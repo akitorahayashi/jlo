@@ -17,14 +17,15 @@ fn user_can_init_create_role_and_session() {
 
     // Create a role
     ctx.cli()
-        .args(["role", "value"])
+        .arg("role")
+        .write_stdin("taxonomy\n")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Created role 'value'"));
+        .stdout(predicate::str::contains("Created role 'taxonomy'"));
 
     // Create a session for that role
     ctx.cli()
-        .args(["session", "value", "--slug", "initial-analysis"])
+        .args(["session", "taxonomy", "--slug", "initial-analysis"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Created session"));
@@ -79,10 +80,10 @@ fn user_can_use_command_aliases() {
     ctx.cli().arg("st").assert().success();
 
     // Use 'r' alias for role
-    ctx.cli().args(["r", "quality"]).assert().success();
+    ctx.cli().arg("r").write_stdin("taxonomy\n").assert().success();
 
     // Use 's' alias for session
-    ctx.cli().args(["s", "quality"]).assert().success();
+    ctx.cli().args(["s", "taxonomy"]).assert().success();
 
     // Use 'u' alias for update
     ctx.cli().arg("u").assert().success();

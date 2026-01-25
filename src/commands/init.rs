@@ -27,6 +27,7 @@ pub fn execute(options: &InitOptions) -> Result<(), AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::env;
     use tempfile::TempDir;
 
@@ -43,6 +44,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn init_creates_workspace() {
         with_temp_cwd(|| {
             let options = InitOptions::default();
@@ -55,6 +57,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn init_fails_if_exists_without_force() {
         with_temp_cwd(|| {
             let options = InitOptions::default();
@@ -66,6 +69,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn init_succeeds_with_force() {
         with_temp_cwd(|| {
             execute(&InitOptions::default()).expect("first init should succeed");

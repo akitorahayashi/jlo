@@ -136,12 +136,13 @@ fn role_creates_role_directory() {
     ctx.cli().arg("init").assert().success();
 
     ctx.cli()
-        .args(["role", "value"])
+        .arg("role")
+        .write_stdin("taxonomy\n")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Created role 'value'"));
+        .stdout(predicate::str::contains("Created role 'taxonomy'"));
 
-    ctx.assert_role_exists("value");
+    ctx.assert_role_exists("taxonomy");
 }
 
 #[test]
@@ -150,7 +151,8 @@ fn role_fails_without_workspace() {
     let ctx = TestContext::new();
 
     ctx.cli()
-        .args(["role", "value"])
+        .arg("role")
+        .write_stdin("taxonomy\n")
         .assert()
         .failure()
         .stderr(predicate::str::contains("No .jules/"));
@@ -164,7 +166,8 @@ fn role_fails_for_invalid_id() {
     ctx.cli().arg("init").assert().success();
 
     ctx.cli()
-        .args(["role", "invalid/id"])
+        .arg("role")
+        .write_stdin("invalid/id\n")
         .assert()
         .failure()
         .stderr(predicate::str::contains("Invalid role identifier"));
@@ -176,10 +179,10 @@ fn session_creates_session_file() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
-    ctx.cli().args(["role", "value"]).assert().success();
+    ctx.cli().arg("role").write_stdin("taxonomy\n").assert().success();
 
     ctx.cli()
-        .args(["session", "value", "--slug", "test-run"])
+        .args(["session", "taxonomy", "--slug", "test-run"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Created session"));

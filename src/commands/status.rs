@@ -11,7 +11,7 @@ pub struct StatusResult {
     pub installed_version: String,
     /// Workspace version from .jo-version (if exists).
     pub workspace_version: Option<String>,
-    /// List of modified jo-managed files.
+    /// List of modified jo-managed files and structural placeholders.
     pub modified_files: Vec<String>,
     /// Whether an update is available.
     pub update_available: bool,
@@ -51,6 +51,7 @@ pub fn execute() -> Result<StatusResult, AppError> {
 mod tests {
     use super::*;
     use crate::commands::init;
+    use serial_test::serial;
     use std::env;
     use std::fs;
     use tempfile::TempDir;
@@ -68,6 +69,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn status_reports_no_workspace() {
         with_temp_cwd(|| {
             let result = execute().expect("status should succeed");
@@ -77,6 +79,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn status_reports_workspace_info() {
         with_temp_cwd(|| {
             init::execute(&init::InitOptions::default()).unwrap();
@@ -89,6 +92,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn status_detects_modifications() {
         with_temp_cwd(|| {
             init::execute(&init::InitOptions::default()).unwrap();
@@ -104,6 +108,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn status_detects_version_mismatch() {
         with_temp_cwd(|| {
             init::execute(&init::InitOptions::default()).unwrap();

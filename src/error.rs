@@ -69,6 +69,10 @@ impl From<io::Error> for AppError {
 }
 
 impl AppError {
+    pub(crate) fn config_error<S: Into<String>>(message: S) -> Self {
+        AppError::ConfigError(message.into())
+    }
+
     /// Provide an `io::ErrorKind`-like view for callers expecting legacy behavior.
     pub fn kind(&self) -> io::ErrorKind {
         match self {

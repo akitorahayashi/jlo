@@ -1,0 +1,4 @@
+id=cartography
+title=Repository Cartography
+summary=Maintain a concise map of structure, boundaries, and data flow.
+default=true

@@ -1,10 +1,12 @@
 //! Workspace operations for `.jules/` directory management.
 
-use crate::bundle::{self, jo_managed_map};
-use crate::error::AppError;
-use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::PathBuf;
+
+use sha2::{Digest, Sha256};
+
+use crate::error::AppError;
+use crate::scaffold;
 
 /// The `.jules/` workspace directory name.
 pub const JULES_DIR: &str = ".jules";
@@ -64,54 +66,24 @@ impl Workspace {
 
     /// Create the complete `.jules/` directory structure.
     pub fn create_structure(&self) -> Result<(), AppError> {
-        let jules = self.jules_path();
+        fs::create_dir_all(self.jules_path())?;
 
-        // Create all directories
-        let dirs = [
-            jules.clone(),
-            jules.join("org"),
-            jules.join("decisions"),
-            jules.join("roles"),
-            jules.join("exchange/inbox"),
-            jules.join("exchange/threads"),
-            jules.join("synthesis/weekly"),
-            jules.join("state"),
-            jules.join(".jo/policy"),
-            jules.join(".jo/templates"),
-        ];
-
-        for dir in &dirs {
-            fs::create_dir_all(dir)?;
-        }
-
-        // Write START_HERE.md
-        fs::write(jules.join("START_HERE.md"), bundle::start_here_content())?;
-
-        // Write org files
-        for entry in bundle::org_files() {
-            fs::write(jules.join(entry.path), entry.content)?;
-        }
-
-        // Write jo-managed files
-        for entry in bundle::jo_managed_files() {
-            let path = jules.join(entry.path);
+        // Write scaffold files
+        for entry in scaffold::scaffold_files() {
+            let path = self.root.join(&entry.path);
             if let Some(parent) = path.parent() {
                 fs::create_dir_all(parent)?;
             }
             fs::write(&path, entry.content)?;
         }
 
-        // Write initial state files
-        fs::write(jules.join("state/lenses.json"), "{}\n")?;
-        fs::write(jules.join("state/open_threads.json"), "{}\n")?;
-
         Ok(())
     }
 
-    /// Update jo-managed files under `.jules/.jo/`.
-    pub fn update_jo_files(&self) -> Result<(), AppError> {
-        for entry in bundle::jo_managed_files() {
-            let path = self.jules_path().join(entry.path);
+    /// Update jo-managed files and structural scaffolding.
+    pub fn update_managed_files(&self) -> Result<(), AppError> {
+        for entry in scaffold::update_managed_files() {
+            let path = self.root.join(&entry.path);
             if let Some(parent) = path.parent() {
                 fs::create_dir_all(parent)?;
             }
@@ -120,17 +92,17 @@ impl Workspace {
         Ok(())
     }
 
-    /// Detect modified jo-managed files by comparing content hashes.
+    /// Detect modified jo-managed files and structural placeholders by comparing content hashes.
     pub fn detect_modifications(&self) -> Result<Vec<String>, AppError> {
         let mut modified = Vec::new();
-        let managed = jo_managed_map();
-
-        for (path, expected_content) in managed {
-            let full_path = self.jules_path().join(path);
+        for entry in scaffold::update_managed_files() {
+            let full_path = self.root.join(&entry.path);
             if full_path.exists() {
                 let actual_content = fs::read_to_string(&full_path)?;
-                if hash_content(&actual_content) != hash_content(expected_content) {
-                    modified.push(path.to_string());
+                if hash_content(&actual_content) != hash_content(entry.content) {
+                    let display_path =
+                        entry.path.strip_prefix(".jules/").unwrap_or(&entry.path).to_string();
+                    modified.push(display_path);
                 }
             }
         }
@@ -154,12 +126,23 @@ impl Workspace {
         let role_dir = self.role_path(role_id);
         fs::create_dir_all(role_dir.join("sessions"))?;
 
+        let (charter_template, direction_template) = match scaffold::role_definition(role_id) {
+            Some(definition) => (definition.charter, definition.direction),
+            None => {
+                let charter = scaffold::template_content("role-charter.md")
+                    .ok_or_else(|| AppError::config_error("Missing role-charter.md template"))?;
+                let direction = scaffold::template_content("role-direction.md")
+                    .ok_or_else(|| AppError::config_error("Missing role-direction.md template"))?;
+                (charter, direction)
+            }
+        };
+
         // Write charter with role_id substitution
-        let charter = bundle::role_charter_template().replace("{{role_id}}", role_id);
+        let charter = charter_template.replace("{{role_id}}", role_id);
         fs::write(role_dir.join("charter.md"), charter)?;
 
         // Write direction with role_id substitution
-        let direction = bundle::role_direction_template().replace("{{role_id}}", role_id);
+        let direction = direction_template.replace("{{role_id}}", role_id);
         fs::write(role_dir.join("direction.md"), direction)?;
 
         Ok(())
@@ -182,7 +165,9 @@ impl Workspace {
         let filename = format!("{}_{}.md", time.replace(':', ""), slug);
         let session_path = session_dir.join(&filename);
 
-        let content = bundle::session_template()
+        let template = scaffold::template_content("session.md")
+            .ok_or_else(|| AppError::config_error("Missing session.md template"))?;
+        let content = template
             .replace("{{role_id}}", role_id)
             .replace("{{slug}}", slug)
             .replace("{{date}}", date)
@@ -236,7 +221,7 @@ mod tests {
         assert!(ws.jules_path().join(".jo").exists());
         assert!(ws.jules_path().join("org").exists());
         assert!(ws.jules_path().join("roles").exists());
-        assert!(ws.jules_path().join("START_HERE.md").exists());
+        assert!(ws.jules_path().join("README.md").exists());
     }
 
     #[test]

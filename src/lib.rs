@@ -1,8 +1,8 @@
 //! jo: Deploy and manage .jules/ workspace scaffolding for organizational memory.
 
-mod bundle;
 mod commands;
 pub mod error;
+mod scaffold;
 mod workspace;
 
 use commands::{init, role, session, status, update};
@@ -17,7 +17,7 @@ pub fn init(force: bool) -> Result<(), AppError> {
     Ok(())
 }
 
-/// Update jo-managed files under `.jules/.jo/`.
+/// Update jo-managed files and structural scaffolding in `.jules/`.
 pub fn update(force: bool) -> Result<(), AppError> {
     let options = update::UpdateOptions { force };
     let result = update::execute(&options)?;
@@ -78,6 +78,13 @@ pub fn role(role_id: &str) -> Result<(), AppError> {
     role::execute(&options)?;
     println!("✅ Created role '{}'", role_id);
     Ok(())
+}
+
+/// Create a role workspace via interactive selection.
+pub fn role_interactive() -> Result<String, AppError> {
+    let role_id = role::execute_interactive()?;
+    println!("✅ Created role '{}'", role_id);
+    Ok(role_id)
 }
 
 /// Create a new session file for a role.
