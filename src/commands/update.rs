@@ -49,6 +49,7 @@ pub fn execute(options: &UpdateOptions) -> Result<UpdateResult, AppError> {
 mod tests {
     use super::*;
     use crate::commands::init;
+    use serial_test::serial;
     use std::env;
     use std::fs;
     use tempfile::TempDir;
@@ -66,6 +67,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn update_fails_without_workspace() {
         with_temp_cwd(|| {
             let err = execute(&UpdateOptions::default()).expect_err("update should fail");
@@ -74,6 +76,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn update_succeeds_on_clean_workspace() {
         with_temp_cwd(|| {
             init::execute(&init::InitOptions::default()).unwrap();
@@ -84,6 +87,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn update_fails_with_modifications() {
         with_temp_cwd(|| {
             init::execute(&init::InitOptions::default()).unwrap();
@@ -99,6 +103,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn update_force_overwrites_modifications() {
         with_temp_cwd(|| {
             init::execute(&init::InitOptions::default()).unwrap();

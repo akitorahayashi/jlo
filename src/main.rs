@@ -34,10 +34,7 @@ enum Commands {
     Status,
     /// Scaffold .jules/roles/<role_id>/ workspace
     #[clap(visible_alias = "r")]
-    Role {
-        /// Role identifier (alphanumeric with hyphens)
-        role_id: String,
-    },
+    Role,
     /// Create a new session file under a role's sessions directory
     #[clap(visible_alias = "s")]
     Session {
@@ -56,7 +53,7 @@ fn main() {
         Commands::Init { force } => jo::init(force),
         Commands::Update { force } => jo::update(force),
         Commands::Status => jo::status(),
-        Commands::Role { role_id } => jo::role(&role_id),
+        Commands::Role => jo::role_interactive().map(|_| ()),
         Commands::Session { role_id, slug } => jo::session(&role_id, slug.as_deref()).map(|_| ()),
     };
 

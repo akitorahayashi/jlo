@@ -1,10 +1,10 @@
 # jo
 
 `jo` deploys and manages `.jules/` workspace scaffolding for organizational memory. It standardizes
-a versioned policy/docs bundle into `.jules/` so scheduled agents and humans can read consistent
+a versioned policy/docs bundle into `.jules/` so scheduled agents and humans read consistent
 structure in-repo.
 
-## What is `.jules/`?
+## What is `.jules/`
 
 The `.jules/` directory is repository-local organizational memory and a workflow contract for
 scheduled LLM agents and humans. It persists direction, decisions, and per-role session outputs
@@ -33,7 +33,7 @@ This creates a `.jules/` workspace with:
 | `jo update` | `u` | Update jo-managed docs/templates under `.jules/.jo/` |
 | `jo update --force` | `u -f` | Force overwrite jo-managed files |
 | `jo status` | `st` | Print version info and detect local modifications |
-| `jo role <role_id>` | `r` | Scaffold `.jules/roles/<role_id>/` workspace |
+| `jo role [role_id]` | `r` | Scaffold `.jules/roles/<role_id>/` workspace (interactive when omitted) |
 | `jo session <role_id> [--slug <slug>]` | `s` | Create new session file |
 
 ## Usage Examples
@@ -45,13 +45,14 @@ jo init
 # Check status
 jo status
 
-# Create a role
-jo role value
-jo role quality
-jo role feasibility
+# Create a role (interactive selection)
+jo role
+
+# Create a role by selecting from the menu
+jo role
 
 # Create a session for a role
-jo session value --slug initial-analysis
+jo session taxonomy --slug initial-analysis
 
 # Update jo-managed files after upgrading jo
 jo update
@@ -64,9 +65,9 @@ jo update --force
 
 ```text
 .jules/
-  START_HERE.md              # Entry point for navigating the workspace
+  README.md                  # Entry point for navigating the workspace
   .jo-version                # jo version that last deployed .jo/
-  .jo/                       # jo-managed policy and templates (overwritten by jo update)
+  .jo/                       # jo-managed policy and templates
     policy/
       contract.md
       layout.md
@@ -79,6 +80,10 @@ jo update --force
       session.md
       decision.md
       weekly-synthesis.md
+      role-charter.md
+      role-direction.md
+    roles/
+      .gitkeep
   org/                       # Source-of-truth direction (human-managed)
     north_star.md
     constraints.md
@@ -135,7 +140,8 @@ jo/
 ├── src/
 │   ├── main.rs           # CLI parsing (clap)
 │   ├── lib.rs            # Public API
-│   ├── bundle.rs         # Embedded policy/template content
+│   ├── scaffold.rs       # Embedded scaffold loader
+│   ├── scaffold/         # Embedded .jules content
 │   ├── error.rs          # AppError definitions
 │   ├── workspace.rs      # Workspace filesystem operations
 │   └── commands/         # Command implementations

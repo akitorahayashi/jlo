@@ -54,6 +54,7 @@ pub fn execute(options: &SessionOptions<'_>) -> Result<PathBuf, AppError> {
 mod tests {
     use super::*;
     use crate::commands::{init, role};
+    use serial_test::serial;
     use std::env;
     use tempfile::TempDir;
 
@@ -70,6 +71,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn session_fails_without_workspace() {
         with_temp_cwd(|| {
             let options = SessionOptions { role_id: "value", slug: None };
@@ -79,6 +81,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn session_fails_without_role() {
         with_temp_cwd(|| {
             init::execute(&init::InitOptions::default()).unwrap();
@@ -90,6 +93,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn session_creates_file() {
         with_temp_cwd(|| {
             init::execute(&init::InitOptions::default()).unwrap();
@@ -104,6 +108,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn session_uses_default_slug() {
         with_temp_cwd(|| {
             init::execute(&init::InitOptions::default()).unwrap();
@@ -118,6 +123,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn session_fails_with_invalid_slug() {
         with_temp_cwd(|| {
             init::execute(&init::InitOptions::default()).unwrap();

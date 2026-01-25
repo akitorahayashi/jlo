@@ -1,0 +1,4 @@
+id=synthesis
+title=Weekly Synthesis
+summary=Integrate role outputs into decisions and next actions.
+default=false
