@@ -13,6 +13,14 @@ pub struct SessionOptions<'a> {
     pub slug: Option<&'a str>,
 }
 
+/// Validate a session slug to prevent invalid filenames.
+fn is_valid_slug(slug: &str) -> bool {
+    !slug.is_empty()
+        && slug.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+        && !slug.starts_with('-')
+        && !slug.starts_with('_')
+}
+
 /// Execute the session command.
 ///
 /// Returns the path to the created session file.
@@ -31,6 +39,11 @@ pub fn execute(options: &SessionOptions<'_>) -> Result<PathBuf, AppError> {
     let date = now.format("%Y-%m-%d").to_string();
     let time = now.format("%H:%M:%S").to_string();
     let slug = options.slug.unwrap_or("session");
+
+    // Validate slug to prevent path traversal and invalid filenames
+    if !is_valid_slug(slug) {
+        return Err(AppError::InvalidSlug(slug.to_string()));
+    }
 
     let session_path = workspace.create_session(options.role_id, &date, &time, slug)?;
 
@@ -101,6 +114,24 @@ mod tests {
 
             assert!(path.exists());
             assert!(path.to_string_lossy().contains("session"));
+        });
+    }
+
+    #[test]
+    fn session_fails_with_invalid_slug() {
+        with_temp_cwd(|| {
+            init::execute(&init::InitOptions::default()).unwrap();
+            role::execute(&role::RoleOptions { role_id: "value" }).unwrap();
+
+            // Test path traversal attempt
+            let options = SessionOptions { role_id: "value", slug: Some("../attack") };
+            let err = execute(&options).expect_err("session should fail");
+            assert!(matches!(err, AppError::InvalidSlug(_)));
+
+            // Test slash in slug
+            let options = SessionOptions { role_id: "value", slug: Some("bad/slug") };
+            let err = execute(&options).expect_err("session should fail");
+            assert!(matches!(err, AppError::InvalidSlug(_)));
         });
     }
 }

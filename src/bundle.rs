@@ -4,6 +4,7 @@
 //! starter files that jo deploys into a workspace.
 
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 /// Bundle entry with path relative to `.jules/` and content.
 pub struct BundleEntry {
@@ -61,9 +62,13 @@ pub fn session_template() -> &'static str {
     TEMPLATE_SESSION
 }
 
-/// Build a lookup map of path -> content for jo-managed files.
-pub fn jo_managed_map() -> HashMap<&'static str, &'static str> {
-    jo_managed_files().into_iter().map(|e| (e.path, e.content)).collect()
+/// Static lookup map of path -> content for jo-managed files.
+static JO_MANAGED_MAP: LazyLock<HashMap<&'static str, &'static str>> =
+    LazyLock::new(|| jo_managed_files().into_iter().map(|e| (e.path, e.content)).collect());
+
+/// Returns a reference to the lookup map of path -> content for jo-managed files.
+pub fn jo_managed_map() -> &'static HashMap<&'static str, &'static str> {
+    &JO_MANAGED_MAP
 }
 
 // =============================================================================
