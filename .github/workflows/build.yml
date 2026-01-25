@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  workflow_call:
+
+jobs:
+  build-debug:
+    name: Build debug binary
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Environment
+        uses: ./.github/actions/setup
+
+      - name: Build debug binary
+        run: cargo build
+
+  build-release:
+    name: Build release binary
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Environment
+        uses: ./.github/actions/setup
+
+      - name: Build release binary
+        run: cargo build --release
