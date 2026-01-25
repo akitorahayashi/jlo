@@ -1,100 +1,154 @@
-# rs-cli-tmpl
+# jo
 
-`rs-cli-tmpl` is a reference template for building Rust-based command line tools with a clean,
-layered architecture. It demonstrates how to separate concerns across the CLI interface,
-application commands, pure business logic, and I/O abstractions so new projects can start from a
-well-tested foundation.
+`jo` deploys and manages `.jules/` workspace scaffolding for organizational memory. It standardizes
+a versioned policy/docs bundle into `.jules/` so scheduled agents and humans can read consistent
+structure in-repo.
 
-## Architectural Highlights
+## What is `.jules/`?
 
-- **Two-tier structure** &mdash; `src/main.rs` handles CLI parsing, `src/lib.rs` exposes public 
-  command APIs, and `src/commands/` keeps business rules testable via the `Execute` trait.
-- **I/O abstraction** &mdash; `src/storage.rs` defines a `Storage` trait and a `FilesystemStorage`
-  implementation rooted at `~/.config/rs-cli-tmpl`, making it easy to swap storage backends.
-- **Configuration management** &mdash; `src/config.rs` provides a `Config` struct for externalized
-  configuration, enabling easy testing with custom storage paths.
-- **Robust testing strategy** &mdash; unit tests live next to their modules, `src/commands/test_support.rs`
-  offers a `MockStorage` for command logic tests (with `#[cfg(test)]`), and the `tests/` directory 
-  provides integration suites for both the library API and the CLI binary.
-
-The template ships with minimal sample commands (`add`, `list`, and `delete`) that show how to
-thread dependencies through each layer. Replace or extend them with your own domain logic while
-reusing the same structure.
-
-## Storage Layout
-
-The template stores items under `~/.config/rs-cli-tmpl/<id>/item.txt`. For example, after running `rs-cli-tmpl add my-item --content '...'`:
-
-```text
-~/.config/rs-cli-tmpl/
-  my-item/
-    item.txt
-```
+The `.jules/` directory is repository-local organizational memory and a workflow contract for
+scheduled LLM agents and humans. It persists direction, decisions, and per-role session outputs
+so each scheduled run starts fresh while still regaining context by reading `.jules/`.
 
 ## Quick Start
 
 ```bash
 cargo install --path .
-# or
-cargo build --release
+cd your-project
+jo init
 ```
 
-The optimized binary will be created at `target/release/rs-cli-tmpl`.
+This creates a `.jules/` workspace with:
+- Source-of-truth documents in `org/`
+- Role workspaces under `roles/`
+- Decision records in `decisions/`
+- Inter-role communication in `exchange/`
+- jo-managed policy and templates in `.jo/`
 
-## Usage
+## Commands
+
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `jo init` | `i` | Create `.jules/` skeleton and source-of-truth docs |
+| `jo update` | `u` | Update jo-managed docs/templates under `.jules/.jo/` |
+| `jo update --force` | `u -f` | Force overwrite jo-managed files |
+| `jo status` | `st` | Print version info and detect local modifications |
+| `jo role <role_id>` | `r` | Scaffold `.jules/roles/<role_id>/` workspace |
+| `jo session <role_id> [--slug <slug>]` | `s` | Create new session file |
+
+## Usage Examples
 
 ```bash
-rs-cli-tmpl --version    # Show version information
-rs-cli-tmpl add <id>     # Add an item
-rs-cli-tmpl list         # List items
-rs-cli-tmpl delete <id>  # Delete an item
+# Initialize a new workspace
+jo init
+
+# Check status
+jo status
+
+# Create a role
+jo role value
+jo role quality
+jo role feasibility
+
+# Create a session for a role
+jo session value --slug initial-analysis
+
+# Update jo-managed files after upgrading jo
+jo update
+
+# Force update even if local modifications exist
+jo update --force
 ```
+
+## Directory Layout
+
+```text
+.jules/
+  START_HERE.md              # Entry point for navigating the workspace
+  .jo-version                # jo version that last deployed .jo/
+  .jo/                       # jo-managed policy and templates (overwritten by jo update)
+    policy/
+      contract.md
+      layout.md
+      run-bootstrap.md
+      run-output.md
+      role-boundaries.md
+      exchange.md
+      decisions.md
+    templates/
+      session.md
+      decision.md
+      weekly-synthesis.md
+  org/                       # Source-of-truth direction (human-managed)
+    north_star.md
+    constraints.md
+    current_priorities.md
+  decisions/                 # Decision records by year
+    YYYY/
+      YYYY-MM-DD_<slug>.md
+  roles/                     # Per-role workspaces
+    <role_id>/
+      charter.md
+      direction.md
+      sessions/
+        YYYY-MM-DD/
+          HHMMSS_<slug>.md
+  exchange/                  # Inter-role communication
+    inbox/
+      <role_id>/
+    threads/
+      <thread_id>/
+  synthesis/                 # Periodic synthesis outputs
+    weekly/
+      YYYY-WW.md
+  state/                     # Machine-readable state
+    lenses.json
+    open_threads.json
+```
+
+## Ownership Rules
+
+| Path | Owner | Notes |
+|------|-------|-------|
+| `.jules/.jo/` | jo | Overwritten by `jo update` |
+| `.jules/.jo-version` | jo | Version marker |
+| Everything else | Human/Agent | Never overwritten by jo |
 
 ## Development Commands
 
-- `cargo build` &mdash; build a debug binary.
-- `cargo build --release` &mdash; build the optimized release binary.
-- `cargo fmt` &mdash; format code using rustfmt.
-- `cargo fmt --check && cargo clippy --all-targets --all-features -- -D warnings` &mdash; format check and lint with clippy.
-- `cargo test --all-targets --all-features` &mdash; run all tests.
-- `cargo fetch --locked` &mdash; pre-fetch dependencies.
+- `cargo build` — build a debug binary
+- `cargo build --release` — build the optimized release binary
+- `cargo fmt` — format code using rustfmt
+- `cargo fmt --check && cargo clippy --all-targets --all-features -- -D warnings` — lint
+- `cargo test --all-targets --all-features` — run all tests
 
 ## Testing Culture
 
-- **Unit Tests**: Live alongside their modules inside `src/`, covering helper utilities and
-  filesystem boundaries.
-- **Command Logic Tests**: Use the mock storage in `src/commands/test_support.rs` (conditionally
-  compiled with `#[cfg(test)]`) to exercise command implementations without touching the filesystem.
-- **Integration Tests**: Located in the `tests/` directory. Separate crates cover the public
-  library API (`tests/commands_api.rs`) and CLI workflows (`tests/cli_commands.rs`,
-  `tests/cli_flow.rs`). Shared fixtures live in `tests/common/mod.rs`.
+- **Unit Tests**: Live alongside their modules inside `src/`
+- **Command Logic Tests**: Each command module includes `#[cfg(test)]` tests
+- **Integration Tests**: Located in `tests/` directory covering CLI workflows and library API
 
 ## Project Structure
 
 ```
-rs-cli-tmpl/
+jo/
 ├── src/
 │   ├── main.rs           # CLI parsing (clap)
-│   ├── lib.rs            # Public API + default_storage() helper
-│   ├── config.rs         # Config struct for externalized configuration
+│   ├── lib.rs            # Public API
+│   ├── bundle.rs         # Embedded policy/template content
 │   ├── error.rs          # AppError definitions
-│   ├── storage.rs        # Storage trait + FilesystemStorage
+│   ├── workspace.rs      # Workspace filesystem operations
 │   └── commands/         # Command implementations
-│       ├── mod.rs        # Execute trait
-│       ├── add_item.rs
-│       ├── list_items.rs
-│       ├── delete_item.rs
-│       └── test_support.rs  # MockStorage (#[cfg(test)])
+│       ├── mod.rs
+│       ├── init.rs
+│       ├── update.rs
+│       ├── status.rs
+│       ├── role.rs
+│       └── session.rs
 └── tests/
     ├── common/           # Shared test fixtures
-    └── ...
+    ├── cli_commands.rs   # CLI command tests
+    ├── cli_flow.rs       # CLI workflow tests
+    ├── commands_api.rs   # Library API tests
+    └── commands_core.rs  # Error handling tests
 ```
-
-## Adapting the Template
-
-1. Replace the sample commands in `src/commands/` with your own business logic.
-2. Extend `src/lib.rs` to wire new dependencies and expose public APIs.
-3. Update the CLI definitions in `src/main.rs` to match your command surface.
-4. Refresh the integration tests and documentation to describe the new behavior.
-
-Happy hacking!

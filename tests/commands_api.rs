@@ -1,49 +1,68 @@
 mod common;
 
 use common::TestContext;
-use rs_cli_tmpl::{add, delete, list};
 use serial_test::serial;
 
 #[test]
 #[serial]
-fn add_persists_item_via_library_api() {
+fn init_creates_workspace_via_library_api() {
     let ctx = TestContext::new();
 
-    ctx.with_dir(ctx.work_dir(), || {
-        add("sample", "hello world").expect("library add should succeed");
+    ctx.with_work_dir(|| {
+        jo::init(false).expect("init should succeed");
     });
 
-    ctx.assert_saved_item_contains("sample", "hello world");
+    ctx.assert_jules_exists();
 }
 
 #[test]
 #[serial]
-fn list_returns_items_via_library_api() {
+fn status_returns_info_via_library_api() {
     let ctx = TestContext::new();
 
-    ctx.with_dir(ctx.work_dir(), || {
-        add("first", "one").expect("add should succeed");
-        add("second", "two").expect("add should succeed");
-        let mut items = list().expect("list should succeed");
-        items.sort();
-        assert_eq!(items, vec!["first".to_string(), "second".to_string()]);
+    ctx.with_work_dir(|| {
+        // Status without workspace
+        jo::status().expect("status should succeed even without workspace");
+
+        // Initialize and check again
+        jo::init(false).expect("init should succeed");
+        jo::status().expect("status should succeed with workspace");
     });
 }
 
 #[test]
 #[serial]
-fn delete_removes_item_via_library_api() {
+fn role_creates_directory_via_library_api() {
     let ctx = TestContext::new();
 
-    ctx.with_dir(ctx.work_dir(), || {
-        add("temp", "value").expect("add should succeed");
+    ctx.with_work_dir(|| {
+        jo::init(false).expect("init should succeed");
+        jo::role("value").expect("role should succeed");
     });
 
-    assert!(ctx.saved_item_path("temp").exists(), "Item should exist before delete");
+    ctx.assert_role_exists("value");
+}
 
-    ctx.with_dir(ctx.work_dir(), || {
-        delete("temp").expect("delete should succeed");
+#[test]
+#[serial]
+fn session_creates_file_via_library_api() {
+    let ctx = TestContext::new();
+
+    ctx.with_work_dir(|| {
+        jo::init(false).expect("init should succeed");
+        jo::role("value").expect("role should succeed");
+        let path = jo::session("value", Some("test-session")).expect("session should succeed");
+        assert!(path.exists());
     });
+}
 
-    assert!(!ctx.saved_item_path("temp").exists(), "Item should be removed after delete");
+#[test]
+#[serial]
+fn update_refreshes_files_via_library_api() {
+    let ctx = TestContext::new();
+
+    ctx.with_work_dir(|| {
+        jo::init(false).expect("init should succeed");
+        jo::update(false).expect("update should succeed");
+    });
 }
