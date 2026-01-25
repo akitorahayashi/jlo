@@ -80,9 +80,9 @@ impl Workspace {
         Ok(())
     }
 
-    /// Update jo-managed files under `.jules/.jo/`.
-    pub fn update_jo_files(&self) -> Result<(), AppError> {
-        for entry in scaffold::jo_managed_files() {
+    /// Update jo-managed files and structural scaffolding.
+    pub fn update_managed_files(&self) -> Result<(), AppError> {
+        for entry in scaffold::update_managed_files() {
             let path = self.root.join(&entry.path);
             if let Some(parent) = path.parent() {
                 fs::create_dir_all(parent)?;
@@ -92,10 +92,10 @@ impl Workspace {
         Ok(())
     }
 
-    /// Detect modified jo-managed files by comparing content hashes.
+    /// Detect modified jo-managed files and structural placeholders by comparing content hashes.
     pub fn detect_modifications(&self) -> Result<Vec<String>, AppError> {
         let mut modified = Vec::new();
-        for entry in scaffold::jo_managed_files() {
+        for entry in scaffold::update_managed_files() {
             let full_path = self.root.join(&entry.path);
             if full_path.exists() {
                 let actual_content = fs::read_to_string(&full_path)?;

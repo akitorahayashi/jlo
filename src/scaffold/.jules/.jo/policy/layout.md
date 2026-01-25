@@ -2,7 +2,7 @@
 
 ```text
 .jules/
-  README.md                  # Entry point for navigating the workspace
+  README.md                  # jo-managed entry point for navigating the workspace
   .jo-version                # jo version that last deployed .jo/
   .jo/                       # jo-managed policy and templates
     policy/
@@ -47,3 +47,5 @@
     lenses.json
     open_threads.json
 ```
+
+Empty directories include `.gitkeep` placeholders that are jo-managed.

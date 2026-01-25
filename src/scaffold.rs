@@ -36,9 +36,9 @@ pub fn scaffold_files() -> Vec<ScaffoldFile> {
     files
 }
 
-/// Returns scaffold files that belong to `.jules/.jo/`.
-pub fn jo_managed_files() -> Vec<ScaffoldFile> {
-    scaffold_files().into_iter().filter(|file| file.path.starts_with(".jules/.jo/")).collect()
+/// Returns scaffold files that `jo update` may overwrite.
+pub fn update_managed_files() -> Vec<ScaffoldFile> {
+    scaffold_files().into_iter().filter(|file| is_update_managed_path(&file.path)).collect()
 }
 
 /// Lookup a scaffold file by path.
@@ -136,6 +136,10 @@ fn role_id_from_path(path: &str) -> String {
     trimmed.to_string()
 }
 
+fn is_update_managed_path(path: &str) -> bool {
+    path.starts_with(".jules/.jo/") || path == ".jules/README.md" || path.ends_with("/.gitkeep")
+}
+
 fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
     for entry in dir.entries() {
         match entry {
@@ -176,6 +180,12 @@ mod tests {
     fn scaffold_files_include_policy_paths() {
         let files = scaffold_files();
         assert!(files.iter().any(|file| file.path == ".jules/.jo/policy/contract.md"));
+    }
+
+    #[test]
+    fn update_managed_files_include_readme() {
+        let files = update_managed_files();
+        assert!(files.iter().any(|file| file.path == ".jules/README.md"));
     }
 
     #[test]

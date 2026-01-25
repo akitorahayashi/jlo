@@ -1,7 +1,7 @@
 # jo Development Overview
 
 ## Project Summary
-`jo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for organizational memory. It standardizes a versioned policy/docs bundle into `.jules/` so scheduled LLM agents and humans read consistent structure in-repo. The tool scaffolds paths and files so outputs land in consistent directories without defining domain-specific roles.
+`jo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for organizational memory. It standardizes a versioned policy/docs bundle into `.jules/` so scheduled LLM agents and humans read consistent structure in-repo. The tool scaffolds paths and files so outputs land in consistent directories without defining domain-specific roles. `jo update` overwrites jo-managed files (`.jules/.jo/`, `.jules/README.md`, and `.jules/**/.gitkeep`) and never overwrites user-owned content.
 
 ## Tech Stack
 - **Language**: Rust
@@ -46,7 +46,7 @@
 
 ## CLI Commands
 - `jo init` (alias: `i`): Create `.jules/` skeleton and source-of-truth docs.
-- `jo update` (alias: `u`): Update jo-managed docs/templates under `.jules/.jo/`.
+- `jo update` (alias: `u`): Update jo-managed docs/templates and structural placeholders.
 - `jo update --force` (alias: `u -f`): Force overwrite jo-managed files.
 - `jo status` (alias: `st`): Print version info and detect local modifications.
 - `jo role [role_id]` (alias: `r`): Scaffold `.jules/roles/<role_id>/` workspace (interactive when omitted).

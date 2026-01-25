@@ -15,5 +15,6 @@ It preserves direction, decisions, and role sessions so new runs regain context 
 
 ## Ownership
 
-- `.jo/` is jo-managed and may be overwritten by `jo update`.
+- `.jo/`, `README.md`, and structural `.gitkeep` placeholders are jo-managed and may be
+  overwritten by `jo update`.
 - Everything else is human or agent output and is not overwritten by jo.

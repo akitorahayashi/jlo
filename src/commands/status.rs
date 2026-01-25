@@ -11,7 +11,7 @@ pub struct StatusResult {
     pub installed_version: String,
     /// Workspace version from .jo-version (if exists).
     pub workspace_version: Option<String>,
-    /// List of modified jo-managed files.
+    /// List of modified jo-managed files and structural placeholders.
     pub modified_files: Vec<String>,
     /// Whether an update is available.
     pub update_available: bool,

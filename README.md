@@ -30,7 +30,7 @@ This creates a `.jules/` workspace with:
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jo init` | `i` | Create `.jules/` skeleton and source-of-truth docs |
-| `jo update` | `u` | Update jo-managed docs/templates under `.jules/.jo/` |
+| `jo update` | `u` | Update jo-managed docs/templates and structural placeholders |
 | `jo update --force` | `u -f` | Force overwrite jo-managed files |
 | `jo status` | `st` | Print version info and detect local modifications |
 | `jo role [role_id]` | `r` | Scaffold `.jules/roles/<role_id>/` workspace (interactive when omitted) |
@@ -65,7 +65,7 @@ jo update --force
 
 ```text
 .jules/
-  README.md                  # Entry point for navigating the workspace
+  README.md                  # jo-managed entry point for navigating the workspace
   .jo-version                # jo version that last deployed .jo/
   .jo/                       # jo-managed policy and templates
     policy/
@@ -116,6 +116,8 @@ jo update --force
 | Path | Owner | Notes |
 |------|-------|-------|
 | `.jules/.jo/` | jo | Overwritten by `jo update` |
+| `.jules/README.md` | jo | Overwritten by `jo update` |
+| `.jules/**/.gitkeep` | jo | Structural placeholders |
 | `.jules/.jo-version` | jo | Version marker |
 | Everything else | Human/Agent | Never overwritten by jo |
 

@@ -12,13 +12,16 @@ so each scheduled run starts fresh while regaining context by reading `.jules/`.
 - Scheduled tasks are read-only for product code; outputs stay under `.jules/`.
 - Source-of-truth documents in `org/` prevent drift.
 - Roles are stable decision functions rather than domain-specific job titles.
-- `.jo/` is jo-managed and may be overwritten by `jo update`.
+- `.jo/`, `.jules/README.md`, and structural `.gitkeep` files are jo-managed and may be
+  overwritten by `jo update`.
 
 ## Ownership
 
 | Path | Owner | Notes |
 |------|-------|-------|
 | `.jules/.jo/` | jo | Overwritten by `jo update` |
+| `.jules/README.md` | jo | Entry point, overwritten by `jo update` |
+| `.jules/**/.gitkeep` | jo | Structural placeholder for empty dirs |
 | `.jules/.jo-version` | jo | Version marker |
 | `.jules/org/` | Human | Source-of-truth documents |
 | `.jules/decisions/` | Human/Agent | Decision records |

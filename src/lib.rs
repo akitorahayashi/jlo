@@ -17,7 +17,7 @@ pub fn init(force: bool) -> Result<(), AppError> {
     Ok(())
 }
 
-/// Update jo-managed files under `.jules/.jo/`.
+/// Update jo-managed files and structural scaffolding in `.jules/`.
 pub fn update(force: bool) -> Result<(), AppError> {
     let options = update::UpdateOptions { force };
     let result = update::execute(&options)?;

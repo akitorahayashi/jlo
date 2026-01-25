@@ -1,4 +1,4 @@
-//! Update command: update jo-managed docs/templates under `.jules/.jo/`.
+//! Update command: update jo-managed docs/templates and structural scaffolding.
 
 use crate::error::AppError;
 use crate::workspace::Workspace;
@@ -38,8 +38,8 @@ pub fn execute(options: &UpdateOptions) -> Result<UpdateResult, AppError> {
         }
     }
 
-    // Update jo-managed files
-    workspace.update_jo_files()?;
+    // Update jo-managed files and structural scaffolding
+    workspace.update_managed_files()?;
     workspace.write_version(&new_version)?;
 
     Ok(UpdateResult { previous_version, new_version })
