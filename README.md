@@ -33,7 +33,7 @@ This creates a `.jules/` workspace with:
 | `jo update` | `u` | Update jo-managed docs/templates and structural placeholders |
 | `jo update --force` | `u -f` | Force overwrite jo-managed files |
 | `jo status` | `st` | Print version info and detect local modifications |
-| `jo role [role_id]` | `r` | Scaffold `.jules/roles/<role_id>/` workspace (interactive when omitted) |
+| `jo role` | `r` | Scaffold `.jules/roles/<role_id>/` workspace via interactive selection |
 | `jo session <role_id> [--slug <slug>]` | `s` | Create new session file |
 
 ## Usage Examples
@@ -44,9 +44,6 @@ jo init
 
 # Check status
 jo status
-
-# Create a role (interactive selection)
-jo role
 
 # Create a role by selecting from the menu
 jo role

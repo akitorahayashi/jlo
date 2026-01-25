@@ -111,29 +111,21 @@ static ROLE_DEFINITIONS: LazyLock<Vec<RoleDefinition>> = LazyLock::new(|| {
 });
 
 fn parse_meta(content: &str) -> HashMap<String, String> {
-    let mut map = HashMap::new();
-
-    for line in content.lines() {
-        let line = line.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        let Some((key, value)) = line.split_once('=') else {
-            continue;
-        };
-        map.insert(key.trim().to_string(), value.trim().to_string());
-    }
-
-    map
+    content
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .filter_map(|line| line.split_once('='))
+        .map(|(key, value)| (key.trim().to_string(), value.trim().to_string()))
+        .collect()
 }
 
 fn role_id_from_path(path: &str) -> String {
-    let trimmed = path
-        .trim_start_matches("src/role_kits/")
-        .trim_start_matches("role_kits/")
-        .trim_end_matches("meta.txt")
-        .trim_end_matches('/');
-    trimmed.to_string()
+    std::path::Path::new(path)
+        .parent()
+        .and_then(|parent| parent.as_os_str().to_str())
+        .unwrap_or("")
+        .to_string()
 }
 
 fn is_update_managed_path(path: &str) -> bool {

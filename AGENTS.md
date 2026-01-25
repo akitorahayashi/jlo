@@ -49,5 +49,5 @@
 - `jo update` (alias: `u`): Update jo-managed docs/templates and structural placeholders.
 - `jo update --force` (alias: `u -f`): Force overwrite jo-managed files.
 - `jo status` (alias: `st`): Print version info and detect local modifications.
-- `jo role [role_id]` (alias: `r`): Scaffold `.jules/roles/<role_id>/` workspace (interactive when omitted).
+- `jo role` (alias: `r`): Scaffold `.jules/roles/<role_id>/` workspace via interactive selection.
 - `jo session <role_id> [--slug]` (alias: `s`): Create new session file.
