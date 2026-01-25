@@ -1,53 +1,89 @@
-//! Library entry point exposing the core command handlers.
+//! jo: Deploy and manage .jules/ workspace scaffolding for organizational memory.
 
+mod bundle;
 mod commands;
-pub mod config;
 pub mod error;
-mod storage;
+mod workspace;
 
-use commands::{Execute, add_item::AddItem, delete_item::DeleteItem, list_items::ListItems};
+use commands::{init, role, session, status, update};
 use error::AppError;
-use storage::FilesystemStorage;
+use std::path::PathBuf;
 
-/// Create the default storage instance.
-fn default_storage() -> Result<FilesystemStorage, AppError> {
-    FilesystemStorage::new_default()
-}
-
-/// Add a new item to storage using the default filesystem backend.
-pub fn add(id: &str, content: &str) -> Result<(), AppError> {
-    let storage = default_storage()?;
-    let command = AddItem { id, content };
-
-    command.execute(&storage)?;
-    println!("✅ Added item '{id}'");
+/// Initialize a new `.jules/` workspace in the current directory.
+pub fn init(force: bool) -> Result<(), AppError> {
+    let options = init::InitOptions { force };
+    init::execute(&options)?;
+    println!("✅ Initialized .jules/ workspace");
     Ok(())
 }
 
-/// List all stored item identifiers.
-pub fn list() -> Result<Vec<String>, AppError> {
-    let storage = default_storage()?;
-    let command = ListItems;
-    let items = command.execute(&storage)?;
+/// Update jo-managed files under `.jules/.jo/`.
+pub fn update(force: bool) -> Result<(), AppError> {
+    let options = update::UpdateOptions { force };
+    let result = update::execute(&options)?;
 
-    println!("📦 Stored items:");
-    if items.is_empty() {
-        println!("(none)");
-    } else {
-        for id in &items {
-            println!("- {id}");
+    match result.previous_version {
+        Some(prev) if prev != result.new_version => {
+            println!("✅ Updated from {} to {}", prev, result.new_version);
+        }
+        Some(_) => {
+            println!("✅ Refreshed jo-managed files (version {})", result.new_version);
+        }
+        None => {
+            println!("✅ Deployed jo-managed files (version {})", result.new_version);
         }
     }
 
-    Ok(items)
+    Ok(())
 }
 
-/// Delete an item from storage.
-pub fn delete(id: &str) -> Result<(), AppError> {
-    let storage = default_storage()?;
-    let command = DeleteItem { id };
+/// Print status information about the workspace.
+pub fn status() -> Result<(), AppError> {
+    let result = status::execute()?;
 
-    command.execute(&storage)?;
-    println!("🗑️  Deleted item '{id}'");
+    println!("jo version: {}", result.installed_version);
+
+    if !result.workspace_exists {
+        println!("⚠️  No .jules/ workspace in current directory");
+        println!("   Run 'jo init' to create one");
+        return Ok(());
+    }
+
+    if let Some(ref version) = result.workspace_version {
+        println!("Workspace version: {}", version);
+    } else {
+        println!("Workspace version: (unknown)");
+    }
+
+    if result.update_available {
+        println!("📦 Update available - run 'jo update' to apply");
+    } else {
+        println!("✅ Workspace is up to date");
+    }
+
+    if !result.modified_files.is_empty() {
+        println!("\n⚠️  Modified jo-managed files:");
+        for file in &result.modified_files {
+            println!("   - {}", file);
+        }
+        println!("\n   Run 'jo update --force' to restore them");
+    }
+
     Ok(())
+}
+
+/// Create a role workspace under `.jules/roles/`.
+pub fn role(role_id: &str) -> Result<(), AppError> {
+    let options = role::RoleOptions { role_id };
+    role::execute(&options)?;
+    println!("✅ Created role '{}'", role_id);
+    Ok(())
+}
+
+/// Create a new session file for a role.
+pub fn session(role_id: &str, slug: Option<&str>) -> Result<PathBuf, AppError> {
+    let options = session::SessionOptions { role_id, slug };
+    let path = session::execute(&options)?;
+    println!("✅ Created session: {}", path.display());
+    Ok(path)
 }

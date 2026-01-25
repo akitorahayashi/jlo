@@ -1,4 +1,4 @@
-//! Shared testing utilities mirroring the reference project's fixture culture.
+//! Shared testing utilities for jo CLI tests.
 
 use assert_cmd::Command;
 use std::env;
@@ -7,28 +7,31 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
-/// Testing harness providing an isolated HOME/workspace pair for CLI and SDK exercises.
+/// Testing harness providing an isolated environment for CLI exercises.
 #[allow(dead_code)]
 pub struct TestContext {
     root: TempDir,
     work_dir: PathBuf,
     original_home: Option<OsString>,
+    original_cwd: PathBuf,
 }
 
 #[allow(dead_code)]
 impl TestContext {
-    /// Create a new isolated environment and point `HOME` to it so the CLI uses local storage.
+    /// Create a new isolated environment.
     pub fn new() -> Self {
         let root = TempDir::new().expect("Failed to create temp directory for tests");
         let work_dir = root.path().join("work");
         fs::create_dir_all(&work_dir).expect("Failed to create test work directory");
 
         let original_home = env::var_os("HOME");
+        let original_cwd = env::current_dir().expect("Failed to get current directory");
+
         unsafe {
             env::set_var("HOME", root.path());
         }
 
-        Self { root, work_dir, original_home }
+        Self { root, work_dir, original_home, original_cwd }
     }
 
     /// Absolute path to the emulated `$HOME` directory.
@@ -41,63 +44,69 @@ impl TestContext {
         &self.work_dir
     }
 
-    /// Convenience helper to create additional sibling workspaces (e.g., for linking scenarios).
-    pub fn create_workspace(&self, name: &str) -> PathBuf {
-        let path = self.home().join(name);
-        fs::create_dir_all(&path).expect("Failed to create additional workspace");
-        path
-    }
-
-    /// Populate the default workspace with an item file containing the provided contents.
-    pub fn write_item_file(&self, contents: &str) {
-        let item_path = self.work_dir().join("item.txt");
-        fs::write(&item_path, contents).expect("Failed to write item file for test");
-    }
-
-    /// Create an item file in the given directory with the provided contents.
-    pub fn write_item_file_in<P: AsRef<Path>>(&self, dir: P, contents: &str) {
-        let path = dir.as_ref().join("item.txt");
-        fs::write(path, contents).expect("Failed to write item file");
-    }
-
-    /// Build a command for invoking the compiled `rs-cli-tmpl` binary within the default workspace.
+    /// Build a command for invoking the compiled `jo` binary within the default workspace.
     pub fn cli(&self) -> Command {
         self.cli_in(self.work_dir())
     }
 
-    /// Build a command for invoking the compiled `rs-cli-tmpl` binary within a custom directory.
+    /// Build a command for invoking the compiled `jo` binary within a custom directory.
     pub fn cli_in<P: AsRef<Path>>(&self, dir: P) -> Command {
-        let mut cmd =
-            Command::cargo_bin("rs-cli-tmpl").expect("Failed to locate rs-cli-tmpl binary");
+        let mut cmd = Command::cargo_bin("jo").expect("Failed to locate jo binary");
         cmd.current_dir(dir.as_ref()).env("HOME", self.home());
         cmd
     }
 
-    /// Return the path where the CLI stores a saved item file for the provided identifier.
-    pub fn saved_item_path(&self, id: &str) -> PathBuf {
-        self.home().join(".config").join("rs-cli-tmpl").join(id).join("item.txt")
+    /// Path to the .jules directory in the work directory.
+    pub fn jules_path(&self) -> PathBuf {
+        self.work_dir.join(".jules")
     }
 
-    /// Assert that a saved item contains the provided value snippet.
-    pub fn assert_saved_item_contains(&self, id: &str, expected_snippet: &str) {
-        let item_path = self.saved_item_path(id);
-        assert!(item_path.exists(), "Expected saved item at {}", item_path.display());
-        let content = fs::read_to_string(&item_path).expect("Failed to read saved item");
-        assert!(
-            content.contains(expected_snippet),
-            "Saved item for id `{id}` did not contain `{expected}`; content: {content}",
-            expected = expected_snippet
-        );
+    /// Assert that .jules directory exists.
+    pub fn assert_jules_exists(&self) {
+        assert!(self.jules_path().exists(), ".jules directory should exist");
     }
 
-    /// Execute a closure after temporarily switching into the provided directory.
-    pub fn with_dir<F, R, P>(&self, dir: P, action: F) -> R
+    /// Assert that .jules directory does not exist.
+    pub fn assert_jules_not_exists(&self) {
+        assert!(!self.jules_path().exists(), ".jules directory should not exist");
+    }
+
+    /// Assert that a role directory exists.
+    pub fn assert_role_exists(&self, role_id: &str) {
+        let role_path = self.jules_path().join("roles").join(role_id);
+        assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
+        assert!(role_path.join("charter.md").exists(), "Role charter should exist");
+        assert!(role_path.join("direction.md").exists(), "Role direction should exist");
+    }
+
+    /// Read the .jo-version file.
+    pub fn read_version(&self) -> Option<String> {
+        let version_path = self.jules_path().join(".jo-version");
+        if version_path.exists() {
+            Some(
+                fs::read_to_string(version_path)
+                    .expect("Failed to read version")
+                    .trim()
+                    .to_string(),
+            )
+        } else {
+            None
+        }
+    }
+
+    /// Modify a jo-managed file for testing.
+    pub fn modify_jo_file(&self, relative_path: &str, content: &str) {
+        let path = self.jules_path().join(relative_path);
+        fs::write(&path, content).expect("Failed to modify file");
+    }
+
+    /// Execute a closure after temporarily switching into the work directory.
+    pub fn with_work_dir<F, R>(&self, action: F) -> R
     where
         F: FnOnce() -> R,
-        P: AsRef<Path>,
     {
         let original = env::current_dir().expect("Failed to capture current dir");
-        env::set_current_dir(dir.as_ref()).expect("Failed to switch current dir");
+        env::set_current_dir(&self.work_dir).expect("Failed to switch current dir");
         let result = action();
         env::set_current_dir(original).expect("Failed to restore current dir");
         result
@@ -106,6 +115,9 @@ impl TestContext {
 
 impl Drop for TestContext {
     fn drop(&mut self) {
+        // Restore original CWD first (in case we're still in the temp dir)
+        let _ = env::set_current_dir(&self.original_cwd);
+
         match &self.original_home {
             Some(value) => unsafe {
                 env::set_var("HOME", value);

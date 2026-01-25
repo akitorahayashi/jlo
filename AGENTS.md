@@ -1,11 +1,13 @@
-# rs-cli-tmpl Development Overview
+# jo Development Overview
 
 ## Project Summary
-`rs-cli-tmpl` is a reference template for building Rust-based command line tools with a clean, layered architecture. It demonstrates how to separate concerns across the CLI interface, application commands, pure business logic, and I/O abstractions, providing a well-tested foundation for new projects. The template includes sample commands (`add`, `list`, and `delete`) that can be replaced or extended with custom domain logic.
+`jo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for organizational memory. It standardizes a versioned policy/docs bundle into `.jules/` so scheduled LLM agents and humans can read consistent structure in-repo. The tool scaffolds paths and files so outputs land in consistent directories without defining domain-specific roles.
 
 ## Tech Stack
 - **Language**: Rust
 - **CLI Parsing**: `clap`
+- **Date/Time**: `chrono`
+- **Hashing**: `sha2`
 - **Development Dependencies**:
   - `assert_cmd`
   - `assert_fs`
@@ -18,8 +20,8 @@
 - **Linter**: `clippy` is used for linting, with a strict policy of treating all warnings as errors (`-D warnings`).
 
 ## Naming Conventions
-- **Structs and Enums**: `PascalCase` (e.g., `Cli`, `Commands`)
-- **Functions and Variables**: `snake_case` (e.g., `run_tests`, `test_context`)
+- **Structs and Enums**: `PascalCase` (e.g., `Workspace`, `Commands`)
+- **Functions and Variables**: `snake_case` (e.g., `create_role`, `session_path`)
 - **Modules**: `snake_case` (e.g., `cli_commands.rs`)
 
 ## Key Commands
@@ -30,13 +32,20 @@
 - **Test**: `cargo test --all-targets --all-features`
 
 ## Testing Strategy
-- **Unit Tests**: Located within the `src/` directory alongside the code they test, covering helper utilities and filesystem boundaries.
-- **Command Logic Tests**: Found in `src/commands/`, utilizing mock storage (`src/commands/test_support.rs` with `#[cfg(test)]`) to ensure business logic is tested in isolation via the `Execute` trait.
+- **Unit Tests**: Located within the `src/` directory alongside the code they test, covering helper utilities and workspace operations.
+- **Command Logic Tests**: Found in `src/commands/`, each command module includes `#[cfg(test)]` tests.
 - **Integration Tests**: Housed in the `tests/` directory, these tests cover the public library API and CLI user flows from an external perspective. Separate crates for API (`tests/commands_api.rs`) and CLI workflows (`tests/cli_commands.rs`, `tests/cli_flow.rs`), with shared fixtures in `tests/common/mod.rs`.
-- **CI**: GitHub Actions automatically runs build, linting, and test workflows, as defined in `.github/workflows/`.
 
 ## Architectural Highlights
-- **Two-tier structure**: `src/main.rs` handles CLI parsing, `src/lib.rs` exposes public APIs and the `default_storage()` helper, and `src/commands/` keeps business rules testable.
-- **I/O abstraction**: `src/storage.rs` defines a `Storage` trait and a `FilesystemStorage` implementation rooted at `~/.config/rs-cli-tmpl`, making it easy to swap storage backends.
-- **Configuration management**: `src/config.rs` provides a `Config` struct for externalized configuration, enabling custom storage paths for testing.
-- **Storage Layout**: Items are stored under `~/.config/rs-cli-tmpl/<id>/item.txt`.
+- **Two-tier structure**: `src/main.rs` handles CLI parsing, `src/lib.rs` exposes public APIs, and `src/commands/` keeps command logic testable.
+- **Bundle embedding**: `src/bundle.rs` contains all static content for policy documents, templates, and starter files that jo deploys.
+- **Workspace abstraction**: `src/workspace.rs` provides a `Workspace` struct for all `.jules/` directory operations.
+- **Version management**: `.jo-version` tracks which jo version last deployed the workspace, enabling update detection.
+
+## CLI Commands
+- `jo init` (alias: `i`): Create `.jules/` skeleton and source-of-truth docs.
+- `jo update` (alias: `u`): Update jo-managed docs/templates under `.jules/.jo/`.
+- `jo update --force` (alias: `u -f`): Force overwrite jo-managed files.
+- `jo status` (alias: `st`): Print version info and detect local modifications.
+- `jo role <role_id>` (alias: `r`): Scaffold `.jules/roles/<role_id>/` workspace.
+- `jo session <role_id> [--slug]` (alias: `s`): Create new session file.
