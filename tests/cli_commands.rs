@@ -17,6 +17,7 @@ fn init_creates_jules_directory() {
 
     ctx.assert_jules_exists();
     assert!(ctx.read_version().is_some());
+    ctx.assert_role_exists("taxonomy");
 }
 
 #[test]
@@ -50,33 +51,22 @@ fn update_updates_jo_managed_files() {
         .arg("update")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Refreshed jo-managed files"));
+        .stdout(predicate::str::contains("Workspace already up to date"));
 }
 
 #[test]
 #[serial]
-fn update_fails_if_modified_without_force() {
+fn update_succeeds_if_modified() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
-    ctx.modify_jo_file(".jo/policy/contract.md", "MODIFIED");
+    ctx.modify_jo_file("README.md", "MODIFIED");
 
     ctx.cli()
         .arg("update")
         .assert()
-        .failure()
-        .stderr(predicate::str::contains("Modified jo-managed files"));
-}
-
-#[test]
-#[serial]
-fn update_force_overwrites_modified() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("init").assert().success();
-    ctx.modify_jo_file(".jo/policy/contract.md", "MODIFIED");
-
-    ctx.cli().args(["update", "--force"]).assert().success();
+        .success()
+        .stdout(predicate::str::contains("Refreshed jo-managed files"));
 }
 
 #[test]
@@ -85,47 +75,6 @@ fn update_fails_without_workspace() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("update").assert().failure().stderr(predicate::str::contains("No .jules/"));
-}
-
-#[test]
-#[serial]
-fn status_shows_no_workspace() {
-    let ctx = TestContext::new();
-
-    ctx.cli()
-        .arg("status")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("No .jules/ workspace"));
-}
-
-#[test]
-#[serial]
-fn status_shows_versions() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("init").assert().success();
-
-    ctx.cli().arg("status").assert().success().stdout(
-        predicate::str::contains("jo version:")
-            .and(predicate::str::contains("Workspace version:"))
-            .and(predicate::str::contains("up to date")),
-    );
-}
-
-#[test]
-#[serial]
-fn status_detects_modifications() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("init").assert().success();
-    ctx.modify_jo_file(".jo/policy/contract.md", "MODIFIED");
-
-    ctx.cli()
-        .arg("status")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Modified jo-managed files"));
 }
 
 #[test]
@@ -140,7 +89,7 @@ fn role_creates_role_directory() {
         .write_stdin("taxonomy\n")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Created role 'taxonomy'"));
+        .stdout(predicate::str::contains("role: taxonomy"));
 
     ctx.assert_role_exists("taxonomy");
 }
@@ -170,36 +119,7 @@ fn role_fails_for_invalid_id() {
         .write_stdin("invalid/id\n")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Invalid role identifier"));
-}
-
-#[test]
-#[serial]
-fn session_creates_session_file() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("init").assert().success();
-    ctx.cli().arg("role").write_stdin("taxonomy\n").assert().success();
-
-    ctx.cli()
-        .args(["session", "taxonomy", "--slug", "test-run"])
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Created session"));
-}
-
-#[test]
-#[serial]
-fn session_fails_for_nonexistent_role() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("init").assert().success();
-
-    ctx.cli()
-        .args(["session", "nonexistent"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("Role 'nonexistent' not found"));
+        .stderr(predicate::str::contains("Role 'invalid/id' not found"));
 }
 
 #[test]
@@ -222,8 +142,6 @@ fn help_lists_visible_aliases() {
     ctx.cli().arg("--help").assert().success().stdout(
         predicate::str::contains("[aliases: i]")
             .and(predicate::str::contains("[aliases: u]"))
-            .and(predicate::str::contains("[aliases: st]"))
-            .and(predicate::str::contains("[aliases: r]"))
-            .and(predicate::str::contains("[aliases: s]")),
+            .and(predicate::str::contains("[aliases: r]")),
     );
 }

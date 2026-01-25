@@ -1,4 +1,0 @@
-id=drift-audit
-title=Drift Audit
-summary=Detect gaps between documentation, policy, and current state.
-default=false

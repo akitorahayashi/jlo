@@ -15,35 +15,19 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Create .jules/ skeleton and source-of-truth docs
+    /// Create .jules/ minimal structure
     #[clap(visible_alias = "i")]
     Init {
         /// Force initialization even if workspace exists
         #[clap(short, long)]
         force: bool,
     },
-    /// Update jo-managed docs/templates under .jules/.jo/
+    /// Update jo-managed files (README, version)
     #[clap(visible_alias = "u")]
-    Update {
-        /// Force overwrite even if local modifications exist
-        #[clap(short, long)]
-        force: bool,
-    },
-    /// Print version info and detect local modifications
-    #[clap(visible_alias = "st")]
-    Status,
-    /// Scaffold .jules/roles/<role_id>/ workspace
+    Update,
+    /// Interactive role selection and scheduler prompt generation
     #[clap(visible_alias = "r")]
     Role,
-    /// Create a new session file under a role's sessions directory
-    #[clap(visible_alias = "s")]
-    Session {
-        /// Role identifier
-        role_id: String,
-        /// Session slug for the filename
-        #[clap(short, long)]
-        slug: Option<String>,
-    },
 }
 
 fn main() {
@@ -51,10 +35,8 @@ fn main() {
 
     let result: Result<(), AppError> = match cli.command {
         Commands::Init { force } => jo::init(force),
-        Commands::Update { force } => jo::update(force),
-        Commands::Status => jo::status(),
+        Commands::Update => jo::update(),
         Commands::Role => jo::role_interactive().map(|_| ()),
-        Commands::Session { role_id, slug } => jo::session(&role_id, slug.as_deref()).map(|_| ()),
     };
 
     if let Err(e) = result {

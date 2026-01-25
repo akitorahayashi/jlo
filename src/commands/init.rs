@@ -1,4 +1,4 @@
-//! Init command: create `.jules/` skeleton and source-of-truth docs.
+//! Init command: create a minimal `.jules/` workspace structure.
 
 use crate::error::AppError;
 use crate::workspace::Workspace;
@@ -33,20 +33,20 @@ mod tests {
 
     fn with_temp_cwd<F, R>(f: F) -> R
     where
-        F: FnOnce() -> R,
+        F: FnOnce(&TempDir) -> R,
     {
         let dir = TempDir::new().expect("failed to create temp dir");
         let original = env::current_dir().expect("failed to get cwd");
         env::set_current_dir(dir.path()).expect("failed to set cwd");
-        let result = f();
-        env::set_current_dir(original).expect("failed to restore cwd");
+        let result = f(&dir);
+        env::set_current_dir(&original).expect("failed to restore cwd");
         result
     }
 
     #[test]
     #[serial]
     fn init_creates_workspace() {
-        with_temp_cwd(|| {
+        with_temp_cwd(|_dir| {
             let options = InitOptions::default();
             execute(&options).expect("init should succeed");
 
@@ -59,7 +59,7 @@ mod tests {
     #[test]
     #[serial]
     fn init_fails_if_exists_without_force() {
-        with_temp_cwd(|| {
+        with_temp_cwd(|_dir| {
             let options = InitOptions::default();
             execute(&options).expect("first init should succeed");
 
@@ -71,7 +71,7 @@ mod tests {
     #[test]
     #[serial]
     fn init_succeeds_with_force() {
-        with_temp_cwd(|| {
+        with_temp_cwd(|_dir| {
             execute(&InitOptions::default()).expect("first init should succeed");
 
             let options = InitOptions { force: true };

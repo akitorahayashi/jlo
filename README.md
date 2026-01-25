@@ -1,14 +1,25 @@
 # jo
 
-`jo` deploys and manages `.jules/` workspace scaffolding for organizational memory. It standardizes
-a versioned policy/docs bundle into `.jules/` so scheduled agents and humans read consistent
-structure in-repo.
+`jo` is a CLI tool that deploys and manages minimal `.jules/` workspace scaffolding for scheduled LLM agent execution. It creates a simple, consistent structure where agents can read project context and write analysis reports without modifying product code.
 
-## What is `.jules/`
+## Design Philosophy
 
-The `.jules/` directory is repository-local organizational memory and a workflow contract for
-scheduled LLM agents and humans. It persists direction, decisions, and per-role session outputs
-so each scheduled run starts fresh while still regaining context by reading `.jules/`.
+- **Single-Scheduled-Prompt**: Each scheduled task runs one self-contained prompt
+- **Stateless Execution**: Agents read repo files for context (no in-memory state)
+- **Japanese Content**: All `.jules/` content is in English; file/directory names are English
+
+## `.jules/` Structure
+
+```
+.jules/
+  README.md           # English explanation of workspace
+  .jo-version         # Version marker for updates
+  roles/              # Role-scoped workspaces
+    <role>/
+      prompt.yml      # Role prompt material (English, pasteable as-is)
+      reports/        # Accumulated analysis reports
+        YYYY-MM-DD_HHMMSS.md
+```
 
 ## Quick Start
 
@@ -16,107 +27,51 @@ so each scheduled run starts fresh while still regaining context by reading `.ju
 cargo install --path .
 cd your-project
 jo init
+jo role
 ```
 
-This creates a `.jules/` workspace with:
-- Source-of-truth documents in `org/`
-- Role workspaces under `roles/`
-- Decision records in `decisions/`
-- Inter-role communication in `exchange/`
-- jo-managed policy and templates in `.jo/`
+The `jo init` command creates the minimal `.jules/` structure. The `jo role` command shows an interactive menu to select a role and prints a ready-to-paste scheduler prompt.
 
 ## Commands
 
 | Command | Alias | Description |
 |---------|-------|-------------|
-| `jo init` | `i` | Create `.jules/` skeleton and source-of-truth docs |
-| `jo update` | `u` | Update jo-managed docs/templates and structural placeholders |
-| `jo update --force` | `u -f` | Force overwrite jo-managed files |
-| `jo status` | `st` | Print version info and detect local modifications |
-| `jo role` | `r` | Scaffold `.jules/roles/<role_id>/` workspace via interactive selection |
-| `jo session <role_id> [--slug <slug>]` | `s` | Create new session file |
+| `jo init` | `i` | Create minimal `.jules/` structure |
+| `jo update` | `u` | Update jo-managed files (README, version) |
+| `jo update --force` | `u -f` | Force overwrite modified jo-managed files |
+| `jo role` | `r` | Interactive role selection and prompt output to stdout |
 
-## Usage Examples
+## Workflow
 
-```bash
-# Initialize a new workspace
-jo init
+1. **Initialize**: Run `jo init` to create `.jules/`
+2. **Select Role**: Run `jo role` to see available roles
+3. **Get Prompt**: Select a role (scaffolds if built-in) and copy the printed `prompt.yml`
+4. **Schedule**: Paste prompt into scheduler (e.g., Jules GUI)
+5. **Execute**: Scheduler runs prompt; agent writes report to `.jules/roles/<role>/reports/`
 
-# Check status
-jo status
+## Built-in Roles
 
-# Create a role by selecting from the menu
-jo role
+- **taxonomy**: Analyzes naming and terminology consistency across the repository
+`jo init` scaffolds `taxonomy` by default so the structure is visible immediately.
 
-# Create a session for a role
-jo session taxonomy --slug initial-analysis
+## Version Management
 
-# Update jo-managed files after upgrading jo
-jo update
+The `.jules/.jo-version` file tracks which version of `jo` last managed the workspace. Running `jo update` refreshes managed files and checks for modifications.
 
-# Force update even if local modifications exist
-jo update --force
-```
+## Language Policy
 
-## Directory Layout
+- **File/Directory Names**: English only (e.g., `roles/`, `reports/`, `prompt.yml`)
+- **File Contents**: Japanese only (`.jules/README.md`, `prompt.yml`, reports)
+- **CLI Output**: English (command-line messages, errors)
 
-```text
-.jules/
-  README.md                  # jo-managed entry point for navigating the workspace
-  .jo-version                # jo version that last deployed .jo/
-  .jo/                       # jo-managed policy and templates
-    policy/
-      contract.md
-      layout.md
-      run-bootstrap.md
-      run-output.md
-      role-boundaries.md
-      exchange.md
-      decisions.md
-    templates/
-      session.md
-      decision.md
-      weekly-synthesis.md
-      role-charter.md
-      role-direction.md
-    roles/
-      .gitkeep
-  org/                       # Source-of-truth direction (human-managed)
-    north_star.md
-    constraints.md
-    current_priorities.md
-  decisions/                 # Decision records by year
-    YYYY/
-      YYYY-MM-DD_<slug>.md
-  roles/                     # Per-role workspaces
-    <role_id>/
-      charter.md
-      direction.md
-      sessions/
-        YYYY-MM-DD/
-          HHMMSS_<slug>.md
-  exchange/                  # Inter-role communication
-    inbox/
-      <role_id>/
-    threads/
-      <thread_id>/
-  synthesis/                 # Periodic synthesis outputs
-    weekly/
-      YYYY-WW.md
-  state/                     # Machine-readable state
-    lenses.json
-    open_threads.json
-```
+## Managed Files
 
-## Ownership Rules
+`jo update` only touches these files:
+- `.jules/README.md`
+- `.jules/roles/.gitkeep`
+- `.jules/.jo-version`
 
-| Path | Owner | Notes |
-|------|-------|-------|
-| `.jules/.jo/` | jo | Overwritten by `jo update` |
-| `.jules/README.md` | jo | Overwritten by `jo update` |
-| `.jules/**/.gitkeep` | jo | Structural placeholders |
-| `.jules/.jo-version` | jo | Version marker |
-| Everything else | Human/Agent | Never overwritten by jo |
+Everything else (user reports, user-created roles) is never touched by `jo`.
 
 ## Development Commands
 
@@ -141,15 +96,16 @@ jo/
 │   ├── lib.rs            # Public API
 │   ├── scaffold.rs       # Embedded scaffold loader
 │   ├── scaffold/         # Embedded .jules content
+│   │   └── .jules/       # Scaffold files
+│   ├── role_kits/        # Built-in role definitions
+│   │   └── taxonomy/
 │   ├── error.rs          # AppError definitions
 │   ├── workspace.rs      # Workspace filesystem operations
 │   └── commands/         # Command implementations
 │       ├── mod.rs
 │       ├── init.rs
 │       ├── update.rs
-│       ├── status.rs
-│       ├── role.rs
-│       └── session.rs
+│       └── role.rs
 └── tests/
     ├── common/           # Shared test fixtures
     ├── cli_commands.rs   # CLI command tests
