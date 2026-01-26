@@ -120,11 +120,11 @@ mod tests {
 
     #[test]
     fn role_definitions_includes_all_four_roles() {
-        assert_eq!(role_definitions().len(), 4);
-        assert!(role_definition("taxonomy").is_some());
-        assert!(role_definition("data_arch").is_some());
-        assert!(role_definition("qa").is_some());
-        assert!(role_definition("pm").is_some());
+        use std::collections::HashSet;
+        let expected_ids: HashSet<&str> =
+            ["taxonomy", "data_arch", "qa", "pm"].iter().cloned().collect();
+        let actual_ids: HashSet<&str> = role_definitions().iter().map(|r| r.id).collect();
+        assert_eq!(actual_ids, expected_ids);
     }
 
     #[test]

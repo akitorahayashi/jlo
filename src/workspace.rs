@@ -140,7 +140,7 @@ impl Workspace {
 
     /// Check if a role exists (has role.yml).
     pub fn role_exists(&self, role_id: &str) -> bool {
-        if role_id.contains('/') || role_id.contains('\\') || role_id == "." || role_id == ".." {
+        if !Self::is_valid_role_id(role_id) {
             return false;
         }
         self.role_path(role_id).join("role.yml").exists()
@@ -169,6 +169,15 @@ impl Workspace {
         Ok(roles)
     }
 
+    /// Check if a role_id is valid (no path traversal characters).
+    fn is_valid_role_id(role_id: &str) -> bool {
+        !role_id.contains('/')
+            && !role_id.contains('\\')
+            && role_id != "."
+            && role_id != ".."
+            && !role_id.is_empty()
+    }
+
     /// Scaffold a new role with role.yml and notes directory.
     pub fn scaffold_role(
         &self,
@@ -176,6 +185,10 @@ impl Workspace {
         role_yaml: &str,
         policy: Option<&str>,
     ) -> Result<(), AppError> {
+        if !Self::is_valid_role_id(role_id) {
+            return Err(AppError::InvalidRoleId(role_id.to_string()));
+        }
+
         let role_dir = self.role_path(role_id);
         let notes_dir = role_dir.join("notes");
 
@@ -193,6 +206,10 @@ impl Workspace {
 
     /// Read the role configuration (role.yml).
     pub fn read_role_config(&self, role_id: &str) -> Result<String, AppError> {
+        if !Self::is_valid_role_id(role_id) {
+            return Err(AppError::InvalidRoleId(role_id.to_string()));
+        }
+
         if !self.exists() {
             return Err(AppError::WorkspaceNotFound);
         }
