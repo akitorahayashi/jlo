@@ -71,12 +71,36 @@ impl TestContext {
         assert!(!self.jules_path().exists(), ".jules directory should not exist");
     }
 
-    /// Assert that a role directory exists.
+    /// Assert that a role directory exists with v1 structure.
     pub fn assert_role_exists(&self, role_id: &str) {
         let role_path = self.jules_path().join("roles").join(role_id);
         assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
-        assert!(role_path.join("prompt.yml").exists(), "Role prompt should exist");
-        assert!(role_path.join("reports").exists(), "Role reports directory should exist");
+        assert!(role_path.join("role.yml").exists(), "Role role.yml should exist");
+        assert!(role_path.join("notes").exists(), "Role notes directory should exist");
+    }
+
+    /// Assert that the global reports directory exists.
+    pub fn assert_global_reports_exists(&self) {
+        let reports_path = self.jules_path().join("reports");
+        assert!(reports_path.exists(), "Global reports directory should exist");
+    }
+
+    /// Assert that the issues directory structure exists.
+    pub fn assert_issues_structure_exists(&self) {
+        let issues_path = self.jules_path().join("issues");
+        assert!(issues_path.join("bugs").exists(), "issues/bugs should exist");
+        assert!(issues_path.join("refacts").exists(), "issues/refacts should exist");
+        assert!(issues_path.join("updates").exists(), "issues/updates should exist");
+        assert!(issues_path.join("tests").exists(), "issues/tests should exist");
+        assert!(issues_path.join("docs").exists(), "issues/docs should exist");
+    }
+
+    /// Assert that all 4 built-in roles exist.
+    pub fn assert_all_builtin_roles_exist(&self) {
+        self.assert_role_exists("taxonomy");
+        self.assert_role_exists("data_arch");
+        self.assert_role_exists("qa");
+        self.assert_role_exists("pm");
     }
 
     /// Read the .jo-version file.

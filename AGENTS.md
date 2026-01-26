@@ -1,7 +1,7 @@
 # jo Development Overview
 
 ## Project Summary
-`jo` is a CLI tool that deploys and manages minimal `.jules/` workspace scaffolding for scheduled LLM agent execution. It creates a simple structure where agents can read project context (via `AGENTS.md` and past reports) and write analysis reports without modifying product code. The v0 design follows a single-scheduled-prompt model: each scheduled task runs one self-contained prompt stored as `.jules/roles/<role>/prompt.yml`.
+`jo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. It implements a **PM/Worker agent organization layer** where specialized worker agents maintain persistent memory (`notes/`), propose improvements (`reports/`), and a PM agent screens and converts proposals into actionable issues (`issues/`).
 
 ## Tech Stack
 - **Language**: Rust
@@ -22,7 +22,7 @@
 
 ## Naming Conventions
 - **Structs and Enums**: `PascalCase` (e.g., `Workspace`, `Commands`)
-- **Functions and Variables**: `snake_case` (e.g., `scaffold_role`, `read_role_prompt`)
+- **Functions and Variables**: `snake_case` (e.g., `scaffold_role`, `read_role_config`)
 - **Modules**: `snake_case` (e.g., `cli_commands.rs`)
 
 ## Key Commands
@@ -40,35 +40,72 @@
 ## Architectural Highlights
 - **Two-tier structure**: `src/main.rs` handles CLI parsing, `src/lib.rs` exposes public APIs, and `src/commands/` keeps command logic testable.
 - **Scaffold embedding**: `src/scaffold.rs` loads static files from `src/scaffold/.jules/` for deployment, plus built-in role definitions from `src/role_kits/`.
-- **Workspace abstraction**: `src/workspace.rs` provides a `Workspace` struct for all `.jules/` directory operations, including role discovery and prompt file access.
+- **Workspace abstraction**: `src/workspace.rs` provides a `Workspace` struct for all `.jules/` directory operations, including role discovery and config access.
 - **Version management**: `.jo-version` tracks which jo version last deployed the workspace, enabling update detection.
 
-## CLI Commands (v0)
-- `jo init` (alias: `i`): Create minimal `.jules/` structure and scaffold the default `taxonomy` role.
+## CLI Commands
+- `jo init` (alias: `i`): Create complete `.jules/` structure with all 4 built-in roles.
 - `jo update` (alias: `u`): Update jo-managed files (README, .jo-version).
-- `jo role` (alias: `r`): Show interactive menu with existing + built-in roles, scaffold if needed, print the selected role's `prompt.yml` to stdout.
+- `jo role` (alias: `r`): Show interactive menu with roles, print selected role's `role.yml` to stdout.
 
-## Workspace Contract (v0)
-- `.jules/README.md`: English explanation, jo-managed
-- `.jules/.jo-version`: Version marker, jo-managed
-- `.jules/roles/<role>/prompt.yml`: Scheduler prompt material, user-owned
-- `.jules/roles/<role>/reports/`: Report accumulation directory, user-owned
-- `.jules/roles/<role>/reports/.gitkeep`: Structural placeholder, user-owned
+## Workspace Contract (v1)
 
-## Built-in Roles (v0)
-- **taxonomy**: Naming and terminology consistency analysis (only built-in role)
+### Directory Structure
+```
+.jules/
+├── README.md           # Workflow documentation (jo-managed)
+├── .jo-version         # Version marker (jo-managed)
+│
+├── roles/              # Agent workspaces
+│   ├── <role>/         # Worker role
+│   │   ├── role.yml    # Role definition (user-owned)
+│   │   └── notes/      # Persistent memory (user-owned)
+│   └── pm/             # PM role (special)
+│       ├── role.yml    # PM definition (user-owned)
+│       └── policy.md   # Decision criteria (user-owned)
+│
+├── reports/            # Proposals from Workers (user-owned)
+│   └── YYYY-MM-DD_<role>_<title>.md
+│
+└── issues/             # Approved tasks from PM (user-owned)
+    ├── bugs/           # Bug fixes
+    ├── refacts/        # Refactoring
+    ├── updates/        # New features
+    ├── tests/          # Test-only changes
+    └── docs/           # Documentation-only changes
+```
 
-## Prompt Output Logic
-When `jo role` is executed:
-1. Validate `.jules/` exists (fail early before menu)
-2. Discover existing roles via `Workspace::discover_roles()` (scan for `prompt.yml` files)
-3. Get built-in role definitions via `scaffold::role_definitions()` (only taxonomy)
-4. Show menu: existing roles first, then missing built-ins
-5. If user selects built-in that doesn't exist: scaffold it via `Workspace::scaffold_role()`
-6. Print `.jules/roles/<role>/prompt.yml` to stdout
+### File Ownership
+- **jo-managed**: `README.md`, `.jo-version` (overwritten by `jo update`)
+- **user-owned**: Everything else (never modified by jo)
+
+## Built-in Roles
+
+| Role | Type | Responsibility |
+|------|------|----------------|
+| `taxonomy` | Worker | Naming conventions, terminology consistency |
+| `data_arch` | Worker | Data models, data flow efficiency |
+| `qa` | Worker | Test coverage, test quality |
+| `pm` | Manager | Proposal review, issue creation |
+
+### Worker Behavior
+Workers read source code and their `notes/` directory, update notes with current understanding (declarative state), and create proposals in `reports/` when improvements are found. Workers do NOT write to `issues/`.
+
+### PM Behavior
+PM reads proposals from `reports/`, screens against `policy.md` criteria, and converts approved proposals to `issues/<category>/*.md`. Only PM writes to `issues/`.
+
+## Role Configuration Schema
+Each role has a `role.yml` file defining:
+- `role`: Identifier
+- `type`: `worker` or `manager`
+- `goal`: Purpose description
+- `memory`: Notes directory configuration (workers only)
+- `reporting`: How to create proposals
+- `behavior`: Read/write patterns and constraints
 
 ## Language Policy
 - **Scaffold Content**: English (README.md)
-- **File/Directory Names**: English (`roles/`, `reports/`, `prompt.yml`, `.gitkeep`)
+- **File/Directory Names**: English (`roles/`, `reports/`, `issues/`, `notes/`, `role.yml`)
+- **Role Content**: Japanese (role.yml, notes, reports, issues)
 - **CLI Messages**: English (stdout/stderr)
 - **Code Comments**: English
