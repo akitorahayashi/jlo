@@ -15,12 +15,8 @@ pub enum AppError {
     WorkspaceNotFound,
     /// Jo-managed files have been modified locally.
     ModifiedFiles(Vec<String>),
-    /// Role directory does not exist.
-    RoleNotFound(String),
     /// Role identifier is invalid.
     InvalidRoleId(String),
-    /// Session slug is invalid.
-    InvalidSlug(String),
     /// Version mismatch between installed jo and workspace.
     VersionMismatch { installed: String, workspace: String },
 }
@@ -39,12 +35,8 @@ impl Display for AppError {
             AppError::ModifiedFiles(files) => {
                 write!(f, "Modified jo-managed files detected: {}", files.join(", "))
             }
-            AppError::RoleNotFound(id) => write!(f, "Role '{}' not found", id),
             AppError::InvalidRoleId(id) => {
                 write!(f, "Invalid role identifier '{}': must be alphanumeric with hyphens", id)
-            }
-            AppError::InvalidSlug(slug) => {
-                write!(f, "Invalid session slug '{}': must be alphanumeric with hyphens", slug)
             }
             AppError::VersionMismatch { installed, workspace } => {
                 write!(f, "Version mismatch: jo {} vs workspace {}", installed, workspace)
@@ -77,10 +69,8 @@ impl AppError {
     pub fn kind(&self) -> io::ErrorKind {
         match self {
             AppError::Io(err) => err.kind(),
-            AppError::ConfigError(_) | AppError::InvalidRoleId(_) | AppError::InvalidSlug(_) => {
-                io::ErrorKind::InvalidInput
-            }
-            AppError::WorkspaceNotFound | AppError::RoleNotFound(_) => io::ErrorKind::NotFound,
+            AppError::ConfigError(_) | AppError::InvalidRoleId(_) => io::ErrorKind::InvalidInput,
+            AppError::WorkspaceNotFound => io::ErrorKind::NotFound,
             AppError::WorkspaceExists => io::ErrorKind::AlreadyExists,
             AppError::ModifiedFiles(_) | AppError::VersionMismatch { .. } => {
                 io::ErrorKind::InvalidData

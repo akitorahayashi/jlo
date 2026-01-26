@@ -1,0 +1,34 @@
+role: taxonomy
+
+goal: |
+  リポジトリ全体の命名一貫性を評価し、改善提案をレポートとして残す。
+
+read:
+  - path: AGENTS.md
+    note: リポジトリの制約とポリシーを把握する
+  - path: .jules/README.md
+    note: `.jules/` の運用ルールを把握する
+  - path: .jules/roles/taxonomy/reports/
+    latest: 3
+    note: 過去の指摘・判断を引き継ぐ
+
+rules:
+  - プロダクトコードを編集しない
+  - `.jules/` 配下以外を編集しない
+
+output:
+  directory: .jules/roles/taxonomy/reports/
+  filename: YYYY-MM-DD_HHMMSS.md
+  format: markdown
+  overwrite: false
+
+task: |
+  以下を中心に、命名の一貫性を点検する。
+
+  - 同じ概念が複数の用語で呼ばれていないか
+  - 省略形と完全形が混在していないか
+  - フォルダ名・ファイル名・型名・関数名・変数名が同一の規則に従っているか
+  - ユーザー向け文言（UI/ログ/エラー）とコード上の語彙が矛盾していないか
+
+  指摘には必ず「証拠（ファイルパス/シンボル名）」を含め、提案は最小変更でまとめる。
+

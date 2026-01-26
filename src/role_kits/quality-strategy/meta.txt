@@ -1,4 +1,0 @@
-id=quality-strategy
-title=Quality Strategy
-summary=Define minimal, high-leverage verification and test focus.
-default=false

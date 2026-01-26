@@ -75,8 +75,8 @@ impl TestContext {
     pub fn assert_role_exists(&self, role_id: &str) {
         let role_path = self.jules_path().join("roles").join(role_id);
         assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
-        assert!(role_path.join("charter.md").exists(), "Role charter should exist");
-        assert!(role_path.join("direction.md").exists(), "Role direction should exist");
+        assert!(role_path.join("prompt.yml").exists(), "Role prompt should exist");
+        assert!(role_path.join("reports").exists(), "Role reports directory should exist");
     }
 
     /// Read the .jo-version file.

@@ -5,9 +5,8 @@ pub mod error;
 mod scaffold;
 mod workspace;
 
-use commands::{init, role, session, status, update};
+use commands::{init, role, update};
 use error::AppError;
-use std::path::PathBuf;
 
 /// Initialize a new `.jules/` workspace in the current directory.
 pub fn init(force: bool) -> Result<(), AppError> {
@@ -18,9 +17,13 @@ pub fn init(force: bool) -> Result<(), AppError> {
 }
 
 /// Update jo-managed files and structural scaffolding in `.jules/`.
-pub fn update(force: bool) -> Result<(), AppError> {
-    let options = update::UpdateOptions { force };
-    let result = update::execute(&options)?;
+pub fn update() -> Result<(), AppError> {
+    let result = update::execute()?;
+
+    if !result.updated {
+        println!("✅ Workspace already up to date (version {})", result.new_version);
+        return Ok(());
+    }
 
     match result.previous_version {
         Some(prev) if prev != result.new_version => {
@@ -37,60 +40,7 @@ pub fn update(force: bool) -> Result<(), AppError> {
     Ok(())
 }
 
-/// Print status information about the workspace.
-pub fn status() -> Result<(), AppError> {
-    let result = status::execute()?;
-
-    println!("jo version: {}", result.installed_version);
-
-    if !result.workspace_exists {
-        println!("⚠️  No .jules/ workspace in current directory");
-        println!("   Run 'jo init' to create one");
-        return Ok(());
-    }
-
-    if let Some(ref version) = result.workspace_version {
-        println!("Workspace version: {}", version);
-    } else {
-        println!("Workspace version: (unknown)");
-    }
-
-    if result.update_available {
-        println!("📦 Update available - run 'jo update' to apply");
-    } else {
-        println!("✅ Workspace is up to date");
-    }
-
-    if !result.modified_files.is_empty() {
-        println!("\n⚠️  Modified jo-managed files:");
-        for file in &result.modified_files {
-            println!("   - {}", file);
-        }
-        println!("\n   Run 'jo update --force' to restore them");
-    }
-
-    Ok(())
-}
-
-/// Create a role workspace under `.jules/roles/`.
-pub fn role(role_id: &str) -> Result<(), AppError> {
-    let options = role::RoleOptions { role_id };
-    role::execute(&options)?;
-    println!("✅ Created role '{}'", role_id);
-    Ok(())
-}
-
-/// Create a role workspace via interactive selection.
+/// Interactive role selection and scheduler prompt generation.
 pub fn role_interactive() -> Result<String, AppError> {
-    let role_id = role::execute_interactive()?;
-    println!("✅ Created role '{}'", role_id);
-    Ok(role_id)
-}
-
-/// Create a new session file for a role.
-pub fn session(role_id: &str, slug: Option<&str>) -> Result<PathBuf, AppError> {
-    let options = session::SessionOptions { role_id, slug };
-    let path = session::execute(&options)?;
-    println!("✅ Created session: {}", path.display());
-    Ok(path)
+    role::execute()
 }

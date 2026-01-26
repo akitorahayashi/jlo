@@ -1,4 +1,0 @@
-id=taxonomy
-title=Taxonomy Consistency
-summary=Detect naming and terminology inconsistencies across the repository.
-default=true

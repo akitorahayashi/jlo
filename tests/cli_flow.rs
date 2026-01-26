@@ -6,14 +6,11 @@ use serial_test::serial;
 
 #[test]
 #[serial]
-fn user_can_init_create_role_and_session() {
+fn user_can_init_and_create_role() {
     let ctx = TestContext::new();
 
     // Initialize workspace
     ctx.cli().arg("init").assert().success();
-
-    // Check status shows up to date
-    ctx.cli().arg("status").assert().success().stdout(predicate::str::contains("up to date"));
 
     // Create a role
     ctx.cli()
@@ -21,17 +18,7 @@ fn user_can_init_create_role_and_session() {
         .write_stdin("taxonomy\n")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Created role 'taxonomy'"));
-
-    // Create a session for that role
-    ctx.cli()
-        .args(["session", "taxonomy", "--slug", "initial-analysis"])
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Created session"));
-
-    // Status still shows up to date
-    ctx.cli().arg("status").assert().success().stdout(predicate::str::contains("up to date"));
+        .stdout(predicate::str::contains("role: taxonomy"));
 }
 
 #[test]
@@ -43,29 +30,14 @@ fn user_can_update_after_modifications() {
     ctx.cli().arg("init").assert().success();
 
     // Modify a jo-managed file
-    ctx.modify_jo_file(".jo/policy/contract.md", "MODIFIED CONTENT");
+    ctx.modify_jo_file("README.md", "MODIFIED CONTENT");
 
-    // Status shows modifications
+    // Update succeeds even with modifications
     ctx.cli()
-        .arg("status")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Modified jo-managed files"));
-
-    // Update without force fails
-    ctx.cli().arg("update").assert().failure();
-
-    // Update with force succeeds
-    ctx.cli()
-        .args(["update", "--force"])
+        .arg("update")
         .assert()
         .success()
         .stdout(predicate::str::contains("Refreshed jo-managed files"));
-
-    // Status no longer shows modifications
-    ctx.cli().arg("status").assert().success().stdout(
-        predicate::str::contains("up to date").and(predicate::str::contains("Modified").not()),
-    );
 }
 
 #[test]
@@ -76,14 +48,8 @@ fn user_can_use_command_aliases() {
     // Use 'i' alias for init
     ctx.cli().arg("i").assert().success();
 
-    // Use 'st' alias for status
-    ctx.cli().arg("st").assert().success();
-
     // Use 'r' alias for role
     ctx.cli().arg("r").write_stdin("taxonomy\n").assert().success();
-
-    // Use 's' alias for session
-    ctx.cli().args(["s", "taxonomy"]).assert().success();
 
     // Use 'u' alias for update
     ctx.cli().arg("u").assert().success();
