@@ -77,11 +77,11 @@ impl Workspace {
             fs::write(&path, entry.content)?;
         }
 
-        // Scaffold the default role so the structure is visible immediately.
-        if !self.role_exists("taxonomy") {
-            let taxonomy = scaffold::role_definition("taxonomy")
-                .ok_or_else(|| AppError::config_error("Missing built-in role: taxonomy"))?;
-            self.scaffold_role("taxonomy", taxonomy.prompt)?;
+        // Scaffold all built-in roles so the structure is visible immediately.
+        for role in scaffold::role_definitions() {
+            if !self.role_exists(role.id) {
+                self.scaffold_role(role.id, role.role_yaml, role.policy)?;
+            }
         }
 
         Ok(())
@@ -138,15 +138,15 @@ impl Workspace {
         self.jules_path().join("roles").join(role_id)
     }
 
-    /// Check if a role exists (has prompt.yml).
+    /// Check if a role exists (has role.yml).
     pub fn role_exists(&self, role_id: &str) -> bool {
-        if role_id.contains('/') || role_id.contains('\\') || role_id == "." || role_id == ".." {
+        if !Self::is_valid_role_id(role_id) {
             return false;
         }
-        self.role_path(role_id).join("prompt.yml").exists()
+        self.role_path(role_id).join("role.yml").exists()
     }
 
-    /// Discover all existing roles by scanning for prompt.yml files.
+    /// Discover all existing roles by scanning for role.yml files.
     pub fn discover_roles(&self) -> Result<Vec<String>, AppError> {
         let roles_dir = self.jules_path().join("roles");
         if !roles_dir.exists() {
@@ -169,33 +169,60 @@ impl Workspace {
         Ok(roles)
     }
 
-    /// Scaffold a new role with prompt.yml and reports directory.
-    pub fn scaffold_role(&self, role_id: &str, prompt_content: &str) -> Result<(), AppError> {
-        let role_dir = self.role_path(role_id);
-        let reports_dir = role_dir.join("reports");
+    /// Check if a role_id is valid (no path traversal characters).
+    fn is_valid_role_id(role_id: &str) -> bool {
+        !role_id.contains('/')
+            && !role_id.contains('\\')
+            && role_id != "."
+            && role_id != ".."
+            && !role_id.is_empty()
+    }
 
-        fs::create_dir_all(&reports_dir)?;
-        fs::write(role_dir.join("prompt.yml"), prompt_content)?;
-        fs::write(reports_dir.join(".gitkeep"), "")?;
+    /// Scaffold a new role with role.yml and notes directory.
+    pub fn scaffold_role(
+        &self,
+        role_id: &str,
+        role_yaml: &str,
+        policy: Option<&str>,
+    ) -> Result<(), AppError> {
+        if !Self::is_valid_role_id(role_id) {
+            return Err(AppError::InvalidRoleId(role_id.to_string()));
+        }
+
+        let role_dir = self.role_path(role_id);
+        let notes_dir = role_dir.join("notes");
+
+        fs::create_dir_all(&notes_dir)?;
+        fs::write(role_dir.join("role.yml"), role_yaml)?;
+        fs::write(notes_dir.join(".gitkeep"), "")?;
+
+        // Write policy file if provided (for PM role)
+        if let Some(policy_content) = policy {
+            fs::write(role_dir.join("policy.md"), policy_content)?;
+        }
 
         Ok(())
     }
 
-    /// Read the scheduler prompt material for a role (prompt.yml).
-    pub fn read_role_prompt(&self, role_id: &str) -> Result<String, AppError> {
+    /// Read the role configuration (role.yml).
+    pub fn read_role_config(&self, role_id: &str) -> Result<String, AppError> {
+        if !Self::is_valid_role_id(role_id) {
+            return Err(AppError::InvalidRoleId(role_id.to_string()));
+        }
+
         if !self.exists() {
             return Err(AppError::WorkspaceNotFound);
         }
 
-        let prompt_path = self.role_path(role_id).join("prompt.yml");
-        if !prompt_path.exists() {
+        let config_path = self.role_path(role_id).join("role.yml");
+        if !config_path.exists() {
             return Err(AppError::config_error(format!(
-                "Role '{}' does not have prompt.yml",
+                "Role '{}' does not have role.yml",
                 role_id
             )));
         }
 
-        Ok(fs::read_to_string(prompt_path)?)
+        Ok(fs::read_to_string(config_path)?)
     }
 }
 
@@ -232,6 +259,23 @@ mod tests {
         assert!(ws.jules_path().exists());
         assert!(ws.jules_path().join("roles").exists());
         assert!(ws.jules_path().join("README.md").exists());
+        assert!(ws.jules_path().join("reports").exists());
+        assert!(ws.jules_path().join("issues/bugs").exists());
+        assert!(ws.jules_path().join("issues/refacts").exists());
+        assert!(ws.jules_path().join("issues/updates").exists());
+        assert!(ws.jules_path().join("issues/tests").exists());
+        assert!(ws.jules_path().join("issues/docs").exists());
+    }
+
+    #[test]
+    fn create_structure_scaffolds_all_builtin_roles() {
+        let (_dir, ws) = test_workspace();
+        ws.create_structure().expect("create_structure should succeed");
+
+        assert!(ws.role_exists("taxonomy"));
+        assert!(ws.role_exists("data_arch"));
+        assert!(ws.role_exists("qa"));
+        assert!(ws.role_exists("pm"));
     }
 
     #[test]
@@ -257,7 +301,7 @@ mod tests {
     fn discover_roles_finds_existing() {
         let (_dir, ws) = test_workspace();
         ws.create_structure().unwrap();
-        ws.scaffold_role("test-role", "Test prompt").unwrap();
+        ws.scaffold_role("test-role", "Test config", None).unwrap();
 
         let roles = ws.discover_roles().unwrap();
         assert!(roles.contains(&"test-role".to_string()));
@@ -268,25 +312,40 @@ mod tests {
         let (_dir, ws) = test_workspace();
         ws.create_structure().unwrap();
 
-        ws.scaffold_role("my-role", "My role prompt").unwrap();
+        ws.scaffold_role("my-role", "My role config", None).unwrap();
 
         let role_dir = ws.role_path("my-role");
-        assert!(role_dir.join("prompt.yml").exists());
-        assert!(role_dir.join("reports").exists());
-        assert!(role_dir.join("reports/.gitkeep").exists());
+        assert!(role_dir.join("role.yml").exists());
+        assert!(role_dir.join("notes").exists());
+        assert!(role_dir.join("notes/.gitkeep").exists());
 
-        let prompt = fs::read_to_string(role_dir.join("prompt.yml")).unwrap();
-        assert_eq!(prompt, "My role prompt");
+        let config = fs::read_to_string(role_dir.join("role.yml")).unwrap();
+        assert_eq!(config, "My role config");
     }
 
     #[test]
-    fn read_role_prompt_reads_file() {
+    fn scaffold_role_with_policy() {
         let (_dir, ws) = test_workspace();
         ws.create_structure().unwrap();
 
-        ws.scaffold_role("test", "Role specific instructions").unwrap();
+        ws.scaffold_role("pm-test", "PM config", Some("PM policy content")).unwrap();
 
-        let prompt = ws.read_role_prompt("test").unwrap();
-        assert!(prompt.contains("Role specific instructions"));
+        let role_dir = ws.role_path("pm-test");
+        assert!(role_dir.join("role.yml").exists());
+        assert!(role_dir.join("policy.md").exists());
+
+        let policy = fs::read_to_string(role_dir.join("policy.md")).unwrap();
+        assert_eq!(policy, "PM policy content");
+    }
+
+    #[test]
+    fn read_role_config_reads_file() {
+        let (_dir, ws) = test_workspace();
+        ws.create_structure().unwrap();
+
+        ws.scaffold_role("test", "Role specific instructions", None).unwrap();
+
+        let config = ws.read_role_config("test").unwrap();
+        assert!(config.contains("Role specific instructions"));
     }
 }

@@ -6,13 +6,16 @@ use serial_test::serial;
 
 #[test]
 #[serial]
-fn user_can_init_and_create_role() {
+fn user_can_init_and_select_role() {
     let ctx = TestContext::new();
 
     // Initialize workspace
     ctx.cli().arg("init").assert().success();
 
-    // Create a role
+    // All 4 built-in roles should exist after init
+    ctx.assert_all_builtin_roles_exist();
+
+    // Select a role and get its config
     ctx.cli()
         .arg("role")
         .write_stdin("taxonomy\n")
@@ -53,4 +56,22 @@ fn user_can_use_command_aliases() {
 
     // Use 'u' alias for update
     ctx.cli().arg("u").assert().success();
+}
+
+#[test]
+#[serial]
+fn init_creates_complete_v1_structure() {
+    let ctx = TestContext::new();
+
+    ctx.cli().arg("init").assert().success();
+
+    // Verify v1 structure
+    ctx.assert_jules_exists();
+    ctx.assert_global_reports_exists();
+    ctx.assert_issues_structure_exists();
+    ctx.assert_all_builtin_roles_exist();
+
+    // Verify PM has policy.md
+    let pm_policy = ctx.jules_path().join("roles/pm/policy.md");
+    assert!(pm_policy.exists(), "PM should have policy.md");
 }

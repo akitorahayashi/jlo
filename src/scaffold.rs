@@ -17,7 +17,9 @@ pub struct ScaffoldFile {
 #[derive(Debug, Clone)]
 pub struct RoleDefinition {
     pub id: &'static str,
-    pub prompt: &'static str,
+    pub role_yaml: &'static str,
+    /// Optional policy file (only for PM role).
+    pub policy: Option<&'static str>,
 }
 
 /// Returns all scaffold files (relative to `src/scaffold/`).
@@ -44,8 +46,24 @@ pub fn role_definition(role_id: &str) -> Option<&'static RoleDefinition> {
     ROLE_DEFINITIONS.iter().find(|role| role.id == role_id)
 }
 
-static ROLE_DEFINITIONS: [RoleDefinition; 1] =
-    [RoleDefinition { id: "taxonomy", prompt: include_str!("role_kits/taxonomy/prompt.yml") }];
+static ROLE_DEFINITIONS: [RoleDefinition; 4] = [
+    RoleDefinition {
+        id: "taxonomy",
+        role_yaml: include_str!("role_kits/taxonomy/role.yml"),
+        policy: None,
+    },
+    RoleDefinition {
+        id: "data_arch",
+        role_yaml: include_str!("role_kits/data_arch/role.yml"),
+        policy: None,
+    },
+    RoleDefinition { id: "qa", role_yaml: include_str!("role_kits/qa/role.yml"), policy: None },
+    RoleDefinition {
+        id: "pm",
+        role_yaml: include_str!("role_kits/pm/role.yml"),
+        policy: Some(include_str!("role_kits/pm/policy.md")),
+    },
+];
 
 /// Check if a path is managed by `jo update`.
 pub fn is_update_managed_path(path: &str) -> bool {
@@ -79,20 +97,48 @@ mod tests {
     }
 
     #[test]
+    fn scaffold_includes_reports_gitkeep() {
+        let files = scaffold_files();
+        assert!(files.iter().any(|f| f.path == ".jules/reports/.gitkeep"));
+    }
+
+    #[test]
+    fn scaffold_includes_issues_structure() {
+        let files = scaffold_files();
+        assert!(files.iter().any(|f| f.path == ".jules/issues/bugs/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/issues/refacts/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/issues/updates/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/issues/tests/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/issues/docs/.gitkeep"));
+    }
+
+    #[test]
     fn update_managed_files_include_readme() {
         let files = update_managed_files();
         assert!(files.iter().any(|file| file.path == ".jules/README.md"));
     }
 
     #[test]
-    fn role_definitions_includes_taxonomy() {
-        assert_eq!(role_definitions().len(), 1);
-        assert_eq!(role_definitions()[0].id, "taxonomy");
+    fn role_definitions_includes_all_four_roles() {
+        use std::collections::HashSet;
+        let expected_ids: HashSet<&str> =
+            ["taxonomy", "data_arch", "qa", "pm"].iter().cloned().collect();
+        let actual_ids: HashSet<&str> = role_definitions().iter().map(|r| r.id).collect();
+        assert_eq!(actual_ids, expected_ids);
     }
 
     #[test]
-    fn taxonomy_prompt_is_loaded() {
+    fn taxonomy_role_yaml_is_loaded() {
         let taxonomy = role_definition("taxonomy").expect("taxonomy should exist");
-        assert!(!taxonomy.prompt.is_empty());
+        assert!(!taxonomy.role_yaml.is_empty());
+        assert!(taxonomy.policy.is_none());
+    }
+
+    #[test]
+    fn pm_role_has_policy() {
+        let pm = role_definition("pm").expect("pm should exist");
+        assert!(!pm.role_yaml.is_empty());
+        assert!(pm.policy.is_some());
+        assert!(!pm.policy.unwrap().is_empty());
     }
 }

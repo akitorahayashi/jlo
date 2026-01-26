@@ -8,7 +8,7 @@ use crate::error::AppError;
 use crate::scaffold;
 use crate::workspace::Workspace;
 
-/// Execute role command interactively: show menu and print role prompt.
+/// Execute role command interactively: show menu and print role config.
 pub fn execute() -> Result<String, AppError> {
     // Early validation: check workspace exists BEFORE showing menu
     let workspace = Workspace::current()?;
@@ -88,12 +88,12 @@ pub fn execute() -> Result<String, AppError> {
         let builtin = scaffold::role_definition(role_id).ok_or_else(|| {
             AppError::config_error(format!("Built-in role '{}' not found", role_id))
         })?;
-        workspace.scaffold_role(role_id, builtin.prompt)?;
+        workspace.scaffold_role(role_id, builtin.role_yaml, builtin.policy)?;
     }
 
-    // Print the prompt material as-is for copy/paste into the scheduler.
-    let prompt = workspace.read_role_prompt(role_id)?;
-    println!("{}", prompt);
+    // Print the role config as-is for copy/paste into the scheduler.
+    let config = workspace.read_role_config(role_id)?;
+    println!("{}", config);
 
     Ok(role_id.clone())
 }
@@ -135,7 +135,7 @@ mod tests {
         with_temp_cwd(|_dir| {
             init::execute(&init::InitOptions::default()).unwrap();
             let workspace = Workspace::current().unwrap();
-            workspace.scaffold_role("custom-role", "Custom prompt content").unwrap();
+            workspace.scaffold_role("custom-role", "Custom config content", None).unwrap();
 
             let roles = workspace.discover_roles().unwrap();
             assert!(roles.contains(&"custom-role".to_string()));
@@ -144,14 +144,14 @@ mod tests {
 
     #[test]
     #[serial]
-    fn prompt_composition_works() {
+    fn role_config_composition_works() {
         with_temp_cwd(|_dir| {
             init::execute(&init::InitOptions::default()).unwrap();
             let workspace = Workspace::current().unwrap();
-            workspace.scaffold_role("test-role", "Test prompt fragment").unwrap();
+            workspace.scaffold_role("test-role", "Test config fragment", None).unwrap();
 
-            let prompt = workspace.read_role_prompt("test-role").unwrap();
-            assert!(prompt.contains("Test prompt fragment"));
+            let config = workspace.read_role_config("test-role").unwrap();
+            assert!(config.contains("Test config fragment"));
         });
     }
 }

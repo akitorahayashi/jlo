@@ -17,7 +17,9 @@ fn init_creates_jules_directory() {
 
     ctx.assert_jules_exists();
     assert!(ctx.read_version().is_some());
-    ctx.assert_role_exists("taxonomy");
+    ctx.assert_all_builtin_roles_exist();
+    ctx.assert_global_reports_exists();
+    ctx.assert_issues_structure_exists();
 }
 
 #[test]
@@ -79,7 +81,7 @@ fn update_fails_without_workspace() {
 
 #[test]
 #[serial]
-fn role_creates_role_directory() {
+fn role_outputs_role_config() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
