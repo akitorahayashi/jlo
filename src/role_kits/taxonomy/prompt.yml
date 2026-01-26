@@ -7,7 +7,7 @@ read:
   - path: AGENTS.md
     note: リポジトリの制約とポリシーを把握する
   - path: .jules/README.md
-    note: `.jules/` の運用ルールを把握する
+    note: "`.jules/` の運用ルールを把握する"
   - path: .jules/roles/taxonomy/reports/
     latest: 3
     note: 過去の指摘・判断を引き継ぐ
@@ -31,4 +31,3 @@ task: |
   - ユーザー向け文言（UI/ログ/エラー）とコード上の語彙が矛盾していないか
 
   指摘には必ず「証拠（ファイルパス/シンボル名）」を含め、提案は最小変更でまとめる。
-

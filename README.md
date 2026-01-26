@@ -6,17 +6,17 @@
 
 - **Single-Scheduled-Prompt**: Each scheduled task runs one self-contained prompt
 - **Stateless Execution**: Agents read repo files for context (no in-memory state)
-- **Japanese Content**: All `.jules/` content is in English; file/directory names are English
+- **Japanese Content**: All `.jules/` content is in Japanese; file/directory names are English
 
 ## `.jules/` Structure
 
-```
+```text
 .jules/
   README.md           # English explanation of workspace
   .jo-version         # Version marker for updates
   roles/              # Role-scoped workspaces
     <role>/
-      prompt.yml      # Role prompt material (English, pasteable as-is)
+      prompt.yml      # Role prompt material (Japanese, pasteable as-is)
       reports/        # Accumulated analysis reports
         YYYY-MM-DD_HHMMSS.md
 ```
@@ -38,7 +38,6 @@ The `jo init` command creates the minimal `.jules/` structure. The `jo role` com
 |---------|-------|-------------|
 | `jo init` | `i` | Create minimal `.jules/` structure |
 | `jo update` | `u` | Update jo-managed files (README, version) |
-| `jo update --force` | `u -f` | Force overwrite modified jo-managed files |
 | `jo role` | `r` | Interactive role selection and prompt output to stdout |
 
 ## Workflow
@@ -61,14 +60,13 @@ The `.jules/.jo-version` file tracks which version of `jo` last managed the work
 ## Language Policy
 
 - **File/Directory Names**: English only (e.g., `roles/`, `reports/`, `prompt.yml`)
-- **File Contents**: Japanese only (`.jules/README.md`, `prompt.yml`, reports)
+- **File Contents**: Japanese only (`prompt.yml`, reports)
 - **CLI Output**: English (command-line messages, errors)
 
 ## Managed Files
 
 `jo update` only touches these files:
 - `.jules/README.md`
-- `.jules/roles/.gitkeep`
 - `.jules/.jo-version`
 
 Everything else (user reports, user-created roles) is never touched by `jo`.

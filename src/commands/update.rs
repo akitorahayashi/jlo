@@ -66,7 +66,6 @@ mod tests {
 
     #[test]
     #[serial]
-    #[ignore = "Tempdir cleanup timing issues"]
     fn update_fails_without_workspace() {
         with_temp_cwd(|_dir| {
             let err = execute().expect_err("update should fail");
@@ -76,7 +75,6 @@ mod tests {
 
     #[test]
     #[serial]
-    #[ignore = "Tempdir cleanup timing issues"]
     fn update_succeeds_on_clean_workspace() {
         with_temp_cwd(|_dir| {
             init::execute(&init::InitOptions::default()).unwrap();
@@ -89,7 +87,6 @@ mod tests {
 
     #[test]
     #[serial]
-    #[ignore = "Tempdir cleanup timing issues"]
     fn update_succeeds_with_modifications() {
         with_temp_cwd(|_dir| {
             init::execute(&init::InitOptions::default()).unwrap();

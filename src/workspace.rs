@@ -140,6 +140,9 @@ impl Workspace {
 
     /// Check if a role exists (has prompt.yml).
     pub fn role_exists(&self, role_id: &str) -> bool {
+        if role_id.contains('/') || role_id.contains('\\') || role_id == "." || role_id == ".." {
+            return false;
+        }
         self.role_path(role_id).join("prompt.yml").exists()
     }
 

@@ -1,7 +1,7 @@
 # jo Development Overview
 
 ## Project Summary
-`jo` is a CLI tool that deploys and manages minimal `.jules/` workspace scaffolding for scheduled LLM agent execution. It creates a simple structure where agents can read project context (via `AGENTS.md` and past reports) and write analysis reports without modifying product code. The v0 design follows a single-scheduled-prompt model: each scheduled task runs one self-contained prompt stored as `.jules/roles/<role>/prompt.yml`. All `.jules/` content is in Japanese, while file/directory names are in English.
+`jo` is a CLI tool that deploys and manages minimal `.jules/` workspace scaffolding for scheduled LLM agent execution. It creates a simple structure where agents can read project context (via `AGENTS.md` and past reports) and write analysis reports without modifying product code. The v0 design follows a single-scheduled-prompt model: each scheduled task runs one self-contained prompt stored as `.jules/roles/<role>/prompt.yml`.
 
 ## Tech Stack
 - **Language**: Rust
@@ -68,7 +68,7 @@ When `jo role` is executed:
 6. Print `.jules/roles/<role>/prompt.yml` to stdout
 
 ## Language Policy
-- **Scaffold Content**: English (`prompt.yml`, README.md)
+- **Scaffold Content**: English (README.md)
 - **File/Directory Names**: English (`roles/`, `reports/`, `prompt.yml`, `.gitkeep`)
 - **CLI Messages**: English (stdout/stderr)
 - **Code Comments**: English
