@@ -31,40 +31,17 @@ This workspace implements a **4-layer architecture**:
 │   │   │   ├── notes/      # Declarative state
 │   │   │   └── feedbacks/  # Decider rejection feedback
 │   │   ├── data_arch/  # Data model specialist
-│   │   │   ├── prompt.yml
-│   │   │   ├── role.yml
-│   │   │   ├── notes/
-│   │   │   └── feedbacks/
 │   │   ├── consistency/ # Documentation & implementation alignment
-│   │   │   ├── prompt.yml
-│   │   │   ├── role.yml
-│   │   │   ├── notes/
-│   │   │   └── feedbacks/
 │   │   └── qa/         # Quality assurance specialist
-│   │       ├── prompt.yml
-│   │       ├── role.yml
-│   │       ├── notes/
-│   │       └── feedbacks/
 │   │
 │   ├── deciders/       # Decision layer (stateless)
 │   │   └── triage/     # Event screening, issue creation
-│   │       └── prompt.yml  # No role.yml (behavior in archetype)
 │   │
 │   ├── planners/       # Planning layer (stateless)
 │   │   └── specifier/  # Issue decomposition into tasks
-│   │       └── prompt.yml  # No role.yml (behavior in archetype)
 │   │
 │   └── implementers/   # Implementation layer (stateless)
 │       └── executor/   # Code implementation
-│           └── prompt.yml  # No role.yml (behavior in archetype)
-│
-├── archetypes/         # [Templates] Layer archetypes and policies
-│   ├── layers/
-│   │   ├── observer.yml      # Complete observer behavior
-│   │   ├── decider.yml       # Complete decider behavior
-│   │   ├── planner.yml       # Complete planner behavior
-│   │   └── implementer.yml   # Complete implementer behavior
-│   └── policy.yml
 │
 ├── events/             # [Inbox] Normalized observations (YAML)
 │   ├── bugs/
@@ -85,7 +62,7 @@ This workspace implements a **4-layer architecture**:
 ### 1. Observer Agents (Scheduled)
 
 Each observer agent:
-1. Reads `JULES.md`, `.jules/JULES.md`, and `.jules/archetypes/layers/observer.yml`
+1. Reads `AGENTS.md` and `.jules/JULES.md`
 2. Reads all feedback files in `feedbacks/`, abstracts patterns, updates `role.yml`
 3. Reads own `role.yml` for specialized focus
 4. Reads `notes/` for current understanding
@@ -99,7 +76,7 @@ Observers do **not** write `issues/` or `tasks/`.
 ### 2. Decider Agent (Scheduled)
 
 The triage agent:
-1. Reads `JULES.md`, `.jules/JULES.md`, and `.jules/archetypes/layers/decider.yml`
+1. Reads `AGENTS.md` and `.jules/JULES.m d`
 2. Reads all `events/**/*.yml` and existing `issues/*.md`
 3. Critically validates observations (checks if they actually exist in codebase)
 4. Merges related observations that share root cause
@@ -114,39 +91,27 @@ Only deciders write `issues/` and `feedbacks/`.
 ### 3. Planner Agent (On-Demand)
 
 The specifier agent:
-1. Reads `JULES.md`, `.jules/JULES.md`, and `.jules/archetypes/layers/planner.yml`
+1. Reads `AGENTS.md` and `.jules/JULES.md`
 2. Reads target issue specified in `prompt.yml`
 3. Analyzes impact comprehensively (code, tests, documentation)
 4. Decomposes into concrete, executable tasks
 5. Creates `tasks/*.md` with verification plans
 6. Deletes the processed issue
 
-**Stateless**: Planner behavior is entirely defined in `.jules/archetypes/layers/planner.yml`.
-
 ### 4. Implementer Agent (On-Demand)
 
 The executor agent:
-1. Reads `JULES.md`, `.jules/JULES.md`, and `.jules/archetypes/layers/implementer.yml`
+1. Reads `AGENTS.md` and `.jules/JULES.md`
 2. Reads target task specified in `prompt.yml`
 3. Implements code changes following project conventions
 4. Runs verification (or reliable alternative if environment constraints exist)
 5. Deletes the processed task
 
-**Stateless**: Implementer behavior is entirely defined in `.jules/archetypes/layers/implementer.yml`.
-
 ## Configuration Hierarchy
 
 The configuration follows a **single source of truth** hierarchy:
 
-```
-JULES.md (contract, schemas)
-  └── archetypes/layers/*.yml (layer default behavior)
-       └── roles/observers/*/role.yml (specialized focus, only for observers)
-            └── prompt.yml (execution-time parameters only)
-```
-
 - **JULES.md**: Defines contracts, schemas, and workflows
-- **Archetypes**: Define complete behavior for each layer (observer, decider, planner, implementer)
 - **role.yml**: Only exists for observers (stateful roles); defines specialized analytical focus
 - **prompt.yml**: The scheduled entry point. It directs the agent to read `role.yml` and other resources; it does not contain role logic itself.
 
@@ -161,23 +126,3 @@ The feedback mechanism enables continuous improvement:
 5. **Observer** updates its own `role.yml` to refine focus and prevent noise
 
 Feedback files are preserved for audit (never deleted). This self-improvement loop reduces false positives over time.
-
-## Agent Roles by Layer
-
-| Layer | Role | Responsibility | Statefulness |
-|-------|------|----------------|--------------|
-| Observers | taxonomy | Naming conventions, terminology consistency | Stateful (notes, feedbacks) |
-| Observers | data_arch | Data models, data flow efficiency | Stateful (notes, feedbacks) |
-| Observers | qa | Test coverage, test quality | Stateful (notes, feedbacks) |
-| Observers | consistency | Implementation vs Doc alignment | Stateful (notes, feedbacks) |
-| Deciders | triage | Event screening, issue creation, feedback writing | Stateless |
-| Planners | specifier | Issue analysis, task decomposition | Stateless |
-| Implementers | executor | Code implementation, verification | Stateless |
-
-## CLI Commands
-
-| Command | Alias | Description |
-|---------|-------|-------------|
-| `jo init` | `i` | Create `.jules/` with 4-layer architecture |
-| `jo assign <role> [paths...]` | `a` | Generate prompt and copy to clipboard |
-| `jo template [-l layer] [-n name]` | `tp` | Create a new role from layer template |

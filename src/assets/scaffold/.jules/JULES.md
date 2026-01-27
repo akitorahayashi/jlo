@@ -2,37 +2,19 @@
 
 This document defines the operational contract for agents working in this repository.
 All scheduled agents must read this file before acting.
+  
+## YAML Structure Policy
 
-## Configuration Hierarchy
-  
-  The configuration follows a **single source of truth** hierarchy:
-  
-  ```
-  JULES.md (contract, schemas)
-    └── archetypes/layers/*.yml (layer default behavior)
-         ├── roles/observers/*/role.yml (specialized focus, ONLY for observers)
-         └── prompt.yml (scheduled entry point)
-  ```
-  
-  ```
-  JULES.md (contract, schemas)
-    └── archetypes/layers/*.yml (layer default behavior)
-         ├── roles/observers/*/role.yml (specialized focus, ONLY for observers)
-         └── prompt.yml (scheduled entry point)
-  ```
-  
-  ## YAML Structure Policy
+- **Flexible Keys**: Keys in `role.yml` and `prompt.yml` are **NOT** enforced to match a global schema. These files are treated as structured documents; keys serve as headers.
+- **Structured Context**: Avoid cramming all instructions into a single `prompt` key. Use descriptive top-level keys (e.g., `policy`, `constraints`, `actions`, `responsibilities`) to structure the context for the agent.
 
-  - **Flexible Keys**: Keys in `role.yml` and `prompt.yml` are **NOT** enforced to match a global schema. These files are treated as structured documents; keys serve as headers.
-  - **Structured Context**: Avoid cramming all instructions into a single `prompt` key. Use descriptive top-level keys (e.g., `policy`, `constraints`, `actions`, `responsibilities`) to structure the context for the agent.
-
-  ## 4-Layer Architecture
+## 4-Layer Architecture
 
 ### Layer 1: Observers
 Roles: `taxonomy`, `data_arch`, `qa`, `consistency`
 
 Observers are specialized analytical lenses. They:
-- Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)
+- Read `AGENTS.md` and `.jules/JULES.md` (complete contract and behavioral rules)
 - Read their own `.jules/roles/observers/<role>/role.yml` for specialized focus
 - Read `notes/` and `feedbacks/` directories
 - **Initialization**: Read all feedback files in `feedbacks/`, abstract patterns, and update `role.yml` declaratively to reduce recurring noise
@@ -45,7 +27,7 @@ Observers do **not** write `issues/` or `tasks/`.
 Roles: `triage`
 
 Deciders screen and validate observations. Their logic is defined in `prompt.yml`. They:
-- Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)
+- Read `AGENTS.md` and `.jules/JULES.md` (complete contract and behavioral rules)
 - Read all `.jules/events/**/*.yml` and existing `.jules/issues/*.md`
 - Validate observations critically (check if they actually exist in the codebase)
 - Merge related events that share root cause or converge to same task
@@ -68,7 +50,7 @@ Only deciders write `issues/` and `feedbacks/`.
 Roles: `specifier`
 
 Planners decompose issues into tasks. Their logic is defined in `prompt.yml`. They:
-- Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)
+- Read `AGENTS.md` and `.jules/JULES.md` (complete contract and behavioral rules)
 - Read target issue from `.jules/issues/<issue>.md` (path specified in `prompt.yml`)
 - Analyze impact comprehensively (code, tests, documentation)
 - Write concrete, executable tasks to `.jules/tasks/*.md` with verification plans
@@ -81,7 +63,7 @@ Planners do **not** write code, `events/`, or `notes/`.
 Roles: `executor`
 
 Implementers execute tasks. Their logic is defined in `prompt.yml`. They:
-- Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)
+- Read `AGENTS.md` and `.jules/JULES.md` (complete contract and behavioral rules)
 - Read target task from `.jules/tasks/<task>.md` (path specified in `prompt.yml`)
 - Implement code, tests, and documentation following project conventions
 - Run verification plan specified in task (or reliable alternative if environment constraints exist)
