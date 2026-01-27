@@ -1,0 +1,11 @@
+mod error;
+mod generated_prompt;
+mod layer;
+mod role_id;
+mod workspace_layout;
+
+pub use error::AppError;
+pub use generated_prompt::GeneratedPrompt;
+pub use layer::Layer;
+pub use role_id::RoleId;
+pub use workspace_layout::{JULES_DIR, VERSION_FILE};

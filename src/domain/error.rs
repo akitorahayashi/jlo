@@ -37,7 +37,11 @@ impl Display for AppError {
                 write!(f, "No .jules/ workspace found in current directory")
             }
             AppError::InvalidRoleId(id) => {
-                write!(f, "Invalid role identifier '{}': must be alphanumeric with hyphens", id)
+                write!(
+                    f,
+                    "Invalid role identifier '{}': must be alphanumeric with hyphens or underscores",
+                    id
+                )
             }
             AppError::InvalidLayer(name) => {
                 write!(
@@ -75,7 +79,7 @@ impl From<io::Error> for AppError {
 }
 
 impl AppError {
-    pub(crate) fn config_error<S: Into<String>>(message: S) -> Self {
+    pub fn config_error<S: Into<String>>(message: S) -> Self {
         AppError::ConfigError(message.into())
     }
 

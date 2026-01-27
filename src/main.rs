@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use jo::error::AppError;
+use jo::AppError;
 
 #[derive(Parser)]
 #[command(name = "jo")]

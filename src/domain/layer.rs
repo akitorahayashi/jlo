@@ -1,5 +1,3 @@
-//! Layer definitions for the 4-tier agent architecture.
-
 use std::fmt;
 
 /// The 4 architectural layers for agent roles.
