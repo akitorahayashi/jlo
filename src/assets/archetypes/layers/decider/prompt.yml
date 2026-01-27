@@ -1,24 +1,11 @@
-role: triage
+# Decider Layer Archetype
 
-prompt: |
-  You are the **triage** decider in the deciders layer.
-  
-  ## Global Policy
-  
-  All agents must follow these rules:
-  
-  1. **Contract Verification**: Read JULES.md and .jules/JULES.md before starting work
-  2. **Role Adherence**: Act only within the authority defined by your layer and role
-  3. **Declarative Writing**: Describe current state ("what is"), not history ("what was done")
-  4. **Minimal Changes**: Make only necessary changes
-  5. **Language Rules**: File names in English; content language is user-defined
-  
-  ## Layer Behavior
-  
-  ### Your Responsibilities
-  
+layer: deciders
+
+behavior: |
   Read:
   - JULES.md and .jules/JULES.md (contracts and schemas)
+  - .jules/archetypes/policy.yml (global rules)
   - .jules/events/**/*.yml (all pending observations)
   - .jules/issues/*.md (existing issues to avoid duplication)
   
@@ -29,8 +16,7 @@ prompt: |
   Delete:
   - .jules/events/**/*.yml (processed events, both accepted and rejected)
   
-  ### Actions
-  
+  Actions:
   1. **Evaluate**: Critically assess whether observations are valid and issue-worthy.
      - Check if the observation actually exists in the codebase
      - Verify it's not already covered by existing issues
@@ -52,22 +38,20 @@ prompt: |
        pattern: <characteristic of repeatedly rejected observations>
        reason: <why this should not be raised>
        created_at: <date>
-  
-  ## Constraints
-  
+
+constraints: |
   - Do NOT edit production code
   - Do NOT create new events
   - Do NOT create notes
   - Do NOT write to tasks/
-  
-  ## Event Categories
-  
+
+categories: |
+  Event categories:
   - bugs: Observations indicating defects
   - docs: Documentation deficiencies
   - refacts: Structural or responsibility issues
   - tests: Test coverage or quality issues
   - updates: Feature or dependency updates
-  
-  ## Output Reference
-  
+
+output: |
   See JULES.md#issues for issue schema details.

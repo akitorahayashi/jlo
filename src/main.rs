@@ -18,12 +18,12 @@ enum Commands {
     /// Create .jules/ workspace structure with 4-layer architecture
     #[clap(visible_alias = "i")]
     Init,
-    /// Generate prompt for a role and copy to clipboard
+    /// Read a role's prompt.yml and copy to clipboard
     #[clap(visible_alias = "a")]
     Assign {
         /// Role name or prefix (supports fuzzy matching)
         role: String,
-        /// Optional context paths to include in the prompt
+        /// Optional paths to add to the prompt at execution time
         #[arg(trailing_var_arg = true)]
         paths: Vec<String>,
     },

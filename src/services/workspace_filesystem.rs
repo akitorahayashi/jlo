@@ -136,6 +136,11 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         }
     }
 
+    fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
+        let path = self.role_path_in_layer(role.layer, &role.id);
+        if path.exists() { Some(path) } else { None }
+    }
+
     fn scaffold_role_in_layer(
         &self,
         layer: Layer,
@@ -146,7 +151,12 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
     ) -> Result<(), AppError> {
         let role_dir = self.role_path_in_layer(layer, role_id.as_str());
         fs::create_dir_all(&role_dir)?;
-        fs::write(role_dir.join("role.yml"), role_yaml)?;
+
+        // Only observers have role.yml (specialized focus)
+        // Other layers' behavior is fully defined in archetypes
+        if layer == Layer::Observers {
+            fs::write(role_dir.join("role.yml"), role_yaml)?;
+        }
 
         if let Some(prompt_content) = prompt_yaml {
             fs::write(role_dir.join("prompt.yml"), prompt_content)?;
@@ -156,6 +166,13 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
             let notes_dir = role_dir.join("notes");
             fs::create_dir_all(&notes_dir)?;
             fs::write(notes_dir.join(".gitkeep"), "")?;
+
+            // Observers also have feedbacks/ directory
+            if layer == Layer::Observers {
+                let feedbacks_dir = role_dir.join("feedbacks");
+                fs::create_dir_all(&feedbacks_dir)?;
+                fs::write(feedbacks_dir.join(".gitkeep"), "")?;
+            }
         }
 
         Ok(())

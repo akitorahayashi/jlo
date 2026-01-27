@@ -34,6 +34,9 @@ pub trait WorkspaceStore {
     /// Find a role by fuzzy matching (prefix match).
     fn find_role_fuzzy(&self, query: &str) -> Result<Option<DiscoveredRole>, AppError>;
 
+    /// Get the directory path for a specific role.
+    fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf>;
+
     /// Scaffold a new role under a specific layer.
     fn scaffold_role_in_layer(
         &self,
