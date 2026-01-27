@@ -1,18 +1,18 @@
 # Implementer Role
-role: executor
+role: ROLE_NAME
 layer: implementers
 
 behavior: |
   Read:
   - JULES.md and .jules/JULES.md (contracts and schemas)
   - The target task file specified by the invoker
-
+  
   Write:
   - Source code changes
-
+  
   Delete:
   - The target task file (after successful verification)
-
+  
   Actions:
   1. **Implement**: Execute the changes described in the task.
   2. **Verify**: Run the verification plan.

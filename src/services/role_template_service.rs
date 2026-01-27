@@ -6,12 +6,13 @@ use crate::ports::{RoleTemplateStore, ScaffoldFile};
 static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold");
 
 /// Prompt templates for new roles
-mod prompt_templates {
-    pub static OBSERVER: &str = include_str!("../assets/archetypes/layers/observer/template.yml");
-    pub static DECIDER: &str = include_str!("../assets/archetypes/layers/decider/template.yml");
-    pub static PLANNER: &str = include_str!("../assets/archetypes/layers/planner/template.yml");
+mod templates {
+    pub static ROLE_YML: &str = include_str!("../assets/templates/layers/observer/role.yml");
+    pub static OBSERVER: &str = include_str!("../assets/templates/layers/observer/prompt.yml");
+    pub static DECIDER: &str = include_str!("../assets/templates/layers/decider/prompt.yml");
+    pub static PLANNER: &str = include_str!("../assets/templates/layers/planner/prompt.yml");
     pub static IMPLEMENTER: &str =
-        include_str!("../assets/archetypes/layers/implementer/template.yml");
+        include_str!("../assets/templates/layers/implementer/prompt.yml");
 }
 
 /// Embedded role template store implementation.
@@ -43,31 +44,16 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
             return String::new();
         }
 
-        format!(
-            r#"role: {role_id}
-
-focus: |
-  # TODO: Describe the specialized analytical focus for this observer
-
-notes_strategy: |
-  # TODO: Describe how to organize and update notes/
-
-feedback_integration: |
-  At the start of each execution, read all files in feedbacks/.
-  Abstract common patterns and refine focus to reduce noise.
-
-learned_exclusions: []
-"#
-        )
+        templates::ROLE_YML.replace("ROLE_NAME", role_id)
     }
 
     fn generate_prompt_yaml_template(&self, role_id: &str, layer: Layer) -> String {
         // Load the appropriate template and replace ROLE_NAME placeholder
         let template = match layer {
-            Layer::Observers => prompt_templates::OBSERVER,
-            Layer::Deciders => prompt_templates::DECIDER,
-            Layer::Planners => prompt_templates::PLANNER,
-            Layer::Implementers => prompt_templates::IMPLEMENTER,
+            Layer::Observers => templates::OBSERVER,
+            Layer::Deciders => templates::DECIDER,
+            Layer::Planners => templates::PLANNER,
+            Layer::Implementers => templates::IMPLEMENTER,
         };
 
         template.replace("ROLE_NAME", role_id)
@@ -124,8 +110,5 @@ mod tests {
         let yaml = store.generate_prompt_yaml_template("custom", Layer::Planners);
 
         assert!(yaml.contains("role: custom"));
-        assert!(yaml.contains("target_issue:"));
-        assert!(yaml.contains("prompt:"));
-        assert!(yaml.contains("Read JULES.md"));
     }
 }

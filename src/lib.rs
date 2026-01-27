@@ -12,8 +12,8 @@ use app::{
     AppContext,
     commands::{init, template},
 };
-use ports::{ClipboardWriter, NoopClipboard, WorkspaceStore};
-use services::{ArboardClipboard, EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
+use ports::NoopClipboard;
+use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 
 pub use domain::AppError;
 
@@ -31,57 +31,26 @@ pub fn init() -> Result<(), AppError> {
 /// Assign context paths to a role and copy prompt to clipboard.
 ///
 /// Returns the role ID that was matched.
+/// Assign context paths to a role and copy prompt to clipboard.
+///
+/// Returns the role ID that was matched.
 pub fn assign(role_query: &str, paths: &[String]) -> Result<String, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
+    let templates = EmbeddedRoleTemplateStore::new();
+    // We pass NoopClipboard to context, but the command uses ArboardClipboard internally for now
+    // as per previous implementation pattern to ensure system clipboard access.
+    // Ideally, we should inject the real clipboard here.
+    let ctx = AppContext::new(workspace, templates, NoopClipboard);
 
-    // Validate workspace exists before clipboard initialization
-    if !workspace.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
-
-    // Find role before clipboard initialization
-    let role = workspace
-        .find_role_fuzzy(role_query)?
-        .ok_or_else(|| AppError::RoleNotFound(role_query.to_string()))?;
-
-    // Read the existing prompt.yml from the workspace
-    let prompt_path = workspace
-        .role_path(&role)
-        .ok_or_else(|| AppError::config_error("Role path not found"))?
-        .join("prompt.yml");
-
-    let prompt_content = std::fs::read_to_string(&prompt_path)
-        .map_err(|e| AppError::config_error(format!("Failed to read prompt.yml: {}", e)))?;
-
-    // Parse the YAML
-    let mut prompt_yaml: serde_yaml::Value = serde_yaml::from_str(&prompt_content)
-        .map_err(|e| AppError::config_error(format!("Failed to parse prompt.yml: {}", e)))?;
-
-    // Add paths if provided by user at command line
-    if !paths.is_empty()
-        && let Some(mapping) = prompt_yaml.as_mapping_mut()
-    {
-        let paths_value = serde_yaml::Value::Sequence(
-            paths.iter().map(|p| serde_yaml::Value::String(p.clone())).collect(),
-        );
-        mapping.insert(serde_yaml::Value::String("paths".to_string()), paths_value);
-    }
-
-    // Serialize back to YAML
-    let yaml = serde_yaml::to_string(&prompt_yaml)
-        .map_err(|e| AppError::config_error(format!("Failed to serialize prompt: {}", e)))?;
-
-    // Only now initialize clipboard (when we actually need it)
-    let mut clipboard = ArboardClipboard::new()?;
-    clipboard.write_text(&yaml)?;
+    let role_id = app::commands::assign::execute(&ctx, role_query, paths)?;
 
     let message = if paths.is_empty() {
-        format!("📋 Copied prompt for '{}' to clipboard", role.id)
+        format!("📋 Copied prompt for '{}' to clipboard", role_id)
     } else {
-        format!("📋 Copied prompt for '{}' with {} path(s) to clipboard", role.id, paths.len())
+        format!("📋 Copied prompt for '{}' with {} target(s) to clipboard", role_id, paths.len())
     };
     println!("{}", message);
-    Ok(role.id)
+    Ok(role_id)
 }
 
 /// Create a new role from a layer template.
