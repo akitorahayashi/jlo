@@ -16,12 +16,19 @@ use services::{ArboardClipboard, EmbeddedRoleTemplateStore, FilesystemWorkspaceS
 
 pub use domain::AppError;
 
-/// Initialize a new `.jules/` workspace in the current directory.
-pub fn init() -> Result<(), AppError> {
+type DefaultContext =
+    AppContext<FilesystemWorkspaceStore, EmbeddedRoleTemplateStore, ArboardClipboard>;
+
+fn create_default_context() -> Result<DefaultContext, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
     let templates = EmbeddedRoleTemplateStore::new();
     let clipboard = ArboardClipboard::new()?;
-    let ctx = AppContext::new(workspace, templates, clipboard);
+    Ok(AppContext::new(workspace, templates, clipboard))
+}
+
+/// Initialize a new `.jules/` workspace in the current directory.
+pub fn init() -> Result<(), AppError> {
+    let ctx = create_default_context()?;
 
     init::execute(&ctx)?;
     println!("✅ Initialized .jules/ workspace with 4-layer architecture");
@@ -32,10 +39,7 @@ pub fn init() -> Result<(), AppError> {
 ///
 /// Returns the role ID that was matched.
 pub fn assign(role_query: &str, paths: &[String]) -> Result<String, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-    let templates = EmbeddedRoleTemplateStore::new();
-    let clipboard = ArboardClipboard::new()?;
-    let mut ctx = AppContext::new(workspace, templates, clipboard);
+    let mut ctx = create_default_context()?;
 
     let role_id = assign::execute(&mut ctx, role_query, paths)?;
     let message = if paths.is_empty() {
@@ -51,10 +55,7 @@ pub fn assign(role_query: &str, paths: &[String]) -> Result<String, AppError> {
 ///
 /// Returns the full path of the created role (layer/role_name).
 pub fn template(layer: Option<&str>, role_name: Option<&str>) -> Result<String, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-    let templates = EmbeddedRoleTemplateStore::new();
-    let clipboard = ArboardClipboard::new()?;
-    let ctx = AppContext::new(workspace, templates, clipboard);
+    let ctx = create_default_context()?;
 
     let path = template::execute(&ctx, layer, role_name)?;
     println!("✅ Created new role at .jules/roles/{}/", path);

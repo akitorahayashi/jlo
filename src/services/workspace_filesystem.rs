@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::domain::{AppError, JULES_DIR, Layer, RoleId, VERSION_FILE};
-use crate::ports::{DiscoveredRole, RoleDefinition, ScaffoldFile, WorkspaceStore};
+use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
 /// Filesystem-based workspace store implementation.
 #[derive(Debug, Clone)]
@@ -28,23 +28,6 @@ impl FilesystemWorkspaceStore {
 
     fn role_path_in_layer(&self, layer: Layer, role_id: &str) -> PathBuf {
         self.jules_path().join("roles").join(layer.dir_name()).join(role_id)
-    }
-
-    /// Scaffold all built-in roles using provided definitions.
-    pub fn scaffold_builtin_roles(&self, roles: &[RoleDefinition]) -> Result<(), AppError> {
-        for role in roles {
-            let role_id = RoleId::new(role.id)?;
-            if !self.role_exists_in_layer(role.layer, &role_id) {
-                self.scaffold_role_in_layer(
-                    role.layer,
-                    &role_id,
-                    role.role_yaml,
-                    Some(role.prompt_yaml),
-                    role.has_notes,
-                )?;
-            }
-        }
-        Ok(())
     }
 }
 

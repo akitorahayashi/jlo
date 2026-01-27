@@ -107,7 +107,7 @@ fn prompt_role_name() -> Result<String, AppError> {
     if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
         print!("Enter role name: ");
         use std::io::Write;
-        std::io::stdout().flush().ok();
+        std::io::stdout().flush()?;
     }
 
     let mut input = String::new();
