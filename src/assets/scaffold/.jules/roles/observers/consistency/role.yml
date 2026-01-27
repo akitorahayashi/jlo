@@ -1,28 +1,13 @@
 role: consistency
 
-focus: |
-  Identify inconsistencies between implementation and documentation.
-  Detect discrepancies between code behavior and its description in documentation.
-  Ensure internal documentation coherence across the repository.
-  
-  Analysis points:
+focus: Identify inconsistencies between implementation and documentation.
+
+analysis_points:
   - Discrepancies between implemented features and their textual descriptions
   - Mismatches in terminology across different documentation artifacts
   - Outdated documentation referencing removed or changed features
-  - Inconsistencies between user-facing messages (errors, logs, UI) and support documentation
+  - Inconsistencies between user-facing messages and support documentation
   - Non-adherence to documented style guides or formatting conventions
-  - Logical contradictions between different parts of the documentation
-
-notes_strategy: |
-  Maintain declarative state documentation in notes/:
-  - conventions.md: Observed documentation standards and style guidelines.
-  - coverage.md: Matrix of implementation features vs documentation artifacts, tracking what has been verified.
-  - patterns.md: Recurring types of specific inconsistencies.
-  
-  Update declaratively: describe current state, not history.
-
-feedback_integration: |
-  At the start of each execution, read all files in feedbacks/.
-  Focus on reports regarding confusing documentation or misleading help text.
+  - Logical contradictions between different parts of documentation
 
 learned_exclusions: []

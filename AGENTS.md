@@ -100,8 +100,9 @@ The codebase uses a **layered architecture** with clear separation of concerns:
 │
 ├── roles/              # 4-Layer agent organization
 │   ├── observers/      # Layer 1: Observation (stateful)
+│   │   ├── contracts.yml     # Shared observer contract
 │   │   ├── taxonomy/
-│   │   │   ├── prompt.yml    # Execution parameters only
+│   │   │   ├── prompt.yml    # Execution parameters
 │   │   │   ├── role.yml      # Specialized focus
 │   │   │   ├── notes/        # Declarative state
 │   │   │   └── feedbacks/    # Decider rejection feedback
@@ -117,29 +118,33 @@ The codebase uses a **layered architecture** with clear separation of concerns:
 │   │       └── feedbacks/
 │   │
 │   ├── deciders/       # Layer 2: Decision (stateless)
+│   │   ├── contracts.yml     # Shared decider contract
 │   │   └── triage/
-│   │       └── prompt.yml    # No role.yml (behavior in layer definition)
+│   │       └── prompt.yml
 │   │
 │   ├── planners/       # Layer 3: Planning (stateless)
+│   │   ├── contracts.yml     # Shared planner contract
 │   │   └── specifier/
-│   │       └── prompt.yml    # No role.yml (behavior in layer definition)
+│   │       └── prompt.yml
 │   │
 │   └── implementers/   # Layer 4: Implementation (stateless)
+│       ├── contracts.yml     # Shared implementer contract
 │       └── executor/
-│           └── prompt.yml    # No role.yml (behavior in layer definition)
+│           └── prompt.yml
 │
-├── events/             # Normalized observations (user-owned)
-│   ├── bugs/
-│   ├── refacts/
-│   ├── updates/
-│   ├── tests/
-│   └── docs/
-│
-├── issues/             # Actionable tasks (user-owned, flat)
-│   └── *.md
-│
-└── tasks/              # Executable work items (user-owned, flat)
-    └── *.md
+└── exchange/           # Transient data flow (user-owned)
+    ├── events/         # Normalized observations
+    │   ├── bugs/
+    │   ├── refacts/
+    │   ├── updates/
+    │   ├── tests/
+    │   └── docs/
+    │
+    ├── issues/         # Actionable tasks (flat)
+    │   └── *.md
+    │
+    └── tasks/          # Executable work items (flat)
+        └── *.md
 ```
 
 ## Built-in Roles
@@ -156,51 +161,52 @@ The codebase uses a **layered architecture** with clear separation of concerns:
 ### Layer Behaviors
 
 **Observers** (Layer 1):
-- Read source code, `notes/`, and `feedbacks/` directories
+- Read contracts.yml (layer behavior), role.yml (specialized focus), notes/, and feedbacks/
 - **Initialization**: Read all feedback files, abstract patterns, update `role.yml` to reduce noise
 - Update `notes/` with current understanding (declarative state: describe "what is", not "what was done")
-- Create normalized events in `.jules/events/<category>/` when issue-worthy observations are found
+- Create normalized events in `.jules/exchange/events/<category>/` when issue-worthy observations are found
 - **Stateful**: Maintain persistent `notes/` and receive feedback via `feedbacks/`
-- Do NOT write to `.jules/issues/` or `.jules/tasks/`
+- Do NOT write to `.jules/exchange/issues/` or `.jules/exchange/tasks/`
 
 **Deciders** (Layer 2):
-- Read events from `.jules/events/**/*.yml`
+- Read contracts.yml (layer behavior) and events from `.jules/exchange/events/**/*.yml`
 - Screen critically (verify observations actually exist in codebase)
 - Merge related observations that share root cause
-- Convert approved items into `.jules/issues/*.md`
+- Convert approved items into `.jules/exchange/issues/*.md`
 - **Write feedback**: When rejecting recurring patterns, create `feedbacks/<date>_<description>.yml` in observer's directory
 - Delete processed events (both accepted and rejected)
-- **Stateless**: All behavior defined in layer definition
+- **Stateless**: All behavior defined in contracts.yml
 
 **Planners** (Layer 3):
-- Read target issue from `.jules/issues/*.md`
+- Read contracts.yml (layer behavior) and target issue from `.jules/exchange/issues/*.md`
 - Decompose into concrete tasks with verification plans
-- Create `.jules/tasks/*.md` files
+- Create `.jules/exchange/tasks/*.md` files
 - Delete processed issues
-- **Stateless**: All behavior defined in layer definition
+- **Stateless**: All behavior defined in contracts.yml
 
 **Implementers** (Layer 4):
-- Read target task from `.jules/tasks/*.md`
+- Read contracts.yml (layer behavior) and target task from `.jules/exchange/tasks/*.md`
 - Implement code, tests, documentation
 - Run verification (or reliable alternative if environment constraints exist)
 - Delete processed tasks
-- **Stateless**: All behavior defined in layer definition
+- **Stateless**: All behavior defined in contracts.yml
 
 ## Configuration Hierarchy
 
-- JULES.md: Defines contracts and workflows
-- role.yml: Specialized focus for observers
-- prompt.yml: Execution parameters
+- contracts.yml: Layer-level shared constraints (at each layer directory)
+- JULES.md: Overall workflow and file semantics
+- role.yml: Specialized focus for observers (dynamic, evolves with feedback)
+- prompt.yml: Execution parameters and references to contracts.yml
 
 ## Feedback Loop
 
-- Observer creates events
-- Decider reviews events, rejects if needed, writes feedback
-- Observer reads feedback, updates role.yml
+- Observer creates events in exchange/events/
+- Decider reviews events, rejects if needed, writes feedback to observer's feedbacks/
+- Observer reads feedback at next execution, updates role.yml to reduce noise
 
 ## Language Policy
 - **Scaffold Content**: English (README.md, JULES.md, all YAML configuration files)
-- **File/Directory Names**: English (`roles/`, `events/`, `issues/`, `tasks/`, `notes/`, `feedbacks/`, `role.yml`, `prompt.yml`)
+- **File/Directory Names**: English (`roles/`, `exchange/`, `events/`, `issues/`, `tasks/`, `notes/`, `feedbacks/`, `contracts.yml`, `role.yml`, `prompt.yml`)
 - **Role Content**: User-defined (events, issues, tasks, notes can be in any language)
 - **CLI Messages**: English (stdout/stderr)
 - **Code Comments**: English

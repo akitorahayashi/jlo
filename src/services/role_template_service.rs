@@ -47,7 +47,7 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
     }
 
     fn generate_prompt_yaml_template(&self, _role_id: &str, layer: Layer) -> String {
-        // Load the appropriate template and replace ROLE_NAME placeholder
+        // Return the template as-is with placeholders
         let template = match layer {
             Layer::Observers => templates::OBSERVER,
             Layer::Deciders => templates::DECIDER,
@@ -100,7 +100,7 @@ mod tests {
 
         assert!(yaml.contains("role: ROLE_NAME"));
         assert!(yaml.contains("focus:"));
-        assert!(yaml.contains("notes_strategy:"));
+        assert!(yaml.contains("learned_exclusions:"));
     }
 
     #[test]
@@ -108,6 +108,13 @@ mod tests {
         let store = EmbeddedRoleTemplateStore::new();
         let yaml = store.generate_prompt_yaml_template("custom", Layer::Planners);
 
+        // Verify template has placeholder and correct structure
         assert!(yaml.contains("role: ROLE_NAME"));
+        assert!(yaml.contains("layer: planners"));
+        assert!(yaml.contains("responsibility:"));
+        assert!(yaml.contains("contracts:"));
+        assert!(yaml.contains("workflow:"));
+        assert!(yaml.contains("inputs:"));
+        assert!(yaml.contains("outputs:"));
     }
 }

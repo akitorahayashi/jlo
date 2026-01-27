@@ -19,8 +19,11 @@ fn init_creates_jules_directory() {
     assert!(ctx.read_version().is_some());
     ctx.assert_layer_structure_exists();
     ctx.assert_all_builtin_roles_exist();
+    ctx.assert_exchange_structure_exists();
     ctx.assert_events_structure_exists();
     ctx.assert_issues_directory_exists();
+    ctx.assert_tasks_directory_exists();
+    ctx.assert_contracts_exist();
 }
 
 #[test]

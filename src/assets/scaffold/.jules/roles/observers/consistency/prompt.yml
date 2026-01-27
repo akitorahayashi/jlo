@@ -1,18 +1,29 @@
-# Observer Role
 role: consistency
 layer: observers
+responsibility: Documentation-implementation consistency analysis
 
-behavior: |
-  Read:
-  - JULES.md and .jules/JULES.md (contracts and schemas)
-  - .jules/roles/observers/consistency/role.yml (your specialized focus)
-  - .jules/roles/observers/consistency/notes/ (your declarative memory)
-  - .jules/roles/observers/consistency/feedbacks/ (improvement signals from deciders)
-  
-  Write:
-  - .jules/roles/observers/consistency/notes/ (declarative state - describe "what is", not "what was done")
-  - .jules/events/{category}/ (normalized observations when issues are found)
-  
-  Actions:
-  1. **Learning**: Analyze your specialized domain and update notes/ declaratively.
-  2. **Event Recording**: When an observation warrants an issue, record it under .jules/events/{category}/ following the schema in JULES.md.
+contracts:
+  - .jules/roles/observers/contracts.yml (layer workflow and schema)
+  - .jules/roles/observers/consistency/role.yml (specialized focus)
+  - .jules/JULES.md (overall workflow context)
+
+workflow:
+  - Read feedbacks/ and update role.yml to reduce noise
+  - Read notes/ for current understanding
+  - Analyze consistency between documentation and implementation
+  - Update notes/ declaratively (describe current state)
+  - Create events in .jules/exchange/events/<category>/ when issues found
+
+inputs:
+  - role.yml
+  - notes/
+  - feedbacks/
+
+outputs:
+  - notes/ (updated state)
+  - .jules/exchange/events/**/*.yml (new observations)
+
+note: |
+  contracts.yml defines how to structure events and your observation workflow.
+  Your role.yml defines what to look for (doc-code mismatches, terminology inconsistencies).
+

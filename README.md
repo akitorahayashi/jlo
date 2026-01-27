@@ -90,24 +90,28 @@ jo template --layer implementers --name frontend
 ### Agent Workflow
 
 1. **Observer Agents** (scheduled):
+   - Read contracts.yml (layer behavior) and role.yml (specialized focus)
    - Read source code and their `notes/` directory
    - Update `notes/` with current understanding (declarative state)
-   - Record observations as normalized `events/*.yml` when issue-worthy
+   - Record observations as normalized events in `exchange/events/*.yml` when issue-worthy
 
 2. **Decider Agent** (scheduled):
-   - Read events from `events/`
+   - Read contracts.yml (layer behavior)
+   - Read events from `exchange/events/`
    - Screen critically and merge related observations
-   - Convert approved items to flat `issues/*.md` with frontmatter
+   - Convert approved items to flat `exchange/issues/*.md` with frontmatter
    - Delete processed events
 
 3. **Planner Agent** (on-demand):
-   - Read issues from `issues/`
+   - Read contracts.yml (layer behavior)
+   - Read issues from `exchange/issues/`
    - Decompose into concrete tasks with verification plans
-   - Create `tasks/*.md` files
+   - Create `exchange/tasks/*.md` files
    - Delete processed issues
 
 4. **Implementer Agent** (on-demand):
-   - Read tasks from `tasks/`
+   - Read contracts.yml (layer behavior)
+   - Read tasks from `exchange/tasks/`
    - Implement code changes
    - Run verification
    - Delete processed tasks
@@ -117,7 +121,7 @@ jo template --layer implementers --name frontend
 1. **Initialize**: Run `jo init` to create `.jules/` with 4-layer structure
 2. **Assign Role**: Run `jo assign <role>` to generate prompt and copy to clipboard
 3. **Schedule**: Paste prompt into scheduler
-4. **Monitor**: Review `events/`, `issues/`, and `tasks/` for agent activity
+4. **Monitor**: Review `exchange/events/`, `exchange/issues/`, and `exchange/tasks/` for agent activity
 
 ## Built-in Roles
 

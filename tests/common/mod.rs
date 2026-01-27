@@ -120,18 +120,54 @@ impl TestContext {
 
     /// Assert that the events directory structure exists.
     pub fn assert_events_structure_exists(&self) {
-        let events_path = self.jules_path().join("events");
-        assert!(events_path.join("bugs").exists(), "events/bugs should exist");
-        assert!(events_path.join("refacts").exists(), "events/refacts should exist");
-        assert!(events_path.join("updates").exists(), "events/updates should exist");
-        assert!(events_path.join("tests").exists(), "events/tests should exist");
-        assert!(events_path.join("docs").exists(), "events/docs should exist");
+        let events_path = self.jules_path().join("exchange/events");
+        assert!(events_path.join("bugs").exists(), "exchange/events/bugs should exist");
+        assert!(events_path.join("refacts").exists(), "exchange/events/refacts should exist");
+        assert!(events_path.join("updates").exists(), "exchange/events/updates should exist");
+        assert!(events_path.join("tests").exists(), "exchange/events/tests should exist");
+        assert!(events_path.join("docs").exists(), "exchange/events/docs should exist");
     }
 
     /// Assert that the issues directory exists (flat layout).
     pub fn assert_issues_directory_exists(&self) {
-        let issues_path = self.jules_path().join("issues");
-        assert!(issues_path.exists(), "issues directory should exist");
+        let issues_path = self.jules_path().join("exchange/issues");
+        assert!(issues_path.exists(), "exchange/issues directory should exist");
+    }
+
+    /// Assert that the tasks directory exists (flat layout).
+    pub fn assert_tasks_directory_exists(&self) {
+        let tasks_path = self.jules_path().join("exchange/tasks");
+        assert!(tasks_path.exists(), "exchange/tasks directory should exist");
+    }
+
+    /// Assert that exchange directory structure exists.
+    pub fn assert_exchange_structure_exists(&self) {
+        let exchange_path = self.jules_path().join("exchange");
+        assert!(exchange_path.exists(), "exchange directory should exist");
+        assert!(exchange_path.join("events").exists(), "exchange/events should exist");
+        assert!(exchange_path.join("issues").exists(), "exchange/issues should exist");
+        assert!(exchange_path.join("tasks").exists(), "exchange/tasks should exist");
+    }
+
+    /// Assert that contracts.yml exists in each layer directory.
+    pub fn assert_contracts_exist(&self) {
+        let roles_path = self.jules_path().join("roles");
+        assert!(
+            roles_path.join("observers/contracts.yml").exists(),
+            "observers/contracts.yml should exist"
+        );
+        assert!(
+            roles_path.join("deciders/contracts.yml").exists(),
+            "deciders/contracts.yml should exist"
+        );
+        assert!(
+            roles_path.join("planners/contracts.yml").exists(),
+            "planners/contracts.yml should exist"
+        );
+        assert!(
+            roles_path.join("implementers/contracts.yml").exists(),
+            "implementers/contracts.yml should exist"
+        );
     }
 
     /// Assert that feedbacks directories exist for all observer roles.

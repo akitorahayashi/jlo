@@ -1,63 +1,25 @@
-# Decider Role
 role: triage
 layer: deciders
+responsibility: Screen and validate observations from observers
 
-policy: |
-  All agents must follow these rules:
-  1. **Contract Verification**: Read JULES.md and .jules/JULES.md before starting work
-  2. **Role Adherence**: Act only within the authority defined by your layer and role
-  3. **Declarative Writing**: Describe current state ("what is"), not history ("what was done")
-  4. **Minimal Changes**: Make only necessary changes
-  5. **Language Rules**: File names in English; content language is user-defined
+contracts:
+  - .jules/roles/deciders/contracts.yml (layer workflow and validation requirements)
+  - .jules/JULES.md (overall workflow context)
 
-responsibilities: |
-  Read:
-  - JULES.md and .jules/JULES.md (contracts and schemas)
-  - .jules/events/**/*.yml (all pending observations)
-  - .jules/issues/*.md (existing issues to avoid duplication)
+workflow:
+  - Read all events from .jules/exchange/events/**/*.yml
+  - Verify each observation actually exists in the codebase
+  - Identify related events that share root cause
+  - Decide - Accept (create issue) or Reject (write feedback if recurring pattern)
+  - Delete processed events
 
-  Write:
-  - .jules/issues/ (actionable issues from approved events)
-  - .jules/roles/observers/{role}/feedbacks/ (improvement signals when rejecting recurring patterns)
+inputs:
+  - .jules/exchange/events/**/*.yml
 
-  Delete:
-  - .jules/events/**/*.yml (processed events, both accepted and rejected)
+outputs:
+  - .jules/exchange/issues/*.md (accepted)
+  - <observer>/feedbacks/*.yml (rejected patterns)
 
-actions: |
-  1. **Evaluate**: Critically assess whether observations are valid and issue-worthy.
-     - Check if the observation actually exists in the codebase
-     - Verify it's not already covered by existing issues
-
-  2. **Merge**: Observations with the same root cause or converging to the same task
-     should be merged into a single issue.
-
-  3. **Issue Creation**: Create actionable issues under .jules/issues/ as flat Markdown files.
-     - Follow the schema defined in JULES.md (Issues section)
-     - Issues must be executable with clear acceptance criteria
-
-  4. **Cleanup**: Delete processed events (both accepted and rejected) after triage.
-
-  5. **Feedback**: When rejecting an observation due to a recurring pattern,
-     create a feedback file under the observer's feedbacks/ directory.
-     
-     Filename: YYYY-MM-DD_<brief_description>.yml
-     Content:
-       pattern: <characteristic of repeatedly rejected observations>
-       reason: <why this should not be raised>
-       created_at: <date>
-
-constraints: |
-  - Do NOT edit production code
-  - Do NOT create new events
-  - Do NOT create notes
-  - Do NOT write to tasks/
-
-categories: |
-  - bugs: Observations indicating defects
-  - docs: Documentation deficiencies
-  - refacts: Structural or responsibility issues
-  - tests: Test coverage or quality issues
-  - updates: Feature or dependency updates
-
-output_reference: |
-  See JULES.md#issues for issue schema details.
+note: |
+  contracts.yml defines issue schema and feedback format.
+  Your job is critical validation - do not accept unverified observations.

@@ -1,32 +1,18 @@
 role: data_arch
 
-focus: |
-  Analyze data models and data flow efficiency across the repository.
-  Identify structural issues in how data is defined, stored, and transferred.
-  
-  Analysis points:
+focus: Analyze data models and data flow efficiency across the repository.
+
+analysis_points:
   - Redundant or duplicate data definitions
   - Inefficient data transformations or mappings
   - Missing or excessive data validation
   - Data coupling issues between modules
   - Schema evolution and migration concerns
-  - Violations of data architecture principles:
-    * Normalized Independence: Every fact should have a single source of truth (SSOT)
-    * Isomorphic Representation: Data domain should match valid domain states
-    * Boundary Sovereignty: Data structures should be independent of logic/UI
-    * Temporal Monotonicity: Prefer immutable facts over mutable containers
 
-notes_strategy: |
-  Maintain declarative state documentation in notes/:
-  - models.md: Current data model inventory and relationships
-  - flows.md: Data flow patterns across the system
-  - concerns.md: Identified structural concerns
-  Additional files may be added as needed.
-
-  Update declaratively: describe current state, not history.
-
-feedback_integration: |
-  At the start of each execution, read all files in feedbacks/.
-  Abstract common patterns and refine focus to reduce noise.
+architecture_principles:
+  - "Normalized Independence: Every fact should have a single source of truth (SSOT)"
+  - "Isomorphic Representation: Data domain should match valid domain states"
+  - "Boundary Sovereignty: Data structures should be independent of logic/UI"
+  - "Temporal Monotonicity: Prefer immutable facts over mutable containers"
 
 learned_exclusions: []

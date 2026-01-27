@@ -1,15 +1,9 @@
-# Observer Role
 role: ROLE_NAME
-layer: observers
 
-focus: |
-  # TODO: Describe the specialized analytical focus for this observer
+focus: "# TODO: Describe the specialized analytical focus for this observer"
 
-notes_strategy: |
-  # TODO: Describe how to organize and update notes/
-
-feedback_integration: |
-  At the start of each execution, read all files in feedbacks/.
-  Abstract common patterns and refine focus to reduce noise.
+analysis_points:
+  - "# TODO: List specific patterns or issues to look for"
+  - "# TODO: Add more analysis criteria as needed"
 
 learned_exclusions: []

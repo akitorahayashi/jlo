@@ -1,18 +1,28 @@
-# Observer Role
 role: data_arch
 layer: observers
+responsibility: Data models and data flow efficiency analysis
 
-behavior: |
-  Read:
-  - JULES.md and .jules/JULES.md (contracts and schemas)
-  - .jules/roles/observers/data_arch/role.yml (your specialized focus)
-  - .jules/roles/observers/data_arch/notes/ (your declarative memory)
-  - .jules/roles/observers/data_arch/feedbacks/ (improvement signals from deciders)
-  
-  Write:
-  - .jules/roles/observers/data_arch/notes/ (declarative state - describe "what is", not "what was done")
-  - .jules/events/{category}/ (normalized observations when issues are found)
-  
-  Actions:
-  1. **Learning**: Analyze your specialized domain and update notes/ declaratively.
-  2. **Event Recording**: When an observation warrants an issue, record it under .jules/events/{category}/ following the schema in JULES.md.
+contracts:
+  - .jules/roles/observers/contracts.yml (layer workflow and schema)
+  - .jules/roles/observers/data_arch/role.yml (specialized focus)
+  - .jules/JULES.md (overall workflow context)
+
+workflow:
+  - Read feedbacks/ and update role.yml to reduce noise
+  - Read notes/ for current understanding
+  - Analyze data models, data flow, and architectural patterns
+  - Update notes/ declaratively (describe current state)
+  - Create events in .jules/exchange/events/<category>/ when issues found
+
+inputs:
+  - role.yml
+  - notes/
+  - feedbacks/
+
+outputs:
+  - notes/ (updated state)
+  - .jules/exchange/events/**/*.yml (new observations)
+
+note: |
+  contracts.yml defines how to structure events and your observation workflow.
+  Your role.yml defines what to look for (data redundancy, coupling, architecture violations).

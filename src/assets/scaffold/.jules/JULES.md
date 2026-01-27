@@ -2,175 +2,84 @@
 
 This document defines the operational contract for agents working in this repository.
 All scheduled agents must read this file before acting.
-  
-## YAML Structure Policy
 
-- **Flexible Keys**: Keys in `role.yml` and `prompt.yml` are **NOT** enforced to match a global schema. These files are treated as structured documents; keys serve as headers.
-- **Structured Context**: Avoid cramming all instructions into a single `prompt` key. Use descriptive top-level keys (e.g., `policy`, `constraints`, `actions`, `responsibilities`) to structure the context for the agent.
+## Document Hierarchy
 
-## 4-Layer Architecture
+| Document | Audience | Purpose |
+|----------|----------|---------|
+| `AGENTS.md` | All LLM tools (Codex, Claude, etc.) | Repository-wide conventions |
+| `.jules/JULES.md` | Jules agents only | Jules-specific workflow contract |
+| `.jules/README.md` | Humans | Human-readable workflow guide |
 
-### Layer 1: Observers
-Roles: `taxonomy`, `data_arch`, `qa`, `consistency`
+**JULES.md is internal to Jules**. Do not expose Jules-specific workflows in AGENTS.md.
 
-Observers are specialized analytical lenses. They:
-- Read `AGENTS.md` and `.jules/JULES.md` (complete contract and behavioral rules)
-- Read their own `.jules/roles/observers/<role>/role.yml` for specialized focus
-- Read `notes/` and `feedbacks/` directories
-- **Initialization**: Read all feedback files in `feedbacks/`, abstract patterns, and update `role.yml` declaratively to reduce recurring noise
-- Update `notes/` declaratively (describe "what is", not "what was done")
-- Write normalized event files under `.jules/events/<category>/` when observations warrant issues
+## File Semantics
 
-Observers do **not** write `issues/` or `tasks/`.
+### prompt.yml vs role.yml vs contracts.yml
 
-### Layer 2: Deciders
-Roles: `triage`
+| File | Lifecycle | Purpose |
+|------|-----------|---------|
+| `contracts.yml` | **Static** (layer-level) | Shared constraints and schemas for all roles in a layer |
+| `prompt.yml` | **Static** (scheduled) | Execution parameters and references to contracts.yml |
+| `role.yml` | **Dynamic** (evolves) | Specialized focus that updates based on feedback (observers only) |
 
-Deciders screen and validate observations. Their logic is defined in `prompt.yml`. They:
-- Read `AGENTS.md` and `.jules/JULES.md` (complete contract and behavioral rules)
-- Read all `.jules/events/**/*.yml` and existing `.jules/issues/*.md`
-- Validate observations critically (check if they actually exist in the codebase)
-- Merge related events that share root cause or converge to same task
-- Create actionable issues in `.jules/issues/`
-- Delete processed events (both accepted and rejected)
-- **Feedback Writing**: When rejecting observations due to recurring patterns, create feedback files in `.jules/roles/observers/<role>/feedbacks/`
+- `contracts.yml` exists at layer level (e.g., `roles/observers/contracts.yml`)
+- `prompt.yml` references the layer's contracts.yml for behavioral instructions
+- `role.yml` exists only for observers and evolves through feedback loop
 
-Feedback file format:
-- Filename: `YYYY-MM-DD_<brief_description>.yml`
-- Content:
-  ```yaml
-  pattern: <characteristic of repeatedly rejected observations>
-  reason: <why this should not be raised>
-  created_at: <date>
-  ```
+## 4-Layer Flow
 
-Only deciders write `issues/` and `feedbacks/`.
+```
+Observer → Decider → Planner → Implementer
+(events)   (issues)   (tasks)   (code)
+```
 
-### Layer 3: Planners
-Roles: `specifier`
+Each layer has a **distinct transformation responsibility**:
 
-Planners decompose issues into tasks. Their logic is defined in `prompt.yml`. They:
-- Read `AGENTS.md` and `.jules/JULES.md` (complete contract and behavioral rules)
-- Read target issue from `.jules/issues/<issue>.md` (path specified in `prompt.yml`)
-- Analyze impact comprehensively (code, tests, documentation)
-- Write concrete, executable tasks to `.jules/tasks/*.md` with verification plans
-- Delete processed issue after task creation
-- **Single-issue processing**: Handle one issue per execution to avoid context pollution
+| Layer | Input | Output | Key Distinction |
+|-------|-------|--------|-----------------|
+| Observer | source code | events | Domain-specialized observations |
+| Decider | events | issues | **Validation and consolidation** (Is this real? Should events merge?) |
+| Planner | issues | tasks | **Decomposition** (What steps are needed to solve this?) |
+| Implementer | tasks | code | Execution |
 
-Planners do **not** write code, `events/`, or `notes/`.
+**Detailed layer behaviors and schemas are defined in each layer's contracts.yml file.**
 
-### Layer 4: Implementers
-Roles: `executor`
+## Workspace Structure
 
-Implementers execute tasks. Their logic is defined in `prompt.yml`. They:
-- Read `AGENTS.md` and `.jules/JULES.md` (complete contract and behavioral rules)
-- Read target task from `.jules/tasks/<task>.md` (path specified in `prompt.yml`)
-- Implement code, tests, and documentation following project conventions
-- Run verification plan specified in task (or reliable alternative if environment constraints exist)
-- Delete completed task after successful verification
-- **Single-task processing**: Handle one task per execution to avoid context pollution
+```
+.jules/
+├── roles/
+│   ├── observers/
+│   │   ├── contracts.yml    # Shared observer contract
+│   │   └── <role>/
+│   ├── deciders/
+│   │   ├── contracts.yml    # Shared decider contract
+│   │   └── <role>/
+│   ├── planners/
+│   │   ├── contracts.yml    # Shared planner contract
+│   │   └── <role>/
+│   └── implementers/
+│       ├── contracts.yml    # Shared implementer contract
+│       └── <role>/
+└── exchange/
+    ├── events/    # Inbox: raw observations from observers
+    ├── issues/    # Transit: consolidated problems from deciders
+    └── tasks/     # Outbox: executable work from planners
+```
 
-Implementers do **not** write `events/`, `issues/`, or `notes/`. Work output is code changes only, not report files.
-
-## Event Recording (YAML)
-
-Events are normalized observations. They are not plans.
-Do not include downstream test/doc scope in events.
-
-### Categories
-
-Events must be written under `.jules/events/<category>/` where `<category>` is one of:
-
-- `bugs`
-- `docs`
-- `refacts`
-- `tests`
-- `updates`
-
-### Filename
-
-`YYYY-MM-DD_HHMMSS_<category>_<author_role>_<id>.yml`
-
-`<id>` is a short local identifier (8–12 lowercase hex is sufficient).
-
-### Required Keys (schema v1)
-
-- `schema_version: 1`
-- `id: <string>` (matches filename id)
-- `created_at: <YYYY-MM-DD or RFC3339>`
-- `author_role: <string>`
-- `category: <bugs|docs|refacts|tests|updates>`
-- `title: <string>`
-- `statement: <string>` (concise observation claim)
-- `evidence:` (list of evidence items)
-- `confidence: <low|medium|high>`
-
-Evidence item shape:
-
-- `path: <string>` (repo-relative path)
-- `loc: <string>` (line or symbol reference)
-- `note: <string>` (why this supports the statement)
-
-Optional keys:
-
-- `tags: [<string>, ...]`
-- `related: [<event_id>, ...]`
-
-## Issues (Markdown + Frontmatter)
-
-Issues are flat files under `.jules/issues/`.
-They are actionable tasks derived from one or more events.
-
-### Frontmatter (schema v1)
-
-Required keys:
-
-- `id: <string>`
-- `category: <bugs|docs|refacts|tests|updates>`
-- `title: <string>`
-- `priority: <low|medium|high>`
-- `sources: [<event_id>, ...]`
-- `status: <open|blocked|done>`
-
-### Body Expectations
-
-Issues must be executable:
-
-- Background and rationale
-- Concrete change list (files/modules when possible)
-- Acceptance criteria
-
-## Tasks (Markdown + Frontmatter)
-
-Tasks are flat files under `.jules/tasks/`.
-They are executable work items derived from issues.
-
-### Frontmatter
-
-Required keys:
-
-- `id: <string>`
-- `parent_issue_id: <string>`
-- `title: <string>`
-- `status: <open|done>`
-
-### Body Expectations
-
-Tasks must include:
-
-- **Purpose**: Why this task exists
-- **Change Targets**: Specific files/modules to modify with paths
-- **Verification Plan**: Command to run and expected result
+All files in `exchange/` are transient and deleted after processing.
 
 ## Feedback Loop
 
-- Observer creates events
-- Decider reviews events, rejects if needed, writes feedback
-- Observer reads feedback, updates role.yml
+- Observer creates events in `exchange/events/`
+- Decider reviews events, writes feedback to observer's `feedbacks/` directory if rejecting recurring patterns
+- Observer reads feedback at next execution, updates role.yml to reduce noise
 
 ## Deletion Policy
 
-- Processed events are deleted after triage (accepted or rejected)
-- Processed issues are deleted after planning
-- Processed tasks are deleted after implementation
-- Feedback files are **never** deleted (preserved for audit)
+- Processed events: deleted after triage (accepted or rejected)
+- Processed issues: deleted after planning
+- Processed tasks: deleted after implementation
+- Feedback files: **never deleted** (preserved for audit)
+
