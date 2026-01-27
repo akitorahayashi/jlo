@@ -10,10 +10,12 @@ pub(crate) mod testing;
 
 use app::{
     AppContext,
-    commands::{assign, init, template},
+    commands::{init, template},
 };
-use ports::NoopClipboard;
-use services::{ArboardClipboard, EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
+use ports::{ClipboardWriter, NoopClipboard, WorkspaceStore};
+use services::{
+    ArboardClipboard, EmbeddedRoleTemplateStore, FilesystemWorkspaceStore, PromptGenerator,
+};
 
 pub use domain::AppError;
 
@@ -33,18 +35,32 @@ pub fn init() -> Result<(), AppError> {
 /// Returns the role ID that was matched.
 pub fn assign(role_query: &str, paths: &[String]) -> Result<String, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
-    let templates = EmbeddedRoleTemplateStore::new();
-    let clipboard = ArboardClipboard::new()?;
-    let mut ctx = AppContext::new(workspace, templates, clipboard);
 
-    let role_id = assign::execute(&mut ctx, role_query, paths)?;
+    // Validate workspace exists before clipboard initialization
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    // Find role before clipboard initialization
+    let role = workspace
+        .find_role_fuzzy(role_query)?
+        .ok_or_else(|| AppError::RoleNotFound(role_query.to_string()))?;
+
+    // Generate the prompt YAML
+    let yaml = PromptGenerator::generate_yaml(&role.id, role.layer, paths)
+        .map_err(|e| AppError::config_error(format!("Failed to generate prompt: {}", e)))?;
+
+    // Only now initialize clipboard (when we actually need it)
+    let mut clipboard = ArboardClipboard::new()?;
+    clipboard.write_text(&yaml)?;
+
     let message = if paths.is_empty() {
-        format!("📋 Copied prompt for '{}' to clipboard", role_id)
+        format!("📋 Copied prompt for '{}' to clipboard", role.id)
     } else {
-        format!("📋 Copied prompt for '{}' with {} path(s) to clipboard", role_id, paths.len())
+        format!("📋 Copied prompt for '{}' with {} path(s) to clipboard", role.id, paths.len())
     };
     println!("{}", message);
-    Ok(role_id)
+    Ok(role.id)
 }
 
 /// Create a new role from a layer template.
