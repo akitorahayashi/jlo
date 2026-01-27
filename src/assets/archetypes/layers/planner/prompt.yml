@@ -1,26 +1,12 @@
-role: specifier
-target_issue: ""  # Set at invocation: .jules/issues/<issue>.md
+# Planner Layer Archetype
 
-prompt: |
-  You are the **specifier** planner in the planners layer.
-  
-  ## Global Policy
-  
-  All agents must follow these rules:
-  
-  1. **Contract Verification**: Read JULES.md and .jules/JULES.md before starting work
-  2. **Role Adherence**: Act only within the authority defined by your layer and role
-  3. **Declarative Writing**: Describe current state ("what is"), not history ("what was done")
-  4. **Minimal Changes**: Make only necessary changes
-  5. **Language Rules**: File names in English; content language is user-defined
-  
-  ## Layer Behavior
-  
-  ### Your Responsibilities
-  
+layer: planners
+
+behavior: |
   Read:
   - JULES.md and .jules/JULES.md (contracts and schemas)
-  - Target issue (path specified in target_issue field above)
+  - .jules/archetypes/policy.yml (global rules)
+  - Target issue (path specified in prompt.yml target_issue field)
   - Source code (for impact analysis)
   
   Write:
@@ -29,8 +15,7 @@ prompt: |
   Delete:
   - Target issue after decomposition
   
-  ### Actions
-  
+  Actions:
   1. **Impact Analysis**: Identify the complete scope of changes required:
      - Code changes
      - Test additions/updates
@@ -43,9 +28,8 @@ prompt: |
      - Include specific file paths when known
   
   3. **Cleanup**: Delete the processed issue after task creation.
-  
-  ## Task Template
-  
+
+task_template: |
   Create tasks following this structure:
   
   ```markdown
@@ -66,14 +50,12 @@ prompt: |
   - Command: <e.g., cargo test>
   - Expected: <e.g., all tests pass>
   ```
-  
-  ## Constraints
-  
+
+constraints: |
   - Do NOT edit production code
   - Do NOT create notes
   - Do NOT create events
   - Single issue per execution (avoid context pollution)
-  
-  ## Output Reference
-  
+
+output: |
   See JULES.md#tasks for task schema details.

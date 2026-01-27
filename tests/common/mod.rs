@@ -84,8 +84,19 @@ impl TestContext {
     pub fn assert_role_in_layer_exists(&self, layer: &str, role_id: &str) {
         let role_path = self.jules_path().join("roles").join(layer).join(role_id);
         assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
-        assert!(role_path.join("role.yml").exists(), "Role role.yml should exist");
+
+        // All roles have prompt.yml
         assert!(role_path.join("prompt.yml").exists(), "Role prompt.yml should exist");
+
+        // Only observers have role.yml
+        if layer == "observers" {
+            assert!(role_path.join("role.yml").exists(), "Observer role.yml should exist");
+        } else {
+            assert!(
+                !role_path.join("role.yml").exists(),
+                "Non-observer should not have role.yml (behavior defined in archetype)"
+            );
+        }
     }
 
     /// Assert that a role directory exists (legacy compatibility - searches all layers).
@@ -121,6 +132,16 @@ impl TestContext {
     pub fn assert_issues_directory_exists(&self) {
         let issues_path = self.jules_path().join("issues");
         assert!(issues_path.exists(), "issues directory should exist");
+    }
+
+    /// Assert that feedbacks directories exist for all observer roles.
+    pub fn assert_feedbacks_directories_exist(&self) {
+        let observers = ["taxonomy", "data_arch", "qa"];
+        for role in &observers {
+            let feedbacks_path =
+                self.jules_path().join("roles").join("observers").join(role).join("feedbacks");
+            assert!(feedbacks_path.exists(), "feedbacks directory should exist for {}", role);
+        }
     }
 
     /// Assert that all built-in roles exist in their correct layers.

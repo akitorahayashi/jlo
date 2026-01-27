@@ -9,10 +9,12 @@ All scheduled agents must read this file before acting.
 Roles: `taxonomy`, `data_arch`, `qa`
 
 Observers are specialized analytical lenses. They:
-- Read `JULES.md` and `.jules/JULES.md`
-- Read their own `.jules/roles/observers/<role>/role.yml` and `notes/`
-- Update `notes/` declaratively
-- Write normalized event files under `.jules/events/`
+- Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)
+- Read their own `.jules/roles/observers/<role>/role.yml` for specialized focus
+- Read `notes/` and `feedbacks/` directories
+- **Initialization**: Read all feedback files in `feedbacks/`, abstract patterns, and update `role.yml` declaratively to reduce recurring noise
+- Update `notes/` declaratively (describe "what is", not "what was done")
+- Write normalized event files under `.jules/events/<category>/` when observations warrant issues
 
 Observers do **not** write `issues/` or `tasks/`.
 
@@ -20,35 +22,50 @@ Observers do **not** write `issues/` or `tasks/`.
 Roles: `triage`
 
 Deciders screen and validate observations. They:
+- Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)
 - Read all `.jules/events/**/*.yml` and existing `.jules/issues/*.md`
-- Validate observations, merge related events
+- Validate observations critically (check if they actually exist in the codebase)
+- Merge related events that share root cause or converge to same task
 - Create actionable issues in `.jules/issues/`
-- Delete processed events (accepted or rejected)
-- Update observer `role.yml` when rejections indicate recurring noise
+- Delete processed events (both accepted and rejected)
+- **Feedback Writing**: When rejecting observations due to recurring patterns, create feedback files in `.jules/roles/observers/<role>/feedbacks/`
 
-Only deciders write `issues/`.
+Feedback file format:
+- Filename: `YYYY-MM-DD_<brief_description>.yml`
+- Content:
+  ```yaml
+  pattern: <characteristic of repeatedly rejected observations>
+  reason: <why this should not be raised>
+  created_at: <date>
+  ```
+
+Only deciders write `issues/` and `feedbacks/`.
 
 ### Layer 3: Planners
 Roles: `specifier`
 
 Planners decompose issues into tasks. They:
-- Read `.jules/issues/*.md`
-- Analyze impact and create concrete tasks
-- Write `.jules/tasks/*.md` with verification plans
-- Delete processed issues
+- Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)
+- Read target issue from `.jules/issues/<issue>.md` (path specified in `prompt.yml`)
+- Analyze impact comprehensively (code, tests, documentation)
+- Write concrete, executable tasks to `.jules/tasks/*.md` with verification plans
+- Delete processed issue after task creation
+- **Single-issue processing**: Handle one issue per execution to avoid context pollution
 
-Planners do **not** write code or `events/`.
+Planners do **not** write code, `events/`, or `notes/`.
 
 ### Layer 4: Implementers
 Roles: `executor`
 
 Implementers execute tasks. They:
-- Read `.jules/tasks/*.md`
-- Implement code, tests, documentation
-- Run verification
-- Delete processed tasks
+- Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)
+- Read target task from `.jules/tasks/<task>.md` (path specified in `prompt.yml`)
+- Implement code, tests, and documentation following project conventions
+- Run verification plan specified in task (or reliable alternative if environment constraints exist)
+- Delete completed task after successful verification
+- **Single-task processing**: Handle one task per execution to avoid context pollution
 
-Implementers do **not** write `events/`, `issues/`, or `notes/`.
+Implementers do **not** write `events/`, `issues/`, or `notes/`. Work output is code changes only, not report files.
 
 ## Event Recording (YAML)
 
@@ -114,9 +131,9 @@ Required keys:
 
 Issues must be executable:
 
-- background and rationale
-- concrete change list (files/modules when possible)
-- acceptance criteria
+- Background and rationale
+- Concrete change list (files/modules when possible)
+- Acceptance criteria
 
 ## Tasks (Markdown + Frontmatter)
 
@@ -136,17 +153,26 @@ Required keys:
 
 Tasks must include:
 
-- 目的 (Purpose)
-- 変更対象 (Change targets with file paths)
-- 検証計画 (Verification plan with command and expected result)
+- **Purpose**: Why this task exists
+- **Change Targets**: Specific files/modules to modify with paths
+- **Verification Plan**: Command to run and expected result
 
-## Role Feedback Updates
+## Feedback Loop
 
-If an event is rejected, deciders update the originating observer's `role.yml`.
-Feedback should be appended under a dedicated `feedback` section to reduce recurring noise.
+The feedback mechanism enables continuous improvement:
+
+1. **Observer** creates events based on observations
+2. **Decider** reviews events and may reject some due to recurring patterns
+3. **Decider** writes feedback files to `.jules/roles/observers/<role>/feedbacks/`
+4. **Observer** reads feedback files on next execution, abstracts patterns
+5. **Observer** updates its own `role.yml` to refine focus and prevent noise
+6. Feedback files are preserved for audit (not deleted)
+
+This self-improvement loop reduces recurring false positives over time.
 
 ## Deletion Policy
 
 - Processed events are deleted after triage (accepted or rejected)
 - Processed issues are deleted after planning
 - Processed tasks are deleted after implementation
+- Feedback files are **never** deleted (preserved for audit)

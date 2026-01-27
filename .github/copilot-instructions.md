@@ -1,0 +1,1 @@
+/Users/akb/.config/menv/roles/nodejs/common/coder/AGENTS.md

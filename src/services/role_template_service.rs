@@ -5,16 +5,13 @@ use crate::ports::{RoleTemplateStore, ScaffoldFile};
 
 static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold");
 
-/// Layer-specific templates.
-mod layer_templates {
-    pub static OBSERVER: &str =
-        include_str!("../assets/scaffold/.jules/archetypes/layers/observer.yml");
-    pub static DECIDER: &str =
-        include_str!("../assets/scaffold/.jules/archetypes/layers/decider.yml");
-    pub static PLANNER: &str =
-        include_str!("../assets/scaffold/.jules/archetypes/layers/planner.yml");
+/// Prompt templates for new roles
+mod prompt_templates {
+    pub static OBSERVER: &str = include_str!("../assets/archetypes/layers/observer/template.yml");
+    pub static DECIDER: &str = include_str!("../assets/archetypes/layers/decider/template.yml");
+    pub static PLANNER: &str = include_str!("../assets/archetypes/layers/planner/template.yml");
     pub static IMPLEMENTER: &str =
-        include_str!("../assets/scaffold/.jules/archetypes/layers/implementer.yml");
+        include_str!("../assets/archetypes/layers/implementer/template.yml");
 }
 
 /// Embedded role template store implementation.
@@ -35,55 +32,45 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
         files
     }
 
-    fn layer_template(&self, layer: Layer) -> &str {
-        match layer {
-            Layer::Observers => layer_templates::OBSERVER,
-            Layer::Deciders => layer_templates::DECIDER,
-            Layer::Planners => layer_templates::PLANNER,
-            Layer::Implementers => layer_templates::IMPLEMENTER,
-        }
+    fn layer_template(&self, _layer: Layer) -> &str {
+        // Archetypes are not used at runtime; this is kept for compatibility
+        ""
     }
 
     fn generate_role_yaml(&self, role_id: &str, layer: Layer) -> String {
-        let description = layer.description();
-        let layer_dir = layer.dir_name();
-        let layer_file = layer_dir.trim_end_matches('s');
-        let role_type = match layer {
-            Layer::Observers => "worker",
-            Layer::Deciders => "manager",
-            Layer::Planners => "planner",
-            Layer::Implementers => "implementer",
-        };
+        // Only observers have role.yml
+        if !matches!(layer, Layer::Observers) {
+            return String::new();
+        }
 
         format!(
             r#"role: {role_id}
-layer: {layer_dir}
-type: {role_type}
 
-goal: |
-  # TODO: このロールの目的を記述してください
+focus: |
+  # TODO: Describe the specialized analytical focus for this observer
 
-# アーキタイプ参照:
-# {description}
-# 詳細は .jules/archetypes/layers/{layer_file}.yml を参照
+notes_strategy: |
+  # TODO: Describe how to organize and update notes/
+
+feedback_integration: |
+  At the start of each execution, read all files in feedbacks/.
+  Abstract common patterns and refine focus to reduce noise.
+
+learned_exclusions: []
 "#
         )
     }
 
     fn generate_prompt_yaml_template(&self, role_id: &str, layer: Layer) -> String {
-        let layer_name = layer.dir_name();
+        // Load the appropriate template and replace ROLE_NAME placeholder
+        let template = match layer {
+            Layer::Observers => prompt_templates::OBSERVER,
+            Layer::Deciders => prompt_templates::DECIDER,
+            Layer::Planners => prompt_templates::PLANNER,
+            Layer::Implementers => prompt_templates::IMPLEMENTER,
+        };
 
-        format!(
-            r#"role: {role_id}
-layer: {layer_name}
-prompt: |
-  あなたは {role_id} です（{layer_name} レイヤー）。
-  必ず以下を読み、最新の制約に従って行動してください。
-  - JULES.md
-  - .jules/JULES.md
-  - .jules/roles/{layer_name}/{role_id}/role.yml
-"#
-        )
+        template.replace("ROLE_NAME", role_id)
     }
 }
 
@@ -122,38 +109,13 @@ mod tests {
     }
 
     #[test]
-    fn all_layer_templates_exist() {
-        let store = EmbeddedRoleTemplateStore::new();
-        for layer in Layer::ALL {
-            let template = store.layer_template(layer);
-            assert!(!template.is_empty(), "Template for {:?} should not be empty", layer);
-        }
-    }
-
-    #[test]
-    fn scaffold_includes_archetypes() {
-        let store = EmbeddedRoleTemplateStore::new();
-        let files = store.scaffold_files();
-        let expected_paths = [
-            ".jules/archetypes/layers/observer.yml",
-            ".jules/archetypes/layers/decider.yml",
-            ".jules/archetypes/layers/planner.yml",
-            ".jules/archetypes/layers/implementer.yml",
-        ];
-
-        for path in expected_paths {
-            assert!(files.iter().any(|f| f.path == path), "Missing scaffold file: {}", path);
-        }
-    }
-
-    #[test]
     fn generate_role_yaml_has_correct_structure() {
         let store = EmbeddedRoleTemplateStore::new();
         let yaml = store.generate_role_yaml("custom", Layer::Observers);
 
         assert!(yaml.contains("role: custom"));
-        assert!(yaml.contains("layer: observers"));
-        assert!(yaml.contains("type: worker"));
+        assert!(yaml.contains("focus:"));
+        assert!(yaml.contains("notes_strategy:"));
     }
 
     #[test]
@@ -162,7 +124,8 @@ mod tests {
         let yaml = store.generate_prompt_yaml_template("custom", Layer::Planners);
 
         assert!(yaml.contains("role: custom"));
-        assert!(yaml.contains("layer: planners"));
+        assert!(yaml.contains("target_issue:"));
         assert!(yaml.contains("prompt:"));
+        assert!(yaml.contains("Read JULES.md"));
     }
 }
