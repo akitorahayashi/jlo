@@ -38,16 +38,16 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
         ""
     }
 
-    fn generate_role_yaml(&self, role_id: &str, layer: Layer) -> String {
+    fn generate_role_yaml(&self, _role_id: &str, layer: Layer) -> String {
         // Only observers have role.yml
         if !matches!(layer, Layer::Observers) {
             return String::new();
         }
 
-        templates::ROLE_YML.replace("ROLE_NAME", role_id)
+        templates::ROLE_YML.to_string()
     }
 
-    fn generate_prompt_yaml_template(&self, role_id: &str, layer: Layer) -> String {
+    fn generate_prompt_yaml_template(&self, _role_id: &str, layer: Layer) -> String {
         // Load the appropriate template and replace ROLE_NAME placeholder
         let template = match layer {
             Layer::Observers => templates::OBSERVER,
@@ -56,7 +56,7 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
             Layer::Implementers => templates::IMPLEMENTER,
         };
 
-        template.replace("ROLE_NAME", role_id)
+        template.to_string()
     }
 }
 
@@ -99,7 +99,7 @@ mod tests {
         let store = EmbeddedRoleTemplateStore::new();
         let yaml = store.generate_role_yaml("custom", Layer::Observers);
 
-        assert!(yaml.contains("role: custom"));
+        assert!(yaml.contains("role: ROLE_NAME"));
         assert!(yaml.contains("focus:"));
         assert!(yaml.contains("notes_strategy:"));
     }
@@ -109,6 +109,6 @@ mod tests {
         let store = EmbeddedRoleTemplateStore::new();
         let yaml = store.generate_prompt_yaml_template("custom", Layer::Planners);
 
-        assert!(yaml.contains("role: custom"));
+        assert!(yaml.contains("role: ROLE_NAME"));
     }
 }

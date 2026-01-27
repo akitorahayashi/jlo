@@ -10,14 +10,21 @@ All scheduled agents must read this file before acting.
   ```
   JULES.md (contract, schemas)
     └── archetypes/layers/*.yml (layer default behavior)
-         └── roles/observers/*/role.yml (specialized focus, only for observers)
-              └── prompt.yml (scheduled entry point)
+         ├── roles/observers/*/role.yml (specialized focus, ONLY for observers)
+         └── prompt.yml (scheduled entry point)
   ```
   
-  - **JULES.md**: Defines overall contracts, schemas, and workflows.
-  - **Archetypes**: Define complete behavior for each layer.
-  - **role.yml**: Defines specialized analytical focus for stateful agents.
-  - **prompt.yml**: The scheduled entry point. It directs the agent to read `role.yml` and other resources; it **must not** contain role logic itself.
+  ```
+  JULES.md (contract, schemas)
+    └── archetypes/layers/*.yml (layer default behavior)
+         ├── roles/observers/*/role.yml (specialized focus, ONLY for observers)
+         └── prompt.yml (scheduled entry point)
+  ```
+  
+  ## YAML Structure Policy
+
+  - **Flexible Keys**: Keys in `role.yml` and `prompt.yml` are **NOT** enforced to match a global schema. These files are treated as structured documents; keys serve as headers.
+  - **Structured Context**: Avoid cramming all instructions into a single `prompt` key. Use descriptive top-level keys (e.g., `policy`, `constraints`, `actions`, `responsibilities`) to structure the context for the agent.
 
   ## 4-Layer Architecture
 
@@ -37,7 +44,7 @@ Observers do **not** write `issues/` or `tasks/`.
 ### Layer 2: Deciders
 Roles: `triage`
 
-Deciders screen and validate observations. They:
+Deciders screen and validate observations. Their logic is defined in `prompt.yml`. They:
 - Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)
 - Read all `.jules/events/**/*.yml` and existing `.jules/issues/*.md`
 - Validate observations critically (check if they actually exist in the codebase)
@@ -60,7 +67,7 @@ Only deciders write `issues/` and `feedbacks/`.
 ### Layer 3: Planners
 Roles: `specifier`
 
-Planners decompose issues into tasks. They:
+Planners decompose issues into tasks. Their logic is defined in `prompt.yml`. They:
 - Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)
 - Read target issue from `.jules/issues/<issue>.md` (path specified in `prompt.yml`)
 - Analyze impact comprehensively (code, tests, documentation)
@@ -73,7 +80,7 @@ Planners do **not** write code, `events/`, or `notes/`.
 ### Layer 4: Implementers
 Roles: `executor`
 
-Implementers execute tasks. They:
+Implementers execute tasks. Their logic is defined in `prompt.yml`. They:
 - Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)
 - Read target task from `.jules/tasks/<task>.md` (path specified in `prompt.yml`)
 - Implement code, tests, and documentation following project conventions

@@ -2,7 +2,10 @@
 role: executor
 layer: implementers
 
-behavior: |
+prompt: |
+  You are the **executor** implementer in the implementers layer.
+  Your goal is to execute the changes described in a task and verify them.
+
   Read:
   - JULES.md and .jules/JULES.md (contracts and schemas)
   - The target task file specified by the invoker
@@ -17,3 +20,4 @@ behavior: |
   1. **Implement**: Execute the changes described in the task.
   2. **Verify**: Run the verification plan.
   3. **Cleanup**: Delete the task file.
+

@@ -2,7 +2,7 @@
 role: ROLE_NAME
 layer: deciders
 
-behavior: |
+responsibilities: |
   Read:
   - JULES.md and .jules/JULES.md (contracts and schemas)
   - .jules/events/**/*.yml (all pending observations)
@@ -15,7 +15,7 @@ behavior: |
   Delete:
   - .jules/events/**/*.yml (processed events)
   
-  Actions:
+actions: |
   1. **Measure**: detailedly assess whether observations are valid.
   2. **Merge**: Combine events that have similar root causes or are closely related into a single scope.
   3. **Issue Creation**: Define the scope of the problem in .jules/issues/. (Actionable steps are the Planner's responsibility).

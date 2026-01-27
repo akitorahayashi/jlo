@@ -2,7 +2,7 @@
 role: ROLE_NAME
 layer: planners
 
-behavior: |
+responsibilities: |
   Read:
   - JULES.md and .jules/JULES.md (contracts and schemas)
   - The target issue file specified by the invoker
@@ -13,7 +13,8 @@ behavior: |
   Delete:
   - The target issue file (after successful planning)
   
-  Actions:
+actions: |
   1. **Analyze**: Understand the issue requirements and impact.
   2. **Decompose**: Break down into concrete, executable tasks with verification plans.
   3. **Task Creation**: Create tasks in .jules/tasks/ following the schema in JULES.md.
+

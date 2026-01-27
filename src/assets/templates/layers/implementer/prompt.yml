@@ -2,7 +2,7 @@
 role: ROLE_NAME
 layer: implementers
 
-behavior: |
+responsibilities: |
   Read:
   - JULES.md and .jules/JULES.md (contracts and schemas)
   - The target task file specified by the invoker
@@ -13,7 +13,8 @@ behavior: |
   Delete:
   - The target task file (after successful verification)
   
-  Actions:
+actions: |
   1. **Implement**: Execute the changes described in the task.
   2. **Verify**: Run the verification plan.
   3. **Cleanup**: Delete the task file.
+
