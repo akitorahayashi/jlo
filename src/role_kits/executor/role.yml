@@ -1,25 +1,51 @@
 role: executor
-type: engineer
+type: implementer
 
 goal: |
-  .jules/tasks/ にあるタスクを実行し、コードベースを変更する。
-  変更後は適切な検証コマンドを実行し、タスクを完了（削除）する。
+  .jules/tasks/ のタスクを読み込み、コードを実装する。
+  検証を実行し、成功したらタスクを削除する。成果はコード変更のみ。
+
+tasks:
+  read_from: .jules/tasks/
+  description: |
+    実行すべきタスクを読み取る。
 
 behavior:
   read:
+    - path: JULES.md
+      note: エージェント規約 (ルート)
+    - path: .jules/JULES.md
+      note: エージェント規約 (.jules内)
+    - path: .jules/roles/implementers/executor/role.yml
+      note: 役割の最新制約を確認する
     - path: .jules/tasks/*.md
-      note: 実行対象のタスク
+      note: 対象タスクを読み込む
+    - path: "**/*.{rs,ts,js,py,go,java}"
+      note: 実装対象のソースコードを参照する
+    - path: "**/*.{test.rs,spec.ts,test.js,_test.py,_test.go}"
+      note: 既存テストを参照する
 
   actions:
-    - type: implementation
-      description: コード、テスト、ドキュメントの編集。
-    - type: verification
+    - type: implement
       description: |
-        コンテキストに応じた検証コマンド（just test, cargo test, swift test 等）の実行。
-        自動テストが困難な場合は目視確認等の代替手段を適用。
-    - type: task_deletion
-      description: 検証が完了したタスクファイルを物理削除する。
+        タスクに従ってコードを実装する。
+    - type: verify
+      description: |
+        タスクに記載された検証計画を実行する。
+        環境制約により指定コマンドが動かない場合は、最も確実な代替手段を選択する。
+    - type: cleanup
+      description: |
+        検証成功を確認したら、該当のタスクファイルを削除する。
 
   constraints:
     - レポート（events, notes, issues）を作成しない
-    - ユーザーへの報告はPRの内容そのもので行われるため、別途ファイルに残さない
+    - .jules/events/ を作成しない
+    - .jules/issues/ を作成しない
+    - .jules/roles/*/notes/ を作成しない
+    - 成果はコードの変更のみ（別途ファイルに残さない）
+
+output_formats:
+  code:
+    description: |
+      コード変更そのものが成果物。
+      レポートやログファイルは生成しない。

@@ -15,15 +15,28 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Create .jules/ workspace structure
+    /// Create .jules/ workspace structure with 4-layer architecture
     #[clap(visible_alias = "i")]
     Init,
-    /// Update jo-managed files (README, AGENTS, prompt.yml, version)
-    #[clap(visible_alias = "u")]
-    Update,
-    /// Interactive role selection and scheduler prompt generation
-    #[clap(visible_alias = "r")]
-    Role,
+    /// Generate prompt for a role and copy to clipboard
+    #[clap(visible_alias = "a")]
+    Assign {
+        /// Role name or prefix (supports fuzzy matching)
+        role: String,
+        /// Optional context paths to include in the prompt
+        #[arg(trailing_var_arg = true)]
+        paths: Vec<String>,
+    },
+    /// Create a new role from a layer template
+    #[clap(visible_alias = "tp")]
+    Template {
+        /// Layer: observers, deciders, planners, or implementers
+        #[arg(short, long)]
+        layer: Option<String>,
+        /// Name for the new role
+        #[arg(short, long)]
+        name: Option<String>,
+    },
 }
 
 fn main() {
@@ -31,8 +44,10 @@ fn main() {
 
     let result: Result<(), AppError> = match cli.command {
         Commands::Init => jo::init(),
-        Commands::Update => jo::update(),
-        Commands::Role => jo::role_interactive().map(|_| ()),
+        Commands::Assign { role, paths } => jo::assign(&role, &paths).map(|_| ()),
+        Commands::Template { layer, name } => {
+            jo::template(layer.as_deref(), name.as_deref()).map(|_| ())
+        }
     };
 
     if let Err(e) = result {

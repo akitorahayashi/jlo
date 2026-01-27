@@ -6,41 +6,23 @@ use serial_test::serial;
 
 #[test]
 #[serial]
-fn user_can_init_and_select_role() {
+fn user_can_init_and_create_custom_role() {
     let ctx = TestContext::new();
 
     // Initialize workspace
     ctx.cli().arg("init").assert().success();
 
-    // All 4 built-in roles should exist after init
+    // All 6 built-in roles should exist after init in their layers
     ctx.assert_all_builtin_roles_exist();
 
-    // Select a role and get its config
+    // Create a custom observer role
     ctx.cli()
-        .arg("role")
-        .write_stdin("taxonomy\n")
+        .args(["template", "-l", "observers", "-n", "security"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("role: taxonomy"));
-}
+        .stdout(predicate::str::contains("Created new role"));
 
-#[test]
-#[serial]
-fn user_can_update_after_modifications() {
-    let ctx = TestContext::new();
-
-    // Initialize workspace
-    ctx.cli().arg("init").assert().success();
-
-    // Modify a jo-managed file
-    ctx.modify_jo_file("README.md", "MODIFIED CONTENT");
-
-    // Update succeeds even with modifications
-    ctx.cli()
-        .arg("update")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Refreshed jo-managed files"));
+    ctx.assert_role_in_layer_exists("observers", "security");
 }
 
 #[test]
@@ -51,23 +33,62 @@ fn user_can_use_command_aliases() {
     // Use 'i' alias for init
     ctx.cli().arg("i").assert().success();
 
-    // Use 'r' alias for role
-    ctx.cli().arg("r").write_stdin("taxonomy\n").assert().success();
+    // Use 'tp' alias for template
+    ctx.cli().args(["tp", "-l", "planners", "-n", "my-planner"]).assert().success();
 
-    // Use 'u' alias for update
-    ctx.cli().arg("u").assert().success();
+    ctx.assert_role_in_layer_exists("planners", "my-planner");
 }
 
 #[test]
 #[serial]
-fn init_creates_complete_v1_structure() {
+fn init_creates_complete_4_layer_structure() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
 
-    // Verify v2 structure
+    // Verify 4-layer structure
     ctx.assert_jules_exists();
+    ctx.assert_layer_structure_exists();
     ctx.assert_events_structure_exists();
     ctx.assert_issues_directory_exists();
     ctx.assert_all_builtin_roles_exist();
+
+    // Verify observers have notes directories
+    let jules = ctx.jules_path();
+    assert!(jules.join("roles/observers/taxonomy/notes").exists());
+    assert!(jules.join("roles/observers/data_arch/notes").exists());
+    assert!(jules.join("roles/observers/qa/notes").exists());
+
+    // Verify non-observers don't have notes
+    assert!(!jules.join("roles/deciders/triage/notes").exists());
+    assert!(!jules.join("roles/planners/specifier/notes").exists());
+    assert!(!jules.join("roles/implementers/executor/notes").exists());
+}
+
+#[test]
+#[serial]
+fn template_creates_observer_with_notes() {
+    let ctx = TestContext::new();
+
+    ctx.cli().arg("init").assert().success();
+
+    ctx.cli().args(["template", "-l", "observers", "-n", "custom-obs"]).assert().success();
+
+    // Observer roles should have notes directory
+    let notes_path = ctx.jules_path().join("roles/observers/custom-obs/notes");
+    assert!(notes_path.exists(), "Observer role should have notes directory");
+}
+
+#[test]
+#[serial]
+fn template_creates_implementer_without_notes() {
+    let ctx = TestContext::new();
+
+    ctx.cli().arg("init").assert().success();
+
+    ctx.cli().args(["template", "-l", "implementers", "-n", "custom-impl"]).assert().success();
+
+    // Implementer roles should NOT have notes directory
+    let notes_path = ctx.jules_path().join("roles/implementers/custom-impl/notes");
+    assert!(!notes_path.exists(), "Implementer role should not have notes directory");
 }
