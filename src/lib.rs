@@ -12,7 +12,7 @@ use app::{
     AppContext,
     commands::{init, template},
 };
-use ports::NoopClipboard;
+use ports::{ClipboardWriter, NoopClipboard, WorkspaceStore};
 use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 
 pub use domain::AppError;
@@ -34,17 +34,47 @@ pub fn init() -> Result<(), AppError> {
 pub fn assign(role_query: &str, paths: &[String]) -> Result<String, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
     let templates = EmbeddedRoleTemplateStore::new();
-    let mut ctx = AppContext::new(workspace, templates, crate::services::ArboardClipboard::new()?);
 
-    let role_id = app::commands::assign::execute(&mut ctx, role_query, paths)?;
+    // Use NoopClipboard for validation phase
+    let ctx = AppContext::new(workspace, templates, NoopClipboard);
+
+    // Perform validation without clipboard
+    if !ctx.workspace().exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    let role = ctx
+        .workspace()
+        .find_role_fuzzy(role_query)?
+        .ok_or_else(|| AppError::RoleNotFound(role_query.to_string()))?;
+
+    let role_path = ctx
+        .workspace()
+        .role_path(&role)
+        .ok_or_else(|| AppError::config_error(format!("Role path not found for {}", role.id)))?;
+    let prompt_path = role_path.join("prompt.yml");
+
+    let prompt_content = std::fs::read_to_string(&prompt_path)
+        .map_err(|e| AppError::config_error(format!("Failed to read prompt.yml: {}", e)))?;
+
+    let output = if paths.is_empty() {
+        prompt_content
+    } else {
+        let targets = paths.join("\n");
+        format!("# Target\n{}\n\n---\n{}", targets, prompt_content)
+    };
+
+    // Only initialize clipboard after validation succeeds
+    let mut clipboard = crate::services::ArboardClipboard::new()?;
+    clipboard.write_text(&output)?;
 
     let message = if paths.is_empty() {
-        format!("📋 Copied prompt for '{}' to clipboard", role_id)
+        format!("📋 Copied prompt for '{}' to clipboard", role.id)
     } else {
-        format!("📋 Copied prompt for '{}' with {} target(s) to clipboard", role_id, paths.len())
+        format!("📋 Copied prompt for '{}' with {} target(s) to clipboard", role.id, paths.len())
     };
     println!("{}", message);
-    Ok(role_id)
+    Ok(role.id)
 }
 
 /// Create a new role from a layer template.
