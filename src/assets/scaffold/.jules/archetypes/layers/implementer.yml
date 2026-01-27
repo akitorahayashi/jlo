@@ -5,8 +5,8 @@ layer: implementers
 type: implementer
 
 description: |
-  Implementers read tasks and execute them by writing code, tests,
-  and documentation. They verify their work and delete completed tasks.
+  Implementers はタスクを読み、コード・テスト・ドキュメントを実装し、
+  検証したうえで完了済みタスクを削除する。
 
 behavior:
   read:
@@ -19,7 +19,9 @@ behavior:
   write:
     - "**/*.{rs,ts,js,py,go,java}"
     - "**/*.{md,txt}"
-    - tests and documentation
+    - "**/*.{test.rs,spec.ts,test.js,_test.py,_test.go}"
+    - "**/tests/**"
+    - "**/docs/**"
 
   delete:
     - .jules/tasks/*.md

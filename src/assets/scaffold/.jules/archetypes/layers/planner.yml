@@ -5,8 +5,8 @@ layer: planners
 type: planner
 
 description: |
-  Planners read issues and decompose them into concrete, executable tasks
-  with verification plans.
+  Planners は issue を読み、具体的で実行可能なタスクに分解し、
+  検証計画を含める。
 
 behavior:
   read:
