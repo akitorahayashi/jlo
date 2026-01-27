@@ -1,0 +1,43 @@
+# Observer Layer Archetype
+# Roles: taxonomy, data_arch, qa
+
+layer: observers
+type: worker
+
+description: |
+  Observers are specialized analytical lenses that read source code
+  and their notes, update declarative memory, and emit normalized events.
+
+behavior:
+  read:
+    - JULES.md
+    - .jules/JULES.md
+    - .jules/roles/{layer}/{role}/role.yml
+    - .jules/roles/{layer}/{role}/notes/
+    - "**/*.{rs,ts,js,py,go,java}"
+
+  write:
+    - .jules/roles/{layer}/{role}/notes/
+    - .jules/events/{category}/
+
+  forbidden:
+    - .jules/issues/
+    - .jules/tasks/
+    - プロダクトコード
+
+actions:
+  - type: learning
+    description: |
+      専門領域の現状を分析し、notes/ に宣言的に記述・更新する。
+
+  - type: event_recording
+    description: |
+      issueになりうる観測がある場合のみ、.jules/JULES.md のスキーマに従い
+      .jules/events/{category}/ にYAMLで記録する。
+
+constraints:
+  - プロダクトコードを編集しない
+  - 自分の notes/ 以外のメモを作らない
+  - .jules/events/ 以外に観測を記録しない
+  - .jules/issues/ には書き込まない（Deciderの権限）
+  - .jules/tasks/ には書き込まない（Plannerの権限）

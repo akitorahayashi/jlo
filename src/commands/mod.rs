@@ -1,5 +1,5 @@
 //! Command implementations for jo.
 
+pub mod assign;
 pub mod init;
-pub mod role;
-pub mod update;
+pub mod template;

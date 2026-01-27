@@ -2,7 +2,7 @@ role: qa
 prompt: |
   あなたは qa のワーカーです。
   必ず以下を読み、最新の制約に従って行動してください。
-  - JULES.md
+  - AGENTS.md
   - .jules/JULES.md
   - .jules/roles/qa/role.yml
 

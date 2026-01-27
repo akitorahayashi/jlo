@@ -13,15 +13,20 @@ fn init_creates_workspace_via_library_api() {
     });
 
     ctx.assert_jules_exists();
+    ctx.assert_layer_structure_exists();
 }
 
 #[test]
 #[serial]
-fn update_refreshes_files_via_library_api() {
+fn template_creates_role_via_library_api() {
     let ctx = TestContext::new();
 
     ctx.with_work_dir(|| {
         jo::init().expect("init should succeed");
-        jo::update().expect("update should succeed");
+        let path =
+            jo::template(Some("observers"), Some("my-role")).expect("template should succeed");
+        assert_eq!(path, "observers/my-role");
     });
+
+    ctx.assert_role_in_layer_exists("observers", "my-role");
 }

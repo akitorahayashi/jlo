@@ -71,16 +71,35 @@ impl TestContext {
         assert!(!self.jules_path().exists(), ".jules directory should not exist");
     }
 
-    /// Assert that a role directory exists.
-    pub fn assert_role_exists(&self, role_id: &str) {
-        let role_path = self.jules_path().join("roles").join(role_id);
+    /// Assert that layer directories exist.
+    pub fn assert_layer_structure_exists(&self) {
+        let roles_path = self.jules_path().join("roles");
+        assert!(roles_path.join("observers").exists(), "observers layer should exist");
+        assert!(roles_path.join("deciders").exists(), "deciders layer should exist");
+        assert!(roles_path.join("planners").exists(), "planners layer should exist");
+        assert!(roles_path.join("implementers").exists(), "implementers layer should exist");
+    }
+
+    /// Assert that a role exists within a specific layer.
+    pub fn assert_role_in_layer_exists(&self, layer: &str, role_id: &str) {
+        let role_path = self.jules_path().join("roles").join(layer).join(role_id);
         assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
         assert!(role_path.join("role.yml").exists(), "Role role.yml should exist");
     }
 
+    /// Assert that a role directory exists (legacy compatibility - searches all layers).
+    pub fn assert_role_exists(&self, role_id: &str) {
+        let layers = ["observers", "deciders", "planners", "implementers"];
+        let found = layers.iter().any(|layer| {
+            self.jules_path().join("roles").join(layer).join(role_id).join("role.yml").exists()
+        });
+        assert!(found, "Role {} should exist in some layer", role_id);
+    }
+
     /// Assert that a worker role directory exists (role.yml + notes).
     pub fn assert_worker_role_exists(&self, role_id: &str) {
-        let role_path = self.jules_path().join("roles").join(role_id);
+        // Worker roles are in observers layer
+        let role_path = self.jules_path().join("roles").join("observers").join(role_id);
         assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
         assert!(role_path.join("role.yml").exists(), "Role role.yml should exist");
         assert!(role_path.join("notes").exists(), "Role notes directory should exist");
@@ -102,12 +121,14 @@ impl TestContext {
         assert!(issues_path.exists(), "issues directory should exist");
     }
 
-    /// Assert that all built-in roles exist.
+    /// Assert that all built-in roles exist in their correct layers.
     pub fn assert_all_builtin_roles_exist(&self) {
-        self.assert_worker_role_exists("taxonomy");
-        self.assert_worker_role_exists("data_arch");
-        self.assert_worker_role_exists("qa");
-        self.assert_role_exists("triage");
+        self.assert_role_in_layer_exists("observers", "taxonomy");
+        self.assert_role_in_layer_exists("observers", "data_arch");
+        self.assert_role_in_layer_exists("observers", "qa");
+        self.assert_role_in_layer_exists("deciders", "triage");
+        self.assert_role_in_layer_exists("planners", "specifier");
+        self.assert_role_in_layer_exists("implementers", "executor");
     }
 
     /// Read the .jo-version file.
@@ -123,12 +144,6 @@ impl TestContext {
         } else {
             None
         }
-    }
-
-    /// Modify a jo-managed file for testing.
-    pub fn modify_jo_file(&self, relative_path: &str, content: &str) {
-        let path = self.jules_path().join(relative_path);
-        fs::write(&path, content).expect("Failed to modify file");
     }
 
     /// Execute a closure after temporarily switching into the work directory.

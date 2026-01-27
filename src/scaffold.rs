@@ -2,6 +2,8 @@
 
 use include_dir::{Dir, DirEntry, include_dir};
 
+use crate::layers::Layer;
+
 static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/scaffold");
 
 /// A file embedded in the scaffold bundle.
@@ -13,10 +15,11 @@ pub struct ScaffoldFile {
     pub content: &'static str,
 }
 
-/// Definition of a built-in role.
+/// Definition of a built-in role with its content.
 #[derive(Debug, Clone)]
 pub struct RoleDefinition {
     pub id: &'static str,
+    pub layer: Layer,
     pub role_yaml: &'static str,
     pub prompt_yaml: &'static str,
     pub has_notes: bool,
@@ -31,28 +34,13 @@ pub fn scaffold_files() -> Vec<ScaffoldFile> {
     files
 }
 
-/// Returns scaffold files that `jo update` may overwrite.
-pub fn update_managed_files() -> Vec<ScaffoldFile> {
-    let mut files: Vec<ScaffoldFile> =
-        scaffold_files().into_iter().filter(|file| is_update_managed_path(&file.path)).collect();
-
-    for role in role_definitions() {
-        files.push(ScaffoldFile {
-            path: format!(".jules/roles/{}/prompt.yml", role.id),
-            content: role.prompt_yaml,
-        });
-    }
-
-    files.sort_by(|a, b| a.path.cmp(&b.path));
-    files
-}
-
 /// Returns all built-in role definitions.
 pub fn role_definitions() -> &'static [RoleDefinition] {
     &ROLE_DEFINITIONS
 }
 
 /// Lookup a built-in role definition by id.
+#[cfg(test)]
 pub fn role_definition(role_id: &str) -> Option<&'static RoleDefinition> {
     ROLE_DEFINITIONS.iter().find(|role| role.id == role_id)
 }
@@ -60,46 +48,47 @@ pub fn role_definition(role_id: &str) -> Option<&'static RoleDefinition> {
 static ROLE_DEFINITIONS: [RoleDefinition; 6] = [
     RoleDefinition {
         id: "taxonomy",
+        layer: Layer::Observers,
         role_yaml: include_str!("role_kits/taxonomy/role.yml"),
         prompt_yaml: include_str!("role_kits/taxonomy/prompt.yml"),
         has_notes: true,
     },
     RoleDefinition {
         id: "data_arch",
+        layer: Layer::Observers,
         role_yaml: include_str!("role_kits/data_arch/role.yml"),
         prompt_yaml: include_str!("role_kits/data_arch/prompt.yml"),
         has_notes: true,
     },
     RoleDefinition {
         id: "qa",
+        layer: Layer::Observers,
         role_yaml: include_str!("role_kits/qa/role.yml"),
         prompt_yaml: include_str!("role_kits/qa/prompt.yml"),
         has_notes: true,
     },
     RoleDefinition {
         id: "triage",
-        role_yaml: include_str!("role_kits/triage/role.yml"),
+        layer: Layer::Deciders,
+        role_yaml: include_str!("role_kits/triage/prompt.yml"),
         prompt_yaml: include_str!("role_kits/triage/prompt.yml"),
         has_notes: false,
     },
     RoleDefinition {
         id: "specifier",
-        role_yaml: include_str!("role_kits/specifier/role.yml"),
+        layer: Layer::Planners,
+        role_yaml: include_str!("role_kits/specifier/prompt.yml"),
         prompt_yaml: include_str!("role_kits/specifier/prompt.yml"),
         has_notes: false,
     },
     RoleDefinition {
         id: "executor",
-        role_yaml: include_str!("role_kits/executor/role.yml"),
+        layer: Layer::Implementers,
+        role_yaml: include_str!("role_kits/executor/prompt.yml"),
         prompt_yaml: include_str!("role_kits/executor/prompt.yml"),
         has_notes: false,
     },
 ];
-
-/// Check if a path is managed by `jo update`.
-pub fn is_update_managed_path(path: &str) -> bool {
-    matches!(path, ".jules/README.md" | ".jules/JULES.md")
-}
 
 fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
     for entry in dir.entries() {
@@ -146,14 +135,6 @@ mod tests {
     }
 
     #[test]
-    fn update_managed_files_include_readme() {
-        let files = update_managed_files();
-        assert!(files.iter().any(|file| file.path == ".jules/README.md"));
-        assert!(files.iter().any(|file| file.path == ".jules/JULES.md"));
-        assert!(files.iter().any(|file| file.path == ".jules/roles/taxonomy/prompt.yml"));
-    }
-
-    #[test]
     fn role_definitions_includes_all_six_roles() {
         use std::collections::HashSet;
         let expected_ids: HashSet<&str> =
@@ -177,5 +158,13 @@ mod tests {
         let triage = role_definition("triage").expect("triage should exist");
         assert!(!triage.role_yaml.is_empty());
         assert!(!triage.prompt_yaml.is_empty());
+    }
+
+    #[test]
+    fn roles_have_correct_layers() {
+        assert_eq!(role_definition("taxonomy").unwrap().layer, Layer::Observers);
+        assert_eq!(role_definition("triage").unwrap().layer, Layer::Deciders);
+        assert_eq!(role_definition("specifier").unwrap().layer, Layer::Planners);
+        assert_eq!(role_definition("executor").unwrap().layer, Layer::Implementers);
     }
 }

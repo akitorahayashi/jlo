@@ -60,4 +60,23 @@ feedback:
   rejections: []
 
 output_format: |
-  観測には必ず「証拠（ファイルパス/シンボル名/行）」を含める。
+  必ず .jules/JULES.md (Event Recording) のスキーマに従ってYAMLを出力すること。
+
+  required_schema:
+    schema_version: 1
+    id: <random_hex_8_12_chars>
+    created_at: <YYYY-MM-DD>
+    author_role: taxonomy
+    category: <bugs|docs|refacts|tests|updates>
+    title: <concise_title>
+    statement: <observation_claim>
+    evidence:
+      - path: <repo_relative_path>
+        loc: <line_number_or_symbol>
+        note: <why_this_supports_statement>
+    confidence: <low|medium|high>
+
+  constraints:
+    - 1ファイルにつき1つのイベント定義のみを記述する
+    - idはファイル名のidと一致させる
+    - 観測事実は具体的かつ検証可能であること

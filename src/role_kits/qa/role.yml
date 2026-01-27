@@ -2,8 +2,17 @@ role: qa
 type: worker
 
 goal: |
-  テスト戦略と品質の観点から問題になりうる観測事象を記録する。
-  既存テストの不足や品質低下の兆候を検出する。
+  テスト戦略と品質の観点から、以下に示す「4つの普遍的法則」への違反や、既存テストの不足・品質低下の兆候を記録する。
+
+principles:
+  environmental_invariance: |
+    環境不変性の法則: テスト結果はSUTのロジックのみに依存し、時刻・乱数・ネットワーク等の外部要因に左右されてはならない（Flaky Testの排除）。
+  implementation_agnosticism: |
+    実装不可知性の法則: 内部構造（Privateメソッド/詳細実装）ではなく、観測可能な振る舞い（Public API/副作用）を検証すること。
+  diagnostic_specificity: |
+    診断特異性の法則: 1つのテストは1つの論理的アサーション（OTOA）に焦点を絞り、失敗原因が即座に特定できること。
+  state_isolation: |
+    状態分離の法則: テスト間の副作用（共有可変状態）を排除し、常にクリーンな初期状態から実行されること。
 
 memory:
   directory: .jules/roles/qa/notes/
@@ -23,7 +32,7 @@ events:
 
 behavior:
   read:
-    - path: JULES.md
+    - path: AGENTS.md
       note: エージェント規約 (ルート)
     - path: .jules/JULES.md
       note: エージェント規約 (.jules内)
@@ -52,13 +61,33 @@ behavior:
     - .jules/issues/ には書き込まない（triageの権限）
 
 analysis_focus:
-  - 重要なフローにテストが存在するか
-  - 仕様変更に対してテストが追従しているか
-  - テストが過剰に脆い構造になっていないか
+  - 実行環境（時刻、乱数、外部API）に依存したFlakyなテストはないか
+  - 実装詳細に結合しすぎた「脆いテスト」になっていないか
+  - 1つのテストで複数のことを検証しすぎていないか（Assertion Roulette）
+  - テスト間で状態（Global変数、DB）が共有されていないか
   - 重要な失敗ケースが検証されているか
 
 feedback:
   rejections: []
 
 output_format: |
-  観測には必ず「証拠（ファイルパス/シンボル名/行）」を含める。
+  必ず .jules/JULES.md (Event Recording) のスキーマに従ってYAMLを出力すること。
+
+  required_schema:
+    schema_version: 1
+    id: <random_hex_8_12_chars>
+    created_at: <YYYY-MM-DD>
+    author_role: qa
+    category: <bugs|docs|refacts|tests|updates>
+    title: <concise_title>
+    statement: <observation_claim>
+    evidence:
+      - path: <repo_relative_path>
+        loc: <line_number_or_symbol>
+        note: <why_this_supports_statement>
+    confidence: <low|medium|high>
+
+  constraints:
+    - 1ファイルにつき1つのイベント定義のみを記述する
+    - idはファイル名のidと一致させる
+    - 観測事実は具体的かつ検証可能であること

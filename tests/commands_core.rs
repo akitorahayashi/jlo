@@ -18,11 +18,22 @@ fn init_fails_if_exists() {
 
 #[test]
 #[serial]
-fn update_without_workspace_fails() {
+fn template_without_workspace_fails() {
     let ctx = TestContext::new();
 
     ctx.with_work_dir(|| {
-        let err = jo::update().expect_err("update should fail");
+        let err = jo::template(Some("observers"), Some("test")).expect_err("template should fail");
+        assert_eq!(err.kind(), io::ErrorKind::NotFound);
+    });
+}
+
+#[test]
+#[serial]
+fn assign_without_workspace_fails() {
+    let ctx = TestContext::new();
+
+    ctx.with_work_dir(|| {
+        let err = jo::assign("taxonomy", &[]).expect_err("assign should fail");
         assert_eq!(err.kind(), io::ErrorKind::NotFound);
     });
 }

@@ -17,6 +17,7 @@ fn init_creates_jules_directory() {
 
     ctx.assert_jules_exists();
     assert!(ctx.read_version().is_some());
+    ctx.assert_layer_structure_exists();
     ctx.assert_all_builtin_roles_exist();
     ctx.assert_events_structure_exists();
     ctx.assert_issues_directory_exists();
@@ -34,66 +35,11 @@ fn init_fails_if_jules_exists() {
 
 #[test]
 #[serial]
-fn update_updates_jo_managed_files() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("init").assert().success();
-
-    ctx.cli()
-        .arg("update")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Workspace already up to date"));
-}
-
-#[test]
-#[serial]
-fn update_succeeds_if_modified() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("init").assert().success();
-    ctx.modify_jo_file("README.md", "MODIFIED");
-
-    ctx.cli()
-        .arg("update")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Refreshed jo-managed files"));
-}
-
-#[test]
-#[serial]
-fn update_fails_without_workspace() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("update").assert().failure().stderr(predicate::str::contains("No .jules/"));
-}
-
-#[test]
-#[serial]
-fn role_outputs_prompt() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("init").assert().success();
-
-    ctx.cli()
-        .arg("role")
-        .write_stdin("taxonomy\n")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("role: taxonomy"));
-
-    ctx.assert_worker_role_exists("taxonomy");
-}
-
-#[test]
-#[serial]
-fn role_fails_without_workspace() {
+fn assign_fails_without_workspace() {
     let ctx = TestContext::new();
 
     ctx.cli()
-        .arg("role")
-        .write_stdin("taxonomy\n")
+        .args(["assign", "taxonomy"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("No .jules/"));
@@ -101,17 +47,72 @@ fn role_fails_without_workspace() {
 
 #[test]
 #[serial]
-fn role_fails_for_invalid_id() {
+fn assign_fails_for_unknown_role() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
 
     ctx.cli()
-        .arg("role")
-        .write_stdin("invalid/id\n")
+        .args(["assign", "nonexistent"])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Role 'invalid/id' not found"));
+        .stderr(predicate::str::contains("not found"));
+}
+
+#[test]
+#[serial]
+fn template_creates_new_role() {
+    let ctx = TestContext::new();
+
+    ctx.cli().arg("init").assert().success();
+
+    ctx.cli()
+        .args(["template", "-l", "observers", "-n", "custom-role"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Created new role"));
+
+    ctx.assert_role_in_layer_exists("observers", "custom-role");
+}
+
+#[test]
+#[serial]
+fn template_fails_for_invalid_layer() {
+    let ctx = TestContext::new();
+
+    ctx.cli().arg("init").assert().success();
+
+    ctx.cli()
+        .args(["template", "-l", "invalid", "-n", "test"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Invalid layer"));
+}
+
+#[test]
+#[serial]
+fn template_fails_for_existing_role() {
+    let ctx = TestContext::new();
+
+    ctx.cli().arg("init").assert().success();
+
+    ctx.cli()
+        .args(["template", "-l", "observers", "-n", "taxonomy"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("already exists"));
+}
+
+#[test]
+#[serial]
+fn template_fails_without_workspace() {
+    let ctx = TestContext::new();
+
+    ctx.cli()
+        .args(["template", "-l", "observers", "-n", "test"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("No .jules/"));
 }
 
 #[test]
@@ -133,7 +134,7 @@ fn help_lists_visible_aliases() {
 
     ctx.cli().arg("--help").assert().success().stdout(
         predicate::str::contains("[aliases: i]")
-            .and(predicate::str::contains("[aliases: u]"))
-            .and(predicate::str::contains("[aliases: r]")),
+            .and(predicate::str::contains("[aliases: a]"))
+            .and(predicate::str::contains("[aliases: tp]")),
     );
 }

@@ -2,44 +2,38 @@
 
 mod commands;
 pub mod error;
+mod generator;
+mod layers;
 mod scaffold;
+mod templates;
 mod workspace;
 
-use commands::{init, role, update};
+use commands::{assign, init, template};
 use error::AppError;
 
 /// Initialize a new `.jules/` workspace in the current directory.
 pub fn init() -> Result<(), AppError> {
     init::execute()?;
-    println!("✅ Initialized .jules/ workspace");
+    println!("✅ Initialized .jules/ workspace with 4-layer architecture");
     Ok(())
 }
 
-/// Update jo-managed files and structural scaffolding in `.jules/`.
-pub fn update() -> Result<(), AppError> {
-    let result = update::execute()?;
-
-    if !result.updated {
-        println!("✅ Workspace already up to date (version {})", result.new_version);
-        return Ok(());
-    }
-
-    match result.previous_version {
-        Some(prev) if prev != result.new_version => {
-            println!("✅ Updated from {} to {}", prev, result.new_version);
-        }
-        Some(_) => {
-            println!("✅ Refreshed jo-managed files (version {})", result.new_version);
-        }
-        None => {
-            println!("✅ Deployed jo-managed files (version {})", result.new_version);
-        }
-    }
-
-    Ok(())
+/// Assign context paths to a role and copy prompt to clipboard.
+///
+/// Returns the role ID that was matched.
+pub fn assign(role_query: &str, paths: &[String]) -> Result<String, AppError> {
+    let role_id = assign::execute(role_query, paths)?;
+    let path_info =
+        if paths.is_empty() { String::new() } else { format!(" with {} path(s)", paths.len()) };
+    println!("📋 Copied prompt for '{}'{}  to clipboard", role_id, path_info);
+    Ok(role_id)
 }
 
-/// Interactive role selection and scheduler prompt generation.
-pub fn role_interactive() -> Result<String, AppError> {
-    role::execute()
+/// Create a new role from a layer template.
+///
+/// Returns the full path of the created role (layer/role_name).
+pub fn template(layer: Option<&str>, role_name: Option<&str>) -> Result<String, AppError> {
+    let path = template::execute(layer, role_name)?;
+    println!("✅ Created new role at .jules/roles/{}/", path);
+    Ok(path)
 }

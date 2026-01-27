@@ -3,29 +3,52 @@
 This document defines the operational contract for agents working in this repository.
 All scheduled agents must read this file before acting.
 
-## Roles and Responsibilities
+## 4-Layer Architecture
 
-### Workers
+### Layer 1: Observers
+Roles: `taxonomy`, `data_arch`, `qa`
 
-Workers are specialized lenses (taxonomy, data_arch, qa).
-They:
+Observers are specialized analytical lenses. They:
+- Read `JULES.md` and `.jules/JULES.md`
+- Read their own `.jules/roles/observers/<role>/role.yml` and `notes/`
+- Update `notes/` declaratively
+- Write normalized event files under `.jules/events/`
 
-- read `AGENTS.md` and `.jules/JULES.md`
-- read their own `.jules/roles/<role>/role.yml` and `notes/`
-- update `notes/` declaratively
-- write normalized event files under `.jules/events/`
+Observers do **not** write `issues/` or `tasks/`.
 
-Workers do **not** write `issues/`.
+### Layer 2: Deciders
+Roles: `triage`
 
-### Triage
+Deciders screen and validate observations. They:
+- Read all `.jules/events/**/*.yml` and existing `.jules/issues/*.md`
+- Validate observations, merge related events
+- Create actionable issues in `.jules/issues/`
+- Delete processed events (accepted or rejected)
+- Update observer `role.yml` when rejections indicate recurring noise
 
-`triage` is the only role that writes `issues/`.
-It:
+Only deciders write `issues/`.
 
-- reads all `.jules/events/**/*.yml` and existing `.jules/issues/*.md`
-- validates observations, merges related events, and creates actionable issues
-- deletes processed events (accepted or rejected)
-- updates worker `role.yml` when rejections indicate recurring noise
+### Layer 3: Planners
+Roles: `specifier`
+
+Planners decompose issues into tasks. They:
+- Read `.jules/issues/*.md`
+- Analyze impact and create concrete tasks
+- Write `.jules/tasks/*.md` with verification plans
+- Delete processed issues
+
+Planners do **not** write code or `events/`.
+
+### Layer 4: Implementers
+Roles: `executor`
+
+Implementers execute tasks. They:
+- Read `.jules/tasks/*.md`
+- Implement code, tests, documentation
+- Run verification
+- Delete processed tasks
+
+Implementers do **not** write `events/`, `issues/`, or `notes/`.
 
 ## Event Recording (YAML)
 
@@ -95,28 +118,35 @@ Issues must be executable:
 - concrete change list (files/modules when possible)
 - acceptance criteria
 
+## Tasks (Markdown + Frontmatter)
+
+Tasks are flat files under `.jules/tasks/`.
+They are executable work items derived from issues.
+
+### Frontmatter
+
+Required keys:
+
+- `id: <string>`
+- `parent_issue_id: <string>`
+- `title: <string>`
+- `status: <open|done>`
+
+### Body Expectations
+
+Tasks must include:
+
+- 目的 (Purpose)
+- 変更対象 (Change targets with file paths)
+- 検証計画 (Verification plan with command and expected result)
+
 ## Role Feedback Updates
 
-If an event is rejected, `triage` updates the originating worker's `role.yml`.
+If an event is rejected, deciders update the originating observer's `role.yml`.
 Feedback should be appended under a dedicated `feedback` section to reduce recurring noise.
 
 ## Deletion Policy
 
-Processed events are deleted after triage (accepted or rejected).
-
-## Execution Workflow (Specifier/Executor)
-
-This workflow is for active implementation, triggered by specific issues.
-
-### Specifier
-- Reads: `.jules/issues/*.md`
-- Writes: `.jules/tasks/*.md`
-- Action: Decomposes issues into executable tasks with verification plans.
-- Cleanup: Deletes the processed `.jules/issues/*.md`.
-
-### Executor
-- Reads: `.jules/tasks/*.md`
-- Writes: Product code, Tests, Docs
-- Action: Implements the task and runs verification (e.g., `just test`, `swift test`).
-- Cleanup: Deletes the processed `.jules/tasks/*.md` upon success.
-- Reporting: NONE. No output files generated. PR content serves as the report.
+- Processed events are deleted after triage (accepted or rejected)
+- Processed issues are deleted after planning
+- Processed tasks are deleted after implementation

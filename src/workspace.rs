@@ -3,9 +3,8 @@
 use std::fs;
 use std::path::PathBuf;
 
-use sha2::{Digest, Sha256};
-
 use crate::error::AppError;
+use crate::layers::Layer;
 use crate::scaffold;
 
 /// The `.jules/` workspace directory name.
@@ -19,6 +18,13 @@ pub const VERSION_FILE: &str = ".jo-version";
 pub struct Workspace {
     /// The root directory containing `.jules/`.
     root: PathBuf,
+}
+
+/// A discovered role with its layer and ID.
+#[derive(Debug, Clone)]
+pub struct DiscoveredRole {
+    pub layer: Layer,
+    pub id: String,
 }
 
 impl Workspace {
@@ -49,6 +55,7 @@ impl Workspace {
     }
 
     /// Read the current workspace version from `.jo-version`.
+    #[allow(dead_code)]
     pub fn read_version(&self) -> Result<Option<String>, AppError> {
         let path = self.version_path();
         if !path.exists() {
@@ -64,7 +71,7 @@ impl Workspace {
         Ok(())
     }
 
-    /// Create the complete `.jules/` directory structure.
+    /// Create the complete `.jules/` directory structure with 4-layer architecture.
     pub fn create_structure(&self) -> Result<(), AppError> {
         fs::create_dir_all(self.jules_path())?;
 
@@ -77,10 +84,17 @@ impl Workspace {
             fs::write(&path, entry.content)?;
         }
 
-        // Scaffold all built-in roles so the structure is visible immediately.
+        // Create layer directories
+        for layer in Layer::ALL {
+            let layer_dir = self.jules_path().join("roles").join(layer.dir_name());
+            fs::create_dir_all(&layer_dir)?;
+        }
+
+        // Scaffold all built-in roles under their respective layers
         for role in scaffold::role_definitions() {
-            if !self.role_exists(role.id) {
-                self.scaffold_role(
+            if !self.role_exists_in_layer(role.layer, role.id) {
+                self.scaffold_role_in_layer(
+                    role.layer,
                     role.id,
                     role.role_yaml,
                     Some(role.prompt_yaml),
@@ -92,86 +106,84 @@ impl Workspace {
         Ok(())
     }
 
-    /// Update jo-managed files and structural scaffolding.
-    pub fn update_managed_files(&self) -> Result<(), AppError> {
-        for entry in scaffold::update_managed_files() {
-            let path = self.root.join(&entry.path);
-            if let Some(parent) = path.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            fs::write(&path, entry.content)?;
-        }
-        Ok(())
+    /// Path to a role directory (layer-nested).
+    pub fn role_path_in_layer(&self, layer: Layer, role_id: &str) -> PathBuf {
+        self.jules_path().join("roles").join(layer.dir_name()).join(role_id)
     }
 
-    /// List jo-managed files that are missing from the workspace.
-    pub fn missing_managed_files(&self) -> Result<Vec<String>, AppError> {
-        let mut missing = Vec::new();
-        for entry in scaffold::update_managed_files() {
-            let full_path = self.root.join(&entry.path);
-            if !full_path.exists() {
-                let display_path =
-                    entry.path.strip_prefix(".jules/").unwrap_or(&entry.path).to_string();
-                missing.push(display_path);
-            }
+    /// Check if a role exists in a specific layer.
+    pub fn role_exists_in_layer(&self, layer: Layer, role_id: &str) -> bool {
+        if !Self::is_valid_role_id(role_id) {
+            return false;
         }
-        missing.sort();
-        Ok(missing)
+        self.role_path_in_layer(layer, role_id).join("role.yml").exists()
     }
 
-    /// Detect modified jo-managed files and structural placeholders by comparing content hashes.
-    pub fn detect_modifications(&self) -> Result<Vec<String>, AppError> {
-        let mut modified = Vec::new();
-        for entry in scaffold::update_managed_files() {
-            let full_path = self.root.join(&entry.path);
-            if full_path.exists() {
-                let actual_content = fs::read_to_string(&full_path)?;
-                if hash_content(&actual_content) != hash_content(entry.content) {
-                    let display_path =
-                        entry.path.strip_prefix(".jules/").unwrap_or(&entry.path).to_string();
-                    modified.push(display_path);
+    /// Discover all existing roles across all layers.
+    pub fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
+        let mut roles = Vec::new();
+
+        for layer in Layer::ALL {
+            let layer_dir = self.jules_path().join("roles").join(layer.dir_name());
+            if !layer_dir.exists() {
+                continue;
+            }
+
+            for entry in fs::read_dir(&layer_dir)? {
+                let entry = entry?;
+                if !entry.path().is_dir() {
+                    continue;
+                }
+                let role_id = entry.file_name().to_string_lossy().to_string();
+                if self.role_exists_in_layer(layer, &role_id) {
+                    roles.push(DiscoveredRole { layer, id: role_id });
                 }
             }
         }
 
-        modified.sort();
-        Ok(modified)
-    }
+        roles.sort_by(|a, b| {
+            let layer_cmp = a.layer.dir_name().cmp(b.layer.dir_name());
+            if layer_cmp == std::cmp::Ordering::Equal { a.id.cmp(&b.id) } else { layer_cmp }
+        });
 
-    /// Path to a role directory.
-    pub fn role_path(&self, role_id: &str) -> PathBuf {
-        self.jules_path().join("roles").join(role_id)
-    }
-
-    /// Check if a role exists (has role.yml).
-    pub fn role_exists(&self, role_id: &str) -> bool {
-        if !Self::is_valid_role_id(role_id) {
-            return false;
-        }
-        self.role_path(role_id).join("role.yml").exists()
-    }
-
-    /// Discover all existing roles by scanning for role.yml files.
-    pub fn discover_roles(&self) -> Result<Vec<String>, AppError> {
-        let roles_dir = self.jules_path().join("roles");
-        if !roles_dir.exists() {
-            return Ok(Vec::new());
-        }
-
-        let mut roles = Vec::new();
-        for entry in fs::read_dir(&roles_dir)? {
-            let entry = entry?;
-            if !entry.path().is_dir() {
-                continue;
-            }
-            let role_id = entry.file_name().to_string_lossy().to_string();
-            if self.role_exists(&role_id) {
-                roles.push(role_id);
-            }
-        }
-
-        roles.sort();
         Ok(roles)
+    }
+
+    /// Find a role by ID, searching all layers.
+    #[allow(dead_code)]
+    pub fn find_role(&self, role_id: &str) -> Result<Option<DiscoveredRole>, AppError> {
+        let roles = self.discover_roles()?;
+        Ok(roles.into_iter().find(|r| r.id == role_id))
+    }
+
+    /// Find a role by fuzzy matching (prefix match).
+    pub fn find_role_fuzzy(&self, query: &str) -> Result<Option<DiscoveredRole>, AppError> {
+        let roles = self.discover_roles()?;
+
+        // Check for exact match first
+        if let Some(role) = roles.iter().find(|r| r.id == query) {
+            return Ok(Some(role.clone()));
+        }
+
+        // Check for layer/role format (e.g., "observers/taxonomy")
+        if let Some((layer_part, role_part)) = query.split_once('/')
+            && let Some(layer) = Layer::from_dir_name(layer_part)
+            && let Some(role) = roles.iter().find(|r| r.layer == layer && r.id == role_part)
+        {
+            return Ok(Some(role.clone()));
+        }
+
+        // Check for prefix match
+        let matches: Vec<_> = roles.iter().filter(|r| r.id.starts_with(query)).collect();
+
+        match matches.len() {
+            1 => Ok(Some(matches[0].clone())),
+            0 => Ok(None),
+            _ => {
+                // Multiple matches - prefer exact layer prefix
+                Ok(Some(matches[0].clone()))
+            }
+        }
     }
 
     /// Check if a role_id is valid (no path traversal characters).
@@ -183,9 +195,10 @@ impl Workspace {
             && !role_id.is_empty()
     }
 
-    /// Scaffold a new role with role.yml, optional prompt, and optional notes directory.
-    pub fn scaffold_role(
+    /// Scaffold a new role under a specific layer.
+    pub fn scaffold_role_in_layer(
         &self,
+        layer: Layer,
         role_id: &str,
         role_yaml: &str,
         prompt_yaml: Option<&str>,
@@ -195,7 +208,7 @@ impl Workspace {
             return Err(AppError::InvalidRoleId(role_id.to_string()));
         }
 
-        let role_dir = self.role_path(role_id);
+        let role_dir = self.role_path_in_layer(layer, role_id);
         fs::create_dir_all(&role_dir)?;
         fs::write(role_dir.join("role.yml"), role_yaml)?;
 
@@ -212,33 +225,23 @@ impl Workspace {
         Ok(())
     }
 
-    /// Read the role scheduler prompt (prompt.yml).
-    pub fn read_role_prompt(&self, role_id: &str) -> Result<String, AppError> {
-        if !Self::is_valid_role_id(role_id) {
-            return Err(AppError::InvalidRoleId(role_id.to_string()));
-        }
-
+    /// Read the role scheduler prompt (prompt.yml) for a discovered role.
+    #[allow(dead_code)]
+    pub fn read_role_prompt(&self, role: &DiscoveredRole) -> Result<String, AppError> {
         if !self.exists() {
             return Err(AppError::WorkspaceNotFound);
         }
 
-        let prompt_path = self.role_path(role_id).join("prompt.yml");
+        let prompt_path = self.role_path_in_layer(role.layer, &role.id).join("prompt.yml");
         if !prompt_path.exists() {
             return Err(AppError::config_error(format!(
                 "Role '{}' does not have prompt.yml",
-                role_id
+                role.id
             )));
         }
 
         Ok(fs::read_to_string(prompt_path)?)
     }
-}
-
-/// Compute a SHA-256 hash of content for comparison.
-fn hash_content(content: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(content.as_bytes());
-    format!("{:x}", hasher.finalize())
 }
 
 #[cfg(test)]
@@ -276,23 +279,30 @@ mod tests {
     }
 
     #[test]
-    fn create_structure_scaffolds_all_builtin_roles() {
+    fn create_structure_creates_layer_directories() {
         let (_dir, ws) = test_workspace();
         ws.create_structure().expect("create_structure should succeed");
 
-        assert!(ws.role_exists("taxonomy"));
-        assert!(ws.role_exists("data_arch"));
-        assert!(ws.role_exists("qa"));
-        assert!(ws.role_exists("triage"));
+        for layer in Layer::ALL {
+            assert!(
+                ws.jules_path().join("roles").join(layer.dir_name()).exists(),
+                "Layer directory {:?} should exist",
+                layer
+            );
+        }
     }
 
     #[test]
-    fn triage_role_has_no_notes() {
+    fn create_structure_scaffolds_all_builtin_roles_in_layers() {
         let (_dir, ws) = test_workspace();
         ws.create_structure().expect("create_structure should succeed");
 
-        let triage_path = ws.role_path("triage");
-        assert!(!triage_path.join("notes").exists());
+        assert!(ws.role_exists_in_layer(Layer::Observers, "taxonomy"));
+        assert!(ws.role_exists_in_layer(Layer::Observers, "data_arch"));
+        assert!(ws.role_exists_in_layer(Layer::Observers, "qa"));
+        assert!(ws.role_exists_in_layer(Layer::Deciders, "triage"));
+        assert!(ws.role_exists_in_layer(Layer::Planners, "specifier"));
+        assert!(ws.role_exists_in_layer(Layer::Implementers, "executor"));
     }
 
     #[test]
@@ -306,32 +316,47 @@ mod tests {
     }
 
     #[test]
-    fn detect_modifications_empty_when_unchanged() {
-        let (_dir, ws) = test_workspace();
-        ws.create_structure().unwrap();
-
-        let mods = ws.detect_modifications().unwrap();
-        assert!(mods.is_empty());
-    }
-
-    #[test]
     fn discover_roles_finds_existing() {
         let (_dir, ws) = test_workspace();
         ws.create_structure().unwrap();
-        ws.scaffold_role("test-role", "Test config", None, true).unwrap();
 
         let roles = ws.discover_roles().unwrap();
-        assert!(roles.contains(&"test-role".to_string()));
+        assert!(!roles.is_empty());
+
+        let taxonomy = roles.iter().find(|r| r.id == "taxonomy");
+        assert!(taxonomy.is_some());
+        assert_eq!(taxonomy.unwrap().layer, Layer::Observers);
     }
 
     #[test]
-    fn scaffold_role_creates_structure() {
+    fn find_role_fuzzy_matches_prefix() {
         let (_dir, ws) = test_workspace();
         ws.create_structure().unwrap();
 
-        ws.scaffold_role("my-role", "My role config", None, true).unwrap();
+        let result = ws.find_role_fuzzy("tax").unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().id, "taxonomy");
+    }
 
-        let role_dir = ws.role_path("my-role");
+    #[test]
+    fn find_role_fuzzy_matches_layer_prefix() {
+        let (_dir, ws) = test_workspace();
+        ws.create_structure().unwrap();
+
+        let result = ws.find_role_fuzzy("observers/taxonomy").unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().id, "taxonomy");
+    }
+
+    #[test]
+    fn scaffold_role_in_layer_creates_structure() {
+        let (_dir, ws) = test_workspace();
+        ws.create_structure().unwrap();
+
+        ws.scaffold_role_in_layer(Layer::Observers, "my-role", "My role config", None, true)
+            .unwrap();
+
+        let role_dir = ws.role_path_in_layer(Layer::Observers, "my-role");
         assert!(role_dir.join("role.yml").exists());
         assert!(role_dir.join("notes").exists());
         assert!(role_dir.join("notes/.gitkeep").exists());
@@ -341,28 +366,24 @@ mod tests {
     }
 
     #[test]
-    fn scaffold_role_with_prompt() {
+    fn scaffold_role_in_layer_with_prompt() {
         let (_dir, ws) = test_workspace();
         ws.create_structure().unwrap();
 
-        ws.scaffold_role("triage-test", "Triage config", Some("Triage prompt"), false).unwrap();
+        ws.scaffold_role_in_layer(
+            Layer::Deciders,
+            "my-triage",
+            "Triage config",
+            Some("Triage prompt"),
+            false,
+        )
+        .unwrap();
 
-        let role_dir = ws.role_path("triage-test");
+        let role_dir = ws.role_path_in_layer(Layer::Deciders, "my-triage");
         assert!(role_dir.join("role.yml").exists());
         assert!(role_dir.join("prompt.yml").exists());
 
         let prompt = fs::read_to_string(role_dir.join("prompt.yml")).unwrap();
         assert_eq!(prompt, "Triage prompt");
-    }
-
-    #[test]
-    fn read_role_prompt_reads_file() {
-        let (_dir, ws) = test_workspace();
-        ws.create_structure().unwrap();
-
-        ws.scaffold_role("test", "Role config", Some("Prompt text"), true).unwrap();
-
-        let prompt = ws.read_role_prompt("test").unwrap();
-        assert!(prompt.contains("Prompt text"));
     }
 }

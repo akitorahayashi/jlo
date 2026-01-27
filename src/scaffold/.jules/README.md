@@ -1,16 +1,17 @@
 # .jules/
 
 The `.jules/` directory is a structured workspace for scheduled agents and human execution.
-It captures **observations as events** and **actionable work as issues**.
+It captures **observations as events** and **actionable work as issues/tasks**.
 
 This file is human-oriented. Agents must also read `.jules/JULES.md` for the formal contract.
 
 ## Overview
 
-This workspace implements a **worker + triage** workflow:
-- **Worker agents** record issue-worthy observations as normalized events
-- **Triage agent** critically reviews events, produces issues, and deletes processed events
-- **Humans** execute issues
+This workspace implements a **4-layer architecture**:
+- **Observers**: Read source, update notes, emit events (taxonomy, data_arch, qa)
+- **Deciders**: Screen events, emit issues, delete events (triage)
+- **Planners**: Read issues, emit tasks, delete issues (specifier)
+- **Implementers**: Read tasks, write code, delete tasks (executor)
 
 ## Directory Structure
 
@@ -20,22 +21,35 @@ This workspace implements a **worker + triage** workflow:
 ├── JULES.md            # Agent contract (jo-managed)
 ├── .jo-version         # Version marker (jo-managed)
 │
-├── roles/              # [Agent Layer] Deployed roles
-│   ├── taxonomy/
-│   │   ├── prompt.yml  # Scheduler prompt template (jo-managed)
-│   │   ├── role.yml    # Role definition (agent-owned)
-│   │   └── notes/      # Declarative memory (agent-owned)
-│   ├── data_arch/
-│   │   ├── prompt.yml
-│   │   ├── role.yml
-│   │   └── notes/
-│   ├── qa/
-│   │   ├── prompt.yml
-│   │   ├── role.yml
-│   │   └── notes/
-│   └── triage/
-│       ├── prompt.yml
-│       └── role.yml
+├── roles/              # [Agent Layer] 4-tier role organization
+│   ├── observers/      # Observation layer
+│   │   ├── taxonomy/   # Naming consistency specialist
+│   │   │   ├── prompt.yml
+│   │   │   ├── role.yml
+│   │   │   └── notes/
+│   │   ├── data_arch/  # Data model specialist
+│   │   │   ├── prompt.yml
+│   │   │   ├── role.yml
+│   │   │   └── notes/
+│   │   └── qa/         # Quality assurance specialist
+│   │       ├── prompt.yml
+│   │       ├── role.yml
+│   │       └── notes/
+│   │
+│   ├── deciders/       # Decision layer
+│   │   └── triage/     # Event screening, issue creation
+│   │       ├── prompt.yml
+│   │       └── role.yml
+│   │
+│   ├── planners/       # Planning layer
+│   │   └── specifier/  # Issue decomposition into tasks
+│   │       ├── prompt.yml
+│   │       └── role.yml
+│   │
+│   └── implementers/   # Implementation layer
+│       └── executor/   # Code implementation
+│           ├── prompt.yml
+│           └── role.yml
 │
 ├── events/             # [Inbox] Normalized observations (YAML)
 │   ├── bugs/
@@ -44,66 +58,66 @@ This workspace implements a **worker + triage** workflow:
 │   ├── tests/
 │   └── updates/
 │
-├── issues/             # [Outbox] Actionable tasks (Markdown, flat)
-│   └── *.
-
-└── tasks/              # [Transit] Executable tasks (Markdown, flat)
+├── issues/             # [Transit] Actionable tasks (Markdown, flat)
+│   └── *.md
+│
+└── tasks/              # [Outbox] Executable tasks (Markdown, flat)
     └── *.md
 ```
 
 ## Workflow
 
-### 1. Worker Agents (Scheduled)
+### 1. Observer Agents (Scheduled)
 
-Each worker agent:
+Each observer agent:
 1. Reads `JULES.md` and `.jules/JULES.md`
 2. Updates `notes/` with current understanding (declarative state)
 3. Writes normalized `events/**/*.yml` when observations are issue-worthy
 
-Workers do **not** write `issues/`.
+Observers do **not** write `issues/` or `tasks/`.
 
-### 2. Triage Agent (Scheduled)
+### 2. Decider Agent (Scheduled)
 
 The triage agent:
 1. Reads all `events/**/*.yml` and existing `issues/*.md`
 2. Critically validates and merges related observations
 3. Creates actionable issues (Markdown with YAML frontmatter)
 4. Deletes processed events (accepted or rejected)
-5. Updates worker `role.yml` to reduce recurring noise
+5. Updates observer `role.yml` to reduce recurring noise
 
-Only triage writes `issues/`.
+Only deciders write `issues/`.
 
-### 3. Human Execution
+### 3. Planner Agent (On-Demand)
 
-Humans:
-1. Review issues in `issues/`
-2. Select issues to implement
-3. Execute or delegate to coding agents
-4. Close issues when complete
+The specifier agent:
+1. Reads an issue from `issues/`
+2. Analyzes impact and decomposes into tasks
+3. Creates `tasks/*.md` with verification plans
+4. Deletes the processed issue
 
-### 4. Specifier/Executor (On-Demand)
+### 4. Implementer Agent (On-Demand)
 
-This pipeline automates execution:
-1. **Specifier** converts an issue into granular `tasks/`.
-2. **Executor** implements `tasks/` and runs verification.
+The executor agent:
+1. Reads a task from `tasks/`
+2. Implements code changes
+3. Runs verification
+4. Deletes the processed task
 
-## Agent Roles
+## Agent Roles by Layer
 
-| Role | Type | Responsibility |
-|------|------|----------------|
-| taxonomy | Worker | Naming conventions, terminology consistency |
-| data_arch | Worker | Data models, data flow efficiency |
-| qa | Worker | Test coverage, test quality |
-| triage | Manager | Event screening, issue creation, role feedback |
-| specifier | Architect | Issue analysis, task decomposition |
-| executor | Engineer | Implementation, verification, cleanup |
+| Layer | Role | Responsibility |
+|-------|------|----------------|
+| Observers | taxonomy | Naming conventions, terminology consistency |
+| Observers | data_arch | Data models, data flow efficiency |
+| Observers | qa | Test coverage, test quality |
+| Deciders | triage | Event screening, issue creation |
+| Planners | specifier | Issue analysis, task decomposition |
+| Implementers | executor | Code implementation, verification |
 
-## Managed Files
+## CLI Commands
 
-`jo update` manages only:
-- `.jules/README.md`
-- `.jules/JULES.md`
-- `.jules/.jo-version`
-- `.jules/roles/*/prompt.yml`
-
-All other files are agent-owned and never modified by jo.
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `jo init` | `i` | Create `.jules/` with 4-layer architecture |
+| `jo assign <role> [paths...]` | `a` | Generate prompt and copy to clipboard |
+| `jo template [-l layer] [-n name]` | `tp` | Create a new role from layer template |
