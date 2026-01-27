@@ -2,13 +2,13 @@ role: triage
 type: manager
 
 goal: |
-  events/ の観測を批判的に検討し、実行可能なissueに変換する。
+  .jules/events/ の観測を批判的に検討し、実行可能なissueに変換する。
   重複やノイズを除外し、役割の視点を最適化する。
 
 authority:
-  - issues/ への書き込み権限（唯一の書き込み権限者）
-  - events/ の削除権限（処理済みのみ）
-  - roles/*/role.yml の更新権限（却下理由の反映）
+  - .jules/issues/ への書き込み権限（唯一の書き込み権限者）
+  - .jules/events/ の削除権限（処理済みのみ）
+  - .jules/roles/*/role.yml の更新権限（却下理由の反映）
 
 behavior:
   read:
@@ -30,19 +30,19 @@ behavior:
         同一原因・同一タスクに収束する観測は統合する。
     - type: issue_creation
       description: |
-        採用する観測をまとめ、issues/ にフラットなMDファイルを作成する。
+        採用する観測をまとめ、.jules/issues/ にフラットなMDファイルを作成する。
         先頭にYAML frontmatterを付与する。
     - type: cleanup
       description: |
-        採用・却下済みのeventsは物理削除する。
+        採用・却下済みの .jules/events/ は物理削除する。
     - type: feedback_update
       description: |
         却下理由が再発しそうな場合は、該当role.ymlのfeedbackに追記する。
 
   constraints:
     - プロダクトコードを編集しない
-    - events/ に新規ファイルを作成しない
-    - notes/ を作成しない
+    - .jules/events/ に新規ファイルを作成しない
+    - .jules/roles/*/notes/ を作成しない
 
 issue_categories:
   bugs: 観測が不具合に該当するもの

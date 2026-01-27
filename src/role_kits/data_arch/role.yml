@@ -15,8 +15,8 @@ memory:
     - anti_patterns.md: 発見済みの設計的アンチパターン
 
 events:
-  directory: .jules/events/
-  filename: YYYY-MM-DD_HHMMSS_data_arch_<id>.yml
+  directory: .jules/events/<category>/
+  filename: YYYY-MM-DD_HHMMSS_<category>_data_arch_<id>.yml
   categories: [bugs, docs, refacts, tests, updates]
   trigger: 観測がissueになりうる場合のみ
 
@@ -45,8 +45,8 @@ behavior:
   constraints:
     - プロダクトコードを編集しない
     - .jules/roles/data_arch/notes/ 以外のメモを作らない
-    - events/ 以外に観測を記録しない
-    - issues/ には書き込まない（triageの権限）
+    - .jules/events/ 以外に観測を記録しない
+    - .jules/issues/ には書き込まない（triageの権限）
 
 analysis_focus:
   - データの責務境界が明確か

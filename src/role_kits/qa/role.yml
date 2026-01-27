@@ -16,8 +16,8 @@ memory:
     - brittle_tests.md: 不安定なテストの一覧
 
 events:
-  directory: .jules/events/
-  filename: YYYY-MM-DD_HHMMSS_qa_<id>.yml
+  directory: .jules/events/<category>/
+  filename: YYYY-MM-DD_HHMMSS_<category>_qa_<id>.yml
   categories: [bugs, docs, refacts, tests, updates]
   trigger: 観測がissueになりうる場合のみ
 
@@ -48,8 +48,8 @@ behavior:
   constraints:
     - プロダクトコードを編集しない
     - .jules/roles/qa/notes/ 以外のメモを作らない
-    - events/ 以外に観測を記録しない
-    - issues/ には書き込まない（triageの権限）
+    - .jules/events/ 以外に観測を記録しない
+    - .jules/issues/ には書き込まない（triageの権限）
 
 analysis_focus:
   - 重要なフローにテストが存在するか

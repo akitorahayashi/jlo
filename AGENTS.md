@@ -91,10 +91,10 @@
 | `triage` | Manager | Event screening, issue creation |
 
 ### Worker Behavior
-Workers read source code and their `notes/` directory, update notes with current understanding (declarative state), and create normalized events in `events/` when issue-worthy observations are found. Workers do NOT write to `issues/`.
+Workers read source code and their `.jules/roles/<role>/notes/` directory, update notes with current understanding (declarative state), and create normalized events in `.jules/events/<category>/` when issue-worthy observations are found. Workers do NOT write to `.jules/issues/`.
 
 ### Triage Behavior
-Triage reads events from `events/`, screens them critically, and converts approved items into `issues/*.md` (flat). Only triage writes to `issues/`.
+Triage reads events from `.jules/events/**/*.yml`, screens them critically, and converts approved items into `.jules/issues/*.md` (flat). Only triage writes to `.jules/issues/`.
 
 ## Role Configuration Schema
 Each role has a `role.yml` file defining:

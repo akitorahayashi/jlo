@@ -44,7 +44,7 @@ Events must be written under `.jules/events/<category>/` where `<category>` is o
 
 ### Filename
 
-`YYYY-MM-DD_HHMMSS_<author_role>_<id>.yml`
+`YYYY-MM-DD_HHMMSS_<category>_<author_role>_<id>.yml`
 
 `<id>` is a short local identifier (8–12 lowercase hex is sufficient).
 

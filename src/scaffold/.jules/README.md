@@ -55,7 +55,7 @@ This workspace implements a **worker + triage** workflow:
 Each worker agent:
 1. Reads `AGENTS.md` and `.jules/AGENTS.md`
 2. Updates `notes/` with current understanding (declarative state)
-3. Writes normalized `events/*.yml` when observations are issue-worthy
+3. Writes normalized `events/**/*.yml` when observations are issue-worthy
 
 Workers do **not** write `issues/`.
 
