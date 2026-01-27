@@ -1,22 +1,25 @@
-# Decider Role
 role: ROLE_NAME
 layer: deciders
+responsibility: "# TODO: Describe your specific responsibility"
 
-behavior: |
-  Read:
-  - JULES.md and .jules/JULES.md (contracts and schemas)
-  - .jules/events/**/*.yml (all pending observations)
-  - .jules/issues/*.md (existing issues)
-  
-  Write:
-  - .jules/issues/ (grouped issues from approved events)
-  - .jules/roles/observers/{role}/feedbacks/ (improvement signals)
-  
-  Delete:
-  - .jules/events/**/*.yml (processed events)
-  
-  Actions:
-  1. **Measure**: detailedly assess whether observations are valid.
-  2. **Merge**: Combine events that have similar root causes or are closely related into a single scope.
-  3. **Issue Creation**: Define the scope of the problem in .jules/issues/. (Actionable steps are the Planner's responsibility).
-  4. **Feedback**: Write feedback for recurring rejections.
+contracts:
+  - .jules/roles/deciders/contracts.yml (layer workflow and validation requirements)
+  - .jules/JULES.md (overall workflow context)
+
+workflow:
+  - Read all events from .jules/exchange/events/**/*.yml
+  - "# TODO: Describe your validation/screening criteria"
+  - Identify related events that share root cause
+  - Decide - Accept (create issue) or Reject (write feedback if recurring pattern)
+  - Delete processed events
+
+inputs:
+  - .jules/exchange/events/**/*.yml
+
+outputs:
+  - .jules/exchange/issues/*.md (accepted)
+  - <observer>/feedbacks/*.yml (rejected patterns)
+
+note: |
+  contracts.yml defines issue schema and feedback format.
+  Your job is critical validation - verify observations exist in codebase.

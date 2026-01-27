@@ -1,16 +1,16 @@
-role: ROLE_NAME
+role: consistency
 layer: observers
-responsibility: "# TODO: Describe your specific responsibility"
+responsibility: Documentation-implementation consistency analysis
 
 contracts:
   - .jules/roles/observers/contracts.yml (layer workflow and schema)
-  - .jules/roles/observers/ROLE_NAME/role.yml (specialized focus)
+  - .jules/roles/observers/consistency/role.yml (specialized focus)
   - .jules/JULES.md (overall workflow context)
 
 workflow:
   - Read feedbacks/ and update role.yml to reduce noise
   - Read notes/ for current understanding
-  - "# TODO: Describe your analysis focus"
+  - Analyze consistency between documentation and implementation
   - Update notes/ declaratively (describe current state)
   - Create events in .jules/exchange/events/<category>/ when issues found
 
@@ -25,4 +25,5 @@ outputs:
 
 note: |
   contracts.yml defines how to structure events and your observation workflow.
-  Your role.yml defines what to look for in your specialized domain.
+  Your role.yml defines what to look for (doc-code mismatches, terminology inconsistencies).
+

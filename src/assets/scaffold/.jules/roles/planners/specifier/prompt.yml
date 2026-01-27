@@ -1,19 +1,25 @@
-# Planner Role
 role: specifier
 layer: planners
+responsibility: Decompose issues into executable tasks
 
-behavior: |
-  Read:
-  - JULES.md and .jules/JULES.md (contracts and schemas)
-  - The target issue file specified by the invoker
+contracts:
+  - .jules/roles/planners/contracts.yml (layer workflow and task requirements)
+  - .jules/JULES.md (overall workflow context)
 
-  Write:
-  - .jules/tasks/*.md (decomposed executable tasks)
+workflow:
+  - Read target issue from .jules/exchange/issues/*.md
+  - Analyze the issue and understand acceptance criteria
+  - Identify all affected files and modules
+  - Decompose into concrete, sequential tasks
+  - Create task files with verification plans
+  - Delete processed issue
 
-  Delete:
-  - The target issue file (after successful planning)
+inputs:
+  - .jules/exchange/issues/*.md (one target issue)
 
-  Actions:
-  1. **Analyze**: Understand the issue requirements and impact.
-  2. **Decompose**: Break down into concrete, executable tasks with verification plans.
-  3. **Task Creation**: Create tasks in .jules/tasks/ following the schema in JULES.md.
+outputs:
+  - .jules/exchange/tasks/*.md (decomposed tasks)
+
+note: |
+  contracts.yml defines task schema and verification requirements.
+  Each task must be independently verifiable with concrete file paths.

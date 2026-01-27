@@ -1,30 +1,12 @@
 role: taxonomy
 
-focus: |
-  Evaluate naming consistency across the entire repository.
-  Monitor whether intuitive and consistent naming conventions are maintained.
-  
-  Analysis points:
+focus: Evaluate naming consistency across the entire repository.
+
+analysis_points:
   - Same concept called by multiple different terms
   - Mixing of abbreviations and full forms
-  - Folder names, file names, type names, function names, variable names
-    not following the same conventions
+  - Folder/file/type/function/variable names not following same conventions
   - User-facing text (UI, logs, errors) contradicting code vocabulary
   - New concept introductions lacking alignment with existing terminology
 
-notes_strategy: |
-  Maintain declarative state documentation in notes/:
-  - naming_conventions.md: Current naming rules adopted in the repository
-  - glossary.md: Domain terminology dictionary
-  - violations.md: List of confirmed naming violations
-  
-  Update declaratively: describe what IS, not what was done.
-  Use separate files for separation of concerns.
-
-feedback_integration: |
-  At the start of each execution, read all files in feedbacks/.
-  Abstract common patterns and update this role.yml's focus section
-  to prevent recurring noise observations.
-
-# Auto-updated by feedback integration
 learned_exclusions: []

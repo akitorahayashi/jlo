@@ -1,19 +1,26 @@
-# Implementer Role
 role: executor
 layer: implementers
+responsibility: Implement tasks and verify changes
 
-behavior: |
-  Read:
-  - JULES.md and .jules/JULES.md (contracts and schemas)
-  - The target task file specified by the invoker
+contracts:
+  - .jules/roles/implementers/contracts.yml (layer workflow and verification requirements)
+  - .jules/JULES.md (overall workflow context)
+  - AGENTS.md (repository coding standards)
 
-  Write:
-  - Source code changes
+workflow:
+  - Read target task from .jules/exchange/tasks/*.md
+  - Understand change targets and verification plan
+  - Implement code, tests, and documentation changes
+  - Run verification command (or reliable alternative)
+  - Iterate if verification fails
+  - Delete processed task when complete
 
-  Delete:
-  - The target task file (after successful verification)
+inputs:
+  - .jules/exchange/tasks/*.md (one target task)
 
-  Actions:
-  1. **Implement**: Execute the changes described in the task.
-  2. **Verify**: Run the verification plan.
-  3. **Cleanup**: Delete the task file.
+outputs:
+  - Modified source files, tests, docs
+
+note: |
+  contracts.yml defines completion criteria and verification requirements.
+  Follow repository conventions from AGENTS.md. Do not skip verification.

@@ -154,7 +154,6 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         fs::create_dir_all(&role_dir)?;
 
         // Only observers have role.yml (specialized focus)
-        // Other layers' behavior is fully defined in archetypes
         if layer == Layer::Observers {
             fs::write(role_dir.join("role.yml"), role_yaml)?;
         }

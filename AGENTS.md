@@ -7,17 +7,8 @@
 
 **Rule**: All prompts must exist as `.yml` files in `src/assets/scaffold/` or `src/assets/templates/`. Rust code may only do simple string replacement (e.g., `ROLE_NAME` → actual role name), never compose or generate prompt content.
 
-### 2. Archetypes are Build-Time Only, Never Deployed
-**Problem**: If archetypes are deployed to `.jules/archetypes/`, agents might read them instead of JULES.md, breaking the single source of truth contract.
-
-**Rule**: 
-- Archetypes live in `src/assets/archetypes/` (NOT in scaffold)
-- They are used ONLY during `jo init` to generate the scaffold
-- Agents read JULES.md for behavioral contracts, never archetypes
-- `.jules/` workspace contains NO archetypes directory after deployment
-
-### 3. JULES.md is the Single Source of Truth
-**Problem**: Multiple sources of behavioral specification (archetypes, role.yml, prompt.yml, JULES.md) create confusion about authority.
+### 2. JULES.md is the Single Source of Truth
+**Problem**: Multiple sources of behavioral specification (role.yml, prompt.yml, JULES.md) create confusion about authority.
 
 **Rule**:
 - JULES.md defines complete behavioral contracts for all layers
@@ -25,7 +16,7 @@
 - prompt.yml is the composed, executable prompt that references JULES.md
 - Agents always read JULES.md first for their behavioral contract
 
-### 4. Minimal Duplication in Prompts
+### 3. Minimal Duplication in Prompts
 **Problem**: Repeating global policy and layer behavior in every role's prompt.yml creates maintenance burden and inconsistency.
 
 **Rule**:
@@ -109,8 +100,9 @@ The codebase uses a **layered architecture** with clear separation of concerns:
 │
 ├── roles/              # 4-Layer agent organization
 │   ├── observers/      # Layer 1: Observation (stateful)
+│   │   ├── contracts.yml     # Shared observer contract
 │   │   ├── taxonomy/
-│   │   │   ├── prompt.yml    # Execution parameters only
+│   │   │   ├── prompt.yml    # Execution parameters
 │   │   │   ├── role.yml      # Specialized focus
 │   │   │   ├── notes/        # Declarative state
 │   │   │   └── feedbacks/    # Decider rejection feedback
@@ -126,37 +118,33 @@ The codebase uses a **layered architecture** with clear separation of concerns:
 │   │       └── feedbacks/
 │   │
 │   ├── deciders/       # Layer 2: Decision (stateless)
+│   │   ├── contracts.yml     # Shared decider contract
 │   │   └── triage/
-│   │       └── prompt.yml    # No role.yml (behavior in archetype)
+│   │       └── prompt.yml
 │   │
 │   ├── planners/       # Layer 3: Planning (stateless)
+│   │   ├── contracts.yml     # Shared planner contract
 │   │   └── specifier/
-│   │       └── prompt.yml    # No role.yml (behavior in archetype)
+│   │       └── prompt.yml
 │   │
 │   └── implementers/   # Layer 4: Implementation (stateless)
+│       ├── contracts.yml     # Shared implementer contract
 │       └── executor/
-│           └── prompt.yml    # No role.yml (behavior in archetype)
+│           └── prompt.yml
 │
-├── archetypes/         # Layer behavior definitions
-│   ├── layers/
-│   │   ├── observer.yml      # Complete observer behavior
-│   │   ├── decider.yml       # Complete decider behavior
-│   │   ├── planner.yml       # Complete planner behavior
-│   │   └── implementer.yml   # Complete implementer behavior
-│   └── policy.yml
-│
-├── events/             # Normalized observations (user-owned)
-│   ├── bugs/
-│   ├── refacts/
-│   ├── updates/
-│   ├── tests/
-│   └── docs/
-│
-├── issues/             # Actionable tasks (user-owned, flat)
-│   └── *.md
-│
-└── tasks/              # Executable work items (user-owned, flat)
-    └── *.md
+└── exchange/           # Transient data flow (user-owned)
+    ├── events/         # Normalized observations
+    │   ├── bugs/
+    │   ├── refacts/
+    │   ├── updates/
+    │   ├── tests/
+    │   └── docs/
+    │
+    ├── issues/         # Actionable tasks (flat)
+    │   └── *.md
+    │
+    └── tasks/          # Executable work items (flat)
+        └── *.md
 ```
 
 ## Built-in Roles
@@ -173,67 +161,52 @@ The codebase uses a **layered architecture** with clear separation of concerns:
 ### Layer Behaviors
 
 **Observers** (Layer 1):
-- Read source code, `notes/`, and `feedbacks/` directories
+- Read contracts.yml (layer behavior), role.yml (specialized focus), notes/, and feedbacks/
 - **Initialization**: Read all feedback files, abstract patterns, update `role.yml` to reduce noise
 - Update `notes/` with current understanding (declarative state: describe "what is", not "what was done")
-- Create normalized events in `.jules/events/<category>/` when issue-worthy observations are found
+- Create normalized events in `.jules/exchange/events/<category>/` when issue-worthy observations are found
 - **Stateful**: Maintain persistent `notes/` and receive feedback via `feedbacks/`
-- Do NOT write to `.jules/issues/` or `.jules/tasks/`
+- Do NOT write to `.jules/exchange/issues/` or `.jules/exchange/tasks/`
 
 **Deciders** (Layer 2):
-- Read events from `.jules/events/**/*.yml`
+- Read contracts.yml (layer behavior) and events from `.jules/exchange/events/**/*.yml`
 - Screen critically (verify observations actually exist in codebase)
 - Merge related observations that share root cause
-- Convert approved items into `.jules/issues/*.md`
+- Convert approved items into `.jules/exchange/issues/*.md`
 - **Write feedback**: When rejecting recurring patterns, create `feedbacks/<date>_<description>.yml` in observer's directory
 - Delete processed events (both accepted and rejected)
-- **Stateless**: All behavior defined in `.jules/archetypes/layers/decider.yml`
+- **Stateless**: All behavior defined in contracts.yml
 
 **Planners** (Layer 3):
-- Read target issue from `.jules/issues/*.md`
+- Read contracts.yml (layer behavior) and target issue from `.jules/exchange/issues/*.md`
 - Decompose into concrete tasks with verification plans
-- Create `.jules/tasks/*.md` files
+- Create `.jules/exchange/tasks/*.md` files
 - Delete processed issues
-- **Stateless**: All behavior defined in `.jules/archetypes/layers/planner.yml`
+- **Stateless**: All behavior defined in contracts.yml
 
 **Implementers** (Layer 4):
-- Read target task from `.jules/tasks/*.md`
+- Read contracts.yml (layer behavior) and target task from `.jules/exchange/tasks/*.md`
 - Implement code, tests, documentation
 - Run verification (or reliable alternative if environment constraints exist)
 - Delete processed tasks
-- **Stateless**: All behavior defined in `.jules/archetypes/layers/implementer.yml`
+- **Stateless**: All behavior defined in contracts.yml
 
 ## Configuration Hierarchy
 
-The configuration follows a **single source of truth** hierarchy:
-
-```
-JULES.md (contract, schemas)
-  └── archetypes/layers/*.yml (layer default behavior)
-       └── roles/observers/*/role.yml (specialized focus, only for observers)
-            └── prompt.yml (execution-time parameters only)
-```
-
-- **JULES.md**: Defines contracts, schemas, and workflows
-- **Archetypes**: Define complete behavior for each layer
-- **role.yml**: Only exists for observers (stateful roles); defines specialized analytical focus
-- **prompt.yml**: Contains only execution-time parameters (paths for observers, target for planners/implementers)
+- contracts.yml: Layer-level shared constraints (at each layer directory)
+- JULES.md: Overall workflow and file semantics
+- role.yml: Specialized focus for observers (dynamic, evolves with feedback)
+- prompt.yml: Execution parameters and references to contracts.yml
 
 ## Feedback Loop
 
-The feedback mechanism enables continuous improvement:
-
-1. **Observer** creates events based on observations
-2. **Decider** reviews events and may reject some due to recurring patterns
-3. **Decider** writes feedback files to `.jules/roles/observers/<role>/feedbacks/`
-4. **Observer** reads feedback files on next execution, abstracts patterns
-5. **Observer** updates its own `role.yml` to refine focus and prevent noise
-
-Feedback files are preserved for audit (never deleted). This self-improvement loop reduces false positives over time.
+- Observer creates events in exchange/events/
+- Decider reviews events, rejects if needed, writes feedback to observer's feedbacks/
+- Observer reads feedback at next execution, updates role.yml to reduce noise
 
 ## Language Policy
 - **Scaffold Content**: English (README.md, JULES.md, all YAML configuration files)
-- **File/Directory Names**: English (`roles/`, `events/`, `issues/`, `tasks/`, `notes/`, `feedbacks/`, `role.yml`, `prompt.yml`)
+- **File/Directory Names**: English (`roles/`, `exchange/`, `events/`, `issues/`, `tasks/`, `notes/`, `feedbacks/`, `contracts.yml`, `role.yml`, `prompt.yml`)
 - **Role Content**: User-defined (events, issues, tasks, notes can be in any language)
 - **CLI Messages**: English (stdout/stderr)
 - **Code Comments**: English
