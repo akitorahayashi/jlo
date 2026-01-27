@@ -35,17 +35,30 @@
 - **Test**: `cargo test --all-targets --all-features`
 
 ## Testing Strategy
-- **Unit Tests**: Located within the `src/` directory alongside the code they test, covering helper utilities and workspace operations.
-- **Command Logic Tests**: Found in `src/commands/`, each command module includes `#[cfg(test)]` tests.
-- **Integration Tests**: Housed in the `tests/` directory, these tests cover the public library API and CLI user flows from an external perspective. Separate crates for API (`tests/commands_api.rs`) and CLI workflows (`tests/cli_commands.rs`, `tests/cli_flow.rs`), with shared fixtures in `tests/common/mod.rs`.
+- **Unit Tests**: Located within the `src/` directory alongside the code they test, covering domain types, services, and workspace operations.
+- **Integration Tests**: Housed in the `tests/` directory, covering the public library API and CLI user flows. Separate test crates for API (`tests/commands_api.rs`) and CLI workflows (`tests/cli_commands.rs`, `tests/cli_flow.rs`), with shared fixtures in `tests/common/mod.rs`.
 
-## Architectural Highlights
-- **4-Layer Architecture**: Roles are organized into Observers, Deciders, Planners, and Implementers under `.jules/roles/<layer>/<role>/`.
-- **Dynamic Prompt Generation**: `src/generator.rs` composes prompts at runtime using templates from `src/templates/`.
-- **Two-tier structure**: `src/main.rs` handles CLI parsing, `src/lib.rs` exposes public APIs, and `src/commands/` keeps command logic testable.
-- **Scaffold embedding**: `src/scaffold.rs` loads static files from `src/scaffold/.jules/` for deployment, plus built-in role definitions from `src/role_kits/`.
-- **Workspace abstraction**: `src/workspace.rs` provides a `Workspace` struct for all `.jules/` directory operations, including layer-aware role discovery.
-- **Version management**: `.jo-version` tracks which jo version last deployed the workspace.
+## Architecture
+
+The codebase uses a **layered architecture** with clear separation of concerns:
+
+### Layers
+
+| Layer | Location | Responsibility |
+|-------|----------|----------------|
+| **Domain** | `src/domain/` | Pure types, enums, validation (no I/O). `Layer`, `RoleId`, `AppError`, constants. |
+| **Ports** | `src/ports/` | Trait boundaries defining capabilities. `WorkspaceStore`, `RoleTemplateStore`, `ClipboardWriter`. |
+| **Services** | `src/services/` | Concrete implementations with I/O. `FilesystemWorkspaceStore`, `EmbeddedRoleTemplateStore`, `ArboardClipboard`, `PromptGenerator`. |
+| **App** | `src/app/` | `AppContext` (DI container) and command orchestration. Commands in `src/app/commands/`. |
+| **Testing** | `src/testing/` | Mock implementations of ports for unit testing. |
+| **Assets** | `src/assets/` | Static embedded content: scaffold files, role kits, templates. |
+
+### Key Patterns
+
+- **Dependency Injection**: `AppContext<W, R, C>` is generic over port traits, enabling mock injection in tests.
+- **Port/Adapter Separation**: Traits in `ports/` define "what", services in `services/` provide "how".
+- **Deferred Clipboard Initialization**: Clipboard is only initialized when actually needed (after validation), avoiding failures on headless systems.
+- **Embedded Assets**: Static files are compiled into the binary via `include_dir!`.
 
 ## CLI Commands
 - `jo init` (alias: `i`): Create complete `.jules/` structure with 4-layer architecture and all 6 built-in roles.

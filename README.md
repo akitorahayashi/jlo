@@ -154,34 +154,40 @@ jo template --layer implementers --name frontend
 ```
 jo/
 ├── src/
-│   ├── main.rs           # CLI parsing (clap)
-│   ├── lib.rs            # Public API
-│   ├── layers.rs         # 4-layer architecture definitions
-│   ├── generator.rs      # Dynamic prompt generation
-│   ├── templates.rs      # Template loading
-│   ├── templates/        # YAML templates for layers
-│   │   ├── policy.yml
-│   │   └── layers/
-│   ├── scaffold.rs       # Embedded scaffold loader
-│   ├── scaffold/         # Embedded .jules content
-│   │   └── .jules/       # Scaffold files
-│   ├── role_kits/        # Built-in role definitions
-│   │   ├── taxonomy/
-│   │   ├── data_arch/
-│   │   ├── qa/
-│   │   ├── triage/
-│   │   ├── specifier/
-│   │   └── executor/
-│   ├── error.rs          # AppError definitions
-│   ├── workspace.rs      # Workspace filesystem operations
-│   └── commands/         # Command implementations
-│       ├── init.rs
-│       ├── assign.rs
-│       └── template.rs
+│   ├── main.rs            # CLI parsing (clap)
+│   ├── lib.rs             # Public API
+│   ├── domain/            # Pure domain types (no I/O)
+│   │   ├── error.rs       # AppError definitions
+│   │   ├── layer.rs       # 4-layer architecture (Layer enum)
+│   │   ├── role_id.rs     # Role identifier validation
+│   │   ├── workspace_layout.rs  # Constants (.jules/ structure)
+│   │   └── generated_prompt.rs  # Prompt value object
+│   ├── ports/             # Trait boundaries
+│   │   ├── clipboard_writer.rs  # Clipboard abstraction
+│   │   ├── workspace_store.rs   # Workspace operations
+│   │   └── role_template_store.rs # Template loading
+│   ├── services/          # Implementations (with I/O)
+│   │   ├── clipboard_arboard.rs    # arboard clipboard
+│   │   ├── workspace_filesystem.rs # Filesystem operations
+│   │   ├── role_template_service.rs # Embedded templates
+│   │   └── prompt_generator.rs     # Dynamic YAML generation
+│   ├── app/               # Application layer
+│   │   ├── context.rs     # AppContext (DI container)
+│   │   └── commands/      # Command implementations
+│   │       ├── init.rs
+│   │       └── template.rs
+│   ├── assets/            # Embedded static content
+│   │   ├── scaffold/      # .jules/ scaffold files
+│   │   ├── role_kits/     # Built-in role definitions
+│   │   └── templates/     # Layer YAML templates
+│   └── testing/           # Test-only mock implementations
+│       ├── mock_clipboard.rs
+│       ├── mock_workspace_store.rs
+│       └── mock_role_template_store.rs
 └── tests/
-    ├── common/           # Shared test fixtures
-    ├── cli_commands.rs   # CLI command tests
-    ├── cli_flow.rs       # CLI workflow tests
-    ├── commands_api.rs   # Library API tests
-    └── commands_core.rs  # Error handling tests
+    ├── common/            # Shared test fixtures
+    ├── cli_commands.rs    # CLI command tests
+    ├── cli_flow.rs        # CLI workflow tests
+    ├── commands_api.rs    # Library API tests
+    └── commands_core.rs   # Error handling tests
 ```
