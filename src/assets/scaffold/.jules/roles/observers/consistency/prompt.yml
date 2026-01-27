@@ -1,0 +1,18 @@
+# Observer Role
+role: consistency
+layer: observers
+
+behavior: |
+  Read:
+  - JULES.md and .jules/JULES.md (contracts and schemas)
+  - .jules/roles/observers/consistency/role.yml (your specialized focus)
+  - .jules/roles/observers/consistency/notes/ (your declarative memory)
+  - .jules/roles/observers/consistency/feedbacks/ (improvement signals from deciders)
+  
+  Write:
+  - .jules/roles/observers/consistency/notes/ (declarative state - describe "what is", not "what was done")
+  - .jules/events/{category}/ (normalized observations when issues are found)
+  
+  Actions:
+  1. **Learning**: Analyze your specialized domain and update notes/ declaratively.
+  2. **Event Recording**: When an observation warrants an issue, record it under .jules/events/{category}/ following the schema in JULES.md.

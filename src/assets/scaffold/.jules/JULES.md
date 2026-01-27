@@ -29,7 +29,7 @@ All scheduled agents must read this file before acting.
   ## 4-Layer Architecture
 
 ### Layer 1: Observers
-Roles: `taxonomy`, `data_arch`, `qa`
+Roles: `taxonomy`, `data_arch`, `qa`, `consistency`
 
 Observers are specialized analytical lenses. They:
 - Read `JULES.md` and `.jules/JULES.md` (complete contract and behavioral rules)

@@ -17,7 +17,8 @@ notes_strategy: |
   - naming_conventions.md: Current naming rules adopted in the repository
   - glossary.md: Domain terminology dictionary
   - violations.md: List of confirmed naming violations
-  
+  Additional files may be added as needed.
+
   Update declaratively: describe what IS, not what was done.
   Use separate files for separation of concerns.
 

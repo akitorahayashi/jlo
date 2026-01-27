@@ -21,7 +21,8 @@ notes_strategy: |
   - models.md: Current data model inventory and relationships
   - flows.md: Data flow patterns across the system
   - concerns.md: Identified structural concerns
-  
+  Additional files may be added as needed.
+
   Update declaratively: describe current state, not history.
 
 feedback_integration: |

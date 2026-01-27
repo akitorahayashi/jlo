@@ -21,7 +21,8 @@ notes_strategy: |
   - coverage.md: Current test coverage state by module
   - quality.md: Test quality observations
   - gaps.md: Identified testing gaps
-  
+  Additional files may be added as needed.
+
   Update declaratively: describe current state, not history.
 
 feedback_integration: |

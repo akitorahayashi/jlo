@@ -35,6 +35,11 @@ This workspace implements a **4-layer architecture**:
 │   │   │   ├── role.yml
 │   │   │   ├── notes/
 │   │   │   └── feedbacks/
+│   │   ├── consistency/ # Documentation & implementation alignment
+│   │   │   ├── prompt.yml
+│   │   │   ├── role.yml
+│   │   │   ├── notes/
+│   │   │   └── feedbacks/
 │   │   └── qa/         # Quality assurance specialist
 │   │       ├── prompt.yml
 │   │       ├── role.yml
@@ -164,6 +169,7 @@ Feedback files are preserved for audit (never deleted). This self-improvement lo
 | Observers | taxonomy | Naming conventions, terminology consistency | Stateful (notes, feedbacks) |
 | Observers | data_arch | Data models, data flow efficiency | Stateful (notes, feedbacks) |
 | Observers | qa | Test coverage, test quality | Stateful (notes, feedbacks) |
+| Observers | consistency | Implementation vs Doc alignment | Stateful (notes, feedbacks) |
 | Deciders | triage | Event screening, issue creation, feedback writing | Stateless |
 | Planners | specifier | Issue analysis, task decomposition | Stateless |
 | Implementers | executor | Code implementation, verification | Stateless |
