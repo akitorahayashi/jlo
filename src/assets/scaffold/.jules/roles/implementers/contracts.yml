@@ -3,8 +3,6 @@ layer: implementers
 responsibilities: |
   Implementers execute tasks by writing code, tests, and documentation, then verify the changes.
 
-stateful: false
-
 inputs:
   - .jules/exchange/tasks/*.md (single target task to execute)
 

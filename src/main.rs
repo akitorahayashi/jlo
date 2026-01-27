@@ -1,8 +1,8 @@
 use clap::{Parser, Subcommand};
-use jo::AppError;
+use jlo::AppError;
 
 #[derive(Parser)]
-#[command(name = "jo")]
+#[command(name = "jlo")]
 #[command(version)]
 #[command(
     about = "Deploy and manage .jules/ workspace scaffolding",
@@ -43,10 +43,10 @@ fn main() {
     let cli = Cli::parse();
 
     let result: Result<(), AppError> = match cli.command {
-        Commands::Init => jo::init(),
-        Commands::Assign { role, paths } => jo::assign(&role, &paths).map(|_| ()),
+        Commands::Init => jlo::init(),
+        Commands::Assign { role, paths } => jlo::assign(&role, &paths).map(|_| ()),
         Commands::Template { layer, name } => {
-            jo::template(layer.as_deref(), name.as_deref()).map(|_| ())
+            jlo::template(layer.as_deref(), name.as_deref()).map(|_| ())
         }
     };
 

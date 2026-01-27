@@ -1,4 +1,4 @@
-//! jo: Deploy and manage .jules/ workspace scaffolding for organizational memory.
+//! jlo: Deploy and manage .jules/ workspace scaffolding for organizational memory.
 
 pub mod app;
 pub mod domain;

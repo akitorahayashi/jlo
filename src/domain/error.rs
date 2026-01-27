@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt::{self, Display};
 use std::io;
 
-/// Library-wide error type for jo operations.
+/// Library-wide error type for jlo operations.
 #[derive(Debug)]
 pub enum AppError {
     /// Underlying I/O failure.

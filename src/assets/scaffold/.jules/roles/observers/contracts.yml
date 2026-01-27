@@ -4,8 +4,6 @@ responsibilities: |
   Observers analyze source code and repository state to identify patterns, inconsistencies, and quality issues.
   Each observer has a specialized analytical focus defined in their role.yml.
 
-stateful: true
-
 inputs:
   - Source code and repository files
   - role.yml (specialized focus and learned exclusions)

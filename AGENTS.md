@@ -1,4 +1,4 @@
-# jo Development Overview
+# jlo Development Overview
 
 ## Critical Design Principles
 
@@ -25,7 +25,7 @@
 - Template files in `src/assets/templates/` follow this minimalism
 
 ## Project Summary
-`jo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. It implements a **4-layer agent architecture** where specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events, Planners decompose issues, and Implementers execute tasks.
+`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. It implements a **4-layer agent architecture** where specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events, Planners decompose issues, and Implementers execute tasks.
 
 ## Tech Stack
 - **Language**: Rust
@@ -85,18 +85,18 @@ The codebase uses a **layered architecture** with clear separation of concerns:
 - **Embedded Assets**: Static files are compiled into the binary via `include_dir!`.
 
 ## CLI Commands
-- `jo init` (alias: `i`): Create complete `.jules/` structure with 4-layer architecture and all 6 built-in roles.
-- `jo assign <role> [paths...]` (alias: `a`): Read a role's prompt.yml and copy to clipboard. Optional paths are added to the YAML at execution time.
-- `jo template [-l layer] [-n name]` (alias: `tp`): Create a new custom role from a layer archetype.
+- `jlo init` (alias: `i`): Create complete `.jules/` structure with 4-layer architecture and all 6 built-in roles.
+- `jlo assign <role> [paths...]` (alias: `a`): Read a role's prompt.yml and copy to clipboard. Optional paths are added to the YAML at execution time.
+- `jlo template [-l layer] [-n name]` (alias: `tp`): Create a new custom role from a layer archetype.
 
 ## Workspace Contract (v3)
 
 ### Directory Structure
 ```
 .jules/
-├── README.md           # Workflow documentation (jo-managed)
-├── JULES.md            # Agent contract (jo-managed)
-├── .jo-version         # Version marker (jo-managed)
+├── README.md           # Workflow documentation (jlo-managed)
+├── JULES.md            # Agent contract (jlo-managed)
+├── .jlo-version         # Version marker (jlo-managed)
 │
 ├── roles/              # 4-Layer agent organization
 │   ├── observers/      # Layer 1: Observation (stateful)
