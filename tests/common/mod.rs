@@ -1,4 +1,4 @@
-//! Shared testing utilities for jo CLI tests.
+//! Shared testing utilities for jlo CLI tests.
 
 use assert_cmd::Command;
 use std::env;
@@ -44,14 +44,14 @@ impl TestContext {
         &self.work_dir
     }
 
-    /// Build a command for invoking the compiled `jo` binary within the default workspace.
+    /// Build a command for invoking the compiled `jlo` binary within the default workspace.
     pub fn cli(&self) -> Command {
         self.cli_in(self.work_dir())
     }
 
-    /// Build a command for invoking the compiled `jo` binary within a custom directory.
+    /// Build a command for invoking the compiled `jlo` binary within a custom directory.
     pub fn cli_in<P: AsRef<Path>>(&self, dir: P) -> Command {
-        let mut cmd = Command::cargo_bin("jo").expect("Failed to locate jo binary");
+        let mut cmd = Command::cargo_bin("jlo").expect("Failed to locate jlo binary");
         cmd.current_dir(dir.as_ref()).env("HOME", self.home());
         cmd
     }
@@ -190,9 +190,9 @@ impl TestContext {
         self.assert_role_in_layer_exists("implementers", "executor");
     }
 
-    /// Read the .jo-version file.
+    /// Read the .jlo-version file.
     pub fn read_version(&self) -> Option<String> {
-        let version_path = self.jules_path().join(".jo-version");
+        let version_path = self.jules_path().join(".jlo-version");
         if version_path.exists() {
             Some(
                 fs::read_to_string(version_path)

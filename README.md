@@ -1,6 +1,6 @@
-# jo
+# jlo
 
-`jo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. It implements a **4-layer agent architecture** where specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events, Planners decompose issues, and Implementers execute tasks.
+`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. It implements a **4-layer agent architecture** where specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events, Planners decompose issues, and Implementers execute tasks.
 
 ## Design Philosophy
 
@@ -13,9 +13,9 @@
 
 ```text
 .jules/
-├── README.md           # Workflow documentation (jo-managed)
-├── JULES.md            # Agent contract (jo-managed)
-├── .jo-version         # Version marker (jo-managed)
+├── README.md           # Workflow documentation (jlo-managed)
+├── JULES.md            # Agent contract (jlo-managed)
+├── .jlo-version         # Version marker (jlo-managed)
 │
 ├── roles/              # [4-Layer] Agent organization
 │   ├── observers/      # Layer 1: Observation
@@ -52,37 +52,37 @@
 ```bash
 cargo install --path .
 cd your-project
-jo init
-jo assign taxonomy src/
+jlo init
+jlo assign taxonomy src/
 ```
 
-The `jo init` command creates the complete `.jules/` structure with all 6 built-in roles organized in 4 layers. The `jo assign` command generates a prompt for a role and copies it to your clipboard.
+The `jlo init` command creates the complete `.jules/` structure with all 6 built-in roles organized in 4 layers. The `jlo assign` command generates a prompt for a role and copies it to your clipboard.
 
 ## Commands
 
 | Command | Alias | Description |
 |---------|-------|-------------|
-| `jo init` | `i` | Create `.jules/` structure with 4-layer architecture |
-| `jo assign <role> [paths...]` | `a` | Generate prompt and copy to clipboard |
-| `jo template [-l layer] [-n name]` | `tp` | Create a new role from layer template |
+| `jlo init` | `i` | Create `.jules/` structure with 4-layer architecture |
+| `jlo assign <role> [paths...]` | `a` | Generate prompt and copy to clipboard |
+| `jlo template [-l layer] [-n name]` | `tp` | Create a new role from layer template |
 
 ### Examples
 
 ```bash
 # Initialize workspace
-jo init
+jlo init
 
 # Assign taxonomy role with specific paths
-jo assign taxonomy src/models/ src/controllers/
+jlo assign taxonomy src/models/ src/controllers/
 
 # Assign using fuzzy matching
-jo assign tax src/
+jlo assign tax src/
 
 # Create a new custom observer role
-jo template -l observers -n security
+jlo template -l observers -n security
 
 # Create a new implementer role
-jo template --layer implementers --name frontend
+jlo template --layer implementers --name frontend
 ```
 
 ## Workflow
@@ -118,8 +118,8 @@ jo template --layer implementers --name frontend
 
 ### CLI Workflow
 
-1. **Initialize**: Run `jo init` to create `.jules/` with 4-layer structure
-2. **Assign Role**: Run `jo assign <role>` to generate prompt and copy to clipboard
+1. **Initialize**: Run `jlo init` to create `.jules/` with 4-layer structure
+2. **Assign Role**: Run `jlo assign <role>` to generate prompt and copy to clipboard
 3. **Schedule**: Paste prompt into scheduler
 4. **Monitor**: Review `exchange/events/`, `exchange/issues/`, and `exchange/tasks/` for agent activity
 
@@ -157,7 +157,7 @@ jo template --layer implementers --name frontend
 ## Project Structure
 
 ```
-jo/
+jlo/
 ├── src/
 │   ├── main.rs            # CLI parsing (clap)
 │   ├── lib.rs             # Public API

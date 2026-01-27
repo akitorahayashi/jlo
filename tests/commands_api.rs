@@ -9,7 +9,7 @@ fn init_creates_workspace_via_library_api() {
     let ctx = TestContext::new();
 
     ctx.with_work_dir(|| {
-        jo::init().expect("init should succeed");
+        jlo::init().expect("init should succeed");
     });
 
     ctx.assert_jules_exists();
@@ -22,9 +22,9 @@ fn template_creates_role_via_library_api() {
     let ctx = TestContext::new();
 
     ctx.with_work_dir(|| {
-        jo::init().expect("init should succeed");
+        jlo::init().expect("init should succeed");
         let path =
-            jo::template(Some("observers"), Some("my-role")).expect("template should succeed");
+            jlo::template(Some("observers"), Some("my-role")).expect("template should succeed");
         assert_eq!(path, "observers/my-role");
     });
 

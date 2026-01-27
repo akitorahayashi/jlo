@@ -2,4 +2,4 @@
 pub const JULES_DIR: &str = ".jules";
 
 /// The version marker file.
-pub const VERSION_FILE: &str = ".jo-version";
+pub const VERSION_FILE: &str = ".jlo-version";
