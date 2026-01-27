@@ -18,8 +18,8 @@ fn init_creates_jules_directory() {
     ctx.assert_jules_exists();
     assert!(ctx.read_version().is_some());
     ctx.assert_all_builtin_roles_exist();
-    ctx.assert_global_reports_exists();
-    ctx.assert_issues_structure_exists();
+    ctx.assert_events_structure_exists();
+    ctx.assert_issues_directory_exists();
 }
 
 #[test]
@@ -30,16 +30,6 @@ fn init_fails_if_jules_exists() {
     ctx.cli().arg("init").assert().success();
 
     ctx.cli().arg("init").assert().failure().stderr(predicate::str::contains("already exists"));
-}
-
-#[test]
-#[serial]
-fn init_force_overwrites_existing() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("init").assert().success();
-
-    ctx.cli().args(["init", "--force"]).assert().success();
 }
 
 #[test]
@@ -81,7 +71,7 @@ fn update_fails_without_workspace() {
 
 #[test]
 #[serial]
-fn role_outputs_role_config() {
+fn role_outputs_prompt() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
@@ -93,7 +83,7 @@ fn role_outputs_role_config() {
         .success()
         .stdout(predicate::str::contains("role: taxonomy"));
 
-    ctx.assert_role_exists("taxonomy");
+    ctx.assert_worker_role_exists("taxonomy");
 }
 
 #[test]

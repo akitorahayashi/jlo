@@ -1,7 +1,7 @@
 # jo Development Overview
 
 ## Project Summary
-`jo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. It implements a **PM/Worker agent organization layer** where specialized worker agents maintain persistent memory (`notes/`), propose improvements (`reports/`), and a PM agent screens and converts proposals into actionable issues (`issues/`).
+`jo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. It implements a **Worker/Triage agent organization layer** where specialized worker agents maintain persistent memory (`notes/`), record observations as normalized events (`events/`), and a triage agent screens and converts events into actionable issues (`issues/`).
 
 ## Tech Stack
 - **Language**: Rust
@@ -45,38 +45,40 @@
 
 ## CLI Commands
 - `jo init` (alias: `i`): Create complete `.jules/` structure with all 4 built-in roles.
-- `jo update` (alias: `u`): Update jo-managed files (README, .jo-version).
-- `jo role` (alias: `r`): Show interactive menu with roles, print selected role's `role.yml` to stdout.
+- `jo update` (alias: `u`): Update jo-managed files (README, AGENTS, prompt.yml, version).
+- `jo role` (alias: `r`): Show interactive menu with roles, print selected role's `prompt.yml` to stdout.
 
-## Workspace Contract (v1)
+## Workspace Contract (v2)
 
 ### Directory Structure
 ```
 .jules/
 ├── README.md           # Workflow documentation (jo-managed)
+├── AGENTS.md           # Agent contract (jo-managed)
 ├── .jo-version         # Version marker (jo-managed)
 │
 ├── roles/              # Agent workspaces
 │   ├── <role>/         # Worker role
+│   │   ├── prompt.yml  # Scheduler prompt (jo-managed)
 │   │   ├── role.yml    # Role definition (user-owned)
 │   │   └── notes/      # Persistent memory (user-owned)
-│   └── pm/             # PM role (special)
-│       ├── role.yml    # PM definition (user-owned)
-│       └── policy.md   # Decision criteria (user-owned)
+│   └── triage/         # Triage role (special)
+│       ├── prompt.yml  # Scheduler prompt (jo-managed)
+│       └── role.yml    # Triage definition (user-owned)
 │
-├── reports/            # Proposals from Workers (user-owned)
-│   └── YYYY-MM-DD_<role>_<title>.md
+├── events/             # Normalized observations (user-owned)
+│   ├── bugs/
+│   ├── refacts/
+│   ├── updates/
+│   ├── tests/
+│   └── docs/
 │
-└── issues/             # Approved tasks from PM (user-owned)
-    ├── bugs/           # Bug fixes
-    ├── refacts/        # Refactoring
-    ├── updates/        # New features
-    ├── tests/          # Test-only changes
-    └── docs/           # Documentation-only changes
+└── issues/             # Actionable tasks (user-owned, flat)
+    └── *.md
 ```
 
 ### File Ownership
-- **jo-managed**: `README.md`, `.jo-version` (overwritten by `jo update`)
+- **jo-managed**: `README.md`, `AGENTS.md`, `.jo-version`, `roles/*/prompt.yml` (overwritten by `jo update`)
 - **user-owned**: Everything else (never modified by jo)
 
 ## Built-in Roles
@@ -86,13 +88,13 @@
 | `taxonomy` | Worker | Naming conventions, terminology consistency |
 | `data_arch` | Worker | Data models, data flow efficiency |
 | `qa` | Worker | Test coverage, test quality |
-| `pm` | Manager | Proposal review, issue creation |
+| `triage` | Manager | Event screening, issue creation |
 
 ### Worker Behavior
-Workers read source code and their `notes/` directory, update notes with current understanding (declarative state), and create proposals in `reports/` when improvements are found. Workers do NOT write to `issues/`.
+Workers read source code and their `.jules/roles/<role>/notes/` directory, update notes with current understanding (declarative state), and create normalized events in `.jules/events/<category>/` when issue-worthy observations are found. Workers do NOT write to `.jules/issues/`.
 
-### PM Behavior
-PM reads proposals from `reports/`, screens against `policy.md` criteria, and converts approved proposals to `issues/<category>/*.md`. Only PM writes to `issues/`.
+### Triage Behavior
+Triage reads events from `.jules/events/**/*.yml`, screens them critically, and converts approved items into `.jules/issues/*.md` (flat). Only triage writes to `.jules/issues/`.
 
 ## Role Configuration Schema
 Each role has a `role.yml` file defining:
@@ -100,12 +102,12 @@ Each role has a `role.yml` file defining:
 - `type`: `worker` or `manager`
 - `goal`: Purpose description
 - `memory`: Notes directory configuration (workers only)
-- `reporting`: How to create proposals
+- `events`: How to create normalized observations
 - `behavior`: Read/write patterns and constraints
 
 ## Language Policy
-- **Scaffold Content**: English (README.md)
-- **File/Directory Names**: English (`roles/`, `reports/`, `issues/`, `notes/`, `role.yml`)
-- **Role Content**: Japanese (role.yml, notes, reports, issues)
+- **Scaffold Content**: English (README.md, AGENTS.md)
+- **File/Directory Names**: English (`roles/`, `events/`, `issues/`, `notes/`, `role.yml`, `prompt.yml`)
+- **Role Content**: Japanese (role.yml, prompt.yml, notes, events, issues)
 - **CLI Messages**: English (stdout/stderr)
 - **Code Comments**: English

@@ -9,9 +9,8 @@ use commands::{init, role, update};
 use error::AppError;
 
 /// Initialize a new `.jules/` workspace in the current directory.
-pub fn init(force: bool) -> Result<(), AppError> {
-    let options = init::InitOptions { force };
-    init::execute(&options)?;
+pub fn init() -> Result<(), AppError> {
+    init::execute()?;
     println!("✅ Initialized .jules/ workspace");
     Ok(())
 }

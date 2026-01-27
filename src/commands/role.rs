@@ -88,12 +88,17 @@ pub fn execute() -> Result<String, AppError> {
         let builtin = scaffold::role_definition(role_id).ok_or_else(|| {
             AppError::config_error(format!("Built-in role '{}' not found", role_id))
         })?;
-        workspace.scaffold_role(role_id, builtin.role_yaml, builtin.policy)?;
+        workspace.scaffold_role(
+            role_id,
+            builtin.role_yaml,
+            Some(builtin.prompt_yaml),
+            builtin.has_notes,
+        )?;
     }
 
-    // Print the role config as-is for copy/paste into the scheduler.
-    let config = workspace.read_role_config(role_id)?;
-    println!("{}", config);
+    // Print the scheduler prompt as-is for copy/paste into the scheduler.
+    let prompt = workspace.read_role_prompt(role_id)?;
+    println!("{}", prompt);
 
     Ok(role_id.clone())
 }
@@ -133,9 +138,9 @@ mod tests {
     #[serial]
     fn role_discovers_existing() {
         with_temp_cwd(|_dir| {
-            init::execute(&init::InitOptions::default()).unwrap();
+            init::execute().unwrap();
             let workspace = Workspace::current().unwrap();
-            workspace.scaffold_role("custom-role", "Custom config content", None).unwrap();
+            workspace.scaffold_role("custom-role", "Custom config content", None, true).unwrap();
 
             let roles = workspace.discover_roles().unwrap();
             assert!(roles.contains(&"custom-role".to_string()));
@@ -146,12 +151,14 @@ mod tests {
     #[serial]
     fn role_config_composition_works() {
         with_temp_cwd(|_dir| {
-            init::execute(&init::InitOptions::default()).unwrap();
+            init::execute().unwrap();
             let workspace = Workspace::current().unwrap();
-            workspace.scaffold_role("test-role", "Test config fragment", None).unwrap();
+            workspace
+                .scaffold_role("test-role", "Test config fragment", Some("prompt"), true)
+                .unwrap();
 
-            let config = workspace.read_role_config("test-role").unwrap();
-            assert!(config.contains("Test config fragment"));
+            let prompt = workspace.read_role_prompt("test-role").unwrap();
+            assert!(prompt.contains("prompt"));
         });
     }
 }

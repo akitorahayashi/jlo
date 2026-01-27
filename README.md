@@ -1,44 +1,48 @@
 # jo
 
-`jo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. It implements a **PM/Worker agent organization layer** where specialized worker agents maintain persistent memory, propose improvements, and a PM agent screens and converts proposals into actionable issues.
+`jo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. It implements a **Worker/Triage agent organization layer** where specialized worker agents maintain persistent memory, record observations as events, and a triage agent screens and converts events into actionable issues.
 
 ## Design Philosophy
 
-- **Distributed Agent Organization**: Worker agents analyze code from specialized perspectives; PM agent gates issue creation
+- **Distributed Agent Organization**: Worker agents analyze code from specialized perspectives; triage agent gates issue creation
 - **Declarative Memory**: Agents record "what is" (not "what was done") in persistent `notes/` directories
-- **Centralized Decision Making**: All proposals flow through PM for quality control before becoming issues
-- **Structured Output**: Clear categorization of issues (bugs, refacts, updates, tests, docs)
+- **Centralized Decision Making**: All events flow through triage for quality control before becoming issues
+- **Structured Output**: Normalized events and flat, frontmatter-based issues
 
 ## `.jules/` Structure
 
 ```text
 .jules/
 ├── README.md           # Workflow documentation (jo-managed)
+├── AGENTS.md           # Agent contract (jo-managed)
 ├── .jo-version         # Version marker (jo-managed)
 │
 ├── roles/              # [Worker Layer] Agent workspaces
 │   ├── taxonomy/       # Naming consistency specialist
+│   │   ├── prompt.yml  # Scheduler prompt template (jo-managed)
 │   │   ├── role.yml    # Role definition and behavior
 │   │   └── notes/      # Persistent declarative memory
 │   ├── data_arch/      # Data model specialist
+│   │   ├── prompt.yml
 │   │   ├── role.yml
 │   │   └── notes/
 │   ├── qa/             # Quality assurance specialist
+│   │   ├── prompt.yml
 │   │   ├── role.yml
 │   │   └── notes/
-│   └── pm/             # [Manager] Project Manager
-│       ├── role.yml
-│       └── policy.md   # Decision criteria
+│   └── triage/         # [Manager] Triage gatekeeper
+│       ├── prompt.yml
+│       └── role.yml
 │
-├── reports/            # [Inbox] Proposals from Workers
-│   └── YYYY-MM-DD_<role>_<title>.md
+├── events/             # [Inbox] Normalized observations
+│   ├── bugs/
+│   ├── refacts/
+│   ├── updates/
+│   ├── tests/
+│   └── docs/
 │
-└── issues/             # [Outbox] Approved actionable tasks
-    ├── bugs/           # Bug fixes (+tests, +docs)
-    ├── refacts/        # Refactoring (+tests, +docs)
-    ├── updates/        # New features (+tests, +docs)
-    ├── tests/          # Test-only changes
-    └── docs/           # Documentation-only changes
+└── issues/             # [Outbox] Approved actionable tasks (flat)
+    └── *.md
 ```
 
 ## Quick Start
@@ -50,15 +54,15 @@ jo init
 jo role
 ```
 
-The `jo init` command creates the complete `.jules/` structure with all 4 built-in roles. The `jo role` command shows an interactive menu to select a role and prints the role configuration.
+The `jo init` command creates the complete `.jules/` structure with all 4 built-in roles. The `jo role` command shows an interactive menu to select a role and prints the scheduler prompt.
 
 ## Commands
 
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jo init` | `i` | Create `.jules/` structure with all built-in roles |
-| `jo update` | `u` | Update jo-managed files (README, version) |
-| `jo role` | `r` | Interactive role selection and config output |
+| `jo update` | `u` | Update jo-managed files (README, AGENTS, prompt.yml, version) |
+| `jo role` | `r` | Interactive role selection and scheduler prompt output |
 
 ## Workflow
 
@@ -67,12 +71,13 @@ The `jo init` command creates the complete `.jules/` structure with all 4 built-
 1. **Worker Agents** (scheduled):
    - Read source code and their `notes/` directory
    - Update `notes/` with current understanding (declarative state)
-   - Create proposals in `reports/` when improvements are found
+   - Record observations as normalized `events/*.yml` when issue-worthy
 
-2. **PM Agent** (scheduled):
-   - Read proposals from `reports/`
-   - Screen against `policy.md` criteria
-   - Convert approved proposals to `issues/<category>/*.md`
+2. **Triage Agent** (scheduled):
+   - Read events from `events/`
+   - Screen critically and merge related observations
+   - Convert approved items to flat `issues/*.md` with frontmatter
+   - Delete processed events
 
 3. **Human Execution**:
    - Review issues in `issues/`
@@ -82,9 +87,9 @@ The `jo init` command creates the complete `.jules/` structure with all 4 built-
 ### CLI Workflow
 
 1. **Initialize**: Run `jo init` to create `.jules/` with all roles
-2. **Select Role**: Run `jo role` to get role configuration
-3. **Schedule**: Paste `role.yml` content into scheduler
-4. **Monitor**: Review `reports/` and `issues/` for agent activity
+2. **Select Role**: Run `jo role` to get scheduler prompt
+3. **Schedule**: Paste `prompt.yml` content into scheduler
+4. **Monitor**: Review `events/` and `issues/` for agent activity
 
 ## Built-in Roles
 
@@ -93,7 +98,7 @@ The `jo init` command creates the complete `.jules/` structure with all 4 built-
 | `taxonomy` | Worker | Naming conventions, terminology consistency |
 | `data_arch` | Worker | Data models, data flow efficiency |
 | `qa` | Worker | Test coverage, test quality |
-| `pm` | Manager | Proposal review, issue creation |
+| `triage` | Manager | Event screening, issue creation |
 
 ## Version Management
 
@@ -102,16 +107,18 @@ The `.jules/.jo-version` file tracks which version of `jo` last managed the work
 ## Language Policy
 
 - **File/Directory Names**: English only
-- **File Contents**: Japanese (role.yml, notes, reports, issues)
+- **File Contents**: Japanese (role.yml, prompt.yml, notes, events, issues)
 - **CLI Output**: English
 
 ## Managed Files
 
 `jo update` only touches:
 - `.jules/README.md`
+- `.jules/AGENTS.md`
+- `.jules/roles/*/prompt.yml`
 - `.jules/.jo-version`
 
-All other files (roles, notes, reports, issues) are user-owned.
+All other files (roles, notes, events, issues) are user-owned.
 
 ## Development Commands
 
@@ -141,7 +148,7 @@ jo/
 │   │   ├── taxonomy/
 │   │   ├── data_arch/
 │   │   ├── qa/
-│   │   └── pm/
+│   │   └── triage/
 │   ├── error.rs          # AppError definitions
 │   ├── workspace.rs      # Workspace filesystem operations
 │   └── commands/         # Command implementations

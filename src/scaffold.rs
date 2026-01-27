@@ -18,8 +18,8 @@ pub struct ScaffoldFile {
 pub struct RoleDefinition {
     pub id: &'static str,
     pub role_yaml: &'static str,
-    /// Optional policy file (only for PM role).
-    pub policy: Option<&'static str>,
+    pub prompt_yaml: &'static str,
+    pub has_notes: bool,
 }
 
 /// Returns all scaffold files (relative to `src/scaffold/`).
@@ -33,7 +33,18 @@ pub fn scaffold_files() -> Vec<ScaffoldFile> {
 
 /// Returns scaffold files that `jo update` may overwrite.
 pub fn update_managed_files() -> Vec<ScaffoldFile> {
-    scaffold_files().into_iter().filter(|file| is_update_managed_path(&file.path)).collect()
+    let mut files: Vec<ScaffoldFile> =
+        scaffold_files().into_iter().filter(|file| is_update_managed_path(&file.path)).collect();
+
+    for role in role_definitions() {
+        files.push(ScaffoldFile {
+            path: format!(".jules/roles/{}/prompt.yml", role.id),
+            content: role.prompt_yaml,
+        });
+    }
+
+    files.sort_by(|a, b| a.path.cmp(&b.path));
+    files
 }
 
 /// Returns all built-in role definitions.
@@ -50,24 +61,32 @@ static ROLE_DEFINITIONS: [RoleDefinition; 4] = [
     RoleDefinition {
         id: "taxonomy",
         role_yaml: include_str!("role_kits/taxonomy/role.yml"),
-        policy: None,
+        prompt_yaml: include_str!("role_kits/taxonomy/prompt.yml"),
+        has_notes: true,
     },
     RoleDefinition {
         id: "data_arch",
         role_yaml: include_str!("role_kits/data_arch/role.yml"),
-        policy: None,
+        prompt_yaml: include_str!("role_kits/data_arch/prompt.yml"),
+        has_notes: true,
     },
-    RoleDefinition { id: "qa", role_yaml: include_str!("role_kits/qa/role.yml"), policy: None },
     RoleDefinition {
-        id: "pm",
-        role_yaml: include_str!("role_kits/pm/role.yml"),
-        policy: Some(include_str!("role_kits/pm/policy.md")),
+        id: "qa",
+        role_yaml: include_str!("role_kits/qa/role.yml"),
+        prompt_yaml: include_str!("role_kits/qa/prompt.yml"),
+        has_notes: true,
+    },
+    RoleDefinition {
+        id: "triage",
+        role_yaml: include_str!("role_kits/triage/role.yml"),
+        prompt_yaml: include_str!("role_kits/triage/prompt.yml"),
+        has_notes: false,
     },
 ];
 
 /// Check if a path is managed by `jo update`.
 pub fn is_update_managed_path(path: &str) -> bool {
-    matches!(path, ".jules/README.md" | ".jules/.jo-version")
+    matches!(path, ".jules/README.md" | ".jules/AGENTS.md")
 }
 
 fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
@@ -97,32 +116,35 @@ mod tests {
     }
 
     #[test]
-    fn scaffold_includes_reports_gitkeep() {
+    fn scaffold_includes_agents_contract() {
         let files = scaffold_files();
-        assert!(files.iter().any(|f| f.path == ".jules/reports/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/AGENTS.md"));
     }
 
     #[test]
     fn scaffold_includes_issues_structure() {
         let files = scaffold_files();
-        assert!(files.iter().any(|f| f.path == ".jules/issues/bugs/.gitkeep"));
-        assert!(files.iter().any(|f| f.path == ".jules/issues/refacts/.gitkeep"));
-        assert!(files.iter().any(|f| f.path == ".jules/issues/updates/.gitkeep"));
-        assert!(files.iter().any(|f| f.path == ".jules/issues/tests/.gitkeep"));
-        assert!(files.iter().any(|f| f.path == ".jules/issues/docs/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/issues/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/events/bugs/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/events/docs/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/events/refacts/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/events/tests/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/events/updates/.gitkeep"));
     }
 
     #[test]
     fn update_managed_files_include_readme() {
         let files = update_managed_files();
         assert!(files.iter().any(|file| file.path == ".jules/README.md"));
+        assert!(files.iter().any(|file| file.path == ".jules/AGENTS.md"));
+        assert!(files.iter().any(|file| file.path == ".jules/roles/taxonomy/prompt.yml"));
     }
 
     #[test]
     fn role_definitions_includes_all_four_roles() {
         use std::collections::HashSet;
         let expected_ids: HashSet<&str> =
-            ["taxonomy", "data_arch", "qa", "pm"].iter().cloned().collect();
+            ["taxonomy", "data_arch", "qa", "triage"].iter().cloned().collect();
         let actual_ids: HashSet<&str> = role_definitions().iter().map(|r| r.id).collect();
         assert_eq!(actual_ids, expected_ids);
     }
@@ -131,14 +153,13 @@ mod tests {
     fn taxonomy_role_yaml_is_loaded() {
         let taxonomy = role_definition("taxonomy").expect("taxonomy should exist");
         assert!(!taxonomy.role_yaml.is_empty());
-        assert!(taxonomy.policy.is_none());
+        assert!(!taxonomy.prompt_yaml.is_empty());
     }
 
     #[test]
-    fn pm_role_has_policy() {
-        let pm = role_definition("pm").expect("pm should exist");
-        assert!(!pm.role_yaml.is_empty());
-        assert!(pm.policy.is_some());
-        assert!(!pm.policy.unwrap().is_empty());
+    fn triage_role_has_prompt() {
+        let triage = role_definition("triage").expect("triage should exist");
+        assert!(!triage.role_yaml.is_empty());
+        assert!(!triage.prompt_yaml.is_empty());
     }
 }

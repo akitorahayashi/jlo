@@ -1,44 +1,51 @@
 # .jules/
 
-The `.jules/` directory maintains organizational memory for this repository, enabling a PM/Worker agent workflow.
+The `.jules/` directory is a structured workspace for scheduled agents and human execution.
+It captures **observations as events** and **actionable work as issues**.
+
+This file is human-oriented. Agents must also read `.jules/AGENTS.md` for the formal contract.
 
 ## Overview
 
-This workspace implements a **distributed agent organization** where:
-- **Worker Agents** analyze code from specialized perspectives and maintain persistent notes
-- **PM Agent** reviews proposals and creates actionable issues
-- **Humans** execute approved issues
+This workspace implements a **worker + triage** workflow:
+- **Worker agents** record issue-worthy observations as normalized events
+- **Triage agent** critically reviews events, produces issues, and deletes processed events
+- **Humans** execute issues
 
 ## Directory Structure
 
 ```
 .jules/
 ├── README.md           # This file (jo-managed)
+├── AGENTS.md           # Agent contract (jo-managed)
 ├── .jo-version         # Version marker (jo-managed)
 │
-├── roles/              # [Worker Layer] Agent workspaces
-│   ├── taxonomy/       # Naming consistency specialist
-│   │   ├── role.yml    # Role definition and behavior
-│   │   └── notes/      # Persistent declarative memory
-│   ├── data_arch/      # Data model specialist
+├── roles/              # [Agent Layer] Deployed roles
+│   ├── taxonomy/
+│   │   ├── prompt.yml  # Scheduler prompt template (jo-managed)
+│   │   ├── role.yml    # Role definition (agent-owned)
+│   │   └── notes/      # Declarative memory (agent-owned)
+│   ├── data_arch/
+│   │   ├── prompt.yml
 │   │   ├── role.yml
 │   │   └── notes/
-│   ├── qa/             # Quality assurance specialist
+│   ├── qa/
+│   │   ├── prompt.yml
 │   │   ├── role.yml
 │   │   └── notes/
-│   └── pm/             # Project Manager (gatekeeper)
-│       ├── role.yml
-│       └── policy.md   # Decision criteria
+│   └── triage/
+│       ├── prompt.yml
+│       └── role.yml
 │
-├── reports/            # [Inbox] Proposals from Workers
-│   └── YYYY-MM-DD_<role>_<title>.md
+├── events/             # [Inbox] Normalized observations (YAML)
+│   ├── bugs/
+│   ├── docs/
+│   ├── refacts/
+│   ├── tests/
+│   └── updates/
 │
-└── issues/             # [Outbox] Approved actionable tasks
-    ├── bugs/           # Bug fixes (+tests, +docs)
-    ├── refacts/        # Refactoring (+tests, +docs)
-    ├── updates/        # New features (+tests, +docs)
-    ├── tests/          # Test-only changes
-    └── docs/           # Documentation-only changes
+└── issues/             # [Outbox] Actionable tasks (Markdown, flat)
+    └── *.md
 ```
 
 ## Workflow
@@ -46,21 +53,22 @@ This workspace implements a **distributed agent organization** where:
 ### 1. Worker Agents (Scheduled)
 
 Each worker agent:
-1. Reads source code and their `notes/` directory
+1. Reads `AGENTS.md` and `.jules/AGENTS.md`
 2. Updates `notes/` with current understanding (declarative state)
-3. Creates proposals in `reports/` when improvements are identified
+3. Writes normalized `events/**/*.yml` when observations are issue-worthy
 
-**Workers do NOT write to `issues/`.**
+Workers do **not** write `issues/`.
 
-### 2. PM Agent (Scheduled)
+### 2. Triage Agent (Scheduled)
 
-The PM agent:
-1. Reads all proposals from `reports/`
-2. Reviews against `policy.md` criteria
-3. Screens out inappropriate proposals
-4. Converts approved proposals to `issues/<category>/*.md`
+The triage agent:
+1. Reads all `events/**/*.yml` and existing `issues/*.md`
+2. Critically validates and merges related observations
+3. Creates actionable issues (Markdown with YAML frontmatter)
+4. Deletes processed events (accepted or rejected)
+5. Updates worker `role.yml` to reduce recurring noise
 
-**Only the PM writes to `issues/`.**
+Only triage writes `issues/`.
 
 ### 3. Human Execution
 
@@ -68,7 +76,7 @@ Humans:
 1. Review issues in `issues/`
 2. Select issues to implement
 3. Execute or delegate to coding agents
-4. Archive completed issues
+4. Close issues when complete
 
 ## Agent Roles
 
@@ -77,29 +85,14 @@ Humans:
 | taxonomy | Worker | Naming conventions, terminology consistency |
 | data_arch | Worker | Data models, data flow efficiency |
 | qa | Worker | Test coverage, test quality |
-| pm | Manager | Proposal review, issue creation |
-
-## Memory Model
-
-Workers maintain **declarative memory** in `notes/`:
-- Describe "what is" not "what was done"
-- Update state on each run
-- Enable context continuity across executions
-
-## Issue Categories
-
-| Category | Description |
-|----------|-------------|
-| bugs | Bug fixes (includes related tests/docs) |
-| refacts | Refactoring without feature changes |
-| updates | New features or library updates |
-| tests | Test-only changes |
-| docs | Documentation-only changes |
+| triage | Manager | Event screening, issue creation, role feedback |
 
 ## Managed Files
 
 `jo update` manages only:
 - `.jules/README.md`
+- `.jules/AGENTS.md`
 - `.jules/.jo-version`
+- `.jules/roles/*/prompt.yml`
 
-All other files are user-owned and never modified by jo.
+All other files are agent-owned and never modified by jo.

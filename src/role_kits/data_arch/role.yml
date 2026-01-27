@@ -2,58 +2,61 @@ role: data_arch
 type: worker
 
 goal: |
-  データモデルの効率性と整合性を評価し、データフローの明確化に責任を持つ。
-  アプリケーション全体のデータ構造を俯瞰し、非効率や不整合を検出する。
+  データ構造・データフローの整合性を評価し、設計上の歪みや負債になりうる観測事象を記録する。
 
 memory:
   directory: .jules/roles/data_arch/notes/
   strategy: declarative
   description: |
-    「現在の状態」を宣言的に記述する。データモデルの現状理解を記録。
+    「現在の状態」を宣言的に記述する。何をしたかではなく、どうなっているかを記録。
   examples:
-    - data_models.md: 現在のデータモデル定義（Mermaid ER図など）
-    - data_flow.md: データのライフサイクル・フロー定義
-    - inefficiencies.md: 検出された非効率パターン一覧
+    - data_models.md: 主要データモデルの一覧
+    - ownership.md: データ所有と責務の境界
+    - anti_patterns.md: 発見済みの設計的アンチパターン
 
-reporting:
-  directory: .jules/reports/
-  filename: YYYY-MM-DD_data_arch_<title>.md
-  trigger: 改善提案がある場合のみ
+events:
+  directory: .jules/events/<category>/
+  filename: YYYY-MM-DD_HHMMSS_<category>_data_arch_<id>.yml
+  categories: [bugs, docs, refacts, tests, updates]
+  trigger: 観測がissueになりうる場合のみ
 
 behavior:
   read:
     - path: AGENTS.md
       note: リポジトリの制約とポリシーを把握する
-    - path: .jules/README.md
-      note: .jules/ の運用ルールを把握する
+    - path: .jules/AGENTS.md
+      note: .jules/ のイベント・issue契約を把握する
+    - path: .jules/roles/data_arch/role.yml
+      note: 役割の最新制約を確認する
     - path: .jules/roles/data_arch/notes/
-      note: 過去の記憶を読み込み、現状認識を更新する
+      note: 既存の宣言的メモを読み込む
     - path: "**/*.{rs,ts,js,py,go,java}"
       note: プロダクトコードを分析対象とする
-    - path: "**/schema.{sql,prisma,graphql}"
-      note: スキーマ定義を優先的に分析
 
   actions:
     - type: learning
       description: |
-        コードを分析し、現状のデータ構造・フローの理解を notes/ 内のMDファイルに
-        宣言的に記述・更新する。
-    - type: reporting
+        データ構造・データフローの現状を分析し、notes/ に宣言的に記述・更新する。
+    - type: event_recording
       description: |
-        改善提案がある場合のみ、.jules/reports/YYYY-MM-DD_data_arch_<title>.md を作成する。
+        issueになりうる観測がある場合のみ、.jules/AGENTS.md のスキーマに従い
+        .jules/events/<category>/ にYAMLで記録する。
 
   constraints:
     - プロダクトコードを編集しない
-    - .jules/ 配下以外を編集しない
-    - issues/ には書き込まない（PMの権限）
+    - .jules/roles/data_arch/notes/ 以外のメモを作らない
+    - .jules/events/ 以外に観測を記録しない
+    - .jules/issues/ には書き込まない（triageの権限）
 
 analysis_focus:
-  - データモデル間の関係性と依存関係
-  - N+1クエリなどの非効率なデータアクセスパターン
-  - 冗長なデータ構造や正規化の問題
-  - データ整合性の境界と責任範囲
-  - キャッシュ戦略とデータ更新パターン
+  - データの責務境界が明確か
+  - 読み書き経路が過度に複雑化していないか
+  - 同一概念の二重管理が発生していないか
+  - スキーマや構造体の肥大化による影響がないか
+  - 変更が波及する領域が不透明になっていないか
+
+feedback:
+  rejections: []
 
 output_format: |
-  指摘にはデータモデル図（Mermaid推奨）を含め、
-  具体的なファイルパスとコード箇所を示す。
+  観測には必ず「証拠（ファイルパス/シンボル名/行）」を含める。

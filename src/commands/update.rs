@@ -1,4 +1,4 @@
-//! Update command: update jo-managed docs/templates and structural scaffolding.
+//! Update command: update jo-managed docs/templates and role prompts.
 
 use crate::error::AppError;
 use crate::workspace::Workspace;
@@ -77,7 +77,7 @@ mod tests {
     #[serial]
     fn update_succeeds_on_clean_workspace() {
         with_temp_cwd(|_dir| {
-            init::execute(&init::InitOptions::default()).unwrap();
+            init::execute().unwrap();
 
             let result = execute().expect("update should succeed");
             assert_eq!(result.new_version, env!("CARGO_PKG_VERSION"));
@@ -89,7 +89,7 @@ mod tests {
     #[serial]
     fn update_succeeds_with_modifications() {
         with_temp_cwd(|_dir| {
-            init::execute(&init::InitOptions::default()).unwrap();
+            init::execute().unwrap();
 
             // Modify a jo-managed file
             let cwd = env::current_dir().unwrap();

@@ -15,14 +15,10 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Create .jules/ minimal structure
+    /// Create .jules/ workspace structure
     #[clap(visible_alias = "i")]
-    Init {
-        /// Force initialization even if workspace exists
-        #[clap(short, long)]
-        force: bool,
-    },
-    /// Update jo-managed files (README, version)
+    Init,
+    /// Update jo-managed files (README, AGENTS, prompt.yml, version)
     #[clap(visible_alias = "u")]
     Update,
     /// Interactive role selection and scheduler prompt generation
@@ -34,7 +30,7 @@ fn main() {
     let cli = Cli::parse();
 
     let result: Result<(), AppError> = match cli.command {
-        Commands::Init { force } => jo::init(force),
+        Commands::Init => jo::init(),
         Commands::Update => jo::update(),
         Commands::Role => jo::role_interactive().map(|_| ()),
     };

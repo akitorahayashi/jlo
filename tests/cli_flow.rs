@@ -65,13 +65,9 @@ fn init_creates_complete_v1_structure() {
 
     ctx.cli().arg("init").assert().success();
 
-    // Verify v1 structure
+    // Verify v2 structure
     ctx.assert_jules_exists();
-    ctx.assert_global_reports_exists();
-    ctx.assert_issues_structure_exists();
+    ctx.assert_events_structure_exists();
+    ctx.assert_issues_directory_exists();
     ctx.assert_all_builtin_roles_exist();
-
-    // Verify PM has policy.md
-    let pm_policy = ctx.jules_path().join("roles/pm/policy.md");
-    assert!(pm_policy.exists(), "PM should have policy.md");
 }
