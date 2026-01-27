@@ -9,26 +9,10 @@ pub struct ScaffoldFile {
     pub content: String,
 }
 
-/// Definition of a built-in role with its content.
-#[derive(Debug, Clone)]
-pub struct RoleDefinition {
-    pub id: &'static str,
-    pub layer: Layer,
-    pub role_yaml: &'static str,
-    pub prompt_yaml: &'static str,
-    pub has_notes: bool,
-}
-
 /// Port for accessing role templates and scaffold content.
 pub trait RoleTemplateStore {
     /// Get all scaffold files (for workspace initialization).
     fn scaffold_files(&self) -> Vec<ScaffoldFile>;
-
-    /// Get all built-in role definitions.
-    fn role_definitions(&self) -> &[RoleDefinition];
-
-    /// Look up a built-in role definition by id.
-    fn role_definition(&self, role_id: &str) -> Option<&RoleDefinition>;
 
     /// Get the template for a specific layer.
     fn layer_template(&self, layer: Layer) -> &str;

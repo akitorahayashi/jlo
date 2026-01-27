@@ -1,0 +1,49 @@
+# Implementer Layer Archetype
+# Roles: executor
+
+layer: implementers
+type: implementer
+
+description: |
+  Implementers read tasks and execute them by writing code, tests,
+  and documentation. They verify their work and delete completed tasks.
+
+behavior:
+  read:
+    - JULES.md
+    - .jules/JULES.md
+    - .jules/roles/{layer}/{role}/role.yml
+    - .jules/tasks/*.md
+    - "**/*"
+
+  write:
+    - "**/*.{rs,ts,js,py,go,java}"
+    - "**/*.{md,txt}"
+    - tests and documentation
+
+  delete:
+    - .jules/tasks/*.md
+
+  forbidden:
+    - .jules/roles/*/notes/
+    - .jules/events/
+    - .jules/issues/
+
+actions:
+  - step: タスク実行
+    description: |
+      タスクに記載された内容に従ってコードを実装する。
+
+  - step: 検証
+    description: |
+      タスクに記載された検証計画、またはプロジェクトに適切な検証コマンド
+      （just test, xcodebuild, swift test 等）を実行する。
+
+  - step: クリーンアップ
+    description: |
+      作業完了と検証成功を確認したら、該当のタスクファイルを削除する。
+
+constraints:
+  - レポート（events, notes, issues）を作成しない
+  - ユーザーへの報告はPRの内容そのもので行われるため、別途ファイルに残さない
+  - 環境制約により指定コマンドが動かない場合は、最も確実な代替手段を選択する

@@ -1,0 +1,79 @@
+role: triage
+type: decider
+
+goal: |
+  .jules/events/ の観測を批判的に検討し、実行可能なissueに変換する。
+  重複やノイズを除外し、真に対処すべき問題のみを選別する。
+
+events:
+  read_from: .jules/events/
+  description: |
+    各カテゴリの観測イベントを読み取り、批判的に評価する。
+
+issues:
+  directory: .jules/issues/
+  description: |
+    採用した観測をissueとして.jules/issues/にフラットなMDファイルで作成する。
+
+behavior:
+  read:
+    - path: JULES.md
+      note: エージェント規約 (ルート)
+    - path: .jules/JULES.md
+      note: エージェント規約 (.jules内)
+    - path: .jules/roles/deciders/triage/role.yml
+      note: 役割の最新制約を確認する
+    - path: .jules/events/**/*.yml
+      note: 観測イベントを読み込む
+    - path: .jules/issues/*.md
+      note: 既存issueを確認し重複を防ぐ
+
+  actions:
+    - type: evaluate
+      description: |
+        観測が実際に発生しているか、issueに値するかを批判的に評価する。
+    - type: merge
+      description: |
+        同一原因・同一タスクに収束する観測は統合する。
+    - type: issue_creation
+      description: |
+        採用する観測をまとめ、.jules/issues/ にフラットなMDファイルを作成する。
+    - type: cleanup
+      description: |
+        採用・却下済みの .jules/events/ ファイルは物理削除する。
+    - type: feedback
+      description: |
+        却下理由が再発しそうな場合は、該当role.ymlのfeedbackに追記する。
+
+  constraints:
+    - プロダクトコードを編集しない
+    - .jules/events/ に新規ファイルを作成しない
+    - .jules/roles/*/notes/ を作成しない
+    - .jules/tasks/ には書き込まない（specifierの権限）
+
+taxonomy:
+  categories:
+    bugs: 観測が不具合に該当するもの
+    docs: ドキュメントの不備に関する観測
+    refacts: 構造や責務の歪みを是正する観測
+    tests: テストの不足・品質劣化に関する観測
+    updates: 機能や依存の更新に関する観測
+
+output_formats:
+  issue:
+    path: .jules/issues/*.md
+    template: |
+      ---
+      id: <string>
+      category: <bugs|docs|refacts|tests|updates>
+      title: <string>
+      priority: <low|medium|high>
+      sources: [<event_id>, ...]
+      status: <open|blocked|done>
+      ---
+
+      ## 概要
+      <問題の概要>
+
+      ## 関連イベント
+      - <event_id>: <概要>

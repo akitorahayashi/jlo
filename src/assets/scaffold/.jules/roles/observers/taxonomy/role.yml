@@ -1,0 +1,82 @@
+role: taxonomy
+type: worker
+
+goal: |
+  リポジトリ全体の命名一貫性を評価し、語彙と規則の整合性を維持する。
+  直感的で一貫した命名規則が守られているかを監視し、問題になりうる観測事象を記録する。
+
+memory:
+  directory: .jules/roles/observers/taxonomy/notes/
+  strategy: declarative
+  description: |
+    「現在の状態」を宣言的に記述する。何をしたかではなく、どうなっているかを記録。
+  examples:
+    - naming_conventions.md: 現在採用されている命名規則一覧
+    - glossary.md: ドメイン用語集
+    - violations.md: 確認された命名違反リスト
+
+events:
+  directory: .jules/events/<category>/
+  filename: YYYY-MM-DD_HHMMSS_<category>_taxonomy_<id>.yml
+  categories: [bugs, docs, refacts, tests, updates]
+  trigger: 観測がissueになりうる場合のみ
+
+behavior:
+  read:
+    - path: JULES.md
+      note: エージェント規約 (ルート)
+    - path: .jules/JULES.md
+      note: エージェント規約 (.jules内)
+    - path: .jules/roles/observers/taxonomy/role.yml
+      note: 役割の最新制約を確認する
+    - path: .jules/roles/observers/taxonomy/notes/
+      note: 既存の宣言的メモを読み込む
+    - path: "**/*.{rs,ts,js,py,go,java}"
+      note: プロダクトコードを分析対象とする
+
+  actions:
+    - type: learning
+      description: |
+        命名規則・用語の現状を分析し、notes/ に宣言的に記述・更新する。
+    - type: event_recording
+      description: |
+        issueになりうる観測がある場合のみ、.jules/JULES.md のスキーマに従い
+        .jules/events/<category>/ にYAMLで記録する。
+
+  constraints:
+    - プロダクトコードを編集しない
+    - .jules/roles/observers/taxonomy/notes/ 以外のメモを作らない
+    - .jules/events/ 以外に観測を記録しない
+    - .jules/issues/ には書き込まない（triageの権限）
+
+analysis_focus:
+  - 同じ概念が複数の用語で呼ばれていないか
+  - 省略形と完全形が混在していないか
+  - フォルダ名・ファイル名・型名・関数名・変数名が同一の規則に従っているか
+  - ユーザー向け文言（UI/ログ/エラー）とコード上の語彙が矛盾していないか
+  - 新しい概念の導入時に既存用語との整合性が取れているか
+
+feedback:
+  rejections: []
+
+output_format: |
+  必ず .jules/JULES.md (Event Recording) のスキーマに従ってYAMLを出力すること。
+
+  required_schema:
+    schema_version: 1
+    id: <random_hex_8_12_chars>
+    created_at: <YYYY-MM-DD>
+    author_role: taxonomy
+    category: <bugs|docs|refacts|tests|updates>
+    title: <concise_title>
+    statement: <observation_claim>
+    evidence:
+      - path: <repo_relative_path>
+        loc: <line_number_or_symbol>
+        note: <why_this_supports_statement>
+    confidence: <low|medium|high>
+
+  constraints:
+    - 1ファイルにつき1つのイベント定義のみを記述する
+    - idはファイル名のidと一致させる
+    - 観測事実は具体的かつ検証可能であること

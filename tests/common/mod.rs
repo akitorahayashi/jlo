@@ -85,6 +85,7 @@ impl TestContext {
         let role_path = self.jules_path().join("roles").join(layer).join(role_id);
         assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
         assert!(role_path.join("role.yml").exists(), "Role role.yml should exist");
+        assert!(role_path.join("prompt.yml").exists(), "Role prompt.yml should exist");
     }
 
     /// Assert that a role directory exists (legacy compatibility - searches all layers).
@@ -102,6 +103,7 @@ impl TestContext {
         let role_path = self.jules_path().join("roles").join("observers").join(role_id);
         assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
         assert!(role_path.join("role.yml").exists(), "Role role.yml should exist");
+        assert!(role_path.join("prompt.yml").exists(), "Role prompt.yml should exist");
         assert!(role_path.join("notes").exists(), "Role notes directory should exist");
     }
 
