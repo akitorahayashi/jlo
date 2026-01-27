@@ -3,7 +3,23 @@
 This document defines the operational contract for agents working in this repository.
 All scheduled agents must read this file before acting.
 
-## 4-Layer Architecture
+## Configuration Hierarchy
+  
+  The configuration follows a **single source of truth** hierarchy:
+  
+  ```
+  JULES.md (contract, schemas)
+    └── archetypes/layers/*.yml (layer default behavior)
+         └── roles/observers/*/role.yml (specialized focus, only for observers)
+              └── prompt.yml (scheduled entry point)
+  ```
+  
+  - **JULES.md**: Defines overall contracts, schemas, and workflows.
+  - **Archetypes**: Define complete behavior for each layer.
+  - **role.yml**: Defines specialized analytical focus for stateful agents.
+  - **prompt.yml**: The scheduled entry point. It directs the agent to read `role.yml` and other resources; it **must not** contain role logic itself.
+
+  ## 4-Layer Architecture
 
 ### Layer 1: Observers
 Roles: `taxonomy`, `data_arch`, `qa`

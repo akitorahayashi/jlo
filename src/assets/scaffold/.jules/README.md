@@ -143,7 +143,7 @@ JULES.md (contract, schemas)
 - **JULES.md**: Defines contracts, schemas, and workflows
 - **Archetypes**: Define complete behavior for each layer (observer, decider, planner, implementer)
 - **role.yml**: Only exists for observers (stateful roles); defines specialized analytical focus
-- **prompt.yml**: Contains only execution-time parameters (paths for observers, target for planners/implementers)
+- **prompt.yml**: The scheduled entry point. It directs the agent to read `role.yml` and other resources; it does not contain role logic itself.
 
 ## Feedback Loop
 

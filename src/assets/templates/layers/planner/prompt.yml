@@ -1,18 +1,18 @@
 # Planner Role
-role: specifier
+role: ROLE_NAME
 layer: planners
 
 behavior: |
   Read:
   - JULES.md and .jules/JULES.md (contracts and schemas)
   - The target issue file specified by the invoker
-
+  
   Write:
   - .jules/tasks/*.md (decomposed executable tasks)
-
+  
   Delete:
   - The target issue file (after successful planning)
-
+  
   Actions:
   1. **Analyze**: Understand the issue requirements and impact.
   2. **Decompose**: Break down into concrete, executable tasks with verification plans.

@@ -76,7 +76,8 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
     }
 
     fn role_exists_in_layer(&self, layer: Layer, role_id: &RoleId) -> bool {
-        self.role_path_in_layer(layer, role_id.as_str()).join("role.yml").exists()
+        let role_dir = self.role_path_in_layer(layer, role_id.as_str());
+        role_dir.join("prompt.yml").exists() || role_dir.join("role.yml").exists()
     }
 
     fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
