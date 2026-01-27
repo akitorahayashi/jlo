@@ -44,8 +44,8 @@ This workspace implements a **worker + triage** workflow:
 │   ├── tests/
 │   └── updates/
 │
-└── issues/             # [Outbox] Actionable tasks (Markdown, flat)
-    └── *.md
+├── issues/             # [Outbox] Actionable tasks (Markdown, flat)
+│   └── *.
 
 └── tasks/              # [Transit] Executable tasks (Markdown, flat)
     └── *.md

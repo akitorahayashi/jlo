@@ -67,7 +67,6 @@ impl Workspace {
     /// Create the complete `.jules/` directory structure.
     pub fn create_structure(&self) -> Result<(), AppError> {
         fs::create_dir_all(self.jules_path())?;
-        fs::create_dir_all(self.jules_path().join("tasks"))?;
 
         // Write scaffold files
         for entry in scaffold::scaffold_files() {
