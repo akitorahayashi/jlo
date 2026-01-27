@@ -1,61 +1,20 @@
 use include_dir::{Dir, DirEntry, include_dir};
 
 use crate::domain::Layer;
-use crate::ports::{RoleDefinition, RoleTemplateStore, ScaffoldFile};
+use crate::ports::{RoleTemplateStore, ScaffoldFile};
 
 static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold");
 
-static ROLE_DEFINITIONS: [RoleDefinition; 6] = [
-    RoleDefinition {
-        id: "taxonomy",
-        layer: Layer::Observers,
-        role_yaml: include_str!("../assets/role_kits/taxonomy/role.yml"),
-        prompt_yaml: include_str!("../assets/role_kits/taxonomy/prompt.yml"),
-        has_notes: true,
-    },
-    RoleDefinition {
-        id: "data_arch",
-        layer: Layer::Observers,
-        role_yaml: include_str!("../assets/role_kits/data_arch/role.yml"),
-        prompt_yaml: include_str!("../assets/role_kits/data_arch/prompt.yml"),
-        has_notes: true,
-    },
-    RoleDefinition {
-        id: "qa",
-        layer: Layer::Observers,
-        role_yaml: include_str!("../assets/role_kits/qa/role.yml"),
-        prompt_yaml: include_str!("../assets/role_kits/qa/prompt.yml"),
-        has_notes: true,
-    },
-    RoleDefinition {
-        id: "triage",
-        layer: Layer::Deciders,
-        role_yaml: include_str!("../assets/role_kits/triage/role.yml"),
-        prompt_yaml: include_str!("../assets/role_kits/triage/prompt.yml"),
-        has_notes: false,
-    },
-    RoleDefinition {
-        id: "specifier",
-        layer: Layer::Planners,
-        role_yaml: include_str!("../assets/role_kits/specifier/role.yml"),
-        prompt_yaml: include_str!("../assets/role_kits/specifier/prompt.yml"),
-        has_notes: false,
-    },
-    RoleDefinition {
-        id: "executor",
-        layer: Layer::Implementers,
-        role_yaml: include_str!("../assets/role_kits/executor/role.yml"),
-        prompt_yaml: include_str!("../assets/role_kits/executor/prompt.yml"),
-        has_notes: false,
-    },
-];
-
 /// Layer-specific templates.
 mod layer_templates {
-    pub static OBSERVER: &str = include_str!("../assets/templates/layers/observer.yml");
-    pub static DECIDER: &str = include_str!("../assets/templates/layers/decider.yml");
-    pub static PLANNER: &str = include_str!("../assets/templates/layers/planner.yml");
-    pub static IMPLEMENTER: &str = include_str!("../assets/templates/layers/implementer.yml");
+    pub static OBSERVER: &str =
+        include_str!("../assets/scaffold/.jules/archetypes/layers/observer.yml");
+    pub static DECIDER: &str =
+        include_str!("../assets/scaffold/.jules/archetypes/layers/decider.yml");
+    pub static PLANNER: &str =
+        include_str!("../assets/scaffold/.jules/archetypes/layers/planner.yml");
+    pub static IMPLEMENTER: &str =
+        include_str!("../assets/scaffold/.jules/archetypes/layers/implementer.yml");
 }
 
 /// Embedded role template store implementation.
@@ -74,14 +33,6 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
         collect_files(&SCAFFOLD_DIR, &mut files);
         files.sort_by(|a, b| a.path.cmp(&b.path));
         files
-    }
-
-    fn role_definitions(&self) -> &[RoleDefinition] {
-        &ROLE_DEFINITIONS
-    }
-
-    fn role_definition(&self, role_id: &str) -> Option<&RoleDefinition> {
-        ROLE_DEFINITIONS.iter().find(|role| role.id == role_id)
     }
 
     fn layer_template(&self, layer: Layer) -> &str {
@@ -114,7 +65,7 @@ goal: |
 
 # アーキタイプ参照:
 # {description}
-# 詳細は src/templates/layers/{layer_file}.yml を参照
+# 詳細は .jules/archetypes/layers/{layer_file}.yml を参照
 "#
         )
     }
@@ -171,24 +122,27 @@ mod tests {
     }
 
     #[test]
-    fn role_definitions_includes_all_six_roles() {
-        use std::collections::HashSet;
-        let store = EmbeddedRoleTemplateStore::new();
-        let expected_ids: HashSet<&str> =
-            ["taxonomy", "data_arch", "qa", "triage", "specifier", "executor"]
-                .iter()
-                .cloned()
-                .collect();
-        let actual_ids: HashSet<&str> = store.role_definitions().iter().map(|r| r.id).collect();
-        assert_eq!(actual_ids, expected_ids);
-    }
-
-    #[test]
     fn all_layer_templates_exist() {
         let store = EmbeddedRoleTemplateStore::new();
         for layer in Layer::ALL {
             let template = store.layer_template(layer);
             assert!(!template.is_empty(), "Template for {:?} should not be empty", layer);
+        }
+    }
+
+    #[test]
+    fn scaffold_includes_archetypes() {
+        let store = EmbeddedRoleTemplateStore::new();
+        let files = store.scaffold_files();
+        let expected_paths = [
+            ".jules/archetypes/layers/observer.yml",
+            ".jules/archetypes/layers/decider.yml",
+            ".jules/archetypes/layers/planner.yml",
+            ".jules/archetypes/layers/implementer.yml",
+        ];
+
+        for path in expected_paths {
+            assert!(files.iter().any(|f| f.path == path), "Missing scaffold file: {}", path);
         }
     }
 

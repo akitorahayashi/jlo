@@ -5,8 +5,8 @@ layer: deciders
 type: manager
 
 description: |
-  Deciders screen events, validate observations, merge related items,
-  and convert approved events into actionable issues.
+  Deciders はイベントを精査し、観測を検証し、関連項目を統合し、
+  承認されたイベントを実行可能な issue に変換する。
 
 behavior:
   read:

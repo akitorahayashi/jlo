@@ -15,20 +15,5 @@ prompt: |
   - notes/ を作成しない
   - events/ を作成しない
 
-  出力フォーマット（各タスクファイル）:
-  ---
-  id: <string>
-  parent_issue_id: <string>
-  title: <string>
-  status: open
-  ---
-
-  ## 目的
-  <何をするタスクか>
-
-  ## 変更対象
-  - <filepath>: <概要>
-
-  ## 検証計画
-  - コマンド: <例: just test>
-  - 期待値: <例: テストケースXが通過すること>
+  出力フォーマットは role.yml と
+  .jules/archetypes/layers/planner.yml に従ってください。

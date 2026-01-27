@@ -51,6 +51,14 @@ This workspace implements a **4-layer architecture**:
 │           ├── prompt.yml
 │           └── role.yml
 │
+├── archetypes/         # [Templates] Layer archetypes and policies
+│   ├── layers/
+│   │   ├── observer.yml
+│   │   ├── decider.yml
+│   │   ├── planner.yml
+│   │   └── implementer.yml
+│   └── policy.yml
+│
 ├── events/             # [Inbox] Normalized observations (YAML)
 │   ├── bugs/
 │   ├── docs/
@@ -113,6 +121,11 @@ The executor agent:
 | Deciders | triage | Event screening, issue creation |
 | Planners | specifier | Issue analysis, task decomposition |
 | Implementers | executor | Code implementation, verification |
+
+## Archetypes
+
+Layer archetypes live under `.jules/archetypes/layers/` and define the baseline behavior
+for each layer. New custom roles created with `jo template` are derived from these archetypes.
 
 ## CLI Commands
 

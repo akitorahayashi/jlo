@@ -15,5 +15,5 @@ policy: |
 
   - `notes/`: 役割固有の宣言的メモリ（Observer専用）
   - `events/`: 正規化された観測記録（Observer → Decider）
-  - `issues/`: 実行可能なタスク（Decider専用出力）
+  - `issues/`: 承認済みの課題（Decider専用出力）
   - `tasks/`: 分解されたタスク（Planner → Implementer）

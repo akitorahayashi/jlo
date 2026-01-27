@@ -5,8 +5,8 @@ layer: observers
 type: worker
 
 description: |
-  Observers are specialized analytical lenses that read source code
-  and their notes, update declarative memory, and emit normalized events.
+  Observers は専門的な分析レンズであり、ソースコードと自身の notes を読み、
+  宣言的メモリを更新し、正規化されたイベントを発行する。
 
 behavior:
   read:

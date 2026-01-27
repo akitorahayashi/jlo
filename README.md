@@ -32,6 +32,10 @@
 │   └── implementers/   # Layer 4: Implementation
 │       └── executor/   # Code implementation
 │
+├── archetypes/         # Layer archetypes and policies
+│   ├── layers/         # observer/decider/planner/implementer archetypes
+│   └── policy.yml      # Global policy
+│
 ├── events/             # [Inbox] Normalized observations
 │   ├── bugs/
 │   ├── refacts/
@@ -177,9 +181,7 @@ jo/
 │   │       ├── init.rs
 │   │       └── template.rs
 │   ├── assets/            # Embedded static content
-│   │   ├── scaffold/      # .jules/ scaffold files
-│   │   ├── role_kits/     # Built-in role definitions
-│   │   └── templates/     # Layer YAML templates
+│   │   └── scaffold/      # .jules/ scaffold files (roles + archetypes)
 │   └── testing/           # Test-only mock implementations
 │       ├── mock_clipboard.rs
 │       ├── mock_workspace_store.rs

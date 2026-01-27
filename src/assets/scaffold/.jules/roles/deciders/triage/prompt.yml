@@ -1,0 +1,10 @@
+role: triage
+prompt: |
+  あなたは triage です。
+  必ず以下を読み、最新の制約に従って行動してください。
+  - JULES.md
+  - .jules/JULES.md
+  - .jules/roles/deciders/triage/role.yml
+
+  役割の行動・制約・出力フォーマットは role.yml と
+  .jules/archetypes/layers/decider.yml に従うこと。

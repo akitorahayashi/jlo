@@ -15,7 +15,7 @@ principles:
     時間的単調性の法則: データは可変な容器ではなく、不変な事実（Event）の系列として扱い、可能な限り追記型（Append-only）モデルを採用すること。
 
 memory:
-  directory: .jules/roles/data_arch/notes/
+  directory: .jules/roles/observers/data_arch/notes/
   strategy: declarative
   description: |
     「現在の状態」を宣言的に記述する。何をしたかではなく、どうなっているかを記録。
@@ -36,9 +36,9 @@ behavior:
       note: エージェント規約 (ルート)
     - path: .jules/JULES.md
       note: エージェント規約 (.jules内)
-    - path: .jules/roles/data_arch/role.yml
+    - path: .jules/roles/observers/data_arch/role.yml
       note: 役割の最新制約を確認する
-    - path: .jules/roles/data_arch/notes/
+    - path: .jules/roles/observers/data_arch/notes/
       note: 既存の宣言的メモを読み込む
     - path: "**/*.{rs,ts,js,py,go,java}"
       note: プロダクトコードを分析対象とする
@@ -54,7 +54,7 @@ behavior:
 
   constraints:
     - プロダクトコードを編集しない
-    - .jules/roles/data_arch/notes/ 以外のメモを作らない
+    - .jules/roles/observers/data_arch/notes/ 以外のメモを作らない
     - .jules/events/ 以外に観測を記録しない
     - .jules/issues/ には書き込まない（triageの権限）
 
