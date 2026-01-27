@@ -23,7 +23,3 @@ outputs:
   - notes/ (updated state)
   - .jules/exchange/events/**/*.yml (new observations)
 
-note: |
-  contracts.yml defines how to structure events and your observation workflow.
-  Your role.yml defines what to look for (doc-code mismatches, terminology inconsistencies).
-

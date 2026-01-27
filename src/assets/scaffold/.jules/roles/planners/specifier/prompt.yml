@@ -19,7 +19,3 @@ inputs:
 
 outputs:
   - .jules/exchange/tasks/*.md (decomposed tasks)
-
-note: |
-  contracts.yml defines task schema and verification requirements.
-  Each task must be independently verifiable with concrete file paths.

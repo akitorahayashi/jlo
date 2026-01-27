@@ -19,7 +19,3 @@ inputs:
 outputs:
   - .jules/exchange/issues/*.md (accepted)
   - <observer>/feedbacks/*.yml (rejected patterns)
-
-note: |
-  contracts.yml defines issue schema and feedback format.
-  Your job is critical validation - do not accept unverified observations.

@@ -20,7 +20,3 @@ inputs:
 
 outputs:
   - Modified source files, tests, docs
-
-note: |
-  contracts.yml defines completion criteria and verification requirements.
-  Follow repository conventions from AGENTS.md. Do not skip verification.
