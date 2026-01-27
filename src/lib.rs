@@ -31,18 +31,12 @@ pub fn init() -> Result<(), AppError> {
 /// Assign context paths to a role and copy prompt to clipboard.
 ///
 /// Returns the role ID that was matched.
-/// Assign context paths to a role and copy prompt to clipboard.
-///
-/// Returns the role ID that was matched.
 pub fn assign(role_query: &str, paths: &[String]) -> Result<String, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
     let templates = EmbeddedRoleTemplateStore::new();
-    // We pass NoopClipboard to context, but the command uses ArboardClipboard internally for now
-    // as per previous implementation pattern to ensure system clipboard access.
-    // Ideally, we should inject the real clipboard here.
-    let ctx = AppContext::new(workspace, templates, NoopClipboard);
+    let mut ctx = AppContext::new(workspace, templates, crate::services::ArboardClipboard::new()?);
 
-    let role_id = app::commands::assign::execute(&ctx, role_query, paths)?;
+    let role_id = app::commands::assign::execute(&mut ctx, role_query, paths)?;
 
     let message = if paths.is_empty() {
         format!("📋 Copied prompt for '{}' to clipboard", role_id)

@@ -1,11 +1,10 @@
 use crate::app::AppContext;
 use crate::domain::AppError;
 use crate::ports::{ClipboardWriter, RoleTemplateStore, WorkspaceStore};
-use crate::services::ArboardClipboard;
 
 /// Execute the assign command.
 pub fn execute<W, R, C>(
-    ctx: &AppContext<W, R, C>,
+    ctx: &mut AppContext<W, R, C>,
     role_query: &str,
     paths: &[String],
 ) -> Result<String, AppError>
@@ -42,20 +41,7 @@ where
         format!("# Target\n{}\n\n---\n{}", targets, prompt_content)
     };
 
-    // Initialize real clipboard for this interactive command
-    // We bypass the mockable C here because we specifically want system clipboard for `assign`
-    // In a pure architecture, we might want to use C, but currently `assign` logic in lib.rs
-    // was using ArboardClipboard directly. We'll stick to that pattern for now to match behavior,
-    // or better, use C if C is indeed the clipboard writer.
-    // However, AppContext's C might be NoopClipboard in `lib.rs::init` context.
-    // But `assign` is an interactive user command.
-
-    // Let's check `lib.rs`: it initializes ArboardClipboard inside `assign`.
-    // We should probably rely on `ctx` having a real clipboard if possible,
-    // but `jo::assign` instantiates a fresh workspace/clipboard.
-
-    let mut clipboard = ArboardClipboard::new()?;
-    clipboard.write_text(&output)?;
+    ctx.clipboard_mut().write_text(&output)?;
 
     Ok(role.id)
 }
