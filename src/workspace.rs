@@ -80,7 +80,12 @@ impl Workspace {
         // Scaffold all built-in roles so the structure is visible immediately.
         for role in scaffold::role_definitions() {
             if !self.role_exists(role.id) {
-                self.scaffold_role(role.id, role.role_yaml, role.policy)?;
+                self.scaffold_role(
+                    role.id,
+                    role.role_yaml,
+                    Some(role.prompt_yaml),
+                    role.has_notes,
+                )?;
             }
         }
 
@@ -178,34 +183,37 @@ impl Workspace {
             && !role_id.is_empty()
     }
 
-    /// Scaffold a new role with role.yml and notes directory.
+    /// Scaffold a new role with role.yml, optional prompt, and optional notes directory.
     pub fn scaffold_role(
         &self,
         role_id: &str,
         role_yaml: &str,
-        policy: Option<&str>,
+        prompt_yaml: Option<&str>,
+        has_notes: bool,
     ) -> Result<(), AppError> {
         if !Self::is_valid_role_id(role_id) {
             return Err(AppError::InvalidRoleId(role_id.to_string()));
         }
 
         let role_dir = self.role_path(role_id);
-        let notes_dir = role_dir.join("notes");
-
-        fs::create_dir_all(&notes_dir)?;
+        fs::create_dir_all(&role_dir)?;
         fs::write(role_dir.join("role.yml"), role_yaml)?;
-        fs::write(notes_dir.join(".gitkeep"), "")?;
 
-        // Write policy file if provided (for PM role)
-        if let Some(policy_content) = policy {
-            fs::write(role_dir.join("policy.md"), policy_content)?;
+        if let Some(prompt_content) = prompt_yaml {
+            fs::write(role_dir.join("prompt.yml"), prompt_content)?;
+        }
+
+        if has_notes {
+            let notes_dir = role_dir.join("notes");
+            fs::create_dir_all(&notes_dir)?;
+            fs::write(notes_dir.join(".gitkeep"), "")?;
         }
 
         Ok(())
     }
 
-    /// Read the role configuration (role.yml).
-    pub fn read_role_config(&self, role_id: &str) -> Result<String, AppError> {
+    /// Read the role scheduler prompt (prompt.yml).
+    pub fn read_role_prompt(&self, role_id: &str) -> Result<String, AppError> {
         if !Self::is_valid_role_id(role_id) {
             return Err(AppError::InvalidRoleId(role_id.to_string()));
         }
@@ -214,15 +222,15 @@ impl Workspace {
             return Err(AppError::WorkspaceNotFound);
         }
 
-        let config_path = self.role_path(role_id).join("role.yml");
-        if !config_path.exists() {
+        let prompt_path = self.role_path(role_id).join("prompt.yml");
+        if !prompt_path.exists() {
             return Err(AppError::config_error(format!(
-                "Role '{}' does not have role.yml",
+                "Role '{}' does not have prompt.yml",
                 role_id
             )));
         }
 
-        Ok(fs::read_to_string(config_path)?)
+        Ok(fs::read_to_string(prompt_path)?)
     }
 }
 
@@ -259,12 +267,12 @@ mod tests {
         assert!(ws.jules_path().exists());
         assert!(ws.jules_path().join("roles").exists());
         assert!(ws.jules_path().join("README.md").exists());
-        assert!(ws.jules_path().join("reports").exists());
-        assert!(ws.jules_path().join("issues/bugs").exists());
-        assert!(ws.jules_path().join("issues/refacts").exists());
-        assert!(ws.jules_path().join("issues/updates").exists());
-        assert!(ws.jules_path().join("issues/tests").exists());
-        assert!(ws.jules_path().join("issues/docs").exists());
+        assert!(ws.jules_path().join("events/bugs").exists());
+        assert!(ws.jules_path().join("events/docs").exists());
+        assert!(ws.jules_path().join("events/refacts").exists());
+        assert!(ws.jules_path().join("events/tests").exists());
+        assert!(ws.jules_path().join("events/updates").exists());
+        assert!(ws.jules_path().join("issues").exists());
     }
 
     #[test]
@@ -275,7 +283,16 @@ mod tests {
         assert!(ws.role_exists("taxonomy"));
         assert!(ws.role_exists("data_arch"));
         assert!(ws.role_exists("qa"));
-        assert!(ws.role_exists("pm"));
+        assert!(ws.role_exists("triage"));
+    }
+
+    #[test]
+    fn triage_role_has_no_notes() {
+        let (_dir, ws) = test_workspace();
+        ws.create_structure().expect("create_structure should succeed");
+
+        let triage_path = ws.role_path("triage");
+        assert!(!triage_path.join("notes").exists());
     }
 
     #[test]
@@ -301,7 +318,7 @@ mod tests {
     fn discover_roles_finds_existing() {
         let (_dir, ws) = test_workspace();
         ws.create_structure().unwrap();
-        ws.scaffold_role("test-role", "Test config", None).unwrap();
+        ws.scaffold_role("test-role", "Test config", None, true).unwrap();
 
         let roles = ws.discover_roles().unwrap();
         assert!(roles.contains(&"test-role".to_string()));
@@ -312,7 +329,7 @@ mod tests {
         let (_dir, ws) = test_workspace();
         ws.create_structure().unwrap();
 
-        ws.scaffold_role("my-role", "My role config", None).unwrap();
+        ws.scaffold_role("my-role", "My role config", None, true).unwrap();
 
         let role_dir = ws.role_path("my-role");
         assert!(role_dir.join("role.yml").exists());
@@ -324,28 +341,28 @@ mod tests {
     }
 
     #[test]
-    fn scaffold_role_with_policy() {
+    fn scaffold_role_with_prompt() {
         let (_dir, ws) = test_workspace();
         ws.create_structure().unwrap();
 
-        ws.scaffold_role("pm-test", "PM config", Some("PM policy content")).unwrap();
+        ws.scaffold_role("triage-test", "Triage config", Some("Triage prompt"), false).unwrap();
 
-        let role_dir = ws.role_path("pm-test");
+        let role_dir = ws.role_path("triage-test");
         assert!(role_dir.join("role.yml").exists());
-        assert!(role_dir.join("policy.md").exists());
+        assert!(role_dir.join("prompt.yml").exists());
 
-        let policy = fs::read_to_string(role_dir.join("policy.md")).unwrap();
-        assert_eq!(policy, "PM policy content");
+        let prompt = fs::read_to_string(role_dir.join("prompt.yml")).unwrap();
+        assert_eq!(prompt, "Triage prompt");
     }
 
     #[test]
-    fn read_role_config_reads_file() {
+    fn read_role_prompt_reads_file() {
         let (_dir, ws) = test_workspace();
         ws.create_structure().unwrap();
 
-        ws.scaffold_role("test", "Role specific instructions", None).unwrap();
+        ws.scaffold_role("test", "Role config", Some("Prompt text"), true).unwrap();
 
-        let config = ws.read_role_config("test").unwrap();
-        assert!(config.contains("Role specific instructions"));
+        let prompt = ws.read_role_prompt("test").unwrap();
+        assert!(prompt.contains("Prompt text"));
     }
 }

@@ -71,36 +71,43 @@ impl TestContext {
         assert!(!self.jules_path().exists(), ".jules directory should not exist");
     }
 
-    /// Assert that a role directory exists with v1 structure.
+    /// Assert that a role directory exists.
     pub fn assert_role_exists(&self, role_id: &str) {
+        let role_path = self.jules_path().join("roles").join(role_id);
+        assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
+        assert!(role_path.join("role.yml").exists(), "Role role.yml should exist");
+    }
+
+    /// Assert that a worker role directory exists (role.yml + notes).
+    pub fn assert_worker_role_exists(&self, role_id: &str) {
         let role_path = self.jules_path().join("roles").join(role_id);
         assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
         assert!(role_path.join("role.yml").exists(), "Role role.yml should exist");
         assert!(role_path.join("notes").exists(), "Role notes directory should exist");
     }
 
-    /// Assert that the global reports directory exists.
-    pub fn assert_global_reports_exists(&self) {
-        let reports_path = self.jules_path().join("reports");
-        assert!(reports_path.exists(), "Global reports directory should exist");
+    /// Assert that the events directory structure exists.
+    pub fn assert_events_structure_exists(&self) {
+        let events_path = self.jules_path().join("events");
+        assert!(events_path.join("bugs").exists(), "events/bugs should exist");
+        assert!(events_path.join("refacts").exists(), "events/refacts should exist");
+        assert!(events_path.join("updates").exists(), "events/updates should exist");
+        assert!(events_path.join("tests").exists(), "events/tests should exist");
+        assert!(events_path.join("docs").exists(), "events/docs should exist");
     }
 
-    /// Assert that the issues directory structure exists.
-    pub fn assert_issues_structure_exists(&self) {
+    /// Assert that the issues directory exists (flat layout).
+    pub fn assert_issues_directory_exists(&self) {
         let issues_path = self.jules_path().join("issues");
-        assert!(issues_path.join("bugs").exists(), "issues/bugs should exist");
-        assert!(issues_path.join("refacts").exists(), "issues/refacts should exist");
-        assert!(issues_path.join("updates").exists(), "issues/updates should exist");
-        assert!(issues_path.join("tests").exists(), "issues/tests should exist");
-        assert!(issues_path.join("docs").exists(), "issues/docs should exist");
+        assert!(issues_path.exists(), "issues directory should exist");
     }
 
-    /// Assert that all 4 built-in roles exist.
+    /// Assert that all built-in roles exist.
     pub fn assert_all_builtin_roles_exist(&self) {
-        self.assert_role_exists("taxonomy");
-        self.assert_role_exists("data_arch");
-        self.assert_role_exists("qa");
-        self.assert_role_exists("pm");
+        self.assert_worker_role_exists("taxonomy");
+        self.assert_worker_role_exists("data_arch");
+        self.assert_worker_role_exists("qa");
+        self.assert_role_exists("triage");
     }
 
     /// Read the .jo-version file.

@@ -2,61 +2,63 @@ role: qa
 type: worker
 
 goal: |
-  テストカバレッジと品質保証に責任を持つ。
-  テストの重複排除、効率化、カバレッジ改善を継続的に監視する。
+  テスト戦略と品質の観点から問題になりうる観測事象を記録する。
+  既存テストの不足や品質低下の兆候を検出する。
 
 memory:
   directory: .jules/roles/qa/notes/
   strategy: declarative
   description: |
-    「現在の状態」を宣言的に記述する。テスト戦略の現状理解を記録。
+    「現在の状態」を宣言的に記述する。何をしたかではなく、どうなっているかを記録。
   examples:
-    - test_strategy.md: 現在のテスト戦略と方針
-    - coverage_gaps.md: カバーされていない重要パス一覧
-    - test_fixtures.md: テストデータ・フィクスチャの定義
+    - test_matrix.md: 現在のテスト対象と範囲
+    - gaps.md: テスト不足が確認された領域
+    - brittle_tests.md: 不安定なテストの一覧
 
-reporting:
-  directory: .jules/reports/
-  filename: YYYY-MM-DD_qa_<title>.md
-  trigger: 改善提案がある場合のみ
+events:
+  directory: .jules/events/
+  filename: YYYY-MM-DD_HHMMSS_qa_<id>.yml
+  categories: [bugs, docs, refacts, tests, updates]
+  trigger: 観測がissueになりうる場合のみ
 
 behavior:
   read:
     - path: AGENTS.md
       note: リポジトリの制約とポリシーを把握する
-    - path: .jules/README.md
-      note: .jules/ の運用ルールを把握する
+    - path: .jules/AGENTS.md
+      note: .jules/ のイベント・issue契約を把握する
+    - path: .jules/roles/qa/role.yml
+      note: 役割の最新制約を確認する
     - path: .jules/roles/qa/notes/
-      note: 過去の記憶を読み込み、現状認識を更新する
-    - path: "**/tests/**"
-      note: テストコードを分析対象とする
-    - path: "**/*_test.{rs,ts,js,py,go}"
-      note: テストファイルを分析対象とする
-    - path: "**/*.test.{ts,js}"
-      note: テストファイルを分析対象とする
+      note: 既存の宣言的メモを読み込む
+    - path: "**/*.{rs,ts,js,py,go,java}"
+      note: プロダクトコードを分析対象とする
+    - path: "**/*.{md,yml,yaml}"
+      note: テスト関連ドキュメントを確認する
 
   actions:
     - type: learning
       description: |
-        テストコードを分析し、現状のテスト戦略・カバレッジの理解を notes/ 内のMDファイルに
-        宣言的に記述・更新する。
-    - type: reporting
+        テスト網羅性や品質の現状を分析し、notes/ に宣言的に記述・更新する。
+    - type: event_recording
       description: |
-        改善提案がある場合のみ、.jules/reports/YYYY-MM-DD_qa_<title>.md を作成する。
+        issueになりうる観測がある場合のみ、.jules/AGENTS.md のスキーマに従い
+        .jules/events/<category>/ にYAMLで記録する。
 
   constraints:
     - プロダクトコードを編集しない
-    - .jules/ 配下以外を編集しない
-    - issues/ には書き込まない（PMの権限）
+    - .jules/roles/qa/notes/ 以外のメモを作らない
+    - events/ 以外に観測を記録しない
+    - issues/ には書き込まない（triageの権限）
 
 analysis_focus:
-  - 重複するテストケースの検出
-  - カバーされていないエッジケース・境界値
-  - テストの実行効率（遅いテストの特定）
-  - モック・スタブの適切な使用
-  - テストデータの管理方法
-  - 統合テスト vs ユニットテストのバランス
+  - 重要なフローにテストが存在するか
+  - 仕様変更に対してテストが追従しているか
+  - テストが過剰に脆い構造になっていないか
+  - 重要な失敗ケースが検証されているか
+
+feedback:
+  rejections: []
 
 output_format: |
-  指摘には具体的なテストファイルパスとテスト名を含め、
-  カバレッジ改善の優先度を明示する。
+  観測には必ず「証拠（ファイルパス/シンボル名/行）」を含める。

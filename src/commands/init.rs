@@ -1,20 +1,13 @@
-//! Init command: create a minimal `.jules/` workspace structure.
+//! Init command: create the `.jules/` workspace structure.
 
 use crate::error::AppError;
 use crate::workspace::Workspace;
 
-/// Options for the init command.
-#[derive(Default)]
-pub struct InitOptions {
-    /// Force initialization even if workspace exists.
-    pub force: bool,
-}
-
 /// Execute the init command.
-pub fn execute(options: &InitOptions) -> Result<(), AppError> {
+pub fn execute() -> Result<(), AppError> {
     let workspace = Workspace::current()?;
 
-    if workspace.exists() && !options.force {
+    if workspace.exists() {
         return Err(AppError::WorkspaceExists);
     }
 
@@ -47,8 +40,7 @@ mod tests {
     #[serial]
     fn init_creates_workspace() {
         with_temp_cwd(|_dir| {
-            let options = InitOptions::default();
-            execute(&options).expect("init should succeed");
+            execute().expect("init should succeed");
 
             let cwd = env::current_dir().unwrap();
             assert!(cwd.join(".jules").exists());
@@ -58,24 +50,12 @@ mod tests {
 
     #[test]
     #[serial]
-    fn init_fails_if_exists_without_force() {
+    fn init_fails_if_exists() {
         with_temp_cwd(|_dir| {
-            let options = InitOptions::default();
-            execute(&options).expect("first init should succeed");
+            execute().expect("first init should succeed");
 
-            let err = execute(&options).expect_err("second init should fail");
+            let err = execute().expect_err("second init should fail");
             assert!(matches!(err, AppError::WorkspaceExists));
-        });
-    }
-
-    #[test]
-    #[serial]
-    fn init_succeeds_with_force() {
-        with_temp_cwd(|_dir| {
-            execute(&InitOptions::default()).expect("first init should succeed");
-
-            let options = InitOptions { force: true };
-            execute(&options).expect("init with force should succeed");
         });
     }
 }

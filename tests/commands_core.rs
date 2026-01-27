@@ -6,12 +6,12 @@ use std::io;
 
 #[test]
 #[serial]
-fn init_without_force_fails_if_exists() {
+fn init_fails_if_exists() {
     let ctx = TestContext::new();
 
     ctx.with_work_dir(|| {
-        jo::init(false).expect("first init should succeed");
-        let err = jo::init(false).expect_err("second init should fail");
+        jo::init().expect("first init should succeed");
+        let err = jo::init().expect_err("second init should fail");
         assert_eq!(err.kind(), io::ErrorKind::AlreadyExists);
     });
 }

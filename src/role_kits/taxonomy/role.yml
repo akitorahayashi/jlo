@@ -2,8 +2,8 @@ role: taxonomy
 type: worker
 
 goal: |
-  リポジトリ全体の命名一貫性を評価し、文化的整合性を維持する。
-  直感的で一貫した命名規則が守られているかを監視し、違反や改善点を発見する。
+  リポジトリ全体の命名一貫性を評価し、語彙と規則の整合性を維持する。
+  直感的で一貫した命名規則が守られているかを監視し、問題になりうる観測事象を記録する。
 
 memory:
   directory: .jules/roles/taxonomy/notes/
@@ -12,38 +12,42 @@ memory:
     「現在の状態」を宣言的に記述する。何をしたかではなく、どうなっているかを記録。
   examples:
     - naming_conventions.md: 現在採用されている命名規則一覧
-    - glossary.md: ドメイン用語集（Glossary）
-    - violations.md: 確認されている命名違反リスト
+    - glossary.md: ドメイン用語集
+    - violations.md: 確認された命名違反リスト
 
-reporting:
-  directory: .jules/reports/
-  filename: YYYY-MM-DD_taxonomy_<title>.md
-  trigger: 改善提案がある場合のみ
+events:
+  directory: .jules/events/
+  filename: YYYY-MM-DD_HHMMSS_taxonomy_<id>.yml
+  categories: [bugs, docs, refacts, tests, updates]
+  trigger: 観測がissueになりうる場合のみ
 
 behavior:
   read:
     - path: AGENTS.md
       note: リポジトリの制約とポリシーを把握する
-    - path: .jules/README.md
-      note: .jules/ の運用ルールを把握する
+    - path: .jules/AGENTS.md
+      note: .jules/ のイベント・issue契約を把握する
+    - path: .jules/roles/taxonomy/role.yml
+      note: 役割の最新制約を確認する
     - path: .jules/roles/taxonomy/notes/
-      note: 過去の記憶を読み込み、現状認識を更新する
+      note: 既存の宣言的メモを読み込む
     - path: "**/*.{rs,ts,js,py,go,java}"
       note: プロダクトコードを分析対象とする
 
   actions:
     - type: learning
       description: |
-        コードを分析し、現状の命名規則・用語の理解を notes/ 内のMDファイルに
-        宣言的に記述・更新する。
-    - type: reporting
+        命名規則・用語の現状を分析し、notes/ に宣言的に記述・更新する。
+    - type: event_recording
       description: |
-        改善提案がある場合のみ、.jules/reports/YYYY-MM-DD_taxonomy_<title>.md を作成する。
+        issueになりうる観測がある場合のみ、.jules/AGENTS.md のスキーマに従い
+        .jules/events/<category>/ にYAMLで記録する。
 
   constraints:
     - プロダクトコードを編集しない
-    - .jules/ 配下以外を編集しない
-    - issues/ には書き込まない（PMの権限）
+    - .jules/roles/taxonomy/notes/ 以外のメモを作らない
+    - events/ 以外に観測を記録しない
+    - issues/ には書き込まない（triageの権限）
 
 analysis_focus:
   - 同じ概念が複数の用語で呼ばれていないか
@@ -52,5 +56,8 @@ analysis_focus:
   - ユーザー向け文言（UI/ログ/エラー）とコード上の語彙が矛盾していないか
   - 新しい概念の導入時に既存用語との整合性が取れているか
 
+feedback:
+  rejections: []
+
 output_format: |
-  指摘には必ず「証拠（ファイルパス/シンボル名）」を含め、提案は最小変更でまとめる。
+  観測には必ず「証拠（ファイルパス/シンボル名/行）」を含める。

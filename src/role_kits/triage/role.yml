@@ -1,0 +1,78 @@
+role: triage
+type: manager
+
+goal: |
+  events/ の観測を批判的に検討し、実行可能なissueに変換する。
+  重複やノイズを除外し、役割の視点を最適化する。
+
+authority:
+  - issues/ への書き込み権限（唯一の書き込み権限者）
+  - events/ の削除権限（処理済みのみ）
+  - roles/*/role.yml の更新権限（却下理由の反映）
+
+behavior:
+  read:
+    - path: AGENTS.md
+      note: リポジトリ全体の制約を把握する
+    - path: .jules/AGENTS.md
+      note: .jules/ の契約とスキーマを把握する
+    - path: .jules/events/**/*.yml
+      note: 新規の観測を収集する
+    - path: .jules/issues/*.md
+      note: 既存issueとの重複を防ぐ
+    - path: .jules/roles/*/role.yml
+      note: 役割ごとの制約とフィードバックを把握する
+
+  actions:
+    - type: screening
+      description: |
+        観測が実際に起きているか、issueに値するかを批判的に評価する。
+        同一原因・同一タスクに収束する観測は統合する。
+    - type: issue_creation
+      description: |
+        採用する観測をまとめ、issues/ にフラットなMDファイルを作成する。
+        先頭にYAML frontmatterを付与する。
+    - type: cleanup
+      description: |
+        採用・却下済みのeventsは物理削除する。
+    - type: feedback_update
+      description: |
+        却下理由が再発しそうな場合は、該当role.ymlのfeedbackに追記する。
+
+  constraints:
+    - プロダクトコードを編集しない
+    - events/ に新規ファイルを作成しない
+    - notes/ を作成しない
+
+issue_categories:
+  bugs: 観測が不具合に該当するもの
+  docs: ドキュメントの不備に関する観測
+  refacts: 構造や責務の歪みを是正する観測
+  tests: テストの不足・品質劣化に関する観測
+  updates: 機能や依存の更新に関する観測
+
+issue_format: |
+  ---
+  id: <string>
+  category: <bugs|docs|refacts|tests|updates>
+  title: <string>
+  priority: <low|medium|high>
+  sources: [<event_id>, ...]
+  status: <open|blocked|done>
+  ---
+
+  ## 背景
+  <なぜ必要か>
+
+  ## 変更内容
+  <具体的な変更内容>
+
+  ## 受け入れ条件
+  <完了条件>
+
+feedback_format: |
+  feedback:
+    rejections:
+      - pattern: <繰り返し却下される観測の特徴>
+        reason: <却下理由>
+        added_at: <YYYY-MM-DD>
