@@ -1,0 +1,25 @@
+role: executor
+type: engineer
+
+goal: |
+  .jules/tasks/ にあるタスクを実行し、コードベースを変更する。
+  変更後は適切な検証コマンドを実行し、タスクを完了（削除）する。
+
+behavior:
+  read:
+    - path: .jules/tasks/*.md
+      note: 実行対象のタスク
+
+  actions:
+    - type: implementation
+      description: コード、テスト、ドキュメントの編集。
+    - type: verification
+      description: |
+        コンテキストに応じた検証コマンド（just test, cargo test, swift test 等）の実行。
+        自動テストが困難な場合は目視確認等の代替手段を適用。
+    - type: task_deletion
+      description: 検証が完了したタスクファイルを物理削除する。
+
+  constraints:
+    - レポート（events, notes, issues）を作成しない
+    - ユーザーへの報告はPRの内容そのもので行われるため、別途ファイルに残さない

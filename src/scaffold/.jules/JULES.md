@@ -10,7 +10,7 @@ All scheduled agents must read this file before acting.
 Workers are specialized lenses (taxonomy, data_arch, qa).
 They:
 
-- read `AGENTS.md` and `.jules/AGENTS.md`
+- read `AGENTS.md` and `.jules/JULES.md`
 - read their own `.jules/roles/<role>/role.yml` and `notes/`
 - update `notes/` declaratively
 - write normalized event files under `.jules/events/`
@@ -103,3 +103,20 @@ Feedback should be appended under a dedicated `feedback` section to reduce recur
 ## Deletion Policy
 
 Processed events are deleted after triage (accepted or rejected).
+
+## Execution Workflow (Specifier/Executor)
+
+This workflow is for active implementation, triggered by specific issues.
+
+### Specifier
+- Reads: `.jules/issues/*.md`
+- Writes: `.jules/tasks/*.md`
+- Action: Decomposes issues into executable tasks with verification plans.
+- Cleanup: Deletes the processed `.jules/issues/*.md`.
+
+### Executor
+- Reads: `.jules/tasks/*.md`
+- Writes: Product code, Tests, Docs
+- Action: Implements the task and runs verification (e.g., `just test`, `swift test`).
+- Cleanup: Deletes the processed `.jules/tasks/*.md` upon success.
+- Reporting: NONE. No output files generated. PR content serves as the report.

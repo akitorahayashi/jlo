@@ -12,10 +12,10 @@ authority:
 
 behavior:
   read:
-    - path: AGENTS.md
-      note: リポジトリ全体の制約を把握する
-    - path: .jules/AGENTS.md
-      note: .jules/ の契約とスキーマを把握する
+    - path: JULES.md
+      note: リポジトリの制約
+    - path: .jules/JULES.md
+      note: 運用ルールとスキーマ (.jules内)
     - path: .jules/events/**/*.yml
       note: 新規の観測を収集する
     - path: .jules/issues/*.md

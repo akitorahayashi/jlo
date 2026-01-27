@@ -23,10 +23,10 @@ events:
 
 behavior:
   read:
-    - path: AGENTS.md
-      note: リポジトリの制約とポリシーを把握する
-    - path: .jules/AGENTS.md
-      note: .jules/ のイベント・issue契約を把握する
+    - path: JULES.md
+      note: エージェント規約 (ルート)
+    - path: .jules/JULES.md
+      note: エージェント規約 (.jules内)
     - path: .jules/roles/qa/role.yml
       note: 役割の最新制約を確認する
     - path: .jules/roles/qa/notes/
@@ -42,7 +42,7 @@ behavior:
         テスト網羅性や品質の現状を分析し、notes/ に宣言的に記述・更新する。
     - type: event_recording
       description: |
-        issueになりうる観測がある場合のみ、.jules/AGENTS.md のスキーマに従い
+        issueになりうる観測がある場合のみ、.jules/JULES.md のスキーマに従い
         .jules/events/<category>/ にYAMLで記録する。
 
   constraints:

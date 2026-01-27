@@ -57,7 +57,7 @@ pub fn role_definition(role_id: &str) -> Option<&'static RoleDefinition> {
     ROLE_DEFINITIONS.iter().find(|role| role.id == role_id)
 }
 
-static ROLE_DEFINITIONS: [RoleDefinition; 4] = [
+static ROLE_DEFINITIONS: [RoleDefinition; 6] = [
     RoleDefinition {
         id: "taxonomy",
         role_yaml: include_str!("role_kits/taxonomy/role.yml"),
@@ -82,11 +82,23 @@ static ROLE_DEFINITIONS: [RoleDefinition; 4] = [
         prompt_yaml: include_str!("role_kits/triage/prompt.yml"),
         has_notes: false,
     },
+    RoleDefinition {
+        id: "specifier",
+        role_yaml: include_str!("role_kits/specifier/role.yml"),
+        prompt_yaml: include_str!("role_kits/specifier/prompt.yml"),
+        has_notes: false,
+    },
+    RoleDefinition {
+        id: "executor",
+        role_yaml: include_str!("role_kits/executor/role.yml"),
+        prompt_yaml: include_str!("role_kits/executor/prompt.yml"),
+        has_notes: false,
+    },
 ];
 
 /// Check if a path is managed by `jo update`.
 pub fn is_update_managed_path(path: &str) -> bool {
-    matches!(path, ".jules/README.md" | ".jules/AGENTS.md")
+    matches!(path, ".jules/README.md" | ".jules/JULES.md")
 }
 
 fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
@@ -116,15 +128,16 @@ mod tests {
     }
 
     #[test]
-    fn scaffold_includes_agents_contract() {
+    fn scaffold_includes_jules_contract() {
         let files = scaffold_files();
-        assert!(files.iter().any(|f| f.path == ".jules/AGENTS.md"));
+        assert!(files.iter().any(|f| f.path == ".jules/JULES.md"));
     }
 
     #[test]
     fn scaffold_includes_issues_structure() {
         let files = scaffold_files();
         assert!(files.iter().any(|f| f.path == ".jules/issues/.gitkeep"));
+        assert!(files.iter().any(|f| f.path == ".jules/tasks/.gitkeep"));
         assert!(files.iter().any(|f| f.path == ".jules/events/bugs/.gitkeep"));
         assert!(files.iter().any(|f| f.path == ".jules/events/docs/.gitkeep"));
         assert!(files.iter().any(|f| f.path == ".jules/events/refacts/.gitkeep"));
@@ -136,15 +149,18 @@ mod tests {
     fn update_managed_files_include_readme() {
         let files = update_managed_files();
         assert!(files.iter().any(|file| file.path == ".jules/README.md"));
-        assert!(files.iter().any(|file| file.path == ".jules/AGENTS.md"));
+        assert!(files.iter().any(|file| file.path == ".jules/JULES.md"));
         assert!(files.iter().any(|file| file.path == ".jules/roles/taxonomy/prompt.yml"));
     }
 
     #[test]
-    fn role_definitions_includes_all_four_roles() {
+    fn role_definitions_includes_all_six_roles() {
         use std::collections::HashSet;
         let expected_ids: HashSet<&str> =
-            ["taxonomy", "data_arch", "qa", "triage"].iter().cloned().collect();
+            ["taxonomy", "data_arch", "qa", "triage", "specifier", "executor"]
+                .iter()
+                .cloned()
+                .collect();
         let actual_ids: HashSet<&str> = role_definitions().iter().map(|r| r.id).collect();
         assert_eq!(actual_ids, expected_ids);
     }
