@@ -7,17 +7,8 @@
 
 **Rule**: All prompts must exist as `.yml` files in `src/assets/scaffold/` or `src/assets/templates/`. Rust code may only do simple string replacement (e.g., `ROLE_NAME` → actual role name), never compose or generate prompt content.
 
-### 2. Archetypes are Build-Time Only, Never Deployed
-**Problem**: If archetypes are deployed to `.jules/archetypes/`, agents might read them instead of JULES.md, breaking the single source of truth contract.
-
-**Rule**: 
-- Archetypes live in `src/assets/archetypes/` (NOT in scaffold)
-- They are used ONLY during `jo init` to generate the scaffold
-- Agents read JULES.md for behavioral contracts, never archetypes
-- `.jules/` workspace contains NO archetypes directory after deployment
-
-### 3. JULES.md is the Single Source of Truth
-**Problem**: Multiple sources of behavioral specification (archetypes, role.yml, prompt.yml, JULES.md) create confusion about authority.
+### 2. JULES.md is the Single Source of Truth
+**Problem**: Multiple sources of behavioral specification (role.yml, prompt.yml, JULES.md) create confusion about authority.
 
 **Rule**:
 - JULES.md defines complete behavioral contracts for all layers
@@ -25,7 +16,7 @@
 - prompt.yml is the composed, executable prompt that references JULES.md
 - Agents always read JULES.md first for their behavioral contract
 
-### 4. Minimal Duplication in Prompts
+### 3. Minimal Duplication in Prompts
 **Problem**: Repeating global policy and layer behavior in every role's prompt.yml creates maintenance burden and inconsistency.
 
 **Rule**:
@@ -127,23 +118,15 @@ The codebase uses a **layered architecture** with clear separation of concerns:
 │   │
 │   ├── deciders/       # Layer 2: Decision (stateless)
 │   │   └── triage/
-│   │       └── prompt.yml    # No role.yml (behavior in archetype)
+│   │       └── prompt.yml    # No role.yml (behavior in layer definition)
 │   │
 │   ├── planners/       # Layer 3: Planning (stateless)
 │   │   └── specifier/
-│   │       └── prompt.yml    # No role.yml (behavior in archetype)
+│   │       └── prompt.yml    # No role.yml (behavior in layer definition)
 │   │
 │   └── implementers/   # Layer 4: Implementation (stateless)
 │       └── executor/
-│           └── prompt.yml    # No role.yml (behavior in archetype)
-│
-├── archetypes/         # Layer behavior definitions
-│   ├── layers/
-│   │   ├── observer.yml      # Complete observer behavior
-│   │   ├── decider.yml       # Complete decider behavior
-│   │   ├── planner.yml       # Complete planner behavior
-│   │   └── implementer.yml   # Complete implementer behavior
-│   └── policy.yml
+│           └── prompt.yml    # No role.yml (behavior in layer definition)
 │
 ├── events/             # Normalized observations (user-owned)
 │   ├── bugs/
@@ -187,49 +170,33 @@ The codebase uses a **layered architecture** with clear separation of concerns:
 - Convert approved items into `.jules/issues/*.md`
 - **Write feedback**: When rejecting recurring patterns, create `feedbacks/<date>_<description>.yml` in observer's directory
 - Delete processed events (both accepted and rejected)
-- **Stateless**: All behavior defined in `.jules/archetypes/layers/decider.yml`
+- **Stateless**: All behavior defined in layer definition
 
 **Planners** (Layer 3):
 - Read target issue from `.jules/issues/*.md`
 - Decompose into concrete tasks with verification plans
 - Create `.jules/tasks/*.md` files
 - Delete processed issues
-- **Stateless**: All behavior defined in `.jules/archetypes/layers/planner.yml`
+- **Stateless**: All behavior defined in layer definition
 
 **Implementers** (Layer 4):
 - Read target task from `.jules/tasks/*.md`
 - Implement code, tests, documentation
 - Run verification (or reliable alternative if environment constraints exist)
 - Delete processed tasks
-- **Stateless**: All behavior defined in `.jules/archetypes/layers/implementer.yml`
+- **Stateless**: All behavior defined in layer definition
 
 ## Configuration Hierarchy
 
-The configuration follows a **single source of truth** hierarchy:
-
-```
-JULES.md (contract, schemas)
-  └── archetypes/layers/*.yml (layer default behavior)
-       └── roles/observers/*/role.yml (specialized focus, only for observers)
-            └── prompt.yml (execution-time parameters only)
-```
-
-- **JULES.md**: Defines contracts, schemas, and workflows
-- **Archetypes**: Define complete behavior for each layer
-- **role.yml**: Only exists for observers (stateful roles); defines specialized analytical focus
-- **prompt.yml**: Contains only execution-time parameters (paths for observers, target for planners/implementers)
+- JULES.md: Defines contracts and workflows
+- role.yml: Specialized focus for observers
+- prompt.yml: Execution parameters
 
 ## Feedback Loop
 
-The feedback mechanism enables continuous improvement:
-
-1. **Observer** creates events based on observations
-2. **Decider** reviews events and may reject some due to recurring patterns
-3. **Decider** writes feedback files to `.jules/roles/observers/<role>/feedbacks/`
-4. **Observer** reads feedback files on next execution, abstracts patterns
-5. **Observer** updates its own `role.yml` to refine focus and prevent noise
-
-Feedback files are preserved for audit (never deleted). This self-improvement loop reduces false positives over time.
+- Observer creates events
+- Decider reviews events, rejects if needed, writes feedback
+- Observer reads feedback, updates role.yml
 
 ## Language Policy
 - **Scaffold Content**: English (README.md, JULES.md, all YAML configuration files)

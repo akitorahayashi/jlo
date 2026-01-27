@@ -34,7 +34,6 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
     }
 
     fn layer_template(&self, _layer: Layer) -> &str {
-        // Archetypes are not used at runtime; this is kept for compatibility
         ""
     }
 

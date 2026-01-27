@@ -164,16 +164,9 @@ Tasks must include:
 
 ## Feedback Loop
 
-The feedback mechanism enables continuous improvement:
-
-1. **Observer** creates events based on observations
-2. **Decider** reviews events and may reject some due to recurring patterns
-3. **Decider** writes feedback files to `.jules/roles/observers/<role>/feedbacks/`
-4. **Observer** reads feedback files on next execution, abstracts patterns
-5. **Observer** updates its own `role.yml` to refine focus and prevent noise
-6. Feedback files are preserved for audit (not deleted)
-
-This self-improvement loop reduces recurring false positives over time.
+- Observer creates events
+- Decider reviews events, rejects if needed, writes feedback
+- Observer reads feedback, updates role.yml
 
 ## Deletion Policy
 

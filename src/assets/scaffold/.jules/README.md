@@ -13,7 +13,7 @@ This workspace implements a **4-layer architecture**:
 - **Planners**: Read issues, emit tasks, delete issues (specifier)
 - **Implementers**: Read tasks, write code, delete tasks (executor)
 
-**Configuration Language**: All YAML configuration files (role.yml, prompt.yml, archetypes) are written in English for optimal LLM processing.
+**Configuration Language**: All YAML configuration files (role.yml, prompt.yml) are written in English for optimal LLM processing.
 
 ## Directory Structure
 
@@ -83,8 +83,6 @@ The triage agent:
 5. Creates actionable issues (Markdown with YAML frontmatter)
 6. **Writes feedback**: When rejecting recurring patterns, creates `feedbacks/<date>_<description>.yml` in observer's directory
 7. Deletes processed events (both accepted and rejected)
-
-**Stateless**: Decider behavior is entirely defined in `.jules/archetypes/layers/decider.yml`.
 
 Only deciders write `issues/` and `feedbacks/`.
 
