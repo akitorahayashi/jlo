@@ -32,7 +32,7 @@ events:
 
 behavior:
   read:
-    - path: AGENTS.md
+    - path: JULES.md
       note: エージェント規約 (ルート)
     - path: .jules/JULES.md
       note: エージェント規約 (.jules内)

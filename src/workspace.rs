@@ -179,10 +179,7 @@ impl Workspace {
         match matches.len() {
             1 => Ok(Some(matches[0].clone())),
             0 => Ok(None),
-            _ => {
-                // Multiple matches - prefer exact layer prefix
-                Ok(Some(matches[0].clone()))
-            }
+            _ => Ok(None), // Ambiguous matches
         }
     }
 

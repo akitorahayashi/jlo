@@ -23,9 +23,12 @@ pub fn init() -> Result<(), AppError> {
 /// Returns the role ID that was matched.
 pub fn assign(role_query: &str, paths: &[String]) -> Result<String, AppError> {
     let role_id = assign::execute(role_query, paths)?;
-    let path_info =
-        if paths.is_empty() { String::new() } else { format!(" with {} path(s)", paths.len()) };
-    println!("📋 Copied prompt for '{}'{}  to clipboard", role_id, path_info);
+    let message = if paths.is_empty() {
+        format!("📋 Copied prompt for '{}' to clipboard", role_id)
+    } else {
+        format!("📋 Copied prompt for '{}' with {} path(s) to clipboard", role_id, paths.len())
+    };
+    println!("{}", message);
     Ok(role_id)
 }
 

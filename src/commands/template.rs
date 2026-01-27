@@ -40,6 +40,7 @@ pub fn execute(layer_arg: Option<&str>, role_name_arg: Option<&str>) -> Result<S
         || role_name.contains('\\')
         || role_name == "."
         || role_name == ".."
+        || !role_name.chars().all(|c| c.is_alphanumeric() || c == '-')
     {
         return Err(AppError::InvalidRoleId(role_name));
     }
