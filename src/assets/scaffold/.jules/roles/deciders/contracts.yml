@@ -4,8 +4,6 @@ responsibilities: |
   Deciders screen and validate observations from observers, consolidate related events,
   and convert approved items into actionable issues.
 
-stateful: false
-
 inputs:
   - .jules/exchange/events/**/*.yml (raw observations from observers)
   - .jules/exchange/issues/*.md (existing issue backlog)

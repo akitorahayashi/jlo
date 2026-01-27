@@ -3,8 +3,6 @@ layer: planners
 responsibilities: |
   Planners decompose issues into concrete, executable tasks with clear verification plans.
 
-stateful: false
-
 inputs:
   - .jules/exchange/issues/*.md (single target issue to decompose)
 
