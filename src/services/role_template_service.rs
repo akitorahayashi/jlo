@@ -11,8 +11,7 @@ mod templates {
     pub static OBSERVER: &str = include_str!("../assets/templates/layers/observer/prompt.yml");
     pub static DECIDER: &str = include_str!("../assets/templates/layers/decider/prompt.yml");
     pub static PLANNER: &str = include_str!("../assets/templates/layers/planner/prompt.yml");
-    pub static IMPLEMENTER: &str =
-        include_str!("../assets/templates/layers/implementer/prompt.yml");
+    pub static MERGER: &str = include_str!("../assets/templates/layers/merger/prompt.yml");
 }
 
 /// Embedded role template store implementation.
@@ -52,7 +51,7 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
             Layer::Observers => templates::OBSERVER,
             Layer::Deciders => templates::DECIDER,
             Layer::Planners => templates::PLANNER,
-            Layer::Implementers => templates::IMPLEMENTER,
+            Layer::Mergers => templates::MERGER,
         };
 
         template.to_string()

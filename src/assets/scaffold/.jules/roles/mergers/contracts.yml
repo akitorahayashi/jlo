@@ -1,0 +1,37 @@
+layer: mergers
+
+responsibilities: |
+  Mergers consolidate parallel observer branches into a single consistency branch.
+
+inputs:
+  - git branches: jules/observer-*
+
+outputs:
+  - git branch: jules/merger-<role>-<timestamp>-<id>
+
+window_hours: |
+  Process only branches created within window_hours of current time.
+  Branch timestamp parsed from name format: jules/<layer>-<role>-YYYYMMDD-HHMM-<id>
+  Default: 24 hours
+
+workflow:
+  list_branches: |
+    Identify all branches matching jules/observer-*
+    Filter by window_hours using branch name timestamp
+
+  analyze_changes: |
+    Review changes from each observer branch
+    Identify overlapping or conflicting modifications
+
+  resolve_conflicts: |
+    Merge changes, resolving any conflicts
+    Preserve observer notes and feedbacks
+
+  create_branch: |
+    Push merged result as jules/merger-<role>-<timestamp>-<id>
+    Original observer branches remain for jlo prune cleanup
+
+constraints:
+  - Never modify the main branch directly
+  - Preserve all observer notes and feedbacks
+  - No direct modifications to exchange/ directory

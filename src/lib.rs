@@ -10,7 +10,7 @@ pub(crate) mod testing;
 
 use app::{
     AppContext,
-    commands::{init, template},
+    commands::{init, prune, template},
 };
 use ports::{ClipboardWriter, NoopClipboard, WorkspaceStore};
 use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
@@ -24,7 +24,7 @@ pub fn init() -> Result<(), AppError> {
     let ctx = AppContext::new(workspace, templates, NoopClipboard);
 
     init::execute(&ctx)?;
-    println!("✅ Initialized .jules/ workspace with 4-layer architecture");
+    println!("✅ Initialized .jules/ workspace");
     Ok(())
 }
 
@@ -88,4 +88,13 @@ pub fn template(layer: Option<&str>, role_name: Option<&str>) -> Result<String, 
     let path = template::execute(&ctx, layer, role_name)?;
     println!("✅ Created new role at .jules/roles/{}/", path);
     Ok(path)
+}
+
+/// Prune old jules/* branches from remote.
+pub fn prune(days: u32, dry_run: bool) -> Result<(), AppError> {
+    let workspace = FilesystemWorkspaceStore::current()?;
+    let templates = EmbeddedRoleTemplateStore::new();
+    let ctx = AppContext::new(workspace, templates, NoopClipboard);
+
+    prune::execute(&ctx, days, dry_run)
 }

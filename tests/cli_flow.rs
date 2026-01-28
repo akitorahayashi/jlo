@@ -41,12 +41,12 @@ fn user_can_use_command_aliases() {
 
 #[test]
 #[serial]
-fn init_creates_complete_4_layer_structure() {
+fn init_creates_complete_layer_structure() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
 
-    // Verify 4-layer structure
+    // Verify layer structure
     ctx.assert_jules_exists();
     ctx.assert_layer_structure_exists();
     ctx.assert_events_structure_exists();
@@ -69,9 +69,9 @@ fn init_creates_complete_4_layer_structure() {
     assert!(!jules.join("roles/planners/specifier/notes").exists());
     assert!(!jules.join("roles/planners/specifier/feedbacks").exists());
     assert!(!jules.join("roles/planners/specifier/role.yml").exists());
-    assert!(!jules.join("roles/implementers/executor/notes").exists());
-    assert!(!jules.join("roles/implementers/executor/feedbacks").exists());
-    assert!(!jules.join("roles/implementers/executor/role.yml").exists());
+    assert!(!jules.join("roles/mergers/consolidator/notes").exists());
+    assert!(!jules.join("roles/mergers/consolidator/feedbacks").exists());
+    assert!(!jules.join("roles/mergers/consolidator/role.yml").exists());
 }
 
 #[test]
@@ -95,22 +95,22 @@ fn template_creates_observer_with_notes() {
 
 #[test]
 #[serial]
-fn template_creates_implementer_without_notes() {
+fn template_creates_merger_without_notes() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
 
-    ctx.cli().args(["template", "-l", "implementers", "-n", "custom-impl"]).assert().success();
+    ctx.cli().args(["template", "-l", "mergers", "-n", "custom-merger"]).assert().success();
 
-    // Implementer roles should NOT have notes, feedbacks, or role.yml directories
-    let role_path = ctx.jules_path().join("roles/implementers/custom-impl");
+    // Merger roles should NOT have notes, feedbacks, or role.yml directories
+    let role_path = ctx.jules_path().join("roles/mergers/custom-merger");
     let notes_path = role_path.join("notes");
     let feedbacks_path = role_path.join("feedbacks");
     let role_yml = role_path.join("role.yml");
-    assert!(!notes_path.exists(), "Implementer role should not have notes directory");
-    assert!(!feedbacks_path.exists(), "Implementer role should not have feedbacks directory");
+    assert!(!notes_path.exists(), "Merger role should not have notes directory");
+    assert!(!feedbacks_path.exists(), "Merger role should not have feedbacks directory");
     assert!(
         !role_yml.exists(),
-        "Implementer role should not have role.yml (behavior defined in archetype)"
+        "Merger role should not have role.yml (behavior defined in archetype)"
     );
 }

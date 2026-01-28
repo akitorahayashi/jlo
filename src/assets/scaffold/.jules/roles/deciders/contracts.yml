@@ -12,9 +12,15 @@ outputs:
   - .jules/exchange/issues/*.md (consolidated, validated problems)
   - <observer>/feedbacks/<date>_<description>.yml (rejection feedback)
 
+window_hours: |
+  Process only files with timestamps within window_hours of current time.
+  Filename format: YYYY-MM-DD_HHMMSS_*.yml
+  Files older than window_hours are ignored.
+  Default: 24 hours
+
 workflow:
   validation: |
-    Read all events.
+    Read all events within window_hours.
     Verify observations actually exist in codebase.
     Check if observation is significant enough to warrant action.
     Identify related events that share root cause.

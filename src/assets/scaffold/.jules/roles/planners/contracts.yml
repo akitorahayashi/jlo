@@ -9,9 +9,15 @@ inputs:
 outputs:
   - .jules/exchange/tasks/*.md (concrete, executable work items)
 
+window_hours: |
+  Process only files with timestamps within window_hours of current time.
+  Filename format: <id>.md where id contains timestamp
+  Files older than window_hours are ignored.
+  Default: 24 hours
+
 workflow:
   analysis: |
-    Read target issue thoroughly.
+    Read target issue within window_hours.
     Understand acceptance criteria.
     Identify all affected files and modules.
   
