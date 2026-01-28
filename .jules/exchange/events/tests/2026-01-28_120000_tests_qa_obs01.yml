@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-28_120000_tests_qa_obs01"
+created_at: "2026-01-28"
+author_role: "qa"
+category: "tests"
+confidence: "high"
+
+# Content
+title: "Integration tests rely on global state mutation"
+statement: |
+  Integration tests violate the State Isolation principle by modifying global process state (CWD and HOME env vars) via `TestContext`. This forces sequential execution (`#[serial]`) and prevents parallel testing, reducing test suite performance and increasing coupling.
+
+evidence:
+  - path: "tests/common/mod.rs"
+    loc: "symbol:TestContext"
+    note: "TestContext sets global HOME env var and creates work_dir but doesn't isolate process state."
+  - path: "src/services/workspace_filesystem.rs"
+    loc: "symbol:FilesystemWorkspaceStore::current"
+    note: "FilesystemWorkspaceStore::current() relies on std::env::current_dir(), causing implicit coupling to CWD."
+  - path: "tests/cli_flow.rs"
+    loc: "line:6"
+    note: "Tests are marked with #[serial] to avoid race conditions caused by shared global state."
+
+tags:
+  - "testing"
+  - "quality"
+  - "refactoring"
+  - "technical-debt"
