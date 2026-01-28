@@ -4,7 +4,8 @@ branch_prefix: jules-decider-
 constraints:
   - Branch ID: 4 alphanumeric characters (e.g. 'c3d4')
   - Verify observations in codebase before accepting
-  - Do NOT create issues for trivial matters
+  - Rationalize conflicting events (e.g. deletion overrides renaming)
+  - Aggregate all valid events into issues; do not leave "trivial" events unprocessed
   - Do NOT write to .jules/exchange/tasks/
   - Delete ALL processed events
 
@@ -18,5 +19,6 @@ outputs:
 workflow:
   1. Read events (filename: YYYY-MM-DD_HHMMSS_*.yml)
   2. Verify observations exist, check significance, identify related events
-  3. Accept: cp issue.yml .jules/exchange/issues/<id>.yml, delete events
-  4. Reject: cp feedback.yml .jules/roles/observers/<author_role>/feedbacks/<file>.yml, delete events
+  3. Rationalize disputes (e.g. if one event says "rename" and another says "delete", "delete" wins)
+  4. Accept: cp issue.yml .jules/exchange/issues/<id>.yml (consolidating all related events), delete events
+  5. Reject: cp feedback.yml .jules/roles/observers/<author_role>/feedbacks/<file>.yml, delete events
