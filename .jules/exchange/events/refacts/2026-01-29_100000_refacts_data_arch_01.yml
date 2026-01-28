@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-29_100000_refacts_data_arch_01"
+created_at: "2026-01-29"
+author_role: "data_arch"
+category: "refacts"
+confidence: "high"
+
+# Content
+title: "Incomplete Layer Enum Definition"
+statement: |
+  The `Layer` enum in the domain model excludes the `Implementers` layer, which exists in the file system.
+  This violates Isomorphic Representation as the domain model cannot represent a valid state of the system
+  (the existence of the implementers layer).
+
+evidence:
+  - path: "src/domain/layer.rs"
+    loc: "Layer enum definition"
+    note: "Enum only defines Observers, Deciders, Planners"
+  - path: ".jules/roles/implementers"
+    loc: "Directory existence"
+    note: "The directory for the layer exists in the workspace"
+
+tags:
+  - "data-model"
+  - "isomorphism"
+  - "layer-architecture"
