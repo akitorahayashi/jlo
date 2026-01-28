@@ -90,6 +90,7 @@ runs:
         url='https://jules.googleapis.com/v1alpha/sessions'
         response_file="$(mktemp)"
         status_file="$(mktemp)"
+        trap 'rm -f "$response_file" "$status_file"' EXIT
         attempt=1
         max_attempts=5
 
@@ -124,14 +125,15 @@ runs:
             continue
           fi
 
-          if [ "$status" = "429" ] || [ "$status" = "500" ] || [ "$status" = "502" ] || \
-             [ "$status" = "503" ] || [ "$status" = "504" ]; then
-            sleep_seconds="$((attempt * attempt))"
-            echo "Jules API returned HTTP $status; retrying in ${sleep_seconds}s (attempt ${attempt}/${max_attempts})" >&2
-            sleep "$sleep_seconds"
-            attempt="$((attempt + 1))"
-            continue
-          fi
+          case "$status" in
+            429|500|502|503|504)
+              sleep_seconds="$((attempt * attempt))"
+              echo "Jules API returned HTTP $status; retrying in ${sleep_seconds}s (attempt ${attempt}/${max_attempts})" >&2
+              sleep "$sleep_seconds"
+              attempt="$((attempt + 1))"
+              continue
+              ;;
+          esac
 
           echo "Jules API returned HTTP $status" >&2
           exit 1

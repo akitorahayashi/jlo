@@ -22,9 +22,9 @@ on:
 jobs:
   check-scope:
     if: |
-      (startsWith(github.head_ref, 'jules/observer-') ||
-       startsWith(github.head_ref, 'jules/decider-') ||
-       startsWith(github.head_ref, 'jules/planner-')) &&
+      (startsWith(github.head_ref, 'jules-observer-') ||
+       startsWith(github.head_ref, 'jules-decider-') ||
+       startsWith(github.head_ref, 'jules-planner-')) &&
       github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:

@@ -46,10 +46,10 @@ Observer -> Decider -> Planner -> Implementer
 
 | Agent Type | Starting Branch | Output Branch | Auto-merge |
 |------------|-----------------|---------------|------------|
-| Observer | `jules` | `jules/observer-*` | ✅ (if `.jules/` only) |
-| Decider | `jules` | `jules/decider-*` | ✅ (if `.jules/` only) |
-| Planner | `jules` | `jules/planner-*` | ✅ (if `.jules/` only) |
-| Implementer | `main` | `jules/implementer-*` | ❌ (human review) |
+| Observer | `jules` | `jules-observer-*` | ✅ (if `.jules/` only) |
+| Decider | `jules` | `jules-decider-*` | ✅ (if `.jules/` only) |
+| Planner | `jules` | `jules-planner-*` | ✅ (if `.jules/` only) |
+| Implementer | `main` | `jules-implementer-*` | ❌ (human review) |
 
 Observers, Deciders, and Planners modify only `.jules/` and auto-merge after CI passes.
 Implementers modify source code and require human review.
@@ -184,8 +184,8 @@ Feedback files are preserved for audit (never deleted).
 All agents must create branches using this format:
 
 ```
-jules/observer-<id>
-jules/decider-<id>
-jules/planner-<id>
-jules/implementer-<task_id>-<short_description>
+jules-observer-<id>
+jules-decider-<id>
+jules-planner-<id>
+jules-implementer-<task_id>-<short_description>
 ```

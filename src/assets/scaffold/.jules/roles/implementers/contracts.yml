@@ -1,8 +1,8 @@
 layer: implementers
-branch_prefix: jules/implementer-
+branch_prefix: jules-implementer-
 
 constraints:
-  - Branch format: jules/implementer-<task_id>-<short_description>
+  - Branch format: jules-implementer-<task_id>-<short_description>
   - Do NOT skip verification
   - Do NOT modify files outside task scope
   - Delete task after verification
