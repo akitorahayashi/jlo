@@ -40,10 +40,10 @@ Agent execution is orchestrated by GitHub Actions, not jlo. The `.github/workflo
 
 | Agent Type | Starting Branch | Output Branch | Auto-merge |
 |------------|-----------------|---------------|------------|
-| Observer | `jules` | `jules/observer-*` | ✅ (if `.jules/` only) |
-| Decider | `jules` | `jules/decider-*` | ✅ (if `.jules/` only) |
-| Planner | `jules` | `jules/planner-*` | ✅ (if `.jules/` only) |
-| Implementer | `main` | `jules/implementer-*` | ❌ (human review) |
+| Observer | `jules` | `jules-observer-*` | ✅ (if `.jules/` only) |
+| Decider | `jules` | `jules-decider-*` | ✅ (if `.jules/` only) |
+| Planner | `jules` | `jules-planner-*` | ✅ (if `.jules/` only) |
+| Implementer | `main` | `jules-implementer-*` | ❌ (human review) |
 
 ## Tech Stack
 - **Language**: Rust
