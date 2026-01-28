@@ -1,47 +1,22 @@
 layer: implementers
 branch_prefix: jules/implementer-
 
-responsibilities: |
-  Implementers execute tasks by writing code, tests, and documentation, then verify the changes.
-  They are the only agents authorized to modify source code outside of .jules/.
+constraints:
+  - Branch format: jules/implementer-<task_id>-<short_description>
+  - Do NOT skip verification
+  - Do NOT modify files outside task scope
+  - Delete task after verification
+  - Follow AGENTS.md conventions
 
 inputs:
-  - .jules/exchange/tasks/*.yml (single target task to execute)
+  - .jules/exchange/tasks/*.yml (single target task)
 
 outputs:
-  - Source code, tests, documentation (as specified in task)
-  - Standard output (verification results)
+  - Modified source files, tests, documentation
 
 workflow:
-  planning: |
-    Read target task thoroughly.
-    Understand change targets and verification plan.
-    Identify all files to modify.
-  
-  implementation: |
-    Implement code changes.
-    Write or update tests.
-    Update documentation if needed.
-    Follow repository coding standards and AGENTS.md conventions.
-  
-  verification: |
-    Run verification command from task.
-    If verification fails, iterate on implementation.
-    If environment constraints prevent verification, use reliable alternative.
-  
-  completion: |
-    Confirm all change targets addressed.
-    The processed task file is deleted after verification.
-
-constraints:
-  - Do NOT skip verification step
-  - The processed task file is deleted after verification
-  - Do NOT modify files outside task scope
-  - Follow repository conventions (see AGENTS.md)
-  - If verification command unavailable, use closest reliable alternative
-
-task_processing:
-  - Read single task from .jules/exchange/tasks/
-  - Implement all changes
-  - Verify implementation
-  - The task file is deleted when complete
+  1. Read task, understand targets and verification plan
+  2. Implement code, tests, documentation
+  3. Run verification (or reliable alternative)
+  4. Iterate if verification fails
+  5. Delete task when complete

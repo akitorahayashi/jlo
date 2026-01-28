@@ -1,5 +1,5 @@
 # Feedback for Observer
-# Location: <observer_role>/feedbacks/<date>_<description>.yml
+# Location: .jules/roles/observers/<observer_role>/feedbacks/<date>_<description>.yml
 
 date: "YYYY-MM-DD"
 pattern: "<description of recurring noise>"

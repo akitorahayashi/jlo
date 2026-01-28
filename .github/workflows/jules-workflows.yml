@@ -32,10 +32,7 @@ on:
           - decider
           - planners
           - implementers
-      observer_roles:
-        description: 'JSON array of observer roles to run (overrides auto-discovery)'
-        required: false
-        type: string
+
 
 permissions:
   contents: write
@@ -75,48 +72,32 @@ jobs:
             echo "has_roles=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          roles_override="${{ inputs.observer_roles }}"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
-             [ "${{ inputs.agent }}" = "observers" ] && \
-             [ -n "$roles_override" ]; then
-            if ! echo "$roles_override" | jq -e 'type == "array"' >/dev/null; then
-              echo "Error: observer_roles must be a JSON array of strings."
-              exit 1
+          # Define enabled observers here. Comment out or remove to disable.
+          roles_list=(
+            "consistency"
+            "data_arch"
+            "qa"
+            "taxonomy"
+          )
+
+          # Verify roles exist
+          valid_roles=()
+          for role in "${roles_list[@]}"; do
+            if [ -d "$dir/$role" ]; then
+              valid_roles+=("$role")
+            else
+              echo "Warning: Role '$role' not found in $dir"
             fi
-            roles_list=()
-            missing=()
-            while IFS= read -r role; do
-              if [ -z "$role" ]; then
-                continue
-              fi
-              if [[ "$role" == */* ]] || [[ "$role" == *..* ]]; then
-                echo "Error: Invalid role name '$role'."
-                exit 1
-              fi
-              if [ ! -f "$dir/$role/prompt.yml" ]; then
-                missing+=("$role")
-                continue
-              fi
-              roles_list+=("$role")
-            done < <(echo "$roles_override" | jq -r '.[]')
-            if [ ${#missing[@]} -ne 0 ]; then
-              echo "Error: Unknown observer roles: ${missing[*]}"
-              exit 1
-            fi
-            if [ ${#roles_list[@]} -eq 0 ]; then
-              echo "matrix=[]" >> "$GITHUB_OUTPUT"
-              echo "has_roles=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            roles=$(printf "%s\n" "${roles_list[@]}" \
-              | sort -u \
-              | jq -R -s -c 'split("\n") | map(select(length > 0))')
-          else
-            roles=$(find "$dir" -mindepth 2 -maxdepth 2 -name "prompt.yml" -type f \
-              | awk -F/ '{print $(NF-1)}' \
-              | sort -u \
-              | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          done
+
+          if [ ${#valid_roles[@]} -eq 0 ]; then
+            echo "matrix=[]" >> "$GITHUB_OUTPUT"
+            echo "has_roles=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+
+          roles=$(printf "%s\n" "${valid_roles[@]}" \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
           if [ "$roles" = "[]" ] || [ -z "$roles" ]; then
             echo "matrix=[]" >> "$GITHUB_OUTPUT"
             echo "has_roles=false" >> "$GITHUB_OUTPUT"

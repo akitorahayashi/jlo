@@ -3,23 +3,9 @@ layer: deciders
 responsibility: "# TODO: Describe your specific responsibility"
 
 contracts:
-  - .jules/roles/deciders/contracts.yml (layer workflow and validation requirements)
-  - .jules/JULES.md (overall workflow context)
+  - .jules/JULES.md
+  - .jules/roles/deciders/contracts.yml
 
-workflow:
-  - Read all events from .jules/exchange/events/**/*.yml
-  - "# TODO: Describe your validation/screening criteria"
-  - Identify related events that share root cause
-  - Decide - Accept (create issue) or Reject (write feedback if recurring pattern)
-  - Delete processed events
-
-inputs:
-  - .jules/exchange/events/**/*.yml
-
-outputs:
-  - .jules/exchange/issues/*.md (accepted)
-  - <observer>/feedbacks/*.yml (rejected patterns)
-
-note: |
-  contracts.yml defines issue schema and feedback format.
-  Your job is critical validation - verify observations exist in codebase.
+instructions:
+  - Read every file in contracts in order before doing any work.
+  - Follow contracts.yml exactly (constraints, workflow, inputs/outputs).

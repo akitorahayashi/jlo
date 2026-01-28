@@ -33,10 +33,10 @@ Observer -> Decider -> Planner -> Implementer
 
 | Role Type | Role(s) | Transformation |
 |-----------|---------|----------------|
-| Observer | taxonomy, data_arch, qa | Source -> Events (domain-specialized observations) |
-| Decider | triage | Events -> Issues (validation + consolidation) |
-| Planner | specifier | Issues -> Tasks (decomposition into steps) |
-| Implementer | (via task files) | Tasks -> Code changes |
+| Observer | directories under `.jules/roles/observers/` | Source -> Events (domain-specialized observations) |
+| Decider | directories under `.jules/roles/deciders/` | Events -> Issues (validation + consolidation) |
+| Planner | directories under `.jules/roles/planners/` | Issues -> Tasks (decomposition into steps) |
+| Implementer | directories under `.jules/roles/implementers/` | Tasks -> Code changes |
 
 **Execution**: All roles are invoked by GitHub Actions via `jules-invoke`.
 
@@ -66,38 +66,36 @@ Implementers modify source code and require human review.
 |   +-- observers/
 |   |   +-- contracts.yml    # Shared observer contract
 |   |   +-- event.yml        # Event template
-|   |   +-- taxonomy/
-|   |   |   +-- prompt.yml   # Static: execution parameters
-|   |   |   +-- role.yml     # Dynamic: evolving focus
-|   |   |   +-- notes/       # Declarative state
-|   |   |   +-- feedbacks/   # Decider feedback
-|   |   +-- data_arch/
-|   |   +-- consistency/
-|   |   +-- qa/
+|   |   +-- <role>/
+|   |       +-- prompt.yml   # Static: run prompt
+|   |       +-- role.yml     # Dynamic: evolving focus
+|   |       +-- notes/       # Declarative state
+|   |       +-- feedbacks/   # Decider feedback
 |   |
 |   +-- deciders/
 |   |   +-- contracts.yml    # Shared decider contract
 |   |   +-- issue.yml        # Issue template
 |   |   +-- feedback.yml     # Feedback template
-|   |   +-- triage/
+|   |   +-- <role>/
 |   |       +-- prompt.yml
 |   |
 |   +-- planners/
 |   |   +-- contracts.yml    # Shared planner contract
 |   |   +-- task.yml         # Task template
-|   |   +-- specifier/
+|   |   +-- <role>/
 |   |       +-- prompt.yml
 |   |
+|   +-- implementers/
+|       +-- contracts.yml    # Shared implementer contract
+|       +-- <role>/
+|           +-- prompt.yml
+|
 +-- exchange/           # Transient data flow
     +-- events/         # [Inbox] Raw observations
-    |   +-- bugs/
-    |   +-- docs/
-    |   +-- refacts/
-    |   +-- tests/
-    |   +-- updates/
-    |   +-- issues/         # [Transit] Consolidated problems
+    |   +-- <category>/
+    |       +-- *.yml
+    +-- issues/         # [Transit] Consolidated problems
     |   +-- *.yml
-    |
     +-- tasks/          # [Outbox] Executable tasks
         +-- *.yml
 ```
@@ -109,7 +107,6 @@ Layer-level shared constraints and workflows. All roles in the layer reference t
 
 ### prompt.yml
 Execution parameters and references to contracts.yml. Static, scheduled with agent.
-Includes `window_hours` parameter for Deciders and Planners.
 
 ### role.yml
 Specialized focus that evolves through feedback loop. Only observers have this (stateful layer).
@@ -137,7 +134,7 @@ Each observer:
 
 Triage agent:
 1. Reads contracts.yml (layer behavior)
-2. Reads all exchange/events/**/*.yml within window_hours
+2. Reads all exchange/events/**/*.yml
 3. Validates observations (do they exist in codebase?)
 4. Merges related events sharing root cause
 5. Creates consolidated issues in exchange/issues/
@@ -150,7 +147,7 @@ Triage agent:
 
 Specifier agent:
 1. Reads contracts.yml (layer behavior)
-2. Reads target issue from exchange/issues/ within window_hours
+2. Reads target issue from exchange/issues/
 3. Analyzes impact
 4. Decomposes into executable tasks in exchange/tasks/
 5. Deletes processed issue
@@ -187,9 +184,8 @@ Feedback files are preserved for audit (never deleted).
 All agents must create branches using this format:
 
 ```
-jules/<layer>-<role>-<YYYYMMDD>-<HHMM>-<short_id>
+jules/observer-<id>
+jules/decider-<id>
+jules/planner-<id>
+jules/implementer-<task_id>-<short_description>
 ```
-
-Examples:
-- `jules/observer-taxonomy-20260128-1345-a1b2`
-- `jules/decider-triage-20260128-1400-c3d4`
