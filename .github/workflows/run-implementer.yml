@@ -55,7 +55,7 @@ jobs:
           role: executor
 
       - name: Invoke Jules
-        uses: google-labs-code/jules-invoke@v1
+        uses: ./.github/actions/jules-invoke
         with:
           prompt: |
             ${{ steps.prompt.outputs.prompt }}
