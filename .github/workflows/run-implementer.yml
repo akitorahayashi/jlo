@@ -14,18 +14,38 @@ on:
 jobs:
   implement:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: jules
+          path: jules-task-read
 
       - name: Read task
         id: task
         run: |
-          content=$(cat ".jules/exchange/tasks/${{ inputs.task_file }}")
-          echo "content<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$content" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          task_file="${{ inputs.task_file }}"
+          if [[ "$task_file" == */* ]] || [[ "$task_file" == *..* ]]; then
+            echo "Error: task_file cannot contain path traversal characters ('/' or '..')."
+            exit 1
+          fi
+          task_path="jules-task-read/.jules/exchange/tasks/$task_file"
+          if [ ! -f "$task_path" ]; then
+            echo "Error: Task file not found at $task_path"
+            exit 1
+          fi
+          delimiter="TASK_EOF_$(date +%s%N)"
+          content=$(cat "$task_path")
+          {
+            echo "content<<$delimiter"
+            echo "$content"
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Invoke Jules
         uses: google-labs-code/jules-invoke@v1
@@ -37,9 +57,40 @@ jobs:
             
             ${{ steps.task.outputs.content }}
             
-            After implementation, delete the task file.
+            Task cleanup is handled on the jules branch after verification.
             
             IMPORTANT: Name your branch with prefix `jules/impl/` (e.g., jules/impl/fix-auth-validation).
             This ensures your PR requires human review and is NOT auto-merged.
           jules_api_key: ${{ secrets.jules_api_key }}
           starting_branch: main
+
+      - uses: actions/checkout@v4
+        if: success()
+        with:
+          ref: jules
+          path: jules-task-cleanup
+
+      - name: Delete task on jules
+        if: success()
+        run: |
+          task_file="${{ inputs.task_file }}"
+          if [[ "$task_file" == */* ]] || [[ "$task_file" == *..* ]]; then
+            echo "Error: task_file cannot contain path traversal characters ('/' or '..')."
+            exit 1
+          fi
+          cd jules-task-cleanup
+          task_path=".jules/exchange/tasks/$task_file"
+          if [ ! -f "$task_path" ]; then
+            echo "Task file not found at $task_path; nothing to delete."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm "$task_path"
+          git add "$task_path"
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Remove processed task $task_file"
+          git push origin HEAD:jules

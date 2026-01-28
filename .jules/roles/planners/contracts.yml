@@ -4,10 +4,10 @@ responsibilities: |
   Planners decompose issues into concrete, executable tasks with clear verification plans.
 
 inputs:
-  - .jules/exchange/issues/*.md (single target issue to decompose)
+  - .jules/exchange/issues/*.yml (single target issue to decompose)
 
 outputs:
-  - .jules/exchange/tasks/*.md (concrete, executable work items)
+  - .jules/exchange/tasks/*.yml (concrete, executable work items)
 
 workflow:
   analysis: |
@@ -34,7 +34,7 @@ constraints:
 
 task_schema:
   version: 1
-  filename_format: "<id>.md"
+  filename_format: "<id>.yml"
   
   frontmatter:
     id: string

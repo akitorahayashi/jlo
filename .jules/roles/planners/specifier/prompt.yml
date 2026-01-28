@@ -15,7 +15,7 @@ workflow:
   - Delete processed issue
 
 inputs:
-  - .jules/exchange/issues/*.md (one target issue)
+  - .jules/exchange/issues/*.yml (one target issue)
 
 outputs:
-  - .jules/exchange/tasks/*.md (decomposed tasks)
+  - .jules/exchange/tasks/*.yml (decomposed tasks)

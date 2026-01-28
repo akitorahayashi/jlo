@@ -4,7 +4,7 @@ responsibilities: |
   Implementers execute tasks by writing code, tests, and documentation, then verify the changes.
 
 inputs:
-  - .jules/exchange/tasks/*.md (single target task to execute)
+  - .jules/exchange/tasks/*.yml (single target task to execute)
 
 outputs:
   - Source code, tests, documentation (as specified in task)
@@ -29,11 +29,11 @@ workflow:
   
   completion: |
     Confirm all change targets addressed.
-    Delete processed task.
+    Task file is removed from jules after verification.
 
 constraints:
   - Do NOT skip verification step
-  - Do NOT delete task before verification passes
+  - Task file removal occurs only after verification passes
   - Do NOT modify files outside task scope
   - Follow repository conventions (see AGENTS.md)
   - If verification command unavailable, use closest reliable alternative
@@ -42,4 +42,4 @@ task_processing:
   - Read single task from .jules/exchange/tasks/
   - Implement all changes
   - Verify implementation
-  - Delete task file when complete
+  - Task file is removed from jules when complete

@@ -6,10 +6,10 @@ responsibilities: |
 
 inputs:
   - .jules/exchange/events/**/*.yml (raw observations from observers)
-  - .jules/exchange/issues/*.md (existing issue backlog)
+  - .jules/exchange/issues/*.yml (existing issue backlog)
 
 outputs:
-  - .jules/exchange/issues/*.md (consolidated, validated problems)
+  - .jules/exchange/issues/*.yml (consolidated, validated problems)
   - <observer>/feedbacks/<date>_<description>.yml (rejection feedback)
 
 workflow:
@@ -41,7 +41,7 @@ constraints:
 
 issue_schema:
   version: 1
-  filename_format: "<id>.md"
+  filename_format: "<id>.yml"
   
   frontmatter:
     id: string

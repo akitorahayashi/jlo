@@ -14,7 +14,7 @@ outputs:
 
 window_hours: |
   Process only files with timestamps within window_hours of current time.
-  Filename format: YYYY-MM-DD_HHMMSS_*.yml
+  Filename format: YYYY-MM-DD_HHMMSS_*.yml (events)
   Files older than window_hours are ignored.
   Default: 24 hours
 
