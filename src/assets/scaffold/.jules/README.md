@@ -15,19 +15,23 @@ This file is human-oriented. Agents must read `.jules/JULES.md` for the formal c
 
 **Rule**: Jules-internal details stay in `.jules/`. `AGENTS.md` remains tool-agnostic.
 
-## 4-Layer Architecture
+## Role Flow
 
 ```
-Observer → Decider → Planner → Implementer
-(events)   (issues)   (tasks)   (code)
+Observer -> Decider -> Planner -> (GitHub Issue)
+(events)    (issues)   (tasks)    (implementation)
 ```
 
-| Layer | Role(s) | Transformation |
-|-------|---------|----------------|
-| Observer | taxonomy, data_arch, qa, consistency | Source → Events (domain-specialized observations) |
-| Decider | triage | Events → Issues (validation + consolidation) |
-| Planner | specifier | Issues → Tasks (decomposition into steps) |
-| Implementer | executor | Tasks → Code (execution) |
+Parallel observer branches are consolidated by Merger roles.
+
+| Role Type | Role(s) | Transformation |
+|-----------|---------|----------------|
+| Observer | taxonomy, data_arch, qa, consistency | Source -> Events (domain-specialized observations) |
+| Decider | triage | Events -> Issues (validation + consolidation) |
+| Planner | specifier | Issues -> Tasks (decomposition into steps) |
+| Merger | consolidator | Branches -> Unified branch (parallel work consolidation) |
+
+**Implementation**: Invoked via GitHub Issues with `jules` label.
 
 **Configuration Language**: All YAML files are written in English for optimal LLM processing.
 
@@ -35,50 +39,50 @@ Observer → Decider → Planner → Implementer
 
 ```
 .jules/
-├── README.md           # This file (jo-managed)
-├── JULES.md            # Agent contract (jo-managed)
-├── .jo-version         # Version marker (jo-managed)
-│
-├── roles/              # Role definitions
-│   ├── observers/
-│   │   ├── contracts.yml    # Shared observer contract
-│   │   ├── taxonomy/
-│   │   │   ├── prompt.yml  # Static: execution parameters
-│   │   │   ├── role.yml    # Dynamic: evolving focus
-│   │   │   ├── notes/      # Declarative state
-│   │   │   └── feedbacks/  # Decider feedback
-│   │   ├── data_arch/
-│   │   ├── consistency/
-│   │   └── qa/
-│   │
-│   ├── deciders/
-│   │   ├── contracts.yml    # Shared decider contract
-│   │   └── triage/
-│   │       └── prompt.yml
-│   │
-│   ├── planners/
-│   │   ├── contracts.yml    # Shared planner contract
-│   │   └── specifier/
-│   │       └── prompt.yml
-│   │
-│   └── implementers/
-│       ├── contracts.yml    # Shared implementer contract
-│       └── executor/
-│           └── prompt.yml
-│
-└── exchange/           # Transient data flow
-    ├── events/         # [Inbox] Raw observations
-    │   ├── bugs/
-    │   ├── docs/
-    │   ├── refacts/
-    │   ├── tests/
-    │   └── updates/
-    │
-    ├── issues/         # [Transit] Consolidated problems
-    │   └── *.md
-    │
-    └── tasks/          # [Outbox] Executable tasks
-        └── *.md
++-- README.md           # This file (jlo-managed)
++-- JULES.md            # Agent contract (jlo-managed)
++-- .jlo-version        # Version marker (jlo-managed)
+|
++-- roles/              # Role definitions
+|   +-- observers/
+|   |   +-- contracts.yml    # Shared observer contract
+|   |   +-- taxonomy/
+|   |   |   +-- prompt.yml   # Static: execution parameters
+|   |   |   +-- role.yml     # Dynamic: evolving focus
+|   |   |   +-- notes/       # Declarative state
+|   |   |   +-- feedbacks/   # Decider feedback
+|   |   +-- data_arch/
+|   |   +-- consistency/
+|   |   +-- qa/
+|   |
+|   +-- deciders/
+|   |   +-- contracts.yml    # Shared decider contract
+|   |   +-- triage/
+|   |       +-- prompt.yml
+|   |
+|   +-- planners/
+|   |   +-- contracts.yml    # Shared planner contract
+|   |   +-- specifier/
+|   |       +-- prompt.yml
+|   |
+|   +-- mergers/
+|       +-- contracts.yml    # Shared merger contract
+|       +-- consolidator/
+|           +-- prompt.yml
+|
++-- exchange/           # Transient data flow
+    +-- events/         # [Inbox] Raw observations
+    |   +-- bugs/
+    |   +-- docs/
+    |   +-- refacts/
+    |   +-- tests/
+    |   +-- updates/
+    |
+    +-- issues/         # [Transit] Consolidated problems
+    |   +-- *.md
+    |
+    +-- tasks/          # [Outbox] Executable tasks
+        +-- *.md
 ```
 
 ## Configuration Files
@@ -88,6 +92,7 @@ Layer-level shared constraints and workflows. All roles in the layer reference t
 
 ### prompt.yml
 Execution parameters and references to contracts.yml. Static, scheduled with agent.
+Includes `window_hours` parameter for Deciders, Planners, and Mergers.
 
 ### role.yml
 Specialized focus that evolves through feedback loop. Only observers have this (stateful layer).
@@ -103,6 +108,7 @@ Each observer:
 4. Reads notes/ for current state
 5. Updates notes/ declaratively
 6. Writes exchange/events/**/*.yml when observations warrant
+7. Creates branch: `jules/observer-<role>-<timestamp>-<id>`
 
 **Stateful**: Maintains `notes/` and receives feedback via `feedbacks/`.
 
@@ -110,7 +116,7 @@ Each observer:
 
 Triage agent:
 1. Reads contracts.yml (layer behavior)
-2. Reads all exchange/events/**/*.yml and existing exchange/issues/*.md
+2. Reads all exchange/events/**/*.yml within window_hours
 3. Validates observations (do they exist in codebase?)
 4. Merges related events sharing root cause
 5. Creates consolidated issues in exchange/issues/
@@ -123,34 +129,60 @@ Triage agent:
 
 Specifier agent:
 1. Reads contracts.yml (layer behavior)
-2. Reads target issue from exchange/issues/
+2. Reads target issue from exchange/issues/ within window_hours
 3. Analyzes impact
 4. Decomposes into executable tasks in exchange/tasks/
 5. Deletes processed issue
 
 **Planner answers**: "What steps solve this issue?"
 
-### 4. Implementer Agent (On-Demand)
+### 4. Merger Agent (Scheduled)
 
-Executor agent:
+Consolidator agent:
 1. Reads contracts.yml (layer behavior)
-2. Reads target task from exchange/tasks/
-3. Implements code changes
-4. Runs verification
-5. Deletes processed task
+2. Lists branches matching jules/observer-* within window_hours
+3. Analyzes changes from each branch
+4. Resolves conflicts between parallel observers
+5. Creates consolidated branch: `jules/merger-<role>-<timestamp>-<id>`
+
+**Merger answers**: "How do parallel observer changes combine?"
+
+### 5. Implementation (Via GitHub Issue)
+
+Implementation is invoked by creating a GitHub Issue with `jules` label.
+The issue contains tasks from exchange/tasks/.
 
 ## Feedback Loop
 
 ```
 Observer creates events in exchange/events/
-       ↓
+       |
+       v
 Decider validates, may reject
-       ↓ (rejection)
+       |
+       v (rejection)
 Decider writes feedbacks/{date}_{desc}.yml
-       ↓
+       |
+       v
 Observer reads feedbacks/, updates role.yml
-       ↓
+       |
+       v
 Observer avoids similar observations
 ```
 
 Feedback files are preserved for audit (never deleted).
+
+## Branch Naming Convention
+
+All agents must create branches using this format:
+
+```
+jules/<role>-<YYYYMMDD>-<HHMM>-<short_id>
+```
+
+Examples:
+- `jules/observer-taxonomy-20260128-1345-a1b2`
+- `jules/decider-triage-20260128-1400-c3d4`
+- `jules/merger-consolidator-20260128-1415-e5f6`
+
+Old branches can be cleaned up with `jlo prune -d <days>`.

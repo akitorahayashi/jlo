@@ -1,0 +1,34 @@
+# Merger Layer Contract
+
+## Purpose
+Consolidate parallel observer branches into a single consistency branch.
+
+## Branch Naming Convention
+All agents must use the following branch naming format:
+```
+jules/<role>-<YYYYMMDD>-<HHMM>-<short_id>
+```
+
+Examples:
+- jules/observer-taxonomy-20260128-1345-a1b2
+- jules/merger-consolidator-20260128-1415-e5f6
+
+## Workflow
+
+1. **List Branches**: Identify all branches matching `jules/observer-*`
+2. **Filter by Window**: Process only branches created within `window_hours`
+3. **Analyze Changes**: Review changes from each observer branch
+4. **Resolve Conflicts**: Merge changes, resolving any conflicts
+5. **Create Consolidated Branch**: Push merged result as `jules/merger-<role>-<timestamp>-<id>`
+
+## Constraints
+
+- Never modify the main branch directly
+- Preserve all observer notes and feedbacks
+- Original observer branches remain for `jlo prune` to clean up
+- window_hours parameter determines processing scope
+
+## Outputs
+
+- Single consolidated branch containing merged observer changes
+- No direct modifications to exchange/ directory (observers handle that)

@@ -27,45 +27,77 @@ All scheduled agents must read this file before acting.
 - `prompt.yml` references the layer's contracts.yml for behavioral instructions
 - `role.yml` exists only for observers and evolves through feedback loop
 
-## 4-Layer Flow
+## Role Flow
 
 ```
-Observer → Decider → Planner → Implementer
-(events)   (issues)   (tasks)   (code)
+Observer -> Decider -> Planner -> (GitHub Issue)
+(events)    (issues)   (tasks)    (implementation)
 ```
 
-Each layer has a **distinct transformation responsibility**:
+Parallel observer branches are consolidated by Merger roles.
 
-| Layer | Input | Output | Key Distinction |
-|-------|-------|--------|-----------------|
+Each role type has a **distinct transformation responsibility**:
+
+| Role Type | Input | Output | Key Distinction |
+|-----------|-------|--------|-----------------|
 | Observer | source code | events | Domain-specialized observations |
 | Decider | events | issues | **Validation and consolidation** (Is this real? Should events merge?) |
 | Planner | issues | tasks | **Decomposition** (What steps are needed to solve this?) |
-| Implementer | tasks | code | Execution |
+| Merger | observer branches | consolidated branch | **Branch consolidation** (Merge parallel observer work) |
 
-**Detailed layer behaviors and schemas are defined in each layer's contracts.yml file.**
+**Implementation is invoked via GitHub Issues with `jules` label.**
+
+**Detailed role behaviors and schemas are defined in each layer's contracts.yml file.**
+
+## Branch Naming Convention
+
+All agents must create branches using this format:
+
+```
+jules/<role>-<YYYYMMDD>-<HHMM>-<short_id>
+```
+
+Examples:
+- `jules/observer-taxonomy-20260128-1345-a1b2`
+- `jules/decider-triage-20260128-1400-c3d4`
+- `jules/merger-consolidator-20260128-1415-e5f6`
+
+This convention enables:
+- Automated pruning via `jlo prune`
+- Age-based filtering
+- Role identification
+
+## window_hours Behavior
+
+Deciders and Planners use `window_hours` parameter to filter input files.
+
+- **Default**: 24 hours
+- **Behavior**: Files older than `window_hours` from execution time are ignored
+- **Filename format**: Files must contain timestamp (e.g., `YYYY-MM-DD_HHMMSS_*.yml`)
+
+This prevents re-processing of old events/issues without requiring cursor files.
 
 ## Workspace Structure
 
 ```
 .jules/
-├── roles/
-│   ├── observers/
-│   │   ├── contracts.yml    # Shared observer contract
-│   │   └── <role>/
-│   ├── deciders/
-│   │   ├── contracts.yml    # Shared decider contract
-│   │   └── <role>/
-│   ├── planners/
-│   │   ├── contracts.yml    # Shared planner contract
-│   │   └── <role>/
-│   └── implementers/
-│       ├── contracts.yml    # Shared implementer contract
-│       └── <role>/
-└── exchange/
-    ├── events/    # Inbox: raw observations from observers
-    ├── issues/    # Transit: consolidated problems from deciders
-    └── tasks/     # Outbox: executable work from planners
++-- roles/
+|   +-- observers/
+|   |   +-- contracts.yml    # Shared observer contract
+|   |   +-- <role>/
+|   +-- deciders/
+|   |   +-- contracts.yml    # Shared decider contract
+|   |   +-- <role>/
+|   +-- planners/
+|   |   +-- contracts.yml    # Shared planner contract
+|   |   +-- <role>/
+|   +-- mergers/
+|       +-- contracts.yml    # Shared merger contract
+|       +-- <role>/
++-- exchange/
+    +-- events/    # Inbox: raw observations from observers
+    +-- issues/    # Transit: consolidated problems from deciders
+    +-- tasks/     # Outbox: executable work from planners
 ```
 
 All files in `exchange/` are transient and deleted after processing.
@@ -80,6 +112,5 @@ All files in `exchange/` are transient and deleted after processing.
 
 - Processed events: deleted after triage (accepted or rejected)
 - Processed issues: deleted after planning
-- Processed tasks: deleted after implementation
+- Processed tasks: deleted after implementation via GitHub Issue
 - Feedback files: **never deleted** (preserved for audit)
-

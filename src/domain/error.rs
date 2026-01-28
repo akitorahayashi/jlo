@@ -46,7 +46,7 @@ impl Display for AppError {
             AppError::InvalidLayer(name) => {
                 write!(
                     f,
-                    "Invalid layer '{}': must be one of observers, deciders, planners, implementers",
+                    "Invalid layer '{}': must be one of observers, deciders, planners, mergers",
                     name
                 )
             }

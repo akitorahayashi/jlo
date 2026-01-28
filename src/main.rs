@@ -15,7 +15,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Create .jules/ workspace structure with 4-layer architecture
+    /// Create .jules/ workspace structure
     #[clap(visible_alias = "i")]
     Init,
     /// Read a role's prompt.yml and copy to clipboard
@@ -30,12 +30,22 @@ enum Commands {
     /// Create a new role from a layer template
     #[clap(visible_alias = "tp")]
     Template {
-        /// Layer: observers, deciders, planners, or implementers
+        /// Layer: observers, deciders, planners, or mergers
         #[arg(short, long)]
         layer: Option<String>,
         /// Name for the new role
         #[arg(short, long)]
         name: Option<String>,
+    },
+    /// Delete old jules/* branches
+    #[clap(visible_alias = "prn")]
+    Prune {
+        /// Delete branches older than N days
+        #[arg(short, long)]
+        days: u32,
+        /// Preview branches without deleting
+        #[arg(long)]
+        dry_run: bool,
     },
 }
 
@@ -48,6 +58,7 @@ fn main() {
         Commands::Template { layer, name } => {
             jlo::template(layer.as_deref(), name.as_deref()).map(|_| ())
         }
+        Commands::Prune { days, dry_run } => jlo::prune(days, dry_run),
     };
 
     if let Err(e) = result {

@@ -1,6 +1,6 @@
 use std::fmt;
 
-/// The 4 architectural layers for agent roles.
+/// The architectural layers for agent roles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Layer {
     /// Observers: Read source, update notes, emit events (taxonomy, data_arch, qa)
@@ -9,14 +9,14 @@ pub enum Layer {
     Deciders,
     /// Planners: Read issues, emit tasks, delete issues (specifier)
     Planners,
-    /// Implementers: Read tasks, write code/tests, delete tasks (executor)
-    Implementers,
+    /// Mergers: Consolidate parallel observer branches (consolidator)
+    Mergers,
 }
 
 impl Layer {
     /// All available layers in order.
     pub const ALL: [Layer; 4] =
-        [Layer::Observers, Layer::Deciders, Layer::Planners, Layer::Implementers];
+        [Layer::Observers, Layer::Deciders, Layer::Planners, Layer::Mergers];
 
     /// Directory name for this layer.
     pub fn dir_name(&self) -> &'static str {
@@ -24,7 +24,7 @@ impl Layer {
             Layer::Observers => "observers",
             Layer::Deciders => "deciders",
             Layer::Planners => "planners",
-            Layer::Implementers => "implementers",
+            Layer::Mergers => "mergers",
         }
     }
 
@@ -34,7 +34,7 @@ impl Layer {
             Layer::Observers => "Observer",
             Layer::Deciders => "Decider",
             Layer::Planners => "Planner",
-            Layer::Implementers => "Implementer",
+            Layer::Mergers => "Merger",
         }
     }
 
@@ -44,7 +44,7 @@ impl Layer {
             "observers" | "observer" => Some(Layer::Observers),
             "deciders" | "decider" => Some(Layer::Deciders),
             "planners" | "planner" => Some(Layer::Planners),
-            "implementers" | "implementer" => Some(Layer::Implementers),
+            "mergers" | "merger" => Some(Layer::Mergers),
             _ => None,
         }
     }
@@ -55,7 +55,7 @@ impl Layer {
             Layer::Observers => "Read source & notes, emit events. Never write issues.",
             Layer::Deciders => "Read events & issues, emit issues. Delete processed events.",
             Layer::Planners => "Read issues, emit tasks. Delete processed issues.",
-            Layer::Implementers => "Read tasks, write code/tests. Delete processed tasks.",
+            Layer::Mergers => "Consolidate parallel observer branches into consistency branch.",
         }
     }
 }
