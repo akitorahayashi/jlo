@@ -59,13 +59,13 @@ jules/<layer>-<role>-<YYYYMMDD>-<HHMM>-<short_id>
 
 **Implementers** (starting from `main` branch):
 ```
-impl/<task_id>-<short_description>
+jules/implementer-<task_id>-<short_description>
 ```
 
 Examples:
 - `jules/observer-taxonomy-20260128-1345-a1b2`
 - `jules/decider-triage-20260128-1400-c3d4`
-- `impl/task-001-fix-null-check`
+- `jules/implementer-task-001-fix-null-check`
 
 ## Branch Strategy
 
@@ -74,7 +74,7 @@ Examples:
 | Observer | `jules` | `jules/observer-*` | ✅ (if `.jules/` only) |
 | Decider | `jules` | `jules/decider-*` | ✅ (if `.jules/` only) |
 | Planner | `jules` | `jules/planner-*` | ✅ (if `.jules/` only) |
-| Implementer | `main` | `impl/*` | ❌ (human review) |
+| Implementer | `main` | `jules/implementer-*` | ❌ (human review) |
 
 **Auto-merge criteria**: PRs that only modify files under `.jules/` are auto-merged after CI passes.
 **Human review**: Implementer PRs modify source code and require human approval.

@@ -1,4 +1,5 @@
 layer: observers
+branch_prefix: jules/observer-
 
 responsibilities: |
   Observers analyze source code and repository state to identify patterns, inconsistencies, and quality issues.
