@@ -35,7 +35,7 @@ Agent execution is orchestrated by GitHub Actions, not jlo. The `.github/workflo
 | Observer | `jules` | `jules/observer-*` | ✅ (if `.jules/` only) |
 | Decider | `jules` | `jules/decider-*` | ✅ (if `.jules/` only) |
 | Planner | `jules` | `jules/planner-*` | ✅ (if `.jules/` only) |
-| Implementer | `main` | `impl/*` | ❌ (human review) |
+| Implementer | `main` | `jules/impl/*` | ❌ (human review) |
 
 ## Tech Stack
 - **Language**: Rust

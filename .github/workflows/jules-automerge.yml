@@ -27,6 +27,8 @@ jobs:
        startsWith(github.head_ref, 'jules/planner-')) &&
       github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
     outputs:
       jules_only: ${{ steps.check.outputs.jules_only }}
     steps:

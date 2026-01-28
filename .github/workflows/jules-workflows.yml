@@ -46,7 +46,10 @@ jobs:
   # ============================================================================
   observers:
     needs: sync
-    if: always() && (needs.sync.result == 'success' || needs.sync.result == 'skipped')
+    if: |
+      always() && needs.sync.result == 'success' &&
+      (github.event_name == 'schedule' && github.event.schedule == '0 0 * * *' || 
+       (github.event_name == 'workflow_dispatch' && inputs.agent == 'observers'))
     strategy:
       fail-fast: false
       matrix:
