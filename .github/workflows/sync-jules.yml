@@ -1,8 +1,7 @@
 name: Sync main to jules
 
 on:
-  schedule:
-    - cron: '50 23 * * *'  # 08:50 JST - runs before Observers (00:00 UTC)
+  workflow_call:
   workflow_dispatch:
 
 jobs:

@@ -19,6 +19,13 @@ runs:
       id: read
       shell: bash
       run: |
+        # Validate inputs to prevent path traversal
+        if [[ "${{ inputs.layer }}" == */* ]] || [[ "${{ inputs.layer }}" == *..* ]] || \
+           [[ "${{ inputs.role }}" == */* ]] || [[ "${{ inputs.role }}" == *..* ]]; then
+          echo "Error: Inputs cannot contain path traversal characters ('/' or '..')."
+          exit 1
+        fi
+        
         prompt_path=".jules/roles/${{ inputs.layer }}/${{ inputs.role }}/prompt.yml"
         if [ ! -f "$prompt_path" ]; then
           echo "Error: prompt.yml not found at $prompt_path"

@@ -2,17 +2,22 @@
 #
 # Coordinates scheduled agent execution and event-driven workflows.
 # Uses reusable workflows for each agent type.
+#
+# Flow:
+#   Scheduled: sync-jules → observers → (wait) → decider
+#   On push to issues/: planners (matrix)
+#   On push to tasks/: implementers (matrix)
 
 name: Jules Workflows
 
 on:
   schedule:
-    # Observers: daily at 00:00 UTC
+    # Daily at 00:00 UTC - triggers sync + observers
     - cron: '0 0 * * *'
-    # Decider: daily at 00:30 UTC (after observers)
+    # Daily at 00:30 UTC - triggers decider (after observer PRs merge)
     - cron: '30 0 * * *'
   push:
-    branches: [main]
+    branches: [jules]
     paths:
       - '.jules/exchange/issues/*.yml'
       - '.jules/exchange/tasks/*.yml'
@@ -30,10 +35,18 @@ on:
 
 jobs:
   # ============================================================================
-  # Scheduled Observers (cron: 0 0 * * *)
+  # Sync main → jules (before observers)
+  # ============================================================================
+  sync:
+    if: github.event_name == 'schedule' && github.event.schedule == '0 0 * * *' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'observers')
+    uses: ./.github/workflows/sync-jules.yml
+
+  # ============================================================================
+  # Scheduled Observers (after sync)
   # ============================================================================
   observers:
-    if: github.event_name == 'schedule' && github.event.schedule == '0 0 * * *' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'observers')
+    needs: sync
+    if: always() && (needs.sync.result == 'success' || needs.sync.result == 'skipped')
     strategy:
       fail-fast: false
       matrix:
@@ -45,7 +58,7 @@ jobs:
       jules_api_key: ${{ secrets.JULES_API_KEY }}
 
   # ============================================================================
-  # Scheduled Decider (cron: 30 0 * * *)
+  # Scheduled Decider (separate cron, after observer PRs merge)
   # ============================================================================
   decider:
     if: github.event_name == 'schedule' && github.event.schedule == '30 0 * * *' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'decider')

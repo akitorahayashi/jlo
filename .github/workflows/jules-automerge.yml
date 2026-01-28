@@ -1,9 +1,13 @@
 # Jules Auto-Merge
 #
-# Enables squash-merge with branch deletion for PRs from jules/* branches
-# that only modify .jules/ directory. PRs touching other files are blocked.
+# Enables squash-merge with branch deletion for PRs from observer/decider/planner.
+# Only applies when:
+#   1. Branch matches jules/{observer,decider,planner}-* pattern
+#   2. All changed files are within .jules/ directory
 #
-# Does NOT apply to impl/* branches which require human review.
+# Does NOT apply to:
+#   - impl/* branches (implementation requires human review)
+#   - Any PR that modifies files outside .jules/
 #
 # Prerequisites:
 # - Repository Settings: Enable "Allow auto-merge"
@@ -34,12 +38,17 @@ jobs:
           changed=$(gh pr view "${{ github.event.pull_request.number }}" \
             --repo "${{ github.repository }}" \
             --json files -q '.files[].path')
+          
+          # Check if any file is outside .jules/
           non_jules=$(echo "$changed" | grep -v '^\.jules/' || true)
+          
           if [ -z "$non_jules" ]; then
             echo "jules_only=true" >> "$GITHUB_OUTPUT"
+            echo "All changes are within .jules/ - auto-merge eligible"
           else
             echo "jules_only=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::PR modifies files outside .jules/: $non_jules"
+            echo "::warning::PR modifies files outside .jules/:"
+            echo "$non_jules"
           fi
 
   enable:
