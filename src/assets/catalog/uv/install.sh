@@ -9,10 +9,8 @@ fi
 
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Source the env to make uv available
-if [[ -f "$HOME/.local/bin/env" ]]; then
-  # shellcheck disable=SC1091
-  . "$HOME/.local/bin/env"
-fi
+# Add uv to the PATH for this script's execution
+export UV_HOME="${UV_HOME:-$HOME/.uv}"
+export PATH="$UV_HOME/bin:$PATH"
 
 uv --version

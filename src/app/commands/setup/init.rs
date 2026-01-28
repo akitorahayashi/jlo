@@ -23,9 +23,10 @@ env.toml
 /// - `tools.yml` - Tool selection configuration
 /// - `.gitignore` - Ignores env.toml
 pub fn execute(path: Option<&Path>) -> Result<(), AppError> {
-    let target = path
-        .map(|p| p.to_path_buf())
-        .unwrap_or_else(|| std::env::current_dir().expect("Failed to get current directory"));
+    let target = match path {
+        Some(p) => p.to_path_buf(),
+        None => std::env::current_dir()?,
+    };
 
     let setup_dir = target.join(".jules").join("setup");
 

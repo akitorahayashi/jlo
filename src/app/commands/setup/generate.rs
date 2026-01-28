@@ -1,6 +1,5 @@
 //! Setup gen command - generates install.sh and env.toml.
 
-use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
 use crate::domain::AppError;
@@ -15,9 +14,10 @@ use crate::services::{EmbeddedCatalog, Generator, Resolver};
 ///
 /// Returns the list of resolved component names in installation order.
 pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
-    let target = path
-        .map(|p| p.to_path_buf())
-        .unwrap_or_else(|| std::env::current_dir().expect("Failed to get current directory"));
+    let target = match path {
+        Some(p) => p.to_path_buf(),
+        None => std::env::current_dir()?,
+    };
 
     let setup_dir = target.join(".jules").join("setup");
 
@@ -52,10 +52,14 @@ pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
     let install_sh = setup_dir.join("install.sh");
     std::fs::write(&install_sh, &script_content)?;
 
-    // Make executable
-    let mut perms = std::fs::metadata(&install_sh)?.permissions();
-    perms.set_mode(0o755);
-    std::fs::set_permissions(&install_sh, perms)?;
+    // Make executable (Unix only)
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&install_sh)?.permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&install_sh, perms)?;
+    }
 
     // Generate/merge env.toml
     let env_toml_path = setup_dir.join("env.toml");
@@ -133,8 +137,11 @@ mod tests {
         assert!(content.contains("just"));
     }
 
+    #[cfg(unix)]
     #[test]
     fn install_script_is_executable() {
+        use std::os::unix::fs::PermissionsExt;
+
         let temp = tempdir().unwrap();
         setup_initialized_workspace(temp.path());
 

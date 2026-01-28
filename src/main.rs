@@ -89,8 +89,8 @@ fn main() {
         }
         Commands::Prune { days, dry_run } => jlo::prune(days, dry_run),
         Commands::Setup { command } => match command {
-            SetupCommands::Init { path } => jlo::setup_init(path.as_deref()),
-            SetupCommands::Gen { path } => jlo::setup_gen(path.as_deref()).map(|_| ()),
+            SetupCommands::Init { path } => run_setup_init(path),
+            SetupCommands::Gen { path } => run_setup_gen(path),
             SetupCommands::List { detail } => run_setup_list(detail),
         },
     };
@@ -99,6 +99,21 @@ fn main() {
         eprintln!("Error: {}", e);
         std::process::exit(1);
     }
+}
+
+fn run_setup_init(path: Option<PathBuf>) -> Result<(), AppError> {
+    jlo::setup_init(path.as_deref())?;
+    println!("✅ Initialized .jules/setup/ workspace");
+    Ok(())
+}
+
+fn run_setup_gen(path: Option<PathBuf>) -> Result<(), AppError> {
+    let components = jlo::setup_gen(path.as_deref())?;
+    println!("✅ Generated install.sh with {} component(s)", components.len());
+    for (i, name) in components.iter().enumerate() {
+        println!("  {}. {}", i + 1, name);
+    }
+    Ok(())
 }
 
 fn run_setup_list(detail: Option<String>) -> Result<(), AppError> {

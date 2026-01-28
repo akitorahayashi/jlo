@@ -110,9 +110,7 @@ pub fn prune(days: u32, dry_run: bool) -> Result<(), AppError> {
 ///
 /// Creates the directory structure with `tools.yml` template.
 pub fn setup_init(path: Option<&Path>) -> Result<(), AppError> {
-    setup::init(path)?;
-    println!("✅ Initialized .jules/setup/ workspace");
-    Ok(())
+    setup::init(path)
 }
 
 /// Generate setup script and environment configuration.
@@ -123,12 +121,7 @@ pub fn setup_init(path: Option<&Path>) -> Result<(), AppError> {
 ///
 /// Returns the list of resolved component names in installation order.
 pub fn setup_gen(path: Option<&Path>) -> Result<Vec<String>, AppError> {
-    let components = setup::generate(path)?;
-    println!("✅ Generated install.sh with {} component(s)", components.len());
-    for (i, name) in components.iter().enumerate() {
-        println!("  {}. {}", i + 1, name);
-    }
-    Ok(components)
+    setup::generate(path)
 }
 
 /// List all available components.
