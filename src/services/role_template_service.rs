@@ -11,7 +11,6 @@ mod templates {
     pub static OBSERVER: &str = include_str!("../assets/templates/layers/observer/prompt.yml");
     pub static DECIDER: &str = include_str!("../assets/templates/layers/decider/prompt.yml");
     pub static PLANNER: &str = include_str!("../assets/templates/layers/planner/prompt.yml");
-    pub static MERGER: &str = include_str!("../assets/templates/layers/merger/prompt.yml");
 }
 
 /// Embedded role template store implementation.
@@ -51,7 +50,6 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
             Layer::Observers => templates::OBSERVER,
             Layer::Deciders => templates::DECIDER,
             Layer::Planners => templates::PLANNER,
-            Layer::Mergers => templates::MERGER,
         };
 
         template.to_string()
@@ -63,10 +61,11 @@ fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
         match entry {
             DirEntry::File(file) => {
                 if let Some(content) = file.contents_utf8() {
-                    files.push(ScaffoldFile {
-                        path: file.path().to_string_lossy().to_string(),
-                        content: content.to_string(),
-                    });
+                    let path = file.path().to_string_lossy().to_string();
+                    if path.starts_with(".jules/roles/mergers/") {
+                        continue;
+                    }
+                    files.push(ScaffoldFile { path, content: content.to_string() });
                 }
             }
             DirEntry::Dir(subdir) => collect_files(subdir, files),

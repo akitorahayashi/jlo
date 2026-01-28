@@ -56,11 +56,7 @@ impl Display for AppError {
                 )
             }
             AppError::InvalidLayer(name) => {
-                write!(
-                    f,
-                    "Invalid layer '{}': must be one of observers, deciders, planners, mergers",
-                    name
-                )
+                write!(f, "Invalid layer '{}': must be one of observers, deciders, planners", name)
             }
             AppError::RoleNotFound(query) => {
                 write!(f, "Role '{}' not found", query)

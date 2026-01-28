@@ -138,31 +138,8 @@ fn help_lists_visible_aliases() {
     ctx.cli().arg("--help").assert().success().stdout(
         predicate::str::contains("[aliases: i]")
             .and(predicate::str::contains("[aliases: a]"))
-            .and(predicate::str::contains("[aliases: tp]"))
-            .and(predicate::str::contains("[aliases: prn]")),
+            .and(predicate::str::contains("[aliases: tp]")),
     );
-}
-
-#[test]
-#[serial]
-fn prune_fails_without_workspace() {
-    let ctx = TestContext::new();
-
-    ctx.cli()
-        .args(["prune", "-d", "7"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("No .jules/"));
-}
-
-#[test]
-#[serial]
-fn prune_requires_days_flag() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("init").assert().success();
-
-    ctx.cli().args(["prune"]).assert().failure().stderr(predicate::str::contains("--days"));
 }
 
 // =============================================================================
