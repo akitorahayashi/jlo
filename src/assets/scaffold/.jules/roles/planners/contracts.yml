@@ -19,4 +19,4 @@ workflow:
   3. If false: Limit analysis to the specified target files
   4. Decompose into sequential, verifiable tasks
   5. Create tasks: cp task.yml .jules/exchange/tasks/<id>.yml
-  6. Delete processed issue
+  5. Delete processed issue
