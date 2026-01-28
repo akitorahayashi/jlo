@@ -34,7 +34,7 @@ workflow:
     cp .jules/roles/deciders/issue.yml .jules/exchange/issues/<id>.yml
     
     Reject: Write feedback using template, delete events.
-    cp .jules/roles/deciders/feedback.yml <observer>/feedbacks/<date>_<description>.yml
+    cp .jules/roles/deciders/feedback.yml .jules/roles/observers/<observer>/feedbacks/<date>_<description>.yml
   
   feedback_writing: |
     When rejecting recurring patterns, write feedback.

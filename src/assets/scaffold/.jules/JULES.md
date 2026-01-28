@@ -22,7 +22,7 @@ All scheduled agents must read this file before acting.
 | `contracts.yml` | **Static** (layer-level) | Shared constraints and schemas for all roles in a layer |
 | `prompt.yml` | **Static** (scheduled) | Execution parameters and references to contracts.yml |
 | `role.yml` | **Dynamic** (evolves) | Specialized focus that updates based on feedback (observers only) |
-| `*.yml` (templates) | **Static** (layer-level) | Copyable templates for artifacts (event.yml, issue.yml, feedback.yml) |
+| `*.yml` (templates) | **Static** (layer-level) | Copyable templates for artifacts (event.yml, issue.yml, feedback.yml, task.yml) |
 
 - `contracts.yml` exists at layer level (e.g., `roles/observers/contracts.yml`)
 - `prompt.yml` references the layer's contracts.yml for behavioral instructions
