@@ -1,47 +1,21 @@
 layer: planners
-branch_prefix: jules/planner-
-
-responsibilities: |
-  Planners decompose issues into concrete, executable tasks with clear verification plans.
-
-inputs:
-  - .jules/exchange/issues/*.yml (single target issue to decompose)
-
-outputs:
-  - .jules/exchange/tasks/*.yml (concrete, executable work items)
-
-window_hours: |
-  Process only files with timestamps within window_hours of current time.
-  Filename format: <id>.yml where id contains timestamp
-  Files older than window_hours are ignored.
-  Default: 24 hours
-
-workflow:
-  analysis: |
-    Read target issue within window_hours.
-    Understand acceptance criteria.
-    Identify all affected files and modules.
-  
-  decomposition: |
-    Break issue into logical, sequential tasks.
-    Each task should be independently verifiable.
-    Ensure tasks cover all acceptance criteria.
-  
-  task_creation: |
-    Copy task.yml template for each task.
-    cp .jules/roles/planners/task.yml .jules/exchange/tasks/<id>.yml
-    
-    Analyze comprehensive scope:
-    - implementation: files/modules to create or modify
-    - tests: test files to add or update
-    - documentation: docs to reflect the change
-    
-    Delete processed issue.
+branch_prefix: jules-planner-
 
 constraints:
-  - Do NOT create vague or unverifiable tasks
-  - Each task must specify concrete file paths in scope section
-  - Each task must include verification command or method
-  - Delete issue after successful task creation
-  - Do NOT write to other directories
+  - Branch ID: 4 alphanumeric characters (e.g. 'e5f6')
+  - Each task must specify concrete file paths
+  - Each task must include verification command
+  - Delete issue after task creation
 
+inputs:
+  - .jules/exchange/issues/*.yml
+
+outputs:
+  - .jules/exchange/tasks/*.yml
+
+workflow:
+  1. Read target issue, understand acceptance criteria
+  2. Identify affected files/modules
+  3. Decompose into sequential, verifiable tasks
+  4. Create tasks: cp task.yml .jules/exchange/tasks/<id>.yml
+  5. Delete processed issue

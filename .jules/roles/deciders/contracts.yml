@@ -1,50 +1,22 @@
 layer: deciders
-branch_prefix: jules/decider-
-
-responsibilities: |
-  Deciders screen and validate observations from observers, consolidate related events,
-  and convert approved items into actionable issues.
-
-inputs:
-  - .jules/exchange/events/**/*.yml (raw observations from observers)
-  - .jules/exchange/issues/*.yml (existing issue backlog)
-
-outputs:
-  - .jules/exchange/issues/*.yml (consolidated, validated problems)
-  - <observer>/feedbacks/<date>_<description>.yml (rejection feedback)
-
-window_hours: |
-  Process only files with timestamps within window_hours of current time.
-  Filename format: YYYY-MM-DD_HHMMSS_*.yml (events)
-  Files older than window_hours are ignored.
-  Default: 24 hours
-
-workflow:
-  validation: |
-    Read all events within window_hours.
-    Verify observations actually exist in codebase.
-    Check if observation is significant enough to warrant action.
-    Identify related events that share root cause.
-  
-  consolidation: |
-    Merge related events into single issue.
-    Ensure issue is actionable and well-scoped.
-  
-  decision: |
-    Accept: Create issue using template, delete source events.
-    cp .jules/roles/deciders/issue.yml .jules/exchange/issues/<id>.yml
-    
-    Reject: Write feedback using template, delete events.
-    cp .jules/roles/deciders/feedback.yml .jules/roles/observers/<observer>/feedbacks/<date>_<description>.yml
-  
-  feedback_writing: |
-    When rejecting recurring patterns, write feedback.
-    Feedback helps observers refine their focus.
-    Include pattern description and why it's noise.
+branch_prefix: jules-decider-
 
 constraints:
-  - Do NOT accept observations without verifying them in codebase
+  - Branch ID: 4 alphanumeric characters (e.g. 'c3d4')
+  - Verify observations in codebase before accepting
   - Do NOT create issues for trivial matters
   - Do NOT write to .jules/exchange/tasks/
-  - Delete ALL processed events (both accepted and rejected)
-  - Write feedback for recurring rejection patterns
+  - Delete ALL processed events
+
+inputs:
+  - .jules/exchange/events/**/*.yml
+
+outputs:
+  - .jules/exchange/issues/*.yml (accepted)
+  - .jules/roles/observers/<author_role>/feedbacks/<date>_<description>.yml (rejection feedback)
+
+workflow:
+  1. Read events (filename: YYYY-MM-DD_HHMMSS_*.yml)
+  2. Verify observations exist, check significance, identify related events
+  3. Accept: cp issue.yml .jules/exchange/issues/<id>.yml, delete events
+  4. Reject: cp feedback.yml .jules/roles/observers/<author_role>/feedbacks/<file>.yml, delete events

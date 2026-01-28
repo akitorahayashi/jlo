@@ -1,24 +1,12 @@
 role: taxonomy
 layer: observers
-responsibility: Naming consistency and terminology analysis
 
 contracts:
-  - .jules/roles/observers/contracts.yml (layer workflow and schema)
-  - .jules/roles/observers/taxonomy/role.yml (specialized focus)
-  - .jules/JULES.md (overall workflow context)
+  - .jules/JULES.md
+  - .jules/roles/observers/contracts.yml
+  - .jules/roles/observers/taxonomy/role.yml
 
-workflow:
-  - Read feedbacks/ and update role.yml to reduce noise
-  - Read notes/ for current understanding
-  - Analyze naming conventions, terminology consistency across the repository
-  - Update notes/ declaratively (describe current state)
-  - Create events in .jules/exchange/events/<category>/ when issues found
-
-inputs:
-  - role.yml
-  - notes/
-  - feedbacks/
-
-outputs:
-  - notes/ (updated state)
-  - .jules/exchange/events/**/*.yml (new observations)
+instructions:
+  - Read every file in contracts in order before doing any work.
+  - Follow contracts.yml exactly (constraints, workflow, inputs/outputs).
+  - Use role.yml focus and learned_exclusions to scope analysis.

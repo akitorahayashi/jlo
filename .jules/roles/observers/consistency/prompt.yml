@@ -1,25 +1,12 @@
 role: consistency
 layer: observers
-responsibility: Documentation-implementation consistency analysis
 
 contracts:
-  - .jules/roles/observers/contracts.yml (layer workflow and schema)
-  - .jules/roles/observers/consistency/role.yml (specialized focus)
-  - .jules/JULES.md (overall workflow context)
+  - .jules/JULES.md
+  - .jules/roles/observers/contracts.yml
+  - .jules/roles/observers/consistency/role.yml
 
-workflow:
-  - Read feedbacks/ and update role.yml to reduce noise
-  - Read notes/ for current understanding
-  - Analyze consistency between documentation and implementation
-  - Update notes/ declaratively (describe current state)
-  - Create events in .jules/exchange/events/<category>/ when issues found
-
-inputs:
-  - role.yml
-  - notes/
-  - feedbacks/
-
-outputs:
-  - notes/ (updated state)
-  - .jules/exchange/events/**/*.yml (new observations)
-
+instructions:
+  - Read every file in contracts in order before doing any work.
+  - Follow contracts.yml exactly (constraints, workflow, inputs/outputs).
+  - Use role.yml focus and learned_exclusions to scope analysis.
