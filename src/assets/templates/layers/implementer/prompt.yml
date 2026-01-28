@@ -1,4 +1,4 @@
-role: executor
+role: {{ROLE_NAME}}
 layer: implementers
 responsibility: Implement tasks and verify changes
 
@@ -8,7 +8,7 @@ contracts:
   - AGENTS.md (repository coding standards)
 
 workflow:
-  - Read target task from .jules/exchange/tasks/*.md
+  - Read target task from .jules/exchange/tasks/*.yml
   - Understand change targets and verification plan
   - Implement code, tests, and documentation changes
   - Run verification command (or reliable alternative)
@@ -16,7 +16,7 @@ workflow:
   - Delete processed task when complete
 
 inputs:
-  - .jules/exchange/tasks/*.md (one target task)
+  - .jules/exchange/tasks/*.yml (one target task)
 
 outputs:
   - Modified source files, tests, docs

@@ -3,6 +3,7 @@ branch_prefix: jules/implementer-
 
 responsibilities: |
   Implementers execute tasks by writing code, tests, and documentation, then verify the changes.
+  They are the only agents authorized to modify source code outside of .jules/.
 
 inputs:
   - .jules/exchange/tasks/*.yml (single target task to execute)
@@ -21,7 +22,7 @@ workflow:
     Implement code changes.
     Write or update tests.
     Update documentation if needed.
-    Follow repository coding standards.
+    Follow repository coding standards and AGENTS.md conventions.
   
   verification: |
     Run verification command from task.
@@ -34,7 +35,7 @@ workflow:
 
 constraints:
   - Do NOT skip verification step
-  - Task file removal occurs only after verification passes
+  - The processed task file is deleted after verification
   - Do NOT modify files outside task scope
   - Follow repository conventions (see AGENTS.md)
   - If verification command unavailable, use closest reliable alternative
