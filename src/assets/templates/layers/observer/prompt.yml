@@ -3,26 +3,11 @@ layer: observers
 responsibility: "# TODO: Describe your specific responsibility"
 
 contracts:
-  - .jules/roles/observers/contracts.yml (layer workflow and schema)
-  - .jules/roles/observers/ROLE_NAME/role.yml (specialized focus)
-  - .jules/JULES.md (overall workflow context)
+  - .jules/JULES.md
+  - .jules/roles/observers/contracts.yml
+  - .jules/roles/observers/ROLE_NAME/role.yml
 
-workflow:
-  - Read feedbacks/ and update role.yml to reduce noise
-  - Read notes/ for current understanding
-  - "# TODO: Describe your analysis focus"
-  - Update notes/ declaratively (describe current state)
-  - Create events in .jules/exchange/events/<category>/ when issues found
-
-inputs:
-  - role.yml
-  - notes/
-  - feedbacks/
-
-outputs:
-  - notes/ (updated state)
-  - .jules/exchange/events/**/*.yml (new observations)
-
-note: |
-  contracts.yml defines how to structure events and your observation workflow.
-  Your role.yml defines what to look for in your specialized domain.
+instructions:
+  - Read every file in contracts in order before doing any work.
+  - Follow contracts.yml exactly (constraints, workflow, inputs/outputs).
+  - Use role.yml focus and learned_exclusions to scope analysis.
