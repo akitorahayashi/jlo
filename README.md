@@ -18,7 +18,6 @@ jlo assign taxonomy src/
 | `jlo init` | `i` | Create `.jules/` workspace with setup directory |
 | `jlo assign <role> [paths...]` | `a` | Copy role prompt to clipboard |
 | `jlo template [-l layer] [-n name]` | `tp` | Create new role from template |
-| `jlo prune -d <days>` | `prn` | Delete old jules/* branches |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
 
@@ -28,8 +27,6 @@ jlo assign taxonomy src/
 jlo init                                    # Initialize workspace (includes setup)
 jlo assign taxonomy src/                    # Assign role with paths
 jlo template -l observers -n security       # Create custom role
-jlo prune -d 7                              # Clean up old branches
-jlo prune --dry-run -d 7                    # Preview deletions
 
 # Setup compiler
 jlo setup list                              # List available components
@@ -38,17 +35,6 @@ jlo setup list --detail just                # Show component details
 jlo setup gen                               # Generate install script
 .jules/setup/install.sh                     # Run installation
 ```
-
-## Built-in Roles
-
-| Layer | Role | Responsibility |
-|-------|------|----------------|
-| Observers | `taxonomy` | Naming conventions |
-| Observers | `data_arch` | Data models |
-| Observers | `qa` | Test quality |
-| Deciders | `triage` | Event screening |
-| Planners | `specifier` | Task decomposition |
-| Mergers | `consolidator` | Branch consolidation |
 
 ## Documentation
 

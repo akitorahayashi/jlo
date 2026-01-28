@@ -12,7 +12,7 @@ fn user_can_init_and_create_custom_role() {
     // Initialize workspace
     ctx.cli().arg("init").assert().success();
 
-    // All 6 built-in roles should exist after init in their layers
+    // All built-in roles should exist after init in their layers
     ctx.assert_all_builtin_roles_exist();
 
     // Create a custom observer role
@@ -69,9 +69,6 @@ fn init_creates_complete_layer_structure() {
     assert!(!jules.join("roles/planners/specifier/notes").exists());
     assert!(!jules.join("roles/planners/specifier/feedbacks").exists());
     assert!(!jules.join("roles/planners/specifier/role.yml").exists());
-    assert!(!jules.join("roles/mergers/consolidator/notes").exists());
-    assert!(!jules.join("roles/mergers/consolidator/feedbacks").exists());
-    assert!(!jules.join("roles/mergers/consolidator/role.yml").exists());
 }
 
 #[test]
@@ -95,22 +92,22 @@ fn template_creates_observer_with_notes() {
 
 #[test]
 #[serial]
-fn template_creates_merger_without_notes() {
+fn template_creates_planner_without_notes() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
 
-    ctx.cli().args(["template", "-l", "mergers", "-n", "custom-merger"]).assert().success();
+    ctx.cli().args(["template", "-l", "planners", "-n", "custom-planner"]).assert().success();
 
-    // Merger roles should NOT have notes, feedbacks, or role.yml directories
-    let role_path = ctx.jules_path().join("roles/mergers/custom-merger");
+    // Planner roles should NOT have notes, feedbacks, or role.yml directories
+    let role_path = ctx.jules_path().join("roles/planners/custom-planner");
     let notes_path = role_path.join("notes");
     let feedbacks_path = role_path.join("feedbacks");
     let role_yml = role_path.join("role.yml");
-    assert!(!notes_path.exists(), "Merger role should not have notes directory");
-    assert!(!feedbacks_path.exists(), "Merger role should not have feedbacks directory");
+    assert!(!notes_path.exists(), "Planner role should not have notes directory");
+    assert!(!feedbacks_path.exists(), "Planner role should not have feedbacks directory");
     assert!(
         !role_yml.exists(),
-        "Merger role should not have role.yml (behavior defined in archetype)"
+        "Planner role should not have role.yml (behavior defined in archetype)"
     );
 }

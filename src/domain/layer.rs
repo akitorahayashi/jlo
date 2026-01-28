@@ -9,14 +9,11 @@ pub enum Layer {
     Deciders,
     /// Planners: Read issues, emit tasks, delete issues (specifier)
     Planners,
-    /// Mergers: Consolidate parallel observer branches (consolidator)
-    Mergers,
 }
 
 impl Layer {
     /// All available layers in order.
-    pub const ALL: [Layer; 4] =
-        [Layer::Observers, Layer::Deciders, Layer::Planners, Layer::Mergers];
+    pub const ALL: [Layer; 3] = [Layer::Observers, Layer::Deciders, Layer::Planners];
 
     /// Directory name for this layer.
     pub fn dir_name(&self) -> &'static str {
@@ -24,7 +21,6 @@ impl Layer {
             Layer::Observers => "observers",
             Layer::Deciders => "deciders",
             Layer::Planners => "planners",
-            Layer::Mergers => "mergers",
         }
     }
 
@@ -34,7 +30,6 @@ impl Layer {
             Layer::Observers => "Observer",
             Layer::Deciders => "Decider",
             Layer::Planners => "Planner",
-            Layer::Mergers => "Merger",
         }
     }
 
@@ -44,7 +39,6 @@ impl Layer {
             "observers" | "observer" => Some(Layer::Observers),
             "deciders" | "decider" => Some(Layer::Deciders),
             "planners" | "planner" => Some(Layer::Planners),
-            "mergers" | "merger" => Some(Layer::Mergers),
             _ => None,
         }
     }
@@ -55,7 +49,6 @@ impl Layer {
             Layer::Observers => "Read source & notes, emit events. Never write issues.",
             Layer::Deciders => "Read events & issues, emit issues. Delete processed events.",
             Layer::Planners => "Read issues, emit tasks. Delete processed issues.",
-            Layer::Mergers => "Consolidate parallel observer branches into consistency branch.",
         }
     }
 }

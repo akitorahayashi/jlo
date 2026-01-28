@@ -35,8 +35,6 @@ Observer -> Decider -> Planner -> (GitHub Issue)
 (events)    (issues)   (tasks)    (implementation)
 ```
 
-Parallel observer branches are consolidated by Merger roles.
-
 Each role type has a **distinct transformation responsibility**:
 
 | Role Type | Input | Output | Key Distinction |
@@ -44,7 +42,6 @@ Each role type has a **distinct transformation responsibility**:
 | Observer | source code | events | Domain-specialized observations |
 | Decider | events | issues | **Validation and consolidation** (Is this real? Should events merge?) |
 | Planner | issues | tasks | **Decomposition** (What steps are needed to solve this?) |
-| Merger | observer branches | consolidated branch | **Branch consolidation** (Merge parallel observer work) |
 
 **Implementation is invoked via GitHub Issues with `jules` label.**
 
@@ -61,10 +58,8 @@ jules/<layer>-<role>-<YYYYMMDD>-<HHMM>-<short_id>
 Examples:
 - `jules/observer-taxonomy-20260128-1345-a1b2`
 - `jules/decider-triage-20260128-1400-c3d4`
-- `jules/merger-consolidator-20260128-1415-e5f6`
 
 This convention enables:
-- Automated pruning via `jlo prune`
 - Age-based filtering
 - Role identification
 
@@ -96,9 +91,6 @@ This prevents re-processing of old events/issues without requiring cursor files.
 |   |   +-- contracts.yml    # Shared planner contract
 |   |   +-- task.yml         # Task template
 |   |   +-- <role>/
-|   +-- mergers/
-|       +-- contracts.yml    # Shared merger contract
-|       +-- <role>/
 +-- exchange/
     +-- events/    # Inbox: raw observations from observers
     +-- issues/    # Transit: consolidated problems from deciders

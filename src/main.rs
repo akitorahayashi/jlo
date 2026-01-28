@@ -32,22 +32,12 @@ enum Commands {
     /// Create a new role from a layer template
     #[clap(visible_alias = "tp")]
     Template {
-        /// Layer: observers, deciders, planners, or mergers
+        /// Layer: observers, deciders, or planners
         #[arg(short, long)]
         layer: Option<String>,
         /// Name for the new role
         #[arg(short, long)]
         name: Option<String>,
-    },
-    /// Delete old jules/* branches
-    #[clap(visible_alias = "prn")]
-    Prune {
-        /// Delete branches older than N days
-        #[arg(short, long)]
-        days: u32,
-        /// Preview branches without deleting
-        #[arg(long)]
-        dry_run: bool,
     },
     /// Setup compiler commands
     #[clap(visible_alias = "s")]
@@ -83,7 +73,6 @@ fn main() {
         Commands::Template { layer, name } => {
             jlo::template(layer.as_deref(), name.as_deref()).map(|_| ())
         }
-        Commands::Prune { days, dry_run } => jlo::prune(days, dry_run),
         Commands::Setup { command } => match command {
             SetupCommands::Gen { path } => run_setup_gen(path),
             SetupCommands::List { detail } => run_setup_list(detail),

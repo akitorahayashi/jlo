@@ -14,7 +14,7 @@ All prompts exist as `.yml` files in `src/assets/scaffold/` or `src/assets/templ
 Common rules belong in JULES.md. Template files in `src/assets/templates/` follow this minimalism.
 
 ## Project Summary
-`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. Specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events, Planners decompose issues, and Mergers consolidate parallel work. Implementation is invoked via GitHub Issues with `jules` label.
+`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. Specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events, and Planners decompose issues. Implementation is invoked via GitHub Issues with `jules` label.
 
 ## Tech Stack
 - **Language**: Rust
@@ -48,7 +48,7 @@ src/
 ├── services/          # I/O implementations (catalog, resolver, generator)
 ├── app/
 │   ├── context.rs     # AppContext (DI container)
-│   └── commands/      # init, assign, template, prune, setup
+│   └── commands/      # init, assign, template, setup
 ├── assets/
 │   ├── scaffold/      # Embedded .jules/ structure
 │   ├── templates/     # Role templates by layer
@@ -65,7 +65,6 @@ tests/
 - `jlo init` (alias: `i`): Create `.jules/` structure with setup directory
 - `jlo assign <role> [paths...]` (alias: `a`): Copy prompt to clipboard
 - `jlo template [-l layer] [-n name]` (alias: `tp`): Create custom role
-- `jlo prune -d <days>` (alias: `prn`): Delete old jules/* branches
 - `jlo setup gen [path]` (alias: `s g`): Generate `install.sh` and `env.toml`
 - `jlo setup list` (alias: `s ls`): List available components
 - `jlo setup list --detail <component>`: Show component details
@@ -79,7 +78,6 @@ tests/
 | Observers | `qa` | Test coverage |
 | Deciders | `triage` | Event screening, feedback writing |
 | Planners | `specifier` | Task decomposition |
-| Mergers | `consolidator` | Branch consolidation |
 
 ## Language Policy
 - **Scaffold Content**: English
