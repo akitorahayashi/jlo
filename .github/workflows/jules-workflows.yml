@@ -72,13 +72,18 @@ jobs:
             echo "has_roles=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # Define enabled observers here. Comment out or remove to disable.
-          roles_list=(
-            "consistency"
-            "data_arch"
-            "qa"
-            "taxonomy"
-          )
+          # Read enabled observers from file
+          enabled_file="$dir/enabled-observers.txt"
+          if [ ! -f "$enabled_file" ]; then
+            echo "Warning: $enabled_file not found"
+            echo "matrix=[]" >> "$GITHUB_OUTPUT"
+            echo "has_roles=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          roles_list=()
+          while IFS= read -r role; do
+            [ -n "$role" ] && roles_list+=("$role")
+          done < "$enabled_file"
 
           # Verify roles exist
           valid_roles=()
@@ -217,6 +222,7 @@ jobs:
     if: needs.list-issues.outputs.has_issues == 'true'
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         issue: ${{ fromJson(needs.list-issues.outputs.matrix) }}
     uses: ./.github/workflows/run-planner.yml
@@ -271,6 +277,7 @@ jobs:
     if: needs.list-tasks.outputs.has_tasks == 'true'
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         task: ${{ fromJson(needs.list-tasks.outputs.matrix) }}
     uses: ./.github/workflows/run-implementer.yml
