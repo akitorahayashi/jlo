@@ -47,20 +47,24 @@ jobs:
         with:
           ref: main
 
+      - name: Read prompt
+        id: prompt
+        uses: ./.github/actions/read-role-prompt
+        with:
+          layer: implementers
+          role: executor
+
       - name: Invoke Jules
         uses: google-labs-code/jules-invoke@v1
         with:
           prompt: |
-            Execute this task. Read AGENTS.md for repository conventions.
+            ${{ steps.prompt.outputs.prompt }}
             
             Task file: .jules/exchange/tasks/${{ inputs.task_file }}
             
             ${{ steps.task.outputs.content }}
             
             Task cleanup is handled on the jules branch after verification.
-            
-            IMPORTANT: Name your branch with prefix `jules/impl/` (e.g., jules/impl/fix-auth-validation).
-            This ensures your PR requires human review and is NOT auto-merged.
           jules_api_key: ${{ secrets.jules_api_key }}
           starting_branch: main
 

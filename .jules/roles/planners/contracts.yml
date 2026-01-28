@@ -1,4 +1,5 @@
 layer: planners
+branch_prefix: jules/planner-
 
 responsibilities: |
   Planners decompose issues into concrete, executable tasks with clear verification plans.

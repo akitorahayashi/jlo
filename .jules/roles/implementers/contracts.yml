@@ -1,4 +1,5 @@
 layer: implementers
+branch_prefix: jules/implementer-
 
 responsibilities: |
   Implementers execute tasks by writing code, tests, and documentation, then verify the changes.
@@ -29,7 +30,7 @@ workflow:
   
   completion: |
     Confirm all change targets addressed.
-    Task file is removed from jules after verification.
+    The processed task file is deleted after verification.
 
 constraints:
   - Do NOT skip verification step
@@ -42,4 +43,4 @@ task_processing:
   - Read single task from .jules/exchange/tasks/
   - Implement all changes
   - Verify implementation
-  - Task file is removed from jules when complete
+  - The task file is deleted when complete

@@ -49,7 +49,7 @@ Observer -> Decider -> Planner -> Implementer
 | Observer | `jules` | `jules/observer-*` | ✅ (if `.jules/` only) |
 | Decider | `jules` | `jules/decider-*` | ✅ (if `.jules/` only) |
 | Planner | `jules` | `jules/planner-*` | ✅ (if `.jules/` only) |
-| Implementer | `main` | `impl/*` | ❌ (human review) |
+| Implementer | `main` | `jules/implementer-*` | ❌ (human review) |
 
 Observers, Deciders, and Planners modify only `.jules/` and auto-merge after CI passes.
 Implementers modify source code and require human review.
