@@ -13,8 +13,8 @@ name: Jules Workflows
 
 on:
   schedule:
-    # Daily at 00:00 UTC - triggers sync + observers
-    - cron: '0 0 * * *'
+    # Daily at 19:00 UTC (04:00 JST) - triggers sync + observers
+    - cron: '0 19 * * *'
   push:
     branches: [jules]
     paths:
@@ -33,12 +33,15 @@ on:
           - planners
           - implementers
 
+permissions:
+  contents: write
+
 jobs:
   # ============================================================================
   # Sync main → jules (before observers)
   # ============================================================================
   sync:
-    if: github.event_name == 'schedule' && github.event.schedule == '0 0 * * *' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'observers')
+    if: github.event_name == 'schedule' && github.event.schedule == '0 19 * * *' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'observers')
     uses: ./.github/workflows/sync-jules.yml
 
   # ============================================================================
@@ -48,7 +51,7 @@ jobs:
     needs: sync
     if: |
       always() && needs.sync.result == 'success' &&
-      (github.event_name == 'schedule' && github.event.schedule == '0 0 * * *' ||
+      (github.event_name == 'schedule' && github.event.schedule == '0 19 * * *' ||
        (github.event_name == 'workflow_dispatch' && inputs.agent == 'observers'))
     runs-on: ubuntu-latest
     outputs:
@@ -84,7 +87,7 @@ jobs:
     needs: [sync, list-observers]
     if: |
       always() && needs.sync.result == 'success' && needs.list-observers.outputs.has_roles == 'true' &&
-      (github.event_name == 'schedule' && github.event.schedule == '0 0 * * *' || 
+      (github.event_name == 'schedule' && github.event.schedule == '0 19 * * *' || 
        (github.event_name == 'workflow_dispatch' && inputs.agent == 'observers'))
     strategy:
       fail-fast: false
