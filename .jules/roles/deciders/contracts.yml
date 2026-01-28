@@ -1,0 +1,65 @@
+layer: deciders
+
+responsibilities: |
+  Deciders screen and validate observations from observers, consolidate related events,
+  and convert approved items into actionable issues.
+
+inputs:
+  - .jules/exchange/events/**/*.yml (raw observations from observers)
+  - .jules/exchange/issues/*.md (existing issue backlog)
+
+outputs:
+  - .jules/exchange/issues/*.md (consolidated, validated problems)
+  - <observer>/feedbacks/<date>_<description>.yml (rejection feedback)
+
+workflow:
+  validation: |
+    Read all events.
+    Verify observations actually exist in codebase.
+    Check if observation is significant enough to warrant action.
+    Identify related events that share root cause.
+  
+  consolidation: |
+    Merge related events into single issue.
+    Ensure issue is actionable and well-scoped.
+  
+  decision: |
+    Accept: Create issue, delete source events.
+    Reject: Write feedback to observer's feedbacks/, delete events.
+  
+  feedback_writing: |
+    When rejecting recurring patterns, write feedback.
+    Feedback helps observers refine their focus.
+    Include pattern description and why it's noise.
+
+constraints:
+  - Do NOT accept observations without verifying them in codebase
+  - Do NOT create issues for trivial matters
+  - Do NOT write to .jules/exchange/tasks/
+  - Delete ALL processed events (both accepted and rejected)
+  - Write feedback for recurring rejection patterns
+
+issue_schema:
+  version: 1
+  filename_format: "<id>.md"
+  
+  frontmatter:
+    id: string
+    category: bugs|docs|refacts|tests|updates
+    title: string
+    priority: low|medium|high
+    sources: [event_id]
+    status: open
+  
+  body_requirements:
+    - Background and rationale
+    - Concrete change list (specific files/modules)
+    - Acceptance criteria
+
+feedback_schema:
+  location: "<observer_role>/feedbacks/<date>_<description>.yml"
+  format:
+    date: YYYY-MM-DD
+    pattern: description of recurring noise
+    reason: why this should not be reported
+    examples: [event_id]

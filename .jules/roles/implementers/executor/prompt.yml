@@ -1,0 +1,22 @@
+role: executor
+layer: implementers
+responsibility: Implement tasks and verify changes
+
+contracts:
+  - .jules/roles/implementers/contracts.yml (layer workflow and verification requirements)
+  - .jules/JULES.md (overall workflow context)
+  - AGENTS.md (repository coding standards)
+
+workflow:
+  - Read target task from .jules/exchange/tasks/*.md
+  - Understand change targets and verification plan
+  - Implement code, tests, and documentation changes
+  - Run verification command (or reliable alternative)
+  - Iterate if verification fails
+  - Delete processed task when complete
+
+inputs:
+  - .jules/exchange/tasks/*.md (one target task)
+
+outputs:
+  - Modified source files, tests, docs

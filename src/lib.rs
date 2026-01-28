@@ -106,13 +106,6 @@ pub fn prune(days: u32, dry_run: bool) -> Result<(), AppError> {
 // Setup Compiler API
 // =============================================================================
 
-/// Initialize setup workspace at `.jules/setup/`.
-///
-/// Creates the directory structure with `tools.yml` template.
-pub fn setup_init(path: Option<&Path>) -> Result<(), AppError> {
-    setup::init(path)
-}
-
 /// Generate setup script and environment configuration.
 ///
 /// Reads `tools.yml`, resolves dependencies, and generates:

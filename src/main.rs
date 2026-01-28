@@ -59,12 +59,7 @@ enum Commands {
 
 #[derive(Subcommand)]
 enum SetupCommands {
-    /// Initialize .jules/setup/ workspace
-    Init {
-        /// Directory to initialize (defaults to current directory)
-        path: Option<PathBuf>,
-    },
-    /// Generate install.sh and env.toml
+    /// Generate install.sh and env.toml from tools.yml
     Gen {
         /// Project directory containing .jules/setup/ (defaults to current directory)
         path: Option<PathBuf>,
@@ -89,7 +84,6 @@ fn main() {
         }
         Commands::Prune { days, dry_run } => jlo::prune(days, dry_run),
         Commands::Setup { command } => match command {
-            SetupCommands::Init { path } => run_setup_init(path),
             SetupCommands::Gen { path } => run_setup_gen(path),
             SetupCommands::List { detail } => run_setup_list(detail),
         },
@@ -99,12 +93,6 @@ fn main() {
         eprintln!("Error: {}", e);
         std::process::exit(1);
     }
-}
-
-fn run_setup_init(path: Option<PathBuf>) -> Result<(), AppError> {
-    jlo::setup_init(path.as_deref())?;
-    println!("✅ Initialized .jules/setup/ workspace");
-    Ok(())
 }
 
 fn run_setup_gen(path: Option<PathBuf>) -> Result<(), AppError> {
