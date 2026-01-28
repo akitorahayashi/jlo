@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-28_192219_consistency_consistency_co02"
+created_at: "2026-01-28"
+author_role: "consistency"
+category: "consistency"
+confidence: "high"
+
+# Content
+title: "Incorrect Documentation on ROLE_NAME Replacement"
+statement: |
+  `AGENTS.md` incorrectly states that `jlo` performs string replacement for `ROLE_NAME` in prompt files. The implementation preserves placeholders as-is, allowing the agent environment to handle them or providing them as static templates.
+
+evidence:
+  - path: "AGENTS.md"
+    loc: "Critical Design Principles #1"
+    note: "Claims Rust code does simple string replacement (e.g., ROLE_NAME -> actual role name)."
+  - path: "src/services/role_template_service.rs"
+    loc: "fn generate_prompt_yaml_template"
+    note: "Returns template string without replacement."
+  - path: "src/services/workspace_filesystem.rs"
+    loc: "fn scaffold_role_in_layer"
+    note: "Writes prompt content directly without modification."
+
+tags:
+  - "documentation-error"
+  - "implementation-mismatch"
