@@ -35,7 +35,7 @@ jobs:
 
       - name: Invoke Jules
         if: steps.check.outputs.count != '0'
-        uses: google-labs-code/jules-invoke@v1
+        uses: ./.github/actions/jules-invoke
         with:
           prompt: ${{ steps.prompt.outputs.prompt }}
           jules_api_key: ${{ secrets.jules_api_key }}
