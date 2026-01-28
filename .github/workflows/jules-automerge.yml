@@ -17,7 +17,7 @@ name: Jules Auto-Merge
 
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review, synchronize]
 
 jobs:
   check-scope:
@@ -35,9 +35,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          changed=$(gh pr view "${{ github.event.pull_request.number }}" \
-            --repo "${{ github.repository }}" \
-            --json files -q '.files[].path')
+          # Use paginated API to handle PRs with >100 files
+          changed=$(gh api --paginate \
+            "/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            --jq '.[].filename')
           
           # Check if any file is outside .jules/
           non_jules=$(echo "$changed" | grep -v '^\.jules/' || true)

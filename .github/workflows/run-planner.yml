@@ -33,10 +33,27 @@ jobs:
       - name: Read issue
         id: issue
         run: |
-          content=$(cat ".jules/exchange/issues/${{ inputs.issue_file }}")
-          echo "content<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$content" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          # Validate issue_file to prevent path traversal
+          issue_file="${{ inputs.issue_file }}"
+          if [[ "$issue_file" == */* ]] || [[ "$issue_file" == *..* ]]; then
+            echo "Error: issue_file cannot contain path traversal characters ('/' or '..')."
+            exit 1
+          fi
+          
+          issue_path=".jules/exchange/issues/$issue_file"
+          if [ ! -f "$issue_path" ]; then
+            echo "Error: Issue file not found at $issue_path"
+            exit 1
+          fi
+          
+          # Use unique delimiter to avoid collision with file content
+          delimiter="ISSUE_EOF_$(date +%s%N)"
+          content=$(cat "$issue_path")
+          {
+            echo "content<<$delimiter"
+            echo "$content"
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Invoke Jules
         uses: google-labs-code/jules-invoke@v1

@@ -19,7 +19,7 @@ cd your-project
 jlo init
 ```
 
-Then copy `.github/workflows/jules-*.yml` from this repository as reference implementations.
+Then copy `.github/workflows/jules-*.yml` and `.github/actions/read-role-prompt/` from this repository as reference implementations.
 
 ## Commands
 

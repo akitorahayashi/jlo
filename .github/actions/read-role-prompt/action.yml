@@ -31,7 +31,12 @@ runs:
           echo "Error: prompt.yml not found at $prompt_path"
           exit 1
         fi
+        
+        # Use unique delimiter to avoid collision with file content
+        delimiter="PROMPT_EOF_$(date +%s%N)"
         content=$(cat "$prompt_path")
-        echo "content<<EOF" >> "$GITHUB_OUTPUT"
-        echo "$content" >> "$GITHUB_OUTPUT"
-        echo "EOF" >> "$GITHUB_OUTPUT"
+        {
+          echo "content<<$delimiter"
+          echo "$content"
+          echo "$delimiter"
+        } >> "$GITHUB_OUTPUT"
