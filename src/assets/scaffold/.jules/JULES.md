@@ -22,6 +22,7 @@ All scheduled agents must read this file before acting.
 | `contracts.yml` | **Static** (layer-level) | Shared constraints and schemas for all roles in a layer |
 | `prompt.yml` | **Static** (scheduled) | Execution parameters and references to contracts.yml |
 | `role.yml` | **Dynamic** (evolves) | Specialized focus that updates based on feedback (observers only) |
+| `*.yml` (templates) | **Static** (layer-level) | Copyable templates for artifacts (event.yml, issue.yml, feedback.yml, task.yml) |
 
 - `contracts.yml` exists at layer level (e.g., `roles/observers/contracts.yml`)
 - `prompt.yml` references the layer's contracts.yml for behavioral instructions
@@ -84,12 +85,16 @@ This prevents re-processing of old events/issues without requiring cursor files.
 +-- roles/
 |   +-- observers/
 |   |   +-- contracts.yml    # Shared observer contract
+|   |   +-- event.yml        # Event template
 |   |   +-- <role>/
 |   +-- deciders/
 |   |   +-- contracts.yml    # Shared decider contract
+|   |   +-- issue.yml        # Issue template
+|   |   +-- feedback.yml     # Feedback template
 |   |   +-- <role>/
 |   +-- planners/
 |   |   +-- contracts.yml    # Shared planner contract
+|   |   +-- task.yml         # Task template
 |   |   +-- <role>/
 |   +-- mergers/
 |       +-- contracts.yml    # Shared merger contract
