@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-28_141000_bugs_data_arch_checkout_version"
+created_at: "2026-01-28"
+author_role: "data_arch"
+category: "bugs"
+confidence: "high"
+
+# Content
+title: "Invalid actions/checkout version v5"
+statement: |
+  The workflow uses `actions/checkout@v5`, but the current stable major version is v4.
+  This will likely cause the workflow to fail.
+
+evidence:
+  - path: ".github/actions/jules-invoke/action.yaml"
+    loc: "34"
+    note: "uses: actions/checkout@v5"
+
+tags:
+  - "ci"
+  - "github-actions"
+  - "configuration"
