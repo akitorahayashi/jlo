@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "<id>" # e.g. 2026-01-28_task_refactor_auth_01
+parent_issue_id: "<issue_id>"
+status: "open"
+
+# Content
+title: "<Actionable Task Title>"
+
+purpose: |
+  <Why this task exists and what it achieves>
+
+scope:
+  implementation:
+    - path: "<file or module path>"
+      action: "<create|modify|delete>"
+      desc: "<what needs to change>"
+  tests:
+    - path: "<test file path>"
+      action: "<create|modify>"
+      desc: "<what needs to be tested>"
+  documentation:
+    - path: "<doc file path>"
+      action: "<create|modify>"
+      desc: "<what needs to be documented>"
+
+verification:
+  command: "<command to run>"
+  expected: "<expected outcome>"

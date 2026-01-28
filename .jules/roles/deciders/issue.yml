@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "<id>" # e.g. 2026-01-28_issue_auth_inconsistency
+category: "<category>" # bugs|docs|refacts|tests|updates
+priority: "low|medium|high"
+status: "open"
+sources: [] # list of event_ids that triggered this issue
+
+# Content
+title: "<Descriptive Title>"
+
+problem: |
+  <What is wrong or missing - conceptual description>
+
+impact: |
+  <Why this matters - consequences if not addressed>
+
+desired_outcome: |
+  <What should be true after resolution>
+
+acceptance_criteria:
+  - "<condition 1>"
+  - "<condition 2>"

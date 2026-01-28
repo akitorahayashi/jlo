@@ -1,0 +1,24 @@
+role: specifier
+layer: planners
+responsibility: Decompose issues into executable tasks
+
+contracts:
+  - .jules/roles/planners/contracts.yml (layer workflow and task requirements)
+  - .jules/JULES.md (overall workflow context)
+
+window_hours: 24
+
+workflow:
+  - Read target issue from .jules/exchange/issues/*.md
+  - Filter issues within window_hours based on filename timestamp
+  - Analyze the issue and understand acceptance criteria
+  - Identify all affected files and modules
+  - Decompose into concrete, sequential tasks
+  - Create task files with verification plans
+  - Delete processed issue
+
+inputs:
+  - .jules/exchange/issues/*.md (one target issue)
+
+outputs:
+  - .jules/exchange/tasks/*.md (decomposed tasks)

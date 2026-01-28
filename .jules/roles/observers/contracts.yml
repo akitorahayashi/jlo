@@ -1,0 +1,39 @@
+layer: observers
+branch_prefix: jules/observer-
+
+responsibilities: |
+  Observers analyze source code and repository state to identify patterns, inconsistencies, and quality issues.
+  Each observer has a specialized analytical focus defined in their role.yml.
+
+inputs:
+  - Source code and repository files
+  - role.yml (specialized focus and learned exclusions)
+  - notes/ (declarative memory)
+  - feedbacks/ (improvement signals from deciders)
+
+outputs:
+  - notes/ (declarative state updates)
+  - .jules/exchange/events/<category>/ (normalized observations)
+
+workflow:
+  initialization: |
+    Read all feedback files at execution start.
+    Abstract common rejection patterns.
+    Update role.yml's learned_exclusions to reduce noise.
+  
+  analysis: |
+    Analyze your specialized domain.
+    Compare findings against learned_exclusions.
+    Identify issue-worthy observations.
+  
+  recording: |
+    Copy assignments from event.yml template.
+    Create normalized event files under .jules/exchange/events/<category>/.
+    cp .jules/roles/observers/event.yml .jules/exchange/events/<category>/<filename>
+
+constraints:
+  - Do NOT write to .jules/exchange/issues/ or .jules/exchange/tasks/
+  - Update notes/ declaratively (what IS, not what WAS done)
+  - One event per observation
+  - Each event must have concrete evidence with file paths and locations
+

@@ -1,0 +1,24 @@
+role: triage
+layer: deciders
+responsibility: Screen and validate observations from observers
+
+contracts:
+  - .jules/roles/deciders/contracts.yml (layer workflow and validation requirements)
+  - .jules/JULES.md (overall workflow context)
+
+window_hours: 24
+
+workflow:
+  - Read all events from .jules/exchange/events/**/*.yml
+  - Filter events within window_hours based on filename timestamp
+  - Verify each observation actually exists in the codebase
+  - Identify related events that share root cause
+  - Decide - Accept (create issue) or Reject (write feedback if recurring pattern)
+  - Delete processed events
+
+inputs:
+  - .jules/exchange/events/**/*.yml
+
+outputs:
+  - .jules/exchange/issues/*.md (accepted)
+  - <observer>/feedbacks/*.yml (rejected patterns)
