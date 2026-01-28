@@ -5,6 +5,7 @@ id: "<id>" # e.g. 2026-01-28_issue_auth_inconsistency
 category: "<category>" # directory name under .jules/exchange/events/
 priority: "low|medium|high"
 status: "open"
+requires_deep_analysis: false # true if deep impact analysis/dependency check is needed
 sources: [] # list of event_ids that triggered this issue
 
 # Content

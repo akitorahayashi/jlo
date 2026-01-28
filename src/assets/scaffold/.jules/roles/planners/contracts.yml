@@ -14,8 +14,9 @@ outputs:
   - .jules/exchange/tasks/*.yml
 
 workflow:
-  1. Read target issue, understand acceptance criteria
-  2. Identify affected files/modules
-  3. Decompose into sequential, verifiable tasks
-  4. Create tasks: cp task.yml .jules/exchange/tasks/<id>.yml
+  1. Read target issue, check 'requires_deep_analysis'
+  2. If true: Analyze full system impact and dependency tree
+  3. If false: Limit analysis to the specified target files
+  4. Decompose into sequential, verifiable tasks
+  5. Create tasks: cp task.yml .jules/exchange/tasks/<id>.yml
   5. Delete processed issue
