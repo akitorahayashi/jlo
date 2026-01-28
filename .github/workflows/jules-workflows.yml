@@ -4,7 +4,8 @@
 # Uses reusable workflows for each agent type.
 #
 # Flow:
-#   Scheduled: sync-jules → observers → (wait) → decider
+#   Scheduled: sync-jules → observers
+#   On push to events/: decider
 #   On push to issues/: planners (matrix)
 #   On push to tasks/: implementers (matrix)
 
@@ -14,11 +15,10 @@ on:
   schedule:
     # Daily at 00:00 UTC - triggers sync + observers
     - cron: '0 0 * * *'
-    # Daily at 00:30 UTC - triggers decider (after observer PRs merge)
-    - cron: '30 0 * * *'
   push:
     branches: [jules]
     paths:
+      - '.jules/exchange/events/**/*.yml'
       - '.jules/exchange/issues/*.yml'
       - '.jules/exchange/tasks/*.yml'
   workflow_dispatch:
@@ -44,16 +44,52 @@ jobs:
   # ============================================================================
   # Scheduled Observers (after sync)
   # ============================================================================
-  observers:
+  list-observers:
     needs: sync
     if: |
       always() && needs.sync.result == 'success' &&
+      (github.event_name == 'schedule' && github.event.schedule == '0 0 * * *' ||
+       (github.event_name == 'workflow_dispatch' && inputs.agent == 'observers'))
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.scan.outputs.matrix }}
+      has_roles: ${{ steps.scan.outputs.has_roles }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+
+      - name: Discover observer roles
+        id: scan
+        run: |
+          dir=".jules/roles/observers"
+          if [ ! -d "$dir" ]; then
+            echo "matrix=[]" >> "$GITHUB_OUTPUT"
+            echo "has_roles=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          roles=$(find "$dir" -mindepth 2 -maxdepth 2 -name "prompt.yml" -type f \
+            | awk -F/ '{print $(NF-1)}' \
+            | sort -u \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          if [ "$roles" = "[]" ] || [ -z "$roles" ]; then
+            echo "matrix=[]" >> "$GITHUB_OUTPUT"
+            echo "has_roles=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix=$roles" >> "$GITHUB_OUTPUT"
+            echo "has_roles=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  observers:
+    needs: [sync, list-observers]
+    if: |
+      always() && needs.sync.result == 'success' && needs.list-observers.outputs.has_roles == 'true' &&
       (github.event_name == 'schedule' && github.event.schedule == '0 0 * * *' || 
        (github.event_name == 'workflow_dispatch' && inputs.agent == 'observers'))
     strategy:
       fail-fast: false
       matrix:
-        role: [taxonomy, data_arch, qa]
+        role: ${{ fromJson(needs.list-observers.outputs.matrix) }}
     uses: ./.github/workflows/run-observer.yml
     with:
       role: ${{ matrix.role }}
@@ -61,10 +97,48 @@ jobs:
       jules_api_key: ${{ secrets.JULES_API_KEY }}
 
   # ============================================================================
-  # Scheduled Decider (separate cron, after observer PRs merge)
+  # Decider (triggered when new events are merged)
   # ============================================================================
+  list-events:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'decider')
+    runs-on: ubuntu-latest
+    outputs:
+      has_events: ${{ steps.scan.outputs.has_events }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+
+      - name: Detect event changes
+        id: scan
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+              base="$(git rev-parse HEAD~1)"
+            fi
+            changed=$(git diff --name-status "$base" "$head" | awk '$1 ~ /^[AM]$/ {print $2}')
+            matches=$(printf "%s\n" "$changed" | grep '^\.jules/exchange/events/.*\.yml$' || true)
+            if [ -n "$matches" ]; then
+              echo "has_events=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "has_events=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            count=$(find .jules/exchange/events -name "*.yml" -type f 2>/dev/null | wc -l | tr -d ' ')
+            if [ "$count" != "0" ]; then
+              echo "has_events=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "has_events=false" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
   decider:
-    if: github.event_name == 'schedule' && github.event.schedule == '30 0 * * *' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'decider')
+    needs: list-events
+    if: |
+      (github.event_name == 'workflow_dispatch' && inputs.agent == 'decider') ||
+      (github.event_name == 'push' && needs.list-events.outputs.has_events == 'true')
     uses: ./.github/workflows/run-decider.yml
     with:
       role: triage
@@ -92,7 +166,17 @@ jobs:
             echo "has_issues=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          files=$(find "$dir" -maxdepth 1 -name "*.yml" -type f -exec basename {} \; 2>/dev/null | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          if [ "${{ github.event_name }}" = "push" ]; then
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+              base="$(git rev-parse HEAD~1)"
+            fi
+            changed=$(git diff --name-status "$base" "$head" | awk '$1 ~ /^[AM]$/ {print $2}')
+            files=$(printf "%s\n" "$changed" | grep '^\.jules/exchange/issues/.*\.yml$' | sed 's#.*/##' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          else
+            files=$(find "$dir" -maxdepth 1 -name "*.yml" -type f -exec basename {} \; 2>/dev/null | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          fi
           if [ "$files" = "[]" ] || [ -z "$files" ]; then
             echo "matrix=[]" >> "$GITHUB_OUTPUT"
             echo "has_issues=false" >> "$GITHUB_OUTPUT"
@@ -136,7 +220,17 @@ jobs:
             echo "has_tasks=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          files=$(find "$dir" -maxdepth 1 -name "*.yml" -type f -exec basename {} \; 2>/dev/null | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          if [ "${{ github.event_name }}" = "push" ]; then
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+            if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+              base="$(git rev-parse HEAD~1)"
+            fi
+            changed=$(git diff --name-status "$base" "$head" | awk '$1 ~ /^[AM]$/ {print $2}')
+            files=$(printf "%s\n" "$changed" | grep '^\.jules/exchange/tasks/.*\.yml$' | sed 's#.*/##' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          else
+            files=$(find "$dir" -maxdepth 1 -name "*.yml" -type f -exec basename {} \; 2>/dev/null | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          fi
           if [ "$files" = "[]" ] || [ -z "$files" ]; then
             echo "matrix=[]" >> "$GITHUB_OUTPUT"
             echo "has_tasks=false" >> "$GITHUB_OUTPUT"
