@@ -62,12 +62,11 @@ tests/
 ```
 
 ## CLI Commands
-- `jlo init` (alias: `i`): Create `.jules/` structure
+- `jlo init` (alias: `i`): Create `.jules/` structure with setup directory
 - `jlo assign <role> [paths...]` (alias: `a`): Copy prompt to clipboard
 - `jlo template [-l layer] [-n name]` (alias: `tp`): Create custom role
 - `jlo prune -d <days>` (alias: `prn`): Delete old jules/* branches
-- `jlo setup init [path]` (alias: `s init`): Initialize `.jules/setup/` workspace
-- `jlo setup gen [path]` (alias: `s gen`): Generate `install.sh` and `env.toml`
+- `jlo setup gen [path]` (alias: `s g`): Generate `install.sh` and `env.toml`
 - `jlo setup list` (alias: `s ls`): List available components
 - `jlo setup list --detail <component>`: Show component details
 

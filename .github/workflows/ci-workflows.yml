@@ -18,3 +18,7 @@ jobs:
   test:
     name: Test
     uses: ./.github/workflows/run-tests.yml
+  
+  verify-installers:
+    name: Verify Installers
+    uses: ./.github/workflows/verify-installers.yml

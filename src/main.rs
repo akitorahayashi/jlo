@@ -60,6 +60,7 @@ enum Commands {
 #[derive(Subcommand)]
 enum SetupCommands {
     /// Generate install.sh and env.toml from tools.yml
+    #[clap(visible_alias = "g")]
     Gen {
         /// Project directory containing .jules/setup/ (defaults to current directory)
         path: Option<PathBuf>,
