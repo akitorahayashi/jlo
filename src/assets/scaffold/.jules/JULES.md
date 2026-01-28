@@ -50,10 +50,10 @@ The runner provides `starting_branch`. Agents do not change it.
 
 Branch names:
 
-- Observers: `jules/observer-<id>`
-- Deciders: `jules/decider-<id>`
-- Planners: `jules/planner-<id>`
-- Implementers: `jules/implementer-<task_id>-<short_description>`
+- Observers: `jules-observer-<id>`
+- Deciders: `jules-decider-<id>`
+- Planners: `jules-planner-<id>`
+- Implementers: `jules-implementer-<task_id>-<short_description>`
 
 `<id>` is 4 alphanumeric characters unless the layer contract specifies otherwise.
 

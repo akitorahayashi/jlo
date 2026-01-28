@@ -1,5 +1,5 @@
 layer: observers
-branch_prefix: jules/observer-
+branch_prefix: jules-observer-
 
 constraints:
   - Branch ID: 4 alphanumeric characters (e.g. 'a1b2')

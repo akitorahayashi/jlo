@@ -1,5 +1,5 @@
 layer: planners
-branch_prefix: jules/planner-
+branch_prefix: jules-planner-
 
 constraints:
   - Branch ID: 4 alphanumeric characters (e.g. 'e5f6')

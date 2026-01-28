@@ -1,5 +1,5 @@
 layer: deciders
-branch_prefix: jules/decider-
+branch_prefix: jules-decider-
 
 constraints:
   - Branch ID: 4 alphanumeric characters (e.g. 'c3d4')
