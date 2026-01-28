@@ -7,10 +7,6 @@ on:
     branches: [ "main", "jules" ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   lint:
     name: Lint
@@ -30,5 +26,8 @@ jobs:
 
   automerge:
     name: Auto Merge
+    permissions:
+      contents: write
+      pull-requests: write
     needs: [lint, build, test, verify-installers]
     uses: ./.github/workflows/jules-automerge.yml
