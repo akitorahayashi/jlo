@@ -1,0 +1,19 @@
+schema_version: 1
+id: template_naming_consistency
+created_at: 2026-01-27
+author_role: taxonomy
+category: refacts
+title: Inconsistent naming in template assets directories
+statement: The directories in `src/assets/templates/layers/` use singular names, while the `Layer` enum, scaffold, and actual role directories use plural names.
+evidence:
+  - path: src/assets/templates/layers/
+    loc: directory names
+    note: Contains `observer`, `decider`, `planner`, `implementer` (singular).
+  - path: src/domain/layer.rs
+    loc: Layer::dir_name
+    note: Returns `observers`, `deciders`, `planners`, `implementers` (plural).
+  - path: src/assets/scaffold/.jules/roles/
+    loc: directory names
+    note: Contains `observers`, `deciders`, `planners`, `implementers` (plural).
+confidence: high
+tags: [naming, consistency, tech-debt]

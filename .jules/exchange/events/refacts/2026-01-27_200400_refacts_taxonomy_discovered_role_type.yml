@@ -1,0 +1,16 @@
+schema_version: 1
+id: discovered_role_type_safety
+created_at: 2026-01-27
+author_role: taxonomy
+category: refacts
+title: Type safety gap in DiscoveredRole struct
+statement: The `DiscoveredRole` struct uses `String` for the `id` field instead of the domain `RoleId` type, bypassing type safety guarantees for consumers.
+evidence:
+  - path: src/ports/workspace_store.rs
+    loc: struct DiscoveredRole
+    note: Field `id` is defined as `String`.
+  - path: src/domain/role_id.rs
+    loc: struct RoleId
+    note: Domain type available for validated role identifiers.
+confidence: medium
+tags: [type-safety, consistency]
