@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-28_152238_docs_consistency_role"
+created_at: "2026-01-28"
+author_role: "consistency"
+category: "docs"
+confidence: "high"
+
+# Content
+title: "Missing consistency role in AGENTS.md"
+statement: |
+  The Built-in Roles table in AGENTS.md lists taxonomy, data_arch, and qa as Observers, but omits the consistency role which exists in .jules/roles/observers/consistency.
+
+evidence:
+  - path: "AGENTS.md"
+    loc: "Built-in Roles"
+    note: "Table lists only taxonomy, data_arch, qa."
+  - path: ".jules/roles/observers/consistency"
+    loc: "directory existence"
+    note: "Role directory exists."
+
+tags:
+  - "documentation"
+  - "inconsistency"
+  - "roles"
