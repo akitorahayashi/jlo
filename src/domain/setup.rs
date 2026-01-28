@@ -1,0 +1,68 @@
+//! Setup compiler domain models.
+
+use serde::Deserialize;
+
+/// Environment variable specification for a component.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct EnvSpec {
+    /// Variable name.
+    pub name: String,
+    /// Human-readable description.
+    #[serde(default)]
+    pub description: String,
+    /// Default value (if any).
+    #[serde(default)]
+    pub default: Option<String>,
+}
+
+/// A component that can be installed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Component {
+    /// Component name (unique identifier).
+    pub name: String,
+    /// Short summary of what this component provides.
+    pub summary: String,
+    /// Names of components this depends on.
+    pub dependencies: Vec<String>,
+    /// Environment variables this component uses.
+    pub env: Vec<EnvSpec>,
+    /// Installation script content.
+    pub script_content: String,
+}
+
+/// Configuration for setup script generation.
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct SetupConfig {
+    /// List of tool names to install.
+    #[serde(default)]
+    pub tools: Vec<String>,
+}
+
+/// Metadata parsed from meta.toml.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ComponentMeta {
+    /// Component name (defaults to directory name if missing).
+    pub name: Option<String>,
+    /// Short summary.
+    #[serde(default)]
+    pub summary: String,
+    /// Dependencies list.
+    #[serde(default)]
+    pub dependencies: Vec<String>,
+    /// Environment specifications.
+    #[serde(default)]
+    pub env: Vec<EnvSpec>,
+}
+
+impl Component {
+    /// Create a component from metadata and script content.
+    pub fn from_meta(dir_name: &str, meta: ComponentMeta, script_content: String) -> Self {
+        Self {
+            name: meta.name.unwrap_or_else(|| dir_name.to_string()),
+            summary: meta.summary,
+            dependencies: meta.dependencies,
+            env: meta.env,
+            script_content,
+        }
+    }
+}

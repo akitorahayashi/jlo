@@ -23,6 +23,18 @@ pub enum AppError {
     RoleExists { role: String, layer: String },
     /// Clipboard operation failed.
     ClipboardError(String),
+    /// Setup workspace not initialized (.jules/setup/ missing).
+    SetupNotInitialized,
+    /// Setup config file missing (tools.yml).
+    SetupConfigMissing,
+    /// Circular dependency detected during resolution.
+    CircularDependency(Vec<String>),
+    /// Component not found in catalog.
+    ComponentNotFound { name: String, available: Vec<String> },
+    /// Invalid component metadata.
+    InvalidComponentMetadata { component: String, reason: String },
+    /// Malformed env.toml file.
+    MalformedEnvToml(String),
 }
 
 impl Display for AppError {
@@ -59,6 +71,24 @@ impl Display for AppError {
             AppError::ClipboardError(msg) => {
                 write!(f, "Clipboard error: {}", msg)
             }
+            AppError::SetupNotInitialized => {
+                write!(f, "Setup not initialized. Run 'jlo setup init' first.")
+            }
+            AppError::SetupConfigMissing => {
+                write!(f, "Setup config file (tools.yml) not found")
+            }
+            AppError::CircularDependency(path) => {
+                write!(f, "Circular dependency detected: {}", path.join(" -> "))
+            }
+            AppError::ComponentNotFound { name, available } => {
+                write!(f, "Component '{}' not found. Available: {}", name, available.join(", "))
+            }
+            AppError::InvalidComponentMetadata { component, reason } => {
+                write!(f, "Invalid metadata for '{}': {}", component, reason)
+            }
+            AppError::MalformedEnvToml(location) => {
+                write!(f, "Malformed env.toml: {}", location)
+            }
         }
     }
 }
@@ -90,8 +120,14 @@ impl AppError {
             AppError::ConfigError(_)
             | AppError::InvalidRoleId(_)
             | AppError::InvalidLayer(_)
-            | AppError::RoleNotFound(_) => io::ErrorKind::InvalidInput,
-            AppError::WorkspaceNotFound => io::ErrorKind::NotFound,
+            | AppError::RoleNotFound(_)
+            | AppError::CircularDependency(_)
+            | AppError::InvalidComponentMetadata { .. }
+            | AppError::MalformedEnvToml(_) => io::ErrorKind::InvalidInput,
+            AppError::WorkspaceNotFound
+            | AppError::SetupNotInitialized
+            | AppError::SetupConfigMissing
+            | AppError::ComponentNotFound { .. } => io::ErrorKind::NotFound,
             AppError::WorkspaceExists | AppError::RoleExists { .. } => io::ErrorKind::AlreadyExists,
             AppError::ClipboardError(_) => io::ErrorKind::Other,
         }
