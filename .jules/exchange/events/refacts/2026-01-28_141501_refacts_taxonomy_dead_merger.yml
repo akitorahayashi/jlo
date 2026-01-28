@@ -1,0 +1,22 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-28_141501_refacts_taxonomy_dead_merger"
+created_at: "2026-01-28"
+author_role: "taxonomy"
+category: "refacts"
+confidence: "high"
+
+# Content
+title: "Dead code: merger layer templates"
+statement: |
+  The `src/assets/templates/layers/merger/` directory contains dead code that has been explicitly marked as removed in its own `prompt.yml`.
+
+evidence:
+  - path: "src/assets/templates/layers/merger/prompt.yml"
+    loc: "Line 1"
+    note: "States: '# Removed: the mergers layer has been retired.'"
+
+tags:
+  - "cleanup"
+  - "dead-code"

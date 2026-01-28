@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-28_141500_bugs_taxonomy_missing_implementer"
+created_at: "2026-01-28"
+author_role: "taxonomy"
+category: "bugs"
+confidence: "high"
+
+# Content
+title: "Layer enum missing Implementers variant"
+statement: |
+  The `Layer` enum in `src/domain/layer.rs` does not include `Implementers`, despite it being a core part of the architecture defined in `AGENTS.md` and used in workflows.
+
+evidence:
+  - path: "src/domain/layer.rs"
+    loc: "Layer enum definition"
+    note: "Missing Implementers variant"
+  - path: "src/domain/error.rs"
+    loc: "AppError::InvalidLayer"
+    note: "Error message only lists observers, deciders, planners"
+
+tags:
+  - "consistency"
+  - "domain-model"
+  - "critical"

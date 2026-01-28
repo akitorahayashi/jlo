@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-28_141502_refacts_taxonomy_layer_naming"
+created_at: "2026-01-28"
+author_role: "taxonomy"
+category: "refacts"
+confidence: "medium"
+
+# Content
+title: "Inconsistent layer directory naming (singular vs plural)"
+statement: |
+  There is an inconsistency between the singular directory names in `src/assets/templates/layers/` (e.g., `observer`) and the plural names used in `.jules/roles/` (e.g., `observers`) and the `Layer` enum (e.g., `Observers`).
+
+evidence:
+  - path: "src/assets/templates/layers/"
+    loc: "Directory names"
+    note: "Uses singular (decider, implementer, observer, planner)"
+  - path: ".jules/roles/"
+    loc: "Directory names"
+    note: "Uses plural (deciders, implementers, observers, planners)"
+  - path: "src/domain/layer.rs"
+    loc: "Layer::dir_name()"
+    note: "Returns plural names"
+
+tags:
+  - "consistency"
+  - "naming"
