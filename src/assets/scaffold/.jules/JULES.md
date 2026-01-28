@@ -31,8 +31,8 @@ All scheduled agents must read this file before acting.
 ## Role Flow
 
 ```
-Observer -> Decider -> Planner -> (GitHub Issue)
-(events)    (issues)   (tasks)    (implementation)
+Observer -> Decider -> Planner -> Implementer
+(events)    (issues)   (tasks)    (code changes)
 ```
 
 Each role type has a **distinct transformation responsibility**:
@@ -42,26 +42,42 @@ Each role type has a **distinct transformation responsibility**:
 | Observer | source code | events | Domain-specialized observations |
 | Decider | events | issues | **Validation and consolidation** (Is this real? Should events merge?) |
 | Planner | issues | tasks | **Decomposition** (What steps are needed to solve this?) |
+| Implementer | tasks | code changes | **Execution** (Apply the prescribed changes) |
 
-**Implementation is invoked via GitHub Issues with `jules` label.**
+**All roles are invoked by GitHub Actions via `jules-invoke`.**
 
 **Detailed role behaviors and schemas are defined in each layer's contracts.yml file.**
 
 ## Branch Naming Convention
 
-All agents must create branches using this format:
+Agents create branches based on their layer:
 
+**Observers, Deciders, Planners** (starting from `jules` branch):
 ```
 jules/<layer>-<role>-<YYYYMMDD>-<HHMM>-<short_id>
+```
+
+**Implementers** (starting from `main` branch):
+```
+impl/<task_id>-<short_description>
 ```
 
 Examples:
 - `jules/observer-taxonomy-20260128-1345-a1b2`
 - `jules/decider-triage-20260128-1400-c3d4`
+- `impl/task-001-fix-null-check`
 
-This convention enables:
-- Age-based filtering
-- Role identification
+## Branch Strategy
+
+| Agent Type | Starting Branch | Output Branch | Auto-merge |
+|------------|-----------------|---------------|------------|
+| Observer | `jules` | `jules/observer-*` | ✅ (if `.jules/` only) |
+| Decider | `jules` | `jules/decider-*` | ✅ (if `.jules/` only) |
+| Planner | `jules` | `jules/planner-*` | ✅ (if `.jules/` only) |
+| Implementer | `main` | `impl/*` | ❌ (human review) |
+
+**Auto-merge criteria**: PRs that only modify files under `.jules/` are auto-merged after CI passes.
+**Human review**: Implementer PRs modify source code and require human approval.
 
 ## window_hours Behavior
 

@@ -1,0 +1,52 @@
+name: Run Planner
+
+on:
+  workflow_call:
+    inputs:
+      role:
+        description: 'Planner role name'
+        required: true
+        type: string
+      issue_file:
+        description: 'Issue file basename to process'
+        required: true
+        type: string
+    secrets:
+      jules_api_key:
+        required: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Read prompt
+        id: prompt
+        uses: ./.github/actions/read-role-prompt
+        with:
+          layer: planners
+          role: ${{ inputs.role }}
+
+      - name: Read issue
+        id: issue
+        run: |
+          content=$(cat ".jules/exchange/issues/${{ inputs.issue_file }}")
+          echo "content<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$content" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Invoke Jules
+        uses: google-labs-code/jules-invoke@v1
+        with:
+          prompt: |
+            ${{ steps.prompt.outputs.prompt }}
+            
+            ---
+            Target issue: .jules/exchange/issues/${{ inputs.issue_file }}
+            
+            ${{ steps.issue.outputs.content }}
+          jules_api_key: ${{ secrets.jules_api_key }}
+          starting_branch: jules

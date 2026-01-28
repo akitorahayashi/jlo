@@ -1,5 +1,14 @@
 # jlo Development Overview
 
+## Architecture
+
+| Component | Responsibility |
+|-----------|----------------|
+| **jlo** | Scaffold installation, versioning, prompt asset management |
+| **GitHub Actions** | Orchestration: cron triggers, matrix execution, auto-merge control |
+| **jules-invoke** | Session creation: prompt delivery, starting_branch specification |
+| **Jules (VM)** | Execution: code analysis, artifact generation, branch/PR creation |
+
 ## Critical Design Principles
 
 ### 1. Prompts are Static Files, Never Generated in Rust
@@ -13,8 +22,20 @@ All prompts exist as `.yml` files in `src/assets/scaffold/` or `src/assets/templ
 ### 3. Minimal Duplication in Prompts
 Common rules belong in JULES.md. Template files in `src/assets/templates/` follow this minimalism.
 
+### 4. Workflow-Driven Execution
+Agent execution is orchestrated by GitHub Actions, not jlo. The `.github/workflows/jules-workflows.yml` coordinates all agent invocations via reusable workflows.
+
 ## Project Summary
-`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. Specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events, and Planners decompose issues. Implementation is invoked via GitHub Issues with `jules` label.
+`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. Specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events, and Planners decompose issues. Implementation is triggered by task files.
+
+## Branch Strategy
+
+| Agent Type | Starting Branch | Output Branch | Auto-merge |
+|------------|-----------------|---------------|------------|
+| Observer | `jules` | `jules/observer-*` | ✅ (if `.jules/` only) |
+| Decider | `jules` | `jules/decider-*` | ✅ (if `.jules/` only) |
+| Planner | `jules` | `jules/planner-*` | ✅ (if `.jules/` only) |
+| Implementer | `main` | `impl/*` | ❌ (human review) |
 
 ## Tech Stack
 - **Language**: Rust
@@ -48,7 +69,7 @@ src/
 ├── services/          # I/O implementations (catalog, resolver, generator)
 ├── app/
 │   ├── context.rs     # AppContext (DI container)
-│   └── commands/      # init, assign, template, setup
+│   └── commands/      # init, template, setup
 ├── assets/
 │   ├── scaffold/      # Embedded .jules/ structure
 │   ├── templates/     # Role templates by layer
@@ -63,7 +84,6 @@ tests/
 
 ## CLI Commands
 - `jlo init` (alias: `i`): Create `.jules/` structure with setup directory
-- `jlo assign <role> [paths...]` (alias: `a`): Copy prompt to clipboard
 - `jlo template [-l layer] [-n name]` (alias: `tp`): Create custom role
 - `jlo setup gen [path]` (alias: `s g`): Generate `install.sh` and `env.toml`
 - `jlo setup list` (alias: `s ls`): List available components

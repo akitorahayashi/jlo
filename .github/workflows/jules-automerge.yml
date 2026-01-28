@@ -1,0 +1,59 @@
+# Jules Auto-Merge
+#
+# Enables squash-merge with branch deletion for PRs from jules/* branches
+# that only modify .jules/ directory. PRs touching other files are blocked.
+#
+# Does NOT apply to impl/* branches which require human review.
+#
+# Prerequisites:
+# - Repository Settings: Enable "Allow auto-merge"
+# - Branch Protection: Require status checks to pass before merging
+
+name: Jules Auto-Merge
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+jobs:
+  check-scope:
+    if: |
+      (startsWith(github.head_ref, 'jules/observer-') ||
+       startsWith(github.head_ref, 'jules/decider-') ||
+       startsWith(github.head_ref, 'jules/planner-')) &&
+      github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    outputs:
+      jules_only: ${{ steps.check.outputs.jules_only }}
+    steps:
+      - name: Check changed files
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          changed=$(gh pr view "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --json files -q '.files[].path')
+          non_jules=$(echo "$changed" | grep -v '^\.jules/' || true)
+          if [ -z "$non_jules" ]; then
+            echo "jules_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "jules_only=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::PR modifies files outside .jules/: $non_jules"
+          fi
+
+  enable:
+    needs: check-scope
+    if: needs.check-scope.outputs.jules_only == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr merge "${{ github.event.pull_request.number }}" \
+            --auto --squash --delete-branch \
+            --repo "${{ github.repository }}"

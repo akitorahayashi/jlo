@@ -1,0 +1,42 @@
+name: Run Decider
+
+on:
+  workflow_call:
+    inputs:
+      role:
+        description: 'Decider role name'
+        required: true
+        type: string
+    secrets:
+      jules_api_key:
+        required: true
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Check for events
+        id: check
+        run: |
+          count=$(find .jules/exchange/events -name "*.yml" -type f 2>/dev/null | wc -l | tr -d ' ')
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Read prompt
+        if: steps.check.outputs.count != '0'
+        id: prompt
+        uses: ./.github/actions/read-role-prompt
+        with:
+          layer: deciders
+          role: ${{ inputs.role }}
+
+      - name: Invoke Jules
+        if: steps.check.outputs.count != '0'
+        uses: google-labs-code/jules-invoke@v1
+        with:
+          prompt: ${{ steps.prompt.outputs.prompt }}
+          jules_api_key: ${{ secrets.jules_api_key }}
+          starting_branch: jules

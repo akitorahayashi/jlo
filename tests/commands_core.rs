@@ -26,14 +26,3 @@ fn template_without_workspace_fails() {
         assert_eq!(err.kind(), io::ErrorKind::NotFound);
     });
 }
-
-#[test]
-#[serial]
-fn assign_without_workspace_fails() {
-    let ctx = TestContext::new();
-
-    ctx.with_work_dir(|| {
-        let err = jlo::assign("taxonomy", &[]).expect_err("assign should fail");
-        assert_eq!(err.kind(), io::ErrorKind::NotFound);
-    });
-}
