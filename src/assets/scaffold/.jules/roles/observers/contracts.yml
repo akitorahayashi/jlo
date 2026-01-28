@@ -26,8 +26,9 @@ workflow:
     Identify issue-worthy observations.
   
   recording: |
+    Copy assignments from event.yml template.
     Create normalized event files under .jules/exchange/events/<category>/.
-    Follow event schema below.
+    cp .jules/roles/observers/event.yml .jules/exchange/events/<category>/<filename>
 
 constraints:
   - Do NOT write to .jules/exchange/issues/ or .jules/exchange/tasks/
@@ -35,31 +36,3 @@ constraints:
   - One event per observation
   - Each event must have concrete evidence with file paths and locations
 
-event_schema:
-  version: 1
-  categories:
-    - bugs
-    - docs
-    - refacts
-    - tests
-    - updates
-  
-  filename_format: "YYYY-MM-DD_HHMMSS_<category>_<author_role>_<id>.yml"
-  
-  required_fields:
-    schema_version: 1
-    id: string
-    created_at: YYYY-MM-DD
-    author_role: string
-    category: bugs|docs|refacts|tests|updates
-    title: string
-    statement: string
-    evidence:
-      - path: string (repo-relative)
-        loc: string (line or symbol reference)
-        note: string (why this supports the statement)
-    confidence: low|medium|high
-  
-  optional_fields:
-    tags: [string]
-    related: [event_id]

@@ -46,6 +46,7 @@ Parallel observer branches are consolidated by Merger roles.
 +-- roles/              # Role definitions
 |   +-- observers/
 |   |   +-- contracts.yml    # Shared observer contract
+|   |   +-- event.yml        # Event template
 |   |   +-- taxonomy/
 |   |   |   +-- prompt.yml   # Static: execution parameters
 |   |   |   +-- role.yml     # Dynamic: evolving focus
@@ -57,11 +58,14 @@ Parallel observer branches are consolidated by Merger roles.
 |   |
 |   +-- deciders/
 |   |   +-- contracts.yml    # Shared decider contract
+|   |   +-- issue.yml        # Issue template
+|   |   +-- feedback.yml     # Feedback template
 |   |   +-- triage/
 |   |       +-- prompt.yml
 |   |
 |   +-- planners/
 |   |   +-- contracts.yml    # Shared planner contract
+|   |   +-- task.yml         # Task template
 |   |   +-- specifier/
 |   |       +-- prompt.yml
 |   |
@@ -77,12 +81,11 @@ Parallel observer branches are consolidated by Merger roles.
     |   +-- refacts/
     |   +-- tests/
     |   +-- updates/
-    |
-    +-- issues/         # [Transit] Consolidated problems
-    |   +-- *.md
+    |   +-- issues/         # [Transit] Consolidated problems
+    |   +-- *.yml
     |
     +-- tasks/          # [Outbox] Executable tasks
-        +-- *.md
+        +-- *.yml
 ```
 
 ## Configuration Files
@@ -96,6 +99,10 @@ Includes `window_hours` parameter for Deciders, Planners, and Mergers.
 
 ### role.yml
 Specialized focus that evolves through feedback loop. Only observers have this (stateful layer).
+
+### Templates (*.yml)
+Copyable templates (event.yml, issue.yml, feedback.yml) defining the structure of artifacts.
+Agents `cp` these files and fill them out.
 
 ## Workflow
 

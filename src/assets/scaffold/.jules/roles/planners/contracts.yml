@@ -4,14 +4,14 @@ responsibilities: |
   Planners decompose issues into concrete, executable tasks with clear verification plans.
 
 inputs:
-  - .jules/exchange/issues/*.md (single target issue to decompose)
+  - .jules/exchange/issues/*.yml (single target issue to decompose)
 
 outputs:
-  - .jules/exchange/tasks/*.md (concrete, executable work items)
+  - .jules/exchange/tasks/*.yml (concrete, executable work items)
 
 window_hours: |
   Process only files with timestamps within window_hours of current time.
-  Filename format: <id>.md where id contains timestamp
+  Filename format: <id>.yml where id contains timestamp
   Files older than window_hours are ignored.
   Default: 24 hours
 
@@ -27,28 +27,20 @@ workflow:
     Ensure tasks cover all acceptance criteria.
   
   task_creation: |
-    Create task files under .jules/exchange/tasks/.
-    Include purpose, change targets, and verification plan.
+    Copy task.yml template for each task.
+    cp .jules/roles/planners/task.yml .jules/exchange/tasks/<id>.yml
+    
+    Analyze comprehensive scope:
+    - implementation: files/modules to create or modify
+    - tests: test files to add or update
+    - documentation: docs to reflect the change
+    
     Delete processed issue.
 
 constraints:
   - Do NOT create vague or unverifiable tasks
-  - Each task must specify concrete file paths
+  - Each task must specify concrete file paths in scope section
   - Each task must include verification command or method
   - Delete issue after successful task creation
   - Do NOT write to other directories
 
-task_schema:
-  version: 1
-  filename_format: "<id>.md"
-  
-  frontmatter:
-    id: string
-    parent_issue_id: string
-    title: string
-    status: open
-  
-  body_requirements:
-    purpose: Why this task exists
-    change_targets: Specific files/modules with paths
-    verification_plan: Command to run and expected result

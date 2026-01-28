@@ -1,0 +1,23 @@
+schema_version: 1
+
+# Metadata
+id: "YYYY-MM-DD_HHMMSS_<category>_<role>_<id>"
+created_at: "YYYY-MM-DD"
+author_role: "<role>" # e.g. taxonomy
+category: "<category>" # bugs|docs|refacts|tests|updates
+confidence: "low|medium|high"
+
+# Content
+title: "<short descriptive title>"
+statement: |
+  <concise statement of the observation>
+
+evidence:
+  - path: "<repo-relative path>"
+    loc: "<line number or symbol>"
+    note: "<why this supports the statement>"
+
+tags:
+  - "<tag>"
+  - "<tag>"
+  - "<tag>"
