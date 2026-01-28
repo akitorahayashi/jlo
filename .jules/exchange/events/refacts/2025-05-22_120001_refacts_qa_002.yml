@@ -1,0 +1,23 @@
+schema_version: 1
+
+# Metadata
+id: "2025-05-22_120001_refacts_qa_002"
+created_at: "2025-05-22"
+author_role: "qa"
+category: "refacts"
+confidence: "high"
+
+# Content
+title: "FilesystemWorkspaceStore is coupled to process state"
+statement: |
+  `FilesystemWorkspaceStore::current()` relies directly on `std::env::current_dir()`. This makes it difficult to test in isolation without modifying the global current working directory of the process. This coupling violates the principle of State Isolation and makes the component harder to reuse in contexts where the workspace is not the CWD.
+
+evidence:
+  - path: "src/services/workspace_filesystem.rs"
+    loc: "18"
+    note: "FilesystemWorkspaceStore::current uses std::env::current_dir()."
+
+tags:
+  - "coupling"
+  - "testability"
+  - "refactor"
