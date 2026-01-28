@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-28_152238_bugs_consistency_layr"
+created_at: "2026-01-28"
+author_role: "consistency"
+category: "bugs"
+confidence: "high"
+
+# Content
+title: "Layer enum missing Implementers"
+statement: |
+  The Layer enum in src/domain/layer.rs only includes Observers, Deciders, and Planners. However, AGENTS.md references Implementer agents, and the .jules/roles/implementers/ directory exists. This omission prevents the CLI from managing implementer roles.
+
+evidence:
+  - path: "src/domain/layer.rs"
+    loc: "pub enum Layer"
+    note: "Enum has only Observers, Deciders, Planners."
+  - path: ".jules/roles/implementers/"
+    loc: "directory existence"
+    note: "Layer directory exists in workspace."
+  - path: "AGENTS.md"
+    loc: "Branch Strategy"
+    note: "Mentions Implementer agent type."
+
+tags:
+  - "code"
+  - "inconsistency"
+  - "layers"
