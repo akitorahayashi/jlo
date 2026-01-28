@@ -1,0 +1,45 @@
+name: Run Implementer
+
+on:
+  workflow_call:
+    inputs:
+      task_file:
+        description: 'Task file basename (e.g., 2026-01-28_task_example.yml)'
+        required: true
+        type: string
+    secrets:
+      jules_api_key:
+        required: true
+
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Read task
+        id: task
+        run: |
+          content=$(cat ".jules/exchange/tasks/${{ inputs.task_file }}")
+          echo "content<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$content" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Invoke Jules
+        uses: google-labs-code/jules-invoke@v1
+        with:
+          prompt: |
+            Execute this task. Read AGENTS.md for repository conventions.
+            
+            Task file: .jules/exchange/tasks/${{ inputs.task_file }}
+            
+            ${{ steps.task.outputs.content }}
+            
+            After implementation, delete the task file.
+            
+            IMPORTANT: Name your branch with prefix `jules/impl/` (e.g., jules/impl/fix-auth-validation).
+            This ensures your PR requires human review and is NOT auto-merged.
+          jules_api_key: ${{ secrets.jules_api_key }}
+          starting_branch: main

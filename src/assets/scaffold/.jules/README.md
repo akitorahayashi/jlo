@@ -27,25 +27,32 @@ This file is human-oriented. Agents must read `.jules/JULES.md` for the formal c
 ## Role Flow
 
 ```
-Observer -> Decider -> Planner -> (GitHub Issue)
-(events)    (issues)   (tasks)    (implementation)
+Observer -> Decider -> Planner -> Implementer
+(events)    (issues)   (tasks)    (code changes)
 ```
 
 | Role Type | Role(s) | Transformation |
 |-----------|---------|----------------|
-| Observer | taxonomy, data_arch, qa, consistency | Source -> Events (domain-specialized observations) |
+| Observer | taxonomy, data_arch, qa | Source -> Events (domain-specialized observations) |
 | Decider | triage | Events -> Issues (validation + consolidation) |
 | Planner | specifier | Issues -> Tasks (decomposition into steps) |
+| Implementer | (via task files) | Tasks -> Code changes |
 
-**Implementation**: Invoked via GitHub Issues with `jules` label.
+**Execution**: All roles are invoked by GitHub Actions via `jules-invoke`.
 
 **Configuration Language**: All YAML files are written in English for optimal LLM processing.
 
-## Merge Policy
+## Branch Strategy
 
-- Each role submits changes as a PR.
-- Merges are performed manually in this phase.
-- Conflicting PRs are not resolved and should not be merged.
+| Agent Type | Starting Branch | Output Branch | Auto-merge |
+|------------|-----------------|---------------|------------|
+| Observer | `jules` | `jules/observer-*` | ✅ (if `.jules/` only) |
+| Decider | `jules` | `jules/decider-*` | ✅ (if `.jules/` only) |
+| Planner | `jules` | `jules/planner-*` | ✅ (if `.jules/` only) |
+| Implementer | `main` | `impl/*` | ❌ (human review) |
+
+Observers, Deciders, and Planners modify only `.jules/` and auto-merge after CI passes.
+Implementers modify source code and require human review.
 
 ## Directory Structure
 

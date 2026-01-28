@@ -1,0 +1,159 @@
+# Jules Agent Orchestration
+#
+# Coordinates scheduled agent execution and event-driven workflows.
+# Uses reusable workflows for each agent type.
+#
+# Flow:
+#   Scheduled: sync-jules → observers → (wait) → decider
+#   On push to issues/: planners (matrix)
+#   On push to tasks/: implementers (matrix)
+
+name: Jules Workflows
+
+on:
+  schedule:
+    # Daily at 00:00 UTC - triggers sync + observers
+    - cron: '0 0 * * *'
+    # Daily at 00:30 UTC - triggers decider (after observer PRs merge)
+    - cron: '30 0 * * *'
+  push:
+    branches: [jules]
+    paths:
+      - '.jules/exchange/issues/*.yml'
+      - '.jules/exchange/tasks/*.yml'
+  workflow_dispatch:
+    inputs:
+      agent:
+        description: 'Agent type to run'
+        required: true
+        type: choice
+        options:
+          - observers
+          - decider
+          - planners
+          - implementers
+
+jobs:
+  # ============================================================================
+  # Sync main → jules (before observers)
+  # ============================================================================
+  sync:
+    if: github.event_name == 'schedule' && github.event.schedule == '0 0 * * *' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'observers')
+    uses: ./.github/workflows/sync-jules.yml
+
+  # ============================================================================
+  # Scheduled Observers (after sync)
+  # ============================================================================
+  observers:
+    needs: sync
+    if: |
+      always() && needs.sync.result == 'success' &&
+      (github.event_name == 'schedule' && github.event.schedule == '0 0 * * *' || 
+       (github.event_name == 'workflow_dispatch' && inputs.agent == 'observers'))
+    strategy:
+      fail-fast: false
+      matrix:
+        role: [taxonomy, data_arch, qa]
+    uses: ./.github/workflows/run-observer.yml
+    with:
+      role: ${{ matrix.role }}
+    secrets:
+      jules_api_key: ${{ secrets.JULES_API_KEY }}
+
+  # ============================================================================
+  # Scheduled Decider (separate cron, after observer PRs merge)
+  # ============================================================================
+  decider:
+    if: github.event_name == 'schedule' && github.event.schedule == '30 0 * * *' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'decider')
+    uses: ./.github/workflows/run-decider.yml
+    with:
+      role: triage
+    secrets:
+      jules_api_key: ${{ secrets.JULES_API_KEY }}
+
+  # ============================================================================
+  # On-Demand Planners (push to issues/)
+  # ============================================================================
+  list-issues:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'planners')
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.scan.outputs.matrix }}
+      has_issues: ${{ steps.scan.outputs.has_issues }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan for issues
+        id: scan
+        run: |
+          dir=".jules/exchange/issues"
+          if [ ! -d "$dir" ]; then
+            echo "matrix=[]" >> "$GITHUB_OUTPUT"
+            echo "has_issues=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(find "$dir" -maxdepth 1 -name "*.yml" -type f -exec basename {} \; 2>/dev/null | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          if [ "$files" = "[]" ] || [ -z "$files" ]; then
+            echo "matrix=[]" >> "$GITHUB_OUTPUT"
+            echo "has_issues=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix=$files" >> "$GITHUB_OUTPUT"
+            echo "has_issues=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  planners:
+    needs: list-issues
+    if: needs.list-issues.outputs.has_issues == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        issue: ${{ fromJson(needs.list-issues.outputs.matrix) }}
+    uses: ./.github/workflows/run-planner.yml
+    with:
+      role: specifier
+      issue_file: ${{ matrix.issue }}
+    secrets:
+      jules_api_key: ${{ secrets.JULES_API_KEY }}
+
+  # ============================================================================
+  # On-Demand Implementers (push to tasks/)
+  # ============================================================================
+  list-tasks:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'implementers')
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.scan.outputs.matrix }}
+      has_tasks: ${{ steps.scan.outputs.has_tasks }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan for tasks
+        id: scan
+        run: |
+          dir=".jules/exchange/tasks"
+          if [ ! -d "$dir" ]; then
+            echo "matrix=[]" >> "$GITHUB_OUTPUT"
+            echo "has_tasks=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(find "$dir" -maxdepth 1 -name "*.yml" -type f -exec basename {} \; 2>/dev/null | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          if [ "$files" = "[]" ] || [ -z "$files" ]; then
+            echo "matrix=[]" >> "$GITHUB_OUTPUT"
+            echo "has_tasks=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix=$files" >> "$GITHUB_OUTPUT"
+            echo "has_tasks=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  implementers:
+    needs: list-tasks
+    if: needs.list-tasks.outputs.has_tasks == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        task: ${{ fromJson(needs.list-tasks.outputs.matrix) }}
+    uses: ./.github/workflows/run-implementer.yml
+    with:
+      task_file: ${{ matrix.task }}
+    secrets:
+      jules_api_key: ${{ secrets.JULES_API_KEY }}

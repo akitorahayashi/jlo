@@ -1,8 +1,7 @@
 name: Sync main to jules
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # 09:00 JST (00:00 UTC)
+  workflow_call:
   workflow_dispatch:
 
 jobs:

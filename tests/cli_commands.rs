@@ -38,32 +38,6 @@ fn init_fails_if_jules_exists() {
 
 #[test]
 #[serial]
-fn assign_fails_without_workspace() {
-    let ctx = TestContext::new();
-
-    ctx.cli()
-        .args(["assign", "taxonomy"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("No .jules/"));
-}
-
-#[test]
-#[serial]
-fn assign_fails_for_unknown_role() {
-    let ctx = TestContext::new();
-
-    ctx.cli().arg("init").assert().success();
-
-    ctx.cli()
-        .args(["assign", "nonexistent"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("not found"));
-}
-
-#[test]
-#[serial]
 fn template_creates_new_role() {
     let ctx = TestContext::new();
 
@@ -136,9 +110,7 @@ fn help_lists_visible_aliases() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("--help").assert().success().stdout(
-        predicate::str::contains("[aliases: i]")
-            .and(predicate::str::contains("[aliases: a]"))
-            .and(predicate::str::contains("[aliases: tp]")),
+        predicate::str::contains("[aliases: i]").and(predicate::str::contains("[aliases: tp]")),
     );
 }
 

@@ -1,0 +1,69 @@
+name: Run Planner
+
+on:
+  workflow_call:
+    inputs:
+      role:
+        description: 'Planner role name'
+        required: true
+        type: string
+      issue_file:
+        description: 'Issue file basename to process'
+        required: true
+        type: string
+    secrets:
+      jules_api_key:
+        required: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+
+      - name: Read prompt
+        id: prompt
+        uses: ./.github/actions/read-role-prompt
+        with:
+          layer: planners
+          role: ${{ inputs.role }}
+
+      - name: Read issue
+        id: issue
+        run: |
+          # Validate issue_file to prevent path traversal
+          issue_file="${{ inputs.issue_file }}"
+          if [[ "$issue_file" == */* ]] || [[ "$issue_file" == *..* ]]; then
+            echo "Error: issue_file cannot contain path traversal characters ('/' or '..')."
+            exit 1
+          fi
+          
+          issue_path=".jules/exchange/issues/$issue_file"
+          if [ ! -f "$issue_path" ]; then
+            echo "Error: Issue file not found at $issue_path"
+            exit 1
+          fi
+          
+          # Use unique delimiter to avoid collision with file content
+          delimiter="ISSUE_EOF_$(date +%s%N)"
+          content=$(cat "$issue_path")
+          {
+            echo "content<<$delimiter"
+            echo "$content"
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Invoke Jules
+        uses: google-labs-code/jules-invoke@v1
+        with:
+          prompt: |
+            ${{ steps.prompt.outputs.prompt }}
+            
+            ---
+            Target issue: .jules/exchange/issues/${{ inputs.issue_file }}
+            
+            ${{ steps.issue.outputs.content }}
+          jules_api_key: ${{ secrets.jules_api_key }}
+          starting_branch: jules

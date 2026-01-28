@@ -1,0 +1,71 @@
+# Jules Auto-Merge
+#
+# Enables squash-merge with branch deletion for PRs from observer/decider/planner.
+# Only applies when:
+#   1. Branch matches jules/{observer,decider,planner}-* pattern
+#   2. All changed files are within .jules/ directory
+#
+# Does NOT apply to:
+#   - impl/* branches (implementation requires human review)
+#   - Any PR that modifies files outside .jules/
+#
+# Prerequisites:
+# - Repository Settings: Enable "Allow auto-merge"
+# - Branch Protection: Require status checks to pass before merging
+
+name: Jules Auto-Merge
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
+
+jobs:
+  check-scope:
+    if: |
+      (startsWith(github.head_ref, 'jules/observer-') ||
+       startsWith(github.head_ref, 'jules/decider-') ||
+       startsWith(github.head_ref, 'jules/planner-')) &&
+      github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      jules_only: ${{ steps.check.outputs.jules_only }}
+    steps:
+      - name: Check changed files
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Use paginated API to handle PRs with >100 files
+          changed=$(gh api --paginate \
+            "/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            --jq '.[].filename')
+          
+          # Check if any file is outside .jules/
+          non_jules=$(echo "$changed" | grep -v '^\.jules/' || true)
+          
+          if [ -z "$non_jules" ]; then
+            echo "jules_only=true" >> "$GITHUB_OUTPUT"
+            echo "All changes are within .jules/ - auto-merge eligible"
+          else
+            echo "jules_only=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::PR modifies files outside .jules/:"
+            echo "$non_jules"
+          fi
+
+  enable:
+    needs: check-scope
+    if: needs.check-scope.outputs.jules_only == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr merge "${{ github.event.pull_request.number }}" \
+            --auto --squash --delete-branch \
+            --repo "${{ github.repository }}"

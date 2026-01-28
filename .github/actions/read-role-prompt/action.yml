@@ -1,0 +1,42 @@
+name: 'Read Role Prompt'
+description: 'Read prompt.yml from a Jules role directory'
+inputs:
+  layer:
+    description: 'Layer name (observers, deciders, planners)'
+    required: true
+  role:
+    description: 'Role name within the layer'
+    required: true
+outputs:
+  prompt:
+    description: 'The prompt content'
+    value: ${{ steps.read.outputs.content }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Read prompt.yml
+      id: read
+      shell: bash
+      run: |
+        # Validate inputs to prevent path traversal
+        if [[ "${{ inputs.layer }}" == */* ]] || [[ "${{ inputs.layer }}" == *..* ]] || \
+           [[ "${{ inputs.role }}" == */* ]] || [[ "${{ inputs.role }}" == *..* ]]; then
+          echo "Error: Inputs cannot contain path traversal characters ('/' or '..')."
+          exit 1
+        fi
+        
+        prompt_path=".jules/roles/${{ inputs.layer }}/${{ inputs.role }}/prompt.yml"
+        if [ ! -f "$prompt_path" ]; then
+          echo "Error: prompt.yml not found at $prompt_path"
+          exit 1
+        fi
+        
+        # Use unique delimiter to avoid collision with file content
+        delimiter="PROMPT_EOF_$(date +%s%N)"
+        content=$(cat "$prompt_path")
+        {
+          echo "content<<$delimiter"
+          echo "$content"
+          echo "$delimiter"
+        } >> "$GITHUB_OUTPUT"

@@ -1,0 +1,34 @@
+name: Run Observer
+
+on:
+  workflow_call:
+    inputs:
+      role:
+        description: 'Observer role name'
+        required: true
+        type: string
+    secrets:
+      jules_api_key:
+        required: true
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+
+      - name: Read prompt
+        id: prompt
+        uses: ./.github/actions/read-role-prompt
+        with:
+          layer: observers
+          role: ${{ inputs.role }}
+
+      - name: Invoke Jules
+        uses: google-labs-code/jules-invoke@v1
+        with:
+          prompt: ${{ steps.prompt.outputs.prompt }}
+          jules_api_key: ${{ secrets.jules_api_key }}
+          starting_branch: jules
