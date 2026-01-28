@@ -62,9 +62,6 @@ fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
             DirEntry::File(file) => {
                 if let Some(content) = file.contents_utf8() {
                     let path = file.path().to_string_lossy().to_string();
-                    if path.starts_with(".jules/roles/mergers/") {
-                        continue;
-                    }
                     files.push(ScaffoldFile { path, content: content.to_string() });
                 }
             }
