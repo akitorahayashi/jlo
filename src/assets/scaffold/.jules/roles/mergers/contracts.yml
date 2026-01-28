@@ -1,34 +1,37 @@
-# Merger Layer Contract
+layer: mergers
 
-## Purpose
-Consolidate parallel observer branches into a single consistency branch.
+responsibilities: |
+  Mergers consolidate parallel observer branches into a single consistency branch.
 
-## Branch Naming Convention
-All agents must use the following branch naming format:
-```
-jules/<role>-<YYYYMMDD>-<HHMM>-<short_id>
-```
+inputs:
+  - git branches: jules/observer-*
 
-Examples:
-- jules/observer-taxonomy-20260128-1345-a1b2
-- jules/merger-consolidator-20260128-1415-e5f6
+outputs:
+  - git branch: jules/merger-<role>-<timestamp>-<id>
 
-## Workflow
+window_hours: |
+  Process only branches created within window_hours of current time.
+  Branch timestamp parsed from name format: jules/<layer>-<role>-YYYYMMDD-HHMM-<id>
+  Default: 24 hours
 
-1. **List Branches**: Identify all branches matching `jules/observer-*`
-2. **Filter by Window**: Process only branches created within `window_hours`
-3. **Analyze Changes**: Review changes from each observer branch
-4. **Resolve Conflicts**: Merge changes, resolving any conflicts
-5. **Create Consolidated Branch**: Push merged result as `jules/merger-<role>-<timestamp>-<id>`
+workflow:
+  list_branches: |
+    Identify all branches matching jules/observer-*
+    Filter by window_hours using branch name timestamp
 
-## Constraints
+  analyze_changes: |
+    Review changes from each observer branch
+    Identify overlapping or conflicting modifications
 
-- Never modify the main branch directly
-- Preserve all observer notes and feedbacks
-- Original observer branches remain for `jlo prune` to clean up
-- window_hours parameter determines processing scope
+  resolve_conflicts: |
+    Merge changes, resolving any conflicts
+    Preserve observer notes and feedbacks
 
-## Outputs
+  create_branch: |
+    Push merged result as jules/merger-<role>-<timestamp>-<id>
+    Original observer branches remain for jlo prune cleanup
 
-- Single consolidated branch containing merged observer changes
-- No direct modifications to exchange/ directory (observers handle that)
+constraints:
+  - Never modify the main branch directly
+  - Preserve all observer notes and feedbacks
+  - No direct modifications to exchange/ directory

@@ -177,7 +177,7 @@ Feedback files are preserved for audit (never deleted).
 All agents must create branches using this format:
 
 ```
-jules/<role>-<YYYYMMDD>-<HHMM>-<short_id>
+jules/<layer>-<role>-<YYYYMMDD>-<HHMM>-<short_id>
 ```
 
 Examples:

@@ -22,8 +22,8 @@ where
         return Ok(());
     }
 
-    // Build role patterns from discovered roles
-    let role_patterns: Vec<String> = roles.iter().map(|r| format!("jules/{}-", r.id)).collect();
+    // Build a set of known role IDs for efficient lookup
+    let known_roles: std::collections::HashSet<_> = roles.into_iter().map(|r| r.id).collect();
 
     // Get remote branches
     let output = Command::new("git")
@@ -50,14 +50,9 @@ where
 
         let short_name = branch.strip_prefix("origin/").unwrap_or(branch);
 
-        // Check if branch matches any role pattern
-        let matches_pattern = role_patterns.iter().any(|p| short_name.starts_with(p));
-        if !matches_pattern {
-            continue;
-        }
-
-        // Parse timestamp from branch name: jules/<role>-YYYYMMDD-HHMM-<id>
-        if let Some(timestamp) = parse_branch_timestamp(short_name)
+        // Parse role and timestamp from branch name: jules/<layer>-<role>-YYYYMMDD-HHMM-<id>
+        if let Some((role_id, timestamp)) = parse_branch_info(short_name)
+            && known_roles.contains(&role_id)
             && timestamp < cutoff
         {
             to_delete.push(branch.to_string());
@@ -95,13 +90,12 @@ where
     Ok(())
 }
 
-/// Parse timestamp from branch name format: jules/<role>-YYYYMMDD-HHMM-<id>
-fn parse_branch_timestamp(branch: &str) -> Option<chrono::DateTime<chrono::Utc>> {
+/// Parse role ID and timestamp from branch name format: jules/<layer>-<role>-YYYYMMDD-HHMM-<id>
+fn parse_branch_info(branch: &str) -> Option<(String, chrono::DateTime<chrono::Utc>)> {
     // Remove "jules/" prefix
     let name = branch.strip_prefix("jules/")?;
 
-    // Find the timestamp pattern: YYYYMMDD-HHMM
-    // Format: <role>-YYYYMMDD-HHMM-<id>
+    // Format: <layer>-<role>-YYYYMMDD-HHMM-<id>
     let parts: Vec<&str> = name.split('-').collect();
     if parts.len() < 4 {
         return None;
@@ -110,10 +104,14 @@ fn parse_branch_timestamp(branch: &str) -> Option<chrono::DateTime<chrono::Utc>>
     // Find the date part (8 digits)
     let date_idx =
         parts.iter().position(|p| p.len() == 8 && p.chars().all(|c| c.is_ascii_digit()))?;
-    if date_idx + 1 >= parts.len() {
+
+    // Ensure there's at least layer-role before date and time after
+    if date_idx < 2 || date_idx + 1 >= parts.len() {
         return None;
     }
 
+    // Role is the second part (after layer)
+    let role_id = parts[1].to_string();
     let date_str = parts[date_idx];
     let time_str = parts[date_idx + 1];
 
@@ -127,9 +125,11 @@ fn parse_branch_timestamp(branch: &str) -> Option<chrono::DateTime<chrono::Utc>>
     let hour: u32 = time_str[0..2].parse().ok()?;
     let minute: u32 = time_str[2..4].parse().ok()?;
 
-    chrono::NaiveDate::from_ymd_opt(year, month, day)
+    let dt = chrono::NaiveDate::from_ymd_opt(year, month, day)
         .and_then(|d| d.and_hms_opt(hour, minute, 0))
-        .map(|dt| dt.and_utc())
+        .map(|dt| dt.and_utc())?;
+
+    Some((role_id, dt))
 }
 
 #[cfg(test)]
@@ -137,23 +137,28 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_branch_timestamp_valid() {
-        let ts = parse_branch_timestamp("jules/observer-taxonomy-20260128-1345-a1b2");
-        assert!(ts.is_some());
-        let ts = ts.unwrap();
+    fn parse_branch_info_valid() {
+        let result = parse_branch_info("jules/observer-taxonomy-20260128-1345-a1b2");
+        assert!(result.is_some());
+        let (role, ts) = result.unwrap();
+        assert_eq!(role, "taxonomy");
         assert_eq!(ts.format("%Y%m%d-%H%M").to_string(), "20260128-1345");
     }
 
     #[test]
-    fn parse_branch_timestamp_merger() {
-        let ts = parse_branch_timestamp("jules/merger-consolidator-20260128-1415-e5f6");
-        assert!(ts.is_some());
+    fn parse_branch_info_merger() {
+        let result = parse_branch_info("jules/merger-consolidator-20260128-1415-e5f6");
+        assert!(result.is_some());
+        let (role, _) = result.unwrap();
+        assert_eq!(role, "consolidator");
     }
 
     #[test]
-    fn parse_branch_timestamp_invalid() {
-        assert!(parse_branch_timestamp("jules/observer-taxonomy").is_none());
-        assert!(parse_branch_timestamp("main").is_none());
-        assert!(parse_branch_timestamp("feature/something").is_none());
+    fn parse_branch_info_invalid() {
+        assert!(parse_branch_info("jules/observer-taxonomy").is_none());
+        assert!(parse_branch_info("main").is_none());
+        assert!(parse_branch_info("feature/something").is_none());
+        // Too few parts before date
+        assert!(parse_branch_info("jules/taxonomy-20260128-1345-a1b2").is_none());
     }
 }

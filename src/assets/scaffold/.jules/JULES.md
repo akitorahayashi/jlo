@@ -54,7 +54,7 @@ Each role type has a **distinct transformation responsibility**:
 All agents must create branches using this format:
 
 ```
-jules/<role>-<YYYYMMDD>-<HHMM>-<short_id>
+jules/<layer>-<role>-<YYYYMMDD>-<HHMM>-<short_id>
 ```
 
 Examples:
