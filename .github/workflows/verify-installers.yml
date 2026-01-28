@@ -1,0 +1,33 @@
+name: Verify Installers
+
+on:
+  workflow_call:
+
+jobs:
+  verify-install:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+    strategy:
+      matrix:
+        component: [swift, uv, just]
+      fail-fast: false
+
+    steps:
+      - name: Install base packages
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            bash ca-certificates curl git tar xz-utils \
+            binutils gnupg libcurl4-openssl-dev libc6-dev libedit2 libgcc-13-dev \
+            libncurses-dev libpython3-dev libstdc++-13-dev libxml2-dev libz3-dev \
+            pkg-config tzdata unzip zlib1g-dev
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install component
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash "src/assets/catalog/${{ matrix.component }}/install.sh"

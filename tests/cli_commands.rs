@@ -164,3 +164,96 @@ fn prune_requires_days_flag() {
 
     ctx.cli().args(["prune"]).assert().failure().stderr(predicate::str::contains("--days"));
 }
+
+// =============================================================================
+// Setup Command Tests
+// =============================================================================
+
+#[test]
+#[serial]
+fn init_creates_setup_structure() {
+    let ctx = TestContext::new();
+
+    ctx.cli()
+        .args(["init"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Initialized .jules/"));
+
+    assert!(ctx.work_dir().join(".jules/setup").exists());
+    assert!(ctx.work_dir().join(".jules/setup/tools.yml").exists());
+    assert!(ctx.work_dir().join(".jules/setup/.gitignore").exists());
+}
+
+#[test]
+#[serial]
+fn setup_gen_requires_init() {
+    let ctx = TestContext::new();
+
+    ctx.cli()
+        .args(["setup", "gen"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Setup not initialized"));
+}
+
+#[test]
+#[serial]
+fn setup_gen_produces_script() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init"]).assert().success();
+
+    // Write tools config
+    let tools_yml = ctx.work_dir().join(".jules/setup/tools.yml");
+    std::fs::write(&tools_yml, "tools:\n  - just\n").unwrap();
+
+    ctx.cli()
+        .args(["setup", "gen"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Generated install.sh"));
+
+    assert!(ctx.work_dir().join(".jules/setup/install.sh").exists());
+    assert!(ctx.work_dir().join(".jules/setup/env.toml").exists());
+}
+
+#[test]
+#[serial]
+fn setup_list_shows_components() {
+    let ctx = TestContext::new();
+
+    ctx.cli()
+        .args(["setup", "list"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Available components:"))
+        .stdout(predicate::str::contains("just"))
+        .stdout(predicate::str::contains("swift"))
+        .stdout(predicate::str::contains("uv"));
+}
+
+#[test]
+#[serial]
+fn setup_list_detail_shows_info() {
+    let ctx = TestContext::new();
+
+    ctx.cli()
+        .args(["setup", "list", "--detail", "just"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("just:"))
+        .stdout(predicate::str::contains("Install Script:"));
+}
+
+#[test]
+#[serial]
+fn setup_list_detail_not_found() {
+    let ctx = TestContext::new();
+
+    ctx.cli()
+        .args(["setup", "list", "--detail", "nonexistent"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("not found"));
+}

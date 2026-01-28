@@ -8,13 +8,16 @@ pub mod services;
 #[cfg(test)]
 pub(crate) mod testing;
 
+use std::path::Path;
+
 use app::{
     AppContext,
-    commands::{init, prune, template},
+    commands::{init, prune, setup, template},
 };
 use ports::{ClipboardWriter, NoopClipboard, WorkspaceStore};
 use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 
+pub use app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
 pub use domain::AppError;
 
 /// Initialize a new `.jules/` workspace in the current directory.
@@ -97,4 +100,29 @@ pub fn prune(days: u32, dry_run: bool) -> Result<(), AppError> {
     let ctx = AppContext::new(workspace, templates, NoopClipboard);
 
     prune::execute(&ctx, days, dry_run)
+}
+
+// =============================================================================
+// Setup Compiler API
+// =============================================================================
+
+/// Generate setup script and environment configuration.
+///
+/// Reads `tools.yml`, resolves dependencies, and generates:
+/// - `install.sh` - Installation script (executable)
+/// - `env.toml` - Environment variables
+///
+/// Returns the list of resolved component names in installation order.
+pub fn setup_gen(path: Option<&Path>) -> Result<Vec<String>, AppError> {
+    setup::generate(path)
+}
+
+/// List all available components.
+pub fn setup_list() -> Result<Vec<ComponentSummary>, AppError> {
+    setup::list()
+}
+
+/// Get detailed information for a specific component.
+pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
+    setup::list_detail(component)
 }

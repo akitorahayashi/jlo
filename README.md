@@ -15,19 +15,28 @@ jlo assign taxonomy src/
 
 | Command | Alias | Description |
 |---------|-------|-------------|
-| `jlo init` | `i` | Create `.jules/` workspace structure |
+| `jlo init` | `i` | Create `.jules/` workspace with setup directory |
 | `jlo assign <role> [paths...]` | `a` | Copy role prompt to clipboard |
 | `jlo template [-l layer] [-n name]` | `tp` | Create new role from template |
 | `jlo prune -d <days>` | `prn` | Delete old jules/* branches |
+| `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
+| `jlo setup list` | `s ls` | List available components |
 
 ### Examples
 
 ```bash
-jlo init                                    # Initialize workspace
+jlo init                                    # Initialize workspace (includes setup)
 jlo assign taxonomy src/                    # Assign role with paths
 jlo template -l observers -n security       # Create custom role
 jlo prune -d 7                              # Clean up old branches
 jlo prune --dry-run -d 7                    # Preview deletions
+
+# Setup compiler
+jlo setup list                              # List available components
+jlo setup list --detail just                # Show component details
+# Edit .jules/setup/tools.yml to select tools
+jlo setup gen                               # Generate install script
+.jules/setup/install.sh                     # Run installation
 ```
 
 ## Built-in Roles

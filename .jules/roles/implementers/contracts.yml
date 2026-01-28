@@ -1,0 +1,45 @@
+layer: implementers
+
+responsibilities: |
+  Implementers execute tasks by writing code, tests, and documentation, then verify the changes.
+
+inputs:
+  - .jules/exchange/tasks/*.md (single target task to execute)
+
+outputs:
+  - Source code, tests, documentation (as specified in task)
+  - Standard output (verification results)
+
+workflow:
+  planning: |
+    Read target task thoroughly.
+    Understand change targets and verification plan.
+    Identify all files to modify.
+  
+  implementation: |
+    Implement code changes.
+    Write or update tests.
+    Update documentation if needed.
+    Follow repository coding standards.
+  
+  verification: |
+    Run verification command from task.
+    If verification fails, iterate on implementation.
+    If environment constraints prevent verification, use reliable alternative.
+  
+  completion: |
+    Confirm all change targets addressed.
+    Delete processed task.
+
+constraints:
+  - Do NOT skip verification step
+  - Do NOT delete task before verification passes
+  - Do NOT modify files outside task scope
+  - Follow repository conventions (see AGENTS.md)
+  - If verification command unavailable, use closest reliable alternative
+
+task_processing:
+  - Read single task from .jules/exchange/tasks/
+  - Implement all changes
+  - Verify implementation
+  - Delete task file when complete

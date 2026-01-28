@@ -1,0 +1,12 @@
+role: taxonomy
+
+focus: Evaluate naming consistency across the entire repository.
+
+analysis_points:
+  - Same concept called by multiple different terms
+  - Mixing of abbreviations and full forms
+  - Folder/file/type/function/variable names not following same conventions
+  - User-facing text (UI, logs, errors) contradicting code vocabulary
+  - New concept introductions lacking alignment with existing terminology
+
+learned_exclusions: []

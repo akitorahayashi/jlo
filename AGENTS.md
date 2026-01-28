@@ -21,6 +21,7 @@ Common rules belong in JULES.md. Template files in `src/assets/templates/` follo
 - **CLI Parsing**: `clap`
 - **Clipboard**: `arboard`
 - **YAML Processing**: `serde`, `serde_yaml`
+- **TOML Processing**: `toml`
 - **Hashing**: `sha2`
 - **Embedded scaffold**: `include_dir`
 - **Interactive prompts**: `dialoguer`
@@ -42,15 +43,16 @@ Common rules belong in JULES.md. Template files in `src/assets/templates/` follo
 src/
 ├── main.rs            # CLI (clap)
 ├── lib.rs             # Public API
-├── domain/            # Pure types (Layer, RoleId, AppError)
+├── domain/            # Pure types (Layer, RoleId, AppError, setup models)
 ├── ports/             # Trait boundaries
-├── services/          # I/O implementations
+├── services/          # I/O implementations (catalog, resolver, generator)
 ├── app/
 │   ├── context.rs     # AppContext (DI container)
-│   └── commands/      # init, assign, template, prune
+│   └── commands/      # init, assign, template, prune, setup
 ├── assets/
 │   ├── scaffold/      # Embedded .jules/ structure
-│   └── templates/     # Role templates by layer
+│   ├── templates/     # Role templates by layer
+│   └── catalog/       # Setup component definitions (meta.toml + install.sh)
 └── testing/           # Mock implementations
 tests/
 ├── common/            # Shared test fixtures
@@ -60,10 +62,13 @@ tests/
 ```
 
 ## CLI Commands
-- `jlo init` (alias: `i`): Create `.jules/` structure
+- `jlo init` (alias: `i`): Create `.jules/` structure with setup directory
 - `jlo assign <role> [paths...]` (alias: `a`): Copy prompt to clipboard
 - `jlo template [-l layer] [-n name]` (alias: `tp`): Create custom role
 - `jlo prune -d <days>` (alias: `prn`): Delete old jules/* branches
+- `jlo setup gen [path]` (alias: `s g`): Generate `install.sh` and `env.toml`
+- `jlo setup list` (alias: `s ls`): List available components
+- `jlo setup list --detail <component>`: Show component details
 
 ## Built-in Roles
 
@@ -81,3 +86,42 @@ tests/
 - **Role Content**: User-defined
 - **CLI Messages**: English
 - **Code Comments**: English
+
+## Setup Compiler
+
+The setup compiler generates dependency-aware installation scripts for development tools.
+
+### Workspace Structure
+```
+.jules/
+  setup/
+    tools.yml      # Tool selection configuration
+    env.toml       # Environment variables (generated/merged)
+    install.sh     # Installation script (generated)
+    .gitignore     # Ignores env.toml
+```
+
+### Component Catalog
+Each component is a directory under `src/assets/catalog/<component>/` with:
+- `meta.toml`: name, summary, dependencies, env specs
+- `install.sh`: Installation script
+
+### meta.toml Schema
+```toml
+name = "component-name"       # Optional; defaults to directory name
+summary = "Short description"
+dependencies = ["other-comp"] # Optional
+
+[[env]]
+name = "ENV_VAR"
+description = "What this variable does"
+default = "optional-default"  # Optional
+```
+
+### Services
+- **CatalogService**: Loads components from embedded assets
+- **ResolverService**: Topological sort with cycle detection
+- **GeneratorService**: Produces install.sh and merges env.toml
+
+### Environment Contract
+Catalog installers assume the Jules environment baseline (Python 3.12+, Node.js 22+, common dev tools). The CI verify-installers workflow provisions that baseline in minimal containers.

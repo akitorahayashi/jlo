@@ -1,6 +1,7 @@
 mod error;
 mod layer;
 mod role_id;
+pub mod setup;
 mod workspace_layout;
 
 pub use error::AppError;

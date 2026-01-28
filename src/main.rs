@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 use jlo::AppError;
 
@@ -47,6 +49,29 @@ enum Commands {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Setup compiler commands
+    #[clap(visible_alias = "s")]
+    Setup {
+        #[command(subcommand)]
+        command: SetupCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum SetupCommands {
+    /// Generate install.sh and env.toml from tools.yml
+    #[clap(visible_alias = "g")]
+    Gen {
+        /// Project directory containing .jules/setup/ (defaults to current directory)
+        path: Option<PathBuf>,
+    },
+    /// List available components
+    #[clap(visible_alias = "ls")]
+    List {
+        /// Show detailed info for a specific component
+        #[arg(long)]
+        detail: Option<String>,
+    },
 }
 
 fn main() {
@@ -59,10 +84,56 @@ fn main() {
             jlo::template(layer.as_deref(), name.as_deref()).map(|_| ())
         }
         Commands::Prune { days, dry_run } => jlo::prune(days, dry_run),
+        Commands::Setup { command } => match command {
+            SetupCommands::Gen { path } => run_setup_gen(path),
+            SetupCommands::List { detail } => run_setup_list(detail),
+        },
     };
 
     if let Err(e) = result {
         eprintln!("Error: {}", e);
         std::process::exit(1);
     }
+}
+
+fn run_setup_gen(path: Option<PathBuf>) -> Result<(), AppError> {
+    let components = jlo::setup_gen(path.as_deref())?;
+    println!("✅ Generated install.sh with {} component(s)", components.len());
+    for (i, name) in components.iter().enumerate() {
+        println!("  {}. {}", i + 1, name);
+    }
+    Ok(())
+}
+
+fn run_setup_list(detail: Option<String>) -> Result<(), AppError> {
+    if let Some(component) = detail {
+        let info = jlo::setup_detail(&component)?;
+        println!("{}: {}", info.name, info.summary);
+        if !info.dependencies.is_empty() {
+            println!("\nDependencies:");
+            for dep in &info.dependencies {
+                println!("  • {}", dep);
+            }
+        }
+        if !info.env_vars.is_empty() {
+            println!("\nEnvironment Variables:");
+            for env in &info.env_vars {
+                let default_str =
+                    env.default.as_ref().map(|d| format!(" (default: {})", d)).unwrap_or_default();
+                println!("  • {}{}", env.name, default_str);
+                if !env.description.is_empty() {
+                    println!("    {}", env.description);
+                }
+            }
+        }
+        println!("\nInstall Script:");
+        println!("{}", info.script_content);
+    } else {
+        let components = jlo::setup_list()?;
+        println!("Available components:");
+        for comp in components {
+            println!("  {} - {}", comp.name, comp.summary);
+        }
+    }
+    Ok(())
 }

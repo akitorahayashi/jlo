@@ -1,0 +1,7 @@
+name = "just"
+summary = "Just - a command runner for project-specific tasks"
+dependencies = []
+
+[[env]]
+name = "JUST_VERSION"
+description = "Version of just to install (leave empty for latest)"
