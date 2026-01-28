@@ -2,11 +2,11 @@
 #
 # Enables squash-merge with branch deletion for PRs from observer/decider/planner.
 # Only applies when:
-#   1. Branch matches jules/{observer,decider,planner}-* pattern
+#   1. Branch matches jules-{observer,decider,planner}-* pattern
 #   2. All changed files are within .jules/ directory
 #
 # Does NOT apply to:
-#   - impl/* branches (implementation requires human review)
+#   - jules-implementer-* branches (implementation requires human review)
 #   - Any PR that modifies files outside .jules/
 #
 # Prerequisites:
@@ -16,15 +16,14 @@
 name: Jules Auto-Merge
 
 on:
-  pull_request:
-    types: [opened, reopened, ready_for_review, synchronize]
+  workflow_call:
 
 jobs:
   check-scope:
     if: |
-      (startsWith(github.head_ref, 'jules/observer-') ||
-       startsWith(github.head_ref, 'jules/decider-') ||
-       startsWith(github.head_ref, 'jules/planner-')) &&
+      (startsWith(github.head_ref, 'jules-observer-') ||
+       startsWith(github.head_ref, 'jules-decider-') ||
+       startsWith(github.head_ref, 'jules-planner-')) &&
       github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:

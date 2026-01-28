@@ -14,15 +14,23 @@
 ### 1. Prompts are Static Files, Never Generated in Rust
 All prompts exist as `.yml` files in `src/assets/scaffold/` or `src/assets/templates/`. Rust code only does simple string replacement (e.g., `ROLE_NAME` -> actual role name).
 
-### 2. JULES.md is the Single Source of Truth
-- JULES.md defines complete behavioral contracts for all layers
-- role.yml (observers only) defines specialized focus WITHIN the observer contract
-- prompt.yml references JULES.md for behavioral instructions
+### 2. Prompt Hierarchy (No Duplication)
+```
+prompt.yml (entry point, role-specific)
+  └─ contracts.yml (layer-shared workflow)
+       └─ JULES.md (global constraints only)
+```
 
-### 3. Minimal Duplication in Prompts
-Common rules belong in JULES.md. Template files in `src/assets/templates/` follow this minimalism.
+| File | Scope | Content |
+|------|-------|---------|
+| `prompt.yml` | Role | Entry point. Lists contracts to follow. |
+| `role.yml` | Role | Specialized focus (observers only). |
+| `contracts.yml` | Layer | Workflow, inputs, outputs, constraints shared within layer. |
+| `JULES.md` | Global | Rules applying to ALL layers (branch naming, system boundaries). |
 
-### 4. Workflow-Driven Execution
+**Rule**: Never duplicate content across levels. Each level references the next.
+
+### 3. Workflow-Driven Execution
 Agent execution is orchestrated by GitHub Actions, not jlo. The `.github/workflows/jules-workflows.yml` coordinates all agent invocations via reusable workflows.
 
 ## Project Summary
@@ -32,10 +40,10 @@ Agent execution is orchestrated by GitHub Actions, not jlo. The `.github/workflo
 
 | Agent Type | Starting Branch | Output Branch | Auto-merge |
 |------------|-----------------|---------------|------------|
-| Observer | `jules` | `jules/observer-*` | ✅ (if `.jules/` only) |
-| Decider | `jules` | `jules/decider-*` | ✅ (if `.jules/` only) |
-| Planner | `jules` | `jules/planner-*` | ✅ (if `.jules/` only) |
-| Implementer | `main` | `jules/implementer-*` | ❌ (human review) |
+| Observer | `jules` | `jules-observer-*` | ✅ (if `.jules/` only) |
+| Decider | `jules` | `jules-decider-*` | ✅ (if `.jules/` only) |
+| Planner | `jules` | `jules-planner-*` | ✅ (if `.jules/` only) |
+| Implementer | `main` | `jules-implementer-*` | ❌ (human review) |
 
 ## Tech Stack
 - **Language**: Rust

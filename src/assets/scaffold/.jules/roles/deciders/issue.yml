@@ -2,7 +2,7 @@ schema_version: 1
 
 # Metadata
 id: "<id>" # e.g. 2026-01-28_issue_auth_inconsistency
-category: "<category>" # bugs|docs|refacts|tests|updates
+category: "<category>" # directory name under .jules/exchange/events/
 priority: "low|medium|high"
 status: "open"
 sources: [] # list of event_ids that triggered this issue

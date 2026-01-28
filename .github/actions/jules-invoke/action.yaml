@@ -32,8 +32,10 @@ runs:
   using: "composite"
   steps:
     - uses: actions/checkout@v5
+      if: ${{ inputs.include_last_commit == 'true' || inputs.include_commit_log == 'true' }}
       with:
         fetch-depth: 30
+        ref: ${{ inputs.starting_branch }}
 
     - name: Create initial prompt
       env:
@@ -43,7 +45,7 @@ runs:
         echo "$USER_PROMPT" > prompt.txt
 
     - name: Save last commit content
-      if: ${{ inputs.include_last_commit }}
+      if: ${{ inputs.include_last_commit == 'true' }}
       shell: bash
       run: |
         echo -e '\n\nContent of the latest commit (in the format of `git show`):' >> prompt.txt
@@ -52,7 +54,7 @@ runs:
         echo '```' >> prompt.txt
 
     - name: Save git log
-      if: ${{ inputs.include_commit_log }}
+      if: ${{ inputs.include_commit_log == 'true' }}
       shell: bash
       run: |
         echo -e '\n\nLog of the last 20 commits (in the format of `git log --stat`):' >> prompt.txt
@@ -63,10 +65,13 @@ runs:
     - name: Assemble Jules payload
       shell: bash
       run: |
-        jq -n --arg jules_prompt "$(cat prompt.txt)" --arg starting_branch "${{ inputs.starting_branch }}" --arg repo_full_name "${{ github.repository }}" '{
+        jq -n --arg jules_prompt "$(cat prompt.txt)" \
+          --arg starting_branch "${{ inputs.starting_branch }}" \
+          --arg source_name "sources/github/${{ github.repository }}" \
+          '{
             "prompt": $jules_prompt,
             "sourceContext": {
-              "source": "sources/github/\($repo_full_name)",
+              "source": $source_name,
               "githubRepoContext": {
                 "startingBranch": $starting_branch
               }
@@ -78,8 +83,61 @@ runs:
     - name: Invoke Jules
       shell: bash
       run: |
-        curl 'https://jules.googleapis.com/v1alpha/sessions' \
-          -X POST \
-          -H "Content-Type: application/json" \
-          -H "X-Goog-Api-Key: ${{ inputs.jules_api_key }}" \
-          -d @jules_payload.json
+        set -euo pipefail
+
+        # Curl exits 0 on HTTP 4xx/5xx unless explicitly checked; treat non-2xx as failure.
+        # Retry transient failures to reduce flakes when the service is under load.
+        url='https://jules.googleapis.com/v1alpha/sessions'
+        response_file="$(mktemp)"
+        status_file="$(mktemp)"
+        trap 'rm -f "$response_file" "$status_file"' EXIT
+        attempt=1
+        max_attempts=5
+
+        while [ "$attempt" -le "$max_attempts" ]; do
+          curl_exit=0
+          curl --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 60 \
+            --write-out '%{http_code}' \
+            --output "$response_file" \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            -H "X-Goog-Api-Key: ${{ inputs.jules_api_key }}" \
+            -d @jules_payload.json \
+            "$url" >"$status_file" || curl_exit=$?
+          status="$(tr -d '\n' <"$status_file")"
+          if ! [[ "$status" =~ ^[0-9]{3}$ ]]; then
+            status="000"
+          fi
+
+          cat "$response_file"
+
+          if [ "$curl_exit" -eq 0 ] && [ "$status" -ge 200 ] && [ "$status" -lt 300 ]; then
+            exit 0
+          fi
+
+          if [ "$curl_exit" -ne 0 ]; then
+            sleep_seconds="$((attempt * attempt))"
+            echo "curl failed (exit $curl_exit); retrying in ${sleep_seconds}s (attempt ${attempt}/${max_attempts})" >&2
+            sleep "$sleep_seconds"
+            attempt="$((attempt + 1))"
+            continue
+          fi
+
+          case "$status" in
+            429|500|502|503|504)
+              sleep_seconds="$((attempt * attempt))"
+              echo "Jules API returned HTTP $status; retrying in ${sleep_seconds}s (attempt ${attempt}/${max_attempts})" >&2
+              sleep "$sleep_seconds"
+              attempt="$((attempt + 1))"
+              continue
+              ;;
+          esac
+
+          echo "Jules API returned HTTP $status" >&2
+          exit 1
+        done
+
+        echo "Jules API did not return a successful response after ${max_attempts} attempts." >&2
+        exit 1

@@ -2,9 +2,9 @@ name: CI Workflows
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "jules" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "jules" ]
   workflow_dispatch:
 
 jobs:
@@ -23,3 +23,11 @@ jobs:
   verify-installers:
     name: Verify Installers
     uses: ./.github/workflows/verify-installers.yml
+
+  automerge:
+    name: Auto Merge
+    permissions:
+      contents: write
+      pull-requests: write
+    needs: [lint, build, test, verify-installers]
+    uses: ./.github/workflows/jules-automerge.yml

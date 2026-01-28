@@ -108,8 +108,6 @@ mod tests {
         assert!(yaml.contains("layer: planners"));
         assert!(yaml.contains("responsibility:"));
         assert!(yaml.contains("contracts:"));
-        assert!(yaml.contains("workflow:"));
-        assert!(yaml.contains("inputs:"));
-        assert!(yaml.contains("outputs:"));
+        assert!(yaml.contains("instructions:"));
     }
 }
