@@ -56,7 +56,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Invoke Jules
-        uses: google-labs-code/jules-invoke@v1
+        uses: google-labs-code/jules-action@v1.0.0
         with:
           prompt: |
             ${{ steps.prompt.outputs.prompt }}
