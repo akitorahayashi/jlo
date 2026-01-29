@@ -41,6 +41,10 @@ pub enum AppError {
     RunConfigInvalid(String),
     /// Role not found in config for layer.
     RoleNotInConfig { role: String, layer: String },
+    /// Issue file required for implementers layer.
+    IssueFileRequired,
+    /// Issue file not found at path.
+    IssueFileNotFound(String),
 }
 
 impl Display for AppError {
@@ -100,6 +104,15 @@ impl Display for AppError {
             AppError::RoleNotInConfig { role, layer } => {
                 write!(f, "Role '{}' not found in config for layer '{}'", role, layer)
             }
+            AppError::IssueFileRequired => {
+                write!(
+                    f,
+                    "Issue file required for implementers. Use --issue <path> to specify a local issue file."
+                )
+            }
+            AppError::IssueFileNotFound(path) => {
+                write!(f, "Issue file not found: {}", path)
+            }
         }
     }
 }
@@ -136,12 +149,14 @@ impl AppError {
             | AppError::InvalidComponentMetadata { .. }
             | AppError::MalformedEnvToml(_)
             | AppError::RunConfigInvalid(_)
-            | AppError::RoleNotInConfig { .. } => io::ErrorKind::InvalidInput,
+            | AppError::RoleNotInConfig { .. }
+            | AppError::IssueFileRequired => io::ErrorKind::InvalidInput,
             AppError::WorkspaceNotFound
             | AppError::SetupNotInitialized
             | AppError::SetupConfigMissing
             | AppError::ComponentNotFound { .. }
-            | AppError::RunConfigMissing => io::ErrorKind::NotFound,
+            | AppError::RunConfigMissing
+            | AppError::IssueFileNotFound(_) => io::ErrorKind::NotFound,
             AppError::WorkspaceExists | AppError::RoleExists { .. } => io::ErrorKind::AlreadyExists,
             AppError::ClipboardError(_) => io::ErrorKind::Other,
         }

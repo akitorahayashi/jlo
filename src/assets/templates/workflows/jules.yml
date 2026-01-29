@@ -8,7 +8,7 @@
 # 2. Set JULES_API_KEY secret in repository settings
 # 3. Install jlo release binary (automatic via workflow)
 
-name: Jules Agents
+name: Jules Workflows
 
 on:
   schedule:
@@ -34,6 +34,11 @@ on:
         required: false
         type: boolean
         default: false
+      jlo_version:
+        description: 'jlo release tag (e.g. v2.0.0) or "latest"'
+        required: false
+        type: string
+        default: 'latest'
 
 permissions:
   contents: write
@@ -44,6 +49,8 @@ jobs:
   scheduled:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
+    env:
+      JLO_VERSION: ${{ vars.JLO_VERSION || 'latest' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,7 +58,19 @@ jobs:
 
       - name: Install jlo
         run: |
-          curl -sSL https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64 -o jlo
+          VERSION="${JLO_VERSION}"
+          if [ -z "$VERSION" ]; then
+            VERSION="latest"
+          fi
+          if [ "$VERSION" != "latest" ] && [ "${VERSION#v}" = "$VERSION" ]; then
+            VERSION="v${VERSION}"
+          fi
+          if [ "$VERSION" = "latest" ]; then
+            URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
+          else
+            URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
+          fi
+          curl -sSL "$URL" -o jlo
           chmod +x jlo && sudo mv jlo /usr/local/bin/
 
       - name: Run observers
@@ -62,6 +81,8 @@ jobs:
   manual:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    env:
+      JLO_VERSION: ${{ inputs.jlo_version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,7 +90,19 @@ jobs:
 
       - name: Install jlo
         run: |
-          curl -sSL https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64 -o jlo
+          VERSION="${JLO_VERSION}"
+          if [ -z "$VERSION" ]; then
+            VERSION="latest"
+          fi
+          if [ "$VERSION" != "latest" ] && [ "${VERSION#v}" = "$VERSION" ]; then
+            VERSION="v${VERSION}"
+          fi
+          if [ "$VERSION" = "latest" ]; then
+            URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
+          else
+            URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
+          fi
+          curl -sSL "$URL" -o jlo
           chmod +x jlo && sudo mv jlo /usr/local/bin/
 
       - name: Parse role input

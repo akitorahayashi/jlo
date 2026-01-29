@@ -3,7 +3,7 @@
 # Simplified workflow using jlo CLI for agent orchestration.
 # Configuration is managed via .jules/config.toml.
 
-name: Jules Agents
+name: Jules Workflows
 
 on:
   schedule:
@@ -24,11 +24,20 @@ on:
         description: 'Specific role (optional, comma-separated)'
         required: false
         type: string
+      issue_file:
+        description: 'Issue file path (required for implementers, e.g. .jules/exchange/issues/xyz.yml)'
+        required: false
+        type: string
       dry_run:
         description: 'Show prompts without executing'
         required: false
         type: boolean
         default: false
+      jlo_version:
+        description: 'jlo release tag (e.g. v2.0.0) or "latest"'
+        required: false
+        type: string
+        default: 'latest'
 
 permissions:
   contents: write
@@ -38,8 +47,10 @@ permissions:
 jobs:
   # Scheduled run: execute observers layer
   scheduled:
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' && vars.JULES_PAUSED != 'true'
     runs-on: ubuntu-latest
+    env:
+      JLO_VERSION: ${{ vars.JLO_VERSION || 'latest' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,7 +58,19 @@ jobs:
 
       - name: Install jlo
         run: |
-          curl -sSL https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64 -o jlo
+          VERSION="${JLO_VERSION}"
+          if [ -z "$VERSION" ]; then
+            VERSION="latest"
+          fi
+          if [ "$VERSION" != "latest" ] && [ "${VERSION#v}" = "$VERSION" ]; then
+            VERSION="v${VERSION}"
+          fi
+          if [ "$VERSION" = "latest" ]; then
+            URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
+          else
+            URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
+          fi
+          curl -sSL "$URL" -o jlo
           chmod +x jlo && sudo mv jlo /usr/local/bin/
 
       - name: Run observers
@@ -59,14 +82,59 @@ jobs:
   manual:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    env:
+      JLO_VERSION: ${{ inputs.jlo_version }}
     steps:
+      - name: Validate implementer inputs
+        if: inputs.layer == 'implementers'
+        shell: bash
+        run: |
+          if [ -z "${{ inputs.issue_file }}" ]; then
+            echo "Error: issue_file is required for implementers layer." >&2
+            echo "Specify a local issue file path (e.g. .jules/exchange/issues/xyz.yml)" >&2
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.layer == 'implementers' && 'main' || 'jules' }}
 
+      - name: Checkout jules branch for issue file
+        if: inputs.layer == 'implementers'
+        uses: actions/checkout@v4
+        with:
+          ref: jules
+          path: jules-ref
+          sparse-checkout: .jules/exchange/issues
+
+      - name: Validate issue file exists
+        if: inputs.layer == 'implementers'
+        shell: bash
+        run: |
+          ISSUE_PATH="jules-ref/${{ inputs.issue_file }}"
+          if [ ! -f "$ISSUE_PATH" ]; then
+            echo "Error: Issue file not found: ${{ inputs.issue_file }}" >&2
+            echo "Available issues:" >&2
+            ls -1 jules-ref/.jules/exchange/issues/*.yml 2>/dev/null || echo "  (none)" >&2
+            exit 1
+          fi
+          echo "ISSUE_FILE_PATH=$ISSUE_PATH" >> "$GITHUB_ENV"
+
       - name: Install jlo
         run: |
-          curl -sSL https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64 -o jlo
+          VERSION="${JLO_VERSION}"
+          if [ -z "$VERSION" ]; then
+            VERSION="latest"
+          fi
+          if [ "$VERSION" != "latest" ] && [ "${VERSION#v}" = "$VERSION" ]; then
+            VERSION="v${VERSION}"
+          fi
+          if [ "$VERSION" = "latest" ]; then
+            URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
+          else
+            URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
+          fi
+          curl -sSL "$URL" -o jlo
           chmod +x jlo && sudo mv jlo /usr/local/bin/
 
       - name: Parse role input
@@ -88,4 +156,33 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
-          jlo run ${{ inputs.layer }} ${{ steps.parse.outputs.role_args }}$ARGS
+          if [ "${{ inputs.layer }}" = "implementers" ] && [ -n "$ISSUE_FILE_PATH" ]; then
+            ARGS="$ARGS --issue $ISSUE_FILE_PATH"
+          fi
+          jlo run ${{ inputs.layer }} ${{ steps.parse.outputs.role_args }} $ARGS
+
+      - name: Delete processed issue file
+        if: inputs.layer == 'implementers' && inputs.dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN || github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Full checkout of jules branch to delete the issue
+          cd jules-ref
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin jules
+          git checkout jules
+          git pull origin jules
+
+          ISSUE_FILE="${{ inputs.issue_file }}"
+          if [ -f "$ISSUE_FILE" ]; then
+            git rm "$ISSUE_FILE"
+            git commit -m "Remove processed issue: $(basename "$ISSUE_FILE")"
+            git push origin jules
+            echo "✅ Deleted processed issue: $ISSUE_FILE"
+          else
+            echo "⚠️ Issue file already removed or not found: $ISSUE_FILE"
+          fi

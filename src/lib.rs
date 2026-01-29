@@ -59,11 +59,13 @@ pub fn template(layer: Option<&str>, role_name: Option<&str>) -> Result<String, 
 /// * `roles` - Specific roles to run (None = all from config)
 /// * `dry_run` - Show prompts without executing
 /// * `branch` - Override the starting branch
+/// * `issue` - Local issue file path (required for implementers)
 pub fn run(
     layer: Layer,
     roles: Option<Vec<String>>,
     dry_run: bool,
     branch: Option<String>,
+    issue: Option<std::path::PathBuf>,
 ) -> Result<RunResult, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
 
@@ -71,7 +73,7 @@ pub fn run(
         return Err(AppError::WorkspaceNotFound);
     }
 
-    let options = RunOptions { layer, roles, dry_run, branch };
+    let options = RunOptions { layer, roles, dry_run, branch, issue };
     run::execute(&workspace.jules_path(), options)
 }
 

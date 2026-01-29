@@ -2,21 +2,21 @@ layer: implementers
 branch_prefix: jules-implementer-
 
 constraints:
-  - Branch format: jules-implementer-<issue_number>-<short_description>
+  - Branch format: jules-implementer-<fingerprint>-<short_description>
   - Do NOT skip verification
   - Do NOT modify files outside issue scope
   - Follow AGENTS.md conventions
 
 inputs:
-  - GitHub Issue number (provided via workflow_dispatch)
-  - Issue content expanded into prompt
+  - Local issue file path (provided via --issue flag)
+  - Issue content embedded in prompt
 
 outputs:
   - Modified source files, tests, documentation
   - Pull request for human review
 
 workflow:
-  1. Read GitHub Issue content from prompt
+  1. Read issue content from the embedded prompt (already provided)
   2. Understand targets and acceptance criteria
   3. Implement code, tests, documentation
   4. Run verification (or reliable alternative)

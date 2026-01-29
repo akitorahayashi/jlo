@@ -80,9 +80,12 @@ fn default_retry_delay_ms() -> u64 {
 /// Execution settings for agent runs.
 #[derive(Debug, Clone, Deserialize)]
 pub struct RunSettings {
-    /// Default branch for agent operations.
+    /// Default branch for agent operations (implementers work from here).
     #[serde(default = "default_branch")]
     pub default_branch: String,
+    /// Branch where .jules/ workspace resides.
+    #[serde(default = "default_jules_branch")]
+    pub jules_branch: String,
     /// Whether to run agents in parallel.
     #[serde(default = "default_true")]
     pub parallel: bool,
@@ -95,6 +98,7 @@ impl Default for RunSettings {
     fn default() -> Self {
         Self {
             default_branch: default_branch(),
+            jules_branch: default_jules_branch(),
             parallel: default_true(),
             max_parallel: default_max_parallel(),
         }
@@ -103,6 +107,10 @@ impl Default for RunSettings {
 
 fn default_branch() -> String {
     "main".to_string()
+}
+
+fn default_jules_branch() -> String {
+    "jules".to_string()
 }
 
 fn default_true() -> bool {
@@ -122,6 +130,7 @@ mod tests {
         let config = RunConfig::default();
         assert!(config.agents.observers.is_empty());
         assert_eq!(config.run.default_branch, "main");
+        assert_eq!(config.run.jules_branch, "jules");
         assert!(config.run.parallel);
         assert_eq!(config.run.max_parallel, 3);
     }
