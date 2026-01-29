@@ -1,4 +1,4 @@
-name: Jules E2E Pipeline (Mock)
+name: Jules E2E Exchange Flow
 
 on:
   workflow_dispatch:
@@ -7,222 +7,173 @@ permissions:
   contents: read
 
 jobs:
-  mock-observer:
+  exchange-flow:
     runs-on: ubuntu-latest
-    outputs:
-      category: ${{ steps.prepare.outputs.category }}
-      event_id: ${{ steps.prepare.outputs.event_id }}
-      issue_id: ${{ steps.prepare.outputs.issue_id }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: jules
 
-      - name: Create mock event
-        id: prepare
+      - name: Setup Rust
+        uses: ./.github/actions/setup
+
+      - name: Verify Jules workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -d ".jules" ]; then
+            echo "Expected .jules/ workspace on the jules branch." >&2
+            exit 1
+          fi
+          if [ ! -f ".jules/config.toml" ]; then
+            echo "Missing .jules/config.toml." >&2
+            exit 1
+          fi
+
+      - name: Dry-run configured layers
+        shell: bash
+        run: |
+          set -euo pipefail
+          layers=$(awk '
+            BEGIN { in_agents=0 }
+            /^\[agents\]/{ in_agents=1; next }
+            /^\[/{ if (in_agents==1) in_agents=0 }
+            in_agents {
+              line=$0
+              sub(/#.*/, "", line)
+              gsub(/^[ \t]+|[ \t]+$/, "", line)
+              if (line=="" || line !~ /=/) next
+              split(line, parts, "=")
+              key=parts[1]
+              gsub(/[ \t]+/, "", key)
+              val=parts[2]
+              gsub(/^[ \t]+|[ \t]+$/, "", val)
+              if (val ~ /^\[/ && val ~ /\]$/) {
+                inner=val
+                gsub(/^\[/, "", inner)
+                gsub(/\]$/, "", inner)
+                gsub(/[ \t]/, "", inner)
+                if (inner != "") print key
+              }
+            }
+          ' .jules/config.toml)
+
+          if [ -z "$layers" ]; then
+            echo "No configured roles found in .jules/config.toml." >&2
+            exit 1
+          fi
+
+          for layer in $layers; do
+            cargo run --quiet -- run "$layer" --dry-run
+          done
+
+      - name: Execute exchange flow
         shell: bash
         run: |
           set -euo pipefail
           MOCK_ROOT="$GITHUB_WORKSPACE/.jules-mock"
           EVENT_ROOT="$MOCK_ROOT/.jules/exchange/events"
           ISSUE_ROOT="$MOCK_ROOT/.jules/exchange/issues"
+          TEMPLATE_ROOT="$GITHUB_WORKSPACE/.github/assets/jules-e2e"
 
           rm -rf "$MOCK_ROOT"
           mkdir -p "$EVENT_ROOT" "$ISSUE_ROOT"
 
-          CATEGORY=$(ls -1 src/assets/scaffold/.jules/exchange/events | head -n 1)
+          CATEGORY=$(ls -1 "$GITHUB_WORKSPACE/.jules/exchange/events" | head -n 1 || true)
           if [ -z "$CATEGORY" ]; then
-            echo "No scaffold event categories found." >&2
+            echo "No exchange event categories found under .jules/exchange/events." >&2
             exit 1
           fi
+
+          ROLE=$(find "$GITHUB_WORKSPACE/.jules/roles/observers" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | head -n 1 || true)
+          if [ -z "$ROLE" ]; then
+            echo "No observer roles found under .jules/roles/observers." >&2
+            exit 1
+          fi
+
+          escape_sed() {
+            printf '%s' "$1" | sed -e 's/[\\/&]/\\&/g'
+          }
+
+          render_template() {
+            local template="$1"
+            local output="$2"
+            shift 2
+
+            cp "$template" "$output"
+            while [ "$#" -gt 1 ]; do
+              local placeholder="$1"
+              local value="$2"
+              shift 2
+              value=$(escape_sed "$value")
+              sed -i "s|$placeholder|$value|g" "$output"
+            done
+          }
+
+          RANDOM_ID=$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 4)
+          EVENT_ID="$(date -u +%Y-%m-%d_%H%M%S)_${CATEGORY}_${ROLE}_${RANDOM_ID}"
+          EVENT_DATE="$(date -u +%Y-%m-%d)"
+          EVENT_PATH="$EVENT_ROOT/$CATEGORY/${EVENT_ID}.yml"
 
           mkdir -p "$EVENT_ROOT/$CATEGORY"
 
-          EVENT_ID="$(date -u +%Y-%m-%d_%H%M%S)_${CATEGORY}_mock_0001"
-          EVENT_PATH="$EVENT_ROOT/$CATEGORY/${EVENT_ID}.yml"
-
-          cat > "$EVENT_PATH" <<EOF
-          schema_version: 1
-          id: "$EVENT_ID"
-          created_at: "$(date -u +%Y-%m-%d)"
-          author_role: "mock"
-          category: "$CATEGORY"
-          confidence: "medium"
-          title: "Mock pipeline event"
-          statement: |
-            Mock observation generated for pipeline validation.
-          evidence:
-            - path: "README.md"
-              loc: "# .jules/"
-              note: "Demonstrates event structure for mock flow validation."
-          tags:
-            - "pipeline"
-          EOF
+          render_template \
+            "$TEMPLATE_ROOT/event.yml" \
+            "$EVENT_PATH" \
+            "__EVENT_ID__" "$EVENT_ID" \
+            "__EVENT_DATE__" "$EVENT_DATE" \
+            "__ROLE__" "$ROLE" \
+            "__CATEGORY__" "$CATEGORY" \
+            "__EVENT_TITLE__" "Mock pipeline event" \
+            "__EVENT_STATEMENT__" "Mock observation generated for pipeline validation." \
+            "__EVIDENCE_PATH__" "README.md" \
+            "__EVIDENCE_LOC__" "# .jules/" \
+            "__EVIDENCE_NOTE__" "Demonstrates event structure for mock flow validation." \
+            "__EVENT_TAG__" "pipeline"
 
           ISSUE_ID="$(date -u +%Y-%m-%d)_mock_pipeline_${CATEGORY}"
-
-
-          echo "category=$CATEGORY" >> "$GITHUB_OUTPUT"
-          echo "event_id=$EVENT_ID" >> "$GITHUB_OUTPUT"
-          echo "issue_id=$ISSUE_ID" >> "$GITHUB_OUTPUT"
-
-      - name: Debug mock files
-        run: ls -R .jules-mock
-
-      - name: Upload observer artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: jules-mock-observer
-          path: .jules-mock
-          if-no-files-found: error
-          include-hidden-files: true
-
-
-  mock-decider:
-    runs-on: ubuntu-latest
-    needs: mock-observer
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download observer artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: jules-mock-observer
-          path: ${{ github.workspace }}/.jules-mock
-
-      - name: Create mock issue and remove event
-        id: decide
-        shell: bash
-        run: |
-          set -euo pipefail
-          MOCK_ROOT="$GITHUB_WORKSPACE/.jules-mock"
-          EVENT_ROOT="$MOCK_ROOT/.jules/exchange/events"
-          ISSUE_ROOT="$MOCK_ROOT/.jules/exchange/issues"
-
-          CATEGORY="${{ needs.mock-observer.outputs.category }}"
-          EVENT_ID="${{ needs.mock-observer.outputs.event_id }}"
-          ISSUE_ID="${{ needs.mock-observer.outputs.issue_id }}"
-
-          EVENT_PATH="$EVENT_ROOT/$CATEGORY/${EVENT_ID}.yml"
           ISSUE_PATH="$ISSUE_ROOT/${ISSUE_ID}.yml"
 
-          if [ ! -f "$EVENT_PATH" ]; then
-            echo "Expected event file missing: $EVENT_PATH" >&2
-            exit 1
-          fi
-
-          mkdir -p "$ISSUE_ROOT"
-
-          cat > "$ISSUE_PATH" <<EOF
-          schema_version: 2
-          id: "$ISSUE_ID"
-          category: "$CATEGORY"
-          priority: "medium"
-          status: "open"
-          requires_deep_analysis: true
-          sources:
-            - "$EVENT_ID"
-          title: "Mock pipeline issue"
-          summary: "Mock issue derived from a synthetic event."
-          affected_areas:
-            - "README.md"
-          constraints: []
-          risks: []
-          problem: |
-            The mock event needs validation coverage.
-          impact: |
-            Pipeline validation needs deterministic artifacts.
-          desired_outcome: |
-            The pipeline steps produce valid issue artifacts.
-          acceptance_criteria:
-            - "Mock pipeline validation passes."
-          EOF
+          render_template \
+            "$TEMPLATE_ROOT/issue-pending.yml" \
+            "$ISSUE_PATH" \
+            "__ISSUE_ID__" "$ISSUE_ID" \
+            "__CATEGORY__" "$CATEGORY" \
+            "__EVENT_ID__" "$EVENT_ID" \
+            "__ISSUE_TITLE__" "Mock pipeline issue" \
+            "__ISSUE_SUMMARY__" "Mock issue derived from a synthetic event." \
+            "__AFFECTED_AREA__" "README.md" \
+            "__PROBLEM__" "The mock event needs validation coverage." \
+            "__IMPACT__" "Pipeline validation needs deterministic artifacts." \
+            "__DESIRED_OUTCOME__" "The pipeline steps produce valid issue artifacts." \
+            "__ACCEPTANCE_1__" "Mock pipeline validation passes." \
+            "__ACCEPTANCE_2__" "requires_deep_analysis is false after planning."
 
           rm -f "$EVENT_PATH"
 
-      - name: Upload decider artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: jules-mock-decider
-          path: .jules-mock
-          if-no-files-found: error
-          include-hidden-files: true
-
-  mock-planner:
-    runs-on: ubuntu-latest
-    needs: [mock-decider, mock-observer]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download decider artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: jules-mock-decider
-          path: ${{ github.workspace }}/.jules-mock
-
-      - name: Expand mock issue
-        shell: bash
-        run: |
-          set -euo pipefail
-          ISSUE_PATH="$GITHUB_WORKSPACE/.jules-mock/.jules/exchange/issues/${{ needs.mock-observer.outputs.issue_id }}.yml"
-
-          if [ ! -f "$ISSUE_PATH" ]; then
-            echo "Expected issue file missing: $ISSUE_PATH" >&2
-            exit 1
-          fi
-
-          cat > "$ISSUE_PATH" <<EOF
-          schema_version: 2
-          id: "${{ needs.mock-observer.outputs.issue_id }}"
-          category: "${{ needs.mock-observer.outputs.category }}"
-          priority: "medium"
-          status: "open"
-          requires_deep_analysis: false
-          sources:
-            - "${{ needs.mock-observer.outputs.event_id }}"
-          title: "Mock pipeline issue"
-          summary: "Mock issue derived from a synthetic event."
-          affected_areas:
-            - "README.md"
-          constraints:
-            - "Mock expansion overwrote the issue in place."
-          risks:
-            - "Mock pipeline skips external API usage."
-          problem: |
-            The mock event needs validation coverage.
-          impact: |
-            Pipeline validation needs deterministic artifacts.
-          desired_outcome: |
-            The pipeline steps produce valid issue artifacts.
-          acceptance_criteria:
-            - "Mock pipeline validation passes."
-            - "requires_deep_analysis is false."
-          EOF
-
-      - name: Upload planner artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: jules-mock-planner
-          path: .jules-mock
-          if-no-files-found: error
-          include-hidden-files: true
-
-  verify-artifacts:
-    runs-on: ubuntu-latest
-    needs: [mock-planner, mock-observer]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download planner artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: jules-mock-planner
-          path: ${{ github.workspace }}/.jules-mock
+          render_template \
+            "$TEMPLATE_ROOT/issue-expanded.yml" \
+            "$ISSUE_PATH" \
+            "__ISSUE_ID__" "$ISSUE_ID" \
+            "__CATEGORY__" "$CATEGORY" \
+            "__EVENT_ID__" "$EVENT_ID" \
+            "__ISSUE_TITLE__" "Mock pipeline issue" \
+            "__ISSUE_SUMMARY__" "Mock issue derived from a synthetic event." \
+            "__AFFECTED_AREA__" "README.md" \
+            "__CONSTRAINT__" "Mock expansion overwrote the issue in place." \
+            "__RISK__" "Mock pipeline skips external API usage." \
+            "__PROBLEM__" "The mock event needs validation coverage." \
+            "__IMPACT__" "Pipeline validation needs deterministic artifacts." \
+            "__DESIRED_OUTCOME__" "The pipeline steps produce valid issue artifacts." \
+            "__ACCEPTANCE_1__" "Mock pipeline validation passes." \
+            "__ACCEPTANCE_2__" "requires_deep_analysis is false."
 
       - name: Verify exchange flow
         shell: bash
         run: |
           set -euo pipefail
           MOCK_ROOT="$GITHUB_WORKSPACE/.jules-mock"
-          ISSUE_PATH="$MOCK_ROOT/.jules/exchange/issues/${{ needs.mock-observer.outputs.issue_id }}.yml"
+          ISSUE_PATH=$(find "$MOCK_ROOT/.jules/exchange/issues" -maxdepth 1 -type f -name "*.yml" | head -n 1 || true)
 
           if [ -d "$MOCK_ROOT/.jules/exchange/events" ]; then
             if find "$MOCK_ROOT/.jules/exchange/events" -type f -name "*.yml" | grep -q .; then
@@ -231,8 +182,8 @@ jobs:
             fi
           fi
 
-          if [ ! -f "$ISSUE_PATH" ]; then
-            echo "Expected issue file missing: $ISSUE_PATH" >&2
+          if [ -z "$ISSUE_PATH" ] || [ ! -f "$ISSUE_PATH" ]; then
+            echo "Expected issue file missing." >&2
             exit 1
           fi
 
@@ -240,3 +191,7 @@ jobs:
             echo "Issue was not expanded by mock planner step." >&2
             exit 1
           fi
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf "$GITHUB_WORKSPACE/.jules-mock"
