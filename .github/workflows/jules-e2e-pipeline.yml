@@ -1,0 +1,232 @@
+name: Jules E2E Pipeline (Mock)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mock-observer:
+    runs-on: ubuntu-latest
+    outputs:
+      category: ${{ steps.prepare.outputs.category }}
+      event_id: ${{ steps.prepare.outputs.event_id }}
+      issue_id: ${{ steps.prepare.outputs.issue_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create mock event
+        id: prepare
+        shell: bash
+        run: |
+          set -euo pipefail
+          MOCK_ROOT="$RUNNER_TEMP/jules-mock"
+          EVENT_ROOT="$MOCK_ROOT/.jules/exchange/events"
+          ISSUE_ROOT="$MOCK_ROOT/.jules/exchange/issues"
+
+          mkdir -p "$EVENT_ROOT" "$ISSUE_ROOT"
+
+          CATEGORY=$(ls -1 src/assets/scaffold/.jules/exchange/events | head -n 1)
+          if [ -z "$CATEGORY" ]; then
+            echo "No scaffold event categories found." >&2
+            exit 1
+          fi
+
+          mkdir -p "$EVENT_ROOT/$CATEGORY"
+
+          EVENT_ID="$(date -u +%Y-%m-%d_%H%M%S)_${CATEGORY}_mock_0001"
+          EVENT_PATH="$EVENT_ROOT/$CATEGORY/${EVENT_ID}.yml"
+
+          cat > "$EVENT_PATH" <<EOF
+          schema_version: 1
+          id: "$EVENT_ID"
+          created_at: "$(date -u +%Y-%m-%d)"
+          author_role: "mock"
+          category: "$CATEGORY"
+          confidence: "medium"
+          title: "Mock pipeline event"
+          statement: |
+            Mock observation generated for pipeline validation.
+          evidence:
+            - path: "README.md"
+              loc: "# .jules/"
+              note: "Demonstrates event structure for mock flow validation."
+          tags:
+            - "pipeline"
+          EOF
+
+          ISSUE_ID="$(date -u +%Y-%m-%d)_mock_pipeline_${CATEGORY}"
+
+          echo "category=$CATEGORY" >> "$GITHUB_OUTPUT"
+          echo "event_id=$EVENT_ID" >> "$GITHUB_OUTPUT"
+          echo "issue_id=$ISSUE_ID" >> "$GITHUB_OUTPUT"
+          echo "mock_root=$MOCK_ROOT" >> "$GITHUB_OUTPUT"
+
+      - name: Upload observer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jules-mock-observer
+          path: ${{ steps.prepare.outputs.mock_root }}/.jules
+
+  mock-decider:
+    runs-on: ubuntu-latest
+    needs: mock-observer
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download observer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: jules-mock-observer
+          path: ${{ runner.temp }}/jules-mock
+
+      - name: Create mock issue and remove event
+        id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+          MOCK_ROOT="$RUNNER_TEMP/jules-mock"
+          EVENT_ROOT="$MOCK_ROOT/.jules/exchange/events"
+          ISSUE_ROOT="$MOCK_ROOT/.jules/exchange/issues"
+
+          CATEGORY="${{ needs.mock-observer.outputs.category }}"
+          EVENT_ID="${{ needs.mock-observer.outputs.event_id }}"
+          ISSUE_ID="${{ needs.mock-observer.outputs.issue_id }}"
+
+          EVENT_PATH="$EVENT_ROOT/$CATEGORY/${EVENT_ID}.yml"
+          ISSUE_PATH="$ISSUE_ROOT/${ISSUE_ID}.yml"
+
+          if [ ! -f "$EVENT_PATH" ]; then
+            echo "Expected event file missing: $EVENT_PATH" >&2
+            exit 1
+          fi
+
+          cat > "$ISSUE_PATH" <<EOF
+          schema_version: 2
+          id: "$ISSUE_ID"
+          category: "$CATEGORY"
+          priority: "medium"
+          status: "open"
+          requires_deep_analysis: true
+          sources:
+            - "$EVENT_ID"
+          title: "Mock pipeline issue"
+          summary: "Mock issue derived from a synthetic event."
+          affected_areas:
+            - "README.md"
+          constraints: []
+          risks: []
+          problem: |
+            The mock event needs validation coverage.
+          impact: |
+            Pipeline validation needs deterministic artifacts.
+          desired_outcome: |
+            The pipeline steps produce valid issue artifacts.
+          acceptance_criteria:
+            - "Mock pipeline validation passes."
+          EOF
+
+          rm -f "$EVENT_PATH"
+
+      - name: Upload decider artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jules-mock-decider
+          path: ${{ runner.temp }}/jules-mock/.jules
+
+  mock-planner:
+    runs-on: ubuntu-latest
+    needs: [mock-decider, mock-observer]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download decider artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: jules-mock-decider
+          path: ${{ runner.temp }}/jules-mock
+
+      - name: Expand mock issue
+        shell: bash
+        run: |
+          set -euo pipefail
+          ISSUE_PATH="$RUNNER_TEMP/jules-mock/.jules/exchange/issues/${{ needs.mock-observer.outputs.issue_id }}.yml"
+
+          if [ ! -f "$ISSUE_PATH" ]; then
+            echo "Expected issue file missing: $ISSUE_PATH" >&2
+            exit 1
+          fi
+
+          cat > "$ISSUE_PATH" <<EOF
+          schema_version: 2
+          id: "${{ needs.mock-observer.outputs.issue_id }}"
+          category: "${{ needs.mock-observer.outputs.category }}"
+          priority: "medium"
+          status: "open"
+          requires_deep_analysis: false
+          sources:
+            - "${{ needs.mock-observer.outputs.event_id }}"
+          title: "Mock pipeline issue"
+          summary: "Mock issue derived from a synthetic event."
+          affected_areas:
+            - "README.md"
+          constraints:
+            - "Mock expansion overwrote the issue in place."
+          risks:
+            - "Mock pipeline skips external API usage."
+          problem: |
+            The mock event needs validation coverage.
+          impact: |
+            Pipeline validation needs deterministic artifacts.
+          desired_outcome: |
+            The pipeline steps produce valid issue artifacts.
+          acceptance_criteria:
+            - "Mock pipeline validation passes."
+            - "requires_deep_analysis is false."
+          EOF
+
+      - name: Upload planner artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jules-mock-planner
+          path: ${{ runner.temp }}/jules-mock/.jules
+
+  verify-artifacts:
+    runs-on: ubuntu-latest
+    needs: [mock-planner, mock-observer]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download planner artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: jules-mock-planner
+          path: ${{ runner.temp }}/jules-mock
+
+      - name: Verify exchange flow
+        shell: bash
+        run: |
+          set -euo pipefail
+          MOCK_ROOT="$RUNNER_TEMP/jules-mock"
+          ISSUE_PATH="$MOCK_ROOT/.jules/exchange/issues/${{ needs.mock-observer.outputs.issue_id }}.yml"
+
+          if [ ! -d "$MOCK_ROOT/.jules/exchange/events" ]; then
+            echo "Expected events directory missing: $MOCK_ROOT/.jules/exchange/events" >&2
+            exit 1
+          fi
+
+          if find "$MOCK_ROOT/.jules/exchange/events" -type f -name "*.yml" | grep -q .; then
+            echo "Event inbox is not empty after mock decider step." >&2
+            exit 1
+          fi
+
+          if [ ! -f "$ISSUE_PATH" ]; then
+            echo "Expected issue file missing: $ISSUE_PATH" >&2
+            exit 1
+          fi
+
+          if ! grep -q "requires_deep_analysis: false" "$ISSUE_PATH"; then
+            echo "Issue was not expanded by mock planner step." >&2
+            exit 1
+          fi

@@ -1,4 +1,4 @@
-name: Jules E2E Test
+name: Jules E2E Mechanics
 
 on:
   workflow_dispatch:
