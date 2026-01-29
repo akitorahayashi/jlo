@@ -31,3 +31,5 @@ jobs:
       pull-requests: write
     needs: [lint, build, test, verify-installers]
     uses: ./.github/workflows/jules-automerge.yml
+    secrets:
+      bot_token: ${{ secrets.JLO_BOT_TOKEN }}
