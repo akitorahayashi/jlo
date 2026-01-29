@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-29_133500_refacts_data_arch_da01"
+created_at: "2026-01-29"
+author_role: "data_arch"
+category: "refacts"
+confidence: "high"
+
+# Content
+title: "Decouple RunConfig from Serialization and Primitives"
+statement: |
+  The `RunConfig` and `JulesApiConfig` domain models in `src/domain/run_config.rs` violate the Boundary Sovereignty principle by mixing domain definitions with `serde` attributes. They also suffer from Primitive Obsession, using `String` for URLs and other configuration values without validation types.
+
+evidence:
+  - path: "src/domain/run_config.rs"
+    loc: "struct RunConfig"
+    note: "Decorated with #[derive(Deserialize)] and #[serde] attributes, coupling domain to serialization."
+  - path: "src/domain/run_config.rs"
+    loc: "pub api_url: String"
+    note: "Uses primitive String for URL instead of a validated URL type."
+
+tags:
+  - "boundary-sovereignty"
+  - "primitive-obsession"
+  - "coupling"
