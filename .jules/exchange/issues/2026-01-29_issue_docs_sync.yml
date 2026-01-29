@@ -1,0 +1,41 @@
+schema_version: 2
+
+# Metadata
+id: "2026-01-29_issue_docs_sync"
+category: "docs"
+priority: "medium"
+status: "open"
+requires_deep_analysis: false
+sources:
+  - "2026-01-28_152238_docs_consistency_serv"
+  - "2026-01-28_152238_docs_consistency_role"
+  - "2026-01-28_153000_consistency_consistency_c0n1"
+  - "2026-01-28_192219_consistency_consistency_co02"
+
+# Content
+title: "Synchronize Documentation with Implementation"
+summary: "Update AGENTS.md and README.md to reflect current services, roles, workflows, and template behaviors."
+
+affected_areas:
+  - "AGENTS.md"
+  - "README.md"
+
+constraints: []
+risks: []
+
+problem: |
+  Documentation is out of sync with the implementation:
+  1. `AGENTS.md` misses several services (`clipboard_arboard`, `role_template_service`, `workspace_filesystem`) and the `consistency` role.
+  2. `README.md` omits local actions and several GitHub workflows.
+  3. `AGENTS.md` incorrectly states that `ROLE_NAME` is string-replaced, while the code preserves it.
+
+impact: |
+  Inaccurate documentation confuses developers and agents, leading to misuse of the system or misunderstandings about its capabilities and architecture.
+
+desired_outcome: |
+  Documentation accurately reflects the codebase, including all services, roles, workflows, and correct template behavior descriptions.
+
+acceptance_criteria:
+  - "`AGENTS.md` lists all current services and roles."
+  - "`README.md` lists all current GitHub workflows and actions."
+  - "`AGENTS.md` correctly describes `ROLE_NAME` placeholder behavior."
