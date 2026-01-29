@@ -37,17 +37,13 @@ pub struct RunResult {
 pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppError> {
     // Validate issue file requirement for implementers
     let issue_content = if options.layer == Layer::Implementers {
-        match &options.issue {
-            Some(path) => {
-                if !path.exists() {
-                    return Err(AppError::IssueFileNotFound(path.display().to_string()));
-                }
-                Some(fs::read_to_string(path)?)
-            }
-            None => {
-                return Err(AppError::IssueFileRequired);
-            }
+        let path = options.issue.as_ref().ok_or(AppError::IssueFileRequired)?;
+
+        if !path.exists() {
+            return Err(AppError::IssueFileNotFound(path.display().to_string()));
         }
+
+        Some(fs::read_to_string(path)?)
     } else {
         None
     };

@@ -159,10 +159,10 @@ jobs:
           if [ "${{ inputs.layer }}" = "implementers" ] && [ -n "$ISSUE_FILE_PATH" ]; then
             ARGS="$ARGS --issue $ISSUE_FILE_PATH"
           fi
-          jlo run ${{ inputs.layer }} ${{ steps.parse.outputs.role_args }}$ARGS
+          jlo run ${{ inputs.layer }} ${{ steps.parse.outputs.role_args }} $ARGS
 
       - name: Delete processed issue file
-        if: inputs.layer == 'implementers' && inputs.dry_run != true
+        if: inputs.layer == 'implementers' && inputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN || github.token }}
         shell: bash

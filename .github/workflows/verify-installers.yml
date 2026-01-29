@@ -1,7 +1,7 @@
 name: Verify Installers
 
 on:
-  workflow_call:
+  workflow_dispatch:
 
 jobs:
   verify-install:
