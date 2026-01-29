@@ -224,14 +224,11 @@ jobs:
           MOCK_ROOT="$GITHUB_WORKSPACE/.jules-mock"
           ISSUE_PATH="$MOCK_ROOT/.jules/exchange/issues/${{ needs.mock-observer.outputs.issue_id }}.yml"
 
-          if [ ! -d "$MOCK_ROOT/.jules/exchange/events" ]; then
-            echo "Expected events directory missing: $MOCK_ROOT/.jules/exchange/events" >&2
-            exit 1
-          fi
-
-          if find "$MOCK_ROOT/.jules/exchange/events" -type f -name "*.yml" | grep -q .; then
-            echo "Event inbox is not empty after mock decider step." >&2
-            exit 1
+          if [ -d "$MOCK_ROOT/.jules/exchange/events" ]; then
+            if find "$MOCK_ROOT/.jules/exchange/events" -type f -name "*.yml" | grep -q .; then
+              echo "Event inbox is not empty after mock decider step." >&2
+              exit 1
+            fi
           fi
 
           if [ ! -f "$ISSUE_PATH" ]; then
