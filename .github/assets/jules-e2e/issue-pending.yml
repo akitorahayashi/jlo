@@ -3,8 +3,8 @@ schema_version: 2
 # Metadata
 id: "__ISSUE_ID__"
 category: "__CATEGORY__"
-priority: "medium"
-status: "open"
+priority: "__PRIORITY__"
+status: "__STATUS__"
 requires_deep_analysis: true
 sources:
   - "__EVENT_ID__"

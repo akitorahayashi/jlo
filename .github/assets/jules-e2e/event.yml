@@ -5,7 +5,7 @@ id: "__EVENT_ID__"
 created_at: "__EVENT_DATE__"
 author_role: "__ROLE__"
 category: "__CATEGORY__"
-confidence: "medium"
+confidence: "__CONFIDENCE__"
 
 # Content
 title: "__EVENT_TITLE__"
