@@ -71,9 +71,6 @@ enum RunLayer {
         /// Show assembled prompts without executing
         #[arg(long)]
         dry_run: bool,
-        /// Run in mock mode (no API calls)
-        #[arg(long)]
-        mock: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
@@ -86,9 +83,6 @@ enum RunLayer {
         /// Show assembled prompts without executing
         #[arg(long)]
         dry_run: bool,
-        /// Run in mock mode (no API calls)
-        #[arg(long)]
-        mock: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
@@ -101,9 +95,6 @@ enum RunLayer {
         /// Show assembled prompts without executing
         #[arg(long)]
         dry_run: bool,
-        /// Run in mock mode (no API calls)
-        #[arg(long)]
-        mock: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
@@ -116,9 +107,6 @@ enum RunLayer {
         /// Show assembled prompts without executing
         #[arg(long)]
         dry_run: bool,
-        /// Run in mock mode (no API calls)
-        #[arg(long)]
-        mock: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
@@ -149,29 +137,25 @@ fn main() {
 fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     use jlo::domain::Layer;
 
-    let (target_layer, roles, dry_run, mock, branch) = match layer {
-        RunLayer::Observers { role, dry_run, mock, branch } => {
-            (Layer::Observers, role, dry_run, mock, branch)
+    let (target_layer, roles, dry_run, branch) = match layer {
+        RunLayer::Observers { role, dry_run, branch } => {
+            (Layer::Observers, role, dry_run, branch)
         }
-        RunLayer::Deciders { role, dry_run, mock, branch } => {
-            (Layer::Deciders, role, dry_run, mock, branch)
+        RunLayer::Deciders { role, dry_run, branch } => {
+            (Layer::Deciders, role, dry_run, branch)
         }
-        RunLayer::Planners { role, dry_run, mock, branch } => {
-            (Layer::Planners, role, dry_run, mock, branch)
+        RunLayer::Planners { role, dry_run, branch } => {
+            (Layer::Planners, role, dry_run, branch)
         }
-        RunLayer::Implementers { role, dry_run, mock, branch } => {
-            (Layer::Implementers, role, dry_run, mock, branch)
+        RunLayer::Implementers { role, dry_run, branch } => {
+            (Layer::Implementers, role, dry_run, branch)
         }
     };
 
-    let result = jlo::run(target_layer, roles, dry_run, mock, branch)?;
+    let result = jlo::run(target_layer, roles, dry_run, branch)?;
 
-    if !result.dry_run && !result.roles.is_empty() {
-        if mock {
-            println!("✅ Executed {} role(s) in mock mode", result.roles.len());
-        } else if !result.sessions.is_empty() {
-            println!("✅ Created {} Jules session(s)", result.sessions.len());
-        }
+    if !result.dry_run && !result.roles.is_empty() && !result.sessions.is_empty() {
+        println!("✅ Created {} Jules session(s)", result.sessions.len());
     }
 
     Ok(())

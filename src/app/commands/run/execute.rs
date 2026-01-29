@@ -4,7 +4,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::domain::{AppError, Layer, RunConfig};
-use crate::ports::{AutomationMode, JulesClient, MockJulesClient, SessionRequest};
+use crate::ports::{AutomationMode, JulesClient, SessionRequest};
 use crate::services::HttpJulesClient;
 
 /// Options for the run command.
@@ -16,8 +16,6 @@ pub struct RunOptions {
     pub roles: Option<Vec<String>>,
     /// Show assembled prompts without executing.
     pub dry_run: bool,
-    /// Run in mock mode (no API calls).
-    pub mock: bool,
     /// Override the starting branch.
     pub branch: Option<String>,
 }
@@ -29,7 +27,7 @@ pub struct RunResult {
     pub roles: Vec<String>,
     /// Whether this was a dry run.
     pub dry_run: bool,
-    /// Session IDs from Jules (empty if dry_run or mock).
+    /// Session IDs from Jules (empty if dry_run).
     pub sessions: Vec<String>,
 }
 
@@ -67,13 +65,9 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
     let source = detect_repository_source()?;
 
     // Execute with appropriate client
-    let sessions = if options.mock {
-        let client = MockJulesClient;
-        execute_roles(jules_path, options.layer, &roles, &starting_branch, &source, &client)?
-    } else {
-        let client = HttpJulesClient::from_env_with_config(&config.jules)?;
-        execute_roles(jules_path, options.layer, &roles, &starting_branch, &source, &client)?
-    };
+    let client = HttpJulesClient::from_env_with_config(&config.jules)?;
+    let sessions =
+        execute_roles(jules_path, options.layer, &roles, &starting_branch, &source, &client)?;
 
     Ok(RunResult { roles, dry_run: false, sessions })
 }
