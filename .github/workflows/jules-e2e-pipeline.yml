@@ -21,10 +21,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          MOCK_ROOT="$RUNNER_TEMP/jules-mock"
+          MOCK_ROOT="$GITHUB_WORKSPACE/.jules-mock"
           EVENT_ROOT="$MOCK_ROOT/.jules/exchange/events"
           ISSUE_ROOT="$MOCK_ROOT/.jules/exchange/issues"
 
+          rm -rf "$MOCK_ROOT"
           mkdir -p "$EVENT_ROOT" "$ISSUE_ROOT"
 
           CATEGORY=$(ls -1 src/assets/scaffold/.jules/exchange/events | head -n 1)
@@ -66,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jules-mock-observer
-          path: ${{ runner.temp }}/jules-mock/.jules
+          path: ${{ github.workspace }}/.jules-mock/.jules
 
   mock-decider:
     runs-on: ubuntu-latest
@@ -78,14 +79,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: jules-mock-observer
-          path: ${{ runner.temp }}/jules-mock
+          path: ${{ github.workspace }}/.jules-mock
 
       - name: Create mock issue and remove event
         id: decide
         shell: bash
         run: |
           set -euo pipefail
-          MOCK_ROOT="$RUNNER_TEMP/jules-mock"
+          MOCK_ROOT="$GITHUB_WORKSPACE/.jules-mock"
           EVENT_ROOT="$MOCK_ROOT/.jules/exchange/events"
           ISSUE_ROOT="$MOCK_ROOT/.jules/exchange/issues"
 
@@ -132,7 +133,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jules-mock-decider
-          path: ${{ runner.temp }}/jules-mock/.jules
+          path: ${{ github.workspace }}/.jules-mock/.jules
 
   mock-planner:
     runs-on: ubuntu-latest
@@ -144,13 +145,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: jules-mock-decider
-          path: ${{ runner.temp }}/jules-mock
+          path: ${{ github.workspace }}/.jules-mock
 
       - name: Expand mock issue
         shell: bash
         run: |
           set -euo pipefail
-          ISSUE_PATH="$RUNNER_TEMP/jules-mock/.jules/exchange/issues/${{ needs.mock-observer.outputs.issue_id }}.yml"
+          ISSUE_PATH="$GITHUB_WORKSPACE/.jules-mock/.jules/exchange/issues/${{ needs.mock-observer.outputs.issue_id }}.yml"
 
           if [ ! -f "$ISSUE_PATH" ]; then
             echo "Expected issue file missing: $ISSUE_PATH" >&2
@@ -189,7 +190,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jules-mock-planner
-          path: ${{ runner.temp }}/jules-mock/.jules
+          path: ${{ github.workspace }}/.jules-mock/.jules
 
   verify-artifacts:
     runs-on: ubuntu-latest
@@ -201,13 +202,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: jules-mock-planner
-          path: ${{ runner.temp }}/jules-mock
+          path: ${{ github.workspace }}/.jules-mock
 
       - name: Verify exchange flow
         shell: bash
         run: |
           set -euo pipefail
-          MOCK_ROOT="$RUNNER_TEMP/jules-mock"
+          MOCK_ROOT="$GITHUB_WORKSPACE/.jules-mock"
           ISSUE_PATH="$MOCK_ROOT/.jules/exchange/issues/${{ needs.mock-observer.outputs.issue_id }}.yml"
 
           if [ ! -d "$MOCK_ROOT/.jules/exchange/events" ]; then
