@@ -110,7 +110,7 @@ jobs:
             done
           }
 
-          RANDOM_ID=$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 4)
+          RANDOM_ID=$(printf '%04x' "$RANDOM")
           EVENT_ID="$(date -u +%Y-%m-%d_%H%M%S)_${CATEGORY}_${ROLE}_${RANDOM_ID}"
           EVENT_DATE="$(date -u +%Y-%m-%d)"
           EVENT_PATH="$EVENT_ROOT/$CATEGORY/${EVENT_ID}.yml"

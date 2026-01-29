@@ -61,7 +61,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          RANDOM_ID=$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 4)
+          RANDOM_ID=$(printf '%04x' "$RANDOM")
           BRANCH="${{ steps.branch.outputs.prefix }}${RANDOM_ID}"
 
           CATEGORY=$(ls -1 .jules/exchange/events | head -n 1 || true)
