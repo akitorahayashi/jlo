@@ -36,8 +36,7 @@ jobs:
     if: |
       (startsWith(inputs.head_ref, 'jules-observer-') ||
        startsWith(inputs.head_ref, 'jules-decider-') ||
-       startsWith(inputs.head_ref, 'jules-planner-') ||
-       startsWith(inputs.head_ref, 'jules-e2e-test-')) &&
+       startsWith(inputs.head_ref, 'jules-planner-')) &&
       inputs.is_draft == false
     runs-on: ubuntu-latest
     permissions:

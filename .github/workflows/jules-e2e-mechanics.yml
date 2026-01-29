@@ -3,14 +3,14 @@ name: Jules E2E Mechanics
 on:
   workflow_dispatch:
     inputs:
-      test_scope:
-        description: 'Test scope'
-        type: choice
-        options:
-          - pr_and_automerge    # PR creation and auto-merge
-          - issue_creation      # Issue creation
-          - full                # All tests
-        default: 'full'
+      run_pr_automerge:
+        description: 'Run PR creation and auto-merge test'
+        type: boolean
+        default: true
+      run_issue_creation:
+        description: 'Run issue creation test'
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   test-pr-automerge:
-    if: inputs.test_scope == 'pr_and_automerge' || inputs.test_scope == 'full'
+    if: inputs.run_pr_automerge
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,38 +33,106 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Create test branch
+      - name: Resolve observer branch prefix
+        id: branch
+        shell: bash
         run: |
-          # Use timestamp to ensure unique branch name
-          TIMESTAMP=$(date +%s)
-          BRANCH="jules-e2e-test-$TIMESTAMP"
-          
-          # Create and switch to new branch from jules
+          set -euo pipefail
+          if [ ! -f ".jules/JULES.md" ]; then
+            echo "Missing .jules/JULES.md in the jules branch." >&2
+            exit 1
+          fi
+
+          pattern=$(grep -n "Observers:" .jules/JULES.md | head -n 1 | sed -n 's/.*`\(jules-[^`]*\)`/\1/p')
+          if [ -z "$pattern" ]; then
+            echo "Could not resolve observer branch pattern from .jules/JULES.md." >&2
+            exit 1
+          fi
+
+          prefix="${pattern%%<*}"
+          if [ -z "$prefix" ]; then
+            echo "Observer branch prefix is empty." >&2
+            exit 1
+          fi
+
+          echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
+
+      - name: Create test branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          RANDOM_ID=$(LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 4)
+          BRANCH="${{ steps.branch.outputs.prefix }}${RANDOM_ID}"
+
+          CATEGORY=$(ls -1 .jules/exchange/events | head -n 1 || true)
+          if [ -z "$CATEGORY" ]; then
+            echo "No exchange event categories found under .jules/exchange/events." >&2
+            exit 1
+          fi
+
+          ROLE=$(find .jules/roles/observers -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | head -n 1 || true)
+          if [ -z "$ROLE" ]; then
+            echo "No observer roles found under .jules/roles/observers." >&2
+            exit 1
+          fi
+
+          escape_sed() {
+            printf '%s' "$1" | sed -e 's/[\\/&]/\\&/g'
+          }
+
+          render_template() {
+            local template="$1"
+            local output="$2"
+            shift 2
+
+            cp "$template" "$output"
+            while [ "$#" -gt 1 ]; do
+              local placeholder="$1"
+              local value="$2"
+              shift 2
+              value=$(escape_sed "$value")
+              sed -i "s|$placeholder|$value|g" "$output"
+            done
+          }
+
+          EVENT_ID="$(date -u +%Y-%m-%d_%H%M%S)_${CATEGORY}_${ROLE}_${RANDOM_ID}"
+          EVENT_DATE="$(date -u +%Y-%m-%d)"
+          EVENT_PATH=".jules/exchange/events/$CATEGORY/${EVENT_ID}.yml"
+          EVENT_TEMPLATE=".github/assets/jules-e2e/event.yml"
+
+          mkdir -p ".jules/exchange/events/$CATEGORY"
+
+          render_template \
+            "$EVENT_TEMPLATE" \
+            "$EVENT_PATH" \
+            "__EVENT_ID__" "$EVENT_ID" \
+            "__EVENT_DATE__" "$EVENT_DATE" \
+            "__ROLE__" "$ROLE" \
+            "__CATEGORY__" "$CATEGORY" \
+            "__EVENT_TITLE__" "E2E observer event" \
+            "__EVENT_STATEMENT__" "Synthetic observer event created for auto-merge validation." \
+            "__EVIDENCE_PATH__" "README.md" \
+            "__EVIDENCE_LOC__" "# .jules/" \
+            "__EVIDENCE_NOTE__" "Validates the observer event flow for e2e mechanics." \
+            "__EVENT_TAG__" "e2e"
+
           git checkout -b "$BRANCH"
-          
-          # Create a dummy change in .jules/
-          mkdir -p .jules/exchange
-          echo "E2E Test Run: $(date -u)" > .jules/exchange/e2e-test.md
-          
-          git add .jules/exchange/e2e-test.md
-          git commit -m "E2E: Test commit for workflow validation $TIMESTAMP"
-          
-          # Push the new branch
+          git add "$EVENT_PATH"
+          git commit -m "E2E: Observer event for workflow validation $RANDOM_ID"
           git push origin "$BRANCH"
-          
+
           echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
       - name: Create PR
         env:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
-          # Create PR aiming at jules branch
           PR_URL=$(gh pr create \
             --base jules \
             --head "$BRANCH" \
             --title "[E2E Test] Workflow validation" \
             --body "Automated E2E test. Will be auto-merged and deleted.")
-            
+
           echo "Created PR: $PR_URL"
           echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
 
@@ -74,11 +142,10 @@ jobs:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
           echo "Waiting for auto-merge..."
-          
-          # Poll for up to 5 minutes (auto-merge should be fast)
-          for i in {1..30}; do
+
+          for i in {1..120}; do
             STATE=$(gh pr view "$PR_URL" --json state -q '.state')
-            
+
             if [ "$STATE" = "MERGED" ]; then
               echo "✅ PR merged successfully"
               echo "result=success" >> "$GITHUB_OUTPUT"
@@ -89,10 +156,10 @@ jobs:
               exit 1
             fi
 
-            echo "State: $STATE - Waiting... ($i/30)"
+            echo "State: $STATE - Waiting... ($i/120)"
             sleep 10
           done
-          
+
           echo "❌ Timeout waiting for merge"
           echo "result=timeout" >> "$GITHUB_OUTPUT"
           exit 1
@@ -103,31 +170,28 @@ jobs:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
           echo "Run Result: ${{ steps.wait-merge.outcome }}"
-          
+
           if [ -n "$PR_URL" ]; then
-             # Check PR status one last time
              STATE=$(gh pr view "$PR_URL" --json state -q '.state')
-             
+
              if [ "$STATE" != "MERGED" ]; then
                echo "🧹 Closing failed/stalled PR: $PR_URL"
-               # Close PR and delete branch
                gh pr close "$PR_URL" --delete-branch || echo "⚠️ Failed to close PR (might be already closed)"
              else
                echo "✨ PR was successfully merged. No cleanup needed."
              fi
-             
+
           elif [ -n "$BRANCH" ]; then
-             # If PR wasn't created but branch was, make sure to delete it
              echo "🧹 Deleting via git push: $BRANCH"
              git push origin --delete "$BRANCH" || echo "⚠️ Failed to delete branch (might not exist)"
           fi
 
   test-issue-creation:
-    if: inputs.test_scope == 'issue_creation' || inputs.test_scope == 'full'
+    if: inputs.run_issue_creation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Create test issue
         env:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
@@ -136,13 +200,13 @@ jobs:
             --title "[E2E Test] Issue creation validation" \
             --body "Automated E2E test. Will be closed immediately." \
             --repo "${{ github.repository }}")
-            
+
           echo "✅ Created Issue: $ISSUE_URL"
           echo "ISSUE_URL=$ISSUE_URL" >> "$GITHUB_ENV"
 
       - name: Close test issue
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
           gh issue close "$ISSUE_URL" --repo "${{ github.repository }}"
           echo "✅ Closed Issue successfully"

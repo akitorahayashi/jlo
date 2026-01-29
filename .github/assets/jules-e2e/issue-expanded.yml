@@ -1,0 +1,35 @@
+schema_version: 2
+
+# Metadata
+id: "__ISSUE_ID__"
+category: "__CATEGORY__"
+priority: "medium"
+status: "open"
+requires_deep_analysis: false
+sources:
+  - "__EVENT_ID__"
+
+# Content
+title: "__ISSUE_TITLE__"
+summary: "__ISSUE_SUMMARY__"
+
+affected_areas:
+  - "__AFFECTED_AREA__"
+
+constraints:
+  - "__CONSTRAINT__"
+risks:
+  - "__RISK__"
+
+problem: |
+  __PROBLEM__
+
+impact: |
+  __IMPACT__
+
+desired_outcome: |
+  __DESIRED_OUTCOME__
+
+acceptance_criteria:
+  - "__ACCEPTANCE_1__"
+  - "__ACCEPTANCE_2__"
