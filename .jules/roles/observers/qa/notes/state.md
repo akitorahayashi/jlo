@@ -1,7 +1,7 @@
 # QA State
 
 ## Coverage Gaps
-- `src/services/jules_api.rs`: Critical logic (retry, error handling) is untested.
+- `src/services/jules_api.rs`: Critical logic (retry, error handling) is untested (covered by issue `test_quality_improvements`).
 - `src/services/clipboard_arboard.rs`: Untested (minor).
 - `src/domain/setup.rs`: Domain logic mixing with DTOs, untested (covered by issue `2026-01-29_issue_setup_domain_refactor`).
 
