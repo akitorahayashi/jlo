@@ -8,17 +8,24 @@ constraints:
   - Aggregate all valid events into issues; do not leave "trivial" events unprocessed
   - Do NOT write to .jules/exchange/tasks/
   - Delete ALL processed events
+  - When requires_deep_analysis is true, deep_analysis_reason MUST be non-empty
+  - Use fingerprint as filename (not date-based)
 
 inputs:
   - .jules/exchange/events/**/*.yml
+  - .jules/exchange/issues/*.yml (existing issues for merge)
 
 outputs:
-  - .jules/exchange/issues/*.yml (accepted)
+  - .jules/exchange/issues/*.yml (created or updated)
   - .jules/roles/observers/<author_role>/feedbacks/<date>_<description>.yml (rejection feedback)
 
 workflow:
   1. Read events (filename: YYYY-MM-DD_HHMMSS_*.yml)
-  2. Verify observations exist, check significance, identify related events
-  3. Rationalize disputes (e.g. if one event says "rename" and another says "delete", "delete" wins)
-  4. Accept: cp issue.yml .jules/exchange/issues/<id>.yml (consolidating all related events), delete events
-  5. Reject: cp feedback.yml .jules/roles/observers/<author_role>/feedbacks/<file>.yml, delete events
+  2. Read existing open issues to identify merge candidates
+  3. Verify observations exist, check significance, identify related events
+  4. Rationalize disputes (e.g. if one event says "rename" and another says "delete", "delete" wins)
+  5. For events related to an existing open issue: merge into that issue (append sources, update content)
+  6. For new problems: cp issue.yml .jules/exchange/issues/<fingerprint>.yml
+  7. If requiring deep analysis, provide a clear reason in deep_analysis_reason
+  8. Reject invalid events: cp feedback.yml .jules/roles/observers/<author_role>/feedbacks/<file>.yml
+  9. Delete ALL processed events

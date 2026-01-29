@@ -27,8 +27,8 @@ This file is human-oriented. Agents must read `.jules/JULES.md` for the formal c
 ## Role Flow
 
 ```
-Observer -> Decider -> [Planner] -> GitHub Issue -> Implementer
-(events)    (issues)   (expand)     (promote)       (code changes)
+Observer -> Decider -> [Planner] -> Implementer
+(events)    (issues)   (expand)     (code changes)
 ```
 
 | Role Type | Role(s) | Transformation |
@@ -36,7 +36,7 @@ Observer -> Decider -> [Planner] -> GitHub Issue -> Implementer
 | Observer | directories under `.jules/roles/observers/` | Source -> Events (domain-specialized observations) |
 | Decider | directories under `.jules/roles/deciders/` | Events -> Issues (validation + consolidation) |
 | Planner | directories under `.jules/roles/planners/` | Issues -> Expanded Issues (deep analysis, optional) |
-| Implementer | directories under `.jules/roles/implementers/` | GitHub Issues -> Code changes |
+| Implementer | directories under `.jules/roles/implementers/` | Issues -> Code changes |
 
 **Execution**: All roles are invoked by GitHub Actions via `jules-invoke`.
 
@@ -121,9 +121,11 @@ Each observer:
 2. Reads role.yml (specialized focus)
 3. Reads feedbacks/, abstracts patterns, updates role.yml
 4. Reads notes/ for current state
-5. Updates notes/ declaratively
-6. Writes exchange/events/**/*.yml when observations warrant
-7. Publishes changes as a PR (branch naming follows the convention below)
+5. **Reads .jules/exchange/issues/*.yml to check for open issues**
+6. Updates notes/ declaratively
+7. **Skips observations already covered by open issues (deduplication)**
+8. Writes exchange/events/**/*.yml when observations warrant
+9. Publishes changes as a PR (branch naming follows the convention below)
 
 **Stateful**: Maintains `notes/` and receives feedback via `feedbacks/`.
 
@@ -132,40 +134,49 @@ Each observer:
 Triage agent:
 1. Reads contracts.yml (layer behavior)
 2. Reads all exchange/events/**/*.yml
-3. Validates observations (do they exist in codebase?)
-4. Merges related events sharing root cause
-5. Creates consolidated issues in exchange/issues/
-6. Writes feedback for recurring rejections
-7. Deletes processed events
+3. **Reads existing .jules/exchange/issues/*.yml to identify merge candidates**
+4. Validates observations (do they exist in codebase?)
+5. Merges related events sharing root cause
+6. **Merges events into existing issues when related (appends sources, updates content)**
+7. Creates new issues for genuinely new problems (using fingerprint as filename)
+8. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
+9. Writes feedback for recurring rejections
+10. Deletes processed events
 
 **Decider answers**: "Is this real? Should these events merge into one issue?"
 
-### 3. Issue Promotion (Automatic)
-
-After decider output:
-1. Issues with `requires_deep_analysis: false` are promoted to GitHub Issues
-2. Each issue file is rendered using the issue template
-3. Existing GitHub Issues are updated; new ones are created
-4. The source file path is used as the unique identifier
-
-### 4. Planner Agent (On-Demand)
+### 3. Planner Agent (On-Demand)
 
 Specifier agent (runs only for `requires_deep_analysis: true`):
 1. Reads contracts.yml (layer behavior)
 2. Reads target issue from exchange/issues/
-3. Analyzes full system impact and dependency tree
-4. Expands issue with detailed analysis (affected_areas, constraints, risks)
-5. Sets requires_deep_analysis to false
-6. Overwrites the issue file
+3. **Reviews deep_analysis_reason to understand scope**
+4. Analyzes full system impact and dependency tree
+5. Expands issue with detailed analysis (affected_areas, constraints, risks)
+6. Sets requires_deep_analysis to false
+7. **Preserves and expands the original rationale with findings**
+8. Overwrites the issue file
 
 **Planner answers**: "What is the full scope of this issue?"
 
-After planner output, the issue is promoted to a GitHub Issue.
+### 4. Implementation (Via Local Issue)
 
-### 5. Implementation (Via GitHub Issue)
+Implementation is invoked manually via `workflow_dispatch` with a local issue file path.
 
-Implementation is invoked manually via `workflow_dispatch` with a GitHub Issue number.
-The implementer reads the issue content and produces code changes.
+```bash
+# Example: Run implementer with a specific issue
+jlo run implementers --issue .jules/exchange/issues/auth_inconsistency.yml
+```
+
+The implementer reads the issue content (embedded in prompt) and produces code changes.
+The issue file must exist; missing files fail fast before agent execution.
+
+**Issue Lifecycle**:
+1. User selects an issue file from `.jules/exchange/issues/` on the `jules` branch.
+2. Workflow validates the file exists and passes content to the implementer.
+3. After successful dispatch, the issue file is automatically deleted from the `jules` branch.
+4. The implementer works on `main` branch and creates a PR for human review.
+5. When the PR is merged, `sync-jules.yml` syncs `main` back to `jules`.
 
 ## Feedback Loop
 
@@ -173,7 +184,7 @@ The implementer reads the issue content and produces code changes.
 Observer creates events in exchange/events/
        |
        v
-Decider validates, may reject
+Decider validates, may reject or merge
        |
        v (rejection)
 Decider writes feedbacks/{date}_{desc}.yml
@@ -187,6 +198,13 @@ Observer avoids similar observations
 
 Feedback files are preserved for audit (never deleted).
 
+## Issue Lifecycle
+
+- Issues have `status: open|closed` to track lifecycle.
+- Open issues suppress duplicate observations from observers.
+- Issue filenames use stable fingerprints (e.g. `auth_inconsistency.yml`).
+- Related events are merged into existing issues, not duplicated.
+
 ## Branch Naming Convention
 
 All agents must create branches using this format:
@@ -195,9 +213,14 @@ All agents must create branches using this format:
 jules-observer-<id>
 jules-decider-<id>
 jules-planner-<id>
-jules-implementer-<issue_number>-<short_description>
+jules-implementer-<fingerprint>-<short_description>
 ```
 
 ## Testing and Validation
 
 The mock pipeline workflow generates synthetic exchange artifacts and exercises the observer → decider → planner transitions without calling external APIs.
+
+## Pause/Resume
+
+Set the repository variable `JULES_PAUSED=true` to skip scheduled runs.
+The default behavior is active; paused behavior is explicit and visible.
