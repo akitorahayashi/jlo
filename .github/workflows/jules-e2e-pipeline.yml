@@ -73,6 +73,7 @@ jobs:
           name: jules-mock-observer
           path: .jules-mock
           if-no-files-found: error
+          include-hidden-files: true
 
 
   mock-decider:
@@ -141,6 +142,7 @@ jobs:
           name: jules-mock-decider
           path: .jules-mock
           if-no-files-found: error
+          include-hidden-files: true
 
   mock-planner:
     runs-on: ubuntu-latest
@@ -199,6 +201,7 @@ jobs:
           name: jules-mock-planner
           path: .jules-mock
           if-no-files-found: error
+          include-hidden-files: true
 
   verify-artifacts:
     runs-on: ubuntu-latest
