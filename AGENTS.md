@@ -11,8 +11,11 @@
 
 ## Critical Design Principles
 
-### 1. Prompts are Static Files, Never Generated in Rust
-All prompts exist as `.yml` files in `src/assets/scaffold/` or `src/assets/templates/`.
+### 1. Assets are Static Files, Never Hardcoded in Rust
+All scaffold files, configurations, and prompts must exist as real files within `src/assets/`.
+**Never** embed file contents (like `DEFAULT_CONFIG_TOML`, `tools.yml`, or default `.gitignore`) as string constants in Rust source code.
+- **Why**: Keeps the scaffold structure visible and maintainable without digging into implementation details.
+- **How**: Use `include_dir!` to load the `src/assets/scaffold` directory as the authoritative source of truth.
 
 ### 2. Prompt Hierarchy (No Duplication)
 ```

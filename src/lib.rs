@@ -12,11 +12,13 @@ use std::path::Path;
 
 use app::{
     AppContext,
-    commands::{init, setup, template},
+    commands::{init, run, setup, template},
 };
-use ports::NoopClipboard;
+use domain::Layer;
+use ports::{NoopClipboard, WorkspaceStore};
 use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 
+pub use app::commands::run::execute::{RunOptions, RunResult};
 pub use app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
 pub use domain::AppError;
 
@@ -42,6 +44,37 @@ pub fn template(layer: Option<&str>, role_name: Option<&str>) -> Result<String, 
     let path = template::execute(&ctx, layer, role_name)?;
     println!("✅ Created new role at .jules/roles/{}/", path);
     Ok(path)
+}
+
+// =============================================================================
+// Run Command API
+// =============================================================================
+
+/// Execute Jules agents for a layer.
+///
+/// Runs agents defined in `.jules/config.toml` for the specified layer.
+///
+/// # Arguments
+/// * `layer` - Target layer (observers, deciders, planners, implementers)
+/// * `roles` - Specific roles to run (None = all from config)
+/// * `dry_run` - Show prompts without executing
+/// * `mock` - Run in mock mode (no API calls)
+/// * `branch` - Override the starting branch
+pub fn run(
+    layer: Layer,
+    roles: Option<Vec<String>>,
+    dry_run: bool,
+    mock: bool,
+    branch: Option<String>,
+) -> Result<RunResult, AppError> {
+    let workspace = FilesystemWorkspaceStore::current()?;
+
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    let options = RunOptions { layer, roles, dry_run, mock, branch };
+    run::execute(&workspace.jules_path(), options)
 }
 
 // =============================================================================

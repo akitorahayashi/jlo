@@ -1,14 +1,13 @@
 # jlo
 
-CLI tool for deploying `.jules/` workspace scaffolding for scheduled LLM agent execution.
+CLI tool for deploying `.jules/` workspace scaffolding and orchestrating scheduled LLM agent execution.
 
 ## Architecture
 
 | Component | Responsibility |
 |-----------|----------------|
-| **jlo** | `.jules/` scaffold installation, versioning, prompt asset management |
-| **GitHub Actions** | Orchestration: cron triggers, matrix execution, PR creation, merge control |
-| **jules-invoke** | Session creation: prompt delivery, starting_branch specification |
+| **jlo** | `.jules/` scaffold installation, agent orchestration, prompt assembly |
+| **GitHub Actions** | Workflow triggers: cron schedules, manual dispatch, merge control |
 | **Jules (VM)** | Execution: code analysis, artifact generation, branch/PR creation |
 
 ## Quick Start
@@ -19,7 +18,7 @@ cd your-project
 jlo init
 ```
 
-Then copy `.github/workflows/jules-*.yml` and `.github/actions/read-role-prompt/` from this repository as reference implementations.
+Copy the sample workflow from `src/assets/templates/workflows/jules.yml` to your repository's `.github/workflows/`.
 
 ## Commands
 
@@ -27,57 +26,86 @@ Then copy `.github/workflows/jules-*.yml` and `.github/actions/read-role-prompt/
 |---------|-------|-------------|
 | `jlo init` | `i` | Create `.jules/` workspace with setup directory |
 | `jlo template [-l layer] [-n name]` | `tp` | Create new role from template |
+| `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
 
-### Examples
+### Run Command
+
+Execute Jules agents for a specific layer:
 
 ```bash
-jlo init                                    # Initialize workspace (includes setup)
+jlo run observers                      # Run all observer roles
+jlo run deciders --role triage         # Run specific role
+jlo run planners --dry-run             # Show prompts without executing
+jlo run implementers --mock            # Mock mode (no API calls)
+jlo run observers --branch custom      # Override starting branch
+```
+
+**Flags**:
+- `--role <name>`: Run specific role(s) instead of all configured
+- `--dry-run`: Show assembled prompts without API calls
+- `--mock`: Run in mock mode (creates test artifacts)
+- `--branch <name>`: Override the default starting branch
+
+**Configuration**: Agent roles are configured in `.jules/config.toml`:
+
+```toml
+[agents]
+observers = ["taxonomy", "data_arch", "qa", "consistency"]
+deciders = ["triage"]
+planners = ["specifier"]
+implementers = ["executor"]
+
+[run]
+default_branch = "main"
+
+[jules]
+# api_url = "https://api.jules.ai/v1/sessions"
+# timeout_secs = 30
+# max_retries = 3
+```
+
+**Environment**: Set `JULES_API_KEY` for API authentication.
+
+### Other Examples
+
+```bash
+jlo init                                    # Initialize workspace
 jlo template -l observers -n security       # Create custom role
 
 # Setup compiler
 jlo setup list                              # List available components
 jlo setup list --detail just                # Show component details
-# Edit .jules/setup/tools.yml to select tools
 jlo setup gen                               # Generate install script
-.jules/setup/install.sh                     # Run installation
 ```
 
-## GitHub Actions Workflows
+## GitHub Actions Integration
 
-This repository includes reference workflow implementations in `.github/`:
+The simplified workflow uses `jlo run` for all agent execution.
 
-| File | Type | Purpose |
-|------|------|---------|
-| `workflows/jules-workflows.yml` | Orchestrator | Coordinates all agent execution |
-| `workflows/jules-automerge.yml` | Automation | Auto-merge jules-* branches |
-| `workflows/run-observer.yml` | Reusable | Execute single observer |
-| `workflows/run-decider.yml` | Reusable | Execute decider |
-| `workflows/run-planner.yml` | Reusable | Execute planner (deep analysis) |
-| `workflows/run-implementer.yml` | Manual | Execute implementer (workflow_dispatch) |
-| `actions/read-role-prompt/` | Action | Read prompt.yml from role |
-| `actions/jules-issue-sync/` | Action | Sync issue files to GitHub Issues |
+| File | Purpose |
+|------|---------|
+| `jules-workflows.yml` | Agent execution (scheduled + manual dispatch) |
+| `jules-automerge.yml` | Auto-merge jules-* branches (optional) |
+| `sync-jules.yml` | Sync main → jules branch (optional) |
 
 **Branch Strategy**:
 
-The branch strategy isolates agent operations from the main development line until changes are reviewed or verified.
-
-| Branch Pattern | Agent Type | Base Branch | Description | Merge Strategy |
-|----------------|------------|-------------|-------------|----------------|
-| `jules` | N/A | `main` | Dedicated integration branch for agent coordination. Acts as the stable base for all operational agents (observers, deciders, planners). | Synced daily from `main` |
-| `jules-observer-*` | Observers | `jules` | Generated by observers. Contains analysis reports and state updates in `.jules/`. | Auto-merged to `jules` |
-| `jules-decider-*` | Deciders | `jules` | Generated by deciders. Contains issue files in `.jules/exchange/issues/`. | Auto-merged to `jules` |
-| `jules-planner-*` | Planners | `jules` | Generated by planners. Contains expanded issue analysis. | Auto-merged to `jules` |
-| `jules-implementer-*` | Implementers | `main` | Generated by implementers. Contains actual application code changes. | **Human Review Required** (PR to `main`) |
+| Branch Pattern | Agent Type | Base Branch | Merge Strategy |
+|----------------|------------|-------------|----------------|
+| `jules` | N/A | `main` | Synced from main |
+| `jules-observer-*` | Observers | `jules` | Auto-merged |
+| `jules-decider-*` | Deciders | `jules` | Auto-merged |
+| `jules-planner-*` | Planners | `jules` | Auto-merged |
+| `jules-implementer-*` | Implementers | `main` | Human review |
 
 **Flow**:
-1. **Sync**: `jules` branch is synced from `main` daily.
-2. **Analysis**: Observers run on `jules`, creating event files.
-3. **Triage**: Deciders consolidate events into issue files.
-4. **Promotion**: Issues are automatically promoted to GitHub Issues.
-5. **Deep Analysis**: Issues with `requires_deep_analysis: true` trigger planner expansion first.
-6. **Implementation**: Implementers are triggered manually via `workflow_dispatch` with a GitHub Issue number.
+1. **Sync**: `jules` branch syncs from `main` periodically
+2. **Analysis**: Observers create event files in `.jules/exchange/events/`
+3. **Triage**: Deciders consolidate events into issue files
+4. **Promotion**: Issues are promoted to GitHub Issues
+5. **Implementation**: Implementers are triggered manually for approved issues
 
 ## Documentation
 
@@ -92,5 +120,3 @@ cargo build                                                    # Build
 cargo fmt --check && cargo clippy -- -D warnings               # Lint
 cargo test --all-targets --all-features                        # Test
 ```
-
-
