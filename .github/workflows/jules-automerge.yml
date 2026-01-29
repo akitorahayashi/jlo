@@ -33,23 +33,43 @@ on:
 
 jobs:
   check-scope:
-    if: |
-      (startsWith(inputs.head_ref, 'jules-observer-') ||
-       startsWith(inputs.head_ref, 'jules-decider-') ||
-       startsWith(inputs.head_ref, 'jules-planner-') ||
-       startsWith(inputs.head_ref, 'jules-e2e-test-')) &&
-      inputs.is_draft == false
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
     outputs:
       jules_only: ${{ steps.check.outputs.jules_only }}
     steps:
+      - name: Debug Inputs
+        run: |
+          echo "Head Ref: ${{ inputs.head_ref }}"
+          echo "Is Draft: ${{ inputs.is_draft }}"
+          echo "PR Number: ${{ inputs.pr_number }}"
+
       - name: Check changed files
         id: check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # 1. Check branch name pattern
+          HEAD_REF="${{ inputs.head_ref }}"
+          IS_DRAFT="${{ inputs.is_draft }}"
+          
+          if [[ ! "$HEAD_REF" =~ ^jules-observer- ]] && \
+             [[ ! "$HEAD_REF" =~ ^jules-decider- ]] && \
+             [[ ! "$HEAD_REF" =~ ^jules-planner- ]] && \
+             [[ ! "$HEAD_REF" =~ ^jules-e2e-test- ]]; then
+             echo "::warning::Branch '$HEAD_REF' does not match jules-* pattern. Skipping."
+             echo "jules_only=false" >> "$GITHUB_OUTPUT"
+             exit 0
+          fi
+          
+          if [ "$IS_DRAFT" == "true" ]; then
+             echo "::warning::PR is a draft. Skipping."
+             echo "jules_only=false" >> "$GITHUB_OUTPUT"
+             exit 0
+          fi
+
+          # 2. Check changed files
           # Use paginated API to handle PRs with >100 files
           changed=$(gh api --paginate \
             "/repos/${{ github.repository }}/pulls/${{ inputs.pr_number }}/files" \
