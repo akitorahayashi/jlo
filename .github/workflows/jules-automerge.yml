@@ -17,6 +17,16 @@ name: Jules Auto-Merge
 
 on:
   workflow_call:
+    inputs:
+      head_ref:
+        required: true
+        type: string
+      is_draft:
+        required: true
+        type: boolean
+      pr_number:
+        required: true
+        type: number
     secrets:
       bot_token:
         required: true
@@ -24,11 +34,11 @@ on:
 jobs:
   check-scope:
     if: |
-      (startsWith(github.event.pull_request.head.ref, 'jules-observer-') ||
-       startsWith(github.event.pull_request.head.ref, 'jules-decider-') ||
-       startsWith(github.event.pull_request.head.ref, 'jules-planner-') ||
-       startsWith(github.event.pull_request.head.ref, 'jules-e2e-test-')) &&
-      github.event.pull_request.draft == false
+      (startsWith(inputs.head_ref, 'jules-observer-') ||
+       startsWith(inputs.head_ref, 'jules-decider-') ||
+       startsWith(inputs.head_ref, 'jules-planner-') ||
+       startsWith(inputs.head_ref, 'jules-e2e-test-')) &&
+      inputs.is_draft == false
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
@@ -42,7 +52,7 @@ jobs:
         run: |
           # Use paginated API to handle PRs with >100 files
           changed=$(gh api --paginate \
-            "/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            "/repos/${{ github.repository }}/pulls/${{ inputs.pr_number }}/files" \
             --jq '.[].filename')
           
           # Check if any file is outside .jules/
@@ -69,6 +79,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.bot_token }}
         run: |
-          gh pr merge "${{ github.event.pull_request.number }}" \
+          gh pr merge "${{ inputs.pr_number }}" \
             --auto --squash --delete-branch \
             --repo "${{ github.repository }}"

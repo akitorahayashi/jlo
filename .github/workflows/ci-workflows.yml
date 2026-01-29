@@ -26,10 +26,15 @@ jobs:
 
   automerge:
     name: Auto Merge
+    if: github.event_name == 'pull_request'
     permissions:
       contents: write
       pull-requests: write
     needs: [lint, build, test, verify-installers]
     uses: ./.github/workflows/jules-automerge.yml
+    with:
+      head_ref: ${{ github.head_ref }}
+      is_draft: ${{ github.event.pull_request.draft }}
+      pr_number: ${{ github.event.pull_request.number }}
     secrets:
       bot_token: ${{ secrets.JLO_BOT_TOKEN }}
