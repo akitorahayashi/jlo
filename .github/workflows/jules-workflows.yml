@@ -1,188 +1,199 @@
-# Jules Agent Execution
+# Jules Agent Orchestration
 #
-# Simplified workflow using jlo CLI for agent orchestration.
-# Configuration is managed via .jules/config.toml.
+# Sequential execution of agent layers with wait periods for async processing.
+# Replaces the reactive model (jules-pipeline.yml + jules-workflows.yml) with
+# a single, robust workflow that executes layers in order.
 
 name: Jules Workflows
 
 on:
   schedule:
-    # Daily at 19:00 UTC (04:00 JST)
-    - cron: '0 19 * * *'
+    - cron: '0 19 * * *'  # Daily at 19:00 UTC (04:00 JST)
   workflow_dispatch:
     inputs:
-      layer:
-        description: 'Agent layer to run'
-        required: true
+      entry_point:
+        description: 'Start from layer'
         type: choice
         options:
           - observers
           - deciders
           - planners
           - implementers
-      role:
-        description: 'Specific role (optional, comma-separated)'
-        required: false
-        type: string
+        default: observers
+      wait_minutes:
+        description: 'Minutes to wait between layers (Jules async processing time)'
+        type: number
+        default: 30
       issue_file:
-        description: 'Issue file path (required for implementers, e.g. .jules/exchange/issues/xyz.yml)'
-        required: false
+        description: 'Issue file path (required for implementers)'
         type: string
       dry_run:
         description: 'Show prompts without executing'
-        required: false
         type: boolean
         default: false
-      jlo_version:
-        description: 'jlo release tag (e.g. v2.0.0) or "latest"'
-        required: false
-        type: string
-        default: 'latest'
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
 
+concurrency:
+  group: jules
+  cancel-in-progress: false
+
+env:
+  WAIT_SECONDS: ${{ github.event.inputs.wait_minutes && github.event.inputs.wait_minutes * 60 || 1800 }}
+
 jobs:
-  # Scheduled run: execute observers layer
-  scheduled:
-    if: github.event_name == 'schedule' && vars.JULES_PAUSED != 'true'
+  run:
+    if: vars.JULES_PAUSED != 'true'
     runs-on: ubuntu-latest
-    env:
-      JLO_VERSION: ${{ vars.JLO_VERSION || 'latest' }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
+          fetch-depth: 0
 
       - name: Install jlo
         run: |
-          VERSION="${JLO_VERSION}"
-          if [ -z "$VERSION" ]; then
-            VERSION="latest"
-          fi
-          if [ "$VERSION" != "latest" ] && [ "${VERSION#v}" = "$VERSION" ]; then
-            VERSION="v${VERSION}"
-          fi
+          VERSION="${{ vars.JLO_VERSION || 'latest' }}"
           if [ "$VERSION" = "latest" ]; then
             URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
           else
+            [ "${VERSION#v}" = "$VERSION" ] && VERSION="v${VERSION}"
             URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
           fi
           curl -sSL "$URL" -o jlo
           chmod +x jlo && sudo mv jlo /usr/local/bin/
 
+      # ============================================================
+      # Observers
+      # ============================================================
       - name: Run observers
-        env:
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-        run: jlo run observers
-
-  # Manual dispatch: run specified layer
-  manual:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    env:
-      JLO_VERSION: ${{ inputs.jlo_version }}
-    steps:
-      - name: Validate implementer inputs
-        if: inputs.layer == 'implementers'
-        shell: bash
-        run: |
-          if [ -z "${{ inputs.issue_file }}" ]; then
-            echo "Error: issue_file is required for implementers layer." >&2
-            echo "Specify a local issue file path (e.g. .jules/exchange/issues/xyz.yml)" >&2
-            exit 1
-          fi
-
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.layer == 'implementers' && 'main' || 'jules' }}
-
-      - name: Checkout jules branch for issue file
-        if: inputs.layer == 'implementers'
-        uses: actions/checkout@v4
-        with:
-          ref: jules
-          path: jules-ref
-          sparse-checkout: .jules/exchange/issues
-
-      - name: Validate issue file exists
-        if: inputs.layer == 'implementers'
-        shell: bash
-        run: |
-          ISSUE_PATH="jules-ref/${{ inputs.issue_file }}"
-          if [ ! -f "$ISSUE_PATH" ]; then
-            echo "Error: Issue file not found: ${{ inputs.issue_file }}" >&2
-            echo "Available issues:" >&2
-            ls -1 jules-ref/.jules/exchange/issues/*.yml 2>/dev/null || echo "  (none)" >&2
-            exit 1
-          fi
-          echo "ISSUE_FILE_PATH=$ISSUE_PATH" >> "$GITHUB_ENV"
-
-      - name: Install jlo
-        run: |
-          VERSION="${JLO_VERSION}"
-          if [ -z "$VERSION" ]; then
-            VERSION="latest"
-          fi
-          if [ "$VERSION" != "latest" ] && [ "${VERSION#v}" = "$VERSION" ]; then
-            VERSION="v${VERSION}"
-          fi
-          if [ "$VERSION" = "latest" ]; then
-            URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
-          else
-            URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
-          fi
-          curl -sSL "$URL" -o jlo
-          chmod +x jlo && sudo mv jlo /usr/local/bin/
-
-      - name: Parse role input
-        id: parse
-        run: |
-          if [ -n "${{ inputs.role }}" ]; then
-            # Convert comma-separated to --role flags
-            roles=$(echo "${{ inputs.role }}" | tr ',' '\n' | sed 's/^/--role /' | tr '\n' ' ')
-            echo "role_args=$roles" >> "$GITHUB_OUTPUT"
-          else
-            echo "role_args=" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Run agents
+        id: observers
+        if: >-
+          github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_dispatch' && inputs.entry_point == 'observers')
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         run: |
           ARGS=""
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
-            ARGS="$ARGS --dry-run"
-          fi
-          if [ "${{ inputs.layer }}" = "implementers" ] && [ -n "$ISSUE_FILE_PATH" ]; then
-            ARGS="$ARGS --issue $ISSUE_FILE_PATH"
-          fi
-          jlo run ${{ inputs.layer }} ${{ steps.parse.outputs.role_args }} $ARGS
+          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="--dry-run"
+          jlo run observers $ARGS
 
-      - name: Delete processed issue file
-        if: inputs.layer == 'implementers' && inputs.dry_run != 'true'
+      - name: Wait for observers
+        if: steps.observers.outcome == 'success' && inputs.dry_run != 'true'
+        run: |
+          echo "⏳ Waiting ${WAIT_SECONDS}s for Jules to complete observer tasks..."
+          sleep "$WAIT_SECONDS"
+
+      - name: Refresh branch after observers
+        if: steps.observers.outcome == 'success' && inputs.dry_run != 'true'
+        run: |
+          git fetch origin jules
+          git reset --hard origin/jules
+
+      # ============================================================
+      # Deciders
+      # ============================================================
+      - name: Check for events
+        id: check-events
+        if: >-
+          steps.observers.outcome == 'success' ||
+          inputs.entry_point == 'deciders'
+        run: |
+          if find .jules/exchange/events -name '*.yml' 2>/dev/null | grep -q .; then
+            echo "has_events=true" >> "$GITHUB_OUTPUT"
+            echo "📋 Found events to process"
+          else
+            echo "has_events=false" >> "$GITHUB_OUTPUT"
+            echo "✅ No events to process"
+          fi
+
+      - name: Run deciders
+        id: deciders
+        if: steps.check-events.outputs.has_events == 'true'
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        run: |
+          ARGS=""
+          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="--dry-run"
+          jlo run deciders $ARGS
+
+      - name: Wait for deciders
+        if: steps.deciders.outcome == 'success' && inputs.dry_run != 'true'
+        run: |
+          echo "⏳ Waiting ${WAIT_SECONDS}s for Jules to complete decider tasks..."
+          sleep "$WAIT_SECONDS"
+
+      - name: Refresh branch after deciders
+        if: steps.deciders.outcome == 'success' && inputs.dry_run != 'true'
+        run: |
+          git fetch origin jules
+          git reset --hard origin/jules
+
+      # ============================================================
+      # Planners
+      # ============================================================
+      - name: Check for deep issues
+        id: check-issues
+        if: >-
+          steps.deciders.outcome == 'success' ||
+          inputs.entry_point == 'planners'
+        run: |
+          if grep -rq 'requires_deep_analysis: true' .jules/exchange/issues/ 2>/dev/null; then
+            echo "has_deep_issues=true" >> "$GITHUB_OUTPUT"
+            echo "🔍 Found issues requiring deep analysis"
+          else
+            echo "has_deep_issues=false" >> "$GITHUB_OUTPUT"
+            echo "✅ No issues require deep analysis"
+          fi
+
+      - name: Run planners
+        id: planners
+        if: steps.check-issues.outputs.has_deep_issues == 'true'
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        run: |
+          ARGS=""
+          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="--dry-run"
+          jlo run planners $ARGS
+
+      # ============================================================
+      # Implementers (manual only)
+      # ============================================================
+      - name: Validate implementer inputs
+        if: inputs.entry_point == 'implementers'
+        run: |
+          if [ -z "${{ inputs.issue_file }}" ]; then
+            echo "::error::issue_file is required for implementers"
+            exit 1
+          fi
+          if [ ! -f "${{ inputs.issue_file }}" ]; then
+            echo "::error::Issue file not found: ${{ inputs.issue_file }}"
+            exit 1
+          fi
+
+      - name: Run implementers
+        if: inputs.entry_point == 'implementers'
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        run: |
+          ARGS="--issue ${{ inputs.issue_file }}"
+          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
+          jlo run implementers $ARGS
+
+      - name: Delete processed issue
+        if: inputs.entry_point == 'implementers' && inputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN || github.token }}
-        shell: bash
         run: |
-          set -euo pipefail
-
-          # Full checkout of jules branch to delete the issue
-          cd jules-ref
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin jules
-          git checkout jules
-          git pull origin jules
-
           ISSUE_FILE="${{ inputs.issue_file }}"
           if [ -f "$ISSUE_FILE" ]; then
             git rm "$ISSUE_FILE"
             git commit -m "Remove processed issue: $(basename "$ISSUE_FILE")"
             git push origin jules
-            echo "✅ Deleted processed issue: $ISSUE_FILE"
-          else
-            echo "⚠️ Issue file already removed or not found: $ISSUE_FILE"
+            echo "✅ Deleted: $ISSUE_FILE"
           fi
