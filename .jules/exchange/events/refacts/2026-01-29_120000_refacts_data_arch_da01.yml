@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-29_120000_refacts_data_arch_da01"
+created_at: "2026-01-29"
+author_role: "data_arch"
+category: "refacts"
+confidence: "high"
+
+# Content
+title: "Duplicate data definitions in Setup domain"
+statement: |
+  The `Component` and `ComponentMeta` structs duplicate the definitions of `summary`, `dependencies`, and `env` fields. This violates the Normalized Independence (SSOT) principle, as changes to these fields must be manually synchronized in two places.
+
+evidence:
+  - path: "src/domain/setup.rs"
+    loc: "Component struct"
+    note: "Defines summary, dependencies, env fields."
+  - path: "src/domain/setup.rs"
+    loc: "ComponentMeta struct"
+    note: "Redefines summary, dependencies, env fields."
+
+tags:
+  - "refactoring"
+  - "data-consistency"
+  - "ssot"

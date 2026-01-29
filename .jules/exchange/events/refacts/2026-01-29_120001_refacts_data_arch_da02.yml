@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-29_120001_refacts_data_arch_da02"
+created_at: "2026-01-29"
+author_role: "data_arch"
+category: "refacts"
+confidence: "high"
+
+# Content
+title: "Missing Implementers layer in Layer enum"
+statement: |
+  The `Layer` enum in `src/domain/layer.rs` is missing the `Implementers` variant, despite it being a core part of the system architecture documented in contracts and CI workflows. This violates the Isomorphic Representation principle, as the code does not accurately reflect the valid domain states.
+
+evidence:
+  - path: "src/domain/layer.rs"
+    loc: "Layer enum"
+    note: "Missing Implementers variant."
+  - path: ".jules/roles/observers/contracts.yml"
+    loc: "Implementers section"
+    note: "References Implementers layer and branch convention."
+
+tags:
+  - "refactoring"
+  - "domain-modeling"
+  - "isomorphism"
