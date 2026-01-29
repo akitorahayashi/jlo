@@ -36,10 +36,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Read Rust toolchain
+        id: toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          channel=$(sed -n 's/^channel = \"\\(.*\\)\"/\\1/p' rust-toolchain.toml)
+          if [ -z "$channel" ]; then
+            echo "Failed to read toolchain channel from rust-toolchain.toml." >&2
+            exit 1
+          fi
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: ${{ steps.toolchain.outputs.channel }}
           targets: ${{ matrix.target }}
 
       - name: Install cross (for cross-compilation)
