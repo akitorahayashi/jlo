@@ -91,7 +91,11 @@ jobs:
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         run: |
-          jlo run ${{ inputs.layer }} \
-            ${{ steps.parse.outputs.role_args }} \
-            ${{ inputs.dry_run && '--dry-run' || '' }} \
-            ${{ inputs.mock && '--mock' || '' }}
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ "${{ inputs.mock }}" = "true" ]; then
+            ARGS="$ARGS --mock"
+          fi
+          jlo run ${{ inputs.layer }} ${{ steps.parse.outputs.role_args }}$ARGS

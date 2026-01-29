@@ -3,7 +3,6 @@ layer: observers
 responsibility: "# TODO: Describe your specific responsibility"
 
 contracts:
-  - .jules/JULES.md
   - .jules/roles/observers/contracts.yml
   - .jules/roles/observers/ROLE_NAME/role.yml
 

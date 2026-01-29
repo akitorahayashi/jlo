@@ -105,11 +105,14 @@ impl JulesClient for HttpJulesClient {
         };
 
         let mut last_error = None;
+        let max_attempts = self.max_retries.max(1); // Ensure at least one attempt
 
-        for attempt in 0..self.max_retries {
+        for attempt in 0..max_attempts {
             if attempt > 0 {
-                std::thread::sleep(Duration::from_millis(RETRY_DELAY_MS * (attempt as u64)));
-                println!("Retrying... (attempt {}/{})", attempt + 1, self.max_retries);
+                // Exponential backoff: 1s, 2s, 4s, ...
+                let delay = RETRY_DELAY_MS * 2_u64.pow(attempt.saturating_sub(1));
+                std::thread::sleep(Duration::from_millis(delay));
+                println!("Retrying... (attempt {}/{})", attempt + 1, max_attempts);
             }
 
             match self.send_request(&api_request) {
@@ -124,7 +127,8 @@ impl JulesClient for HttpJulesClient {
             }
         }
 
-        Err(last_error.unwrap_or_else(|| AppError::ConfigError("Unknown error".into())))
+        Err(last_error
+            .unwrap_or_else(|| AppError::ConfigError("Request failed after all retries".into())))
     }
 }
 

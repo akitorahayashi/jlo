@@ -166,10 +166,12 @@ fn run_agents(layer: RunLayer) -> Result<(), AppError> {
 
     let result = jlo::run(target_layer, roles, dry_run, mock, branch)?;
 
-    if !result.dry_run && !result.roles.is_empty() && result.sessions.is_empty() {
-        println!("✅ Executed {} role(s) in mock mode", result.roles.len());
-    } else if !result.dry_run && !result.sessions.is_empty() {
-        println!("✅ Created {} Jules session(s)", result.sessions.len());
+    if !result.dry_run && !result.roles.is_empty() {
+        if mock {
+            println!("✅ Executed {} role(s) in mock mode", result.roles.len());
+        } else if !result.sessions.is_empty() {
+            println!("✅ Created {} Jules session(s)", result.sessions.len());
+        }
     }
 
     Ok(())

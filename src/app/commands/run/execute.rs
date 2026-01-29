@@ -88,6 +88,7 @@ fn execute_roles<C: JulesClient>(
     client: &C,
 ) -> Result<Vec<String>, AppError> {
     let mut sessions = Vec::new();
+    let mut failures = 0;
 
     for role in roles {
         println!("Executing {} / {}...", layer.dir_name(), role);
@@ -109,12 +110,21 @@ fn execute_roles<C: JulesClient>(
             }
             Err(e) => {
                 println!("  ❌ Failed: {}", e);
-                // Continue with other roles even if one fails
+                failures += 1;
             }
         }
     }
 
     println!("\nCompleted: {}/{} role(s)", sessions.len(), roles.len());
+
+    if failures > 0 {
+        return Err(AppError::ConfigError(format!(
+            "{} of {} roles failed to execute",
+            failures,
+            roles.len()
+        )));
+    }
+
     Ok(sessions)
 }
 
