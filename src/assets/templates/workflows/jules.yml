@@ -34,11 +34,6 @@ on:
         required: false
         type: boolean
         default: false
-      mock:
-        description: 'Run in mock mode (no Jules API calls)'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -94,8 +89,5 @@ jobs:
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             ARGS="$ARGS --dry-run"
-          fi
-          if [ "${{ inputs.mock }}" = "true" ]; then
-            ARGS="$ARGS --mock"
           fi
           jlo run ${{ inputs.layer }} ${{ steps.parse.outputs.role_args }}$ARGS

@@ -54,23 +54,3 @@ pub trait JulesClient {
     /// Create a new Jules session.
     fn create_session(&self, request: SessionRequest) -> Result<SessionResponse, AppError>;
 }
-
-/// Mock client for testing without API calls.
-#[derive(Debug, Clone, Default)]
-pub struct MockJulesClient;
-
-impl JulesClient for MockJulesClient {
-    fn create_session(&self, request: SessionRequest) -> Result<SessionResponse, AppError> {
-        println!("=== MOCK MODE ===");
-        println!("Would invoke Jules with:");
-        println!("  Source: {}", request.source);
-        println!("  Starting branch: {}", request.starting_branch);
-        println!("  Automation: {}", request.automation_mode.as_str());
-        println!("  Prompt length: {} chars", request.prompt.len());
-
-        Ok(SessionResponse {
-            session_id: format!("mock-{}", chrono::Utc::now().timestamp()),
-            status: "mock".to_string(),
-        })
-    }
-}

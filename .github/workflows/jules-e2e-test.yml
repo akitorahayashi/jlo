@@ -1,0 +1,154 @@
+name: Jules E2E Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: 'Test scope'
+        type: choice
+        options:
+          - pr_and_automerge    # PR creation and auto-merge
+          - issue_creation      # Issue creation
+          - full                # All tests
+        default: 'full'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  test-pr-automerge:
+    if: inputs.test_scope == 'pr_and_automerge' || inputs.test_scope == 'full'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create test branch
+        run: |
+          # Use timestamp to ensure unique branch name
+          TIMESTAMP=$(date +%s)
+          BRANCH="jules-e2e-test-$TIMESTAMP"
+          
+          # Create and switch to new branch from jules
+          git checkout -b "$BRANCH"
+          
+          # Create a dummy change in .jules/
+          mkdir -p .jules/exchange
+          echo "E2E Test Run: $(date -u)" > .jules/exchange/e2e-test.md
+          
+          git add .jules/exchange/e2e-test.md
+          git commit -m "E2E: Test commit for workflow validation $TIMESTAMP"
+          
+          # Push the new branch
+          git push origin "$BRANCH"
+          
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          # Create PR aiming at jules branch
+          PR_URL=$(gh pr create \
+            --base jules \
+            --head "$BRANCH" \
+            --title "[E2E Test] Workflow validation" \
+            --body "Automated E2E test. Will be auto-merged and deleted.")
+            
+          echo "Created PR: $PR_URL"
+          echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
+
+      - name: Wait for merge
+        id: wait-merge
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          echo "Waiting for PR to be merged..."
+          
+          # Poll for up to 5 minutes
+          for i in {1..30}; do
+            # Get PR state
+            STATE=$(gh pr view "$PR_URL" --json state -q '.state')
+            
+            if [ "$STATE" = "MERGED" ]; then
+              echo "✅ PR merged successfully"
+              echo "result=success" >> "$GITHUB_OUTPUT"
+              exit 0
+            elif [ "$STATE" = "CLOSED" ]; then
+              echo "❌ PR was closed but not merged"
+              echo "result=closed" >> "$GITHUB_OUTPUT"
+              exit 1
+            fi
+            
+            # Check for failed checks
+            CHECKS=$(gh pr checks "$PR_URL" --json state,conclusion --jq 'map(select(.state=="COMPLETED" and .conclusion=="FAILURE")) | length')
+            if [ "$CHECKS" -gt 0 ]; then
+               echo "❌ One or more checks failed"
+               gh pr checks "$PR_URL"
+               echo "result=failure" >> "$GITHUB_OUTPUT"
+               exit 1
+            fi
+
+            echo "Current state: $STATE - Waiting... ($i/30)"
+            sleep 10
+          done
+          
+          echo "❌ Timeout waiting for merge"
+          echo "result=timeout" >> "$GITHUB_OUTPUT"
+          exit 1
+
+      - name: Cleanup
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          echo "Run Result: ${{ steps.wait-merge.outcome }}"
+          
+          if [ -n "$PR_URL" ]; then
+             # Check PR status one last time
+             STATE=$(gh pr view "$PR_URL" --json state -q '.state')
+             
+             if [ "$STATE" != "MERGED" ]; then
+               echo "🧹 Closing failed/stalled PR: $PR_URL"
+               # Close PR and delete branch
+               gh pr close "$PR_URL" --delete-branch || echo "⚠️ Failed to close PR (might be already closed)"
+             else
+               echo "✨ PR was successfully merged. No cleanup needed."
+             fi
+             
+          elif [ -n "$BRANCH" ]; then
+             # If PR wasn't created but branch was, make sure to delete it
+             echo "🧹 Deleting via git push: $BRANCH"
+             git push origin --delete "$BRANCH" || echo "⚠️ Failed to delete branch (might not exist)"
+          fi
+
+  test-issue-creation:
+    if: inputs.test_scope == 'issue_creation' || inputs.test_scope == 'full'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create test issue
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          ISSUE_URL=$(gh issue create \
+            --title "[E2E Test] Issue creation validation" \
+            --body "Automated E2E test. Will be closed immediately." \
+            --repo "${{ github.repository }}")
+            
+          echo "✅ Created Issue: $ISSUE_URL"
+          
+          # Verify we can modify/close it
+          gh issue close "$ISSUE_URL" --repo "${{ github.repository }}"
+          echo "✅ Closed Issue successfully"

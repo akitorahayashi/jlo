@@ -26,7 +26,8 @@ jobs:
     if: |
       (startsWith(github.head_ref, 'jules-observer-') ||
        startsWith(github.head_ref, 'jules-decider-') ||
-       startsWith(github.head_ref, 'jules-planner-')) &&
+       startsWith(github.head_ref, 'jules-planner-') ||
+       startsWith(github.head_ref, 'jules-e2e-test-')) &&
       github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
