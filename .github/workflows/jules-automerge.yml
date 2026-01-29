@@ -17,31 +17,62 @@ name: Jules Auto-Merge
 
 on:
   workflow_call:
+    inputs:
+      head_ref:
+        required: true
+        type: string
+      is_draft:
+        required: true
+        type: boolean
+      pr_number:
+        required: true
+        type: number
     secrets:
       bot_token:
         required: true
 
 jobs:
   check-scope:
-    if: |
-      (startsWith(github.head_ref, 'jules-observer-') ||
-       startsWith(github.head_ref, 'jules-decider-') ||
-       startsWith(github.head_ref, 'jules-planner-')) &&
-      github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
     outputs:
       jules_only: ${{ steps.check.outputs.jules_only }}
     steps:
+      - name: Debug Inputs
+        run: |
+          echo "Head Ref: ${{ inputs.head_ref }}"
+          echo "Is Draft: ${{ inputs.is_draft }}"
+          echo "PR Number: ${{ inputs.pr_number }}"
+
       - name: Check changed files
         id: check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # 1. Check branch name pattern
+          HEAD_REF="${{ inputs.head_ref }}"
+          IS_DRAFT="${{ inputs.is_draft }}"
+          
+          if [[ ! "$HEAD_REF" =~ ^jules-observer- ]] && \
+             [[ ! "$HEAD_REF" =~ ^jules-decider- ]] && \
+             [[ ! "$HEAD_REF" =~ ^jules-planner- ]] && \
+             [[ ! "$HEAD_REF" =~ ^jules-e2e-test- ]]; then
+             echo "::warning::Branch '$HEAD_REF' does not match jules-* pattern. Skipping."
+             echo "jules_only=false" >> "$GITHUB_OUTPUT"
+             exit 0
+          fi
+          
+          if [ "$IS_DRAFT" == "true" ]; then
+             echo "::warning::PR is a draft. Skipping."
+             echo "jules_only=false" >> "$GITHUB_OUTPUT"
+             exit 0
+          fi
+
+          # 2. Check changed files
           # Use paginated API to handle PRs with >100 files
           changed=$(gh api --paginate \
-            "/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
+            "/repos/${{ github.repository }}/pulls/${{ inputs.pr_number }}/files" \
             --jq '.[].filename')
           
           # Check if any file is outside .jules/
@@ -68,6 +99,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.bot_token }}
         run: |
-          gh pr merge "${{ github.event.pull_request.number }}" \
+          gh pr merge "${{ inputs.pr_number }}" \
             --auto --squash --delete-branch \
             --repo "${{ github.repository }}"

@@ -35,6 +35,12 @@ pub enum AppError {
     InvalidComponentMetadata { component: String, reason: String },
     /// Malformed env.toml file.
     MalformedEnvToml(String),
+    /// Run config file missing (.jules/config.toml).
+    RunConfigMissing,
+    /// Run config file is malformed.
+    RunConfigInvalid(String),
+    /// Role not found in config for layer.
+    RoleNotInConfig { role: String, layer: String },
 }
 
 impl Display for AppError {
@@ -85,6 +91,15 @@ impl Display for AppError {
             AppError::MalformedEnvToml(location) => {
                 write!(f, "Malformed env.toml: {}", location)
             }
+            AppError::RunConfigMissing => {
+                write!(f, "Run config not found. Create .jules/config.toml first.")
+            }
+            AppError::RunConfigInvalid(reason) => {
+                write!(f, "Invalid run config: {}", reason)
+            }
+            AppError::RoleNotInConfig { role, layer } => {
+                write!(f, "Role '{}' not found in config for layer '{}'", role, layer)
+            }
         }
     }
 }
@@ -119,11 +134,14 @@ impl AppError {
             | AppError::RoleNotFound(_)
             | AppError::CircularDependency(_)
             | AppError::InvalidComponentMetadata { .. }
-            | AppError::MalformedEnvToml(_) => io::ErrorKind::InvalidInput,
+            | AppError::MalformedEnvToml(_)
+            | AppError::RunConfigInvalid(_)
+            | AppError::RoleNotInConfig { .. } => io::ErrorKind::InvalidInput,
             AppError::WorkspaceNotFound
             | AppError::SetupNotInitialized
             | AppError::SetupConfigMissing
-            | AppError::ComponentNotFound { .. } => io::ErrorKind::NotFound,
+            | AppError::ComponentNotFound { .. }
+            | AppError::RunConfigMissing => io::ErrorKind::NotFound,
             AppError::WorkspaceExists | AppError::RoleExists { .. } => io::ErrorKind::AlreadyExists,
             AppError::ClipboardError(_) => io::ErrorKind::Other,
         }

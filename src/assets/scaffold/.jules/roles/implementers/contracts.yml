@@ -2,21 +2,23 @@ layer: implementers
 branch_prefix: jules-implementer-
 
 constraints:
-  - Branch format: jules-implementer-<task_id>-<short_description>
+  - Branch format: jules-implementer-<issue_number>-<short_description>
   - Do NOT skip verification
-  - Do NOT modify files outside task scope
-  - Delete task after verification
+  - Do NOT modify files outside issue scope
   - Follow AGENTS.md conventions
 
 inputs:
-  - .jules/exchange/tasks/*.yml (single target task)
+  - GitHub Issue number (provided via workflow_dispatch)
+  - Issue content expanded into prompt
 
 outputs:
   - Modified source files, tests, documentation
+  - Pull request for human review
 
 workflow:
-  1. Read task, understand targets and verification plan
-  2. Implement code, tests, documentation
-  3. Run verification (or reliable alternative)
-  4. Iterate if verification fails
-  5. Delete task when complete
+  1. Read GitHub Issue content from prompt
+  2. Understand targets and acceptance criteria
+  3. Implement code, tests, documentation
+  4. Run verification (or reliable alternative)
+  5. Iterate if verification fails
+  6. Create pull request for human review

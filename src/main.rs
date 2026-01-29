@@ -23,7 +23,7 @@ enum Commands {
     /// Create a new role from a layer template
     #[clap(visible_alias = "tp")]
     Template {
-        /// Layer: observers, deciders, or planners
+        /// Layer: observers, deciders, planners, or implementers
         #[arg(short, long)]
         layer: Option<String>,
         /// Name for the new role
@@ -35,6 +35,12 @@ enum Commands {
     Setup {
         #[command(subcommand)]
         command: SetupCommands,
+    },
+    /// Execute Jules agents
+    #[clap(visible_alias = "r")]
+    Run {
+        #[command(subcommand)]
+        layer: RunLayer,
     },
 }
 
@@ -55,6 +61,58 @@ enum SetupCommands {
     },
 }
 
+#[derive(Subcommand)]
+enum RunLayer {
+    /// Run observer agents
+    Observers {
+        /// Specific roles to run (default: all from config)
+        #[arg(long)]
+        role: Option<Vec<String>>,
+        /// Show assembled prompts without executing
+        #[arg(long)]
+        dry_run: bool,
+        /// Override the starting branch
+        #[arg(long)]
+        branch: Option<String>,
+    },
+    /// Run decider agents
+    Deciders {
+        /// Specific roles to run (default: all from config)
+        #[arg(long)]
+        role: Option<Vec<String>>,
+        /// Show assembled prompts without executing
+        #[arg(long)]
+        dry_run: bool,
+        /// Override the starting branch
+        #[arg(long)]
+        branch: Option<String>,
+    },
+    /// Run planner agents
+    Planners {
+        /// Specific roles to run (default: all from config)
+        #[arg(long)]
+        role: Option<Vec<String>>,
+        /// Show assembled prompts without executing
+        #[arg(long)]
+        dry_run: bool,
+        /// Override the starting branch
+        #[arg(long)]
+        branch: Option<String>,
+    },
+    /// Run implementer agents
+    Implementers {
+        /// Specific roles to run (default: all from config)
+        #[arg(long)]
+        role: Option<Vec<String>>,
+        /// Show assembled prompts without executing
+        #[arg(long)]
+        dry_run: bool,
+        /// Override the starting branch
+        #[arg(long)]
+        branch: Option<String>,
+    },
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -67,12 +125,34 @@ fn main() {
             SetupCommands::Gen { path } => run_setup_gen(path),
             SetupCommands::List { detail } => run_setup_list(detail),
         },
+        Commands::Run { layer } => run_agents(layer),
     };
 
     if let Err(e) = result {
         eprintln!("Error: {}", e);
         std::process::exit(1);
     }
+}
+
+fn run_agents(layer: RunLayer) -> Result<(), AppError> {
+    use jlo::domain::Layer;
+
+    let (target_layer, roles, dry_run, branch) = match layer {
+        RunLayer::Observers { role, dry_run, branch } => (Layer::Observers, role, dry_run, branch),
+        RunLayer::Deciders { role, dry_run, branch } => (Layer::Deciders, role, dry_run, branch),
+        RunLayer::Planners { role, dry_run, branch } => (Layer::Planners, role, dry_run, branch),
+        RunLayer::Implementers { role, dry_run, branch } => {
+            (Layer::Implementers, role, dry_run, branch)
+        }
+    };
+
+    let result = jlo::run(target_layer, roles, dry_run, branch)?;
+
+    if !result.dry_run && !result.roles.is_empty() && !result.sessions.is_empty() {
+        println!("✅ Created {} Jules session(s)", result.sessions.len());
+    }
+
+    Ok(())
 }
 
 fn run_setup_gen(path: Option<PathBuf>) -> Result<(), AppError> {

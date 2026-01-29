@@ -4,7 +4,7 @@ schema_version: 1
 id: "YYYY-MM-DD_HHMMSS_<category>_<role>_<id>"
 created_at: "YYYY-MM-DD"
 author_role: "<role>" # e.g. taxonomy
-category: "<category>" # directory name under .jules/exchange/events/
+category: "<category>" # must be one of: bugs, docs, refacts, tests, updates
 confidence: "low|medium|high"
 
 # Content

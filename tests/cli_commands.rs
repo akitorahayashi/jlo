@@ -22,7 +22,6 @@ fn init_creates_jules_directory() {
     ctx.assert_exchange_structure_exists();
     ctx.assert_events_structure_exists();
     ctx.assert_issues_directory_exists();
-    ctx.assert_tasks_directory_exists();
     ctx.assert_contracts_exist();
 }
 

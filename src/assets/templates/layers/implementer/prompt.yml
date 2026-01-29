@@ -1,12 +1,11 @@
 role: ROLE_NAME
-layer: observers
+layer: implementers
 responsibility: "# TODO: Describe your specific responsibility"
 
 contracts:
-  - .jules/roles/observers/contracts.yml
-  - .jules/roles/observers/ROLE_NAME/role.yml
+  - .jules/JULES.md
+  - .jules/roles/implementers/contracts.yml
 
 instructions:
   - Read every file in contracts in order before doing any work.
   - Follow contracts.yml exactly (constraints, workflow, inputs/outputs).
-  - Use role.yml focus and learned_exclusions to scope analysis.

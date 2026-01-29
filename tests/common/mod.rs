@@ -133,19 +133,12 @@ impl TestContext {
         assert!(issues_path.exists(), "exchange/issues directory should exist");
     }
 
-    /// Assert that the tasks directory exists (flat layout).
-    pub fn assert_tasks_directory_exists(&self) {
-        let tasks_path = self.jules_path().join("exchange/tasks");
-        assert!(tasks_path.exists(), "exchange/tasks directory should exist");
-    }
-
     /// Assert that exchange directory structure exists.
     pub fn assert_exchange_structure_exists(&self) {
         let exchange_path = self.jules_path().join("exchange");
         assert!(exchange_path.exists(), "exchange directory should exist");
         assert!(exchange_path.join("events").exists(), "exchange/events should exist");
         assert!(exchange_path.join("issues").exists(), "exchange/issues should exist");
-        assert!(exchange_path.join("tasks").exists(), "exchange/tasks should exist");
     }
 
     /// Assert that contracts.yml exists in each layer directory.

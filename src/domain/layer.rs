@@ -3,17 +3,20 @@ use std::fmt;
 /// The architectural layers for agent roles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Layer {
-    /// Observers: Read source, update notes, emit events (taxonomy, data_arch, qa)
+    /// Observers: Read source, update notes, emit events (taxonomy, data_arch, consistency, qa)
     Observers,
-    /// Deciders: Read events/issues, emit issues, delete events (triage)
+    /// Deciders: Read events, emit issues, delete events (triage)
     Deciders,
-    /// Planners: Read issues, emit tasks, delete issues (specifier)
+    /// Planners: Read issues requiring deep analysis, expand them in-place (specifier)
     Planners,
+    /// Implementers: Execute approved tasks, create PRs with code changes (executor)
+    Implementers,
 }
 
 impl Layer {
     /// All available layers in order.
-    pub const ALL: [Layer; 3] = [Layer::Observers, Layer::Deciders, Layer::Planners];
+    pub const ALL: [Layer; 4] =
+        [Layer::Observers, Layer::Deciders, Layer::Planners, Layer::Implementers];
 
     /// Directory name for this layer.
     pub fn dir_name(&self) -> &'static str {
@@ -21,6 +24,7 @@ impl Layer {
             Layer::Observers => "observers",
             Layer::Deciders => "deciders",
             Layer::Planners => "planners",
+            Layer::Implementers => "implementers",
         }
     }
 
@@ -30,6 +34,7 @@ impl Layer {
             Layer::Observers => "Observer",
             Layer::Deciders => "Decider",
             Layer::Planners => "Planner",
+            Layer::Implementers => "Implementer",
         }
     }
 
@@ -39,6 +44,7 @@ impl Layer {
             "observers" | "observer" => Some(Layer::Observers),
             "deciders" | "decider" => Some(Layer::Deciders),
             "planners" | "planner" => Some(Layer::Planners),
+            "implementers" | "implementer" => Some(Layer::Implementers),
             _ => None,
         }
     }
@@ -47,8 +53,9 @@ impl Layer {
     pub fn description(&self) -> &'static str {
         match self {
             Layer::Observers => "Read source & notes, emit events. Never write issues.",
-            Layer::Deciders => "Read events & issues, emit issues. Delete processed events.",
-            Layer::Planners => "Read issues, emit tasks. Delete processed issues.",
+            Layer::Deciders => "Read events, emit issues. Delete processed events.",
+            Layer::Planners => "Read issues requiring deep analysis, expand them in-place.",
+            Layer::Implementers => "Execute approved tasks, create PRs with code changes.",
         }
     }
 }
