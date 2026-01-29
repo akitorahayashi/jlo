@@ -1,0 +1,50 @@
+schema_version: 2
+
+# Metadata
+fingerprint: "decouple_filesystem_state"
+id: "decouple_filesystem_state"
+category: "refacts"
+priority: "medium"
+status: "open"
+requires_deep_analysis: false
+deep_analysis_reason: ""
+sources:
+  - "2025-05-22_120001_refacts_qa_002"
+  - "2025-05-22_120000_tests_qa_001"
+  - "2026-01-28_120000_tests_qa_obs01"
+  - "2026-01-28_152238_refacts_qa_genfs"
+
+# Content
+title: "Decouple Services from Global Process State"
+summary: "Refactor FilesystemWorkspaceStore and Generator to avoid direct dependency on std::env::current_dir() and direct file I/O for better testability."
+
+affected_areas:
+  - "src/services/workspace_filesystem.rs"
+  - "src/services/generator.rs"
+  - "tests/common/mod.rs"
+
+constraints:
+  - "Must maintain backward compatibility with CLI behavior"
+
+risks:
+  - "Refactoring core services might introduce regressions in path handling"
+
+problem: |
+  `FilesystemWorkspaceStore::current()` relies directly on `std::env::current_dir()`.
+  `Generator::merge_env_toml` performs direct file I/O inside the method.
+  This forces tests to modify the global process state (CWD, HOME) to verify behavior, violating the principle of State Isolation.
+  This leads to serial execution of tests (`#[serial]`) and makes the components hard to reuse or test in parallel.
+
+impact: |
+  Tests are slower and more brittle due to global state mutation.
+  Components are tightly coupled to the filesystem and process environment.
+
+desired_outcome: |
+  `FilesystemWorkspaceStore` should act on a provided path, not implicitly on CWD (or `current()` should be a thin wrapper).
+  `Generator` should operate on strings/streams rather than paths where possible, or accept a reader/writer.
+  Tests should be able to run in parallel without `#[serial]`.
+
+acceptance_criteria:
+  - "`FilesystemWorkspaceStore` logic is testable without changing CWD."
+  - "`Generator::merge_env_toml` (or equivalent) logic is testable without file I/O."
+  - "Integration tests can be run without `#[serial]` (or at least `TestContext` is safer)."
