@@ -1,0 +1,50 @@
+schema_version: 2
+
+# Metadata
+fingerprint: "enforce_service_boundaries"
+id: "enforce_service_boundaries"
+category: "refacts"
+priority: "medium"
+status: "open"
+requires_deep_analysis: true
+deep_analysis_reason: "Determine new directory structure for Infrastructure Adapters vs Domain Services."
+sources:
+  - "2026-01-29_140000_refacts_data_arch_da01"
+  - "2026-01-29_193510_refacts_taxonomy_0003"
+
+# Content
+title: "Enforce Service Layer Boundaries"
+summary: "Separate Domain Services from Infrastructure Adapters to enforce Boundary Sovereignty and improve testability."
+
+affected_areas:
+  - "src/services/"
+  - "src/services/generator.rs"
+  - "src/services/resolver.rs"
+  - "src/services/catalog.rs"
+  - "src/services/clipboard_arboard.rs"
+  - "src/services/jules_api.rs"
+  - "src/services/workspace_filesystem.rs"
+
+constraints: []
+
+risks:
+  - "Refactoring file structure requires updating all import paths."
+
+problem: |
+  The `src/services/` directory mixes pure Domain Services (business logic like `Generator`, `Resolver`) with Infrastructure Adapters (technology-specific implementations like `EmbeddedCatalog`, `FilesystemWorkspaceStore`, `HttpJulesClient`). This violates the Boundary Sovereignty principle and makes the architecture harder to understand and test in isolation.
+
+impact: |
+  Domain logic is not clearly separated from infrastructure.
+  Increases coupling between layers.
+  Makes it harder to verify that domain logic does not depend on infrastructure details.
+
+desired_outcome: |
+  A clear separation of concerns.
+  Domain Services should remain in a domain-centric location (e.g. `src/domain/services` or keep in `src/services` if defined as such).
+  Infrastructure Adapters should be moved to a dedicated location (e.g. `src/adapters/`).
+  The exact directory structure should be determined by deep analysis.
+
+acceptance_criteria:
+  - "Infrastructure Adapters are moved out of `src/services/` (or `src/services/` is reorganized)."
+  - "Domain Services are clearly distinguished."
+  - "No circular dependencies introduced."

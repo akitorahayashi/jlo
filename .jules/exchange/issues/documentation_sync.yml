@@ -15,14 +15,16 @@ sources:
   - "2026-01-28_192219_consistency_consistency_co02"
   - "2026-01-29_120001_docs_consistency_invoke"
   - "2026-01-29_120000_docs_consistency_run"
+  - "2026-01-29_123000_bugs_consistency_prompt"
 
 # Content
 title: "Synchronize Documentation with Implementation"
-summary: "Update AGENTS.md and README.md to reflect the current state of roles, services, and workflows."
+summary: "Update AGENTS.md, README.md and Templates to reflect the current state of roles, services, workflows, and prompt hierarchy."
 
 affected_areas:
   - "AGENTS.md"
   - "README.md"
+  - "src/assets/templates/layers/observer/prompt.yml"
 
 constraints: []
 
@@ -30,18 +32,20 @@ risks:
   - "Documentation drift if not maintained"
 
 problem: |
-  Several discrepancies exist between the documentation and the codebase:
+  Several discrepancies exist between the documentation, templates, and the codebase:
   1. `AGENTS.md` omits the `consistency` observer role.
   2. `AGENTS.md` lists an incomplete set of services in `src/services/`.
   3. `README.md` omits several GitHub Actions workflows and local actions present in `.github/`.
   4. `AGENTS.md` incorrectly states that `jlo` performs `ROLE_NAME` string replacement, while the code preserves placeholders.
   5. `AGENTS.md` lists `jules-invoke` as a component, but the action does not exist in `.github/actions/`.
   6. `AGENTS.md` incorrectly states that agent execution is orchestrated by GitHub Actions only and omits the `jlo run` command.
+  7. Prompt Hierarchy Mismatch: `AGENTS.md` describes a nested prompt hierarchy (contracts -> JULES), but `observer/prompt.yml` has a flat list and currently omits `.jules/JULES.md`.
 
 impact: |
   New developers or agents (like me) relying on documentation may be confused or misled about the system's capabilities and architecture.
   The `consistency` role is invisible in docs.
   Mechanism descriptions (replacement) are factually wrong.
+  Observers do not receive global constraints due to missing `JULES.md` reference.
 
 desired_outcome: |
   Documentation should accurately reflect the codebase.
@@ -49,6 +53,7 @@ desired_outcome: |
   `AGENTS.md` should list all services.
   `AGENTS.md` should correctly describe the templating mechanism (preservation of placeholders).
   `README.md` should list relevant workflows and actions.
+  `src/assets/templates/layers/observer/prompt.yml` should include `.jules/JULES.md`.
 
 acceptance_criteria:
   - "`AGENTS.md` lists `consistency` role."
@@ -57,3 +62,4 @@ acceptance_criteria:
   - "`README.md` lists all key workflows."
   - "`AGENTS.md` Architecture table does not reference non-existent `jules-invoke`."
   - "`AGENTS.md` documents `jlo run` command and its role in execution."
+  - "`src/assets/templates/layers/observer/prompt.yml` includes `.jules/JULES.md` in contracts list."

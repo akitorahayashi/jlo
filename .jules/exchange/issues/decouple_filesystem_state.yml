@@ -13,26 +13,31 @@ sources:
   - "2025-05-22_120000_tests_qa_001"
   - "2026-01-28_120000_tests_qa_obs01"
   - "2026-01-28_152238_refacts_qa_genfs"
+  - "2026-01-29_140001_refacts_data_arch_da01"
 
 # Content
 title: "Decouple Services from Global Process State"
-summary: "Refactor FilesystemWorkspaceStore and Generator to avoid direct dependency on std::env::current_dir() and direct file I/O for better testability."
+summary: "Refactor core services (FilesystemWorkspaceStore, Generator, HttpJulesClient) to avoid direct dependencies on global state (CWD, env vars) for better testability."
 
 affected_areas:
   - "src/services/workspace_filesystem.rs"
   - "src/services/generator.rs"
+  - "src/services/jules_api.rs"
   - "tests/common/mod.rs"
 
 constraints:
   - "Must maintain backward compatibility with CLI behavior"
 
 risks:
-  - "Refactoring core services might introduce regressions in path handling"
+  - "Refactoring core services might introduce regressions in path/env handling"
 
 problem: |
-  `FilesystemWorkspaceStore::current()` relies directly on `std::env::current_dir()`.
-  `Generator::merge_env_toml` performs direct file I/O inside the method.
-  This forces tests to modify the global process state (CWD, HOME) to verify behavior, violating the principle of State Isolation.
+  Several core services are tightly coupled to global process state:
+  1. `FilesystemWorkspaceStore::current()` relies directly on `std::env::current_dir()`.
+  2. `Generator::merge_env_toml` performs direct file I/O inside the method.
+  3. `HttpJulesClient` methods `from_env` and `from_env_with_config` directly access `std::env::var`.
+
+  This forces tests to modify the global process state (CWD, HOME, ENV) to verify behavior, violating the principle of State Isolation.
   This leads to serial execution of tests (`#[serial]`) and makes the components hard to reuse or test in parallel.
 
 impact: |
@@ -40,11 +45,13 @@ impact: |
   Components are tightly coupled to the filesystem and process environment.
 
 desired_outcome: |
-  `FilesystemWorkspaceStore` should act on a provided path, not implicitly on CWD (or `current()` should be a thin wrapper).
-  `Generator` should operate on strings/streams rather than paths where possible, or accept a reader/writer.
+  `FilesystemWorkspaceStore` should act on a provided path, not implicitly on CWD.
+  `Generator` should operate on strings/streams rather than paths where possible.
+  `HttpJulesClient` should accept configuration/keys via arguments, not `std::env::var` (or environment loading should be separated).
   Tests should be able to run in parallel without `#[serial]`.
 
 acceptance_criteria:
   - "`FilesystemWorkspaceStore` logic is testable without changing CWD."
-  - "`Generator::merge_env_toml` (or equivalent) logic is testable without file I/O."
+  - "`Generator::merge_env_toml` logic is testable without file I/O."
+  - "`HttpJulesClient` does not directly depend on `std::env::var`."
   - "Integration tests can be run without `#[serial]` (or at least `TestContext` is safer)."
