@@ -1,0 +1,42 @@
+schema_version: 2
+
+# Metadata
+id: "2026-01-29_issue_setup_domain_refactor"
+category: "refacts"
+priority: "medium"
+status: "open"
+requires_deep_analysis: false
+sources:
+  - "2026-01-28_152056_refacts_data_arch_da01"
+  - "2026-01-29_100000_refacts_data_arch_02"
+  - "2026-01-28_152420_refacts_data_arch_0001"
+  - "2026-01-28_152238_tests_qa_domset"
+
+# Content
+title: "Refactor and Verify Setup Domain Model"
+summary: "Decouple domain models from serialization DTOs in setup.rs, enforce typing in TOML parsing, and add missing unit tests."
+
+affected_areas:
+  - "src/domain/setup.rs"
+  - "src/services/generator.rs"
+
+constraints: []
+risks: []
+
+problem: |
+  1. `EnvSpec` and `Component` mix domain logic with serialization attributes (`serde`), violating Boundary Sovereignty.
+  2. `Component` and `ComponentMeta` have redundant field definitions, violating Normalized Independence.
+  3. `Generator::parse_env_toml` uses weak typing, ignoring structure mismatches.
+  4. `src/domain/setup.rs` lacks unit tests.
+
+impact: |
+  Code is fragile to serialization changes, prone to data divergence between DTO and model, and risks silent data loss during configuration parsing. Lack of tests increases regression risk.
+
+desired_outcome: |
+  Clear separation between DTOs (infra) and Domain Models. Strict validation during TOML parsing. Comprehensive unit tests for domain logic.
+
+acceptance_criteria:
+  - "`EnvSpec` and `Component` are pure domain objects without `serde` attributes."
+  - "`ComponentMeta` (DTO) handles serialization and maps to `Component`."
+  - "TOML parsing validates structure and types."
+  - "Unit tests cover `Component::from_meta` and other domain logic."
