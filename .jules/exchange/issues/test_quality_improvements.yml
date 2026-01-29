@@ -11,6 +11,7 @@ deep_analysis_reason: ""
 sources:
   - "2025-05-22_120002_tests_qa_003"
   - "2026-01-28_152238_tests_qa_domset"
+  - "2026-01-30_100000_tests_qa_api_client"
 
 # Content
 title: "Improve Test Quality and Coverage"
@@ -19,6 +20,7 @@ summary: "Refactor integration tests to follow Diagnostic Specificity and add mi
 affected_areas:
   - "tests/cli_commands.rs"
   - "src/domain/setup.rs"
+  - "src/services/jules_api.rs"
 
 constraints: []
 
@@ -27,6 +29,7 @@ risks: []
 problem: |
   1. Integration tests like `init_creates_jules_directory` assert too many logical conditions in a single test case (Diagnostic Specificity violation), making failures hard to diagnose.
   2. The `src/domain/setup.rs` module lacks unit tests, despite containing logic like `Component::from_meta`.
+  3. `HttpJulesClient` in `src/services/jules_api.rs` lacks unit tests for retry logic, error classification, and session creation.
 
 impact: |
   Test failures are harder to debug.
@@ -39,3 +42,4 @@ desired_outcome: |
 acceptance_criteria:
   - "`init_creates_jules_directory` and similar tests are refactored for specificity."
   - "`src/domain/setup.rs` has comprehensive unit tests."
+  - "`src/services/jules_api.rs` has unit tests for retry logic and error handling."

@@ -13,6 +13,8 @@ sources:
   - "2026-01-28_152238_docs_consistency_serv"
   - "2026-01-28_153000_consistency_consistency_c0n1"
   - "2026-01-28_192219_consistency_consistency_co02"
+  - "2026-01-29_120001_docs_consistency_invoke"
+  - "2026-01-29_120000_docs_consistency_run"
 
 # Content
 title: "Synchronize Documentation with Implementation"
@@ -33,6 +35,8 @@ problem: |
   2. `AGENTS.md` lists an incomplete set of services in `src/services/`.
   3. `README.md` omits several GitHub Actions workflows and local actions present in `.github/`.
   4. `AGENTS.md` incorrectly states that `jlo` performs `ROLE_NAME` string replacement, while the code preserves placeholders.
+  5. `AGENTS.md` lists `jules-invoke` as a component, but the action does not exist in `.github/actions/`.
+  6. `AGENTS.md` incorrectly states that agent execution is orchestrated by GitHub Actions only and omits the `jlo run` command.
 
 impact: |
   New developers or agents (like me) relying on documentation may be confused or misled about the system's capabilities and architecture.
@@ -51,3 +55,5 @@ acceptance_criteria:
   - "`AGENTS.md` lists `clipboard_arboard`, `role_template_service`, `workspace_filesystem` in services."
   - "`AGENTS.md` correctly describes templating behavior."
   - "`README.md` lists all key workflows."
+  - "`AGENTS.md` Architecture table does not reference non-existent `jules-invoke`."
+  - "`AGENTS.md` documents `jlo run` command and its role in execution."
