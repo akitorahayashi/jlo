@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_100000_tests_qa_api_client"
+created_at: "2026-01-30"
+author_role: "qa"
+category: "tests"
+confidence: "high"
+
+# Content
+title: "Missing Unit Tests for Jules API Client"
+statement: |
+  The `HttpJulesClient` in `src/services/jules_api.rs` implements critical logic for retry strategies (exponential backoff), error classification (retryable vs terminal), and JSON serialization, but lacks unit tests.
+
+evidence:
+  - path: "src/services/jules_api.rs"
+    loc: "HttpJulesClient"
+    note: "Contains complex logic for retry and error handling but has no associated unit tests beyond a simple enum serialization check."
+  - path: "src/services/jules_api.rs"
+    loc: "create_session"
+    note: "Critical path for agent operation (LLM session creation) is untested."
+
+tags:
+  - "coverage"
+  - "risk"
+  - "api"
