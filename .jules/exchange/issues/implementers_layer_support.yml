@@ -1,0 +1,50 @@
+schema_version: 2
+
+# Metadata
+fingerprint: "implementers_layer_support"
+id: "implementers_layer_support"
+category: "bugs"
+priority: "high"
+status: "open"
+requires_deep_analysis: false
+deep_analysis_reason: ""
+sources:
+  - "2026-01-28_152238_bugs_consistency_layr"
+  - "2026-01-28_192219_consistency_consistency_co01"
+  - "2026-01-29_100000_refacts_data_arch_01"
+
+# Content
+title: "Add Implementers Layer to Domain and Scaffolding"
+summary: "The Implementers layer is documented but missing from the Layer enum and scaffolding logic."
+
+affected_areas:
+  - "src/domain/layer.rs"
+  - "src/services/workspace_filesystem.rs"
+  - "src/assets/templates/"
+
+constraints:
+  - "Must preserve existing enum values"
+
+risks:
+  - "Changes to Layer enum might affect exhaustiveness checks in match expressions"
+
+problem: |
+  The `Implementers` layer is a core part of the documented architecture (AGENTS.md, README.md) and CI workflows, but it is missing from the `Layer` enum in `src/domain/layer.rs`.
+  Consequently, `Layer::ALL` and `from_dir_name` do not include it.
+  This prevents the CLI from managing implementer roles or scaffolding them correctly, as seen in `FilesystemWorkspaceStore`.
+  This violates Isomorphic Representation as the code does not reflect the documented system structure.
+
+impact: |
+  Users cannot use the CLI to interact with the Implementers layer (e.g., `jlo run implementers` might fail or behave unexpectedly if it relies on `Layer` enum).
+  It creates confusion as the directory structure exists but the tool doesn't recognize it.
+
+desired_outcome: |
+  The `Layer` enum should include `Implementers`.
+  `Layer::ALL` should include `Implementers`.
+  `FilesystemWorkspaceStore` should handle `Implementers` correctly (if any special handling is needed, though `Layer::ALL` might suffice).
+  The CLI should fully support the Implementers layer as documented.
+
+acceptance_criteria:
+  - "`Layer::Implementers` exists."
+  - "`Layer::from_dir_name(\"implementers\")` returns `Some(Layer::Implementers)`."
+  - "Filesystem discovery finds roles in `.jules/roles/implementers/`."

@@ -1,0 +1,50 @@
+schema_version: 2
+
+# Metadata
+fingerprint: "refactor_setup_domain"
+id: "refactor_setup_domain"
+category: "refacts"
+priority: "medium"
+status: "open"
+requires_deep_analysis: false
+deep_analysis_reason: ""
+sources:
+  - "2026-01-28_152056_refacts_data_arch_da01"
+  - "2026-01-28_152420_refacts_data_arch_0001"
+  - "2026-01-29_100000_refacts_data_arch_02"
+
+# Content
+title: "Refactor Setup Domain for Boundary Sovereignty"
+summary: "Decouple EnvSpec domain model from serialization, introduce proper DTOs, and improve TOML parsing validation."
+
+affected_areas:
+  - "src/domain/setup.rs"
+  - "src/services/generator.rs"
+  - "src/services/catalog.rs"
+
+constraints:
+  - "Must maintain TOML format compatibility"
+
+risks:
+  - "Parsing changes might break existing configs if not careful"
+
+problem: |
+  1. `EnvSpec` in `src/domain/setup.rs` carries `serde` attributes, mixing domain logic with infrastructure (Boundary Sovereignty).
+  2. `Component` and `ComponentMeta` duplicate field definitions, violating Normalized Independence (SSOT).
+  3. `Generator::parse_env_toml` uses manual, untyped parsing of TOML tables, which is error-prone and lacks validation (Isomorphic Representation).
+
+impact: |
+  Domain models are polluted with serialization details.
+  Redundant code increases maintenance burden.
+  Weak parsing can lead to silent data corruption or loss in `env.toml`.
+
+desired_outcome: |
+  `EnvSpec` should be a pure domain object.
+  Serialization logic should be moved to DTOs (e.g., `EnvSpecDto`).
+  `Component` and `ComponentMeta` should share a common definition or be better structured to avoid duplication.
+  `Generator` should use strongly-typed structures for parsing `env.toml`.
+
+acceptance_criteria:
+  - "`EnvSpec` has no `serde` dependency (or is cleanly separated)."
+  - "`Component` and `ComponentMeta` do not duplicate field definitions unnecessarily."
+  - "`env.toml` parsing uses a structured Serde model with validation."
