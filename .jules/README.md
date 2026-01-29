@@ -1,13 +1,13 @@
 # .jules/
 
 The `.jules/` directory is a structured workspace for scheduled agents and human execution.
-It captures **observations as events** and **actionable work as issues/tasks**.
+It captures **observations as events** and **actionable work as issues**.
 
 This file is human-oriented. Agents must read `.jules/JULES.md` for the formal contract.
 
 ## Scope (What this README defines)
 
-- `.jules/` defines **artifacts and contracts** (events/issues/tasks, role state, schemas).
+- `.jules/` defines **artifacts and contracts** (events/issues, role state, schemas).
 - **Execution + git + PR operations are out of scope here.**
   When you are reading this inside the VM, you already have the execution environment;
   follow the role contract and produce the required artifacts/changes.
@@ -27,16 +27,16 @@ This file is human-oriented. Agents must read `.jules/JULES.md` for the formal c
 ## Role Flow
 
 ```
-Observer -> Decider -> Planner -> Implementer
-(events)    (issues)   (tasks)    (code changes)
+Observer -> Decider -> [Planner] -> GitHub Issue -> Implementer
+(events)    (issues)   (expand)     (promote)       (code changes)
 ```
 
 | Role Type | Role(s) | Transformation |
 |-----------|---------|----------------|
 | Observer | directories under `.jules/roles/observers/` | Source -> Events (domain-specialized observations) |
 | Decider | directories under `.jules/roles/deciders/` | Events -> Issues (validation + consolidation) |
-| Planner | directories under `.jules/roles/planners/` | Issues -> Tasks (decomposition into steps) |
-| Implementer | directories under `.jules/roles/implementers/` | Tasks -> Code changes |
+| Planner | directories under `.jules/roles/planners/` | Issues -> Expanded Issues (deep analysis, optional) |
+| Implementer | directories under `.jules/roles/implementers/` | GitHub Issues -> Code changes |
 
 **Execution**: All roles are invoked by GitHub Actions via `jules-invoke`.
 
@@ -81,7 +81,6 @@ Implementers modify source code and require human review.
 |   |
 |   +-- planners/
 |   |   +-- contracts.yml    # Shared planner contract
-|   |   +-- task.yml         # Task template
 |   |   +-- <role>/
 |   |       +-- prompt.yml
 |   |
@@ -95,8 +94,6 @@ Implementers modify source code and require human review.
     |   +-- <category>/
     |       +-- *.yml
     +-- issues/         # [Transit] Consolidated problems
-    |   +-- *.yml
-    +-- tasks/          # [Outbox] Executable tasks
         +-- *.yml
 ```
 
@@ -143,21 +140,32 @@ Triage agent:
 
 **Decider answers**: "Is this real? Should these events merge into one issue?"
 
-### 3. Planner Agent (On-Demand)
+### 3. Issue Promotion (Automatic)
 
-Specifier agent:
+After decider output:
+1. Issues with `requires_deep_analysis: false` are promoted to GitHub Issues
+2. Each issue file is rendered using the issue template
+3. Existing GitHub Issues are updated; new ones are created
+4. The source file path is used as the unique identifier
+
+### 4. Planner Agent (On-Demand)
+
+Specifier agent (runs only for `requires_deep_analysis: true`):
 1. Reads contracts.yml (layer behavior)
 2. Reads target issue from exchange/issues/
-3. Analyzes impact
-4. Decomposes into executable tasks in exchange/tasks/
-5. Deletes processed issue
+3. Analyzes full system impact and dependency tree
+4. Expands issue with detailed analysis (affected_areas, constraints, risks)
+5. Sets requires_deep_analysis to false
+6. Overwrites the issue file
 
-**Planner answers**: "What steps solve this issue?"
+**Planner answers**: "What is the full scope of this issue?"
 
-### 4. Implementation (Via GitHub Issue)
+After planner output, the issue is promoted to a GitHub Issue.
 
-Implementation is invoked by creating a GitHub Issue with `jules` label.
-The issue contains tasks from exchange/tasks/.
+### 5. Implementation (Via GitHub Issue)
+
+Implementation is invoked manually via `workflow_dispatch` with a GitHub Issue number.
+The implementer reads the issue content and produces code changes.
 
 ## Feedback Loop
 
@@ -187,5 +195,9 @@ All agents must create branches using this format:
 jules-observer-<id>
 jules-decider-<id>
 jules-planner-<id>
-jules-implementer-<task_id>-<short_description>
+jules-implementer-<issue_number>-<short_description>
 ```
+
+## Testing and Validation
+
+The mock pipeline workflow generates synthetic exchange artifacts and exercises the observer → decider → planner transitions without calling external APIs.

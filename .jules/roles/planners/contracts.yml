@@ -3,20 +3,20 @@ branch_prefix: jules-planner-
 
 constraints:
   - Branch ID: 4 alphanumeric characters (e.g. 'e5f6')
-  - Each task must specify concrete file paths
-  - Each task must include verification command
-  - Delete issue after task creation
+  - Only process issues where requires_deep_analysis is true
+  - Expand analysis in-place (overwrite the issue file)
+  - Set requires_deep_analysis to false after expansion
+  - Do NOT create task files
 
 inputs:
-  - .jules/exchange/issues/*.yml
+  - .jules/exchange/issues/*.yml (where requires_deep_analysis: true)
 
 outputs:
-  - .jules/exchange/tasks/*.yml
+  - .jules/exchange/issues/*.yml (expanded, requires_deep_analysis: false)
 
 workflow:
-  1. Read target issue, check 'requires_deep_analysis'
-  2. If true: Analyze full system impact and dependency tree
-  3. If false: Limit analysis to the specified target files
-  4. Decompose into sequential, verifiable tasks
-  5. Create tasks: cp task.yml .jules/exchange/tasks/<id>.yml
-  6. Delete processed issue
+  1. Read target issue, verify requires_deep_analysis is true
+  2. Analyze full system impact and dependency tree
+  3. Expand issue with detailed analysis (affected_areas, constraints, risks, specifics)
+  4. Set requires_deep_analysis to false
+  5. Overwrite the issue file with expanded content

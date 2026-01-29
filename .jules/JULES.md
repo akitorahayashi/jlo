@@ -23,17 +23,21 @@ conflict is reported.
 
 ## Workspace Data Flow
 
-The pipeline is file-based:
+The pipeline is file-based and terminates at issue promotion:
 
-`events -> issues -> tasks -> code changes`
+`events -> issues -> GitHub Issues`
 
 Exchange directories:
 
 - Events (Observer output, Decider input): `.jules/exchange/events/<category>/*.yml`
-- Issues (Decider output, Planner input): `.jules/exchange/issues/*.yml`
-- Tasks (Planner output, Implementer input): `.jules/exchange/tasks/*.yml`
+- Issues (Decider output): `.jules/exchange/issues/*.yml`
 
 Categories are the directory names under `.jules/exchange/events/`.
+
+After decider output:
+- Issues with `requires_deep_analysis: false` are promoted to GitHub Issues.
+- Issues with `requires_deep_analysis: true` trigger deep analysis by planners.
+- Implementers are invoked manually via `workflow_dispatch` with a GitHub Issue number.
 
 ## File Rules
 
@@ -42,7 +46,6 @@ Categories are the directory names under `.jules/exchange/events/`.
   - Events: `.jules/roles/observers/event.yml`
   - Issues: `.jules/roles/deciders/issue.yml`
   - Feedback: `.jules/roles/deciders/feedback.yml`
-  - Tasks: `.jules/roles/planners/task.yml`
 
 ## Git And Branch Rules
 
@@ -53,16 +56,16 @@ Branch names:
 - Observers: `jules-observer-<id>`
 - Deciders: `jules-decider-<id>`
 - Planners: `jules-planner-<id>`
-- Implementers: `jules-implementer-<task_id>-<short_description>`
+- Implementers: `jules-implementer-<issue_number>-<short_description>`
 
 `<id>` is 4 alphanumeric characters unless the layer contract specifies otherwise.
 
 ## Safety Boundaries
 
 - Observers, Deciders, and Planners modify only `.jules/`.
-- Implementers modify only what the task specifies, run the verification command, then delete the
-  processed task file.
+- Implementers modify only what the GitHub Issue specifies, run the verification command, then
+  create a pull request for human review.
 
 ## Forbidden By Default
 
-- `.github/workflows/` is not modified unless explicitly required by the issue/task.
+- `.github/workflows/` is not modified unless explicitly required by the issue.
