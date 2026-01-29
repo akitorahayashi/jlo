@@ -78,6 +78,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.bot_token }}
         run: |
+          # Try auto-merge first (requires branch protection)
+          # If that fails, fall back to immediate merge
           gh pr merge "${{ inputs.pr_number }}" \
             --auto --squash --delete-branch \
+            --repo "${{ github.repository }}" || \
+          gh pr merge "${{ inputs.pr_number }}" \
+            --squash --delete-branch \
             --repo "${{ github.repository }}"
