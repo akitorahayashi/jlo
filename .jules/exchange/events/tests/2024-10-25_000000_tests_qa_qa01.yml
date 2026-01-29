@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "2024-10-25_000000_tests_qa_qa01"
+created_at: "2024-10-25"
+author_role: "qa"
+category: "tests"
+confidence: "high"
+
+# Content
+title: "Integration tests violate State Isolation principle"
+statement: |
+  TestContext modifies global process state (CWD, HOME), forcing serial execution of tests and preventing parallel test runs.
+
+evidence:
+  - path: "tests/common/mod.rs"
+    loc: "26"
+    note: "TestContext::new modifies global HOME environment variable."
+  - path: "tests/common/mod.rs"
+    loc: "107"
+    note: "TestContext::with_work_dir modifies global current directory."
+  - path: "tests/commands_api.rs"
+    loc: "5"
+    note: "Tests require #[serial] attribute due to global state modification."
+
+tags:
+  - "testing"
+  - "isolation"
+  - "technical-debt"

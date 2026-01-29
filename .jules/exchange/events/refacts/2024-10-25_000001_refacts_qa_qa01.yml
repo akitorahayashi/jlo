@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "2024-10-25_000001_refacts_qa_qa01"
+created_at: "2024-10-25"
+author_role: "qa"
+category: "refacts"
+confidence: "high"
+
+# Content
+title: "Core library functions coupled to global environment state"
+statement: |
+  jlo::init and jlo::template hardcode the dependency on FilesystemWorkspaceStore::current(), which directly accesses std::env::current_dir(). This forces tests to mutate the global current working directory to test these functions.
+
+evidence:
+  - path: "src/lib.rs"
+    loc: "24"
+    note: "jlo::init calls FilesystemWorkspaceStore::current()"
+  - path: "src/lib.rs"
+    loc: "37"
+    note: "jlo::template calls FilesystemWorkspaceStore::current()"
+  - path: "src/services/workspace_filesystem.rs"
+    loc: "19"
+    note: "FilesystemWorkspaceStore::current() calls std::env::current_dir()"
+
+tags:
+  - "architecture"
+  - "coupling"
+  - "testing"
