@@ -1,3 +1,4 @@
 /target
 .tmp/*
 .claude/settings.local.json
+/reference
