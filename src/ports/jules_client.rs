@@ -54,4 +54,3 @@ pub trait JulesClient {
     /// Create a new Jules session.
     fn create_session(&self, request: SessionRequest) -> Result<SessionResponse, AppError>;
 }
-

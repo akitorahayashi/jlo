@@ -33,7 +33,6 @@ on:
         description: 'Show prompts without executing'
         required: false
         type: boolean
-        type: boolean
         default: false
 
 permissions:

@@ -138,15 +138,9 @@ fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     use jlo::domain::Layer;
 
     let (target_layer, roles, dry_run, branch) = match layer {
-        RunLayer::Observers { role, dry_run, branch } => {
-            (Layer::Observers, role, dry_run, branch)
-        }
-        RunLayer::Deciders { role, dry_run, branch } => {
-            (Layer::Deciders, role, dry_run, branch)
-        }
-        RunLayer::Planners { role, dry_run, branch } => {
-            (Layer::Planners, role, dry_run, branch)
-        }
+        RunLayer::Observers { role, dry_run, branch } => (Layer::Observers, role, dry_run, branch),
+        RunLayer::Deciders { role, dry_run, branch } => (Layer::Deciders, role, dry_run, branch),
+        RunLayer::Planners { role, dry_run, branch } => (Layer::Planners, role, dry_run, branch),
         RunLayer::Implementers { role, dry_run, branch } => {
             (Layer::Implementers, role, dry_run, branch)
         }
