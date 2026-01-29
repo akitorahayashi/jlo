@@ -1,0 +1,23 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-29_140001_refacts_data_arch_da01"
+created_at: "2026-01-29"
+author_role: "data_arch"
+category: "refacts"
+confidence: "high"
+
+# Content
+title: "HttpJulesClient Coupled to Global Environment State"
+statement: |
+  HttpJulesClient implements explicit dependency on environment variables within the struct implementation.
+
+evidence:
+  - path: "src/services/jules_api.rs"
+    loc: "impl HttpJulesClient"
+    note: "Methods `from_env` and `from_env_with_config` directly access `std::env::var`, coupling to global process state."
+
+tags:
+  - "coupling"
+  - "global-state"
+  - "testing"
