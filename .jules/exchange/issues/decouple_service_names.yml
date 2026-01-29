@@ -1,0 +1,41 @@
+schema_version: 2
+
+# Metadata
+fingerprint: "decouple_service_names"
+id: "decouple_service_names"
+category: "refacts"
+priority: "low"
+status: "open"
+requires_deep_analysis: false
+deep_analysis_reason: ""
+sources:
+  - "2026-01-29_193450_refacts_taxonomy_0001"
+
+# Content
+title: "Decouple Service Names from Implementation Technology"
+summary: "Rename services to be implementation-agnostic and consistent with their ports."
+
+affected_areas:
+  - "src/services/clipboard_arboard.rs"
+  - "src/services/catalog.rs"
+
+constraints: []
+
+risks:
+  - "Renaming structs requires updating all call sites."
+
+problem: |
+  Service implementation names are coupled to underlying technologies or inconsistent with their ports.
+  1. `ArboardClipboard` is named after the underlying library `arboard`, violating Implementation Agnosticism.
+  2. `EmbeddedCatalog` truncates the port name `ComponentCatalog`, whereas `EmbeddedRoleTemplateStore` correctly preserves `RoleTemplateStore`.
+
+impact: |
+  Coupling names to technology makes it harder to swap implementations later without renaming (or having misleading names).
+  Inconsistent naming confuses developers about which port a service implements.
+
+desired_outcome: |
+  Services should have names that describe *what* they do or their *nature* (e.g. `Embedded`) rather than *how* they do it (e.g. `Arboard`).
+
+acceptance_criteria:
+  - "`ArboardClipboard` -> `ClipboardService` (or `LocalClipboard` / `SystemClipboard`)."
+  - "`EmbeddedCatalog` -> `EmbeddedComponentCatalog`."

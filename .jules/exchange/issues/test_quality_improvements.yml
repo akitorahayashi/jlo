@@ -12,15 +12,17 @@ sources:
   - "2025-05-22_120002_tests_qa_003"
   - "2026-01-28_152238_tests_qa_domset"
   - "2026-01-30_100000_tests_qa_api_client"
+  - "2026-01-29_193000_tests_qa_clip"
 
 # Content
 title: "Improve Test Quality and Coverage"
-summary: "Refactor integration tests to follow Diagnostic Specificity and add missing unit tests for setup domain."
+summary: "Refactor integration tests to follow Diagnostic Specificity and add missing unit tests for setup domain and services."
 
 affected_areas:
   - "tests/cli_commands.rs"
   - "src/domain/setup.rs"
   - "src/services/jules_api.rs"
+  - "src/services/clipboard_arboard.rs"
 
 constraints: []
 
@@ -30,16 +32,18 @@ problem: |
   1. Integration tests like `init_creates_jules_directory` assert too many logical conditions in a single test case (Diagnostic Specificity violation), making failures hard to diagnose.
   2. The `src/domain/setup.rs` module lacks unit tests, despite containing logic like `Component::from_meta`.
   3. `HttpJulesClient` in `src/services/jules_api.rs` lacks unit tests for retry logic, error classification, and session creation.
+  4. `ArboardClipboard` in `src/services/clipboard_arboard.rs` lacks unit tests.
 
 impact: |
   Test failures are harder to debug.
-  Domain logic logic is unprotected against regressions.
+  Domain and service logic is unprotected against regressions.
 
 desired_outcome: |
   Integration tests should be broken down into smaller, more focused tests where possible (or have better assertion messages).
-  Unit tests should be added to `src/domain/setup.rs` to cover all logic.
+  Unit tests should be added to `src/domain/setup.rs` and service modules to cover all logic.
 
 acceptance_criteria:
   - "`init_creates_jules_directory` and similar tests are refactored for specificity."
   - "`src/domain/setup.rs` has comprehensive unit tests."
   - "`src/services/jules_api.rs` has unit tests for retry logic and error handling."
+  - "`src/services/clipboard_arboard.rs` has unit tests."
