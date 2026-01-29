@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-29_013000_consistency_consistency_001"
+created_at: "2026-01-29"
+author_role: "consistency"
+category: "consistency"
+confidence: "high"
+
+# Content
+title: "Implementers Layer Missing in Code"
+statement: |
+  The Implementers layer is documented in README.md and AGENTS.md but is missing from the Layer enum in src/domain/layer.rs and the templates directory.
+
+evidence:
+  - path: "src/domain/layer.rs"
+    loc: "Layer enum"
+    note: "Missing Implementers variant"
+  - path: "README.md"
+    loc: "Branch Strategy table"
+    note: "Lists Implementers layer"
+  - path: "AGENTS.md"
+    loc: "Project Summary"
+    note: "Lists Implementers layer"
+
+tags:
+  - "consistency"
+  - "documentation"
+  - "implementation"
+  - "missing-feature"

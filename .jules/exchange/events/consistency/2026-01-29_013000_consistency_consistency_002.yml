@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-29_013000_consistency_consistency_002"
+created_at: "2026-01-29"
+author_role: "consistency"
+category: "consistency"
+confidence: "high"
+
+# Content
+title: "ROLE_NAME Replacement Documentation Incorrect"
+statement: |
+  AGENTS.md claims that jlo replaces ROLE_NAME with the actual role name during generation, but the code explicitly preserves the ROLE_NAME placeholder in generated files.
+
+evidence:
+  - path: "src/services/role_template_service.rs"
+    loc: "generate_prompt_yaml_template"
+    note: "Returns template string without replacement"
+  - path: "AGENTS.md"
+    loc: "Critical Design Principles"
+    note: "Claims replacement happens"
+
+tags:
+  - "consistency"
+  - "documentation"
+  - "implementation"
