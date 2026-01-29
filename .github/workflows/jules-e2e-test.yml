@@ -90,9 +90,9 @@ jobs:
               exit 1
             fi
             
-            # Check for failed checks
-            CHECKS=$(gh pr checks "$PR_URL" --json state,conclusion --jq 'map(select(.state=="COMPLETED" and .conclusion=="FAILURE")) | length')
-            if [ "$CHECKS" -gt 0 ]; then
+            # Check for failed checks (bucket: pass, fail, pending, skipping, cancel)
+            FAILED=$(gh pr checks "$PR_URL" --json bucket --jq '[.[] | select(.bucket=="fail")] | length')
+            if [ "$FAILED" -gt 0 ]; then
                echo "❌ One or more checks failed"
                gh pr checks "$PR_URL"
                echo "result=failure" >> "$GITHUB_OUTPUT"
@@ -148,7 +148,11 @@ jobs:
             --repo "${{ github.repository }}")
             
           echo "✅ Created Issue: $ISSUE_URL"
-          
-          # Verify we can modify/close it
+          echo "ISSUE_URL=$ISSUE_URL" >> "$GITHUB_ENV"
+
+      - name: Close test issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
           gh issue close "$ISSUE_URL" --repo "${{ github.repository }}"
           echo "✅ Closed Issue successfully"
