@@ -110,6 +110,51 @@ jobs:
             done
           }
 
+          extract_template_value() {
+            local file="$1"
+            local key="$2"
+            local line
+
+            line=$(grep -E "^[[:space:]]*$key:" "$file" | head -n 1 | sed -E 's/^[^:]*:[[:space:]]*//')
+            line=${line%%#*}
+            line=$(printf '%s' "$line" | tr -d '"' | xargs)
+            printf '%s' "$line"
+          }
+
+          pick_enum_value() {
+            local raw="$1"
+            IFS='|' read -r -a parts <<< "$raw"
+            local count=${#parts[@]}
+            if [ "$count" -eq 0 ]; then
+              return 1
+            fi
+            local index=$((count / 2))
+            printf '%s' "${parts[$index]}"
+          }
+
+          OBSERVER_TEMPLATE="$GITHUB_WORKSPACE/.jules/roles/observers/event.yml"
+          DECIDER_TEMPLATE="$GITHUB_WORKSPACE/.jules/roles/deciders/issue.yml"
+
+          CONFIDENCE_ENUM=$(extract_template_value "$OBSERVER_TEMPLATE" "confidence")
+          if [ -z "$CONFIDENCE_ENUM" ]; then
+            echo "Failed to read confidence enum from $OBSERVER_TEMPLATE." >&2
+            exit 1
+          fi
+          EVENT_CONFIDENCE=$(pick_enum_value "$CONFIDENCE_ENUM")
+
+          PRIORITY_ENUM=$(extract_template_value "$DECIDER_TEMPLATE" "priority")
+          if [ -z "$PRIORITY_ENUM" ]; then
+            echo "Failed to read priority enum from $DECIDER_TEMPLATE." >&2
+            exit 1
+          fi
+          ISSUE_PRIORITY=$(pick_enum_value "$PRIORITY_ENUM")
+
+          ISSUE_STATUS=$(extract_template_value "$DECIDER_TEMPLATE" "status")
+          if [ -z "$ISSUE_STATUS" ]; then
+            echo "Failed to read status from $DECIDER_TEMPLATE." >&2
+            exit 1
+          fi
+
           RANDOM_ID=$(printf '%04x' "$RANDOM")
           EVENT_ID="$(date -u +%Y-%m-%d_%H%M%S)_${CATEGORY}_${ROLE}_${RANDOM_ID}"
           EVENT_DATE="$(date -u +%Y-%m-%d)"
@@ -124,6 +169,7 @@ jobs:
             "__EVENT_DATE__" "$EVENT_DATE" \
             "__ROLE__" "$ROLE" \
             "__CATEGORY__" "$CATEGORY" \
+            "__CONFIDENCE__" "$EVENT_CONFIDENCE" \
             "__EVENT_TITLE__" "Mock pipeline event" \
             "__EVENT_STATEMENT__" "Mock observation generated for pipeline validation." \
             "__EVIDENCE_PATH__" "README.md" \
@@ -140,6 +186,9 @@ jobs:
             "__ISSUE_ID__" "$ISSUE_ID" \
             "__CATEGORY__" "$CATEGORY" \
             "__EVENT_ID__" "$EVENT_ID" \
+            "__PRIORITY__" "$ISSUE_PRIORITY" \
+            "__STATUS__" "$ISSUE_STATUS" \
+            "__REQUIRES_DEEP_ANALYSIS__" "true" \
             "__ISSUE_TITLE__" "Mock pipeline issue" \
             "__ISSUE_SUMMARY__" "Mock issue derived from a synthetic event." \
             "__AFFECTED_AREA__" "README.md" \
@@ -157,6 +206,9 @@ jobs:
             "__ISSUE_ID__" "$ISSUE_ID" \
             "__CATEGORY__" "$CATEGORY" \
             "__EVENT_ID__" "$EVENT_ID" \
+            "__PRIORITY__" "$ISSUE_PRIORITY" \
+            "__STATUS__" "$ISSUE_STATUS" \
+            "__REQUIRES_DEEP_ANALYSIS__" "false" \
             "__ISSUE_TITLE__" "Mock pipeline issue" \
             "__ISSUE_SUMMARY__" "Mock issue derived from a synthetic event." \
             "__AFFECTED_AREA__" "README.md" \
