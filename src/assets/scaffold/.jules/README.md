@@ -197,3 +197,7 @@ jules-decider-<id>
 jules-planner-<id>
 jules-implementer-<issue_number>-<short_description>
 ```
+
+## Testing and Validation
+
+The mock pipeline workflow generates synthetic exchange artifacts and exercises the observer → decider → planner transitions without calling external APIs.
