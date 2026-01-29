@@ -1,58 +1,71 @@
 name: Run Implementer
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
-      task_file:
-        description: 'Task file basename (e.g., 2026-01-28_task_example.yml)'
+      issue_number:
+        description: 'GitHub Issue number to implement'
         required: true
+        type: number
+      role:
+        description: 'Implementer role name'
+        required: false
         type: string
-    secrets:
-      jules_api_key:
-        required: true
+        default: 'executor'
 
 jobs:
   implement:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: read
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: jules
-          path: jules-task-read
+          ref: main
 
-      - name: Read task
-        id: task
+      - name: Load implementer role
+        id: role
         run: |
-          task_file="${{ inputs.task_file }}"
-          if [[ "$task_file" == */* ]] || [[ "$task_file" == *..* ]]; then
-            echo "Error: task_file cannot contain path traversal characters ('/' or '..')."
-            exit 1
+          role="${{ inputs.role }}"
+          if [ -z "$role" ]; then
+            role="executor"
           fi
-          task_path="jules-task-read/.jules/exchange/tasks/$task_file"
-          if [ ! -f "$task_path" ]; then
-            echo "Error: Task file not found at $task_path"
-            exit 1
-          fi
-          delimiter="TASK_EOF_$(date +%s%N)"
-          content=$(cat "$task_path")
+          echo "role=$role" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch GitHub Issue
+        id: issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          issue_number="${{ inputs.issue_number }}"
+          
+          # Fetch issue details
+          issue_json=$(gh issue view "$issue_number" --json title,body,labels)
+          
+          title=$(echo "$issue_json" | jq -r '.title')
+          body=$(echo "$issue_json" | jq -r '.body')
+          
+          # Output for prompt
+          delimiter="ISSUE_EOF_$(date +%s%N)"
           {
-            echo "content<<$delimiter"
-            echo "$content"
+            echo "title<<$delimiter"
+            echo "$title"
             echo "$delimiter"
           } >> "$GITHUB_OUTPUT"
-
-      - uses: actions/checkout@v4
-        with:
-          ref: main
+          
+          {
+            echo "body<<$delimiter"
+            echo "$body"
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Read prompt
         id: prompt
         uses: ./.github/actions/read-role-prompt
         with:
           layer: implementers
-          role: executor
+          role: ${{ steps.role.outputs.role }}
 
       - name: Invoke Jules
         uses: ./.github/actions/jules-invoke
@@ -60,41 +73,9 @@ jobs:
           prompt: |
             ${{ steps.prompt.outputs.prompt }}
             
-            Task file: .jules/exchange/tasks/${{ inputs.task_file }}
+            ---
+            GitHub Issue #${{ inputs.issue_number }}: ${{ steps.issue.outputs.title }}
             
-            ${{ steps.task.outputs.content }}
-            
-            Task cleanup is handled on the jules branch after verification.
-          jules_api_key: ${{ secrets.jules_api_key }}
+            ${{ steps.issue.outputs.body }}
+          jules_api_key: ${{ secrets.JULES_API_KEY }}
           starting_branch: main
-
-      - uses: actions/checkout@v4
-        if: success()
-        with:
-          ref: jules
-          path: jules-task-cleanup
-
-      - name: Delete task on jules
-        if: success()
-        run: |
-          task_file="${{ inputs.task_file }}"
-          if [[ "$task_file" == */* ]] || [[ "$task_file" == *..* ]]; then
-            echo "Error: task_file cannot contain path traversal characters ('/' or '..')."
-            exit 1
-          fi
-          cd jules-task-cleanup
-          task_path=".jules/exchange/tasks/$task_file"
-          if [ ! -f "$task_path" ]; then
-            echo "Task file not found at $task_path; nothing to delete."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm "$task_path"
-          git add "$task_path"
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
-          git commit -m "Remove processed task $task_file"
-          git push origin HEAD:jules

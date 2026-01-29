@@ -1,4 +1,0 @@
-consistency
-data_arch
-qa
-taxonomy

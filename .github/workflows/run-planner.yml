@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       issue_file:
-        description: 'Issue file basename to process'
+        description: 'Issue file basename to process (requires_deep_analysis: true)'
         required: true
         type: string
     secrets:
@@ -23,14 +23,12 @@ jobs:
         with:
           ref: jules
 
-      - name: Read prompt
-        id: prompt
-        uses: ./.github/actions/read-role-prompt
-        with:
-          layer: planners
-          role: ${{ inputs.role }}
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
 
-      - name: Read issue
+      - name: Read and validate issue
         id: issue
         run: |
           # Validate issue_file to prevent path traversal
@@ -46,6 +44,13 @@ jobs:
             exit 1
           fi
           
+          # Verify requires_deep_analysis is true
+          requires_deep=$(yq -r '.requires_deep_analysis // false' "$issue_path")
+          if [ "$requires_deep" != "true" ]; then
+            echo "Error: Issue does not require deep analysis (requires_deep_analysis: $requires_deep)"
+            exit 1
+          fi
+          
           # Use unique delimiter to avoid collision with file content
           delimiter="ISSUE_EOF_$(date +%s%N)"
           content=$(cat "$issue_path")
@@ -54,6 +59,13 @@ jobs:
             echo "$content"
             echo "$delimiter"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Read prompt
+        id: prompt
+        uses: ./.github/actions/read-role-prompt
+        with:
+          layer: planners
+          role: ${{ inputs.role }}
 
       - name: Invoke Jules
         uses: ./.github/actions/jules-invoke

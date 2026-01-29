@@ -1,0 +1,17 @@
+{
+  "observers": [
+    "consistency",
+    "data_arch",
+    "qa",
+    "taxonomy"
+  ],
+  "deciders": [
+    "triage"
+  ],
+  "planners": [
+    "specifier"
+  ],
+  "implementers": [
+    "executor"
+  ]
+}

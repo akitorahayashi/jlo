@@ -4,7 +4,7 @@ branch_prefix: jules-observer-
 constraints:
   - Branch ID: 4 alphanumeric characters (e.g. 'a1b2')
   - Do NOT write to .jules/exchange/issues/ or tasks/
-  - One event per observation with concrete evidence
+  - Event categories must be one of: bugs, docs, refacts, tests, updates
 
 inputs:
   - Source code and repository files
@@ -14,7 +14,7 @@ inputs:
 
 outputs:
   - notes/ (updated state)
-  - .jules/exchange/events/<category>/*.yml
+  - .jules/exchange/events/{bugs,docs,refacts,tests,updates}/*.yml
 
 workflow:
   1. Read feedbacks/, abstract patterns, update role.yml learned_exclusions

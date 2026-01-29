@@ -1,4 +1,4 @@
-schema_version: 1
+schema_version: 2
 
 # Metadata
 id: "<id>" # e.g. 2026-01-28_issue_auth_inconsistency
@@ -10,6 +10,13 @@ sources: [] # list of event_ids that triggered this issue
 
 # Content
 title: "<Descriptive Title>"
+summary: "<One-line statement of the issue>"
+
+affected_areas:
+  - "<file or module path>"
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
 
 problem: |
   <What is wrong or missing - conceptual description>
