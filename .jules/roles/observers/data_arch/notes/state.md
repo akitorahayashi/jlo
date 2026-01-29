@@ -35,6 +35,27 @@
     - Coupled to `std::env::current_dir()`.
 - **Related Issues**: `2026-01-29_issue_decouple_global_state`
 
+### Service: Jules API (`src/services/jules_api.rs`)
+- **Status**: Issues Identified
+- **Findings**:
+    - `HttpJulesClient` coupled to `std::env::var` (Global Process State).
+- **Related Events**: `2026-01-29_140001_refacts_data_arch_da01`
+
+### Service Layer Architecture (`src/services/`)
+- **Status**: Issues Identified
+- **Findings**:
+    - Directory mixes Domain Services (`Generator`, `Resolver`) and Infrastructure Adapters (`HttpJulesClient`, `EmbeddedCatalog`, etc.).
+    - Violates Boundary Sovereignty.
+- **Related Events**: `2026-01-29_140000_refacts_data_arch_da01`
+
+### Implementers Layer Support
+- **Status**: Clean (Verified)
+- **Findings**:
+    - `Implementers` variant is present in `src/domain/layer.rs`.
+    - Templates exist in `src/assets/templates/layers/implementer/`.
+    - Code appears consistent, contrary to open issue `2026-01-29_issue_implementers_layer` (likely stale).
+
 ## Next Steps
 - Monitor progress on setup domain refactor.
-- Deep dive into `Implementers` layer support once the consistency issue is resolved.
+- Monitor progress on global state decoupling.
+- Analyze `src/ports/` to ensure clean separation from implementation details.
