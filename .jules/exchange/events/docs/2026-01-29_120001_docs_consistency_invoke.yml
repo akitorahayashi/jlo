@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-29_120001_docs_consistency_invoke"
+created_at: "2026-01-29"
+author_role: "consistency"
+category: "docs"
+confidence: "high"
+
+# Content
+title: "AGENTS.md References Non-Existent jules-invoke Action"
+statement: |
+  `AGENTS.md` lists `jules-invoke` as a component in the Architecture table, but the action does not exist in `.github/actions/`.
+
+evidence:
+  - path: "AGENTS.md"
+    loc: "Architecture Table"
+    note: "Lists `jules-invoke` component."
+  - path: ".github/actions/"
+    loc: "Directory listing"
+    note: "Directory does not contain `jules-invoke`."
+
+tags:
+  - "documentation"
+  - "github-actions"
+  - "ghost-artifact"
