@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-29_120001_refacts_taxonomy_services"
+created_at: "2026-01-29"
+author_role: "taxonomy"
+category: "refacts"
+confidence: "high"
+
+# Content
+title: "Separate Domain Services from Infrastructure Adapters"
+statement: |
+  The `src/services/` directory mixes Domain Services (pure logic like `Generator`, `Resolver`) with Infrastructure Adapters (port implementations like `EmbeddedCatalog`, `FilesystemWorkspaceStore`). This violates architectural boundaries and makes the distinction between business logic and I/O plumbing unclear.
+
+evidence:
+  - path: "src/services/generator.rs"
+    loc: "struct Generator"
+    note: "Domain Service (Logic) mixed with adapters."
+  - path: "src/services/workspace_filesystem.rs"
+    loc: "struct FilesystemWorkspaceStore"
+    note: "Infrastructure Adapter (Port Impl) mixed with services."
+
+tags:
+  - "taxonomy"
+  - "architecture"
+  - "organization"

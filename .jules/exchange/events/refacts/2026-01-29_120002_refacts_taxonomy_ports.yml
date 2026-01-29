@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-29_120002_refacts_taxonomy_ports"
+created_at: "2026-01-29"
+author_role: "taxonomy"
+category: "refacts"
+confidence: "high"
+
+# Content
+title: "Standardize Port Implementation Naming"
+statement: |
+  Implementation structs for ports follow inconsistent naming conventions. `ComponentCatalog` is implemented as `EmbeddedCatalog` (dropping 'Component'), while `RoleTemplateStore` becomes `EmbeddedRoleTemplateStore` (preserving the full port name). Naming should be consistent (e.g. `EmbeddedComponentCatalog` or `RoleTemplateStore`).
+
+evidence:
+  - path: "src/services/catalog.rs"
+    loc: "struct EmbeddedCatalog"
+    note: "Drops 'Component' prefix from port name."
+  - path: "src/services/role_template_service.rs"
+    loc: "struct EmbeddedRoleTemplateStore"
+    note: "Preserves full port name."
+  - path: "src/ports/component_catalog.rs"
+    loc: "trait ComponentCatalog"
+    note: "Original port name."
+
+tags:
+  - "taxonomy"
+  - "consistency"
+  - "naming"

@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-29_120000_refacts_taxonomy_layers"
+created_at: "2026-01-29"
+author_role: "taxonomy"
+category: "refacts"
+confidence: "high"
+
+# Content
+title: "Standardize Layer Naming to Plural"
+statement: |
+  Layer directories in `src/assets/templates/layers/` use singular naming (observer, decider), while the domain model (`Layer` enum), documentation (`AGENTS.md`), and active workspace structure (`.jules/roles/`) use plural naming (observers, deciders). This inconsistency confuses navigation and requires manual mapping in `role_template_service.rs`.
+
+evidence:
+  - path: "src/domain/layer.rs"
+    loc: "Layer::Observers"
+    note: "Domain model uses plural variants."
+  - path: "src/assets/templates/layers/observer"
+    loc: "dir"
+    note: "Template assets use singular directory names."
+  - path: "src/services/role_template_service.rs"
+    loc: "templates::ROLE_YML"
+    note: "Hardcoded paths map to singular directories."
+
+tags:
+  - "taxonomy"
+  - "consistency"
+  - "naming"
