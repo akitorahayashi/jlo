@@ -41,9 +41,6 @@ concurrency:
   group: jules
   cancel-in-progress: false
 
-env:
-  WAIT_SECONDS: ${{ github.event.inputs.wait_minutes && github.event.inputs.wait_minutes * 60 || 1800 }}
-
 jobs:
   run:
     if: vars.JULES_PAUSED != 'true'
@@ -84,7 +81,9 @@ jobs:
       - name: Wait for observers
         if: steps.observers.outcome == 'success' && inputs.dry_run != 'true'
         run: |
-          echo "⏳ Waiting ${WAIT_SECONDS}s for Jules to complete observer tasks..."
+          WAIT_MINS="${{ inputs.wait_minutes || 30 }}"
+          WAIT_SECONDS=$((WAIT_MINS * 60))
+          echo "⏳ Waiting ${WAIT_SECONDS}s (${WAIT_MINS} mins) for Jules to complete observer tasks..."
           sleep "$WAIT_SECONDS"
 
       - name: Refresh branch after observers
@@ -123,7 +122,9 @@ jobs:
       - name: Wait for deciders
         if: steps.deciders.outcome == 'success' && inputs.dry_run != 'true'
         run: |
-          echo "⏳ Waiting ${WAIT_SECONDS}s for Jules to complete decider tasks..."
+          WAIT_MINS="${{ inputs.wait_minutes || 30 }}"
+          WAIT_SECONDS=$((WAIT_MINS * 60))
+          echo "⏳ Waiting ${WAIT_SECONDS}s (${WAIT_MINS} mins) for Jules to complete decider tasks..."
           sleep "$WAIT_SECONDS"
 
       - name: Refresh branch after deciders
