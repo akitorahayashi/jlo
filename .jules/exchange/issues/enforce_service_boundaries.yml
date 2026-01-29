@@ -6,8 +6,26 @@ id: "enforce_service_boundaries"
 category: "refacts"
 priority: "medium"
 status: "open"
-requires_deep_analysis: true
-deep_analysis_reason: "Determine new directory structure for Infrastructure Adapters vs Domain Services."
+requires_deep_analysis: false
+deep_analysis_reason: |
+  Determine new directory structure for Infrastructure Adapters vs Domain Services.
+
+  Analysis Findings:
+  1. Component Classification:
+     - Domain Services (Business Logic): `Generator`, `Resolver`. These belong in `src/services/`.
+     - Infrastructure Adapters (Implementation): `EmbeddedCatalog`, `ArboardClipboard`, `HttpJulesClient`, `EmbeddedRoleTemplateStore`, `FilesystemWorkspaceStore`. These belong in a new `src/adapters/` directory.
+
+  2. Impact Analysis:
+     - `src/lib.rs` exposes `mod services`. Moving adapters will break the public API unless re-exported.
+     - Internal usage in `src/app/commands/` relies on `crate::services`.
+     - `src/main.rs` and integration tests rely on `jlo::init()` which is an abstraction, but `src/lib.rs` itself needs updates.
+
+  3. Recommended Plan:
+     - Create `src/adapters/`.
+     - Move infrastructure files to `src/adapters/` (e.g., `src/adapters/filesystem_workspace_store.rs`).
+     - Keep `src/services/` for pure domain services (`Generator`, `Resolver`).
+     - Update `src/lib.rs` to expose `mod adapters;` (and potentially re-export for backward compatibility if desired, but separation is preferred).
+     - Update all internal imports in `src/app/commands/` to `crate::adapters::...`.
 sources:
   - "2026-01-29_140000_refacts_data_arch_da01"
   - "2026-01-29_193510_refacts_taxonomy_0003"
@@ -24,11 +42,15 @@ affected_areas:
   - "src/services/clipboard_arboard.rs"
   - "src/services/jules_api.rs"
   - "src/services/workspace_filesystem.rs"
+  - "src/adapters/"
+  - "src/lib.rs"
+  - "src/app/commands/"
 
 constraints: []
 
 risks:
   - "Refactoring file structure requires updating all import paths."
+  - "Breaking change to public API `jlo::services` if adapters are moved without re-export."
 
 problem: |
   The `src/services/` directory mixes pure Domain Services (business logic like `Generator`, `Resolver`) with Infrastructure Adapters (technology-specific implementations like `EmbeddedCatalog`, `FilesystemWorkspaceStore`, `HttpJulesClient`). This violates the Boundary Sovereignty principle and makes the architecture harder to understand and test in isolation.
