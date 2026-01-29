@@ -203,7 +203,7 @@ jobs:
   # On-Demand Planners (push to issues/ with requires_deep_analysis: true)
   # ============================================================================
   list-issues:
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.agent == 'planners')
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.agent == 'planners' || inputs.agent == 'issue-sync'))
     runs-on: ubuntu-latest
     outputs:
       planner_matrix: ${{ steps.scan.outputs.planner_matrix }}
@@ -216,6 +216,11 @@ jobs:
         with:
           ref: jules
           fetch-depth: 0
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
 
       - name: Load planner roles
         id: roles
@@ -264,15 +269,14 @@ jobs:
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             requires_deep=$(yq -r '.requires_deep_analysis // false' "$file" 2>/dev/null || echo "false")
-            basename_file=$(basename "$file")
             if [ "$requires_deep" = "true" ]; then
-              planner_files+=("$basename_file")
+              planner_files+=("$(basename "$file")")
             else
               sync_files+=("$file")
             fi
           done <<< "$files"
           
-          # Output planner matrix
+          # Output planner matrix (basenames for run-planner.yml)
           if [ ${#planner_files[@]} -eq 0 ]; then
             echo "planner_matrix=[]" >> "$GITHUB_OUTPUT"
             echo "has_planner_issues=false" >> "$GITHUB_OUTPUT"
@@ -282,7 +286,7 @@ jobs:
             echo "has_planner_issues=true" >> "$GITHUB_OUTPUT"
           fi
           
-          # Output sync matrix
+          # Output sync matrix (full paths for issue-sync action)
           if [ ${#sync_files[@]} -eq 0 ]; then
             echo "sync_matrix=[]" >> "$GITHUB_OUTPUT"
             echo "has_sync_issues=false" >> "$GITHUB_OUTPUT"

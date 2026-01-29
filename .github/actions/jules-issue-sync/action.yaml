@@ -12,10 +12,10 @@ inputs:
 outputs:
   issue_number:
     description: 'The GitHub Issue number (created or updated)'
-    value: ${{ steps.sync.outputs.issue_number }}
+    value: ${{ steps.result.outputs.issue_number }}
   action_taken:
     description: 'Action taken: created, updated, or skipped'
-    value: ${{ steps.sync.outputs.action_taken }}
+    value: ${{ steps.result.outputs.action_taken }}
 
 runs:
   using: "composite"
@@ -239,9 +239,14 @@ runs:
           echo "Updated issue #$existing"
         fi
 
-    - name: Handle skip case
-      if: steps.parse.outputs.skip == 'true'
+    - name: Set result outputs
+      id: result
       shell: bash
       run: |
-        echo "issue_number=" >> "$GITHUB_OUTPUT"
-        echo "action_taken=skipped" >> "$GITHUB_OUTPUT"
+        if [ "${{ steps.parse.outputs.skip }}" = "true" ]; then
+          echo "issue_number=" >> "$GITHUB_OUTPUT"
+          echo "action_taken=skipped" >> "$GITHUB_OUTPUT"
+        else
+          echo "issue_number=${{ steps.sync.outputs.issue_number }}" >> "$GITHUB_OUTPUT"
+          echo "action_taken=${{ steps.sync.outputs.action_taken }}" >> "$GITHUB_OUTPUT"
+        fi
