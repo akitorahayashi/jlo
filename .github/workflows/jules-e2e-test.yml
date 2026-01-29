@@ -26,6 +26,7 @@ jobs:
         with:
           ref: jules
           fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
 
       - name: Configure Git
         run: |
@@ -55,7 +56,7 @@ jobs:
 
       - name: Create PR
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
           # Create PR aiming at jules branch
           PR_URL=$(gh pr create \
@@ -70,7 +71,7 @@ jobs:
       - name: Wait for merge
         id: wait-merge
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
           echo "Waiting for PR to be merged..."
           
@@ -109,7 +110,7 @@ jobs:
       - name: Cleanup
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
           echo "Run Result: ${{ steps.wait-merge.outcome }}"
           
@@ -139,7 +140,7 @@ jobs:
       
       - name: Create test issue
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
           ISSUE_URL=$(gh issue create \
             --title "[E2E Test] Issue creation validation" \
