@@ -23,21 +23,35 @@ conflict is reported.
 
 ## Workspace Data Flow
 
-The pipeline is file-based and terminates at issue promotion:
+The pipeline is file-based and terminates at local issues:
 
-`events -> issues -> GitHub Issues`
+`events -> issues`
 
 Exchange directories:
 
 - Events (Observer output, Decider input): `.jules/exchange/events/<category>/*.yml`
-- Issues (Decider output): `.jules/exchange/issues/*.yml`
+- Issues (Decider/Planner output, Implementer input): `.jules/exchange/issues/*.yml`
 
 Categories are the directory names under `.jules/exchange/events/`.
 
 After decider output:
-- Issues with `requires_deep_analysis: false` are promoted to GitHub Issues.
+- Issues with `requires_deep_analysis: false` are ready for implementation.
 - Issues with `requires_deep_analysis: true` trigger deep analysis by planners.
-- Implementers are invoked manually via `workflow_dispatch` with a GitHub Issue number.
+- Implementers are invoked manually via `workflow_dispatch` with a local issue file.
+
+## Issue Identity and Deduplication
+
+- Issue filenames use stable fingerprints, not dates (e.g. `auth_inconsistency.yml`).
+- Observers check open issues before emitting events to avoid duplicates.
+- Deciders merge related events into existing issues when applicable.
+- Issues have `status: open|closed` to track lifecycle.
+
+## Deep Analysis
+
+When an issue requires deep analysis:
+- `requires_deep_analysis: true` must have a non-empty `deep_analysis_reason` field.
+- Planners expand the issue and set `requires_deep_analysis: false`.
+- The original rationale is preserved and expanded with findings.
 
 ## File Rules
 
@@ -56,14 +70,14 @@ Branch names:
 - Observers: `jules-observer-<id>`
 - Deciders: `jules-decider-<id>`
 - Planners: `jules-planner-<id>`
-- Implementers: `jules-implementer-<issue_number>-<short_description>`
+- Implementers: `jules-implementer-<fingerprint>-<short_description>`
 
 `<id>` is 4 alphanumeric characters unless the layer contract specifies otherwise.
 
 ## Safety Boundaries
 
 - Observers, Deciders, and Planners modify only `.jules/`.
-- Implementers modify only what the GitHub Issue specifies, run the verification command, then
+- Implementers modify only what the issue specifies, run the verification command, then
   create a pull request for human review.
 
 ## Forbidden By Default

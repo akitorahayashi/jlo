@@ -205,3 +205,66 @@ fn setup_list_detail_not_found() {
         .failure()
         .stderr(predicate::str::contains("not found"));
 }
+
+// =============================================================================
+// Run Implementers Tests
+// =============================================================================
+
+#[test]
+#[serial]
+fn run_implementers_requires_issue_file() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init"]).assert().success();
+
+    ctx.cli()
+        .args(["run", "implementers"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Issue file required"));
+}
+
+#[test]
+#[serial]
+fn run_implementers_with_missing_issue_file() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init"]).assert().success();
+
+    ctx.cli()
+        .args(["run", "implementers", "--issue", ".jules/exchange/issues/nonexistent.yml"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Issue file not found"));
+}
+
+#[test]
+#[serial]
+fn run_implementers_dry_run_with_issue_file() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init"]).assert().success();
+
+    // Create a test issue file
+    let issue_dir = ctx.work_dir().join(".jules/exchange/issues");
+    std::fs::create_dir_all(&issue_dir).unwrap();
+    let issue_path = issue_dir.join("test_issue.yml");
+    std::fs::write(
+        &issue_path,
+        "fingerprint: test_issue\nid: test_issue\ntitle: Test Issue\nstatus: open\n",
+    )
+    .unwrap();
+
+    ctx.cli()
+        .args([
+            "run",
+            "implementers",
+            "--issue",
+            ".jules/exchange/issues/test_issue.yml",
+            "--dry-run",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Dry Run: Implementer"))
+        .stdout(predicate::str::contains("Issue content:"));
+}

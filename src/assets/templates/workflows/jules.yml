@@ -8,7 +8,7 @@
 # 2. Set JULES_API_KEY secret in repository settings
 # 3. Install jlo release binary (automatic via workflow)
 
-name: Jules Agents
+name: Jules Workflows
 
 on:
   schedule:

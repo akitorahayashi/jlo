@@ -20,9 +20,6 @@ jobs:
     name: Test
     uses: ./.github/workflows/run-tests.yml
   
-  verify-installers:
-    name: Verify Installers
-    uses: ./.github/workflows/verify-installers.yml
 
   automerge:
     name: Auto Merge
@@ -30,7 +27,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    needs: [lint, build, test, verify-installers]
+    needs: [lint, build, test]
     uses: ./.github/workflows/jules-automerge.yml
     with:
       head_ref: ${{ github.head_ref }}

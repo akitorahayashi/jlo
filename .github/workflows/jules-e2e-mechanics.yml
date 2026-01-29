@@ -7,14 +7,9 @@ on:
         description: 'Run PR creation and auto-merge test'
         type: boolean
         default: true
-      run_issue_creation:
-        description: 'Run issue creation test'
-        type: boolean
-        default: true
 
 permissions:
   contents: write
-  issues: write
   pull-requests: write
 
 jobs:
@@ -218,28 +213,3 @@ jobs:
              echo "🧹 Deleting via git push: $BRANCH"
              git push origin --delete "$BRANCH" || echo "⚠️ Failed to delete branch (might not exist)"
           fi
-
-  test-issue-creation:
-    if: inputs.run_issue_creation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Create test issue
-        env:
-          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-        run: |
-          ISSUE_URL=$(gh issue create \
-            --title "[E2E Test] Issue creation validation" \
-            --body "Automated E2E test. Will be closed immediately." \
-            --repo "${{ github.repository }}")
-
-          echo "✅ Created Issue: $ISSUE_URL"
-          echo "ISSUE_URL=$ISSUE_URL" >> "$GITHUB_ENV"
-
-      - name: Close test issue
-        env:
-          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-        run: |
-          gh issue close "$ISSUE_URL" --repo "${{ github.repository }}"
-          echo "✅ Closed Issue successfully"
