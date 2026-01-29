@@ -16,10 +16,9 @@
 name: Jules Auto-Merge
 
 on:
-  workflow_call:
-    secrets:
-      bot_token:
-        required: true
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, jules]
 
 jobs:
   check-scope:
@@ -67,7 +66,7 @@ jobs:
     steps:
       - name: Enable auto-merge
         env:
-          GH_TOKEN: ${{ secrets.bot_token }}
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
           gh pr merge "${{ github.event.pull_request.number }}" \
             --auto --squash --delete-branch \

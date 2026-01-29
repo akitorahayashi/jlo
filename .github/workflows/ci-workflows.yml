@@ -23,13 +23,3 @@ jobs:
   verify-installers:
     name: Verify Installers
     uses: ./.github/workflows/verify-installers.yml
-
-  automerge:
-    name: Auto Merge
-    permissions:
-      contents: write
-      pull-requests: write
-    needs: [lint, build, test, verify-installers]
-    uses: ./.github/workflows/jules-automerge.yml
-    secrets:
-      bot_token: ${{ secrets.JLO_BOT_TOKEN }}
