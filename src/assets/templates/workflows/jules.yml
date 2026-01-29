@@ -1,13 +1,18 @@
 # Jules Agent Execution
 #
-# Simplified workflow using jlo CLI for agent orchestration.
-# Configuration is managed via .jules/config.toml.
+# Workflow template for repositories using jlo.
+# Copy to .github/workflows/jules.yml in target repository.
+#
+# Prerequisites:
+# 1. Run `jlo init` to create .jules/ structure
+# 2. Set JULES_API_KEY secret in repository settings
+# 3. Install jlo release binary (automatic via workflow)
 
 name: Jules Agents
 
 on:
   schedule:
-    # Daily at 19:00 UTC (04:00 JST)
+    # Daily at 19:00 UTC - adjust as needed
     - cron: '0 19 * * *'
   workflow_dispatch:
     inputs:
@@ -41,7 +46,6 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Scheduled run: execute observers layer
   scheduled:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
@@ -60,7 +64,6 @@ jobs:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         run: jlo run observers
 
-  # Manual dispatch: run specified layer
   manual:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -78,7 +81,6 @@ jobs:
         id: parse
         run: |
           if [ -n "${{ inputs.role }}" ]; then
-            # Convert comma-separated to --role flags
             roles=$(echo "${{ inputs.role }}" | tr ',' '\n' | sed 's/^/--role /' | tr '\n' ' ')
             echo "role_args=$roles" >> "$GITHUB_OUTPUT"
           else

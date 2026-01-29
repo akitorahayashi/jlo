@@ -9,11 +9,14 @@ pub enum Layer {
     Deciders,
     /// Planners: Read issues requiring deep analysis, expand them in-place (specifier)
     Planners,
+    /// Implementers: Execute approved tasks, create PRs with code changes (executor)
+    Implementers,
 }
 
 impl Layer {
     /// All available layers in order.
-    pub const ALL: [Layer; 3] = [Layer::Observers, Layer::Deciders, Layer::Planners];
+    pub const ALL: [Layer; 4] =
+        [Layer::Observers, Layer::Deciders, Layer::Planners, Layer::Implementers];
 
     /// Directory name for this layer.
     pub fn dir_name(&self) -> &'static str {
@@ -21,6 +24,7 @@ impl Layer {
             Layer::Observers => "observers",
             Layer::Deciders => "deciders",
             Layer::Planners => "planners",
+            Layer::Implementers => "implementers",
         }
     }
 
@@ -30,6 +34,7 @@ impl Layer {
             Layer::Observers => "Observer",
             Layer::Deciders => "Decider",
             Layer::Planners => "Planner",
+            Layer::Implementers => "Implementer",
         }
     }
 
@@ -39,6 +44,7 @@ impl Layer {
             "observers" | "observer" => Some(Layer::Observers),
             "deciders" | "decider" => Some(Layer::Deciders),
             "planners" | "planner" => Some(Layer::Planners),
+            "implementers" | "implementer" => Some(Layer::Implementers),
             _ => None,
         }
     }
@@ -49,6 +55,7 @@ impl Layer {
             Layer::Observers => "Read source & notes, emit events. Never write issues.",
             Layer::Deciders => "Read events, emit issues. Delete processed events.",
             Layer::Planners => "Read issues requiring deep analysis, expand them in-place.",
+            Layer::Implementers => "Execute approved tasks, create PRs with code changes.",
         }
     }
 }
