@@ -73,11 +73,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
-          echo "Waiting for PR to be merged..."
+          echo "Waiting for auto-merge..."
           
-          # Poll for up to 5 minutes
+          # Poll for up to 5 minutes (auto-merge should be fast)
           for i in {1..30}; do
-            # Get PR state
             STATE=$(gh pr view "$PR_URL" --json state -q '.state')
             
             if [ "$STATE" = "MERGED" ]; then
@@ -89,17 +88,8 @@ jobs:
               echo "result=closed" >> "$GITHUB_OUTPUT"
               exit 1
             fi
-            
-            # Check for failed checks (bucket: pass, fail, pending, skipping, cancel)
-            FAILED=$(gh pr checks "$PR_URL" --json bucket --jq '[.[] | select(.bucket=="fail")] | length')
-            if [ "$FAILED" -gt 0 ]; then
-               echo "❌ One or more checks failed"
-               gh pr checks "$PR_URL"
-               echo "result=failure" >> "$GITHUB_OUTPUT"
-               exit 1
-            fi
 
-            echo "Current state: $STATE - Waiting... ($i/30)"
+            echo "State: $STATE - Waiting... ($i/30)"
             sleep 10
           done
           
