@@ -5,7 +5,7 @@ id: "__ISSUE_ID__"
 category: "__CATEGORY__"
 priority: "__PRIORITY__"
 status: "__STATUS__"
-requires_deep_analysis: true
+requires_deep_analysis: __REQUIRES_DEEP_ANALYSIS__
 sources:
   - "__EVENT_ID__"
 
