@@ -9,6 +9,7 @@ implementers = ["executor"]
 
 [run]
 default_branch = "main"
+jules_branch = "jules"
 parallel = true
 max_parallel = 3
 

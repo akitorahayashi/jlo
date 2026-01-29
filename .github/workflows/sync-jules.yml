@@ -1,6 +1,9 @@
 name: Sync main to jules
 
 on:
+  push:
+    branches:
+      - main
   workflow_call:
   workflow_dispatch:
 
@@ -14,6 +17,7 @@ jobs:
         with:
           ref: jules
           fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
 
       - name: Configure Git
         run: |

@@ -41,10 +41,19 @@ jlo run planners --dry-run             # Show prompts without executing
 jlo run observers --branch custom      # Override starting branch
 ```
 
+**Implementer Invocation** (requires issue file):
+
+```bash
+jlo run implementers --issue .jules/exchange/issues/auth_inconsistency.yml
+```
+
+Implementers require a local issue file path. The issue content is embedded in the prompt.
+
 **Flags**:
 - `--role <name>`: Run specific role(s) instead of all configured
 - `--dry-run`: Show assembled prompts without API calls
 - `--branch <name>`: Override the default starting branch
+- `--issue <path>`: Local issue file (required for implementers)
 
 **Configuration**: Agent roles are configured in `.jules/config.toml`:
 
@@ -87,6 +96,7 @@ The simplified workflow uses `jlo run` for all agent execution.
 | `jules-workflows.yml` | Agent execution (scheduled + manual dispatch) |
 | `jules-automerge.yml` | Auto-merge jules-* branches (optional) |
 | `sync-jules.yml` | Sync main → jules branch (optional) |
+| `jules-pipeline.yml` | Orchestrate deciders/planners after observer merge |
 
 **Branch Strategy**:
 
@@ -102,8 +112,10 @@ The simplified workflow uses `jlo run` for all agent execution.
 1. **Sync**: `jules` branch syncs from `main` periodically
 2. **Analysis**: Observers create event files in `.jules/exchange/events/`
 3. **Triage**: Deciders consolidate events into issue files
-4. **Promotion**: Issues are promoted to GitHub Issues
-5. **Implementation**: Implementers are triggered manually for approved issues
+4. **Expansion**: Planners expand issues requiring deep analysis
+5. **Implementation**: Implementers are triggered manually with a local issue file
+
+**Pause/Resume**: Set repository variable `JULES_PAUSED=true` to skip scheduled runs.
 
 ## Documentation
 

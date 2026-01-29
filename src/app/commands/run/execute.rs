@@ -1,7 +1,7 @@
 //! Run command execution logic.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::domain::{AppError, Layer, RunConfig};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
@@ -18,6 +18,8 @@ pub struct RunOptions {
     pub dry_run: bool,
     /// Override the starting branch.
     pub branch: Option<String>,
+    /// Local issue file path (required for implementers).
+    pub issue: Option<PathBuf>,
 }
 
 /// Result of a run execution.
@@ -33,6 +35,23 @@ pub struct RunResult {
 
 /// Execute the run command.
 pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppError> {
+    // Validate issue file requirement for implementers
+    let issue_content = if options.layer == Layer::Implementers {
+        match &options.issue {
+            Some(path) => {
+                if !path.exists() {
+                    return Err(AppError::IssueFileNotFound(path.display().to_string()));
+                }
+                Some(fs::read_to_string(path)?)
+            }
+            None => {
+                return Err(AppError::IssueFileRequired);
+            }
+        }
+    } else {
+        None
+    };
+
     // Load config
     let config = load_config(jules_path)?;
 
@@ -57,7 +76,13 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
     });
 
     if options.dry_run {
-        execute_dry_run(jules_path, options.layer, &roles, &starting_branch)?;
+        execute_dry_run(
+            jules_path,
+            options.layer,
+            &roles,
+            &starting_branch,
+            issue_content.as_deref(),
+        )?;
         return Ok(RunResult { roles, dry_run: true, sessions: vec![] });
     }
 
@@ -66,8 +91,15 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
 
     // Execute with appropriate client
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
-    let sessions =
-        execute_roles(jules_path, options.layer, &roles, &starting_branch, &source, &client)?;
+    let sessions = execute_roles(
+        jules_path,
+        options.layer,
+        &roles,
+        &starting_branch,
+        &source,
+        &client,
+        issue_content.as_deref(),
+    )?;
 
     Ok(RunResult { roles, dry_run: false, sessions })
 }
@@ -80,6 +112,7 @@ fn execute_roles<C: JulesClient>(
     starting_branch: &str,
     source: &str,
     client: &C,
+    issue_content: Option<&str>,
 ) -> Result<Vec<String>, AppError> {
     let mut sessions = Vec::new();
     let mut failures = 0;
@@ -87,7 +120,13 @@ fn execute_roles<C: JulesClient>(
     for role in roles {
         println!("Executing {} / {}...", layer.dir_name(), role);
 
-        let prompt = assemble_prompt(jules_path, layer, role)?;
+        let mut prompt = assemble_prompt(jules_path, layer, role)?;
+
+        // Append issue content for implementers
+        if let Some(content) = issue_content {
+            prompt.push_str("\n---\n# Issue Content\n");
+            prompt.push_str(content);
+        }
 
         let request = SessionRequest {
             prompt,
@@ -267,9 +306,15 @@ fn execute_dry_run(
     layer: Layer,
     roles: &[String],
     starting_branch: &str,
+    issue_content: Option<&str>,
 ) -> Result<(), AppError> {
     println!("=== Dry Run: {} ===", layer.display_name());
     println!("Starting branch: {}\n", starting_branch);
+
+    if let Some(content) = issue_content {
+        println!("Issue content: {} chars", content.len());
+        println!();
+    }
 
     for role in roles {
         println!("--- Role: {} ---", role);

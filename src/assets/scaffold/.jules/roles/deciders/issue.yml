@@ -1,12 +1,14 @@
 schema_version: 2
 
 # Metadata
-id: "<id>" # e.g. 2026-01-28_issue_auth_inconsistency
+fingerprint: "<fingerprint>" # stable identity for filename (e.g. auth_inconsistency)
+id: "<fingerprint>" # alias for fingerprint, used as filename: .jules/exchange/issues/<fingerprint>.yml
 category: "<category>" # directory name under .jules/exchange/events/
 priority: "low|medium|high"
-status: "open"
+status: "open|closed"
 requires_deep_analysis: false # true if deep impact analysis/dependency check is needed
-sources: [] # list of event_ids that triggered this issue
+deep_analysis_reason: "" # required when requires_deep_analysis is true
+sources: [] # list of event_ids that triggered this issue (append new sources on merge)
 
 # Content
 title: "<Descriptive Title>"

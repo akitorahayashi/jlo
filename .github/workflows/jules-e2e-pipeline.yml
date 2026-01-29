@@ -189,6 +189,7 @@ jobs:
             "__PRIORITY__" "$ISSUE_PRIORITY" \
             "__STATUS__" "$ISSUE_STATUS" \
             "__REQUIRES_DEEP_ANALYSIS__" "true" \
+            "__DEEP_ANALYSIS_REASON__" "Mock issue requires validation of expansion workflow." \
             "__ISSUE_TITLE__" "Mock pipeline issue" \
             "__ISSUE_SUMMARY__" "Mock issue derived from a synthetic event." \
             "__AFFECTED_AREA__" "README.md" \
@@ -209,6 +210,7 @@ jobs:
             "__PRIORITY__" "$ISSUE_PRIORITY" \
             "__STATUS__" "$ISSUE_STATUS" \
             "__REQUIRES_DEEP_ANALYSIS__" "false" \
+            "__DEEP_ANALYSIS_REASON__" "Mock issue expansion completed. Original: validation of expansion workflow." \
             "__ISSUE_TITLE__" "Mock pipeline issue" \
             "__ISSUE_SUMMARY__" "Mock issue derived from a synthetic event." \
             "__AFFECTED_AREA__" "README.md" \

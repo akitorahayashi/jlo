@@ -110,6 +110,9 @@ enum RunLayer {
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
+        /// Local issue file path (required for implementers)
+        #[arg(long)]
+        issue: Option<PathBuf>,
     },
 }
 
@@ -137,16 +140,22 @@ fn main() {
 fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     use jlo::domain::Layer;
 
-    let (target_layer, roles, dry_run, branch) = match layer {
-        RunLayer::Observers { role, dry_run, branch } => (Layer::Observers, role, dry_run, branch),
-        RunLayer::Deciders { role, dry_run, branch } => (Layer::Deciders, role, dry_run, branch),
-        RunLayer::Planners { role, dry_run, branch } => (Layer::Planners, role, dry_run, branch),
-        RunLayer::Implementers { role, dry_run, branch } => {
-            (Layer::Implementers, role, dry_run, branch)
+    let (target_layer, roles, dry_run, branch, issue) = match layer {
+        RunLayer::Observers { role, dry_run, branch } => {
+            (Layer::Observers, role, dry_run, branch, None)
+        }
+        RunLayer::Deciders { role, dry_run, branch } => {
+            (Layer::Deciders, role, dry_run, branch, None)
+        }
+        RunLayer::Planners { role, dry_run, branch } => {
+            (Layer::Planners, role, dry_run, branch, None)
+        }
+        RunLayer::Implementers { role, dry_run, branch, issue } => {
+            (Layer::Implementers, role, dry_run, branch, issue)
         }
     };
 
-    let result = jlo::run(target_layer, roles, dry_run, branch)?;
+    let result = jlo::run(target_layer, roles, dry_run, branch, issue)?;
 
     if !result.dry_run && !result.roles.is_empty() && !result.sessions.is_empty() {
         println!("✅ Created {} Jules session(s)", result.sessions.len());
