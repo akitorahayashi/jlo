@@ -45,6 +45,9 @@ pub struct JulesApiConfig {
     /// Maximum retry attempts.
     #[serde(default = "default_max_retries")]
     pub max_retries: u32,
+    /// Delay between retries in milliseconds.
+    #[serde(default = "default_retry_delay_ms")]
+    pub retry_delay_ms: u64,
 }
 
 impl Default for JulesApiConfig {
@@ -53,6 +56,7 @@ impl Default for JulesApiConfig {
             api_url: default_api_url(),
             timeout_secs: default_timeout(),
             max_retries: default_max_retries(),
+            retry_delay_ms: default_retry_delay_ms(),
         }
     }
 }
@@ -67,6 +71,10 @@ fn default_timeout() -> u64 {
 
 fn default_max_retries() -> u32 {
     3
+}
+
+fn default_retry_delay_ms() -> u64 {
+    1000
 }
 
 /// Execution settings for agent runs.

@@ -9,16 +9,27 @@ use serde::{Deserialize, Serialize};
 use crate::domain::{AppError, JulesApiConfig};
 use crate::ports::{JulesClient, SessionRequest, SessionResponse};
 
-const RETRY_DELAY_MS: u64 = 1000;
 const X_GOOG_API_KEY: &str = "X-Goog-Api-Key";
 
 /// HTTP client for Jules API.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct HttpJulesClient {
     api_key: String,
     api_url: String,
     max_retries: u32,
+    retry_delay_ms: u64,
     client: Client,
+}
+
+impl std::fmt::Debug for HttpJulesClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("HttpJulesClient")
+            .field("api_url", &self.api_url)
+            .field("max_retries", &self.max_retries)
+            .field("retry_delay_ms", &self.retry_delay_ms)
+            .field("api_key", &"[REDACTED]")
+            .finish()
+    }
 }
 
 impl HttpJulesClient {
@@ -33,6 +44,7 @@ impl HttpJulesClient {
             api_key,
             api_url: config.api_url.clone(),
             max_retries: config.max_retries,
+            retry_delay_ms: config.retry_delay_ms,
             client,
         })
     }
@@ -109,8 +121,8 @@ impl JulesClient for HttpJulesClient {
 
         for attempt in 0..max_attempts {
             if attempt > 0 {
-                // Exponential backoff: 1s, 2s, 4s, ...
-                let delay = RETRY_DELAY_MS * 2_u64.pow(attempt.saturating_sub(1));
+                // Exponential backoff: base * 2^(attempt-1)
+                let delay = self.retry_delay_ms * 2_u64.pow(attempt.saturating_sub(1));
                 std::thread::sleep(Duration::from_millis(delay));
                 println!("Retrying... (attempt {}/{})", attempt + 1, max_attempts);
             }

@@ -14,8 +14,10 @@ max_parallel = 3
 
 [jules]
 # Jules API endpoint
-# api_url = "https://api.jules.ai/v1/sessions"
+api_url = "https://jules.googleapis.com/v1alpha/sessions"
 # Request timeout in seconds
-# timeout_secs = 30
+timeout_secs = 30
 # Maximum retry attempts on transient failures
-# max_retries = 3
+max_retries = 3
+# Delay between retries in milliseconds
+retry_delay_ms = 1000
