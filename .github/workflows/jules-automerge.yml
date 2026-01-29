@@ -16,17 +16,18 @@
 name: Jules Auto-Merge
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main, jules]
+  workflow_call:
+    secrets:
+      bot_token:
+        required: true
 
 jobs:
   check-scope:
     if: |
-      (startsWith(github.head_ref, 'jules-observer-') ||
-       startsWith(github.head_ref, 'jules-decider-') ||
-       startsWith(github.head_ref, 'jules-planner-') ||
-       startsWith(github.head_ref, 'jules-e2e-test-')) &&
+      (startsWith(github.event.pull_request.head.ref, 'jules-observer-') ||
+       startsWith(github.event.pull_request.head.ref, 'jules-decider-') ||
+       startsWith(github.event.pull_request.head.ref, 'jules-planner-') ||
+       startsWith(github.event.pull_request.head.ref, 'jules-e2e-test-')) &&
       github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
@@ -66,7 +67,7 @@ jobs:
     steps:
       - name: Enable auto-merge
         env:
-          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+          GH_TOKEN: ${{ secrets.bot_token }}
         run: |
           gh pr merge "${{ github.event.pull_request.number }}" \
             --auto --squash --delete-branch \
