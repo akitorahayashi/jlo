@@ -61,13 +61,12 @@ jobs:
           echo "category=$CATEGORY" >> "$GITHUB_OUTPUT"
           echo "event_id=$EVENT_ID" >> "$GITHUB_OUTPUT"
           echo "issue_id=$ISSUE_ID" >> "$GITHUB_OUTPUT"
-          echo "mock_root=$MOCK_ROOT" >> "$GITHUB_OUTPUT"
 
       - name: Upload observer artifact
         uses: actions/upload-artifact@v4
         with:
           name: jules-mock-observer
-          path: ${{ steps.prepare.outputs.mock_root }}/.jules
+          path: ${{ runner.temp }}/jules-mock/.jules
 
   mock-decider:
     runs-on: ubuntu-latest
