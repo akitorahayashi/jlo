@@ -38,14 +38,12 @@ Execute Jules agents for a specific layer:
 jlo run observers                      # Run all observer roles
 jlo run deciders --role triage         # Run specific role
 jlo run planners --dry-run             # Show prompts without executing
-jlo run implementers --mock            # Mock mode (no API calls)
 jlo run observers --branch custom      # Override starting branch
 ```
 
 **Flags**:
 - `--role <name>`: Run specific role(s) instead of all configured
 - `--dry-run`: Show assembled prompts without API calls
-- `--mock`: Run in mock mode (creates test artifacts)
 - `--branch <name>`: Override the default starting branch
 
 **Configuration**: Agent roles are configured in `.jules/config.toml`:
