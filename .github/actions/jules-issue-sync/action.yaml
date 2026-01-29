@@ -1,0 +1,247 @@
+name: Sync Jules Issue to GitHub
+description: 'Creates or updates a GitHub Issue from a .jules/exchange/issues/*.yml file'
+
+inputs:
+  issue_file:
+    description: 'Path to the issue YAML file (relative to repo root)'
+    required: true
+  github_token:
+    description: 'GitHub token with issue write permission'
+    required: true
+
+outputs:
+  issue_number:
+    description: 'The GitHub Issue number (created or updated)'
+    value: ${{ steps.sync.outputs.issue_number }}
+  action_taken:
+    description: 'Action taken: created, updated, or skipped'
+    value: ${{ steps.sync.outputs.action_taken }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Validate and parse issue file
+      id: parse
+      shell: bash
+      run: |
+        issue_file="${{ inputs.issue_file }}"
+        
+        if [ ! -f "$issue_file" ]; then
+          echo "Error: Issue file not found: $issue_file"
+          exit 1
+        fi
+        
+        # Check requires_deep_analysis
+        requires_deep=$(yq -r '.requires_deep_analysis // false' "$issue_file")
+        if [ "$requires_deep" = "true" ]; then
+          echo "skip=true" >> "$GITHUB_OUTPUT"
+          echo "Skipping: requires_deep_analysis is true"
+          exit 0
+        fi
+        echo "skip=false" >> "$GITHUB_OUTPUT"
+        
+        # Extract fields for template rendering
+        title=$(yq -r '.title // ""' "$issue_file")
+        summary=$(yq -r '.summary // ""' "$issue_file")
+        id=$(yq -r '.id // ""' "$issue_file")
+        category=$(yq -r '.category // ""' "$issue_file")
+        priority=$(yq -r '.priority // ""' "$issue_file")
+        status=$(yq -r '.status // ""' "$issue_file")
+        requires_deep_analysis=$(yq -r '.requires_deep_analysis // false' "$issue_file")
+        
+        # Validate required fields
+        if [ -z "$title" ] || [ "$title" = "null" ]; then
+          echo "Error: Missing required field 'title'"
+          exit 1
+        fi
+        
+        # Output for next step
+        {
+          echo "title<<EOF"
+          echo "$title"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        
+        {
+          echo "summary<<EOF"
+          echo "$summary"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        
+        echo "id=$id" >> "$GITHUB_OUTPUT"
+        echo "category=$category" >> "$GITHUB_OUTPUT"
+        echo "priority=$priority" >> "$GITHUB_OUTPUT"
+        echo "status=$status" >> "$GITHUB_OUTPUT"
+        echo "requires_deep_analysis=$requires_deep_analysis" >> "$GITHUB_OUTPUT"
+        echo "source_path=$issue_file" >> "$GITHUB_OUTPUT"
+
+    - name: Render issue body
+      id: render
+      if: steps.parse.outputs.skip != 'true'
+      shell: bash
+      run: |
+        issue_file="${{ inputs.issue_file }}"
+        
+        # Extract all fields
+        sources=$(yq -r '.sources // [] | .[]' "$issue_file" | sed 's/^/- /')
+        affected_areas=$(yq -r '.affected_areas // [] | .[]' "$issue_file" | sed 's/^/- /')
+        constraints=$(yq -r '.constraints // [] | .[]' "$issue_file" | sed 's/^/- /')
+        risks=$(yq -r '.risks // [] | .[]' "$issue_file" | sed 's/^/- /')
+        problem=$(yq -r '.problem // ""' "$issue_file")
+        impact=$(yq -r '.impact // ""' "$issue_file")
+        desired_outcome=$(yq -r '.desired_outcome // ""' "$issue_file")
+        acceptance_criteria=$(yq -r '.acceptance_criteria // [] | .[]' "$issue_file" | sed 's/^/- [ ] /')
+        
+        # Build issue body using template
+        cat > issue_body.md << 'TEMPLATE_EOF'
+        <!-- jules-source: ${{ inputs.issue_file }} -->
+        
+        ## Summary
+        
+        ${{ steps.parse.outputs.summary }}
+        
+        ## Affected Areas
+        
+        TEMPLATE_EOF
+        
+        if [ -n "$affected_areas" ]; then
+          echo "$affected_areas" >> issue_body.md
+        else
+          echo "_None specified_" >> issue_body.md
+        fi
+        
+        cat >> issue_body.md << 'TEMPLATE_EOF'
+        
+        ---
+        
+        ## Metadata
+        
+        | Field | Value |
+        |-------|-------|
+        | ID | `${{ steps.parse.outputs.id }}` |
+        | Category | `${{ steps.parse.outputs.category }}` |
+        | Priority | `${{ steps.parse.outputs.priority }}` |
+        | Status | `${{ steps.parse.outputs.status }}` |
+        | Source | `${{ inputs.issue_file }}` |
+        
+        TEMPLATE_EOF
+        
+        if [ -n "$sources" ]; then
+          echo "### Event Sources" >> issue_body.md
+          echo "" >> issue_body.md
+          echo "$sources" >> issue_body.md
+          echo "" >> issue_body.md
+        fi
+        
+        echo "---" >> issue_body.md
+        echo "" >> issue_body.md
+        echo "## Problem" >> issue_body.md
+        echo "" >> issue_body.md
+        echo "$problem" >> issue_body.md
+        echo "" >> issue_body.md
+        
+        echo "## Impact" >> issue_body.md
+        echo "" >> issue_body.md
+        echo "$impact" >> issue_body.md
+        echo "" >> issue_body.md
+        
+        echo "## Desired Outcome" >> issue_body.md
+        echo "" >> issue_body.md
+        echo "$desired_outcome" >> issue_body.md
+        echo "" >> issue_body.md
+        
+        echo "## Acceptance Criteria" >> issue_body.md
+        echo "" >> issue_body.md
+        if [ -n "$acceptance_criteria" ]; then
+          echo "$acceptance_criteria" >> issue_body.md
+        else
+          echo "_None specified_" >> issue_body.md
+        fi
+        echo "" >> issue_body.md
+        
+        if [ -n "$constraints" ]; then
+          echo "## Constraints" >> issue_body.md
+          echo "" >> issue_body.md
+          echo "$constraints" >> issue_body.md
+          echo "" >> issue_body.md
+        fi
+        
+        if [ -n "$risks" ]; then
+          echo "## Risks" >> issue_body.md
+          echo "" >> issue_body.md
+          echo "$risks" >> issue_body.md
+          echo "" >> issue_body.md
+        fi
+        
+        # Store body for next step
+        {
+          echo "body<<BODY_EOF"
+          cat issue_body.md
+          echo "BODY_EOF"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Search for existing issue
+      id: search
+      if: steps.parse.outputs.skip != 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        source_path="${{ inputs.issue_file }}"
+        search_query="jules-source: $source_path in:body"
+        
+        # Search for issues containing the source marker
+        results=$(gh issue list --search "$search_query" --json number --jq '.[].number' 2>/dev/null || echo "")
+        
+        count=$(echo "$results" | grep -c '[0-9]' || echo "0")
+        
+        if [ "$count" -eq 0 ]; then
+          echo "existing_issue=" >> "$GITHUB_OUTPUT"
+          echo "match_count=0" >> "$GITHUB_OUTPUT"
+        elif [ "$count" -eq 1 ]; then
+          issue_num=$(echo "$results" | head -1)
+          echo "existing_issue=$issue_num" >> "$GITHUB_OUTPUT"
+          echo "match_count=1" >> "$GITHUB_OUTPUT"
+        else
+          echo "Error: Multiple issues found with source '$source_path'"
+          echo "$results"
+          exit 1
+        fi
+
+    - name: Create or update issue
+      id: sync
+      if: steps.parse.outputs.skip != 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        title="${{ steps.parse.outputs.title }}"
+        body_file="issue_body.md"
+        existing="${{ steps.search.outputs.existing_issue }}"
+        
+        if [ -z "$existing" ]; then
+          # Create new issue
+          issue_num=$(gh issue create \
+            --title "$title" \
+            --body-file "$body_file" \
+            --label "jules" \
+            | grep -o '[0-9]*$')
+          echo "issue_number=$issue_num" >> "$GITHUB_OUTPUT"
+          echo "action_taken=created" >> "$GITHUB_OUTPUT"
+          echo "Created issue #$issue_num"
+        else
+          # Update existing issue
+          gh issue edit "$existing" \
+            --title "$title" \
+            --body-file "$body_file"
+          echo "issue_number=$existing" >> "$GITHUB_OUTPUT"
+          echo "action_taken=updated" >> "$GITHUB_OUTPUT"
+          echo "Updated issue #$existing"
+        fi
+
+    - name: Handle skip case
+      if: steps.parse.outputs.skip == 'true'
+      shell: bash
+      run: |
+        echo "issue_number=" >> "$GITHUB_OUTPUT"
+        echo "action_taken=skipped" >> "$GITHUB_OUTPUT"

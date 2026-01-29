@@ -12,7 +12,7 @@
 ## Critical Design Principles
 
 ### 1. Prompts are Static Files, Never Generated in Rust
-All prompts exist as `.yml` files in `src/assets/scaffold/` or `src/assets/templates/`. Rust code only does simple string replacement (e.g., `ROLE_NAME` -> actual role name).
+All prompts exist as `.yml` files in `src/assets/scaffold/` or `src/assets/templates/`.
 
 ### 2. Prompt Hierarchy (No Duplication)
 ```
@@ -34,7 +34,7 @@ prompt.yml (entry point, role-specific)
 Agent execution is orchestrated by GitHub Actions, not jlo. The `.github/workflows/jules-workflows.yml` coordinates all agent invocations via reusable workflows.
 
 ## Project Summary
-`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. Specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events, and Planners decompose issues. Implementation is triggered by task files.
+`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. Specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events and produce issues, Planners expand issues requiring deep analysis, and Implementers are triggered manually from GitHub Issues.
 
 ## Branch Strategy
 
@@ -55,10 +55,6 @@ Agent execution is orchestrated by GitHub Actions, not jlo. The `.github/workflo
 - **Embedded scaffold**: `include_dir`
 - **Interactive prompts**: `dialoguer`
 - **Date/Time**: `chrono`
-
-## Coding Standards
-- **Formatter**: `rustfmt` (100 char width, crate-level import granularity)
-- **Linter**: `clippy` with `-D warnings`
 
 ## Key Commands
 - **Build**: `cargo build`
@@ -96,22 +92,6 @@ tests/
 - `jlo setup gen [path]` (alias: `s g`): Generate `install.sh` and `env.toml`
 - `jlo setup list` (alias: `s ls`): List available components
 - `jlo setup list --detail <component>`: Show component details
-
-## Built-in Roles
-
-| Layer | Role | Responsibility |
-|-------|------|----------------|
-| Observers | `taxonomy` | Naming conventions |
-| Observers | `data_arch` | Data models |
-| Observers | `qa` | Test coverage |
-| Deciders | `triage` | Event screening, feedback writing |
-| Planners | `specifier` | Task decomposition |
-
-## Language Policy
-- **Scaffold Content**: English
-- **Role Content**: User-defined
-- **CLI Messages**: English
-- **Code Comments**: English
 
 ## Setup Compiler
 
