@@ -59,15 +59,21 @@ jobs:
 
           ISSUE_ID="$(date -u +%Y-%m-%d)_mock_pipeline_${CATEGORY}"
 
+
           echo "category=$CATEGORY" >> "$GITHUB_OUTPUT"
           echo "event_id=$EVENT_ID" >> "$GITHUB_OUTPUT"
           echo "issue_id=$ISSUE_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Debug mock files
+        run: ls -R .jules-mock
 
       - name: Upload observer artifact
         uses: actions/upload-artifact@v4
         with:
           name: jules-mock-observer
-          path: ${{ github.workspace }}/.jules-mock/.jules
+          path: .jules-mock
+          if-no-files-found: error
+
 
   mock-decider:
     runs-on: ubuntu-latest
@@ -133,7 +139,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jules-mock-decider
-          path: ${{ github.workspace }}/.jules-mock/.jules
+          path: .jules-mock
+          if-no-files-found: error
 
   mock-planner:
     runs-on: ubuntu-latest
@@ -190,7 +197,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jules-mock-planner
-          path: ${{ github.workspace }}/.jules-mock/.jules
+          path: .jules-mock
+          if-no-files-found: error
 
   verify-artifacts:
     runs-on: ubuntu-latest
