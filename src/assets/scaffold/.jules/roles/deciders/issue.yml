@@ -4,9 +4,7 @@ schema_version: 2
 id: "<fingerprint>" # stable identity used as filename
 fingerprint: "<fingerprint>" # alias for id
 title: "<Descriptive Title>"
-status: "open|closed"
 priority: "low|medium|high"
-category: "<category>" # directory name under .jules/exchange/events/
 summary: "<One-line statement of the issue>"
 
 # Content
@@ -19,6 +17,9 @@ impact: |
 desired_outcome: |
   <What should be true after resolution>
 
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
 # Specifics
 affected_areas:
   - "<file or module path>"
@@ -27,8 +28,10 @@ acceptance_criteria:
   - "<condition 1>"
   - "<condition 2>"
 
-constraints: [] # list of constraints/assumptions (optional)
-risks: [] # list of known risks or regressions (optional)
+verification_commands:
+  - "<command 1 (e.g. format check)>"
+  - "<command 2 (e.g. lint check)>"
+  - "<command 3 (e.g. test commands)>"
 
 # Analysis Flags
 requires_deep_analysis: false # true if deep impact analysis/dependency check is needed

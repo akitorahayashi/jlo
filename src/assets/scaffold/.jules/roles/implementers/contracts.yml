@@ -3,8 +3,6 @@ branch_prefix: jules-implementer-
 
 constraints:
   - Branch format: jules-implementer-<fingerprint>-<short_description>
-  - Do NOT skip verification
-  - Do NOT modify files outside issue scope
   - Follow AGENTS.md conventions
 
 inputs:
@@ -13,7 +11,7 @@ inputs:
 
 outputs:
   - Modified source files, tests, documentation
-  - Pull request for human review
+  - Pull request
 
 workflow:
   1. Read issue content from the embedded prompt (already provided)
@@ -21,4 +19,4 @@ workflow:
   3. Implement code, tests, documentation
   4. Run verification (or reliable alternative)
   5. Iterate if verification fails
-  6. Create pull request for human review
+  6. Create pull request

@@ -60,8 +60,7 @@ Agent execution is orchestrated by GitHub Actions, not jlo. The `.github/workflo
 - **Date/Time**: `chrono`
 
 ## Key Commands
-- **Build**: `cargo build`
-- **Format**: `cargo fmt --check`
+- **Format**: `cargo fmt`, `cargo fmt --check`
 - **Lint**: `cargo clippy --all-targets --all-features -- -D warnings`
 - **Test**: `cargo test --all-targets --all-features`
 
