@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "wf0001"
+created_at: "2026-01-30"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Workflow Template Inconsistency"
+statement: |
+  The README.md documentation lists four workflow templates (`jules-workflows.yml`, `jules-automerge.yml`, `sync-jules.yml`, `jules-e2e-pipeline.yml`) as available for use. However, the `src/assets/templates/workflows/` directory contains only `jules.yml`. This creates a critical gap between documentation instructions and available assets, potentially confusing users trying to set up CI/CD.
+
+evidence:
+  - path: "README.md"
+    loc: "GitHub Actions Integration table"
+    note: "Lists missing workflow files"
+  - path: "src/assets/templates/workflows/"
+    loc: "Directory listing"
+    note: "Only contains jules.yml"
+
+tags:
+  - "documentation"
+  - "missing-assets"
+  - "readme"
