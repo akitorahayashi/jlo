@@ -1,36 +1,34 @@
 layer: deciders
 branch_prefix: jules-decider-
 
+inputs:
+  - .jules/workstreams/<workstream>/events/*.yml
+  - .jules/workstreams/<workstream>/issues/**/*.yml (existing issues)
+  - .jules/workstreams/<workstream>/issues/index.md
+
 constraints:
   - "Branch ID: 4 alphanumeric characters (e.g. 'c3d4')"
-  - Verify observations in codebase before accepting
+  - Verify observations events in codebase before accepting
   - Rationalize conflicting events (e.g. deletion overrides renaming)
-  - Aggregate all valid events into issues; do not leave "trivial" events unprocessed
+  - Aggregate all valid events into issues
   - Delete ALL processed events
   - When requires_deep_analysis is true, deep_analysis_reason MUST be non-empty
   - Use fingerprint as filename (not date-based)
-  - Ensure verification_commands are realistic and executable (e.g. `cargo test`, `npm test`); DO NOT use recursive/hypothetical commands (e.g. launching jules)
-  - Workstream directory must exist (fail fast if missing)
-  - Deciders never read or write outside their workstream
+  - Ensure verification_commands are realistic and executable (e.g. `cargo test`, `npm test`); DO NOT use recursive/hypothetical commands (e.g. launching jules VM, launch simulators)
+  - Never read or write outside your workstream directory
 
-inputs:
-  - .jules/workstreams/<workstream>/events/*.yml
-  - .jules/workstreams/<workstream>/issues/**/*.yml (existing issues for merge)
-  - .jules/workstreams/<workstream>/issues/index.md
+workflow:
+  - "1. Read events (filename: YYYY-MM-DD_HHMMSS_*.yml)"
+  - 2. Read existing issues and index.md
+  - 3. Verify observed events exist, check significance, identify related events
+  - 4. Rationalize disputes
+  - "5. For events related to an existing issue: merge into that issue (update content)"
+  - "6. For new problems: cp issue.yml .jules/workstreams/<workstream>/issues/<priority>/<fingerprint>.yml"
+  - 7. Update .jules/workstreams/<workstream>/issues/index.md to reflect the current state of issues
+  - "8. Reject invalid events: Create feedback based on feedback.yml at .jules/roles/observers/<author_role>/feedbacks/<summary>.yml (fill in critique and rejected_content)"
+  - 9. Delete ALL processed events
 
 outputs:
   - .jules/workstreams/<workstream>/issues/<priority>/*.yml (created or updated)
   - .jules/workstreams/<workstream>/issues/index.md
   - .jules/roles/observers/<author_role>/feedbacks/<date>_<description>.yml (rejection feedback)
-
-workflow:
-  - "1. Read events (filename: YYYY-MM-DD_HHMMSS_*.yml)"
-  - 2. Read existing open issues and index.md to identify merge candidates
-  - 3. Verify observations exist, check significance, identify related events
-  - 4. Rationalize disputes
-  - "5. For events related to an existing open issue: merge into that issue (update content)"
-  - "6. For new problems: cp issue.yml .jules/workstreams/<workstream>/issues/<priority>/<fingerprint>.yml"
-  - 7. Update .jules/workstreams/<workstream>/issues/index.md to reflect the current state of issues
-  - 8. If requiring deep analysis, provide a clear reason in deep_analysis_reason
-  - "9. Reject invalid events: Create feedback based on feedback.yml at .jules/roles/observers/<author_role>/feedbacks/<file>.yml (fill in critique and rejected_content)"
-  - 10. Delete ALL processed events

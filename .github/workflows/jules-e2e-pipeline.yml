@@ -1,241 +1,321 @@
-name: Jules E2E Exchange Flow
+# Jules E2E Pipeline Simulation
+#
+# Simulates the actual Observer → Decider → Planner pipeline flow without
+# calling Jules API. Each phase creates a real branch and PR, triggering
+# the auto-merge workflow.
+
+name: Jules E2E Pipeline
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 jobs:
-  exchange-flow:
+  # ============================================================
+  # Mock Observer Phase
+  # Creates an event file and submits PR for auto-merge
+  # ============================================================
+  mock-observer:
+    runs-on: ubuntu-latest
+    outputs:
+      event_id: ${{ steps.create.outputs.event_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create event file
+        id: create
+        shell: bash
+        run: |
+          set -euo pipefail
+          RANDOM_ID=$(printf '%04x' "$RANDOM")
+          BRANCH="jules-observer-e2e-${RANDOM_ID}"
+          WORKSTREAM="generic"
+          
+          EVENT_TEMPLATE=".jules/roles/observers/event.yml"
+          if [ ! -f "$EVENT_TEMPLATE" ]; then
+            echo "Missing event template" >&2
+            exit 1
+          fi
+
+          # Find first observer role
+          ROLE=$(find .jules/roles/observers -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | head -n 1 || true)
+          if [ -z "$ROLE" ]; then
+            echo "No observer roles found" >&2
+            exit 1
+          fi
+
+          DATE_STR="$(date -u +%Y-%m-%d)"
+          TIME_STR="$(date -u +%H%M%S)"
+          EVENT_ID="${DATE_STR}_${TIME_STR}_${ROLE}_e2e_${RANDOM_ID}"
+          EVENT_PATH=".jules/workstreams/$WORKSTREAM/events/${EVENT_ID}.yml"
+
+          mkdir -p ".jules/workstreams/$WORKSTREAM/events"
+          cp "$EVENT_TEMPLATE" "$EVENT_PATH"
+
+          # Replace placeholders
+          sed -i "s#YYYY-MM-DD_HHMMSS_<role>_<id>#$EVENT_ID#g" "$EVENT_PATH"
+          sed -i "s#YYYY-MM-DD#$DATE_STR#g" "$EVENT_PATH"
+          sed -i "s#<role>#$ROLE#g" "$EVENT_PATH"
+          sed -i "s#low|medium|high#medium#g" "$EVENT_PATH"
+          sed -i "s#<short descriptive title>#E2E Pipeline Test Event#g" "$EVENT_PATH"
+          sed -i "s#<concise statement of the observation>#Synthetic event for E2E pipeline validation.#g" "$EVENT_PATH"
+          sed -i "s#<repo-relative path>#README.md#g" "$EVENT_PATH"
+          sed -i "s#<line number or symbol># jlo#g" "$EVENT_PATH"
+          sed -i "s#<why this supports the statement>#E2E test evidence.#g" "$EVENT_PATH"
+          sed -i "s#<tag>#e2e-pipeline#g" "$EVENT_PATH"
+
+          git checkout -b "$BRANCH"
+          git add "$EVENT_PATH"
+          git commit -m "E2E Pipeline: Mock observer event $RANDOM_ID"
+          git push origin "$BRANCH"
+
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "event_id=$EVENT_ID" >> "$GITHUB_OUTPUT"
+          echo "event_path=$EVENT_PATH" >> "$GITHUB_OUTPUT"
+          echo "workstream=$WORKSTREAM" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          PR_URL=$(gh pr create \
+            --base jules \
+            --head "${{ steps.create.outputs.branch }}" \
+            --title "[E2E Pipeline] Mock Observer" \
+            --body "Automated E2E pipeline test - Observer phase.")
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          for i in {1..60}; do
+            STATE=$(gh pr view "${{ steps.pr.outputs.pr_url }}" --json state -q '.state')
+            if [ "$STATE" = "MERGED" ]; then
+              echo "✅ Observer PR merged"
+              exit 0
+            elif [ "$STATE" = "CLOSED" ]; then
+              echo "❌ Observer PR closed without merge"
+              exit 1
+            fi
+            echo "Waiting for merge... ($i/60)"
+            sleep 2
+          done
+          echo "❌ Timeout waiting for observer merge"
+          exit 1
+
+  # ============================================================
+  # Mock Decider Phase
+  # Processes event, creates issue, deletes event
+  # ============================================================
+  mock-decider:
+    needs: mock-observer
+    runs-on: ubuntu-latest
+    outputs:
+      issue_path: ${{ steps.create.outputs.issue_path }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Process event and create issue
+        id: create
+        shell: bash
+        run: |
+          set -euo pipefail
+          RANDOM_ID=$(printf '%04x' "$RANDOM")
+          BRANCH="jules-decider-e2e-${RANDOM_ID}"
+          WORKSTREAM="generic"
+          
+          ISSUE_TEMPLATE=".jules/roles/deciders/issue.yml"
+          if [ ! -f "$ISSUE_TEMPLATE" ]; then
+            echo "Missing issue template" >&2
+            exit 1
+          fi
+
+          # Find the event created by observer
+          EVENT_PATH=$(find .jules/workstreams/$WORKSTREAM/events -name "*.yml" -type f | head -n 1 || true)
+          if [ -z "$EVENT_PATH" ]; then
+            echo "No event files found to process" >&2
+            exit 1
+          fi
+
+          ISSUE_ID="e2e_pipeline_${RANDOM_ID}"
+          PRIORITY="medium"
+          ISSUE_PATH=".jules/workstreams/$WORKSTREAM/issues/$PRIORITY/${ISSUE_ID}.yml"
+
+          mkdir -p ".jules/workstreams/$WORKSTREAM/issues/$PRIORITY"
+          cp "$ISSUE_TEMPLATE" "$ISSUE_PATH"
+
+          # Replace placeholders
+          sed -i "s#<fingerprint>#$ISSUE_ID#g" "$ISSUE_PATH"
+          sed -i "s#<Descriptive Title>#E2E Pipeline Test Issue#g" "$ISSUE_PATH"
+          sed -i "s#low|medium|high#$PRIORITY#g" "$ISSUE_PATH"
+          sed -i "s#<One-line statement of the issue>#Issue created from E2E pipeline event.#g" "$ISSUE_PATH"
+          sed -i "s#<What is wrong or missing - conceptual description>#E2E pipeline validation.#g" "$ISSUE_PATH"
+          sed -i "s#<Why this matters - consequences if not addressed>#Pipeline flow test.#g" "$ISSUE_PATH"
+          sed -i "s#<What should be true after resolution>#E2E test passes.#g" "$ISSUE_PATH"
+          sed -i "s#<file or module path>#README.md#g" "$ISSUE_PATH"
+          sed -i "s#<condition 1>#Pipeline completes successfully.#g" "$ISSUE_PATH"
+          sed -i "s#<condition 2>#Issue state is correct.#g" "$ISSUE_PATH"
+          sed -i "s#<command 1 (e.g. format check)>#echo verified#g" "$ISSUE_PATH"
+          sed -i "s#<command 2 (e.g. lint check)>##g" "$ISSUE_PATH"
+          sed -i "s#<command 3 (e.g. test commands)>##g" "$ISSUE_PATH"
+
+          # Delete processed event
+          rm -f "$EVENT_PATH"
+
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "E2E Pipeline: Mock decider - process event, create issue"
+          git push origin "$BRANCH"
+
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "issue_path=$ISSUE_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          PR_URL=$(gh pr create \
+            --base jules \
+            --head "${{ steps.create.outputs.branch }}" \
+            --title "[E2E Pipeline] Mock Decider" \
+            --body "Automated E2E pipeline test - Decider phase.")
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          for i in {1..60}; do
+            STATE=$(gh pr view "${{ steps.pr.outputs.pr_url }}" --json state -q '.state')
+            if [ "$STATE" = "MERGED" ]; then
+              echo "✅ Decider PR merged"
+              exit 0
+            elif [ "$STATE" = "CLOSED" ]; then
+              echo "❌ Decider PR closed without merge"
+              exit 1
+            fi
+            echo "Waiting for merge... ($i/60)"
+            sleep 2
+          done
+          echo "❌ Timeout waiting for decider merge"
+          exit 1
+
+  # ============================================================
+  # Verification
+  # Planners and Implementers are single-role, issue-driven layers
+  # tested separately via jules-e2e-single-role.yml
+  # ============================================================
+  verify:
+    needs: mock-decider
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
+          fetch-depth: 0
 
-      - name: Setup Rust
-        uses: ./.github/actions/setup
-
-      - name: Verify Jules workspace
+      - name: Verify final state
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -d ".jules" ]; then
-            echo "Expected .jules/ workspace on the jules branch." >&2
-            exit 1
-          fi
-          if [ ! -f ".jules/config.toml" ]; then
-            echo "Missing .jules/config.toml." >&2
-            exit 1
-          fi
+          WORKSTREAM="generic"
 
-      - name: Dry-run configured layers
-        shell: bash
+          echo "=== Checking event inbox ==="
+          EVENT_COUNT=$(find .jules/workstreams/$WORKSTREAM/events -name "*.yml" -type f 2>/dev/null | wc -l)
+          if [ "$EVENT_COUNT" -gt 0 ]; then
+            echo "❌ Event inbox not empty (found $EVENT_COUNT files)"
+            find .jules/workstreams/$WORKSTREAM/events -name "*.yml" -type f
+            exit 1
+          fi
+          echo "✅ Event inbox is empty"
+
+          echo "=== Checking issue was created ==="
+          ISSUE_PATH=$(find .jules/workstreams/$WORKSTREAM/issues -name "*.yml" -type f | head -n 1 || true)
+          if [ -z "$ISSUE_PATH" ]; then
+            echo "❌ No issue files found"
+            exit 1
+          fi
+          echo "✅ Found issue: $ISSUE_PATH"
+
+          echo "=== E2E Pipeline Verification Complete ==="
+
+  # ============================================================
+  # Cleanup (runs regardless of success/failure)
+  # ============================================================
+  cleanup:
+    if: always()
+    needs: [mock-observer, mock-decider, verify]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
         run: |
-          set -euo pipefail
-          layers=$(awk '
-            BEGIN { in_agents=0 }
-            /^\[agents\]/{ in_agents=1; next }
-            /^\[/{ if (in_agents==1) in_agents=0 }
-            in_agents {
-              line=$0
-              sub(/#.*/, "", line)
-              gsub(/^[ \t]+|[ \t]+$/, "", line)
-              if (line=="" || line !~ /=/) next
-              split(line, parts, "=")
-              key=parts[1]
-              gsub(/[ \t]+/, "", key)
-              val=parts[2]
-              gsub(/^[ \t]+|[ \t]+$/, "", val)
-              if (val ~ /^\[/ && val ~ /\]$/) {
-                inner=val
-                gsub(/^\[/, "", inner)
-                gsub(/\]$/, "", inner)
-                gsub(/[ \t]/, "", inner)
-                if (inner != "") print key
-              }
-            }
-          ' .jules/config.toml)
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          if [ -z "$layers" ]; then
-            echo "No configured roles found in .jules/config.toml." >&2
-            exit 1
-          fi
+      - name: Clean up test artifacts
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          set -x
+          WORKSTREAM="generic"
 
-          for layer in $layers; do
-            cargo run --quiet -- run "$layer" --dry-run
+          # Close any open E2E PRs
+          gh pr list --state open --json number,headRefName --jq '.[] | select(.headRefName | startswith("jules-") and contains("-e2e-")) | .number' | while read -r pr_num; do
+            echo "Closing PR #$pr_num"
+            gh pr close "$pr_num" --delete-branch || true
           done
 
-      - name: Execute exchange flow
-        shell: bash
-        run: |
-          set -euo pipefail
-          MOCK_ROOT="$GITHUB_WORKSPACE/.jules-mock"
-          WORKSTREAM="generic"
-          
-          EVENT_ROOT="$MOCK_ROOT/.jules/workstreams/$WORKSTREAM/events"
-          ISSUE_ROOT="$MOCK_ROOT/.jules/workstreams/$WORKSTREAM/issues"
-          
-          # Templates from the workspace
-          EVENT_TEMPLATE="$GITHUB_WORKSPACE/.jules/roles/observers/event.yml"
-          ISSUE_TEMPLATE="$GITHUB_WORKSPACE/.jules/roles/deciders/issue.yml"
-          
-          if [ ! -f "$EVENT_TEMPLATE" ] || [ ! -f "$ISSUE_TEMPLATE" ]; then
-             echo "Missing templates in workspace." >&2
-             exit 1
+          # Delete leftover E2E branches
+          git fetch --prune
+          git branch -r | grep -E 'jules-(observer|decider)-e2e-' | sed 's#origin/##' | while read -r branch; do
+            echo "Deleting branch: $branch"
+            git push origin --delete "$branch" || true
+          done
+
+          # Remove test event files
+          if find .jules/workstreams/$WORKSTREAM/events -name "*e2e*.yml" -type f 2>/dev/null | grep -q .; then
+            find .jules/workstreams/$WORKSTREAM/events -name "*e2e*.yml" -type f -delete
+            git add -A
+            git commit -m "E2E Cleanup: Remove test event files" || true
+            git push origin jules || true
           fi
 
-          rm -rf "$MOCK_ROOT"
-          mkdir -p "$EVENT_ROOT" "$ISSUE_ROOT/pending"
-
-          ROLE=$(find "$GITHUB_WORKSPACE/.jules/roles/observers" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | head -n 1 || true)
-          if [ -z "$ROLE" ]; then
-            echo "No observer roles found under .jules/roles/observers." >&2
-            exit 1
+          # Remove test issue files
+          if find .jules/workstreams/$WORKSTREAM/issues -name "*e2e*.yml" -type f 2>/dev/null | grep -q .; then
+            find .jules/workstreams/$WORKSTREAM/issues -name "*e2e*.yml" -type f -delete
+            git add -A
+            git commit -m "E2E Cleanup: Remove test issue files" || true
+            git push origin jules || true
           fi
 
-          escape_sed() {
-            printf '%s' "$1" | sed -e 's/[\\&#]/\\&/g'
-          }
-
-          render_template() {
-            local template="$1"
-            local output="$2"
-            shift 2
-
-            cp "$template" "$output"
-            while [ "$#" -gt 1 ]; do
-              local placeholder="$1"
-              local value="$2"
-              shift 2
-              value=$(escape_sed "$value")
-              sed -i "s#$placeholder#$value#g" "$output"
-            done
-          }
-
-          extract_template_value() {
-            local file="$1"
-            local key="$2"
-            local line
-
-            line=$(grep -E "^[[:space:]]*$key:" "$file" | head -n 1 | sed -E 's/^[^:]*:[[:space:]]*//')
-            line=${line%%#*}
-            line=$(printf '%s' "$line" | tr -d '"' | xargs)
-            printf '%s' "$line"
-          }
-
-          pick_enum_value() {
-            local raw="$1"
-            IFS='|' read -r -a parts <<< "$raw"
-            local count=${#parts[@]}
-            if [ "$count" -eq 0 ]; then
-              return 1
-            fi
-            local index=$((count / 2))
-            printf '%s' "${parts[$index]}"
-          }
-
-          CONFIDENCE_ENUM=$(extract_template_value "$EVENT_TEMPLATE" "confidence")
-          if [ -z "$CONFIDENCE_ENUM" ]; then
-            echo "Failed to read confidence enum." >&2
-            exit 1
-          fi
-          EVENT_CONFIDENCE=$(pick_enum_value "$CONFIDENCE_ENUM")
-
-          PRIORITY_ENUM=$(extract_template_value "$ISSUE_TEMPLATE" "priority")
-          if [ -z "$PRIORITY_ENUM" ]; then
-            echo "Failed to read priority enum." >&2
-            exit 1
-          fi
-          ISSUE_PRIORITY=$(pick_enum_value "$PRIORITY_ENUM")
-
-          # Create Event
-          DATE_STR="$(date -u +%Y-%m-%d)"
-          TIME_STR="$(date -u +%H%M%S)"
-          RANDOM_ID=$(printf '%04x' "$RANDOM")
-          EVENT_ID="${DATE_STR}_${TIME_STR}_${ROLE}_${RANDOM_ID}"
-          EVENT_PATH="$EVENT_ROOT/${EVENT_ID}.yml"
-
-          render_template \
-            "$EVENT_TEMPLATE" \
-            "$EVENT_PATH" \
-            "YYYY-MM-DD_HHMMSS_<role>_<id>" "$EVENT_ID" \
-            "YYYY-MM-DD" "$DATE_STR" \
-            "<role>" "$ROLE" \
-            "low|medium|high" "$EVENT_CONFIDENCE" \
-            "<short descriptive title>" "Mock pipeline event" \
-            "<concise statement of the observation>" "Mock observation generated for pipeline validation." \
-            "<repo-relative path>" "README.md" \
-            "<line number or symbol>" "# .jules/" \
-            "<why this supports the statement>" "Demonstrates event structure for mock flow validation." \
-            "<tag>" "pipeline"
-
-          # Create Issue (Simulate Decider + Planner flow)
-          # 1. Decider creates issue (pending analysis)
-          
-          ISSUE_ID="mock_pipeline_${WORKSTREAM}_${RANDOM_ID}"
-          ISSUE_PATH="$ISSUE_ROOT/${ISSUE_PRIORITY}/${ISSUE_ID}.yml"
-          mkdir -p "$(dirname "$ISSUE_PATH")"
-
-          # Render base issue
-          render_template \
-            "$ISSUE_TEMPLATE" \
-            "$ISSUE_PATH" \
-            "<fingerprint>" "$ISSUE_ID" \
-            "<Descriptive Title>" "Mock pipeline issue" \
-            "low|medium|high" "$ISSUE_PRIORITY" \
-            "<One-line statement of the issue>" "Mock issue derived from a synthetic event." \
-            "<What is wrong or missing - conceptual description>" "The mock event needs validation coverage." \
-            "<Why this matters - consequences if not addressed>" "Pipeline validation needs deterministic artifacts." \
-            "<What should be true after resolution>" "The pipeline steps produce valid issue artifacts." \
-            "<file or module path>" "README.md" \
-            "<condition 1>" "Mock pipeline validation passes." \
-            "<condition 2>" "requires_deep_analysis is false." \
-            "<command 1 (e.g. format check)>" "echo 'verified'"
-
-          # 2. Simulate Planner expansion (update requires_deep_analysis)
-          # First, set to true to simulate state before planning
-          sed -i 's/requires_deep_analysis: false/requires_deep_analysis: true/' "$ISSUE_PATH"
-          sed -i 's/deep_analysis_reason: ""/deep_analysis_reason: "Mock deep analysis"/' "$ISSUE_PATH"
-          
-          # Then, Mock Planner "runs" and sets it to false
-          # In this simplified test, we just overwrite it back to false essentially, or verify the toggle
-          # But the original test validated that the file ends up with false.
-          
-          rm -f "$EVENT_PATH" # Decider consumes event
-          
-          # Planner expansion
-          sed -i 's/requires_deep_analysis: true/requires_deep_analysis: false/' "$ISSUE_PATH"
-          sed -i 's/deep_analysis_reason: "Mock deep analysis"/deep_analysis_reason: "Mock analysis complete"/' "$ISSUE_PATH"
-
-      - name: Verify exchange flow
-        shell: bash
-        run: |
-          set -euo pipefail
-          MOCK_ROOT="$GITHUB_WORKSPACE/.jules-mock"
-          WORKSTREAM="generic"
-          
-          if [ -d "$MOCK_ROOT/.jules/workstreams/$WORKSTREAM/events" ]; then
-             if find "$MOCK_ROOT/.jules/workstreams/$WORKSTREAM/events" -type f -name "*.yml" | grep -q .; then
-               echo "Event inbox is not empty after mock decider step." >&2
-               exit 1
-             fi
-          fi
-          
-          # Check for issue in any priority folder
-          ISSUE_PATH=$(find "$MOCK_ROOT/.jules/workstreams/$WORKSTREAM/issues" -type f -name "*.yml" | head -n 1 || true)
-
-          if [ -z "$ISSUE_PATH" ] || [ ! -f "$ISSUE_PATH" ]; then
-            echo "Expected issue file missing." >&2
-            exit 1
-          fi
-
-          if ! grep -q "requires_deep_analysis: false" "$ISSUE_PATH"; then
-            echo "Issue was not expanded by mock planner step." >&2
-            exit 1
-          fi
-
-      - name: Cleanup
-        if: always()
-        run: rm -rf "$GITHUB_WORKSPACE/.jules-mock"
+          echo "✅ Cleanup complete"

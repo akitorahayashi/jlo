@@ -18,7 +18,7 @@ use domain::Layer;
 use ports::{NoopClipboard, WorkspaceStore};
 use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 
-pub use app::commands::run::execute::{RunOptions, RunResult};
+pub use app::commands::run::{RunOptions, RunResult};
 pub use app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
 pub use app::commands::update::{UpdateOptions, UpdateResult};
 pub use domain::AppError;
