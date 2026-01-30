@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "2024-05-21_100002_qa_workspace_store_partial_coverage"
+created_at: "2024-05-21"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Partial Test Coverage for FilesystemWorkspaceStore"
+statement: |
+  The `FilesystemWorkspaceStore` in `src/services/workspace_filesystem.rs` lacks unit tests for role discovery methods (`discover_roles`, `find_role_fuzzy`) and workstream management methods (`create_workstream`, `list_workstreams`). Existing tests focus only on structure creation and versioning.
+
+evidence:
+  - path: "src/services/workspace_filesystem.rs"
+    loc: "80"
+    note: "Method `discover_roles` implementation."
+  - path: "src/services/workspace_filesystem.rs"
+    loc: "208"
+    note: "Test module lacks tests for discovery and workstream methods."
+
+tags:
+  - "coverage"
+  - "services"
