@@ -15,7 +15,7 @@ It serves as the central source of truth for the **Decider** to deduplicate obse
 
 | Issue | Summary |
 | :--- | :--- |
-| _No open issues_ | - |
+| [Inconsistent and Outdated Documentation](./medium/documentation_consistency.yml) | Several discrepancies exist between documentation (README.md, AGENTS.md) and actual codebase structure. |
 
 ## Low Priority
 > Minor tweaks and housekeeping in [`low/`](./low/).
