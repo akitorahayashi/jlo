@@ -72,18 +72,22 @@ jobs:
         run: |
           set -euo pipefail
           MOCK_ROOT="$GITHUB_WORKSPACE/.jules-mock"
-          EVENT_ROOT="$MOCK_ROOT/.jules/exchange/events"
-          ISSUE_ROOT="$MOCK_ROOT/.jules/exchange/issues"
-          TEMPLATE_ROOT="$GITHUB_WORKSPACE/.github/assets/jules-e2e"
+          WORKSTREAM="generic"
+          
+          EVENT_ROOT="$MOCK_ROOT/.jules/workstreams/$WORKSTREAM/events"
+          ISSUE_ROOT="$MOCK_ROOT/.jules/workstreams/$WORKSTREAM/issues"
+          
+          # Templates from the workspace
+          EVENT_TEMPLATE="$GITHUB_WORKSPACE/.jules/roles/observers/event.yml"
+          ISSUE_TEMPLATE="$GITHUB_WORKSPACE/.jules/roles/deciders/issue.yml"
+          
+          if [ ! -f "$EVENT_TEMPLATE" ] || [ ! -f "$ISSUE_TEMPLATE" ]; then
+             echo "Missing templates in workspace." >&2
+             exit 1
+          fi
 
           rm -rf "$MOCK_ROOT"
-          mkdir -p "$EVENT_ROOT" "$ISSUE_ROOT"
-
-          CATEGORY=$(ls -1 "$GITHUB_WORKSPACE/.jules/exchange/events" | head -n 1 || true)
-          if [ -z "$CATEGORY" ]; then
-            echo "No exchange event categories found under .jules/exchange/events." >&2
-            exit 1
-          fi
+          mkdir -p "$EVENT_ROOT" "$ISSUE_ROOT/pending"
 
           ROLE=$(find "$GITHUB_WORKSPACE/.jules/roles/observers" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | head -n 1 || true)
           if [ -z "$ROLE" ]; then
@@ -132,109 +136,95 @@ jobs:
             printf '%s' "${parts[$index]}"
           }
 
-          OBSERVER_TEMPLATE="$GITHUB_WORKSPACE/.jules/roles/observers/event.yml"
-          DECIDER_TEMPLATE="$GITHUB_WORKSPACE/.jules/roles/deciders/issue.yml"
-
-          CONFIDENCE_ENUM=$(extract_template_value "$OBSERVER_TEMPLATE" "confidence")
+          CONFIDENCE_ENUM=$(extract_template_value "$EVENT_TEMPLATE" "confidence")
           if [ -z "$CONFIDENCE_ENUM" ]; then
-            echo "Failed to read confidence enum from $OBSERVER_TEMPLATE." >&2
+            echo "Failed to read confidence enum." >&2
             exit 1
           fi
           EVENT_CONFIDENCE=$(pick_enum_value "$CONFIDENCE_ENUM")
 
-          PRIORITY_ENUM=$(extract_template_value "$DECIDER_TEMPLATE" "priority")
+          PRIORITY_ENUM=$(extract_template_value "$ISSUE_TEMPLATE" "priority")
           if [ -z "$PRIORITY_ENUM" ]; then
-            echo "Failed to read priority enum from $DECIDER_TEMPLATE." >&2
+            echo "Failed to read priority enum." >&2
             exit 1
           fi
           ISSUE_PRIORITY=$(pick_enum_value "$PRIORITY_ENUM")
 
-          ISSUE_STATUS=$(extract_template_value "$DECIDER_TEMPLATE" "status")
-          if [ -z "$ISSUE_STATUS" ]; then
-            echo "Failed to read status from $DECIDER_TEMPLATE." >&2
-            exit 1
-          fi
-
+          # Create Event
+          DATE_STR="$(date -u +%Y-%m-%d)"
+          TIME_STR="$(date -u +%H%M%S)"
           RANDOM_ID=$(printf '%04x' "$RANDOM")
-          EVENT_ID="$(date -u +%Y-%m-%d_%H%M%S)_${CATEGORY}_${ROLE}_${RANDOM_ID}"
-          EVENT_DATE="$(date -u +%Y-%m-%d)"
-          EVENT_PATH="$EVENT_ROOT/$CATEGORY/${EVENT_ID}.yml"
-
-          mkdir -p "$EVENT_ROOT/$CATEGORY"
+          EVENT_ID="${DATE_STR}_${TIME_STR}_${ROLE}_${RANDOM_ID}"
+          EVENT_PATH="$EVENT_ROOT/${EVENT_ID}.yml"
 
           render_template \
-            "$TEMPLATE_ROOT/event.yml" \
+            "$EVENT_TEMPLATE" \
             "$EVENT_PATH" \
-            "__EVENT_ID__" "$EVENT_ID" \
-            "__EVENT_DATE__" "$EVENT_DATE" \
-            "__ROLE__" "$ROLE" \
-            "__CATEGORY__" "$CATEGORY" \
-            "__CONFIDENCE__" "$EVENT_CONFIDENCE" \
-            "__EVENT_TITLE__" "Mock pipeline event" \
-            "__EVENT_STATEMENT__" "Mock observation generated for pipeline validation." \
-            "__EVIDENCE_PATH__" "README.md" \
-            "__EVIDENCE_LOC__" "# .jules/" \
-            "__EVIDENCE_NOTE__" "Demonstrates event structure for mock flow validation." \
-            "__EVENT_TAG__" "pipeline"
+            "YYYY-MM-DD_HHMMSS_<role>_<id>" "$EVENT_ID" \
+            "YYYY-MM-DD" "$DATE_STR" \
+            "<role>" "$ROLE" \
+            "low|medium|high" "$EVENT_CONFIDENCE" \
+            "<short descriptive title>" "Mock pipeline event" \
+            "<concise statement of the observation>" "Mock observation generated for pipeline validation." \
+            "<repo-relative path>" "README.md" \
+            "<line number or symbol>" "# .jules/" \
+            "<why this supports the statement>" "Demonstrates event structure for mock flow validation." \
+            "<tag>" "pipeline"
 
-          ISSUE_ID="$(date -u +%Y-%m-%d)_mock_pipeline_${CATEGORY}"
-          ISSUE_PATH="$ISSUE_ROOT/${ISSUE_ID}.yml"
+          # Create Issue (Simulate Decider + Planner flow)
+          # 1. Decider creates issue (pending analysis)
+          
+          ISSUE_ID="mock_pipeline_${WORKSTREAM}_${RANDOM_ID}"
+          ISSUE_PATH="$ISSUE_ROOT/${ISSUE_PRIORITY}/${ISSUE_ID}.yml"
+          mkdir -p "$(dirname "$ISSUE_PATH")"
 
+          # Render base issue
           render_template \
-            "$TEMPLATE_ROOT/issue-pending.yml" \
+            "$ISSUE_TEMPLATE" \
             "$ISSUE_PATH" \
-            "__ISSUE_ID__" "$ISSUE_ID" \
-            "__CATEGORY__" "$CATEGORY" \
-            "__EVENT_ID__" "$EVENT_ID" \
-            "__PRIORITY__" "$ISSUE_PRIORITY" \
-            "__STATUS__" "$ISSUE_STATUS" \
-            "__REQUIRES_DEEP_ANALYSIS__" "true" \
-            "__DEEP_ANALYSIS_REASON__" "Mock issue requires validation of expansion workflow." \
-            "__ISSUE_TITLE__" "Mock pipeline issue" \
-            "__ISSUE_SUMMARY__" "Mock issue derived from a synthetic event." \
-            "__AFFECTED_AREA__" "README.md" \
-            "__PROBLEM__" "The mock event needs validation coverage." \
-            "__IMPACT__" "Pipeline validation needs deterministic artifacts." \
-            "__DESIRED_OUTCOME__" "The pipeline steps produce valid issue artifacts." \
-            "__ACCEPTANCE_1__" "Mock pipeline validation passes." \
-            "__ACCEPTANCE_2__" "requires_deep_analysis is false after planning."
+            "<fingerprint>" "$ISSUE_ID" \
+            "<Descriptive Title>" "Mock pipeline issue" \
+            "low|medium|high" "$ISSUE_PRIORITY" \
+            "<One-line statement of the issue>" "Mock issue derived from a synthetic event." \
+            "<What is wrong or missing - conceptual description>" "The mock event needs validation coverage." \
+            "<Why this matters - consequences if not addressed>" "Pipeline validation needs deterministic artifacts." \
+            "<What should be true after resolution>" "The pipeline steps produce valid issue artifacts." \
+            "<file or module path>" "README.md" \
+            "<condition 1>" "Mock pipeline validation passes." \
+            "<condition 2>" "requires_deep_analysis is false." \
+            "<command 1 (e.g. format check)>" "echo 'verified'"
 
-          rm -f "$EVENT_PATH"
-
-          render_template \
-            "$TEMPLATE_ROOT/issue-expanded.yml" \
-            "$ISSUE_PATH" \
-            "__ISSUE_ID__" "$ISSUE_ID" \
-            "__CATEGORY__" "$CATEGORY" \
-            "__EVENT_ID__" "$EVENT_ID" \
-            "__PRIORITY__" "$ISSUE_PRIORITY" \
-            "__STATUS__" "$ISSUE_STATUS" \
-            "__REQUIRES_DEEP_ANALYSIS__" "false" \
-            "__DEEP_ANALYSIS_REASON__" "Mock issue expansion completed. Original: validation of expansion workflow." \
-            "__ISSUE_TITLE__" "Mock pipeline issue" \
-            "__ISSUE_SUMMARY__" "Mock issue derived from a synthetic event." \
-            "__AFFECTED_AREA__" "README.md" \
-            "__CONSTRAINT__" "Mock expansion overwrote the issue in place." \
-            "__RISK__" "Mock pipeline skips external API usage." \
-            "__PROBLEM__" "The mock event needs validation coverage." \
-            "__IMPACT__" "Pipeline validation needs deterministic artifacts." \
-            "__DESIRED_OUTCOME__" "The pipeline steps produce valid issue artifacts." \
-            "__ACCEPTANCE_1__" "Mock pipeline validation passes." \
-            "__ACCEPTANCE_2__" "requires_deep_analysis is false."
+          # 2. Simulate Planner expansion (update requires_deep_analysis)
+          # First, set to true to simulate state before planning
+          sed -i 's/requires_deep_analysis: false/requires_deep_analysis: true/' "$ISSUE_PATH"
+          sed -i 's/deep_analysis_reason: ""/deep_analysis_reason: "Mock deep analysis"/' "$ISSUE_PATH"
+          
+          # Then, Mock Planner "runs" and sets it to false
+          # In this simplified test, we just overwrite it back to false essentially, or verify the toggle
+          # But the original test validated that the file ends up with false.
+          
+          rm -f "$EVENT_PATH" # Decider consumes event
+          
+          # Planner expansion
+          sed -i 's/requires_deep_analysis: true/requires_deep_analysis: false/' "$ISSUE_PATH"
+          sed -i 's/deep_analysis_reason: "Mock deep analysis"/deep_analysis_reason: "Mock analysis complete"/' "$ISSUE_PATH"
 
       - name: Verify exchange flow
         shell: bash
         run: |
           set -euo pipefail
           MOCK_ROOT="$GITHUB_WORKSPACE/.jules-mock"
-          ISSUE_PATH=$(find "$MOCK_ROOT/.jules/exchange/issues" -maxdepth 1 -type f -name "*.yml" | head -n 1 || true)
-
-          if [ -d "$MOCK_ROOT/.jules/exchange/events" ]; then
-            if find "$MOCK_ROOT/.jules/exchange/events" -type f -name "*.yml" | grep -q .; then
-              echo "Event inbox is not empty after mock decider step." >&2
-              exit 1
-            fi
+          WORKSTREAM="generic"
+          
+          if [ -d "$MOCK_ROOT/.jules/workstreams/$WORKSTREAM/events" ]; then
+             if find "$MOCK_ROOT/.jules/workstreams/$WORKSTREAM/events" -type f -name "*.yml" | grep -q .; then
+               echo "Event inbox is not empty after mock decider step." >&2
+               exit 1
+             fi
           fi
+          
+          # Check for issue in any priority folder
+          ISSUE_PATH=$(find "$MOCK_ROOT/.jules/workstreams/$WORKSTREAM/issues" -type f -name "*.yml" | head -n 1 || true)
 
           if [ -z "$ISSUE_PATH" ] || [ ! -f "$ISSUE_PATH" ]; then
             echo "Expected issue file missing." >&2

@@ -111,7 +111,7 @@ jobs:
       - name: Check for events
         id: check-events
         run: |
-          if find .jules/exchange/events -name '*.yml' 2>/dev/null | grep -q .; then
+          if find .jules/workstreams -path '*/events/*.yml' 2>/dev/null | grep -q .; then
             echo "has_events=true" >> "$GITHUB_OUTPUT"
             echo "📋 Found events to process"
           else
@@ -166,7 +166,7 @@ jobs:
       - name: Check for deep issues
         id: check-issues
         run: |
-          if grep -rq 'requires_deep_analysis: true' .jules/exchange/issues/ 2>/dev/null; then
+          if grep -r "requires_deep_analysis: true" .jules/workstreams --include="*.yml" 2>/dev/null; then
             echo "has_deep_issues=true" >> "$GITHUB_OUTPUT"
             echo "🔍 Found issues requiring deep analysis"
           else
