@@ -1,16 +1,15 @@
 mod common;
 
 use common::TestContext;
+use predicates::prelude::*;
 use serial_test::serial;
 
 #[test]
 #[serial]
-fn init_creates_workspace_via_library_api() {
+fn init_creates_workspace_via_cli() {
     let ctx = TestContext::new();
 
-    ctx.with_work_dir(|| {
-        jlo::init().expect("init should succeed");
-    });
+    ctx.cli().arg("init").assert().success();
 
     ctx.assert_jules_exists();
     ctx.assert_layer_structure_exists();
@@ -18,15 +17,16 @@ fn init_creates_workspace_via_library_api() {
 
 #[test]
 #[serial]
-fn template_creates_role_via_library_api() {
+fn template_creates_role_via_cli() {
     let ctx = TestContext::new();
 
-    ctx.with_work_dir(|| {
-        jlo::init().expect("init should succeed");
-        let path = jlo::template(Some("observers"), Some("my-role"), None)
-            .expect("template should succeed");
-        assert_eq!(path, "observers/my-role");
-    });
+    ctx.cli().arg("init").assert().success();
+
+    ctx.cli()
+        .args(["template", "-l", "observers", "-n", "my-role"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("observers/my-role"));
 
     ctx.assert_role_in_layer_exists("observers", "my-role");
 }
