@@ -17,6 +17,10 @@ pub struct RunConfig {
 }
 
 /// Agent role assignments per layer.
+///
+/// Only multi-role layers (observers, deciders) are configured here.
+/// Single-role layers (planners, implementers) are issue-driven and
+/// do not require role configuration.
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct AgentConfig {
     /// Observer role names.
@@ -25,12 +29,6 @@ pub struct AgentConfig {
     /// Decider role names.
     #[serde(default)]
     pub deciders: Vec<String>,
-    /// Planner role names.
-    #[serde(default)]
-    pub planners: Vec<String>,
-    /// Implementer role names.
-    #[serde(default)]
-    pub implementers: Vec<String>,
 }
 
 /// Jules API configuration.
@@ -129,6 +127,7 @@ mod tests {
     fn run_config_defaults() {
         let config = RunConfig::default();
         assert!(config.agents.observers.is_empty());
+        assert!(config.agents.deciders.is_empty());
         assert_eq!(config.run.default_branch, "main");
         assert_eq!(config.run.jules_branch, "jules");
         assert!(config.run.parallel);
@@ -150,7 +149,6 @@ max_parallel = 5
         let config: RunConfig = toml::from_str(toml).unwrap();
         assert_eq!(config.agents.observers, vec!["taxonomy", "qa"]);
         assert_eq!(config.agents.deciders, vec!["triage_generic"]);
-        assert!(config.agents.planners.is_empty());
         assert_eq!(config.run.default_branch, "develop");
         assert!(!config.run.parallel);
         assert_eq!(config.run.max_parallel, 5);

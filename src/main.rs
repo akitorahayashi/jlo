@@ -121,32 +121,29 @@ enum RunLayer {
         #[arg(long)]
         branch: Option<String>,
     },
-    /// Run planner agents
+    /// Run planner agent (single-role, issue-driven)
     #[clap(visible_alias = "p")]
     Planners {
-        /// Specific roles to run (default: all from config)
-        #[arg(long)]
-        role: Option<Vec<String>>,
         /// Show assembled prompts without executing
         #[arg(long)]
         dry_run: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
+        /// Local issue file path (required)
+        #[arg(long)]
+        issue: Option<PathBuf>,
     },
-    /// Run implementer agents
+    /// Run implementer agent (single-role, issue-driven)
     #[clap(visible_alias = "i")]
     Implementers {
-        /// Specific roles to run (default: all from config)
-        #[arg(long)]
-        role: Option<Vec<String>>,
         /// Show assembled prompts without executing
         #[arg(long)]
         dry_run: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
-        /// Local issue file path (required for implementers)
+        /// Local issue file path (required)
         #[arg(long)]
         issue: Option<PathBuf>,
     },
@@ -211,11 +208,11 @@ fn run_agents(layer: RunLayer) -> Result<(), AppError> {
         RunLayer::Deciders { role, dry_run, branch } => {
             (Layer::Deciders, role, dry_run, branch, None)
         }
-        RunLayer::Planners { role, dry_run, branch } => {
-            (Layer::Planners, role, dry_run, branch, None)
+        RunLayer::Planners { dry_run, branch, issue } => {
+            (Layer::Planners, None, dry_run, branch, issue)
         }
-        RunLayer::Implementers { role, dry_run, branch, issue } => {
-            (Layer::Implementers, role, dry_run, branch, issue)
+        RunLayer::Implementers { dry_run, branch, issue } => {
+            (Layer::Implementers, None, dry_run, branch, issue)
         }
     };
 

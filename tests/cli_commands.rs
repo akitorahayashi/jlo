@@ -226,6 +226,20 @@ fn run_implementers_requires_issue_file() {
 
 #[test]
 #[serial]
+fn run_planners_requires_issue_file() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init"]).assert().success();
+
+    ctx.cli()
+        .args(["run", "planners"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Issue file required"));
+}
+
+#[test]
+#[serial]
 fn run_implementers_with_missing_issue_file() {
     let ctx = TestContext::new();
 
@@ -265,6 +279,38 @@ fn run_implementers_dry_run_with_issue_file() {
         .args([
             "run",
             "implementers",
+            "--issue",
+            ".jules/workstreams/generic/issues/medium/test_issue.yml",
+            "--dry-run",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Dry Run: Local Dispatch"))
+        .stdout(predicate::str::contains("Would dispatch workflow"));
+}
+
+#[test]
+#[serial]
+fn run_planners_dry_run_with_issue_file() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init"]).assert().success();
+
+    // Create a test issue file in workstreams
+    let issue_dir = ctx.work_dir().join(".jules/workstreams/generic/issues/medium");
+    std::fs::create_dir_all(&issue_dir).unwrap();
+    let issue_path = issue_dir.join("test_issue.yml");
+    std::fs::write(
+        &issue_path,
+        "fingerprint: test_issue\nid: test_issue\ntitle: Test Issue\nstatus: open\nrequires_deep_analysis: true\n",
+    )
+    .unwrap();
+
+    ctx.cli()
+        .env_remove("GITHUB_ACTIONS")
+        .args([
+            "run",
+            "planners",
             "--issue",
             ".jules/workstreams/generic/issues/medium/test_issue.yml",
             "--dry-run",

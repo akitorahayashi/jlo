@@ -1,6 +1,5 @@
-role: ROLE_NAME
+role: planner
 layer: planners
-responsibility: "# TODO: Describe your specific responsibility"
 
 contracts:
   - .jules/JULES.md

@@ -33,10 +33,10 @@ fn user_can_use_command_aliases() {
     // Use 'i' alias for init
     ctx.cli().arg("i").assert().success();
 
-    // Use 'tp' alias for template
-    ctx.cli().args(["tp", "-l", "planners", "-n", "my-planner"]).assert().success();
+    // Use 'tp' alias for template (with a multi-role layer)
+    ctx.cli().args(["tp", "-l", "deciders", "-n", "my-decider"]).assert().success();
 
-    ctx.assert_role_in_layer_exists("planners", "my-planner");
+    ctx.assert_role_in_layer_exists("deciders", "my-decider");
 }
 
 #[test]
@@ -66,12 +66,12 @@ fn init_creates_complete_layer_structure() {
     assert!(!jules.join("roles/deciders/triage_generic/notes").exists());
     assert!(!jules.join("roles/deciders/triage_generic/feedbacks").exists());
     assert!(!jules.join("roles/deciders/triage_generic/role.yml").exists());
-    assert!(!jules.join("roles/planners/specifier_global/notes").exists());
-    assert!(!jules.join("roles/planners/specifier_global/feedbacks").exists());
-    assert!(!jules.join("roles/planners/specifier_global/role.yml").exists());
-    assert!(!jules.join("roles/implementers/executor_global/notes").exists());
-    assert!(!jules.join("roles/implementers/executor_global/feedbacks").exists());
-    assert!(!jules.join("roles/implementers/executor_global/role.yml").exists());
+
+    // Single-role layers have flat structure (no role subdirectory)
+    assert!(jules.join("roles/planners/prompt.yml").exists());
+    assert!(jules.join("roles/planners/contracts.yml").exists());
+    assert!(jules.join("roles/implementers/prompt.yml").exists());
+    assert!(jules.join("roles/implementers/contracts.yml").exists());
 }
 
 #[test]
@@ -95,22 +95,22 @@ fn template_creates_observer_with_notes() {
 
 #[test]
 #[serial]
-fn template_creates_planner_without_notes() {
+fn template_rejects_single_role_layers() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
 
-    ctx.cli().args(["template", "-l", "planners", "-n", "custom-planner"]).assert().success();
+    // Planners are single-role and should not accept template creation
+    ctx.cli()
+        .args(["template", "-l", "planners", "-n", "custom-planner"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("single-role"));
 
-    // Planner roles should NOT have notes, feedbacks, or role.yml directories
-    let role_path = ctx.jules_path().join("roles/planners/custom-planner");
-    let notes_path = role_path.join("notes");
-    let feedbacks_path = role_path.join("feedbacks");
-    let role_yml = role_path.join("role.yml");
-    assert!(!notes_path.exists(), "Planner role should not have notes directory");
-    assert!(!feedbacks_path.exists(), "Planner role should not have feedbacks directory");
-    assert!(
-        !role_yml.exists(),
-        "Planner role should not have role.yml (behavior defined in archetype)"
-    );
+    // Implementers are single-role and should not accept template creation
+    ctx.cli()
+        .args(["template", "-l", "implementers", "-n", "custom-impl"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("single-role"));
 }

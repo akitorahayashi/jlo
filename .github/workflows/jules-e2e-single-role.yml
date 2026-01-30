@@ -1,0 +1,246 @@
+# Jules E2E Single-Role Layers
+#
+# Tests the single-role, issue-driven workflows (planner and implementer)
+# via CLI dry-run without calling Jules API.
+
+name: Jules E2E Single-Role
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # ============================================================
+  # Setup - Create a test issue file
+  # ============================================================
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      issue_path: ${{ steps.create.outputs.issue_path }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create test issue
+        id: create
+        shell: bash
+        run: |
+          set -euo pipefail
+          RANDOM_ID=$(printf '%04x' "$RANDOM")
+          BRANCH="jules-e2e-single-role-setup-${RANDOM_ID}"
+          WORKSTREAM="generic"
+
+          ISSUE_TEMPLATE=".jules/roles/deciders/issue.yml"
+          if [ ! -f "$ISSUE_TEMPLATE" ]; then
+            echo "Missing issue template" >&2
+            exit 1
+          fi
+
+          ISSUE_ID="e2e_single_role_${RANDOM_ID}"
+          PRIORITY="medium"
+          ISSUE_PATH=".jules/workstreams/$WORKSTREAM/issues/$PRIORITY/${ISSUE_ID}.yml"
+
+          mkdir -p ".jules/workstreams/$WORKSTREAM/issues/$PRIORITY"
+          cp "$ISSUE_TEMPLATE" "$ISSUE_PATH"
+
+          # Replace placeholders
+          sed -i "s#<fingerprint>#$ISSUE_ID#g" "$ISSUE_PATH"
+          sed -i "s#<Descriptive Title>#E2E Single-Role Test Issue#g" "$ISSUE_PATH"
+          sed -i "s#low|medium|high#$PRIORITY#g" "$ISSUE_PATH"
+          sed -i "s#<One-line statement of the issue>#Test issue for single-role E2E.#g" "$ISSUE_PATH"
+          sed -i "s#<What is wrong or missing - conceptual description>#E2E test validation.#g" "$ISSUE_PATH"
+          sed -i "s#<Why this matters - consequences if not addressed>#Test coverage.#g" "$ISSUE_PATH"
+          sed -i "s#<What should be true after resolution>#E2E test passes.#g" "$ISSUE_PATH"
+          sed -i "s#<file or module path>#README.md#g" "$ISSUE_PATH"
+          sed -i "s#<condition 1>#CLI executes successfully.#g" "$ISSUE_PATH"
+          sed -i "s#<condition 2>#Dry-run output is correct.#g" "$ISSUE_PATH"
+          sed -i "s#<command 1 (e.g. format check)>#echo verified#g" "$ISSUE_PATH"
+          sed -i "s#<command 2 (e.g. lint check)>##g" "$ISSUE_PATH"
+          sed -i "s#<command 3 (e.g. test commands)>##g" "$ISSUE_PATH"
+
+          git checkout -b "$BRANCH"
+          git add "$ISSUE_PATH"
+          git commit -m "E2E Single-Role: Create test issue $RANDOM_ID"
+          git push origin "$BRANCH"
+
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "issue_path=$ISSUE_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          PR_URL=$(gh pr create \
+            --base jules \
+            --head "${{ steps.create.outputs.branch }}" \
+            --title "[E2E Single-Role] Setup" \
+            --body "Automated E2E test - Create test issue file.")
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          for i in {1..60}; do
+            STATE=$(gh pr view "${{ steps.pr.outputs.pr_url }}" --json state -q '.state')
+            if [ "$STATE" = "MERGED" ]; then
+              echo "✅ Setup PR merged"
+              exit 0
+            elif [ "$STATE" = "CLOSED" ]; then
+              echo "❌ Setup PR closed without merge"
+              exit 1
+            fi
+            echo "Waiting for merge... ($i/60)"
+            sleep 2
+          done
+          echo "❌ Timeout waiting for setup merge"
+          exit 1
+
+  # ============================================================
+  # Test Planner CLI
+  # ============================================================
+  test-planner:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Test planner CLI dry-run
+        run: |
+          ISSUE_PATH="${{ needs.setup.outputs.issue_path }}"
+          echo "Testing planner with issue: $ISSUE_PATH"
+
+          # Verify issue exists
+          if [ ! -f "$ISSUE_PATH" ]; then
+            echo "❌ Issue file not found: $ISSUE_PATH"
+            exit 1
+          fi
+
+          # Run planner in dry-run mode
+          echo "=== Running: jlo run planners --issue $ISSUE_PATH --dry-run ==="
+          jlo run planners --issue "$ISSUE_PATH" --dry-run
+
+          echo "✅ Planner CLI dry-run succeeded"
+
+      - name: Test planner CLI error on missing issue
+        run: |
+          # Should fail when --issue is not provided
+          echo "=== Testing error handling: missing --issue flag ==="
+          if jlo run planners 2>&1; then
+            echo "❌ Expected failure but command succeeded"
+            exit 1
+          fi
+          echo "✅ Correctly failed when --issue is missing"
+
+  # ============================================================
+  # Test Implementer CLI
+  # ============================================================
+  test-implementer:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Test implementer CLI dry-run
+        run: |
+          ISSUE_PATH="${{ needs.setup.outputs.issue_path }}"
+          echo "Testing implementer with issue: $ISSUE_PATH"
+
+          # Verify issue exists
+          if [ ! -f "$ISSUE_PATH" ]; then
+            echo "❌ Issue file not found: $ISSUE_PATH"
+            exit 1
+          fi
+
+          # Run implementer in dry-run mode
+          echo "=== Running: jlo run implementers --issue $ISSUE_PATH --dry-run ==="
+          jlo run implementers --issue "$ISSUE_PATH" --dry-run
+
+          echo "✅ Implementer CLI dry-run succeeded"
+
+      - name: Test implementer CLI error on missing issue
+        run: |
+          # Should fail when --issue is not provided
+          echo "=== Testing error handling: missing --issue flag ==="
+          if jlo run implementers 2>&1; then
+            echo "❌ Expected failure but command succeeded"
+            exit 1
+          fi
+          echo "✅ Correctly failed when --issue is missing"
+
+  # ============================================================
+  # Cleanup
+  # ============================================================
+  cleanup:
+    if: always()
+    needs: [setup, test-planner, test-implementer]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Clean up test artifacts
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          set -x
+          WORKSTREAM="generic"
+
+          # Close any open E2E PRs
+          gh pr list --state open --json number,headRefName --jq '.[] | select(.headRefName | startswith("jules-e2e-single-role-")) | .number' | while read -r pr_num; do
+            echo "Closing PR #$pr_num"
+            gh pr close "$pr_num" --delete-branch || true
+          done
+
+          # Delete leftover E2E branches
+          git fetch --prune
+          git branch -r | grep -E 'jules-e2e-single-role-' | sed 's#origin/##' | while read -r branch; do
+            echo "Deleting branch: $branch"
+            git push origin --delete "$branch" || true
+          done
+
+          # Remove test issue files
+          if find .jules/workstreams/$WORKSTREAM/issues -name "*e2e_single_role*.yml" -type f 2>/dev/null | grep -q .; then
+            find .jules/workstreams/$WORKSTREAM/issues -name "*e2e_single_role*.yml" -type f -delete
+            git add -A
+            git commit -m "E2E Cleanup: Remove single-role test issue files" || true
+            git push origin jules || true
+          fi
+
+          echo "✅ Cleanup complete"

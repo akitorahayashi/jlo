@@ -41,10 +41,12 @@ pub enum AppError {
     RunConfigInvalid(String),
     /// Role not found in config for layer.
     RoleNotInConfig { role: String, layer: String },
-    /// Issue file required for implementers layer.
+    /// Issue file required for single-role layers (planners, implementers).
     IssueFileRequired,
     /// Issue file not found at path.
     IssueFileNotFound(String),
+    /// Template creation not supported for single-role layers.
+    SingleRoleLayerTemplate(String),
 }
 
 impl Display for AppError {
@@ -107,11 +109,18 @@ impl Display for AppError {
             AppError::IssueFileRequired => {
                 write!(
                     f,
-                    "Issue file required for implementers. Use --issue <path> to specify a local issue file."
+                    "Issue file required for planners and implementers. Use --issue <path> to specify a local issue file."
                 )
             }
             AppError::IssueFileNotFound(path) => {
                 write!(f, "Issue file not found: {}", path)
+            }
+            AppError::SingleRoleLayerTemplate(layer) => {
+                write!(
+                    f,
+                    "Layer '{}' is single-role and does not support custom templates. Use the built-in role.",
+                    layer
+                )
             }
         }
     }
@@ -150,7 +159,8 @@ impl AppError {
             | AppError::MalformedEnvToml(_)
             | AppError::RunConfigInvalid(_)
             | AppError::RoleNotInConfig { .. }
-            | AppError::IssueFileRequired => io::ErrorKind::InvalidInput,
+            | AppError::IssueFileRequired
+            | AppError::SingleRoleLayerTemplate(_) => io::ErrorKind::InvalidInput,
             AppError::WorkspaceNotFound
             | AppError::SetupNotInitialized
             | AppError::SetupConfigMissing

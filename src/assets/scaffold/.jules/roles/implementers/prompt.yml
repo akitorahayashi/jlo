@@ -1,8 +1,8 @@
-role: ROLE_NAME
+role: implementer
 layer: implementers
-responsibility: "# TODO: Describe your specific responsibility"
 
 contracts:
+  - AGENTS.md
   - .jules/JULES.md
   - .jules/roles/implementers/contracts.yml
 

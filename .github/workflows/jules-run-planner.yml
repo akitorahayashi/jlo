@@ -1,9 +1,9 @@
-# Jules Run Implementer
+# Jules Run Planner
 #
-# Manual execution of the implementer layer for a specific issue.
+# Manual execution of the planner layer for a specific issue.
 # Separated from the main orchestration workflow to allow targeted execution.
 
-name: Jules Run Implementer
+name: Jules Run Planner
 
 on:
   workflow_dispatch:
@@ -23,7 +23,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  implementers:
+  planners:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,8 +37,6 @@ jobs:
             echo "::error::issue_file is required"
             exit 1
           fi
-          # We can't strictly check file existence before checkout/install in all cases if generic,
-          # but here we are on 'jules' branch.
           if [ ! -f "${{ inputs.issue_file }}" ]; then
             echo "::error::Issue file not found in repository: ${{ inputs.issue_file }}"
             exit 1
@@ -49,25 +47,10 @@ jobs:
         with:
           version: ${{ vars.JLO_VERSION || 'latest' }}
 
-      - name: Run implementers
+      - name: Run planners
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         run: |
           ARGS="--issue ${{ inputs.issue_file }}"
           [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
-          jlo run implementers $ARGS --branch main
-
-      - name: Delete processed issue
-        if: inputs.dry_run != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN || github.token }}
-        run: |
-          git config user.name "aria"
-          git config user.email "aria67323@gmail.com"
-          ISSUE_FILE="${{ inputs.issue_file }}"
-          if [ -f "$ISSUE_FILE" ]; then
-            git rm "$ISSUE_FILE"
-            git commit -m "Remove processed issue: $(basename "$ISSUE_FILE")"
-            git push origin jules
-            echo "✅ Deleted: $ISSUE_FILE"
-          fi
+          jlo run planners $ARGS
