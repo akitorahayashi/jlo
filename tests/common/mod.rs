@@ -24,6 +24,19 @@ impl TestContext {
         let work_dir = root.path().join("work");
         fs::create_dir_all(&work_dir).expect("Failed to create test work directory");
 
+        // Initialize git repo and switch to jules branch to satisfy init requirements
+        let _ = std::process::Command::new("git")
+            .arg("init")
+            .current_dir(&work_dir)
+            .output()
+            .expect("Failed to git init");
+
+        let _ = std::process::Command::new("git")
+            .args(["checkout", "-b", "jules"])
+            .current_dir(&work_dir)
+            .output()
+            .expect("Failed to checkout jules branch");
+
         let original_home = env::var_os("HOME");
         let original_cwd = env::current_dir().expect("Failed to get current directory");
 
