@@ -17,6 +17,7 @@ workflow:
   - 1. Read issue content from the embedded in this prompt
   - 2. Understand targets and acceptance criteria
   - 3. Implement code, tests, documentation
-  - 4. Run verification (or reliable alternative)
-  - 5. Iterate if verification fails
-  - 6. Create pull request
+  - 4. Run verification (Decider recommended command)
+  - 5. Run standard verification from AGENTS.md (Format, Lint, Test)
+  - 6. Iterate if verification fails
+  - 7. Create pull request
