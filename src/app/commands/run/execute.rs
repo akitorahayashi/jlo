@@ -35,7 +35,12 @@ pub struct RunResult {
 
 /// Execute the run command.
 pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppError> {
-    // Validate issue file requirement for implementers
+    // Check if we are in CI environment
+    let is_ci = std::env::var("GITHUB_ACTIONS").is_ok();
+
+    // VALIDATION: Issue file requirement for implementers
+    // If local execution: we need the path to pass to GH CLI
+    // If CI execution: we need the content to embed in prompt
     let issue_content = if options.layer == Layer::Implementers {
         let path = options.issue.as_ref().ok_or(AppError::IssueFileRequired)?;
 
@@ -43,6 +48,52 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
             return Err(AppError::IssueFileNotFound(path.display().to_string()));
         }
 
+        // Handle Local Dispatch for Implementers
+        if !is_ci {
+            if options.dry_run {
+                println!("=== Dry Run: Local Dispatch ===");
+                println!(
+                    "Would dispatch workflow 'jules-run-implementer.yml' for: {}",
+                    path.display()
+                );
+                return Ok(RunResult { roles: vec![], dry_run: true, sessions: vec![] });
+            }
+
+            println!("Dispatching implementer workflow for: {}", path.display());
+
+            // Execute: gh workflow run jules-run-implementer.yml -f issue_file=<path>
+            let status = std::process::Command::new("gh")
+                .args([
+                    "workflow",
+                    "run",
+                    "jules-run-implementer.yml",
+                    "-f",
+                    &format!("issue_file={}", path.display()),
+                ])
+                .status()
+                .map_err(|e| AppError::ConfigError(format!("Failed to execute gh CLI: {}", e)))?;
+
+            if !status.success() {
+                return Err(AppError::ConfigError("Failed to dispatch workflow via gh CLI".into()));
+            }
+
+            println!("✅ Workflow dispatched successfully.");
+
+            // Delete the local file
+            if let Err(e) = fs::remove_file(path) {
+                eprintln!("⚠️ Failed to delete local issue file: {}", e);
+            } else {
+                println!("Deleted local issue file: {}", path.display());
+            }
+
+            return Ok(RunResult {
+                roles: vec!["implementer-dispatch".to_string()],
+                dry_run: false,
+                sessions: vec![],
+            });
+        }
+
+        // CI Execution: Read content
         Some(fs::read_to_string(path)?)
     } else {
         None
@@ -64,10 +115,13 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
 
     // Determine starting branch
     let starting_branch = options.branch.clone().unwrap_or_else(|| {
+        // Implementers always start from main when running in CI/Agent mode
+        // to ensure a clean base for the feature branch.
         if options.layer == Layer::Implementers {
-            config.run.default_branch.clone()
+            "main".to_string()
         } else {
-            "jules".to_string()
+            // Check config default, fallback to "jules"
+            config.run.default_branch.clone()
         }
     });
 
