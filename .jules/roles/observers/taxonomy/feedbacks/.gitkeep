@@ -1,0 +1,24 @@
+# Feedback Directory
+
+This directory stores rejection feedback from the Decider layer.
+
+When the `triage_generic` role rejects observations due to recurring patterns, it creates feedback files here. The observer reads these files on initialization, abstracts common patterns, and updates its own `role.yml` to reduce noise.
+
+## Feedback File Format
+
+Filename: `YYYY-MM-DD_<brief_description>.yml`
+
+Content:
+```yaml
+pattern: <characteristic of repeatedly rejected observations>
+reason: <why this should not be raised>
+created_at: <date>
+```
+
+## Workflow
+
+1. Decider rejects an observation and identifies a recurring pattern
+2. Decider creates a feedback file in this directory
+3. Observer reads all feedback files on next execution
+4. Observer abstracts patterns and updates its `role.yml` focus/learned_exclusions
+5. Feedback files are preserved for audit (not deleted by observer)

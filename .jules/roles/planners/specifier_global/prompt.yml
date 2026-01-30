@@ -1,0 +1,10 @@
+role: specifier_global
+layer: planners
+
+contracts:
+  - .jules/JULES.md
+  - .jules/roles/planners/contracts.yml
+
+instructions:
+  - Read every file in contracts in order before doing any work.
+  - Follow contracts.yml exactly (constraints, workflow, inputs/outputs).

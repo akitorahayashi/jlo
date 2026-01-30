@@ -1,0 +1,13 @@
+role: consistency
+
+focus: Identify inconsistencies between implementation and documentation.
+
+analysis_points:
+  - Discrepancies between implemented features and their textual descriptions
+  - Mismatches in terminology across different documentation artifacts
+  - Outdated documentation referencing removed or changed features
+  - Inconsistencies between user-facing messages and support documentation
+  - Non-adherence to documented style guides or formatting conventions
+  - Logical contradictions between different parts of documentation
+
+learned_exclusions: []
