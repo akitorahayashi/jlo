@@ -91,10 +91,27 @@ tests/
 ## CLI Commands
 - `jlo init` (alias: `i`): Create `.jules/` structure with setup directory
 - `jlo update [--dry-run] [--workflows]` (alias: `u`): Update workspace to current jlo version
-- `jlo template [-l layer] [-n name]` (alias: `tp`): Create custom role
+- `jlo template [-l layer] [-n name]` (alias: `tp`): Create custom role (observers, deciders only)
+- `jlo run observers [--role <name>]`: Run observer agents
+- `jlo run deciders [--role <name>]`: Run decider agents
+- `jlo run planners <path>`: Run planner (single-role, issue-driven)
+- `jlo run implementers <path>`: Run implementer (single-role, issue-driven)
 - `jlo setup gen [path]` (alias: `s g`): Generate `install.sh` and `env.toml`
 - `jlo setup list` (alias: `s ls`): List available components
 - `jlo setup list --detail <component>`: Show component details
+
+## Layer Architecture
+
+| Layer | Type | Invocation | Config |
+|-------|------|------------|--------|
+| Observers | Multi-role | `jlo run observers` | `config.toml` |
+| Deciders | Multi-role | `jlo run deciders` | `config.toml` |
+| Planners | Single-role | `jlo run planners <path>` | None |
+| Implementers | Single-role | `jlo run implementers <path>` | None |
+
+**Single-role layers**: Planners and Implementers have a fixed role with `prompt.yml` directly in the layer directory. They are issue-driven and require the issue path as a positional argument. Template creation is not supported.
+
+**Multi-role layers**: Observers and Deciders support multiple configurable roles listed in `config.toml`. Each role has its own subdirectory with `prompt.yml`.
 
 ## Setup Compiler
 

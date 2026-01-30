@@ -73,32 +73,43 @@ Implementers modify source code and require human review.
 |           +-- low/
 |
 +-- roles/              # Role definitions (global)
-    +-- observers/
+    +-- observers/      # Multi-role layer
     |   +-- contracts.yml    # Shared observer contract
     |   +-- event.yml        # Event template
-    |   +-- <role>/
+    |   +-- <role>/          # Role subdirectory
     |       +-- prompt.yml   # Static: run prompt (includes workstream)
     |       +-- role.yml     # Dynamic: evolving focus
     |       +-- notes/       # Declarative state
     |       +-- feedbacks/   # Decider feedback
     |
-    +-- deciders/
+    +-- deciders/       # Multi-role layer
     |   +-- contracts.yml    # Shared decider contract
     |   +-- issue.yml        # Issue template
     |   +-- feedback.yml     # Feedback template
-    |   +-- <role>/
+    |   +-- <role>/          # Role subdirectory
     |       +-- prompt.yml   # Includes workstream
     |
-    +-- planners/
+    +-- planners/       # Single-role layer (issue-driven)
     |   +-- contracts.yml    # Shared planner contract
-    |   +-- <role>/
-    |       +-- prompt.yml
+    |   +-- prompt.yml       # Direct prompt (no subdirectory)
     |
-    +-- implementers/
+    +-- implementers/   # Single-role layer (issue-driven)
         +-- contracts.yml    # Shared implementer contract
-        +-- <role>/
-            +-- prompt.yml
+        +-- prompt.yml       # Direct prompt (no subdirectory)
 ```
+
+## Layer Architecture
+
+| Layer | Type | Invocation |
+|-------|------|------------|
+| Observers | Multi-role | `jlo run observers` |
+| Deciders | Multi-role | `jlo run deciders` |
+| Planners | Single-role | `jlo run planners --issue <path>` |
+| Implementers | Single-role | `jlo run implementers --issue <path>` |
+
+**Multi-role layers** (Observers, Deciders): Support multiple configurable roles listed in `config.toml`. Each role has its own subdirectory with `prompt.yml`. Custom roles can be created with `jlo template`.
+
+**Single-role layers** (Planners, Implementers): Have a fixed role with `prompt.yml` directly in the layer directory. They are issue-driven and require the `--issue` flag. Template creation is not supported.
 
 ## Workstreams
 

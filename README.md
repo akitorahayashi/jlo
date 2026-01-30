@@ -38,32 +38,37 @@ Execute Jules agents for a specific layer:
 ```bash
 jlo run observers                      # Run all observer roles
 jlo run deciders --role triage_generic # Run specific role
-jlo run planners --dry-run             # Show prompts without executing
+jlo run observers --dry-run            # Show prompts without executing
 jlo run observers --branch custom      # Override starting branch
 ```
 
-**Implementer Invocation** (requires issue file):
+**Single-Role Layers** (Planners, Implementers) require an issue file:
 
 ```bash
-jlo run implementers --issue .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
+# Run planner for a specific issue
+jlo run planners .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
+
+# Run implementer for a specific issue
+jlo run implementers .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
 ```
 
-Implementers require a local issue file path. The issue content is embedded in the prompt.
+Single-role layers are issue-driven and do not support the `--role` flag.
 
 **Flags**:
-- `--role <name>`: Run specific role(s) instead of all configured
+- `--role <name>`: Run specific role(s) instead of all configured (multi-role layers only)
 - `--dry-run`: Show assembled prompts without API calls
 - `--branch <name>`: Override the default starting branch
-- `--issue <path>`: Local issue file (required for implementers)
+- `<path>`: Local issue file (required for planners and implementers)
 
 **Configuration**: Agent roles are configured in `.jules/config.toml`:
 
 ```toml
 [agents]
+# Multi-role layers: list roles to run
 observers = ["taxonomy", "data_arch", "qa", "consistency"]
 deciders = ["triage_generic"]
-planners = ["specifier_global"]
-implementers = ["executor_global"]
+# Single-role layers (planners, implementers) are issue-driven
+# and do not require configuration here.
 
 [run]
 default_branch = "main"

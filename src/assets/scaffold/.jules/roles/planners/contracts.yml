@@ -11,7 +11,7 @@ constraints:
   - Issue file path is authoritative (includes workstream)
 
 inputs:
-  - Issue file path (provided via workflow)
+  - Local issue file path (provided as argument)
   - .jules/workstreams/<workstream>/issues/<priority>/<issue>.yml (where requires_deep_analysis: true)
 
 outputs:

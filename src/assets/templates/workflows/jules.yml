@@ -7,6 +7,9 @@
 # 1. Run `jlo init` to create .jules/ structure
 # 2. Set JULES_API_KEY secret in repository settings
 # 3. Install jlo release binary (automatic via workflow)
+#
+# Note: Planners and Implementers are single-role, issue-driven layers.
+# They are invoked via separate workflows (jules-run-planner.yml, jules-run-implementer.yml).
 
 name: Jules Workflows
 
@@ -17,14 +20,12 @@ on:
   workflow_dispatch:
     inputs:
       layer:
-        description: 'Agent layer to run'
+        description: 'Agent layer to run (multi-role layers only)'
         required: true
         type: choice
         options:
           - observers
           - deciders
-          - planners
-          - implementers
       role:
         description: 'Specific role (optional, comma-separated)'
         required: false
@@ -86,7 +87,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.layer == 'implementers' && 'main' || 'jules' }}
+          ref: jules
 
       - name: Install jlo
         run: |

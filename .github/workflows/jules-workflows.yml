@@ -3,6 +3,9 @@
 # Sequential execution of agent layers with wait periods for async processing.
 # Replaces the reactive model (jules-pipeline.yml + jules-workflows.yml) with
 # a single, robust workflow that executes layers in order.
+#
+# Note: Planners and Implementers are single-role, issue-driven layers.
+# They are invoked via separate workflows (jules-run-planner.yml, jules-run-implementer.yml).
 
 name: Jules Workflows
 
@@ -17,7 +20,6 @@ on:
         options:
           - observers
           - deciders
-          - planners
         default: observers
       wait_minutes:
         description: 'Minutes to wait between layers (Jules async processing time)'
@@ -54,16 +56,9 @@ jobs:
           fetch-depth: 0
 
       - name: Install jlo
-        run: |
-          VERSION="${{ vars.JLO_VERSION || 'latest' }}"
-          if [ "$VERSION" = "latest" ]; then
-            URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
-          else
-            [ "${VERSION#v}" = "$VERSION" ] && VERSION="v${VERSION}"
-            URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
-          fi
-          curl -sSL "$URL" -o jlo
-          chmod +x jlo && sudo mv jlo /usr/local/bin/
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Run observers
         env:
@@ -97,16 +92,9 @@ jobs:
           fetch-depth: 0
 
       - name: Install jlo
-        run: |
-          VERSION="${{ vars.JLO_VERSION || 'latest' }}"
-          if [ "$VERSION" = "latest" ]; then
-            URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
-          else
-            [ "${VERSION#v}" = "$VERSION" ] && VERSION="v${VERSION}"
-            URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
-          fi
-          curl -sSL "$URL" -o jlo
-          chmod +x jlo && sudo mv jlo /usr/local/bin/
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Check for events
         id: check-events
@@ -127,58 +115,3 @@ jobs:
           ARGS=""
           [ "${{ inputs.dry_run }}" = "true" ] && ARGS="--dry-run"
           jlo run deciders $ARGS
-
-      - name: Wait for deciders
-        if: steps.check-events.outputs.has_events == 'true' && inputs.dry_run != 'true'
-        run: |
-          WAIT_MINS="${{ inputs.wait_minutes }}"
-          WAIT_SECONDS=$((WAIT_MINS * 60))
-          echo "⏳ Waiting ${WAIT_SECONDS}s (${WAIT_MINS} mins) for Jules to complete decider tasks..."
-          sleep "$WAIT_SECONDS"
-
-  # ============================================================
-  # Planners
-  # ============================================================
-  planners:
-    needs: deciders
-    if: >-
-      vars.JULES_PAUSED != 'true' &&
-      (always() && (needs.deciders.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.entry_point == 'planners')))
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-      
-      - name: Install jlo
-        run: |
-          VERSION="${{ vars.JLO_VERSION || 'latest' }}"
-          if [ "$VERSION" = "latest" ]; then
-            URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
-          else
-            [ "${VERSION#v}" = "$VERSION" ] && VERSION="v${VERSION}"
-            URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
-          fi
-          curl -sSL "$URL" -o jlo
-          chmod +x jlo && sudo mv jlo /usr/local/bin/
-
-      - name: Check for deep issues
-        id: check-issues
-        run: |
-          if grep -r "requires_deep_analysis: true" .jules/workstreams --include="*.yml" 2>/dev/null; then
-            echo "has_deep_issues=true" >> "$GITHUB_OUTPUT"
-            echo "🔍 Found issues requiring deep analysis"
-          else
-            echo "has_deep_issues=false" >> "$GITHUB_OUTPUT"
-            echo "✅ No issues require deep analysis"
-          fi
-
-      - name: Run planners
-        if: steps.check-issues.outputs.has_deep_issues == 'true'
-        env:
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-        run: |
-          ARGS=""
-          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="--dry-run"
-          jlo run planners $ARGS

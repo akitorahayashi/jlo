@@ -5,14 +5,11 @@ use crate::ports::{RoleTemplateStore, ScaffoldFile};
 
 static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold");
 
-/// Prompt templates for new roles
+/// Prompt templates for new roles (multi-role layers only)
 mod templates {
     pub static ROLE_YML: &str = include_str!("../assets/templates/layers/observer/role.yml");
     pub static OBSERVER: &str = include_str!("../assets/templates/layers/observer/prompt.yml");
     pub static DECIDER: &str = include_str!("../assets/templates/layers/decider/prompt.yml");
-    pub static PLANNER: &str = include_str!("../assets/templates/layers/planner/prompt.yml");
-    pub static IMPLEMENTER: &str =
-        include_str!("../assets/templates/layers/implementer/prompt.yml");
 }
 
 /// Embedded role template store implementation.
@@ -47,12 +44,16 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
     }
 
     fn generate_prompt_yaml_template(&self, _role_id: &str, layer: Layer) -> String {
-        // Return the template as-is with placeholders
+        // Single-role layers (Planners, Implementers) don't support template creation
+        // Return the template as-is with placeholders for multi-role layers
         let template = match layer {
             Layer::Observers => templates::OBSERVER,
             Layer::Deciders => templates::DECIDER,
-            Layer::Planners => templates::PLANNER,
-            Layer::Implementers => templates::IMPLEMENTER,
+            Layer::Planners | Layer::Implementers => {
+                // This should not be called for single-role layers
+                // The template command rejects them earlier
+                return String::new();
+            }
         };
 
         template.to_string()
@@ -104,13 +105,25 @@ mod tests {
     #[test]
     fn generate_prompt_yaml_template_has_correct_structure() {
         let store = EmbeddedRoleTemplateStore::new();
-        let yaml = store.generate_prompt_yaml_template("custom", Layer::Planners);
 
-        // Verify template has placeholder and correct structure
+        // Test with observer (multi-role layer)
+        let yaml = store.generate_prompt_yaml_template("custom", Layer::Observers);
         assert!(yaml.contains("role: ROLE_NAME"));
-        assert!(yaml.contains("layer: planners"));
+        assert!(yaml.contains("layer: observers"));
         assert!(yaml.contains("responsibility:"));
         assert!(yaml.contains("contracts:"));
         assert!(yaml.contains("instructions:"));
+
+        // Test with decider (multi-role layer)
+        let yaml = store.generate_prompt_yaml_template("custom", Layer::Deciders);
+        assert!(yaml.contains("role: ROLE_NAME"));
+        assert!(yaml.contains("layer: deciders"));
+
+        // Single-role layers return empty (not supported for template creation)
+        let yaml = store.generate_prompt_yaml_template("custom", Layer::Planners);
+        assert!(yaml.is_empty());
+
+        let yaml = store.generate_prompt_yaml_template("custom", Layer::Implementers);
+        assert!(yaml.is_empty());
     }
 }

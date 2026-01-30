@@ -33,6 +33,11 @@ where
         None => select_layer()?,
     };
 
+    // Reject single-role layers (Planners, Implementers)
+    if layer.is_single_role() {
+        return Err(AppError::SingleRoleLayerTemplate(layer.dir_name().to_string()));
+    }
+
     // Get role name
     let role_name = match role_name_arg {
         Some(name) => name.to_string(),
@@ -99,9 +104,18 @@ where
 }
 
 /// Interactive layer selection.
+///
+/// Only shows multi-role layers (Observers, Deciders) since single-role
+/// layers (Planners, Implementers) do not support custom templates.
 fn select_layer() -> Result<Layer, AppError> {
-    let items: Vec<String> =
-        Layer::ALL.iter().map(|l| format!("{} - {}", l.display_name(), l.description())).collect();
+    // Filter to only multi-role layers
+    let multi_role_layers: Vec<Layer> =
+        Layer::ALL.iter().filter(|l| !l.is_single_role()).copied().collect();
+
+    let items: Vec<String> = multi_role_layers
+        .iter()
+        .map(|l| format!("{} - {}", l.display_name(), l.description()))
+        .collect();
 
     if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
         let selection = Select::new()
@@ -111,7 +125,7 @@ fn select_layer() -> Result<Layer, AppError> {
             .interact()
             .map_err(|e| AppError::config_error(format!("Layer selection failed: {}", e)))?;
 
-        Ok(Layer::ALL[selection])
+        Ok(multi_role_layers[selection])
     } else {
         // Non-interactive: read from stdin
         let mut input = String::new();
@@ -122,16 +136,23 @@ fn select_layer() -> Result<Layer, AppError> {
 
         let trimmed = input.trim();
 
-        // Try as 1-based index
+        // Try as 1-based index (only for multi-role layers)
         if let Ok(index) = trimmed.parse::<usize>()
             && index >= 1
-            && index <= Layer::ALL.len()
+            && index <= multi_role_layers.len()
         {
-            return Ok(Layer::ALL[index - 1]);
+            return Ok(multi_role_layers[index - 1]);
         }
 
-        // Try as layer name
-        Layer::from_dir_name(trimmed).ok_or_else(|| AppError::InvalidLayer(trimmed.to_string()))
+        // Try as layer name (validate it's a multi-role layer)
+        let layer = Layer::from_dir_name(trimmed)
+            .ok_or_else(|| AppError::InvalidLayer(trimmed.to_string()))?;
+
+        if layer.is_single_role() {
+            return Err(AppError::SingleRoleLayerTemplate(layer.dir_name().to_string()));
+        }
+
+        Ok(layer)
     }
 }
 

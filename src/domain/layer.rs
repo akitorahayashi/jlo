@@ -58,6 +58,15 @@ impl Layer {
             Layer::Implementers => "Execute approved tasks, create PRs with code changes.",
         }
     }
+
+    /// Whether this layer has a single, fixed role (no subdirectories).
+    ///
+    /// Single-role layers (Planners, Implementers) are issue-driven and require
+    /// the `--issue` flag. They do not support template creation or config.toml
+    /// role lists.
+    pub fn is_single_role(&self) -> bool {
+        matches!(self, Layer::Planners | Layer::Implementers)
+    }
 }
 
 impl fmt::Display for Layer {
@@ -90,5 +99,13 @@ mod tests {
             assert!(!layer.description().is_empty());
             assert!(!layer.display_name().is_empty());
         }
+    }
+
+    #[test]
+    fn single_role_layers_are_planners_and_implementers() {
+        assert!(!Layer::Observers.is_single_role());
+        assert!(!Layer::Deciders.is_single_role());
+        assert!(Layer::Planners.is_single_role());
+        assert!(Layer::Implementers.is_single_role());
     }
 }
