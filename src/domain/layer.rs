@@ -5,11 +5,11 @@ use std::fmt;
 pub enum Layer {
     /// Observers: Read source, update notes, emit events (taxonomy, data_arch, consistency, qa)
     Observers,
-    /// Deciders: Read events, emit issues, delete events (triage)
+    /// Deciders: Read events, emit issues, delete events (triage_generic)
     Deciders,
-    /// Planners: Read issues requiring deep analysis, expand them in-place (specifier)
+    /// Planners: Read issues requiring deep analysis, expand them in-place (specifier_global)
     Planners,
-    /// Implementers: Execute approved tasks, create PRs with code changes (executor)
+    /// Implementers: Execute approved tasks, create PRs with code changes (executor_global)
     Implementers,
 }
 

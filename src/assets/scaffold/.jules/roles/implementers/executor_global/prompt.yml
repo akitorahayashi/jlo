@@ -1,4 +1,4 @@
-role: executor
+role: executor_global
 layer: implementers
 
 contracts:

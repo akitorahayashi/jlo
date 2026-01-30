@@ -198,8 +198,8 @@ impl TestContext {
         self.assert_role_in_layer_exists("observers", "taxonomy");
         self.assert_role_in_layer_exists("observers", "data_arch");
         self.assert_role_in_layer_exists("observers", "qa");
-        self.assert_role_in_layer_exists("deciders", "triage");
-        self.assert_role_in_layer_exists("planners", "specifier");
+        self.assert_role_in_layer_exists("deciders", "triage_generic");
+        self.assert_role_in_layer_exists("planners", "specifier_global");
     }
 
     /// Read the .jlo-version file.
