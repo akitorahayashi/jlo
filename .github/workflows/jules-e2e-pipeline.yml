@@ -96,7 +96,7 @@ jobs:
           fi
 
           escape_sed() {
-            printf '%s' "$1" | sed -e 's/[\\/&]/\\&/g'
+            printf '%s' "$1" | sed -e 's/[\\&#]/\\&/g'
           }
 
           render_template() {
@@ -110,7 +110,7 @@ jobs:
               local value="$2"
               shift 2
               value=$(escape_sed "$value")
-              sed -i "s|$placeholder|$value|g" "$output"
+              sed -i "s#$placeholder#$value#g" "$output"
             done
           }
 
