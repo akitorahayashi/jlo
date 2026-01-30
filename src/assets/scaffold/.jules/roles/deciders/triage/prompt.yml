@@ -1,5 +1,6 @@
 role: triage
 layer: deciders
+workstream: generic
 
 contracts:
   - .jules/JULES.md

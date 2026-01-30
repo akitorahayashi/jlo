@@ -1,5 +1,6 @@
 role: ROLE_NAME
 layer: deciders
+workstream: generic
 responsibility: "# TODO: Describe your specific responsibility"
 
 contracts:

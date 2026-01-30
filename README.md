@@ -25,6 +25,7 @@ Copy the sample workflow from `src/assets/templates/workflows/jules.yml` to your
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jlo init` | `i` | Create `.jules/` workspace with setup directory |
+| `jlo update [--dry-run] [--workflows]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name]` | `tp` | Create new role from template |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
@@ -44,7 +45,7 @@ jlo run observers --branch custom      # Override starting branch
 **Implementer Invocation** (requires issue file):
 
 ```bash
-jlo run implementers --issue .jules/exchange/issues/auth_inconsistency.yml
+jlo run implementers --issue .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
 ```
 
 Implementers require a local issue file path. The issue content is embedded in the prompt.
@@ -110,7 +111,7 @@ The simplified workflow uses `jlo run` for all agent execution.
 
 **Flow**:
 1. **Sync**: `jules` branch syncs from `main` periodically
-2. **Analysis**: Observers create event files in `.jules/exchange/events/`
+2. **Analysis**: Observers create event files in `.jules/workstreams/<workstream>/events/`
 3. **Triage**: Deciders consolidate events into issue files
 4. **Expansion**: Planners expand issues requiring deep analysis
 5. **Implementation**: Implementers are triggered manually with a local issue file

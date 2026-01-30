@@ -12,7 +12,7 @@ use std::path::Path;
 
 use app::{
     AppContext,
-    commands::{init, run, setup, template},
+    commands::{init, run, setup, template, update},
 };
 use domain::Layer;
 use ports::{NoopClipboard, WorkspaceStore};
@@ -20,6 +20,7 @@ use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 
 pub use app::commands::run::execute::{RunOptions, RunResult};
 pub use app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
+pub use app::commands::update::{UpdateOptions, UpdateResult};
 pub use domain::AppError;
 
 /// Initialize a new `.jules/` workspace in the current directory.
@@ -36,12 +37,16 @@ pub fn init() -> Result<(), AppError> {
 /// Create a new role from a layer template.
 ///
 /// Returns the full path of the created role (layer/role_name).
-pub fn template(layer: Option<&str>, role_name: Option<&str>) -> Result<String, AppError> {
+pub fn template(
+    layer: Option<&str>,
+    role_name: Option<&str>,
+    workstream: Option<&str>,
+) -> Result<String, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
     let templates = EmbeddedRoleTemplateStore::new();
     let ctx = AppContext::new(workspace, templates, NoopClipboard);
 
-    let path = template::execute(&ctx, layer, role_name)?;
+    let path = template::execute(&ctx, layer, role_name, workstream)?;
     println!("✅ Created new role at .jules/roles/{}/", path);
     Ok(path)
 }
@@ -100,4 +105,53 @@ pub fn setup_list() -> Result<Vec<ComponentSummary>, AppError> {
 /// Get detailed information for a specific component.
 pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
     setup::list_detail(component)
+}
+
+// =============================================================================
+// Update Command API
+// =============================================================================
+
+/// Update workspace to current jlo version.
+///
+/// Reconciles the existing workspace with the scaffold embedded in the jlo binary.
+/// Only jlo-managed files are overwritten; repository-owned files are preserved.
+///
+/// # Arguments
+/// * `dry_run` - Show planned changes without applying
+/// * `workflows` - Include workflow files in update
+pub fn update(dry_run: bool, workflows: bool) -> Result<UpdateResult, AppError> {
+    let workspace = FilesystemWorkspaceStore::current()?;
+
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    let options = UpdateOptions { dry_run, workflows };
+    update::execute(&workspace.jules_path(), options)
+}
+
+// =============================================================================
+// Workstream Command API
+// =============================================================================
+
+/// Create a new workstream.
+pub fn workstream_new(name: &str) -> Result<(), AppError> {
+    let workspace = FilesystemWorkspaceStore::current()?;
+
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    workspace.create_workstream(name)
+}
+
+/// List existing workstreams.
+pub fn workstream_list() -> Result<Vec<String>, AppError> {
+    let workspace = FilesystemWorkspaceStore::current()?;
+
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    workspace.list_workstreams()
 }

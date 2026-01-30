@@ -23,8 +23,8 @@ fn template_creates_role_via_library_api() {
 
     ctx.with_work_dir(|| {
         jlo::init().expect("init should succeed");
-        let path =
-            jlo::template(Some("observers"), Some("my-role")).expect("template should succeed");
+        let path = jlo::template(Some("observers"), Some("my-role"), None)
+            .expect("template should succeed");
         assert_eq!(path, "observers/my-role");
     });
 
