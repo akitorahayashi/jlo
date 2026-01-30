@@ -4,9 +4,8 @@
 
 | Component | Responsibility |
 |-----------|----------------|
-| **jlo** | Scaffold installation, versioning, prompt asset management |
+| **jlo** | Scaffold installation, versioning, prompt asset management, agent orchestration |
 | **GitHub Actions** | Orchestration: cron triggers, matrix execution, auto-merge control |
-| **jules-invoke** | Session creation: prompt delivery, starting_branch specification |
 | **Jules (VM)** | Execution: code analysis, artifact generation, branch/PR creation |
 
 ## Critical Design Principles
@@ -18,23 +17,26 @@ All scaffold files, configurations, and prompts must exist as real files within 
 - **How**: Use `include_dir!` to load the `src/assets/scaffold` directory as the authoritative source of truth.
 
 ### 2. Prompt Hierarchy (No Duplication)
-```
-prompt.yml (entry point, role-specific)
-  └─ contracts.yml (layer-shared workflow)
-       └─ JULES.md (global constraints only)
+Prompts are constructed as a flat list of contracts in `prompt.yml`.
+
+```yaml
+contracts:
+  - .jules/JULES.md (global)
+  - .jules/roles/<layer>/contracts.yml (layer)
+  - .jules/roles/<layer>/<role>/role.yml (role-specific)
 ```
 
 | File | Scope | Content |
 |------|-------|---------|
-| `prompt.yml` | Role | Entry point. Lists contracts to follow. |
+| `prompt.yml` | Role | Entry point. Lists all contracts to follow. |
 | `role.yml` | Role | Specialized focus (observers only). |
 | `contracts.yml` | Layer | Workflow, inputs, outputs, constraints shared within layer. |
 | `JULES.md` | Global | Rules applying to ALL layers (branch naming, system boundaries). |
 
-**Rule**: Never duplicate content across levels. Each level references the next.
+**Rule**: Never duplicate content across levels. Each level refines the constraints of the previous one.
 
 ### 3. Workflow-Driven Execution
-Agent execution is orchestrated by GitHub Actions, not jlo. The `.github/workflows/jules-workflows.yml` coordinates all agent invocations via reusable workflows.
+Agent execution is orchestrated by GitHub Actions using `jlo run`. The `.github/workflows/jules-workflows.yml` coordinates all agent invocations via reusable workflows, delegating the actual execution logic to the CLI.
 
 ## Project Summary
 `jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. Specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events and produce issues, Planners expand issues requiring deep analysis, and Implementers are triggered manually from GitHub Issues.
@@ -72,7 +74,7 @@ src/
 ├── lib.rs             # Public API
 ├── domain/            # Pure types (Layer, RoleId, AppError, setup models)
 ├── ports/             # Trait boundaries
-├── services/          # I/O implementations (catalog, resolver, generator)
+├── services/          # I/O implementations (catalog, resolver, generator, clipboard_arboard, jules_api, role_template_service, workspace_filesystem)
 ├── app/
 │   ├── context.rs     # AppContext (DI container)
 │   └── commands/      # init, template, setup
