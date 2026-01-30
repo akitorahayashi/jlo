@@ -59,10 +59,15 @@ jobs:
           RANDOM_ID=$(printf '%04x' "$RANDOM")
           BRANCH="${{ steps.branch.outputs.prefix }}${RANDOM_ID}"
 
-          CATEGORY=$(ls -1 .jules/exchange/events | head -n 1 || true)
-          if [ -z "$CATEGORY" ]; then
-            echo "No exchange event categories found under .jules/exchange/events." >&2
-            exit 1
+          # Determine Workstream (jlo init creates 'generic')
+          WORKSTREAM="generic"
+          if [ ! -d ".jules/workstreams/$WORKSTREAM" ]; then
+             echo "Workstream '$WORKSTREAM' not found in .jules/workstreams/." >&2
+             WORKSTREAM=$(ls -1 .jules/workstreams | head -n 1 || true)
+             if [ -z "$WORKSTREAM" ]; then
+                echo "No workstreams found." >&2
+                exit 1
+             fi
           fi
 
           ROLE=$(find .jules/roles/observers -mindepth 1 -maxdepth 1 -type d -printf "%f\n" | head -n 1 || true)
@@ -113,7 +118,7 @@ jobs:
           }
 
           OBSERVER_TEMPLATE=".jules/roles/observers/event.yml"
-          DECIDER_TEMPLATE=".jules/roles/deciders/issue.yml"
+          # DECIDER_TEMPLATE is not strictly needed for the mechanics test if we only create an event
 
           CONFIDENCE_ENUM=$(extract_template_value "$OBSERVER_TEMPLATE" "confidence")
           if [ -z "$CONFIDENCE_ENUM" ]; then
@@ -122,27 +127,31 @@ jobs:
           fi
           EVENT_CONFIDENCE=$(pick_enum_value "$CONFIDENCE_ENUM")
 
-          EVENT_ID="$(date -u +%Y-%m-%d_%H%M%S)_${CATEGORY}_${ROLE}_${RANDOM_ID}"
-          EVENT_DATE="$(date -u +%Y-%m-%d)"
-          EVENT_PATH=".jules/exchange/events/$CATEGORY/${EVENT_ID}.yml"
-          EVENT_TEMPLATE=".github/assets/jules-e2e/event.yml"
+          # Placeholder logic matches .jules/roles/observers/event.yml
+          # id: "YYYY-MM-DD_HHMMSS_<role>_<id>"
+          DATE_STR="$(date -u +%Y-%m-%d)"
+          TIME_STR="$(date -u +%H%M%S)"
+          EVENT_ID="${DATE_STR}_${TIME_STR}_${ROLE}_${RANDOM_ID}"
+          
+          # Path: .jules/workstreams/<workstream>/events/<id>.yml
+          EVENT_PATH=".jules/workstreams/$WORKSTREAM/events/${EVENT_ID}.yml"
+          EVENT_TEMPLATE=".jules/roles/observers/event.yml"
 
-          mkdir -p ".jules/exchange/events/$CATEGORY"
+          mkdir -p ".jules/workstreams/$WORKSTREAM/events"
 
           render_template \
             "$EVENT_TEMPLATE" \
             "$EVENT_PATH" \
-            "__EVENT_ID__" "$EVENT_ID" \
-            "__EVENT_DATE__" "$EVENT_DATE" \
-            "__ROLE__" "$ROLE" \
-            "__CATEGORY__" "$CATEGORY" \
-            "__CONFIDENCE__" "$EVENT_CONFIDENCE" \
-            "__EVENT_TITLE__" "E2E observer event" \
-            "__EVENT_STATEMENT__" "Synthetic observer event created for auto-merge validation." \
-            "__EVIDENCE_PATH__" "README.md" \
-            "__EVIDENCE_LOC__" "# .jules/" \
-            "__EVIDENCE_NOTE__" "Validates the observer event flow for e2e mechanics." \
-            "__EVENT_TAG__" "e2e"
+            "YYYY-MM-DD_HHMMSS_<role>_<id>" "$EVENT_ID" \
+            "YYYY-MM-DD" "$DATE_STR" \
+            "<role>" "$ROLE" \
+            "low|medium|high" "$EVENT_CONFIDENCE" \
+            "<short descriptive title>" "E2E observer event" \
+            "<concise statement of the observation>" "Synthetic observer event created for auto-merge validation." \
+            "<repo-relative path>" "README.md" \
+            "<line number or symbol>" "# .jules/" \
+            "<why this supports the statement>" "Validates the observer event flow for e2e mechanics." \
+            "<tag>" "e2e"
 
           git checkout -b "$BRANCH"
           git add "$EVENT_PATH"
