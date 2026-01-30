@@ -3,9 +3,9 @@
 
 [agents]
 observers = ["taxonomy", "data_arch", "qa", "consistency"]
-deciders = ["triage"]
-planners = ["specifier"]
-implementers = ["executor"]
+deciders = ["triage_generic"]
+planners = ["specifier_global"]
+implementers = ["executor_global"]
 
 [workstreams]
 # Default workstream for scaffold

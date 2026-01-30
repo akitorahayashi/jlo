@@ -63,12 +63,15 @@ fn init_creates_complete_layer_structure() {
     assert!(jules.join("roles/observers/qa/feedbacks").exists());
 
     // Verify non-observers don't have notes, feedbacks, or role.yml
-    assert!(!jules.join("roles/deciders/triage/notes").exists());
-    assert!(!jules.join("roles/deciders/triage/feedbacks").exists());
-    assert!(!jules.join("roles/deciders/triage/role.yml").exists());
-    assert!(!jules.join("roles/planners/specifier/notes").exists());
-    assert!(!jules.join("roles/planners/specifier/feedbacks").exists());
-    assert!(!jules.join("roles/planners/specifier/role.yml").exists());
+    assert!(!jules.join("roles/deciders/triage_generic/notes").exists());
+    assert!(!jules.join("roles/deciders/triage_generic/feedbacks").exists());
+    assert!(!jules.join("roles/deciders/triage_generic/role.yml").exists());
+    assert!(!jules.join("roles/planners/specifier_global/notes").exists());
+    assert!(!jules.join("roles/planners/specifier_global/feedbacks").exists());
+    assert!(!jules.join("roles/planners/specifier_global/role.yml").exists());
+    assert!(!jules.join("roles/implementers/executor_global/notes").exists());
+    assert!(!jules.join("roles/implementers/executor_global/feedbacks").exists());
+    assert!(!jules.join("roles/implementers/executor_global/role.yml").exists());
 }
 
 #[test]
