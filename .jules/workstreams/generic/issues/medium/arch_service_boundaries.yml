@@ -1,0 +1,40 @@
+schema_version: 2
+id: "arch_service_boundaries"
+fingerprint: "arch_service_boundaries"
+title: "Service Layer Mixed with Infrastructure Adapters"
+priority: "medium"
+summary: "The `src/services/` directory incorrectly mixes Domain Services with Infrastructure Adapters, violating architectural boundaries."
+
+problem: |
+  The `src/services/` directory contains a mix of:
+  1. Domain Services: `Generator`, `Resolver` (contain core business logic).
+  2. Infrastructure Adapters: `ArboardClipboard`, `FilesystemWorkspaceStore`, `HttpJulesClient`, `EmbeddedRoleTemplateStore`.
+
+  This violates the clear separation between core logic (Domain) and external interfaces (Adapters).
+
+impact: |
+  Makes the codebase harder to navigate and understand. Obscures the dependency direction (Adapters should depend on Domain).
+
+desired_outcome: |
+  - Move Adapters to `src/adapters/` (or `src/infrastructure/`).
+  - Keep Domain Services in `src/services/` (or rename to `src/domain/services/`).
+  - Update `mod.rs` and imports accordingly.
+
+constraints: []
+risks:
+  - "Moving files might break public API if `src/services` is re-exported in `lib.rs`."
+
+affected_areas:
+  - "src/services/"
+  - "src/adapters/"
+
+acceptance_criteria:
+  - "`src/services/` contains only Domain Services (`Generator`, `Resolver`)."
+  - "`src/adapters/` (or similar) contains `ArboardClipboard`, `FilesystemWorkspaceStore`, `HttpJulesClient`, `EmbeddedRoleTemplateStore`."
+
+verification_commands:
+  - "ls src/services/"
+  - "ls src/adapters/"
+
+requires_deep_analysis: false
+deep_analysis_reason: ""

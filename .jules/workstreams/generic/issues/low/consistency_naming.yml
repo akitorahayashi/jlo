@@ -1,0 +1,39 @@
+schema_version: 2
+id: "consistency_naming"
+fingerprint: "consistency_naming"
+title: "Naming Inconsistencies and Missing Templates"
+priority: "low"
+summary: "The codebase has inconsistent layer naming (singular vs plural), filename mismatches, and missing templates for single-role layers."
+
+problem: |
+  Several inconsistencies exist in naming and structure:
+  1. Layer directories in `src/assets/templates/layers/` use singular (e.g., `observer`), while `Layer` enum and `.jules/roles/` use plural (`Observers`).
+  2. `src/services/role_template_service.rs` defines `EmbeddedRoleTemplateStore`, creating a filename/struct mismatch.
+  3. `Planners` and `Implementers` layers are defined but lack template directories in `src/assets/templates/layers/`.
+
+impact: |
+  Causes confusion during development and navigation. Inconsistent conventions make automation harder.
+
+desired_outcome: |
+  - Rename `src/assets/templates/layers/` directories to match plural convention (or decide on singular everywhere).
+  - Rename `role_template_service.rs` to `embedded_role_template_store.rs` or rename the struct.
+  - Add missing templates for `planners` and `implementers`.
+
+constraints: []
+risks: []
+
+affected_areas:
+  - "src/assets/templates/layers/"
+  - "src/services/role_template_service.rs"
+
+acceptance_criteria:
+  - "Layer directories in `src/assets/templates/layers/` match the `Layer` enum convention."
+  - "Filename matches struct name for role template store."
+  - "Templates exist for `planners` and `implementers`."
+
+verification_commands:
+  - "ls src/assets/templates/layers/"
+  - "ls src/services/"
+
+requires_deep_analysis: false
+deep_analysis_reason: ""

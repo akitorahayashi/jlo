@@ -1,0 +1,42 @@
+schema_version: 2
+id: "qa_missing_coverage"
+fingerprint: "qa_missing_coverage"
+title: "Critical Missing Unit Tests in Core Modules"
+priority: "high"
+summary: "Core components (Setup domain, Jules API client, WorkspaceStore) lack essential unit tests, leaving them vulnerable to regressions."
+
+problem: |
+  Several core modules lack sufficient unit test coverage:
+  1. `src/domain/setup.rs` contains logic for `Component`, `EnvSpec`, and meta parsing but has NO unit tests.
+  2. `src/services/jules_api.rs` has critical retry/backoff logic and error classification in `create_session` but lacks tests covering these scenarios.
+  3. `src/services/workspace_filesystem.rs` lacks tests for role discovery (`discover_roles`, `find_role_fuzzy`) and workstream creation logic.
+
+impact: |
+  High risk of regressions in setup logic, API reliability (retries), and role discovery. This destabilizes the agent's core capabilities.
+
+desired_outcome: |
+  Unit tests are added to cover:
+  - `src/domain/setup.rs`: Parsing and validation logic.
+  - `src/services/jules_api.rs`: Retry mechanism, error handling, and session creation.
+  - `src/services/workspace_filesystem.rs`: Role discovery and fuzzy finding.
+
+constraints: []
+risks: []
+
+affected_areas:
+  - "src/domain/setup.rs"
+  - "src/services/jules_api.rs"
+  - "src/services/workspace_filesystem.rs"
+
+acceptance_criteria:
+  - "`src/domain/setup.rs` has a test module covering `Component::from_meta` and validation."
+  - "`src/services/jules_api.rs` has tests verifying retry attempts on 500/429 errors."
+  - "`src/services/workspace_filesystem.rs` has tests for `discover_roles` and `find_role_fuzzy`."
+
+verification_commands:
+  - "cargo test src/domain/setup.rs"
+  - "cargo test src/services/jules_api.rs"
+  - "cargo test src/services/workspace_filesystem.rs"
+
+requires_deep_analysis: false
+deep_analysis_reason: ""
