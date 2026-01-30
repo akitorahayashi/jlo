@@ -6,9 +6,9 @@ use std::path::{Path, PathBuf};
 
 use chrono::Utc;
 
+use crate::adapters::EmbeddedRoleTemplateStore;
 use crate::domain::AppError;
 use crate::ports::RoleTemplateStore;
-use crate::services::EmbeddedRoleTemplateStore;
 
 /// Files that are managed by jlo and will be overwritten on update.
 ///

@@ -1,5 +1,6 @@
 //! jlo: Deploy and manage .jules/ workspace scaffolding for organizational memory.
 
+pub mod adapters;
 pub mod app;
 pub mod domain;
 pub mod ports;
@@ -10,13 +11,13 @@ pub(crate) mod testing;
 
 use std::path::Path;
 
+use adapters::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 use app::{
     AppContext,
     commands::{init, run, setup, template, update},
 };
 use domain::Layer;
 use ports::{NoopClipboard, WorkspaceStore};
-use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 
 pub use app::commands::run::{RunOptions, RunResult};
 pub use app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};

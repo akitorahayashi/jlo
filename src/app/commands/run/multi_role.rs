@@ -6,9 +6,9 @@ use std::path::Path;
 use super::RunResult;
 use super::config::{detect_repository_source, load_config, resolve_roles};
 use super::prompt::assemble_prompt;
+use crate::adapters::HttpJulesClient;
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
-use crate::services::HttpJulesClient;
 
 /// Execute a multi-role layer (Observers or Deciders).
 pub fn execute(

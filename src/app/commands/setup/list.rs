@@ -1,8 +1,8 @@
 //! Setup list command - lists available components.
 
+use crate::adapters::EmbeddedCatalog;
 use crate::domain::AppError;
 use crate::ports::ComponentCatalog;
-use crate::services::EmbeddedCatalog;
 
 /// Summary information for a component.
 #[derive(Debug, Clone)]

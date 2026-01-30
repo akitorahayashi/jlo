@@ -2,9 +2,10 @@
 
 use std::path::Path;
 
+use crate::adapters::EmbeddedCatalog;
 use crate::domain::AppError;
 use crate::domain::setup::SetupConfig;
-use crate::services::{EmbeddedCatalog, Generator, Resolver};
+use crate::services::{Generator, Resolver};
 
 /// Execute the setup gen command.
 ///

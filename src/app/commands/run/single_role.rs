@@ -6,9 +6,9 @@ use std::path::Path;
 use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
+use crate::adapters::HttpJulesClient;
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
-use crate::services::HttpJulesClient;
 
 const PLANNER_WORKFLOW_NAME: &str = "jules-run-planner.yml";
 const IMPLEMENTER_WORKFLOW_NAME: &str = "jules-run-implementer.yml";
