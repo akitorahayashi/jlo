@@ -309,4 +309,102 @@ mod tests {
         assert!(role_dir.join("notes").exists());
         assert!(role_dir.join("notes/.gitkeep").exists());
     }
+
+    #[test]
+    fn discover_roles_finds_and_sorts_roles() {
+        let (_dir, ws) = test_workspace();
+        ws.create_structure(&[]).unwrap();
+
+        // Create some roles
+        let obs_role = RoleId::new("taxonomy").unwrap();
+        ws.scaffold_role_in_layer(
+            Layer::Observers,
+            &obs_role,
+            "role: taxonomy",
+            Some("prompt"),
+            false,
+        )
+        .unwrap();
+
+        let dec_role = RoleId::new("screener").unwrap();
+        ws.scaffold_role_in_layer(
+            Layer::Deciders,
+            &dec_role,
+            "role: screener",
+            Some("prompt"),
+            false,
+        )
+        .unwrap();
+
+        let plan_role = RoleId::new("architect").unwrap();
+        ws.scaffold_role_in_layer(
+            Layer::Planners,
+            &plan_role,
+            "role: architect",
+            Some("prompt"),
+            false,
+        )
+        .unwrap();
+
+        let roles = ws.discover_roles().unwrap();
+
+        assert_eq!(roles.len(), 3);
+        // Sort order is by dir_name: deciders, observers, planners
+        assert_eq!(roles[0].layer, Layer::Deciders);
+        assert_eq!(roles[0].id, "screener");
+
+        assert_eq!(roles[1].layer, Layer::Observers);
+        assert_eq!(roles[1].id, "taxonomy");
+
+        assert_eq!(roles[2].layer, Layer::Planners);
+        assert_eq!(roles[2].id, "architect");
+    }
+
+    #[test]
+    fn find_role_fuzzy_matches() {
+        let (_dir, ws) = test_workspace();
+        ws.create_structure(&[]).unwrap();
+
+        let obs_role = RoleId::new("taxonomy").unwrap();
+        ws.scaffold_role_in_layer(
+            Layer::Observers,
+            &obs_role,
+            "role: taxonomy",
+            Some("prompt"),
+            false,
+        )
+        .unwrap();
+
+        let dec_role = RoleId::new("taxman").unwrap();
+        ws.scaffold_role_in_layer(
+            Layer::Deciders,
+            &dec_role,
+            "role: taxman",
+            Some("prompt"),
+            false,
+        )
+        .unwrap();
+
+        // Exact match
+        let found = ws.find_role_fuzzy("taxonomy").unwrap().unwrap();
+        assert_eq!(found.layer, Layer::Observers);
+        assert_eq!(found.id, "taxonomy");
+
+        // Layer/Role match
+        let found = ws.find_role_fuzzy("deciders/taxman").unwrap().unwrap();
+        assert_eq!(found.layer, Layer::Deciders);
+        assert_eq!(found.id, "taxman");
+
+        // Prefix match (unique)
+        let found = ws.find_role_fuzzy("taxo").unwrap().unwrap();
+        assert_eq!(found.id, "taxonomy");
+
+        // Prefix match (ambiguous) - "tax" matches "taxonomy" and "taxman"
+        let found = ws.find_role_fuzzy("tax").unwrap();
+        assert!(found.is_none());
+
+        // No match
+        let found = ws.find_role_fuzzy("nonexistent").unwrap();
+        assert!(found.is_none());
+    }
 }
