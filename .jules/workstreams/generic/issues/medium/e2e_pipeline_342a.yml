@@ -1,0 +1,38 @@
+schema_version: 2
+
+# Metadata
+id: "e2e_pipeline_342a" # stable identity used as filename
+fingerprint: "e2e_pipeline_342a" # alias for id
+title: "E2E Pipeline Test Issue"
+priority: "medium"
+summary: "Issue created from E2E pipeline event."
+
+# Content
+problem: |
+  E2E pipeline validation.
+
+impact: |
+  Pipeline flow test.
+
+desired_outcome: |
+  E2E test passes.
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "README.md"
+
+acceptance_criteria:
+  - "Pipeline completes successfully."
+  - "Issue state is correct."
+
+verification_commands:
+  - "echo verified"
+  - ""
+  - ""
+
+# Analysis Flags
+requires_deep_analysis: false # true if deep impact analysis/dependency check is needed
+deep_analysis_reason: "" # required when requires_deep_analysis is true
