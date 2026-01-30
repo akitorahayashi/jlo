@@ -62,7 +62,7 @@ jobs:
         run: |
           ARGS="--issue ${{ inputs.issue_file }}"
           [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
-          jlo run implementers $ARGS
+          jlo run implementers $ARGS --branch main
 
       - name: Delete processed issue
         if: inputs.dry_run != 'true'
