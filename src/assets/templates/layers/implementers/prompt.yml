@@ -1,0 +1,12 @@
+role: implementer
+layer: implementers
+workstream: generic
+responsibility: "Execute approved tasks, create PRs with code changes."
+
+contracts:
+  - .jules/JULES.md
+  - .jules/roles/implementers/contracts.yml
+
+instructions:
+  - Read every file in contracts in order before doing any work.
+  - Follow contracts.yml exactly (constraints, workflow, inputs/outputs).

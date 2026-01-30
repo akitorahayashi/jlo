@@ -3,7 +3,7 @@
 use url::Url;
 
 /// Configuration for agent execution loaded from `.jules/config.toml`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RunConfig {
     /// Agent role assignments per layer.
     pub agents: AgentConfig,
@@ -11,16 +11,6 @@ pub struct RunConfig {
     pub run: RunSettings,
     /// Jules API settings.
     pub jules: JulesApiConfig,
-}
-
-impl Default for RunConfig {
-    fn default() -> Self {
-        Self {
-            agents: AgentConfig::default(),
-            run: RunSettings::default(),
-            jules: JulesApiConfig::default(),
-        }
-    }
 }
 
 /// Agent role assignments per layer.
@@ -129,6 +119,9 @@ mod tests {
         assert_eq!(config.run.jules_branch, "jules");
         assert!(config.run.parallel);
         assert_eq!(config.run.max_parallel, 3);
-        assert_eq!(config.jules.api_url.as_str(), "https://jules.googleapis.com/v1alpha/sessions");
+        assert_eq!(
+            config.jules.api_url.as_str(),
+            "https://jules.googleapis.com/v1alpha/sessions"
+        );
     }
 }

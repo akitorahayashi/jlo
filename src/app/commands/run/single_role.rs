@@ -147,15 +147,6 @@ fn execute_local_dispatch(
 
     println!("✅ Workflow dispatched successfully.");
 
-    // Delete the local file (only for implementers, planners keep the file)
-    if layer == Layer::Implementers {
-        if let Err(e) = fs::remove_file(canonical_path) {
-            eprintln!("⚠️ Failed to delete local issue file: {}", e);
-        } else {
-            println!("Deleted local issue file: {}", canonical_path.display());
-        }
-    }
-
     let role_name = format!("{}-dispatch", layer.dir_name().trim_end_matches('s'));
     Ok(RunResult { roles: vec![role_name], dry_run: false, sessions: vec![] })
 }

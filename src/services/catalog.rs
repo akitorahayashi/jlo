@@ -1,11 +1,10 @@
 //! Component catalog service - loads components from embedded assets.
 
 use include_dir::{Dir, include_dir};
-use serde::Deserialize;
 use std::collections::BTreeMap;
 
 use crate::domain::AppError;
-use crate::domain::setup::{Component, EnvSpec};
+use crate::domain::setup::{Component, ComponentMeta};
 use crate::ports::ComponentCatalog;
 
 /// Embedded catalog directory.
@@ -14,32 +13,6 @@ static CATALOG_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/catal
 /// Service for managing the component catalog.
 pub struct EmbeddedCatalog {
     components: BTreeMap<String, Component>,
-}
-
-#[derive(Deserialize)]
-struct ComponentMetaDto {
-    name: Option<String>,
-    #[serde(default)]
-    summary: String,
-    #[serde(default)]
-    dependencies: Vec<String>,
-    #[serde(default)]
-    env: Vec<EnvSpecDto>,
-}
-
-#[derive(Deserialize)]
-struct EnvSpecDto {
-    name: String,
-    #[serde(default)]
-    description: String,
-    #[serde(default)]
-    default: Option<String>,
-}
-
-impl From<EnvSpecDto> for EnvSpec {
-    fn from(dto: EnvSpecDto) -> Self {
-        Self { name: dto.name, description: dto.description, default: dto.default }
-    }
 }
 
 impl EmbeddedCatalog {
@@ -69,20 +42,13 @@ impl EmbeddedCatalog {
                     reason: "install.sh is not valid UTF-8".to_string(),
                 })?;
 
-            let meta: ComponentMetaDto =
+            let meta: ComponentMeta =
                 toml::from_str(meta_content).map_err(|e| AppError::InvalidComponentMetadata {
                     component: dir_name.to_string(),
                     reason: e.to_string(),
                 })?;
 
-            let component = Component {
-                name: meta.name.unwrap_or_else(|| dir_name.to_string()),
-                summary: meta.summary,
-                dependencies: meta.dependencies,
-                env: meta.env.into_iter().map(EnvSpec::from).collect(),
-                script_content: script_content.to_string(),
-            };
-
+            let component = Component::from_meta(dir_name, meta, script_content.to_string());
             components.insert(component.name.clone(), component);
         }
 

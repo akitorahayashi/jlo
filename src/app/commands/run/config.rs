@@ -55,6 +55,17 @@ struct JulesApiConfigDto {
     retry_delay_ms: u64,
 }
 
+impl Default for JulesApiConfigDto {
+    fn default() -> Self {
+        Self {
+            api_url: default_api_url(),
+            timeout_secs: default_timeout(),
+            max_retries: default_max_retries(),
+            retry_delay_ms: default_retry_delay_ms(),
+        }
+    }
+}
+
 fn default_api_url() -> String {
     "https://jules.googleapis.com/v1alpha/sessions".to_string()
 }
@@ -71,17 +82,6 @@ fn default_retry_delay_ms() -> u64 {
     1000
 }
 
-impl Default for JulesApiConfigDto {
-    fn default() -> Self {
-        Self {
-            api_url: default_api_url(),
-            timeout_secs: default_timeout(),
-            max_retries: default_max_retries(),
-            retry_delay_ms: default_retry_delay_ms(),
-        }
-    }
-}
-
 #[derive(Debug, Deserialize)]
 struct RunSettingsDto {
     #[serde(default = "default_branch")]
@@ -92,6 +92,17 @@ struct RunSettingsDto {
     parallel: bool,
     #[serde(default = "default_max_parallel")]
     max_parallel: usize,
+}
+
+impl Default for RunSettingsDto {
+    fn default() -> Self {
+        Self {
+            default_branch: default_branch(),
+            jules_branch: default_jules_branch(),
+            parallel: default_true(),
+            max_parallel: default_max_parallel(),
+        }
+    }
 }
 
 fn default_branch() -> String {
@@ -110,23 +121,15 @@ fn default_max_parallel() -> usize {
     3
 }
 
-impl Default for RunSettingsDto {
-    fn default() -> Self {
-        Self {
-            default_branch: default_branch(),
-            jules_branch: default_jules_branch(),
-            parallel: default_true(),
-            max_parallel: default_max_parallel(),
-        }
-    }
-}
-
 impl TryFrom<RunConfigDto> for RunConfig {
     type Error = AppError;
 
     fn try_from(dto: RunConfigDto) -> Result<Self, Self::Error> {
         Ok(RunConfig {
-            agents: AgentConfig { observers: dto.agents.observers, deciders: dto.agents.deciders },
+            agents: AgentConfig {
+                observers: dto.agents.observers,
+                deciders: dto.agents.deciders,
+            },
             run: RunSettings {
                 default_branch: dto.run.default_branch,
                 jules_branch: dto.run.jules_branch,
