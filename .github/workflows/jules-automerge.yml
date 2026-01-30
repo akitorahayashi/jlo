@@ -78,6 +78,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.bot_token }}
         run: |
-          gh pr merge "${{ inputs.pr_number }}" \
+          # Try enabling auto-merge first (preferred if branch protection is on)
+          if ! gh pr merge "${{ inputs.pr_number }}" \
             --auto --squash --delete-branch \
-            --repo "${{ github.repository }}"
+            --repo "${{ github.repository }}"; then
+            echo "Auto-merge failed (likely due to missing branch protection). Attempting immediate merge..."
+            # Fallback to immediate merge
+            gh pr merge "${{ inputs.pr_number }}" \
+              --squash --delete-branch \
+              --repo "${{ github.repository }}"
+          fi
