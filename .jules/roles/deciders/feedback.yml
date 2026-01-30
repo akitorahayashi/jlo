@@ -1,7 +1,0 @@
-# Feedback for Observer
-# Location: .jules/roles/observers/<observer_role>/feedbacks/<date>_<description>.yml
-
-date: "YYYY-MM-DD"
-pattern: "<description of recurring noise>"
-reason: "<why this should not be reported>"
-examples: [] # list of event_ids
