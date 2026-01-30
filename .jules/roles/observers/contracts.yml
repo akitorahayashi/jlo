@@ -1,0 +1,26 @@
+layer: observers
+branch_prefix: jules-observer-
+
+constraints:
+  - "Branch ID: 4 alphanumeric characters (e.g. 'a1b2')"
+  - Do NOT write to issues/ or tasks/
+  - Do NOT emit events for observations already covered by open issues
+  - Workstream directory must exist (fail fast if missing)
+
+inputs:
+  - Source code and repository files
+  - role.yml (specialized focus)
+  - notes/ (declarative memory)
+  - feedbacks/ (signals from deciders)
+  - .jules/workstreams/<workstream>/issues/**/*.yml (open issues for suppression)
+
+outputs:
+  - notes/ (updated state)
+  - .jules/workstreams/<workstream>/events/*.yml
+
+workflow:
+  - 1. Read feedbacks/, abstract patterns, update role.yml learned_exclusions
+  - 2. Read .jules/workstreams/<workstream>/issues/**/*.yml where status is 'open' to identify known problems
+  - 3. Analyze specialized domain against exclusions and open issues
+  - 4. Skip observations already covered by open issues (deduplication)
+  - "5. Record new findings: cp event.yml .jules/workstreams/<workstream>/events/<file>"
