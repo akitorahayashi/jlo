@@ -1,0 +1,21 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_090903_data_arch_3b13"
+created_at: "2026-01-30"
+author_role: "data_arch" # e.g. taxonomy
+confidence: "medium"
+
+# Content
+title: "E2E observer event"
+statement: |
+  Synthetic observer event created for auto-merge validation.
+
+evidence:
+  - path: "README.md"
+    loc: "# .jules/"
+    note: "Validates the observer event flow for e2e mechanics."
+
+tags:
+  - "e2e"
+  - "e2e"
