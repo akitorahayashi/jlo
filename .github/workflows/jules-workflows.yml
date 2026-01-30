@@ -22,7 +22,7 @@ on:
       wait_minutes:
         description: 'Minutes to wait between layers (Jules async processing time)'
         type: number
-        default: 30
+        default: 15
       dry_run:
         description: 'Show prompts without executing'
         type: boolean
@@ -76,7 +76,7 @@ jobs:
       - name: Wait for observers
         if: inputs.dry_run != 'true'
         run: |
-          WAIT_MINS="${{ inputs.wait_minutes || 30 }}"
+          WAIT_MINS="${{ inputs.wait_minutes }}"
           WAIT_SECONDS=$((WAIT_MINS * 60))
           echo "⏳ Waiting ${WAIT_SECONDS}s (${WAIT_MINS} mins) for Jules to complete observer tasks..."
           sleep "$WAIT_SECONDS"
@@ -131,7 +131,7 @@ jobs:
       - name: Wait for deciders
         if: steps.check-events.outputs.has_events == 'true' && inputs.dry_run != 'true'
         run: |
-          WAIT_MINS="${{ inputs.wait_minutes || 30 }}"
+          WAIT_MINS="${{ inputs.wait_minutes }}"
           WAIT_SECONDS=$((WAIT_MINS * 60))
           echo "⏳ Waiting ${WAIT_SECONDS}s (${WAIT_MINS} mins) for Jules to complete decider tasks..."
           sleep "$WAIT_SECONDS"
