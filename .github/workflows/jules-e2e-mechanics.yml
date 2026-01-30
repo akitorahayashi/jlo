@@ -2,11 +2,6 @@ name: Jules E2E Mechanics
 
 on:
   workflow_dispatch:
-    inputs:
-      run_pr_automerge:
-        description: 'Run PR creation and auto-merge test'
-        type: boolean
-        default: true
 
 permissions:
   contents: write
@@ -14,7 +9,6 @@ permissions:
 
 jobs:
   test-pr-automerge:
-    if: inputs.run_pr_automerge
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +71,7 @@ jobs:
           fi
 
           escape_sed() {
-            printf '%s' "$1" | sed -e 's/[\\/&]/\\&/g'
+            printf '%s' "$1" | sed -e 's/[\\&#]/\\&/g'
           }
 
           render_template() {
@@ -91,7 +85,7 @@ jobs:
               local value="$2"
               shift 2
               value=$(escape_sed "$value")
-              sed -i "s|$placeholder|$value|g" "$output"
+              sed -i "s#$placeholder#$value#g" "$output"
             done
           }
 
