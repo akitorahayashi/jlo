@@ -37,32 +37,3 @@ pub struct SetupConfig {
     #[serde(default)]
     pub tools: Vec<String>,
 }
-
-/// Metadata parsed from meta.toml.
-#[derive(Debug, Clone, Deserialize)]
-pub struct ComponentMeta {
-    /// Component name (defaults to directory name if missing).
-    pub name: Option<String>,
-    /// Short summary.
-    #[serde(default)]
-    pub summary: String,
-    /// Dependencies list.
-    #[serde(default)]
-    pub dependencies: Vec<String>,
-    /// Environment specifications.
-    #[serde(default)]
-    pub env: Vec<EnvSpec>,
-}
-
-impl Component {
-    /// Create a component from metadata and script content.
-    pub fn from_meta(dir_name: &str, meta: ComponentMeta, script_content: String) -> Self {
-        Self {
-            name: meta.name.unwrap_or_else(|| dir_name.to_string()),
-            summary: meta.summary,
-            dependencies: meta.dependencies,
-            env: meta.env,
-            script_content,
-        }
-    }
-}

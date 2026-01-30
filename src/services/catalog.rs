@@ -1,14 +1,31 @@
 //! Component catalog service - loads components from embedded assets.
 
 use include_dir::{Dir, include_dir};
+use serde::Deserialize;
 use std::collections::BTreeMap;
 
 use crate::domain::AppError;
-use crate::domain::setup::{Component, ComponentMeta};
+use crate::domain::setup::{Component, EnvSpec};
 use crate::ports::ComponentCatalog;
 
 /// Embedded catalog directory.
 static CATALOG_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/catalog");
+
+/// Metadata parsed from meta.toml.
+#[derive(Debug, Clone, Deserialize)]
+struct ComponentMeta {
+    /// Component name (defaults to directory name if missing).
+    pub name: Option<String>,
+    /// Short summary.
+    #[serde(default)]
+    pub summary: String,
+    /// Dependencies list.
+    #[serde(default)]
+    pub dependencies: Vec<String>,
+    /// Environment specifications.
+    #[serde(default)]
+    pub env: Vec<EnvSpec>,
+}
 
 /// Service for managing the component catalog.
 pub struct EmbeddedCatalog {
@@ -48,7 +65,13 @@ impl EmbeddedCatalog {
                     reason: e.to_string(),
                 })?;
 
-            let component = Component::from_meta(dir_name, meta, script_content.to_string());
+            let component = Component {
+                name: meta.name.unwrap_or_else(|| dir_name.to_string()),
+                summary: meta.summary,
+                dependencies: meta.dependencies,
+                env: meta.env,
+                script_content: script_content.to_string(),
+            };
             components.insert(component.name.clone(), component);
         }
 

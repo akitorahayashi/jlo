@@ -5,6 +5,7 @@ use std::time::Duration;
 use reqwest::blocking::Client;
 use reqwest::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use crate::domain::{AppError, JulesApiConfig};
 use crate::ports::{JulesClient, SessionRequest, SessionResponse};
@@ -15,7 +16,7 @@ const X_GOOG_API_KEY: &str = "X-Goog-Api-Key";
 #[derive(Clone)]
 pub struct HttpJulesClient {
     api_key: String,
-    api_url: String,
+    api_url: Url,
     max_retries: u32,
     retry_delay_ms: u64,
     client: Client,
@@ -148,7 +149,7 @@ impl HttpJulesClient {
     fn send_request(&self, request: &ApiRequest) -> Result<SessionResponse, AppError> {
         let response = self
             .client
-            .post(&self.api_url)
+            .post(self.api_url.clone())
             .header(X_GOOG_API_KEY, &self.api_key)
             .header(CONTENT_TYPE, "application/json")
             .json(request)

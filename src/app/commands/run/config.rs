@@ -14,7 +14,7 @@ pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
     }
 
     let content = fs::read_to_string(&config_path)?;
-    toml::from_str(&content).map_err(|e| AppError::RunConfigInvalid(e.to_string()))
+    RunConfig::parse_toml(&content).map_err(AppError::RunConfigInvalid)
 }
 
 /// Resolve which roles to run for a multi-role layer.
