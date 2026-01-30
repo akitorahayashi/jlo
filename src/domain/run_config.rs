@@ -1,19 +1,25 @@
 //! Run configuration domain models.
 
-use serde::Deserialize;
+use std::str::FromStr;
+use url::Url;
 
 /// Configuration for agent execution loaded from `.jules/config.toml`.
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default)]
 pub struct RunConfig {
     /// Agent role assignments per layer.
-    #[serde(default)]
     pub agents: AgentConfig,
     /// Execution settings.
-    #[serde(default)]
     pub run: RunSettings,
     /// Jules API settings.
-    #[serde(default)]
     pub jules: JulesApiConfig,
+}
+
+impl RunConfig {
+    /// Parse configuration from TOML content.
+    pub fn parse_toml(content: &str) -> Result<Self, String> {
+        let dto: dto::RunConfigDto = toml::from_str(content).map_err(|e| e.to_string())?;
+        dto.try_into()
+    }
 }
 
 /// Agent role assignments per layer.
@@ -21,102 +27,205 @@ pub struct RunConfig {
 /// Only multi-role layers (observers, deciders) are configured here.
 /// Single-role layers (planners, implementers) are issue-driven and
 /// do not require role configuration.
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default)]
 pub struct AgentConfig {
     /// Observer role names.
-    #[serde(default)]
     pub observers: Vec<String>,
     /// Decider role names.
-    #[serde(default)]
     pub deciders: Vec<String>,
 }
 
 /// Jules API configuration.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct JulesApiConfig {
     /// Jules API endpoint URL.
-    #[serde(default = "default_api_url")]
-    pub api_url: String,
+    pub api_url: Url,
     /// Request timeout in seconds.
-    #[serde(default = "default_timeout")]
     pub timeout_secs: u64,
     /// Maximum retry attempts.
-    #[serde(default = "default_max_retries")]
     pub max_retries: u32,
     /// Delay between retries in milliseconds.
-    #[serde(default = "default_retry_delay_ms")]
     pub retry_delay_ms: u64,
 }
 
 impl Default for JulesApiConfig {
     fn default() -> Self {
         Self {
-            api_url: default_api_url(),
-            timeout_secs: default_timeout(),
-            max_retries: default_max_retries(),
-            retry_delay_ms: default_retry_delay_ms(),
+            api_url: Url::parse("https://jules.googleapis.com/v1alpha/sessions")
+                .expect("Default API URL must be valid"),
+            timeout_secs: 30,
+            max_retries: 3,
+            retry_delay_ms: 1000,
         }
     }
 }
 
-fn default_api_url() -> String {
-    "https://jules.googleapis.com/v1alpha/sessions".to_string()
-}
-
-fn default_timeout() -> u64 {
-    30
-}
-
-fn default_max_retries() -> u32 {
-    3
-}
-
-fn default_retry_delay_ms() -> u64 {
-    1000
-}
-
 /// Execution settings for agent runs.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct RunSettings {
     /// Default branch for agent operations (implementers work from here).
-    #[serde(default = "default_branch")]
     pub default_branch: String,
     /// Branch where .jules/ workspace resides.
-    #[serde(default = "default_jules_branch")]
     pub jules_branch: String,
     /// Whether to run agents in parallel.
-    #[serde(default = "default_true")]
     pub parallel: bool,
     /// Maximum number of parallel agent executions.
-    #[serde(default = "default_max_parallel")]
     pub max_parallel: usize,
 }
 
 impl Default for RunSettings {
     fn default() -> Self {
         Self {
-            default_branch: default_branch(),
-            jules_branch: default_jules_branch(),
-            parallel: default_true(),
-            max_parallel: default_max_parallel(),
+            default_branch: "main".to_string(),
+            jules_branch: "jules".to_string(),
+            parallel: true,
+            max_parallel: 3,
         }
     }
 }
 
-fn default_branch() -> String {
-    "main".to_string()
-}
+mod dto {
+    use super::*;
+    use serde::Deserialize;
 
-fn default_jules_branch() -> String {
-    "jules".to_string()
-}
+    #[derive(Debug, Clone, Default, Deserialize)]
+    pub struct RunConfigDto {
+        #[serde(default)]
+        pub agents: AgentConfigDto,
+        #[serde(default)]
+        pub run: RunSettingsDto,
+        #[serde(default)]
+        pub jules: JulesApiConfigDto,
+    }
 
-fn default_true() -> bool {
-    true
-}
+    #[derive(Debug, Clone, Default, Deserialize)]
+    pub struct AgentConfigDto {
+        #[serde(default)]
+        pub observers: Vec<String>,
+        #[serde(default)]
+        pub deciders: Vec<String>,
+    }
 
-fn default_max_parallel() -> usize {
-    3
+    #[derive(Debug, Clone, Deserialize)]
+    pub struct JulesApiConfigDto {
+        #[serde(default = "default_api_url")]
+        pub api_url: String,
+        #[serde(default = "default_timeout")]
+        pub timeout_secs: u64,
+        #[serde(default = "default_max_retries")]
+        pub max_retries: u32,
+        #[serde(default = "default_retry_delay_ms")]
+        pub retry_delay_ms: u64,
+    }
+
+    impl Default for JulesApiConfigDto {
+        fn default() -> Self {
+            Self {
+                api_url: default_api_url(),
+                timeout_secs: default_timeout(),
+                max_retries: default_max_retries(),
+                retry_delay_ms: default_retry_delay_ms(),
+            }
+        }
+    }
+
+    fn default_api_url() -> String {
+        "https://jules.googleapis.com/v1alpha/sessions".to_string()
+    }
+
+    fn default_timeout() -> u64 {
+        30
+    }
+
+    fn default_max_retries() -> u32 {
+        3
+    }
+
+    fn default_retry_delay_ms() -> u64 {
+        1000
+    }
+
+    #[derive(Debug, Clone, Deserialize)]
+    pub struct RunSettingsDto {
+        #[serde(default = "default_branch")]
+        pub default_branch: String,
+        #[serde(default = "default_jules_branch")]
+        pub jules_branch: String,
+        #[serde(default = "default_true")]
+        pub parallel: bool,
+        #[serde(default = "default_max_parallel")]
+        pub max_parallel: usize,
+    }
+
+    impl Default for RunSettingsDto {
+        fn default() -> Self {
+            Self {
+                default_branch: default_branch(),
+                jules_branch: default_jules_branch(),
+                parallel: default_true(),
+                max_parallel: default_max_parallel(),
+            }
+        }
+    }
+
+    fn default_branch() -> String {
+        "main".to_string()
+    }
+
+    fn default_jules_branch() -> String {
+        "jules".to_string()
+    }
+
+    fn default_true() -> bool {
+        true
+    }
+
+    fn default_max_parallel() -> usize {
+        3
+    }
+
+    impl TryFrom<RunConfigDto> for RunConfig {
+        type Error = String;
+
+        fn try_from(dto: RunConfigDto) -> Result<Self, Self::Error> {
+            Ok(RunConfig {
+                agents: dto.agents.into(),
+                run: dto.run.into(),
+                jules: dto.jules.try_into()?,
+            })
+        }
+    }
+
+    impl From<AgentConfigDto> for AgentConfig {
+        fn from(dto: AgentConfigDto) -> Self {
+            AgentConfig { observers: dto.observers, deciders: dto.deciders }
+        }
+    }
+
+    impl TryFrom<JulesApiConfigDto> for JulesApiConfig {
+        type Error = String;
+
+        fn try_from(dto: JulesApiConfigDto) -> Result<Self, Self::Error> {
+            Ok(JulesApiConfig {
+                api_url: Url::from_str(&dto.api_url)
+                    .map_err(|e| format!("Invalid API URL: {}", e))?,
+                timeout_secs: dto.timeout_secs,
+                max_retries: dto.max_retries,
+                retry_delay_ms: dto.retry_delay_ms,
+            })
+        }
+    }
+
+    impl From<RunSettingsDto> for RunSettings {
+        fn from(dto: RunSettingsDto) -> Self {
+            RunSettings {
+                default_branch: dto.default_branch,
+                jules_branch: dto.jules_branch,
+                parallel: dto.parallel,
+                max_parallel: dto.max_parallel,
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -146,7 +255,8 @@ default_branch = "develop"
 parallel = false
 max_parallel = 5
 "#;
-        let config: RunConfig = toml::from_str(toml).unwrap();
+        let config = RunConfig::parse_toml(toml).unwrap();
+
         assert_eq!(config.agents.observers, vec!["taxonomy", "qa"]);
         assert_eq!(config.agents.deciders, vec!["triage_generic"]);
         assert_eq!(config.run.default_branch, "develop");
@@ -160,7 +270,8 @@ max_parallel = 5
 [agents]
 observers = ["test"]
 "#;
-        let config: RunConfig = toml::from_str(toml).unwrap();
+        let config = RunConfig::parse_toml(toml).unwrap();
+
         assert_eq!(config.agents.observers, vec!["test"]);
         assert_eq!(config.run.default_branch, "main");
         assert!(config.run.parallel);
