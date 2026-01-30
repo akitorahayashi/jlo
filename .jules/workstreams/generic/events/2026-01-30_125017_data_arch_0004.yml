@@ -1,0 +1,21 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_125017_data_arch_0004"
+created_at: "2026-01-30"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Unsafe manual TOML parsing in Generator"
+statement: |
+  `Generator::parse_env_toml` manually iterates over `toml::Value` instead of deserializing into a typed structure. This is brittle and skips validation.
+
+evidence:
+  - path: "src/services/generator.rs"
+    loc: "112-136"
+    note: "parse_env_toml function implementation"
+
+tags:
+  - "inefficient_transformation"
+  - "missing_validation"

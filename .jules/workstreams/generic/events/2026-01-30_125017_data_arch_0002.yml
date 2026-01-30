@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_125017_data_arch_0002"
+created_at: "2026-01-30"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Domain entities coupled to Serde"
+statement: |
+  Domain models in `src/domain/run_config.rs` and `src/domain/setup.rs` use `#[derive(Deserialize)]` and `#[serde(...)]` attributes, coupling the domain to infrastructure concerns (serialization), violating Boundary Sovereignty.
+
+evidence:
+  - path: "src/domain/run_config.rs"
+    loc: "7, 24, 35"
+    note: "RunConfig, AgentConfig, JulesApiConfig structs"
+  - path: "src/domain/setup.rs"
+    loc: "6"
+    note: "EnvSpec struct"
+
+tags:
+  - "boundary_sovereignty"
+  - "coupling"
