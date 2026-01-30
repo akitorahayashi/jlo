@@ -1,0 +1,21 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_125058_qa_setup"
+created_at: "2026-01-30"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Setup domain model lacks unit tests"
+statement: |
+  The `src/domain/setup.rs` module contains core domain logic for `Component`, `EnvSpec`, and `ComponentMeta`, including the `Component::from_meta` factory method, but has no unit tests. This risks logic errors in component configuration parsing.
+
+evidence:
+  - path: "src/domain/setup.rs"
+    loc: "1-68"
+    note: "Entire file lacks #[cfg(test)] mod tests."
+
+tags:
+  - "test-coverage"
+  - "domain"

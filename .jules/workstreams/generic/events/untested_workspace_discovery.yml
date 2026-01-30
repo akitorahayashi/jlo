@@ -1,0 +1,21 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_125058_qa_disc"
+created_at: "2026-01-30"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Workspace discovery methods lack unit tests"
+statement: |
+  The `discover_roles` and `find_role_fuzzy` methods in `FilesystemWorkspaceStore` (`src/services/workspace_filesystem.rs`) are not covered by the existing unit tests. These methods are critical for CLI functionality but their behavior is not verified at the unit level.
+
+evidence:
+  - path: "src/services/workspace_filesystem.rs"
+    loc: "80-128"
+    note: "Methods discover_roles and find_role_fuzzy are not invoked in mod tests."
+
+tags:
+  - "test-coverage"
+  - "services"

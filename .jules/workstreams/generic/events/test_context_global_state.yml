@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_125058_qa_state"
+created_at: "2026-01-30"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "TestContext modifies global process state"
+statement: |
+  The `TestContext` in `tests/common/mod.rs` modifies global process state (CWD and HOME env var), violating the State Isolation principle. This forces all integration tests using it to run sequentially (via `#[serial]`), increasing test suite duration and preventing parallel execution.
+
+evidence:
+  - path: "tests/common/mod.rs"
+    loc: "51-53"
+    note: "Unsafe modification of HOME environment variable."
+  - path: "tests/common/mod.rs"
+    loc: "250-252"
+    note: "Modification of current directory via env::set_current_dir."
+
+tags:
+  - "test-quality"
+  - "testing-infrastructure"

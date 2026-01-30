@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_125058_qa_jules"
+created_at: "2026-01-30"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "HttpJulesClient lacks unit tests for logic"
+statement: |
+  The `HttpJulesClient` implementation in `src/services/jules_api.rs` contains complex logic for exponential backoff retries, error classification (`is_retryable`), and session creation (`create_session`). This logic is currently not covered by unit tests, making it fragile and difficult to verify without hitting the real API.
+
+evidence:
+  - path: "src/services/jules_api.rs"
+    loc: "167-210"
+    note: "create_session and retry logic is untested."
+  - path: "src/services/jules_api.rs"
+    loc: "244-248"
+    note: "is_retryable logic is untested."
+
+tags:
+  - "test-coverage"
+  - "services"

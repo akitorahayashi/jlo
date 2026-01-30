@@ -1,0 +1,21 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_125058_qa_clip"
+created_at: "2026-01-30"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "ArboardClipboard service lacks unit tests"
+statement: |
+  The `ArboardClipboard` struct in `src/services/clipboard_arboard.rs` implements `ClipboardWriter` but has no unit tests. This leaves the clipboard functionality unverified and prone to regressions.
+
+evidence:
+  - path: "src/services/clipboard_arboard.rs"
+    loc: "1-22"
+    note: "Entire file lacks #[cfg(test)] mod tests or separate test file."
+
+tags:
+  - "test-coverage"
+  - "services"
