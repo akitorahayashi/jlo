@@ -1,9 +1,10 @@
-role: specifier_global
-layer: planners
+role: implementer
+layer: implementers
 
 contracts:
+  - AGENTS.md
   - .jules/JULES.md
-  - .jules/roles/planners/contracts.yml
+  - .jules/roles/implementers/contracts.yml
 
 instructions:
   - Read every file in contracts in order before doing any work.
