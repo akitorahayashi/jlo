@@ -7,7 +7,6 @@ inputs:
   - .jules/workstreams/<workstream>/issues/index.md
 
 constraints:
-  - "Branch ID: 4 alphanumeric characters (e.g. 'c3d4')"
   - Verify observations events in codebase before accepting
   - Rationalize conflicting events (e.g. deletion overrides renaming)
   - Aggregate all valid events into issues

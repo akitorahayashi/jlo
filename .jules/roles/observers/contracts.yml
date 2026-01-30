@@ -2,7 +2,6 @@ layer: observers
 branch_prefix: jules-observer-
 
 constraints:
-  - "Branch ID: 4 alphanumeric characters (e.g. 'a1b2')"
   - Do NOT write to issues/ or tasks/
   - Do NOT emit events for observations already covered by open issues
   - Workstream directory must exist (fail fast if missing)
