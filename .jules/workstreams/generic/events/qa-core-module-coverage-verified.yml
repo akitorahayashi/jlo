@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "qa003v"
+created_at: "2026-01-31"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Core Module Test Coverage Audit Results"
+statement: |
+  Audit of `src/domain/setup.rs`, `src/services/jules_api.rs`, and `src/services/workspace_filesystem.rs` confirms robust unit test coverage, satisfying the audit request in issue `high/qa_missing_coverage.yml`.
+  Only `src/services/clipboard_arboard.rs` remains with zero coverage.
+
+evidence:
+  - path: "src/domain/setup.rs"
+    loc: "65-116"
+    note: "Tests Component::from_meta logic and field pass-through."
+  - path: "src/services/jules_api.rs"
+    loc: "163-261"
+    note: "Tests API client success, retries (500, 429), and fail-fast (400)."
+  - path: "src/services/workspace_filesystem.rs"
+    loc: "220-377"
+    note: "Tests workspace structure, role discovery, and fuzzy finding."
+
+tags:
+  - "audit"
+  - "coverage"
+  - "verified"

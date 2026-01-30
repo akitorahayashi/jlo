@@ -4,14 +4,18 @@
 - `src/services/clipboard_arboard.rs`: Zero coverage (confirmed).
 
 ## Verified Coverage
-The following core modules have verified unit tests:
-- `src/domain/setup.rs`: `mod tests` exists and passes.
-- `src/services/jules_api.rs`: `mod tests` exists and passes.
-- `src/services/workspace_filesystem.rs`: `mod tests` exists and passes.
+The following modules have been audited and confirmed to have robust unit test coverage:
+- `src/domain/setup.rs`: Validates `Component::from_meta` and pass-through fields.
+- `src/services/jules_api.rs`: Tests API client success, retries (500, 429), and fail-fast logic (400).
+- `src/services/workspace_filesystem.rs`: Tests structure creation, versioning, role discovery, and fuzzy finding.
+- `src/services/resolver.rs`: Tests dependency resolution, ordering, and circular dependency detection.
+- `src/services/generator.rs`: Tests script generation and TOML merging.
+- `src/services/catalog.rs`: Tests embedded component loading and retrieval.
+- `src/services/embedded_role_template_store.rs`: Tests template loading and interpolation.
 
 ## Registry State
-- **Consistency Issue**: The issue `high/qa_missing_coverage.yml` (and others) are listed in `index.md` but missing from the file system.
-- **Accuracy Issue**: The claims in the ghost issue `qa_missing_coverage.yml` regarding missing tests in `setup.rs`, `jules_api.rs`, and `workspace_filesystem.rs` are factually incorrect.
+- **Resolved**: Previous reports of "ghost issues" were incorrect. Issues `high/qa_missing_coverage.yml` and others exist in the file system.
+- **Accuracy**: The claim in `qa_missing_coverage.yml` about missing coverage in core modules (Setup, API, Workspace) is partially inaccurate; these modules have good coverage. The claim regarding `ArboardClipboard` is correct.
 
 ## Architecture
-- Confirmed `src/services/` contains infrastructure adapters (`clipboard_arboard.rs`, `jules_api.rs`, `workspace_filesystem.rs`), supporting `medium/arch_service_boundaries.yml` (which is also missing from file system).
+- `src/services/` contains infrastructure adapters (`clipboard_arboard.rs`, `jules_api.rs`, `workspace_filesystem.rs`), confirming `medium/arch_service_boundaries.yml`.
