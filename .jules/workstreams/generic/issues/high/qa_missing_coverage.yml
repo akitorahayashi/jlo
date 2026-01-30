@@ -1,0 +1,45 @@
+schema_version: 2
+
+# Metadata
+id: "mf95p7"
+fingerprint: "mf95p7"
+title: "Critical Missing Unit Tests in Core Modules"
+priority: "high"
+summary: "Core components and adapters lack essential unit tests, leaving them vulnerable to regressions."
+
+# Content
+problem: |
+  Essential components of the system lack unit test coverage.
+  1. The `ArboardClipboard` struct in `src/services/clipboard_arboard.rs` implements `ClipboardWriter` but has no accompanying unit tests.
+  2. Previous reports indicate missing tests in Core Modules (Setup domain, Jules API client, WorkspaceStore), though some tests may exist now, gaps likely remain.
+
+impact: |
+  Lack of testing increases the risk of regressions in critical functionality (clipboard, core domain logic), which are key interaction points for the tool.
+
+desired_outcome: |
+  Unit tests should exist for all core components and adapters.
+  Specifically, `ArboardClipboard` should have unit tests covering its initialization and write functionality.
+
+constraints: []
+risks:
+  - "System clipboard access might be flaky in CI environments; mocking may be required."
+
+# Specifics
+affected_areas:
+  - "src/services/clipboard_arboard.rs"
+  - "src/domain/setup.rs"
+  - "src/services/jules_api.rs"
+  - "src/services/workspace_filesystem.rs"
+
+acceptance_criteria:
+  - "Unit tests exist for ArboardClipboard."
+  - "Core modules have sufficient test coverage."
+  - "Tests pass."
+
+verification_commands:
+  - "cargo test clipboard_arboard"
+  - "cargo test"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

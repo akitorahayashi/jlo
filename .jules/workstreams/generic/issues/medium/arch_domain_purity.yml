@@ -1,0 +1,50 @@
+schema_version: 2
+
+# Metadata
+id: "m24z4w"
+fingerprint: "m24z4w"
+title: "Domain Model Impurity and Coupling"
+priority: "medium"
+summary: "Domain entities lack validation and use primitive types in ports, violating Isomorphic Representation."
+
+# Content
+problem: |
+  The domain model exhibits primitive obsession and lacks validation, allowing invalid states to be represented.
+  Specifically:
+  1. `EnvSpec` in `src/domain/setup.rs` has public fields and no validation, accepting arbitrary strings as environment variable names.
+  2. `DiscoveredRole` in `src/ports/workspace_store.rs` uses `String` for IDs instead of `RoleId`, losing validation guarantees.
+  3. `RunSettings` in `src/domain/run_config.rs` uses `String` for branch names instead of a dedicated type.
+  This violates Normalized Independence and Isomorphic Representation principles.
+
+impact: |
+  Invalid data can propagate through the system, leading to runtime errors or inconsistent behavior that should have been caught at the boundary or during construction. It weakens the type safety guarantees of the domain core.
+
+desired_outcome: |
+  Domain entities should enforce invariants on construction.
+  Ports should use domain types (`RoleId`, `BranchName`) instead of primitives where possible.
+  `EnvSpec` should validate variable names.
+
+constraints: []
+risks:
+  - "Refactoring public fields to private with constructors may break downstream usage."
+  - "Serialization compatibility must be maintained or migrated."
+
+# Specifics
+affected_areas:
+  - "src/domain/setup.rs"
+  - "src/ports/workspace_store.rs"
+  - "src/services/workspace_filesystem.rs"
+  - "src/domain/run_config.rs"
+
+acceptance_criteria:
+  - "EnvSpec rejects invalid environment variable names."
+  - "DiscoveredRole uses RoleId."
+  - "RunSettings uses BranchName (or similar strong type)."
+  - "All tests pass."
+
+verification_commands:
+  - "cargo test"
+
+# Analysis Flags
+requires_deep_analysis: true
+deep_analysis_reason: "Refactoring domain entities and ports to introduce strict types (RoleId, BranchName) and validation (EnvSpec) affects multiple layers and may require migration of existing data or widespread signature changes."

@@ -1,0 +1,41 @@
+schema_version: 2
+
+# Metadata
+id: "tq30lo"
+fingerprint: "tq30lo"
+title: "Inconsistent and Outdated Documentation"
+priority: "medium"
+summary: "README.md is out of sync with the codebase (missing commands, wrong workflows)."
+
+# Content
+problem: |
+  The documentation does not reflect the current state of the codebase.
+  1. The `workstream` command (and aliases) is implemented but missing from `README.md`.
+  2. `README.md` references workflow templates (`jules-workflows.yml`, etc.) that do not exist in `src/assets/templates/workflows/` (only `jules.yml` exists).
+
+impact: |
+  Users are unaware of available functionality (workstreams) and are misled about available CI/CD templates, leading to confusion and setup errors.
+
+desired_outcome: |
+  `README.md` should accurately list all available commands.
+  `README.md` should only reference existing workflow templates, or the missing templates should be created.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "README.md"
+  - "src/assets/templates/workflows/"
+
+acceptance_criteria:
+  - "README.md includes the `workstream` command."
+  - "README.md references only existing workflow templates."
+
+verification_commands:
+  - "grep 'workstream' README.md"
+  - "ls src/assets/templates/workflows/"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
