@@ -28,9 +28,7 @@ jobs:
           token: ${{ secrets.JLO_BOT_TOKEN }}
 
       - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+        uses: ./.github/actions/configure-git
 
       - name: Create test issue
         id: create
@@ -211,9 +209,7 @@ jobs:
           token: ${{ secrets.JLO_BOT_TOKEN }}
 
       - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+        uses: ./.github/actions/configure-git
 
       - name: Clean up test artifacts
         env:

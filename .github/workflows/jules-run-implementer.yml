@@ -61,14 +61,16 @@ jobs:
           [ "$DRY_RUN" = "true" ] && args+=("--dry-run")
           jlo run implementers "${args[@]}" --branch main
 
+      - name: Configure Git
+        if: inputs.dry_run != 'true'
+        uses: ./.github/actions/configure-git
+
       - name: Delete processed issue
         if: inputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN || github.token }}
           ISSUE_FILE: ${{ inputs.issue_file }}
         run: |
-          git config user.name "aria"
-          git config user.email "aria67323@gmail.com"
           if [ -f "$ISSUE_FILE" ]; then
             git rm "$ISSUE_FILE"
             git commit -m "Remove processed issue: $(basename "$ISSUE_FILE")"

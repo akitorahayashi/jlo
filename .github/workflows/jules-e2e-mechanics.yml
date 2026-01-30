@@ -18,9 +18,7 @@ jobs:
           token: ${{ secrets.JLO_BOT_TOKEN }}
 
       - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+        uses: ./.github/actions/configure-git
 
       - name: Resolve observer branch prefix
         id: branch
