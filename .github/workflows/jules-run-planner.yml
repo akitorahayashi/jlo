@@ -32,13 +32,15 @@ jobs:
           fetch-depth: 0
 
       - name: Validate inputs
+        env:
+          ISSUE_FILE: ${{ inputs.issue_file }}
         run: |
-          if [ -z "${{ inputs.issue_file }}" ]; then
+          if [ -z "$ISSUE_FILE" ]; then
             echo "::error::issue_file is required"
             exit 1
           fi
-          if [ ! -f "${{ inputs.issue_file }}" ]; then
-            echo "::error::Issue file not found in repository: ${{ inputs.issue_file }}"
+          if [ ! -f "$ISSUE_FILE" ]; then
+            echo "::error::Issue file not found in repository: $ISSUE_FILE"
             exit 1
           fi
 
@@ -50,7 +52,9 @@ jobs:
       - name: Run planners
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          ISSUE_FILE: ${{ inputs.issue_file }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          ARGS="${{ inputs.issue_file }}"
-          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
-          jlo run planners $ARGS
+          args=("$ISSUE_FILE")
+          [ "$DRY_RUN" = "true" ] && args+=("--dry-run")
+          jlo run planners "${args[@]}"
