@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "uc0001"
+created_at: "2026-01-30"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Undocumented Workstream Commands"
+statement: |
+  The `workstream` command (and its subcommands `new` and `list`) is fully implemented in the CLI (visible in `src/main.rs` and `src/lib.rs`) but is entirely missing from `README.md`. Users rely on documentation to discover available commands, so this omission hides functionality.
+
+evidence:
+  - path: "src/main.rs"
+    loc: "Commands::Workstream enum variant"
+    note: "Defines the command structure and 'w' alias"
+  - path: "README.md"
+    loc: "Commands section"
+    note: "Missing 'workstream' or 'w' command"
+
+tags:
+  - "documentation"
+  - "undocumented-feature"
