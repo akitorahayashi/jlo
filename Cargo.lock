@@ -1021,6 +1021,7 @@ dependencies = [
  "sha2",
  "tempfile",
  "toml",
+ "url",
 ]
 
 [[package]]

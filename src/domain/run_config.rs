@@ -1,19 +1,26 @@
 //! Run configuration domain models.
 
-use serde::Deserialize;
+use url::Url;
 
 /// Configuration for agent execution loaded from `.jules/config.toml`.
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct RunConfig {
     /// Agent role assignments per layer.
-    #[serde(default)]
     pub agents: AgentConfig,
     /// Execution settings.
-    #[serde(default)]
     pub run: RunSettings,
     /// Jules API settings.
-    #[serde(default)]
     pub jules: JulesApiConfig,
+}
+
+impl Default for RunConfig {
+    fn default() -> Self {
+        Self {
+            agents: AgentConfig::default(),
+            run: RunSettings::default(),
+            jules: JulesApiConfig::default(),
+        }
+    }
 }
 
 /// Agent role assignments per layer.
@@ -21,30 +28,24 @@ pub struct RunConfig {
 /// Only multi-role layers (observers, deciders) are configured here.
 /// Single-role layers (planners, implementers) are issue-driven and
 /// do not require role configuration.
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default)]
 pub struct AgentConfig {
     /// Observer role names.
-    #[serde(default)]
     pub observers: Vec<String>,
     /// Decider role names.
-    #[serde(default)]
     pub deciders: Vec<String>,
 }
 
 /// Jules API configuration.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct JulesApiConfig {
     /// Jules API endpoint URL.
-    #[serde(default = "default_api_url")]
-    pub api_url: String,
+    pub api_url: Url,
     /// Request timeout in seconds.
-    #[serde(default = "default_timeout")]
     pub timeout_secs: u64,
     /// Maximum retry attempts.
-    #[serde(default = "default_max_retries")]
     pub max_retries: u32,
     /// Delay between retries in milliseconds.
-    #[serde(default = "default_retry_delay_ms")]
     pub retry_delay_ms: u64,
 }
 
@@ -59,8 +60,8 @@ impl Default for JulesApiConfig {
     }
 }
 
-fn default_api_url() -> String {
-    "https://jules.googleapis.com/v1alpha/sessions".to_string()
+fn default_api_url() -> Url {
+    Url::parse("https://jules.googleapis.com/v1alpha/sessions").expect("Default URL must be valid")
 }
 
 fn default_timeout() -> u64 {
@@ -76,19 +77,15 @@ fn default_retry_delay_ms() -> u64 {
 }
 
 /// Execution settings for agent runs.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct RunSettings {
     /// Default branch for agent operations (implementers work from here).
-    #[serde(default = "default_branch")]
     pub default_branch: String,
     /// Branch where .jules/ workspace resides.
-    #[serde(default = "default_jules_branch")]
     pub jules_branch: String,
     /// Whether to run agents in parallel.
-    #[serde(default = "default_true")]
     pub parallel: bool,
     /// Maximum number of parallel agent executions.
-    #[serde(default = "default_max_parallel")]
     pub max_parallel: usize,
 }
 
@@ -132,37 +129,9 @@ mod tests {
         assert_eq!(config.run.jules_branch, "jules");
         assert!(config.run.parallel);
         assert_eq!(config.run.max_parallel, 3);
-    }
-
-    #[test]
-    fn run_config_parses_from_toml() {
-        let toml = r#"
-[agents]
-observers = ["taxonomy", "qa"]
-deciders = ["triage_generic"]
-
-[run]
-default_branch = "develop"
-parallel = false
-max_parallel = 5
-"#;
-        let config: RunConfig = toml::from_str(toml).unwrap();
-        assert_eq!(config.agents.observers, vec!["taxonomy", "qa"]);
-        assert_eq!(config.agents.deciders, vec!["triage_generic"]);
-        assert_eq!(config.run.default_branch, "develop");
-        assert!(!config.run.parallel);
-        assert_eq!(config.run.max_parallel, 5);
-    }
-
-    #[test]
-    fn run_config_uses_defaults_for_missing_sections() {
-        let toml = r#"
-[agents]
-observers = ["test"]
-"#;
-        let config: RunConfig = toml::from_str(toml).unwrap();
-        assert_eq!(config.agents.observers, vec!["test"]);
-        assert_eq!(config.run.default_branch, "main");
-        assert!(config.run.parallel);
+        assert_eq!(
+            config.jules.api_url.as_str(),
+            "https://jules.googleapis.com/v1alpha/sessions"
+        );
     }
 }

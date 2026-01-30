@@ -2,9 +2,17 @@
 
 use std::path::Path;
 
+use serde::Deserialize;
+
 use crate::domain::AppError;
 use crate::domain::setup::SetupConfig;
 use crate::services::{EmbeddedCatalog, Generator, Resolver};
+
+#[derive(Deserialize)]
+struct SetupConfigDto {
+    #[serde(default)]
+    tools: Vec<String>,
+}
 
 /// Execute the setup gen command.
 ///
@@ -32,8 +40,9 @@ pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
 
     // Load configuration
     let content = std::fs::read_to_string(&tools_yml)?;
-    let config: SetupConfig = serde_yaml::from_str(&content)
+    let dto: SetupConfigDto = serde_yaml::from_str(&content)
         .map_err(|e| AppError::config_error(format!("Invalid tools.yml: {}", e)))?;
+    let config = SetupConfig { tools: dto.tools };
 
     if config.tools.is_empty() {
         return Err(AppError::config_error(
