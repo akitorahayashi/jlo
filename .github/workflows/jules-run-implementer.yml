@@ -1,0 +1,80 @@
+# Jules Run Implementer
+#
+# Manual execution of the implementer layer for a specific issue.
+# Separated from the main orchestration workflow to allow targeted execution.
+
+name: Jules Run Implementer
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_file:
+        description: 'Issue file path'
+        type: string
+        required: true
+      dry_run:
+        description: 'Show prompts without executing'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  implementers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Validate inputs
+        run: |
+          if [ -z "${{ inputs.issue_file }}" ]; then
+            echo "::error::issue_file is required"
+            exit 1
+          fi
+          # We can't strictly check file existence before checkout/install in all cases if generic,
+          # but here we are on 'jules' branch.
+          if [ ! -f "${{ inputs.issue_file }}" ]; then
+            echo "::error::Issue file not found in repository: ${{ inputs.issue_file }}"
+            exit 1
+          fi
+
+      - name: Install jlo
+        run: |
+          VERSION="${{ vars.JLO_VERSION || 'latest' }}"
+          if [ "$VERSION" = "latest" ]; then
+            URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
+          else
+            [ "${VERSION#v}" = "$VERSION" ] && VERSION="v${VERSION}"
+            URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
+          fi
+          curl -sSL "$URL" -o jlo
+          chmod +x jlo && sudo mv jlo /usr/local/bin/
+
+      - name: Run implementers
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        run: |
+          ARGS="--issue ${{ inputs.issue_file }}"
+          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
+          jlo run implementers $ARGS
+
+      - name: Delete processed issue
+        if: inputs.dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN || github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          ISSUE_FILE="${{ inputs.issue_file }}"
+          if [ -f "$ISSUE_FILE" ]; then
+            git rm "$ISSUE_FILE"
+            git commit -m "Remove processed issue: $(basename "$ISSUE_FILE")"
+            git push origin jules
+            echo "✅ Deleted: $ISSUE_FILE"
+          fi

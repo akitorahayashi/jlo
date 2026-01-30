@@ -15,6 +15,27 @@ where
         return Err(AppError::WorkspaceExists);
     }
 
+    // Enforce execution on 'jules' branch to protect main history
+    let output = std::process::Command::new("git")
+        .args(["branch", "--show-current"])
+        .output()
+        .map_err(|e| AppError::ConfigError(format!("Failed to run git to check branch: {e}")))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(AppError::ConfigError(format!(
+            "Failed to get current git branch. Is this a git repository?\nDetails: {stderr}"
+        )));
+    }
+
+    let branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if branch != "jules" {
+        return Err(AppError::ConfigError(format!(
+            "Init must be run on 'jules' branch (current: '{}').\nPlease run: git checkout -b jules",
+            branch
+        )));
+    }
+
     let scaffold_files = ctx.templates().scaffold_files();
     ctx.workspace().create_structure(&scaffold_files)?;
 
