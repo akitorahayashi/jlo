@@ -80,4 +80,7 @@ jobs:
         run: |
           gh pr merge "${{ inputs.pr_number }}" \
             --auto --squash --delete-branch \
+            --repo "${{ github.repository }}" || \
+          gh pr merge "${{ inputs.pr_number }}" \
+            --squash --delete-branch \
             --repo "${{ github.repository }}"
