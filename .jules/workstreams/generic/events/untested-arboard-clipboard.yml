@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_152205_qa_clipbd"
+created_at: "2026-01-30"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Untested ArboardClipboard Implementation"
+statement: |
+  The `ArboardClipboard` struct in `src/services/clipboard_arboard.rs` has no unit tests.
+  It contains logic for initializing and writing to the system clipboard which should be verified,
+  even if via mocking or integration tests (if possible in this environment).
+
+evidence:
+  - path: "src/services/clipboard_arboard.rs"
+    loc: "1"
+    note: "File contains no #[cfg(test)] module or tests."
+
+tags:
+  - "testing"
+  - "coverage"
+  - "adapters"
