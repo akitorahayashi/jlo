@@ -1,0 +1,37 @@
+schema_version: 2
+
+# Metadata
+id: "c2x6z8"
+fingerprint: "c2x6z8"
+title: "Inconsistent Command Implementation Pattern"
+priority: "medium"
+summary: "The `workstream` command logic is misplaced in `src/lib.rs` instead of `src/app/commands/`."
+
+# Content
+problem: |
+  The `workstream` command (subcommands `new`, `list`) is implemented directly in `src/lib.rs`, creating a structural inconsistency. All other commands (`init`, `run`, `setup`, etc.) reside in `src/app/commands/`.
+
+impact: |
+  - Makes the `workstream` command harder to find and maintain.
+  - Bloats `src/lib.rs` with application logic.
+  - Violates the established pattern for command organization.
+
+desired_outcome: |
+  - `workstream` command logic is moved to `src/app/commands/workstream.rs` (or similar).
+  - `src/lib.rs` delegates to the new module.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/lib.rs"
+  - "src/app/commands/"
+
+acceptance_criteria:
+  - "`src/app/commands/workstream.rs` (or module) exists."
+  - "`src/lib.rs` no longer contains the command implementation details."
+
+verification_commands:
+  - "ls src/app/commands/workstream.rs"
+  - "grep 'fn workstream_new' src/app/commands/workstream.rs"

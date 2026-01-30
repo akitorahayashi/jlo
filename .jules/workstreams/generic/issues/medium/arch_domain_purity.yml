@@ -1,0 +1,43 @@
+schema_version: 2
+
+# Metadata
+id: "p3r5l9"
+fingerprint: "p3r5l9"
+title: "Domain Model Impurity and Coupling"
+priority: "medium"
+summary: "Domain models are coupled to infrastructure (serde), use primitive types, and lack validation."
+
+# Content
+problem: |
+  The domain model violates purity and type safety principles:
+  1. `EnvSpec` (`src/domain/setup.rs`) exposes public fields without validation and derives `Deserialize` directly, allowing invalid states (e.g. invalid env var names).
+  2. `DiscoveredRole` (`src/ports/workspace_store.rs`) and `RunSettings` (`src/domain/run_config.rs`) use `String` for identifiers (`id`, `branch_name`) instead of domain types (`RoleId`, `BranchName`), losing validation guarantees (Primitive Obsession).
+
+impact: |
+  - Invalid data can propagate deep into the system.
+  - Domain logic is tightly coupled to serialization details.
+  - Refactoring is harder due to lack of strong types.
+
+desired_outcome: |
+  - `EnvSpec` uses a constructor/validator and is not directly deserialized (use a DTO).
+  - `DiscoveredRole` uses `RoleId`.
+  - `RunSettings` uses strongly typed fields for branches.
+  - Domain entities are free of `serde` macros where possible (or strictly controlled).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/setup.rs"
+  - "src/ports/workspace_store.rs"
+  - "src/domain/run_config.rs"
+
+acceptance_criteria:
+  - "EnvSpec validation prevents invalid names."
+  - "DiscoveredRole.id is of type RoleId."
+  - "RunSettings uses types for branch names."
+
+verification_commands:
+  - "grep 'struct EnvSpec' src/domain/setup.rs"
+  - "grep 'struct DiscoveredRole' src/ports/workspace_store.rs"
