@@ -1,0 +1,38 @@
+schema_version: 2
+
+# Metadata
+id: "e2e_single_role_3dbf" # stable identity used as filename
+fingerprint: "e2e_single_role_3dbf" # alias for id
+title: "E2E Single-Role Test Issue"
+priority: "medium"
+summary: "Test issue for single-role E2E."
+
+# Content
+problem: |
+  E2E test validation.
+
+impact: |
+  Test coverage.
+
+desired_outcome: |
+  E2E test passes.
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "README.md"
+
+acceptance_criteria:
+  - "CLI executes successfully."
+  - "Dry-run output is correct."
+
+verification_commands:
+  - "echo verified"
+  - ""
+  - ""
+
+# Analysis Flags
+requires_deep_analysis: false # true if deep impact analysis/dependency check is needed
+deep_analysis_reason: "" # required when requires_deep_analysis is true
