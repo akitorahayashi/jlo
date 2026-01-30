@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "qa002r"
+created_at: "2026-01-30"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Issue Registry Disconnected from File System"
+statement: |
+  Issues listed in index.md (e.g., high/qa_missing_coverage.yml) do not exist in the file system.
+  Additionally, the claims in the ghost issue about core modules missing tests are factually incorrect.
+
+evidence:
+  - path: ".jules/workstreams/generic/issues/index.md"
+    loc: "1"
+    note: "Lists issues like high/qa_missing_coverage.yml."
+  - path: ".jules/workstreams/generic/issues/high/"
+    loc: "1"
+    note: "Directory is empty."
+
+tags:
+  - "meta"
+  - "process"
+  - "consistency"
