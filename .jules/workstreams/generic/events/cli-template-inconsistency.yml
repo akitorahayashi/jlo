@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "t9x2m4"
+created_at: "2026-01-31"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Misleading Template Command Documentation"
+statement: |
+  The `template` command documentation (README and CLI help) suggests `planners` and `implementers` are valid layers for creating new roles, but the implementation explicitly rejects them.
+
+evidence:
+  - path: "src/app/commands/template.rs"
+    loc: "reject single-role layers"
+    note: "Code returns AppError::SingleRoleLayerTemplate if layer is planner/implementer."
+  - path: "README.md"
+    loc: "Commands table"
+    note: "Lists 'Layer: observers, deciders, planners, or implementers' as valid options."
+  - path: "src/main.rs"
+    loc: "Template command"
+    note: "Help text does not explicitly exclude single-role layers in the argument description."
+
+tags:
+  - "documentation"
+  - "cli"
+  - "usability"
