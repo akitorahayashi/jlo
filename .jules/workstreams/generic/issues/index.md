@@ -8,7 +8,7 @@ It serves as the central source of truth for the **Decider** to deduplicate obse
 
 | Issue | Summary |
 | :--- | :--- |
-| [Critical Missing Unit Tests in Core Modules](./high/qa_missing_coverage.yml) | Core components (ArboardClipboard, Setup domain, Jules API, WorkspaceStore) lack essential unit tests. |
+| [Critical Missing Unit Tests in ArboardClipboard](./high/qa_missing_coverage.yml) | The ArboardClipboard component lacks any unit tests. |
 
 ## Medium Priority
 > Standard bugs and improvements in [`medium/`](./medium/).

@@ -3,22 +3,19 @@ schema_version: 2
 # Metadata
 id: "x9k2m4"
 fingerprint: "x9k2m4"
-title: "Critical Missing Unit Tests in Core Modules"
+title: "Critical Missing Unit Tests in ArboardClipboard"
 priority: "high"
-summary: "Core components (ArboardClipboard, Setup domain, Jules API, WorkspaceStore) lack essential unit tests."
+summary: "The ArboardClipboard component lacks any unit tests."
 
 # Content
 problem: |
   The `ArboardClipboard` adapter (`src/services/clipboard_arboard.rs`) has no unit tests (`#[cfg(test)]`), leaving clipboard interaction logic unverified.
-  Additionally, prior triage indicated that `Setup` domain, `JulesApi`, and `WorkspaceStore` may lack essential test coverage (edge cases, failure modes), though basic tests exist.
 
 impact: |
-  Lack of tests for infrastructure adapters like Clipboard and API clients creates a high risk of regressions during refactoring or environment changes.
-  Unverified core domain logic undermines confidence in the system's stability.
+  Lack of tests for infrastructure adapters like Clipboard creates a high risk of regressions during refactoring or environment changes.
 
 desired_outcome: |
   `ArboardClipboard` has unit tests (mocking external dependencies if needed).
-  `Setup`, `JulesApi`, and `WorkspaceStore` are audited and supplemented with tests for missing edge cases.
 
 constraints: []
 risks: []
@@ -26,19 +23,12 @@ risks: []
 # Specifics
 affected_areas:
   - "src/services/clipboard_arboard.rs"
-  - "src/domain/setup.rs"
-  - "src/services/jules_api.rs"
-  - "src/services/workspace_filesystem.rs"
 
 acceptance_criteria:
   - "Unit tests exist for `ArboardClipboard` covering success and failure paths."
-  - "Audit performed on `Setup`, `JulesApi`, `WorkspaceStore` tests; missing critical cases added."
 
 verification_commands:
   - "cargo test src/services/clipboard_arboard.rs"
-  - "cargo test src/domain/setup.rs"
-  - "cargo test src/services/jules_api.rs"
-  - "cargo test src/services/workspace_filesystem.rs"
 
 # Analysis Flags
 requires_deep_analysis: false
