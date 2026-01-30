@@ -1,0 +1,13 @@
+schema_version: 1
+id: "v4s9k2"
+created_at: "2026-01-30T12:00:00Z"
+author_role: "data_arch"
+confidence: "high"
+title: "Implicit Environment Dependency in Adapter"
+statement: "The HttpJulesClient adapter implicitly depends on global environment variables, violating explicit dependency rules."
+evidence: |
+  `src/services/jules_api.rs`: `HttpJulesClient::from_env` and `from_env_with_config` call `std::env::var("JULES_API_KEY")`.
+  This couples the adapter to the process environment and makes testing harder.
+tags:
+  - boundary-sovereignty
+  - implicit-dependency

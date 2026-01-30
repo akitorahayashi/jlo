@@ -1,0 +1,13 @@
+schema_version: 1
+id: "d9l2p5"
+created_at: "2026-01-30T12:10:00Z"
+author_role: "data_arch"
+confidence: "high"
+title: "Domain Model Coupled to TOML"
+statement: "The RunConfig domain entity is coupled to the TOML serialization format."
+evidence: |
+  `src/domain/run_config.rs`: `RunConfig::parse_toml` depends on `toml::from_str`.
+  While `serde` is handled via DTOs, the parsing logic itself resides in the domain entity, coupling it to a specific format (TOML) and infrastructure library (`toml` crate).
+tags:
+  - boundary-sovereignty
+  - domain-purity
