@@ -81,7 +81,7 @@ pub fn detect_repository_source() -> Result<String, AppError> {
 }
 
 /// Parse a GitHub URL to extract owner/repo.
-pub fn parse_github_url(url: &str) -> Option<String> {
+fn parse_github_url(url: &str) -> Option<String> {
     // SSH: git@github.com:owner/repo.git
     if let Some(rest) = url.strip_prefix("git@github.com:") {
         let repo = rest.trim_end_matches(".git");

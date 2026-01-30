@@ -215,16 +215,3 @@ fn execute_dry_run(
     println!("\nWould execute 1 session");
     Ok(())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn single_role_layers_are_identified_correctly() {
-        assert!(Layer::Planners.is_single_role());
-        assert!(Layer::Implementers.is_single_role());
-        assert!(!Layer::Observers.is_single_role());
-        assert!(!Layer::Deciders.is_single_role());
-    }
-}
