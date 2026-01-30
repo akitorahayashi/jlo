@@ -1,0 +1,38 @@
+schema_version: 2
+
+# Metadata
+id: "<fingerprint>" # stable identity used as filename
+fingerprint: "<fingerprint>" # alias for id
+title: "<Descriptive Title>"
+priority: "low|medium|high"
+summary: "<One-line statement of the issue>"
+
+# Content
+problem: |
+  <What is wrong or missing - conceptual description>
+
+impact: |
+  <Why this matters - consequences if not addressed>
+
+desired_outcome: |
+  <What should be true after resolution>
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "<file or module path>"
+
+acceptance_criteria:
+  - "<condition 1>"
+  - "<condition 2>"
+
+verification_commands:
+  - "<command 1 (e.g. format check)>"
+  - "<command 2 (e.g. lint check)>"
+  - "<command 3 (e.g. test commands)>"
+
+# Analysis Flags
+requires_deep_analysis: false # true if deep impact analysis/dependency check is needed
+deep_analysis_reason: "" # required when requires_deep_analysis is true

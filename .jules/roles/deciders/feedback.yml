@@ -1,0 +1,19 @@
+# Feedback for Observer
+# Location: .jules/roles/observers/<observer_role>/feedbacks/<date>_<description>.yml
+
+# Metadata
+date: "YYYY-MM-DD"
+topic: "<short topic>"
+
+# Critique
+critique: |
+  <Explain why the observation was rejected or what needs correction>
+
+# Correction
+guidance: |
+  <Instructions on how to avoid this mistake in the future>
+
+# Evidence
+# Paste the actual content of the rejected event(s) here. Do NOT rely on file IDs as files are deleted.
+rejected_content: |
+  <content of the event>
