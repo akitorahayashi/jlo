@@ -8,23 +8,24 @@ It serves as the central source of truth for the **Decider** to deduplicate obse
 
 | Issue | Summary |
 | :--- | :--- |
-| [Critical Missing Unit Tests in Core Modules](./high/qa_missing_coverage.yml) | Core components (Setup domain, Jules API client, WorkspaceStore) lack essential unit tests, leaving them vulnerable to regressions. |
+| [Critical Missing Unit Tests in Core Modules](./high/qa_missing_coverage.yml) | Core components (ArboardClipboard, Setup domain, Jules API, WorkspaceStore) lack essential unit tests. |
 
 ## Medium Priority
 > Standard bugs and improvements in [`medium/`](./medium/).
 
 | Issue | Summary |
 | :--- | :--- |
-| [Domain Model Impurity and Coupling](./medium/arch_domain_purity.yml) | Domain models are coupled to infrastructure libraries (serde), use primitive types, and contain redundant definitions. |
-| [Service Layer Mixed with Infrastructure Adapters](./medium/arch_service_boundaries.yml) | The `src/services/` directory incorrectly mixes Domain Services with Infrastructure Adapters, violating architectural boundaries. |
-| [Inconsistent and Outdated Documentation](./medium/documentation_consistency.yml) | Several discrepancies exist between documentation (README.md, AGENTS.md) and actual codebase structure. |
+| [Domain Model Impurity and Coupling](./medium/arch_domain_purity.yml) | Domain models are coupled to infrastructure (serde), use primitive types, and lack validation. |
+| [Service Layer Mixed with Infrastructure Adapters](./medium/arch_service_boundaries.yml) | The `src/services/` directory incorrectly mixes Domain Services with Infrastructure Adapters. |
+| [Inconsistent Command Implementation Pattern](./medium/arch_command_structure.yml) | The `workstream` command logic is misplaced in `src/lib.rs` instead of `src/app/commands/`. |
+| [Inconsistent and Outdated Documentation](./medium/documentation_consistency.yml) | Documentation (README.md) is out of sync with codebase capabilities (commands, assets). |
 
 ## Low Priority
 > Minor tweaks and housekeeping in [`low/`](./low/).
 
 | Issue | Summary |
 | :--- | :--- |
-| [Naming Inconsistencies and Missing Templates](./low/consistency_naming.yml) | The codebase has inconsistent layer naming (singular vs plural), filename mismatches, and missing templates for single-role layers. |
+| [Naming Inconsistencies](./low/consistency_naming.yml) | Inconsistent naming between Ports and Adapter implementations. |
 
 <!--
 Instructions for Decider:

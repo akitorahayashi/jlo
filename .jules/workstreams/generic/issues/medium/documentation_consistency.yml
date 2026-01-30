@@ -1,0 +1,37 @@
+schema_version: 2
+
+# Metadata
+id: "d4f9j2"
+fingerprint: "d4f9j2"
+title: "Inconsistent and Outdated Documentation"
+priority: "medium"
+summary: "Documentation (README.md) is out of sync with codebase capabilities (commands, assets)."
+
+# Content
+problem: |
+  1. The `workstream` command (alias `w`) is fully implemented but missing from the `README.md` command list.
+  2. The `README.md` references workflow templates (`jules-workflows.yml`, `jules-automerge.yml`, etc.) that do not exist in `src/assets/templates/workflows/` (only `jules.yml` exists).
+
+impact: |
+  - Users are unaware of the `workstream` command.
+  - Users cannot set up CI/CD workflows as described in the documentation.
+
+desired_outcome: |
+  - `README.md` includes the `workstream` command.
+  - `src/assets/templates/workflows/` contains the missing templates OR `README.md` is updated to reflect available assets.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "README.md"
+  - "src/assets/templates/workflows/"
+
+acceptance_criteria:
+  - "README.md lists `workstream` command."
+  - "Workflow templates match documentation."
+
+verification_commands:
+  - "grep 'workstream' README.md"
+  - "ls src/assets/templates/workflows/"

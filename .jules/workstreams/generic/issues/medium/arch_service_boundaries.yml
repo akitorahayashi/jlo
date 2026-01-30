@@ -1,0 +1,36 @@
+schema_version: 2
+
+# Metadata
+id: "b8v1n7"
+fingerprint: "b8v1n7"
+title: "Service Layer Mixed with Infrastructure Adapters"
+priority: "medium"
+summary: "The `src/services/` directory incorrectly mixes Domain Services with Infrastructure Adapters."
+
+# Content
+problem: |
+  The `src/services/` directory contains a mix of pure Domain Services (e.g., `resolver.rs`, `generator.rs`) and Infrastructure Adapters (e.g., `clipboard_arboard.rs`, `jules_api.rs`, `workspace_filesystem.rs`).
+  This violates clean architecture by blurring the line between the core domain and external interfaces.
+
+impact: |
+  - Increases cognitive load when navigating the codebase.
+  - Makes it harder to enforce dependency rules (domain should not depend on infrastructure).
+
+desired_outcome: |
+  - Infrastructure Adapters are moved to a dedicated directory (e.g., `src/adapters/`).
+  - `src/services/` is reserved for Domain Services (or renamed/restructured to reflect domain logic).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/services/"
+
+acceptance_criteria:
+  - "Adapters (clipboard, api, filesystem) are in `src/adapters/`."
+  - "Domain Services (resolver, generator) are in `src/services/` (or `src/domain/services/`)."
+
+verification_commands:
+  - "ls src/adapters/"
+  - "ls src/services/"

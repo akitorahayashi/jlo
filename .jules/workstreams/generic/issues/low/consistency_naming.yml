@@ -1,0 +1,36 @@
+schema_version: 2
+
+# Metadata
+id: "n7m3k5"
+fingerprint: "n7m3k5"
+title: "Naming Inconsistencies"
+priority: "low"
+summary: "Inconsistent naming between Ports and Adapter implementations."
+
+# Content
+problem: |
+  Several ports in `src/ports/` have implementations in `src/services/` with inconsistent naming:
+  - `JulesClient` -> `HttpJulesClient` (in `jules_api.rs`)
+  - `ClipboardWriter` -> `ArboardClipboard` (in `clipboard_arboard.rs`)
+  - `ComponentCatalog` -> `EmbeddedCatalog` (in `catalog.rs`)
+
+impact: |
+  - Makes it harder to find the implementation for a given port.
+  - Violates the Principle of Least Surprise.
+
+desired_outcome: |
+  - Adapter names and filenames are consistent with their Ports (e.g. `JulesClient` -> `JulesClientImpl` or `HttpJulesClient` in `jules_client_http.rs`).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/ports/"
+  - "src/services/"
+
+acceptance_criteria:
+  - "Naming convention is consistent (e.g. PortName -> PortNameImpl or similar)."
+
+verification_commands:
+  - "ls src/services/"
