@@ -7,8 +7,7 @@ constraints:
   - Issue file path is authoritative (includes workstream)
 
 inputs:
-  - Local issue file path (provided as argument)
-  - Issue content embedded in prompt
+  - Issue content embedded in this prompt
 
 outputs:
   - Modified source files, tests, documentation
