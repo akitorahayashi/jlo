@@ -18,8 +18,10 @@ outputs:
   - .jules/workstreams/<workstream>/events/*.yml
 
 workflow:
-  - 1. Read feedbacks/, abstract patterns, update role.yml learned_exclusions
+  - 1. Read notes/ to load declarative memory of project structure
+  - 2. Read feedbacks/, abstract patterns, update role.yml learned_exclusions
   - 2. Read .jules/workstreams/<workstream>/issues/**/*.yml where status is 'open' to identify known problems
   - 3. Analyze specialized domain against exclusions and open issues
   - 4. Skip observations already covered by open issues (deduplication)
   - "5. Record new findings: cp event.yml .jules/workstreams/<workstream>/events/<kebab-case-description>.yml"
+  - 6. Update notes/ with new patterns or structural understanding of the project (declarative memory)
