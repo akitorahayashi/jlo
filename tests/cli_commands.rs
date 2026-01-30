@@ -256,6 +256,7 @@ fn run_implementers_dry_run_with_issue_file() {
     .unwrap();
 
     ctx.cli()
+        .env_remove("GITHUB_ACTIONS")
         .args([
             "run",
             "implementers",
