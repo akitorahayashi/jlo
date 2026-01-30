@@ -4,6 +4,7 @@ branch_prefix: jules-implementer-
 constraints:
   - Branch format: jules-implementer-<fingerprint>-<short_description>
   - Follow AGENTS.md conventions
+  - Issue file path is authoritative (includes workstream)
 
 inputs:
   - Local issue file path (provided via --issue flag)

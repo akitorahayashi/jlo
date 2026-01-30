@@ -14,6 +14,7 @@ pub fn execute<W, R, C>(
     ctx: &AppContext<W, R, C>,
     layer_arg: Option<&str>,
     role_name_arg: Option<&str>,
+    workstream_arg: Option<&str>,
 ) -> Result<String, AppError>
 where
     W: WorkspaceStore,
@@ -46,9 +47,33 @@ where
         return Err(AppError::RoleExists { role: role_name, layer: layer.dir_name().to_string() });
     }
 
+    // Resolve workstream for observers/deciders
+    let workstream = match (layer, workstream_arg) {
+        (Layer::Observers | Layer::Deciders, Some(ws)) => {
+            // Validate workstream exists
+            if !ctx.workspace().workstream_exists(ws) {
+                return Err(AppError::ConfigError(format!(
+                    "Workstream '{}' does not exist. Create it with: jlo workstream new {}",
+                    ws, ws
+                )));
+            }
+            Some(ws.to_string())
+        }
+        (Layer::Observers | Layer::Deciders, None) => Some("generic".to_string()),
+        _ => None,
+    };
+
     // Generate role.yml and prompt.yml content
     let role_yaml = ctx.templates().generate_role_yaml(&role_name, layer);
-    let prompt_yaml = ctx.templates().generate_prompt_yaml_template(&role_name, layer);
+    let mut prompt_yaml = ctx.templates().generate_prompt_yaml_template(&role_name, layer);
+
+    // Replace ROLE_NAME placeholder
+    prompt_yaml = prompt_yaml.replace("ROLE_NAME", &role_name);
+
+    // Replace workstream placeholder if applicable
+    if let Some(ws) = &workstream {
+        prompt_yaml = prompt_yaml.replace("workstream: generic", &format!("workstream: {}", ws));
+    }
 
     // Determine if this layer type gets notes/
     let has_notes = matches!(layer, Layer::Observers);

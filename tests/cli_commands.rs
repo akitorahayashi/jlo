@@ -232,7 +232,12 @@ fn run_implementers_with_missing_issue_file() {
     ctx.cli().args(["init"]).assert().success();
 
     ctx.cli()
-        .args(["run", "implementers", "--issue", ".jules/exchange/issues/nonexistent.yml"])
+        .args([
+            "run",
+            "implementers",
+            "--issue",
+            ".jules/workstreams/generic/issues/nonexistent.yml",
+        ])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Issue file not found"));
@@ -245,8 +250,8 @@ fn run_implementers_dry_run_with_issue_file() {
 
     ctx.cli().args(["init"]).assert().success();
 
-    // Create a test issue file
-    let issue_dir = ctx.work_dir().join(".jules/exchange/issues");
+    // Create a test issue file in workstreams
+    let issue_dir = ctx.work_dir().join(".jules/workstreams/generic/issues/medium");
     std::fs::create_dir_all(&issue_dir).unwrap();
     let issue_path = issue_dir.join("test_issue.yml");
     std::fs::write(
@@ -261,11 +266,61 @@ fn run_implementers_dry_run_with_issue_file() {
             "run",
             "implementers",
             "--issue",
-            ".jules/exchange/issues/test_issue.yml",
+            ".jules/workstreams/generic/issues/medium/test_issue.yml",
             "--dry-run",
         ])
         .assert()
         .success()
         .stdout(predicate::str::contains("Dry Run: Local Dispatch"))
         .stdout(predicate::str::contains("Would dispatch workflow"));
+}
+
+// =============================================================================
+// Update Command Tests
+// =============================================================================
+
+#[test]
+#[serial]
+fn update_requires_workspace() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["update"]).assert().failure().stderr(predicate::str::contains("No .jules/"));
+}
+
+#[test]
+#[serial]
+fn update_dry_run_shows_plan() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init"]).assert().success();
+
+    // Simulate an older version to trigger update logic
+    let version_file = ctx.work_dir().join(".jules").join(".jlo-version");
+    std::fs::write(&version_file, "0.9.0").expect("write version");
+
+    ctx.cli()
+        .args(["update", "--dry-run"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Dry Run"));
+}
+
+#[test]
+#[serial]
+fn update_noop_when_current() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init"]).assert().success();
+
+    ctx.cli().args(["update"]).assert().success().stdout(predicate::str::contains("already"));
+}
+
+#[test]
+#[serial]
+fn update_alias_works() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init"]).assert().success();
+
+    ctx.cli().args(["u", "--dry-run"]).assert().success();
 }

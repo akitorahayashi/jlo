@@ -104,4 +104,16 @@ impl WorkspaceStore for MockWorkspaceStore {
         self.roles.borrow_mut().insert((layer, role_id.as_str().to_string()), true);
         Ok(())
     }
+
+    fn create_workstream(&self, _name: &str) -> Result<(), AppError> {
+        Ok(())
+    }
+
+    fn list_workstreams(&self) -> Result<Vec<String>, AppError> {
+        Ok(vec!["generic".to_string()])
+    }
+
+    fn workstream_exists(&self, name: &str) -> bool {
+        name == "generic"
+    }
 }

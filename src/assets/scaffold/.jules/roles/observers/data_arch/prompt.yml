@@ -1,5 +1,6 @@
 role: data_arch
 layer: observers
+workstream: generic
 
 contracts:
   - .jules/JULES.md

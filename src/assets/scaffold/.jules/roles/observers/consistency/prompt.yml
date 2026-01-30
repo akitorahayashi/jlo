@@ -1,5 +1,6 @@
 role: consistency
 layer: observers
+workstream: generic
 
 contracts:
   - .jules/JULES.md

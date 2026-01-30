@@ -10,15 +10,17 @@ constraints:
   - When requires_deep_analysis is true, deep_analysis_reason MUST be non-empty
   - Use fingerprint as filename (not date-based)
   - Ensure verification_commands are realistic and executable (e.g. `cargo test`, `npm test`); DO NOT use recursive/hypothetical commands (e.g. launching jules)
+  - Workstream directory must exist (fail fast if missing)
+  - Deciders never read or write outside their workstream
 
 inputs:
-  - .jules/exchange/events/**/*.yml
-  - .jules/exchange/issues/**/*.yml (existing issues for merge)
-  - .jules/exchange/issues/index.md
+  - .jules/workstreams/<workstream>/events/*.yml
+  - .jules/workstreams/<workstream>/issues/**/*.yml (existing issues for merge)
+  - .jules/workstreams/<workstream>/issues/index.md
 
 outputs:
-  - .jules/exchange/issues/<priority>/*.yml (created or updated)
-  - .jules/exchange/issues/index.md
+  - .jules/workstreams/<workstream>/issues/<priority>/*.yml (created or updated)
+  - .jules/workstreams/<workstream>/issues/index.md
   - .jules/roles/observers/<author_role>/feedbacks/<date>_<description>.yml (rejection feedback)
 
 workflow:
@@ -27,8 +29,8 @@ workflow:
   3. Verify observations exist, check significance, identify related events
   4. Rationalize disputes
   5. For events related to an existing open issue: merge into that issue (update content)
-  6. For new problems: cp issue.yml .jules/exchange/issues/<priority>/<fingerprint>.yml
-  7. Update .jules/exchange/issues/index.md to reflect the current state of issues
+  6. For new problems: cp issue.yml .jules/workstreams/<workstream>/issues/<priority>/<fingerprint>.yml
+  7. Update .jules/workstreams/<workstream>/issues/index.md to reflect the current state of issues
   8. If requiring deep analysis, provide a clear reason in deep_analysis_reason
   9. Reject invalid events: Create feedback based on feedback.yml at .jules/roles/observers/<author_role>/feedbacks/<file>.yml (fill in critique and rejected_content)
   10. Delete ALL processed events
