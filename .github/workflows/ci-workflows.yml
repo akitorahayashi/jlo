@@ -2,9 +2,9 @@ name: CI Workflows
 
 on:
   push:
-    branches: [ "main", "jules" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "jules" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -19,19 +19,3 @@ jobs:
   test:
     name: Test
     uses: ./.github/workflows/run-tests.yml
-  
-
-  automerge:
-    name: Auto Merge
-    if: github.event_name == 'pull_request'
-    permissions:
-      contents: write
-      pull-requests: write
-    needs: [lint, build, test]
-    uses: ./.github/workflows/jules-automerge.yml
-    with:
-      head_ref: ${{ github.head_ref }}
-      is_draft: ${{ github.event.pull_request.draft }}
-      pr_number: ${{ github.event.pull_request.number }}
-    secrets:
-      bot_token: ${{ secrets.JLO_BOT_TOKEN }}

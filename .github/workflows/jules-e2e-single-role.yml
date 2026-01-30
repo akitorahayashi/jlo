@@ -46,7 +46,7 @@ jobs:
             exit 1
           fi
 
-          ISSUE_ID="e2e_single_role_${RANDOM_ID}"
+          ISSUE_ID=$(openssl rand -hex 3)
           PRIORITY="medium"
           ISSUE_PATH=".jules/workstreams/$WORKSTREAM/issues/$PRIORITY/${ISSUE_ID}.yml"
 
@@ -54,7 +54,7 @@ jobs:
           cp "$ISSUE_TEMPLATE" "$ISSUE_PATH"
 
           # Replace placeholders
-          sed -i "s#<fingerprint>#$ISSUE_ID#g" "$ISSUE_PATH"
+          sed -i "s#<6_random_lowercase_alphanumeric_chars>#$ISSUE_ID#g" "$ISSUE_PATH"
           sed -i "s#<Descriptive Title>#E2E Single-Role Test Issue#g" "$ISSUE_PATH"
           sed -i "s#low|medium|high#$PRIORITY#g" "$ISSUE_PATH"
           sed -i "s#<One-line statement of the issue>#Test issue for single-role E2E.#g" "$ISSUE_PATH"

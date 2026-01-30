@@ -120,13 +120,16 @@ jobs:
           EVENT_CONFIDENCE=$(pick_enum_value "$CONFIDENCE_ENUM")
 
           # Placeholder logic matches .jules/roles/observers/event.yml
-          # id: "YYYY-MM-DD_HHMMSS_<role>_<id>"
+          # id: "<6_random_lowercase_alphanumeric_chars>"
           DATE_STR="$(date -u +%Y-%m-%d)"
-          TIME_STR="$(date -u +%H%M%S)"
-          EVENT_ID="${DATE_STR}_${TIME_STR}_${ROLE}_${RANDOM_ID}"
+          # TIME_STR not needed for ID in schema v1
+          # Generate 6 random alphanumeric chars
+          EVENT_ID=$(openssl rand -hex 3)
           
-          # Path: .jules/workstreams/<workstream>/events/<id>.yml
-          EVENT_PATH=".jules/workstreams/$WORKSTREAM/events/${EVENT_ID}.yml"
+          # Path: .jules/workstreams/$WORKSTREAM/events/<id>.yml
+          # We append random parts to filename to avoid collisions, but internal ID must be 6 chars
+          FILENAME="${EVENT_ID}.yml"
+          EVENT_PATH=".jules/workstreams/$WORKSTREAM/events/${FILENAME}"
           EVENT_TEMPLATE=".jules/roles/observers/event.yml"
 
           mkdir -p ".jules/workstreams/$WORKSTREAM/events"
@@ -134,7 +137,7 @@ jobs:
           render_template \
             "$EVENT_TEMPLATE" \
             "$EVENT_PATH" \
-            "YYYY-MM-DD_HHMMSS_<role>_<id>" "$EVENT_ID" \
+            "<6_random_lowercase_alphanumeric_chars>" "$EVENT_ID" \
             "YYYY-MM-DD" "$DATE_STR" \
             "<role>" "$ROLE" \
             "low|medium|high" "$EVENT_CONFIDENCE" \
