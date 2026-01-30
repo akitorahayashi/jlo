@@ -2,7 +2,6 @@ layer: planners
 branch_prefix: jules-planner-
 
 constraints:
-  - Branch ID: 4 alphanumeric characters (e.g. 'e5f6')
   - Only process issues where requires_deep_analysis is true
   - Expand analysis in-place (overwrite the issue file)
   - Set requires_deep_analysis to false after expansion
