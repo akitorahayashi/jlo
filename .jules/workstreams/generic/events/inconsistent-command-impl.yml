@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "cmd001"
+created_at: "2026-01-30"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Inconsistent Command Implementation Pattern"
+statement: |
+  The `workstream` command logic (including subcommands `new` and `list`) is implemented directly in `src/lib.rs` and exposed as public functions (`workstream_new`, `workstream_list`), rather than being encapsulated in a dedicated module under `src/app/commands/` like other commands (`init`, `template`, `run`, `setup`). This inconsistency makes the codebase harder to navigate and maintain.
+
+evidence:
+  - path: "src/lib.rs"
+    loc: "workstream_new, workstream_list functions"
+    note: "Command logic implemented in root library file"
+  - path: "src/app/commands/"
+    loc: "Directory listing"
+    note: "Missing workstream module"
+
+tags:
+  - "architecture"
+  - "consistency"
+  - "refactoring"
