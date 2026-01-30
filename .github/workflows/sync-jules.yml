@@ -21,8 +21,8 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "Aria"
+          git config user.email "aria67323@gmail.com"
 
       - name: Merge main into jules
         run: |

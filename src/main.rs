@@ -64,6 +64,7 @@ enum SetupCommands {
 #[derive(Subcommand)]
 enum RunLayer {
     /// Run observer agents
+    #[clap(visible_alias = "o")]
     Observers {
         /// Specific roles to run (default: all from config)
         #[arg(long)]
@@ -76,6 +77,7 @@ enum RunLayer {
         branch: Option<String>,
     },
     /// Run decider agents
+    #[clap(visible_alias = "d")]
     Deciders {
         /// Specific roles to run (default: all from config)
         #[arg(long)]
@@ -88,6 +90,7 @@ enum RunLayer {
         branch: Option<String>,
     },
     /// Run planner agents
+    #[clap(visible_alias = "p")]
     Planners {
         /// Specific roles to run (default: all from config)
         #[arg(long)]
@@ -100,6 +103,7 @@ enum RunLayer {
         branch: Option<String>,
     },
     /// Run implementer agents
+    #[clap(visible_alias = "i")]
     Implementers {
         /// Specific roles to run (default: all from config)
         #[arg(long)]

@@ -256,6 +256,7 @@ fn run_implementers_dry_run_with_issue_file() {
     .unwrap();
 
     ctx.cli()
+        .env_remove("GITHUB_ACTIONS")
         .args([
             "run",
             "implementers",
@@ -265,6 +266,6 @@ fn run_implementers_dry_run_with_issue_file() {
         ])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Dry Run: Implementer"))
-        .stdout(predicate::str::contains("Issue content:"));
+        .stdout(predicate::str::contains("Dry Run: Local Dispatch"))
+        .stdout(predicate::str::contains("Would dispatch workflow"));
 }

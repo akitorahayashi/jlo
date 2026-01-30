@@ -7,6 +7,8 @@ use crate::domain::{AppError, Layer, RunConfig};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
 use crate::services::HttpJulesClient;
 
+const IMPLEMENTER_WORKFLOW_NAME: &str = "jules-run-implementer.yml";
+
 /// Options for the run command.
 #[derive(Debug, Clone)]
 pub struct RunOptions {
@@ -35,7 +37,12 @@ pub struct RunResult {
 
 /// Execute the run command.
 pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppError> {
-    // Validate issue file requirement for implementers
+    // Check if we are in CI environment
+    let is_ci = std::env::var("GITHUB_ACTIONS").is_ok();
+
+    // VALIDATION: Issue file requirement for implementers
+    // If local execution: we need the path to pass to GH CLI
+    // If CI execution: we need the content to embed in prompt
     let issue_content = if options.layer == Layer::Implementers {
         let path = options.issue.as_ref().ok_or(AppError::IssueFileRequired)?;
 
@@ -43,6 +50,81 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
             return Err(AppError::IssueFileNotFound(path.display().to_string()));
         }
 
+        // Security Check: Ensure path is within .jules/exchange/issues
+        let canonical_path = fs::canonicalize(path)?;
+        // Construct expected directory path (resolve jules_path to absolute first)
+        let abs_jules_path = if jules_path.is_absolute() {
+            jules_path.to_path_buf()
+        } else {
+            std::env::current_dir()?.join(jules_path)
+        };
+        // Normalize the checking directory
+        let safe_dir = fs::canonicalize(abs_jules_path.join("exchange").join("issues"))
+            .map_err(|_| AppError::ConfigError("Issues directory not found".into()))?;
+
+        if !canonical_path.starts_with(&safe_dir) {
+            return Err(AppError::ConfigError(format!(
+                "Issue file must be within {}",
+                safe_dir.display()
+            )));
+        }
+
+        // Handle Local Dispatch for Implementers
+        if !is_ci {
+            if options.dry_run {
+                println!("=== Dry Run: Local Dispatch ===");
+                println!(
+                    "Would dispatch workflow '{}' for: {}",
+                    IMPLEMENTER_WORKFLOW_NAME,
+                    canonical_path.display()
+                );
+                return Ok(RunResult { roles: vec![], dry_run: true, sessions: vec![] });
+            }
+
+            println!("Dispatching implementer workflow for: {}", canonical_path.display());
+
+            // Compute relative path for workflow input
+            let current_dir = std::env::current_dir()?;
+            let relative_path =
+                canonical_path.strip_prefix(&current_dir).unwrap_or(&canonical_path);
+
+            // Execute: gh workflow run jules-run-implementer.yml -f issue_file=<path>
+            let output = std::process::Command::new("gh")
+                .args([
+                    "workflow",
+                    "run",
+                    IMPLEMENTER_WORKFLOW_NAME,
+                    "-f",
+                    &format!("issue_file={}", relative_path.display()),
+                ])
+                .output()
+                .map_err(|e| AppError::ConfigError(format!("Failed to execute gh CLI: {}", e)))?;
+
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(AppError::ConfigError(format!(
+                    "Failed to dispatch workflow via gh CLI. Stderr:\n{}",
+                    stderr
+                )));
+            }
+
+            println!("✅ Workflow dispatched successfully.");
+
+            // Delete the local file
+            if let Err(e) = fs::remove_file(&canonical_path) {
+                eprintln!("⚠️ Failed to delete local issue file: {}", e);
+            } else {
+                println!("Deleted local issue file: {}", canonical_path.display());
+            }
+
+            return Ok(RunResult {
+                roles: vec!["implementer-dispatch".to_string()],
+                dry_run: false,
+                sessions: vec![],
+            });
+        }
+
+        // CI Execution: Read content
         Some(fs::read_to_string(path)?)
     } else {
         None
@@ -64,10 +146,13 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
 
     // Determine starting branch
     let starting_branch = options.branch.clone().unwrap_or_else(|| {
+        // Implementers always start from main when running in CI/Agent mode
+        // to ensure a clean base for the feature branch.
         if options.layer == Layer::Implementers {
-            config.run.default_branch.clone()
+            "main".to_string()
         } else {
-            "jules".to_string()
+            // Non-implementer agents operate on the jules branch, where the workspace lives.
+            config.run.jules_branch.clone()
         }
     });
 
