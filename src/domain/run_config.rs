@@ -198,10 +198,7 @@ mod dto {
 
     impl From<AgentConfigDto> for AgentConfig {
         fn from(dto: AgentConfigDto) -> Self {
-            AgentConfig {
-                observers: dto.observers,
-                deciders: dto.deciders,
-            }
+            AgentConfig { observers: dto.observers, deciders: dto.deciders }
         }
     }
 

@@ -1,18 +1,15 @@
 mod common;
 
 use common::TestContext;
-use serial_test::serial;
 use predicates::prelude::*;
+use serial_test::serial;
 
 #[test]
 #[serial]
 fn init_creates_workspace_via_cli() {
     let ctx = TestContext::new();
 
-    ctx.cli()
-        .arg("init")
-        .assert()
-        .success();
+    ctx.cli().arg("init").assert().success();
 
     ctx.assert_jules_exists();
     ctx.assert_layer_structure_exists();
@@ -23,10 +20,7 @@ fn init_creates_workspace_via_cli() {
 fn template_creates_role_via_cli() {
     let ctx = TestContext::new();
 
-    ctx.cli()
-        .arg("init")
-        .assert()
-        .success();
+    ctx.cli().arg("init").assert().success();
 
     ctx.cli()
         .args(["template", "-l", "observers", "-n", "my-role"])
