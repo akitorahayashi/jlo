@@ -67,7 +67,7 @@ pub fn execute(
     });
 
     if dry_run {
-        execute_dry_run(jules_path, layer, &starting_branch, &issue_content)?;
+        execute_dry_run(jules_path, layer, &starting_branch, &issue_content, path)?;
         return Ok(RunResult {
             roles: vec![layer.dir_name().to_string()],
             dry_run: true,
@@ -81,7 +81,7 @@ pub fn execute(
     // Execute with appropriate client
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
     let session_id =
-        execute_session(jules_path, layer, &starting_branch, &source, &client, &issue_content)?;
+        execute_session(jules_path, layer, &starting_branch, &source, &client, &issue_content, path)?;
 
     Ok(RunResult {
         roles: vec![layer.dir_name().to_string()],
@@ -161,6 +161,7 @@ fn execute_session<C: JulesClient>(
     source: &str,
     client: &C,
     issue_content: &str,
+    issue_path: &Path,
 ) -> Result<String, AppError> {
     println!("Executing {}...", layer.display_name());
 
@@ -168,6 +169,9 @@ fn execute_session<C: JulesClient>(
 
     // Append issue content
     prompt.push_str("\n---\n# Issue Content\n");
+    if layer == Layer::Planners {
+        prompt.push_str(&format!("File: {}\n\n", issue_path.display()));
+    }
     prompt.push_str(issue_content);
 
     let request = SessionRequest {
@@ -190,6 +194,7 @@ fn execute_dry_run(
     layer: Layer,
     starting_branch: &str,
     issue_content: &str,
+    issue_path: &Path,
 ) -> Result<(), AppError> {
     println!("=== Dry Run: {} ===", layer.display_name());
     println!("Starting branch: {}\n", starting_branch);
@@ -204,11 +209,17 @@ fn execute_dry_run(
         println!("Contracts: {}", contracts_path.display());
     }
 
-    if let Ok(prompt) = assemble_single_role_prompt(jules_path, layer) {
+    if let Ok(mut prompt) = assemble_single_role_prompt(jules_path, layer) {
+        prompt.push_str("\n---\n# Issue Content\n");
+        if layer == Layer::Planners {
+            prompt.push_str(&format!("File: {}\n\n", issue_path.display()));
+        }
+        prompt.push_str(issue_content);
+
         println!(
-            "Assembled prompt: {} chars (+ {} chars issue)",
+            "Assembled prompt: {} chars (Prompt + {} + Issue Content)",
             prompt.len(),
-            issue_content.len()
+            if layer == Layer::Planners { "Issue Path" } else { "No Path" }
         );
     }
 

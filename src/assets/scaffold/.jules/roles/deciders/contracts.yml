@@ -20,12 +20,12 @@ constraints:
 workflow:
   - "1. Read events (filename: YYYY-MM-DD_HHMMSS_*.yml)"
   - 2. Read existing issues and index.md
-  - 3. Verify observation events exist, check significance, identify related events
+  - 3. Verify observed events exist, check significance, identify related events
   - 4. Rationalize disputes
   - "5. For events related to an existing issue: merge into that issue (update content)"
   - "6. For new problems: cp issue.yml .jules/workstreams/<workstream>/issues/<priority>/<fingerprint>.yml"
   - 7. Update .jules/workstreams/<workstream>/issues/index.md to reflect the current state of issues
-  - "8. Reject invalid events: Create feedback based on feedback.yml at .jules/roles/observers/<author_role>/feedbacks/<file>.yml (fill in critique and rejected_content)"
+  - "8. Reject invalid events: Create feedback based on feedback.yml at .jules/roles/observers/<author_role>/feedbacks/<summary>.yml (fill in critique and rejected_content)"
   - 9. Delete ALL processed events
 
 outputs:

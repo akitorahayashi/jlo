@@ -188,13 +188,13 @@ jobs:
 
       - name: Test implementer CLI error on missing issue
         run: |
-          # Should fail when --issue is not provided
-          echo "=== Testing error handling: missing --issue flag ==="
+          # Should fail when issue is not provided
+          echo "=== Testing error handling: missing issue argument ==="
           if jlo run implementers 2>&1; then
             echo "❌ Expected failure but command succeeded"
             exit 1
           fi
-          echo "✅ Correctly failed when --issue is missing"
+          echo "✅ Correctly failed when issue is missing"
 
   # ============================================================
   # Cleanup
