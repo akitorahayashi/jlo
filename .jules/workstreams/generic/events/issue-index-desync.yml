@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "idx001"
+created_at: "2026-01-30"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Issue Index Desynchronization"
+statement: |
+  The `issues/index.md` file in the generic workstream lists 5 active issues in the `high`, `medium`, and `low` categories, but the corresponding issue files are missing from the filesystem. This indicates a state corruption where the index (Source of Truth) is out of sync with the actual artifacts.
+
+evidence:
+  - path: ".jules/workstreams/generic/issues/index.md"
+    loc: "High, Medium, Low sections"
+    note: "Lists issues like qa_missing_coverage.yml, arch_domain_purity.yml, etc."
+  - path: ".jules/workstreams/generic/issues/medium/"
+    loc: "Directory listing"
+    note: "Directory is empty (contains only .gitkeep)"
+
+tags:
+  - "meta"
+  - "state-corruption"
+  - "workstream-integrity"
