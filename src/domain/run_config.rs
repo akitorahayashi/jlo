@@ -140,7 +140,7 @@ mod tests {
         let toml = r#"
 [agents]
 observers = ["taxonomy", "qa"]
-deciders = ["triage"]
+deciders = ["triage_generic"]
 
 [run]
 default_branch = "develop"
@@ -149,7 +149,7 @@ max_parallel = 5
 "#;
         let config: RunConfig = toml::from_str(toml).unwrap();
         assert_eq!(config.agents.observers, vec!["taxonomy", "qa"]);
-        assert_eq!(config.agents.deciders, vec!["triage"]);
+        assert_eq!(config.agents.deciders, vec!["triage_generic"]);
         assert!(config.agents.planners.is_empty());
         assert_eq!(config.run.default_branch, "develop");
         assert!(!config.run.parallel);

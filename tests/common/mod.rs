@@ -100,6 +100,7 @@ impl TestContext {
         assert!(roles_path.join("observers").exists(), "observers layer should exist");
         assert!(roles_path.join("deciders").exists(), "deciders layer should exist");
         assert!(roles_path.join("planners").exists(), "planners layer should exist");
+        assert!(roles_path.join("implementers").exists(), "implementers layer should exist");
     }
 
     /// Assert that a role exists within a specific layer.
@@ -123,7 +124,7 @@ impl TestContext {
 
     /// Assert that a role directory exists (legacy compatibility - searches all layers).
     pub fn assert_role_exists(&self, role_id: &str) {
-        let layers = ["observers", "deciders", "planners"];
+        let layers = ["observers", "deciders", "planners", "implementers"];
         let found = layers.iter().any(|layer| {
             self.jules_path().join("roles").join(layer).join(role_id).join("role.yml").exists()
         });
@@ -181,6 +182,10 @@ impl TestContext {
             roles_path.join("planners/contracts.yml").exists(),
             "planners/contracts.yml should exist"
         );
+        assert!(
+            roles_path.join("implementers/contracts.yml").exists(),
+            "implementers/contracts.yml should exist"
+        );
     }
 
     /// Assert that feedbacks directories exist for all observer roles.
@@ -198,8 +203,9 @@ impl TestContext {
         self.assert_role_in_layer_exists("observers", "taxonomy");
         self.assert_role_in_layer_exists("observers", "data_arch");
         self.assert_role_in_layer_exists("observers", "qa");
-        self.assert_role_in_layer_exists("deciders", "triage");
-        self.assert_role_in_layer_exists("planners", "specifier");
+        self.assert_role_in_layer_exists("deciders", "triage_generic");
+        self.assert_role_in_layer_exists("planners", "specifier_global");
+        self.assert_role_in_layer_exists("implementers", "executor_global");
     }
 
     /// Read the .jlo-version file.

@@ -1,9 +1,10 @@
-role: specifier
-layer: planners
+role: triage_generic
+layer: deciders
+workstream: generic
 
 contracts:
   - .jules/JULES.md
-  - .jules/roles/planners/contracts.yml
+  - .jules/roles/deciders/contracts.yml
 
 instructions:
   - Read every file in contracts in order before doing any work.

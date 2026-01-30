@@ -2,7 +2,7 @@
 
 This directory stores rejection feedback from the Decider layer.
 
-When the `triage` role rejects observations due to recurring patterns, it creates feedback files here. The observer reads these files on initialization, abstracts common patterns, and updates its own `role.yml` to reduce noise.
+When the `triage_generic` role rejects observations due to recurring patterns, it creates feedback files here. The observer reads these files on initialization, abstracts common patterns, and updates its own `role.yml` to reduce noise.
 
 ## Feedback File Format
 

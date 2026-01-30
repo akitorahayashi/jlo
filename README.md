@@ -37,7 +37,7 @@ Execute Jules agents for a specific layer:
 
 ```bash
 jlo run observers                      # Run all observer roles
-jlo run deciders --role triage         # Run specific role
+jlo run deciders --role triage_generic # Run specific role
 jlo run planners --dry-run             # Show prompts without executing
 jlo run observers --branch custom      # Override starting branch
 ```
@@ -61,9 +61,9 @@ Implementers require a local issue file path. The issue content is embedded in t
 ```toml
 [agents]
 observers = ["taxonomy", "data_arch", "qa", "consistency"]
-deciders = ["triage"]
-planners = ["specifier"]
-implementers = ["executor"]
+deciders = ["triage_generic"]
+planners = ["specifier_global"]
+implementers = ["executor_global"]
 
 [run]
 default_branch = "main"
