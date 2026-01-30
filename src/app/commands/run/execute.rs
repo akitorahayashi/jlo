@@ -7,6 +7,8 @@ use crate::domain::{AppError, Layer, RunConfig};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
 use crate::services::HttpJulesClient;
 
+const IMPLEMENTER_WORKFLOW_NAME: &str = "jules-run-implementer.yml";
+
 /// Options for the run command.
 #[derive(Debug, Clone)]
 pub struct RunOptions {
@@ -48,42 +50,71 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
             return Err(AppError::IssueFileNotFound(path.display().to_string()));
         }
 
+        // Security Check: Ensure path is within .jules/exchange/issues
+        let canonical_path = fs::canonicalize(path)?;
+        // Construct expected directory path (resolve jules_path to absolute first)
+        let abs_jules_path = if jules_path.is_absolute() {
+            jules_path.to_path_buf()
+        } else {
+            std::env::current_dir()?.join(jules_path)
+        };
+        // Normalize the checking directory
+        let safe_dir = fs::canonicalize(abs_jules_path.join("exchange").join("issues"))
+            .map_err(|_| AppError::ConfigError("Issues directory not found".into()))?;
+
+        if !canonical_path.starts_with(&safe_dir) {
+            return Err(AppError::ConfigError(format!(
+                "Issue file must be within {}",
+                safe_dir.display()
+            )));
+        }
+
         // Handle Local Dispatch for Implementers
         if !is_ci {
             if options.dry_run {
                 println!("=== Dry Run: Local Dispatch ===");
                 println!(
-                    "Would dispatch workflow 'jules-run-implementer.yml' for: {}",
-                    path.display()
+                    "Would dispatch workflow '{}' for: {}",
+                    IMPLEMENTER_WORKFLOW_NAME,
+                    canonical_path.display()
                 );
                 return Ok(RunResult { roles: vec![], dry_run: true, sessions: vec![] });
             }
 
-            println!("Dispatching implementer workflow for: {}", path.display());
+            println!("Dispatching implementer workflow for: {}", canonical_path.display());
+
+            // Compute relative path for workflow input
+            let current_dir = std::env::current_dir()?;
+            let relative_path =
+                canonical_path.strip_prefix(&current_dir).unwrap_or(&canonical_path);
 
             // Execute: gh workflow run jules-run-implementer.yml -f issue_file=<path>
-            let status = std::process::Command::new("gh")
+            let output = std::process::Command::new("gh")
                 .args([
                     "workflow",
                     "run",
-                    "jules-run-implementer.yml",
+                    IMPLEMENTER_WORKFLOW_NAME,
                     "-f",
-                    &format!("issue_file={}", path.display()),
+                    &format!("issue_file={}", relative_path.display()),
                 ])
-                .status()
+                .output()
                 .map_err(|e| AppError::ConfigError(format!("Failed to execute gh CLI: {}", e)))?;
 
-            if !status.success() {
-                return Err(AppError::ConfigError("Failed to dispatch workflow via gh CLI".into()));
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(AppError::ConfigError(format!(
+                    "Failed to dispatch workflow via gh CLI. Stderr:\n{}",
+                    stderr
+                )));
             }
 
             println!("✅ Workflow dispatched successfully.");
 
             // Delete the local file
-            if let Err(e) = fs::remove_file(path) {
+            if let Err(e) = fs::remove_file(&canonical_path) {
                 eprintln!("⚠️ Failed to delete local issue file: {}", e);
             } else {
-                println!("Deleted local issue file: {}", path.display());
+                println!("Deleted local issue file: {}", canonical_path.display());
             }
 
             return Ok(RunResult {
@@ -121,7 +152,7 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
             "main".to_string()
         } else {
             // Check config default, fallback to "jules"
-            config.run.default_branch.clone()
+            config.run.jules_branch.clone()
         }
     });
 
