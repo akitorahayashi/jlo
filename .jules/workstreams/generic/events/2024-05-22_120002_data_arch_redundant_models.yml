@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "2024-05-22_120002_data_arch_redundant_models"
+created_at: "2024-05-22"
+author_role: "data_arch"
+confidence: "medium"
+
+# Content
+title: "Redundant Component Data Definitions"
+statement: |
+  `Component` and `ComponentMeta` in `src/domain/setup.rs` exhibit significant field duplication, violating the Normalized Independence principle.
+
+evidence:
+  - path: "src/domain/setup.rs"
+    loc: "17"
+    note: "Component struct definition"
+  - path: "src/domain/setup.rs"
+    loc: "40"
+    note: "ComponentMeta struct definition mirroring Component"
+
+tags:
+  - "architecture"
+  - "redundancy"
+  - "ssot"
