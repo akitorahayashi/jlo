@@ -4,6 +4,10 @@ use std::path::PathBuf;
 use crate::domain::{AppError, JULES_DIR, Layer, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
+/// Workstream template content loaded from scaffold (single source of truth).
+static WORKSTREAM_INDEX_MD: &str =
+    include_str!("../assets/scaffold/.jules/workstreams/generic/issues/index.md");
+
 /// Filesystem-based workspace store implementation.
 #[derive(Debug, Clone)]
 pub struct FilesystemWorkspaceStore {
@@ -198,11 +202,8 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         fs::create_dir_all(&issues_dir)?;
         fs::write(issues_dir.join(".gitkeep"), "")?;
 
-        // Create index.md
-        fs::write(
-            issues_dir.join("index.md"),
-            "# Issues Index\n\nThis file tracks the active issues in this workstream. It is managed by the Decider.\n\n## Open Issues\n\n_No open issues._\n\n## Recently Closed\n\n_No recently closed issues._\n",
-        )?;
+        // Create index.md from scaffold template
+        fs::write(issues_dir.join("index.md"), WORKSTREAM_INDEX_MD)?;
 
         // Create priority directories
         for priority in ["high", "medium", "low"] {

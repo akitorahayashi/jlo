@@ -59,7 +59,15 @@ where
             }
             Some(ws.to_string())
         }
-        (Layer::Observers | Layer::Deciders, None) => Some("generic".to_string()),
+        (Layer::Observers | Layer::Deciders, None) => {
+            // Validate default workstream exists
+            if !ctx.workspace().workstream_exists("generic") {
+                return Err(AppError::ConfigError(
+                    "Default workstream 'generic' does not exist. Run 'jlo init' or create it with: jlo workstream new generic".to_string()
+                ));
+            }
+            Some("generic".to_string())
+        }
         _ => None,
     };
 

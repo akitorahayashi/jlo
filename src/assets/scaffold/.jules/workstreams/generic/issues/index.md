@@ -3,23 +3,30 @@
 This registry tracks active issues in this workstream.
 It serves as the central source of truth for the **Decider** to deduplicate observations.
 
-## Directory Structure
+## High Priority
+> Critical blockers and major defects in [`high/`](./high/).
 
-Issues are stored as YAML files in priority-based directories:
+| Issue | Summary |
+| :--- | :--- |
+| _No open issues_ | - |
 
-- [`high/`](./high/) – Critical blockers and major defects
-- [`medium/`](./medium/) – Standard bugs and improvements
-- [`low/`](./low/) – Minor tweaks and housekeeping
+## Medium Priority
+> Standard bugs and improvements in [`medium/`](./medium/).
 
-## Active Issues
+| Issue | Summary |
+| :--- | :--- |
+| _No open issues_ | - |
 
-| Priority | ID | Title |
-| :--- | :--- | :--- |
-| - | - | _No open issues_ |
+## Low Priority
+> Minor tweaks and housekeeping in [`low/`](./low/).
+
+| Issue | Summary |
+| :--- | :--- |
+| _No open issues_ | - |
 
 <!--
 Instructions for Decider:
-1. This table must reflect all .yml files in high/medium/low.
-2. Sort by Priority (High > Medium > Low).
-3. Use this index to check if an incoming observation is already covered.
+1. Populate each section with issues from `high/`, `medium/`, and `low/` directories.
+2. Format as `| [Title](./path/to/issue.yml) | Summary content |`.
+3. Keep this index in sync with the file system.
 -->

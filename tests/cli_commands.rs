@@ -296,7 +296,7 @@ fn update_dry_run_shows_plan() {
 
     // Simulate an older version to trigger update logic
     let version_file = ctx.work_dir().join(".jules").join(".jlo-version");
-    std::fs::write(&version_file, "0.9.0").expect("write version");
+    std::fs::write(&version_file, "0.0.0").expect("write version");
 
     ctx.cli()
         .args(["update", "--dry-run"])

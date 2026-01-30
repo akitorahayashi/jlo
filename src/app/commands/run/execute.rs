@@ -62,10 +62,10 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
         let workstreams_dir = fs::canonicalize(abs_jules_path.join("workstreams"))
             .map_err(|_| AppError::ConfigError("Workstreams directory not found".into()))?;
 
-        // Validate path is within workstreams and contains /issues/
-        let path_str = canonical_path.to_string_lossy();
-        let workstreams_str = workstreams_dir.to_string_lossy();
-        if !path_str.starts_with(workstreams_str.as_ref()) || !path_str.contains("/issues/") {
+        // Validate path is within workstreams and contains "issues" component
+        // Use path component checking for cross-platform compatibility
+        let has_issues_component = canonical_path.components().any(|c| c.as_os_str() == "issues");
+        if !canonical_path.starts_with(&workstreams_dir) || !has_issues_component {
             return Err(AppError::ConfigError(format!(
                 "Issue file must be within {}/*/issues/",
                 workstreams_dir.display()

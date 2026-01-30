@@ -11,6 +11,16 @@ use crate::ports::RoleTemplateStore;
 use crate::services::EmbeddedRoleTemplateStore;
 
 /// Files that are managed by jlo and will be overwritten on update.
+///
+/// Managed files are core framework files that:
+/// - Define shared contracts and workflows (contracts.yml)
+/// - Provide shared templates for agent outputs (event.yml, issue.yml, feedback.yml)
+/// - Document system-wide rules and conventions (README.md, JULES.md)
+///
+/// Files NOT managed (user-customizable):
+/// - Role-specific prompts (prompt.yml, role.yml)
+/// - User configuration (config.toml)
+/// - Workstream content (events/, issues/)
 const JLO_MANAGED_FILES: &[&str] = &[
     ".jules/README.md",
     ".jules/JULES.md",
@@ -42,12 +52,14 @@ pub struct UpdateOptions {
     /// Show planned changes without applying.
     pub dry_run: bool,
     /// Include workflow files in update.
+    /// TODO: Implement workflow file filtering in execute(). Currently unused.
     pub workflows: bool,
 }
 
 /// Execute the update command.
 pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult, AppError> {
     let version_path = jules_path.join(".jlo-version");
+    let root = jules_path.parent().unwrap_or(Path::new("."));
 
     // Check if workspace exists
     if !jules_path.exists() {
@@ -103,7 +115,7 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
         // Check if this is a jlo-managed file
         if !is_jlo_managed(rel_path) {
             // For non-managed files, only create if missing
-            let full_path = jules_path.parent().unwrap_or(Path::new(".")).join(rel_path);
+            let full_path = root.join(rel_path);
             if !full_path.exists() {
                 to_create.push((rel_path.clone(), file.content.clone()));
             }
@@ -111,7 +123,7 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
         }
 
         // For jlo-managed files, always update
-        let full_path = jules_path.parent().unwrap_or(Path::new(".")).join(rel_path);
+        let full_path = root.join(rel_path);
         if full_path.exists() {
             let current_content = fs::read_to_string(&full_path)?;
             if current_content != file.content {
@@ -161,7 +173,7 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
 
         // Backup files that will be updated
         for (rel_path, _) in &to_update {
-            let src = jules_path.parent().unwrap_or(Path::new(".")).join(rel_path);
+            let src = root.join(rel_path);
             let dst = backup_dir.join(rel_path);
             if let Some(parent) = dst.parent() {
                 fs::create_dir_all(parent)?;
@@ -173,8 +185,6 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
     } else {
         None
     };
-
-    let root = jules_path.parent().unwrap_or(Path::new("."));
 
     // Apply updates
     for (rel_path, content) in &to_update {
