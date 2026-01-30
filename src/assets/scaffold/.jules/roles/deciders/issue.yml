@@ -1,25 +1,13 @@
 schema_version: 2
 
 # Metadata
-fingerprint: "<fingerprint>" # stable identity for filename (e.g. auth_inconsistency)
-id: "<fingerprint>" # alias for fingerprint, used as filename: .jules/exchange/issues/<fingerprint>.yml
-category: "<category>" # directory name under .jules/exchange/events/
-priority: "low|medium|high"
-status: "open|closed"
-requires_deep_analysis: false # true if deep impact analysis/dependency check is needed
-deep_analysis_reason: "" # required when requires_deep_analysis is true
-sources: [] # list of event_ids that triggered this issue (append new sources on merge)
-
-# Content
+id: "<fingerprint>" # stable identity used as filename
+fingerprint: "<fingerprint>" # alias for id
 title: "<Descriptive Title>"
+priority: "low|medium|high"
 summary: "<One-line statement of the issue>"
 
-affected_areas:
-  - "<file or module path>"
-
-constraints: [] # list of constraints/assumptions (optional)
-risks: [] # list of known risks or regressions (optional)
-
+# Content
 problem: |
   <What is wrong or missing - conceptual description>
 
@@ -29,6 +17,22 @@ impact: |
 desired_outcome: |
   <What should be true after resolution>
 
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "<file or module path>"
+
 acceptance_criteria:
   - "<condition 1>"
   - "<condition 2>"
+
+verification_commands:
+  - "<command 1 (e.g. format check)>"
+  - "<command 2 (e.g. lint check)>"
+  - "<command 3 (e.g. test commands)>"
+
+# Analysis Flags
+requires_deep_analysis: false # true if deep impact analysis/dependency check is needed
+deep_analysis_reason: "" # required when requires_deep_analysis is true
