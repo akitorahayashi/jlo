@@ -151,7 +151,7 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
         if options.layer == Layer::Implementers {
             "main".to_string()
         } else {
-            // Check config default, fallback to "jules"
+            // Non-implementer agents operate on the jules branch, where the workspace lives.
             config.run.jules_branch.clone()
         }
     });
