@@ -102,7 +102,7 @@ The simplified workflow uses `jlo run` for all agent execution.
 | `jules-workflows.yml` | Agent execution (scheduled + manual dispatch) |
 | `jules-automerge.yml` | Auto-merge jules-* branches (optional) |
 | `sync-jules.yml` | Sync main → jules branch (optional) |
-| `jules-pipeline.yml` | Orchestrate deciders/planners after observer merge |
+| `jules-e2e-pipeline.yml` | Orchestrate deciders/planners after observer merge |
 
 **Branch Strategy**:
 
