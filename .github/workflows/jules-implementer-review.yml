@@ -1,0 +1,23 @@
+name: Jules Implementer Review
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  auto-review:
+    if: startsWith(github.head_ref, 'jules-implementer-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add Review Comments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body "/gemini summary"
+          gh pr comment "$PR_NUMBER" --body "/gemini review"
+          gh pr comment "$PR_NUMBER" --body "@coderabbitai review"
