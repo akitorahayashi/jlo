@@ -1,0 +1,16 @@
+id: 2026-01-30_000000_taxonomy_structure-workstream-command-location
+created_at: 2026-01-30T00:00:00Z
+author_role: taxonomy
+confidence: high
+title: Workstream command logic location inconsistency
+statement: |
+  The `workstream` command logic is implemented directly in `src/lib.rs`, whereas all other commands
+  (`init`, `run`, `setup`, `template`, `update`) have dedicated modules in `src/app/commands/`.
+evidence: |
+  - `src/lib.rs` contains `pub fn workstream_new` and `pub fn workstream_list`.
+  - `src/app/commands/` contains `init.rs`, `run/`, `setup/`, `template.rs`, `update.rs`.
+  - `src/app/commands/workstream.rs` (or similar) is missing.
+tags:
+  - structure
+  - commands
+  - consistency
