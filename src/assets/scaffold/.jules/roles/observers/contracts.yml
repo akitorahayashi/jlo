@@ -22,4 +22,4 @@ workflow:
   - 2. Read .jules/workstreams/<workstream>/issues/**/*.yml where status is 'open' to identify known problems
   - 3. Analyze specialized domain against exclusions and open issues
   - 4. Skip observations already covered by open issues (deduplication)
-  - "5. Record new findings: cp event.yml .jules/workstreams/<workstream>/events/<file>"
+  - "5. Record new findings: cp event.yml .jules/workstreams/<workstream>/events/<kebab-case-description>.yml"

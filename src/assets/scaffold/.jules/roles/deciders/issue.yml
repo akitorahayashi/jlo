@@ -1,8 +1,8 @@
 schema_version: 2
 
 # Metadata
-id: "<fingerprint>" # stable identity used as filename
-fingerprint: "<fingerprint>" # alias for id
+id: "<6_random_lowercase_alphanumeric_chars>" # stable identity
+fingerprint: "<6_random_lowercase_alphanumeric_chars>" # alias for id
 title: "<Descriptive Title>"
 priority: "low|medium|high"
 summary: "<One-line statement of the issue>"

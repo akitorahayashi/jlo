@@ -1,7 +1,7 @@
 schema_version: 1
 
 # Metadata
-id: "YYYY-MM-DD_HHMMSS_<role>_<id>"
+id: "<6_random_lowercase_alphanumeric_chars>"
 created_at: "YYYY-MM-DD"
 author_role: "<role>" # e.g. taxonomy
 confidence: "low|medium|high"
