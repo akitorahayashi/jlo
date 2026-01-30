@@ -25,10 +25,7 @@ on:
         description: 'Minutes to wait between layers (Jules async processing time)'
         type: number
         default: 15
-      dry_run:
-        description: 'Show prompts without executing'
-        type: boolean
-        default: false
+
 
 permissions:
   contents: write
@@ -63,13 +60,9 @@ jobs:
       - name: Run observers
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-        run: |
-          ARGS=""
-          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="--dry-run"
-          jlo run observers $ARGS
+        run: jlo run observers
 
       - name: Wait for observers
-        if: inputs.dry_run != 'true'
         run: |
           WAIT_MINS="${{ inputs.wait_minutes }}"
           WAIT_SECONDS=$((WAIT_MINS * 60))
@@ -111,7 +104,4 @@ jobs:
         if: steps.check-events.outputs.has_events == 'true'
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-        run: |
-          ARGS=""
-          [ "${{ inputs.dry_run }}" = "true" ] && ARGS="--dry-run"
-          jlo run deciders $ARGS
+        run: jlo run deciders
