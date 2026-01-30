@@ -69,8 +69,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN || github.token }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "aria"
+          git config user.email "aria67323@gmail.com"
           ISSUE_FILE="${{ inputs.issue_file }}"
           if [ -f "$ISSUE_FILE" ]; then
             git rm "$ISSUE_FILE"
