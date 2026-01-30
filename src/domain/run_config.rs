@@ -129,9 +129,6 @@ mod tests {
         assert_eq!(config.run.jules_branch, "jules");
         assert!(config.run.parallel);
         assert_eq!(config.run.max_parallel, 3);
-        assert_eq!(
-            config.jules.api_url.as_str(),
-            "https://jules.googleapis.com/v1alpha/sessions"
-        );
+        assert_eq!(config.jules.api_url.as_str(), "https://jules.googleapis.com/v1alpha/sessions");
     }
 }

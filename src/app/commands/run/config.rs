@@ -126,10 +126,7 @@ impl TryFrom<RunConfigDto> for RunConfig {
 
     fn try_from(dto: RunConfigDto) -> Result<Self, Self::Error> {
         Ok(RunConfig {
-            agents: AgentConfig {
-                observers: dto.agents.observers,
-                deciders: dto.agents.deciders,
-            },
+            agents: AgentConfig { observers: dto.agents.observers, deciders: dto.agents.deciders },
             run: RunSettings {
                 default_branch: dto.run.default_branch,
                 jules_branch: dto.run.jules_branch,

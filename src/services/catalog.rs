@@ -38,11 +38,7 @@ struct EnvSpecDto {
 
 impl From<EnvSpecDto> for EnvSpec {
     fn from(dto: EnvSpecDto) -> Self {
-        Self {
-            name: dto.name,
-            description: dto.description,
-            default: dto.default,
-        }
+        Self { name: dto.name, description: dto.description, default: dto.default }
     }
 }
 
