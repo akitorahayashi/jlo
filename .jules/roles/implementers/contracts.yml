@@ -7,15 +7,14 @@ constraints:
   - Issue file path is authoritative (includes workstream)
 
 inputs:
-  - Local issue file path (provided as argument)
-  - Issue content embedded in prompt
+  - Issue content embedded in this prompt
 
 outputs:
   - Modified source files, tests, documentation
   - Pull request
 
 workflow:
-  - 1. Read issue content from the embedded prompt (already provided)
+  - 1. Read issue content from the embedded in this prompt
   - 2. Understand targets and acceptance criteria
   - 3. Implement code, tests, documentation
   - 4. Run verification (or reliable alternative)
