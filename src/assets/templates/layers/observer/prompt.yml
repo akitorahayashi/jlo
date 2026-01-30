@@ -1,5 +1,6 @@
 role: ROLE_NAME
 layer: observers
+workstream: generic
 responsibility: "# TODO: Describe your specific responsibility"
 
 contracts:

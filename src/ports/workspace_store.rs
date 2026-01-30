@@ -46,4 +46,13 @@ pub trait WorkspaceStore {
         prompt_yaml: Option<&str>,
         has_notes: bool,
     ) -> Result<(), AppError>;
+
+    /// Create a new workstream directory structure.
+    fn create_workstream(&self, name: &str) -> Result<(), AppError>;
+
+    /// List existing workstreams.
+    fn list_workstreams(&self) -> Result<Vec<String>, AppError>;
+
+    /// Check if a workstream exists.
+    fn workstream_exists(&self, name: &str) -> bool;
 }

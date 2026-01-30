@@ -22,7 +22,8 @@ fn template_without_workspace_fails() {
     let ctx = TestContext::new();
 
     ctx.with_work_dir(|| {
-        let err = jlo::template(Some("observers"), Some("test")).expect_err("template should fail");
+        let err =
+            jlo::template(Some("observers"), Some("test"), None).expect_err("template should fail");
         assert_eq!(err.kind(), io::ErrorKind::NotFound);
     });
 }

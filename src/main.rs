@@ -20,6 +20,16 @@ enum Commands {
     /// Create .jules/ workspace structure
     #[clap(visible_alias = "i")]
     Init,
+    /// Update .jules/ workspace to current jlo version
+    #[clap(visible_alias = "u")]
+    Update {
+        /// Show planned changes without applying
+        #[arg(long)]
+        dry_run: bool,
+        /// Include workflow files in update
+        #[arg(long)]
+        workflows: bool,
+    },
     /// Create a new role from a layer template
     #[clap(visible_alias = "tp")]
     Template {
@@ -29,6 +39,15 @@ enum Commands {
         /// Name for the new role
         #[arg(short, long)]
         name: Option<String>,
+        /// Target workstream for observers/deciders
+        #[arg(short, long)]
+        workstream: Option<String>,
+    },
+    /// Workstream management commands
+    #[clap(visible_alias = "w")]
+    Workstream {
+        #[command(subcommand)]
+        command: WorkstreamCommands,
     },
     /// Setup compiler commands
     #[clap(visible_alias = "s")]
@@ -42,6 +61,19 @@ enum Commands {
         #[command(subcommand)]
         layer: RunLayer,
     },
+}
+
+#[derive(Subcommand)]
+enum WorkstreamCommands {
+    /// Create a new workstream
+    #[clap(visible_alias = "n")]
+    New {
+        /// Name for the new workstream
+        name: String,
+    },
+    /// List existing workstreams
+    #[clap(visible_alias = "ls")]
+    List,
 }
 
 #[derive(Subcommand)]
@@ -125,9 +157,14 @@ fn main() {
 
     let result: Result<(), AppError> = match cli.command {
         Commands::Init => jlo::init(),
-        Commands::Template { layer, name } => {
-            jlo::template(layer.as_deref(), name.as_deref()).map(|_| ())
+        Commands::Update { dry_run, workflows } => run_update(dry_run, workflows),
+        Commands::Template { layer, name, workstream } => {
+            jlo::template(layer.as_deref(), name.as_deref(), workstream.as_deref()).map(|_| ())
         }
+        Commands::Workstream { command } => match command {
+            WorkstreamCommands::New { name } => run_workstream_new(&name),
+            WorkstreamCommands::List => run_workstream_list(),
+        },
         Commands::Setup { command } => match command {
             SetupCommands::Gen { path } => run_setup_gen(path),
             SetupCommands::List { detail } => run_setup_list(detail),
@@ -139,6 +176,29 @@ fn main() {
         eprintln!("Error: {}", e);
         std::process::exit(1);
     }
+}
+
+fn run_update(dry_run: bool, workflows: bool) -> Result<(), AppError> {
+    let result = jlo::update(dry_run, workflows)?;
+
+    if !result.dry_run {
+        if result.updated.is_empty() && result.created.is_empty() {
+            println!("✅ Workspace already up to date");
+        } else {
+            println!("✅ Updated workspace to version {}", env!("CARGO_PKG_VERSION"));
+            if !result.updated.is_empty() {
+                println!("  Updated {} file(s)", result.updated.len());
+            }
+            if !result.created.is_empty() {
+                println!("  Created {} file(s)", result.created.len());
+            }
+            if let Some(backup) = result.backup_path {
+                println!("  Backup at: {}", backup.display());
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn run_agents(layer: RunLayer) -> Result<(), AppError> {
@@ -173,6 +233,21 @@ fn run_setup_gen(path: Option<PathBuf>) -> Result<(), AppError> {
     println!("✅ Generated install.sh with {} component(s)", components.len());
     for (i, name) in components.iter().enumerate() {
         println!("  {}. {}", i + 1, name);
+    }
+    Ok(())
+}
+
+fn run_workstream_new(name: &str) -> Result<(), AppError> {
+    jlo::workstream_new(name)?;
+    println!("✅ Created workstream '{}'", name);
+    Ok(())
+}
+
+fn run_workstream_list() -> Result<(), AppError> {
+    let workstreams = jlo::workstream_list()?;
+    println!("Workstreams:");
+    for ws in workstreams {
+        println!("  • {}", ws);
     }
     Ok(())
 }

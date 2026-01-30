@@ -1,7 +1,7 @@
 # .jules/
 
 The `.jules/` directory is a structured workspace for scheduled agents and human execution.
-It captures **observations as events** and **actionable work as issues**.
+It captures **observations as events** and **actionable work as issues** within workstreams.
 
 This file is human-oriented. Agents must read `.jules/JULES.md` for the formal contract.
 
@@ -62,43 +62,54 @@ Implementers modify source code and require human review.
 +-- JULES.md            # Agent contract (jlo-managed)
 +-- .jlo-version        # Version marker (jlo-managed)
 |
-+-- roles/              # Role definitions
-|   +-- observers/
-|   |   +-- contracts.yml    # Shared observer contract
-|   |   +-- event.yml        # Event template
-|   |   +-- <role>/
-|   |       +-- prompt.yml   # Static: run prompt
-|   |       +-- role.yml     # Dynamic: evolving focus
-|   |       +-- notes/       # Declarative state
-|   |       +-- feedbacks/   # Decider feedback
-|   |
-|   +-- deciders/
-|   |   +-- contracts.yml    # Shared decider contract
-|   |   +-- issue.yml        # Issue template
-|   |   +-- feedback.yml     # Feedback template
-|   |   +-- <role>/
-|   |       +-- prompt.yml
-|   |
-|   +-- planners/
-|   |   +-- contracts.yml    # Shared planner contract
-|   |   +-- <role>/
-|   |       +-- prompt.yml
-|   |
-|   +-- implementers/
-|       +-- contracts.yml    # Shared implementer contract
-|       +-- <role>/
-|           +-- prompt.yml
++-- workstreams/        # Workstream containers
+|   +-- <workstream>/   # e.g. generic/
+|       +-- events/     # Raw observations
+|       |   +-- *.yml
+|       +-- issues/     # Consolidated problems
+|           +-- index.md
+|           +-- high/
+|           +-- medium/
+|           +-- low/
 |
-+-- exchange/           # Transient data flow
-    +-- events/         # [Inbox] Raw observations
-    |   +-- <category>/
-    |       +-- *.yml
-    +-- issues/         # [Transit] Consolidated problems
-        +-- index.md    # Declarative index of issues
-        +-- low/
-        +-- medium/
-        +-- high/
++-- roles/              # Role definitions (global)
+    +-- observers/
+    |   +-- contracts.yml    # Shared observer contract
+    |   +-- event.yml        # Event template
+    |   +-- <role>/
+    |       +-- prompt.yml   # Static: run prompt (includes workstream)
+    |       +-- role.yml     # Dynamic: evolving focus
+    |       +-- notes/       # Declarative state
+    |       +-- feedbacks/   # Decider feedback
+    |
+    +-- deciders/
+    |   +-- contracts.yml    # Shared decider contract
+    |   +-- issue.yml        # Issue template
+    |   +-- feedback.yml     # Feedback template
+    |   +-- <role>/
+    |       +-- prompt.yml   # Includes workstream
+    |
+    +-- planners/
+    |   +-- contracts.yml    # Shared planner contract
+    |   +-- <role>/
+    |       +-- prompt.yml
+    |
+    +-- implementers/
+        +-- contracts.yml    # Shared implementer contract
+        +-- <role>/
+            +-- prompt.yml
 ```
+
+## Workstreams
+
+Workstreams isolate events and issues so that decider rules do not mix across unrelated operational areas.
+
+- A workstream may run observers only (no decider), leaving events for human review.
+- `roles/` remains global (not nested per workstream).
+- Observers and deciders declare their destination workstream in `prompt.yml`.
+- If the workstream directory is missing, execution fails fast.
+
+The default scaffold creates a `generic` workstream.
 
 ## Configuration Files
 
@@ -106,7 +117,7 @@ Implementers modify source code and require human review.
 Layer-level shared constraints and workflows. All roles in the layer reference this file.
 
 ### prompt.yml
-Execution parameters and references to contracts.yml. Static, scheduled with agent.
+Execution parameters and references to contracts.yml. Includes `workstream:` field for observers and deciders.
 
 ### role.yml
 Specialized focus that evolves through feedback loop. Only observers have this (stateful layer).
@@ -124,10 +135,10 @@ Each observer:
 2. Reads role.yml (specialized focus)
 3. Reads feedbacks/, abstracts patterns, updates role.yml
 4. Reads notes/ for current state
-5. **Reads .jules/exchange/issues/index.md to check for open issues**
+5. **Reads .jules/workstreams/<workstream>/issues/index.md to check for open issues**
 6. Updates notes/ declaratively
 7. **Skips observations already covered by open issues (deduplication)**
-8. Writes exchange/events/**/*.yml when observations warrant
+8. Writes workstreams/<workstream>/events/*.yml when observations warrant
 9. Publishes changes as a PR (branch naming follows the convention below)
 
 **Stateful**: Maintains `notes/` and receives feedback via `feedbacks/`.
@@ -136,13 +147,13 @@ Each observer:
 
 Triage agent:
 1. Reads contracts.yml (layer behavior)
-2. Reads all exchange/events/**/*.yml
-3. **Reads .jules/exchange/issues/index.md and existing issues to identify merge candidates**
+2. Reads all workstreams/<workstream>/events/*.yml
+3. **Reads .jules/workstreams/<workstream>/issues/index.md and existing issues to identify merge candidates**
 4. Validates observations (do they exist in codebase?)
 5. Merges related events sharing root cause
 6. **Merges events into existing issues when related (updates content)**
 7. Creates new issues for genuinely new problems (using fingerprint as filename, placing in priority folder)
-8. **Updates .jules/exchange/issues/index.md**
+8. **Updates .jules/workstreams/<workstream>/issues/index.md**
 9. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
 10. Writes feedback for recurring rejections
 11. Deletes processed events
@@ -153,7 +164,7 @@ Triage agent:
 
 Specifier agent (runs only for `requires_deep_analysis: true`):
 1. Reads contracts.yml (layer behavior)
-2. Reads target issue from exchange/issues/<priority>/
+2. Reads target issue from workstreams/<workstream>/issues/<priority>/
 3. **Reviews deep_analysis_reason to understand scope**
 4. Analyzes full system impact and dependency tree
 5. Expands issue with detailed analysis (affected_areas, constraints, risks)
@@ -169,14 +180,14 @@ Implementation is invoked manually via `workflow_dispatch` with a local issue fi
 
 ```bash
 # Example: Run implementer with a specific issue
-jlo run implementers --issue .jules/exchange/issues/medium/auth_inconsistency.yml
+jlo run implementers --issue .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
 ```
 
 The implementer reads the issue content (embedded in prompt) and produces code changes.
 The issue file must exist; missing files fail fast before agent execution.
 
 **Issue Lifecycle**:
-1. User selects an issue file from `.jules/exchange/issues/<priority>/` on the `jules` branch.
+1. User selects an issue file from `.jules/workstreams/<workstream>/issues/<priority>/` on the `jules` branch.
 2. Workflow validates the file exists and passes content to the implementer.
 3. After successful dispatch, the issue file is automatically deleted from the `jules` branch.
 4. The implementer works on `main` branch and creates a PR for human review.
@@ -185,7 +196,7 @@ The issue file must exist; missing files fail fast before agent execution.
 ## Feedback Loop
 
 ```
-Observer creates events in exchange/events/
+Observer creates events in workstreams/<workstream>/events/
        |
        v
 Decider validates, may reject or merge
@@ -222,7 +233,7 @@ jules-implementer-<fingerprint>-<short_description>
 
 ## Testing and Validation
 
-The mock pipeline workflow generates synthetic exchange artifacts and exercises the observer → decider → planner transitions without calling external APIs.
+The mock pipeline workflow generates synthetic workstream artifacts and exercises the observer → decider → planner transitions without calling external APIs.
 
 ## Pause/Resume
 

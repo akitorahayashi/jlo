@@ -140,28 +140,30 @@ impl TestContext {
         assert!(role_path.join("notes").exists(), "Role notes directory should exist");
     }
 
-    /// Assert that the events directory structure exists.
+    /// Assert that the events directory structure exists (workstream-based).
     pub fn assert_events_structure_exists(&self) {
-        let events_path = self.jules_path().join("exchange/events");
-        assert!(events_path.join("bugs").exists(), "exchange/events/bugs should exist");
-        assert!(events_path.join("refacts").exists(), "exchange/events/refacts should exist");
-        assert!(events_path.join("updates").exists(), "exchange/events/updates should exist");
-        assert!(events_path.join("tests").exists(), "exchange/events/tests should exist");
-        assert!(events_path.join("docs").exists(), "exchange/events/docs should exist");
+        let events_path = self.jules_path().join("workstreams/generic/events");
+        assert!(events_path.exists(), "workstreams/generic/events should exist");
     }
 
-    /// Assert that the issues directory exists (flat layout).
+    /// Assert that the issues directory exists (workstream-based).
     pub fn assert_issues_directory_exists(&self) {
-        let issues_path = self.jules_path().join("exchange/issues");
-        assert!(issues_path.exists(), "exchange/issues directory should exist");
+        let issues_path = self.jules_path().join("workstreams/generic/issues");
+        assert!(issues_path.exists(), "workstreams/generic/issues directory should exist");
     }
 
-    /// Assert that exchange directory structure exists.
+    /// Assert that workstreams directory structure exists.
+    pub fn assert_workstreams_structure_exists(&self) {
+        let ws_path = self.jules_path().join("workstreams");
+        assert!(ws_path.exists(), "workstreams directory should exist");
+        assert!(ws_path.join("generic").exists(), "generic workstream should exist");
+        assert!(ws_path.join("generic/events").exists(), "generic/events should exist");
+        assert!(ws_path.join("generic/issues").exists(), "generic/issues should exist");
+    }
+
+    /// Assert that exchange directory structure exists (for backward compatibility, now checks workstreams).
     pub fn assert_exchange_structure_exists(&self) {
-        let exchange_path = self.jules_path().join("exchange");
-        assert!(exchange_path.exists(), "exchange directory should exist");
-        assert!(exchange_path.join("events").exists(), "exchange/events should exist");
-        assert!(exchange_path.join("issues").exists(), "exchange/issues should exist");
+        self.assert_workstreams_structure_exists();
     }
 
     /// Assert that contracts.yml exists in each layer directory.

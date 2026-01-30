@@ -90,6 +90,7 @@ tests/
 
 ## CLI Commands
 - `jlo init` (alias: `i`): Create `.jules/` structure with setup directory
+- `jlo update [--dry-run] [--workflows]` (alias: `u`): Update workspace to current jlo version
 - `jlo template [-l layer] [-n name]` (alias: `tp`): Create custom role
 - `jlo setup gen [path]` (alias: `s g`): Generate `install.sh` and `env.toml`
 - `jlo setup list` (alias: `s ls`): List available components
@@ -102,6 +103,14 @@ The setup compiler generates dependency-aware installation scripts for developme
 ### Workspace Structure
 ```
 .jules/
+  workstreams/
+    <workstream>/
+      events/        # Observer outputs
+      issues/        # Decider outputs
+        index.md
+        high/
+        medium/
+        low/
   setup/
     tools.yml      # Tool selection configuration
     env.toml       # Environment variables (generated/merged)

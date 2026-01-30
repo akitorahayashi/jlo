@@ -4,6 +4,10 @@ use std::path::PathBuf;
 use crate::domain::{AppError, JULES_DIR, Layer, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
+/// Workstream template content loaded from scaffold (single source of truth).
+static WORKSTREAM_INDEX_MD: &str =
+    include_str!("../assets/scaffold/.jules/workstreams/generic/issues/index.md");
+
 /// Filesystem-based workspace store implementation.
 #[derive(Debug, Clone)]
 pub struct FilesystemWorkspaceStore {
@@ -176,6 +180,63 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         }
 
         Ok(())
+    }
+
+    fn create_workstream(&self, name: &str) -> Result<(), AppError> {
+        let ws_dir = self.jules_path().join("workstreams").join(name);
+
+        if ws_dir.exists() {
+            return Err(AppError::ConfigError(format!("Workstream '{}' already exists", name)));
+        }
+
+        // Create workstream structure
+        fs::create_dir_all(&ws_dir)?;
+
+        // Create events directory
+        let events_dir = ws_dir.join("events");
+        fs::create_dir_all(&events_dir)?;
+        fs::write(events_dir.join(".gitkeep"), "")?;
+
+        // Create issues directory with priority subdirectories
+        let issues_dir = ws_dir.join("issues");
+        fs::create_dir_all(&issues_dir)?;
+        fs::write(issues_dir.join(".gitkeep"), "")?;
+
+        // Create index.md from scaffold template
+        fs::write(issues_dir.join("index.md"), WORKSTREAM_INDEX_MD)?;
+
+        // Create priority directories
+        for priority in ["high", "medium", "low"] {
+            let priority_dir = issues_dir.join(priority);
+            fs::create_dir_all(&priority_dir)?;
+            fs::write(priority_dir.join(".gitkeep"), "")?;
+        }
+
+        Ok(())
+    }
+
+    fn list_workstreams(&self) -> Result<Vec<String>, AppError> {
+        let ws_dir = self.jules_path().join("workstreams");
+
+        if !ws_dir.exists() {
+            return Ok(vec![]);
+        }
+
+        let mut workstreams = Vec::new();
+        for entry in fs::read_dir(&ws_dir)? {
+            let entry = entry?;
+            if entry.path().is_dir() {
+                let name = entry.file_name().to_string_lossy().to_string();
+                workstreams.push(name);
+            }
+        }
+
+        workstreams.sort();
+        Ok(workstreams)
+    }
+
+    fn workstream_exists(&self, name: &str) -> bool {
+        self.jules_path().join("workstreams").join(name).exists()
     }
 }
 

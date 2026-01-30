@@ -50,7 +50,7 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
             return Err(AppError::IssueFileNotFound(path.display().to_string()));
         }
 
-        // Security Check: Ensure path is within .jules/exchange/issues
+        // Security Check: Ensure path is within .jules/workstreams/*/issues
         let canonical_path = fs::canonicalize(path)?;
         // Construct expected directory path (resolve jules_path to absolute first)
         let abs_jules_path = if jules_path.is_absolute() {
@@ -58,14 +58,17 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
         } else {
             std::env::current_dir()?.join(jules_path)
         };
-        // Normalize the checking directory
-        let safe_dir = fs::canonicalize(abs_jules_path.join("exchange").join("issues"))
-            .map_err(|_| AppError::ConfigError("Issues directory not found".into()))?;
+        // Normalize the checking directory - issues can be in any workstream
+        let workstreams_dir = fs::canonicalize(abs_jules_path.join("workstreams"))
+            .map_err(|_| AppError::ConfigError("Workstreams directory not found".into()))?;
 
-        if !canonical_path.starts_with(&safe_dir) {
+        // Validate path is within workstreams and contains "issues" component
+        // Use path component checking for cross-platform compatibility
+        let has_issues_component = canonical_path.components().any(|c| c.as_os_str() == "issues");
+        if !canonical_path.starts_with(&workstreams_dir) || !has_issues_component {
             return Err(AppError::ConfigError(format!(
-                "Issue file must be within {}",
-                safe_dir.display()
+                "Issue file must be within {}/*/issues/",
+                workstreams_dir.display()
             )));
         }
 

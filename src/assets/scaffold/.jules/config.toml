@@ -7,6 +7,10 @@ deciders = ["triage"]
 planners = ["specifier"]
 implementers = ["executor"]
 
+[workstreams]
+# Default workstream for scaffold
+default = "generic"
+
 [run]
 default_branch = "main"
 jules_branch = "jules"

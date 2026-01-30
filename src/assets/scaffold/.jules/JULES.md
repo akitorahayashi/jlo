@@ -21,18 +21,24 @@ conflict is reported.
 3. The layer `contracts.yml`
 4. Role-specific inputs required by the layer contract
 
+## Workstream Model
+
+Workstreams isolate events and issues so that decider rules do not mix across unrelated operational areas.
+
+- Observers and deciders declare their destination workstream in `prompt.yml` via `workstream: <name>`.
+- If the workstream directory is missing, execution fails fast.
+- Planners and implementers do not declare a workstream; the issue file path is authoritative.
+
+Workstream directories:
+
+- Events (Observer output, Decider input): `.jules/workstreams/<workstream>/events/*.yml`
+- Issues (Decider/Planner output, Implementer input): `.jules/workstreams/<workstream>/issues/<priority>/*.yml`
+
 ## Workspace Data Flow
 
 The pipeline is file-based and terminates at local issues:
 
 `events -> issues`
-
-Exchange directories:
-
-- Events (Observer output, Decider input): `.jules/exchange/events/<category>/*.yml`
-- Issues (Decider/Planner output, Implementer input): `.jules/exchange/issues/*.yml`
-
-Categories are the directory names under `.jules/exchange/events/`.
 
 After decider output:
 - Issues with `requires_deep_analysis: false` are ready for implementation.
