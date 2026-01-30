@@ -1,0 +1,21 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_122957_data_arch_e2e_3a88"
+created_at: "2026-01-30"
+author_role: "data_arch" # e.g. taxonomy
+confidence: "medium"
+
+# Content
+title: "E2E Pipeline Test Event"
+statement: |
+  Synthetic event for E2E pipeline validation.
+
+evidence:
+  - path: "README.md"
+    loc: " jlo"
+    note: "E2E test evidence."
+
+tags:
+  - "e2e-pipeline"
+  - "e2e-pipeline"
