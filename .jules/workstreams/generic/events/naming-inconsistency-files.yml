@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "2026-01-30_152205_taxonomy_x9y8z7"
+created_at: "2026-01-30"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Naming Inconsistency: Port vs Adapter Filenames"
+statement: |
+  Several adapter filenames do not align with their corresponding port filenames or struct names, causing confusion about their purpose and relation.
+  Consistent naming (e.g., `port_name.rs` -> `adapter_name_impl.rs` or similar) aids discoverability.
+
+evidence:
+  - path: "src/services/jules_api.rs"
+    loc: "file"
+    note: "Implements `JulesClient` (src/ports/jules_client.rs). Expected `jules_client_http.rs` or similar, or `jules_client.rs` port should be `jules_api.rs`."
+  - path: "src/services/catalog.rs"
+    loc: "file"
+    note: "Implements `ComponentCatalog` (src/ports/component_catalog.rs). Expected `component_catalog_embedded.rs` or `embedded_catalog.rs`."
+  - path: "src/services/clipboard_arboard.rs"
+    loc: "file"
+    note: "Implements `ClipboardWriter` (src/ports/clipboard_writer.rs). `arboard_clipboard.rs` would match the struct `ArboardClipboard` better, or `clipboard_writer_arboard.rs`."
+
+tags:
+  - "consistency"
+  - "naming"
