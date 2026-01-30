@@ -78,6 +78,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.bot_token }}
         run: |
-          gh pr merge "${{ inputs.pr_number }}" \
-            --auto --squash --delete-branch \
-            --repo "${{ github.repository }}"
+          for i in {1..5}; do
+            if gh pr merge "${{ inputs.pr_number }}" \
+              --auto --squash --delete-branch \
+              --repo "${{ github.repository }}"; then
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+          exit 1
