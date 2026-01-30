@@ -69,6 +69,9 @@ fn init_creates_complete_layer_structure() {
     assert!(!jules.join("roles/planners/specifier_global/notes").exists());
     assert!(!jules.join("roles/planners/specifier_global/feedbacks").exists());
     assert!(!jules.join("roles/planners/specifier_global/role.yml").exists());
+    assert!(!jules.join("roles/implementers/executor_global/notes").exists());
+    assert!(!jules.join("roles/implementers/executor_global/feedbacks").exists());
+    assert!(!jules.join("roles/implementers/executor_global/role.yml").exists());
 }
 
 #[test]
