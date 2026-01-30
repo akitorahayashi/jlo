@@ -1,0 +1,18 @@
+schema_version: 1
+id: "2026-01-30_135432_consistency_layer_naming"
+created_at: "2026-01-30"
+author_role: "consistency"
+confidence: "high"
+title: "Inconsistent Layer Directory Naming (Singular vs Plural)"
+statement: |
+  Layer directories in `src/assets/templates/layers/` use singular naming (e.g., `observer`), whereas `src/domain/layer.rs` and `.jules/roles/` use plural naming (`Observers`).
+evidence:
+  - path: "src/domain/layer.rs"
+    loc: "Layer enum variants"
+    note: "Uses Plural (Observers)"
+  - path: "src/assets/templates/layers/"
+    loc: "directory names"
+    note: "Uses Singular (observer)"
+tags:
+  - "naming"
+  - "inconsistency"
