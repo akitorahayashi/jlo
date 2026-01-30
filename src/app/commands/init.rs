@@ -19,7 +19,14 @@ where
     let output = std::process::Command::new("git")
         .args(["branch", "--show-current"])
         .output()
-        .map_err(|_| AppError::ConfigError("Failed to check git branch".to_string()))?;
+        .map_err(|e| AppError::ConfigError(format!("Failed to run git to check branch: {e}")))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(AppError::ConfigError(format!(
+            "Failed to get current git branch. Is this a git repository?\nDetails: {stderr}"
+        )));
+    }
 
     let branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if branch != "jules" {
