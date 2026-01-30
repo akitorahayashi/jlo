@@ -7,9 +7,11 @@ static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold
 
 /// Prompt templates for new roles (multi-role layers only)
 mod templates {
-    pub static ROLE_YML: &str = include_str!("../assets/templates/layers/observer/role.yml");
-    pub static OBSERVER: &str = include_str!("../assets/templates/layers/observer/prompt.yml");
-    pub static DECIDER: &str = include_str!("../assets/templates/layers/decider/prompt.yml");
+    pub static ROLE_YML: &str = include_str!("../assets/templates/layers/observers/role.yml");
+    pub static OBSERVER: &str = include_str!("../assets/templates/layers/observers/prompt.yml");
+    pub static DECIDER: &str = include_str!("../assets/templates/layers/deciders/prompt.yml");
+    pub static PLANNER: &str = include_str!("../assets/templates/layers/planners/prompt.yml");
+    pub static IMPLEMENTER: &str = include_str!("../assets/templates/layers/implementers/prompt.yml");
 }
 
 /// Embedded role template store implementation.
@@ -49,11 +51,8 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
         let template = match layer {
             Layer::Observers => templates::OBSERVER,
             Layer::Deciders => templates::DECIDER,
-            Layer::Planners | Layer::Implementers => {
-                // This should not be called for single-role layers
-                // The template command rejects them earlier
-                return String::new();
-            }
+            Layer::Planners => templates::PLANNER,
+            Layer::Implementers => templates::IMPLEMENTER,
         };
 
         template.to_string()
@@ -119,11 +118,13 @@ mod tests {
         assert!(yaml.contains("role: ROLE_NAME"));
         assert!(yaml.contains("layer: deciders"));
 
-        // Single-role layers return empty (not supported for template creation)
+        // Single-role layers now return their template
         let yaml = store.generate_prompt_yaml_template("custom", Layer::Planners);
-        assert!(yaml.is_empty());
+        assert!(yaml.contains("role: planner"));
+        assert!(yaml.contains("layer: planners"));
 
         let yaml = store.generate_prompt_yaml_template("custom", Layer::Implementers);
-        assert!(yaml.is_empty());
+        assert!(yaml.contains("role: implementer"));
+        assert!(yaml.contains("layer: implementers"));
     }
 }
