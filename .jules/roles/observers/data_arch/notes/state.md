@@ -8,7 +8,7 @@ The current architecture exhibits significant coupling between Domain and Infras
 ### Domain (`src/domain/`)
 *   **Status**: Compromised
 *   **Issues**:
-    *   **Infrastructure Leakage**: `src/domain/setup.rs` entities (`EnvSpec`, `SetupConfig`) derive `serde::Deserialize` and use `#[serde(default)]`, coupling domain logic to serialization formats.
+    *   **Infrastructure Leakage**: `src/domain/setup.rs` entities (`EnvSpec`, `SetupConfig`, `ComponentMeta`) derive `serde::Deserialize` and use `#[serde(default)]`, coupling domain logic to serialization formats.
     *   **Weak Typing**: `RunSettings` uses raw `String` for branch names. `EnvSpec` uses raw `String` for variable names without validation.
     *   **Validation Gaps**: `EnvSpec` lacks constructor enforcement, allowing invalid environment variable names.
 
@@ -31,3 +31,7 @@ The current architecture exhibits significant coupling between Domain and Infras
 | **Isomorphic Representation** | ❌ Failed | Valid `RoleId`s are demoted to `String`s in Ports; `EnvSpec` permits invalid states. |
 | **Boundary Sovereignty** | ❌ Failed | Domain models depend on `serde`; Services mix adapters and logic. |
 | **Temporal Monotonicity** | ⚠️ At Risk | Mutable state in `ArboardClipboard` adapter. |
+
+## Verification Log
+
+*   **2026-01-30**: Verified all findings. Confirmed `ComponentMeta` exists in `src/domain/setup.rs` and leaks `serde` details. Confirmed `src/services` mixes domain services and adapters. Confirmed `DiscoveredRole` uses `String`.
