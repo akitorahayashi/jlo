@@ -11,7 +11,8 @@ mod templates {
     pub static OBSERVER: &str = include_str!("../assets/templates/layers/observers/prompt.yml");
     pub static DECIDER: &str = include_str!("../assets/templates/layers/deciders/prompt.yml");
     pub static PLANNER: &str = include_str!("../assets/templates/layers/planners/prompt.yml");
-    pub static IMPLEMENTER: &str = include_str!("../assets/templates/layers/implementers/prompt.yml");
+    pub static IMPLEMENTER: &str =
+        include_str!("../assets/templates/layers/implementers/prompt.yml");
 }
 
 /// Embedded role template store implementation.
