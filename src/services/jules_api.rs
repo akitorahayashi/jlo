@@ -194,12 +194,124 @@ impl HttpJulesClient {
 
 #[cfg(test)]
 mod tests {
-    use crate::ports::AutomationMode;
+    use super::*;
+    use crate::domain::JulesApiConfig;
+    use crate::ports::{AutomationMode, SessionRequest};
 
     #[test]
     fn automation_mode_serializes_correctly() {
         assert_eq!(AutomationMode::AutoCreatePr.as_str(), "AUTO_CREATE_PR");
         assert_eq!(AutomationMode::DraftPr.as_str(), "DRAFT_PR");
         assert_eq!(AutomationMode::None.as_str(), "NONE");
+    }
+
+    #[test]
+    fn create_session_success() {
+        let mut server = mockito::Server::new();
+        let _m = server
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"sessionId": "test-session", "status": "created"}"#)
+            .create();
+
+        let config = JulesApiConfig {
+            api_url: Url::parse(&server.url()).unwrap(),
+            max_retries: 3,
+            retry_delay_ms: 1,
+            timeout_secs: 1,
+        };
+
+        let client = HttpJulesClient::new("fake-key".to_string(), &config).unwrap();
+        let request = SessionRequest {
+            prompt: "test".to_string(),
+            source: "github".to_string(),
+            starting_branch: "main".to_string(),
+            require_plan_approval: false,
+            automation_mode: AutomationMode::None,
+        };
+
+        let result = client.create_session(request);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().session_id, "test-session");
+    }
+
+    #[test]
+    fn create_session_retries_on_500() {
+        let mut server = mockito::Server::new();
+        let mock = server.mock("POST", "/").with_status(500).expect(3).create();
+
+        let config = JulesApiConfig {
+            api_url: Url::parse(&server.url()).unwrap(),
+            max_retries: 3,
+            retry_delay_ms: 1,
+            timeout_secs: 1,
+        };
+
+        let client = HttpJulesClient::new("fake-key".to_string(), &config).unwrap();
+        let request = SessionRequest {
+            prompt: "test".to_string(),
+            source: "github".to_string(),
+            starting_branch: "main".to_string(),
+            require_plan_approval: false,
+            automation_mode: AutomationMode::None,
+        };
+
+        let result = client.create_session(request);
+        assert!(result.is_err());
+        mock.assert();
+    }
+
+    #[test]
+    fn create_session_retries_on_429() {
+        let mut server = mockito::Server::new();
+        let mock = server.mock("POST", "/").with_status(429).expect(3).create();
+
+        let config = JulesApiConfig {
+            api_url: Url::parse(&server.url()).unwrap(),
+            max_retries: 3,
+            retry_delay_ms: 1,
+            timeout_secs: 1,
+        };
+
+        let client = HttpJulesClient::new("fake-key".to_string(), &config).unwrap();
+        let request = SessionRequest {
+            prompt: "test".to_string(),
+            source: "github".to_string(),
+            starting_branch: "main".to_string(),
+            require_plan_approval: false,
+            automation_mode: AutomationMode::None,
+        };
+
+        let result = client.create_session(request);
+        assert!(result.is_err());
+        mock.assert();
+    }
+
+    #[test]
+    fn create_session_fails_fast_on_400() {
+        let mut server = mockito::Server::new();
+        let mock =
+            server.mock("POST", "/").with_status(400).with_body("Bad Request").expect(1).create();
+
+        let config = JulesApiConfig {
+            api_url: Url::parse(&server.url()).unwrap(),
+            max_retries: 3,
+            retry_delay_ms: 1,
+            timeout_secs: 1,
+        };
+
+        let client = HttpJulesClient::new("fake-key".to_string(), &config).unwrap();
+        let request = SessionRequest {
+            prompt: "test".to_string(),
+            source: "github".to_string(),
+            starting_branch: "main".to_string(),
+            require_plan_approval: false,
+            automation_mode: AutomationMode::None,
+        };
+
+        let result = client.create_session(request);
+        assert!(result.is_err());
+        mock.assert();
     }
 }
