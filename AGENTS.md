@@ -106,10 +106,10 @@ tests/
 |-------|------|------------|--------|
 | Observers | Multi-role | `jlo run observers` | `config.toml` |
 | Deciders | Multi-role | `jlo run deciders` | `config.toml` |
-| Planners | Single-role | `jlo run planners --issue <path>` | None |
-| Implementers | Single-role | `jlo run implementers --issue <path>` | None |
+| Planners | Single-role | `jlo run planners <path>` | None |
+| Implementers | Single-role | `jlo run implementers <path>` | None |
 
-**Single-role layers**: Planners and Implementers have a fixed role with `prompt.yml` directly in the layer directory. They are issue-driven and require the `--issue` flag. Template creation is not supported.
+**Single-role layers**: Planners and Implementers have a fixed role with `prompt.yml` directly in the layer directory. They are issue-driven and require the issue path as a positional argument. Template creation is not supported.
 
 **Multi-role layers**: Observers and Deciders support multiple configurable roles listed in `config.toml`. Each role has its own subdirectory with `prompt.yml`.
 
