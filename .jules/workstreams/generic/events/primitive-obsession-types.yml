@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "prmobs"
+created_at: "2026-01-30"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Primitive Obsession in Domain and Ports"
+statement: |
+  Critical domain identifiers are demoted to primitive strings in ports and services, violating Isomorphic Representation and weakening type safety boundaries.
+  Specifically, `RoleId` is validated but then discarded for `String` in `DiscoveredRole`, and `RunSettings` uses raw strings for branch names.
+
+evidence:
+  - path: "src/ports/workspace_store.rs"
+    loc: "DiscoveredRole"
+    note: "Struct uses `id: String` instead of `RoleId`, losing validation guarantees."
+  - path: "src/services/workspace_filesystem.rs"
+    loc: "discover_roles"
+    note: "Validates `RoleId` but immediately unwraps to string for storage."
+  - path: "src/domain/run_config.rs"
+    loc: "RunSettings"
+    note: "Branch names are stored as `String` without validation types (e.g., `BranchName`)."
+
+tags:
+  - "primitive-obsession"
+  - "type-safety"
+  - "isomorphic-representation"
