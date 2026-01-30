@@ -53,7 +53,7 @@ jobs:
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         run: |
-          ARGS="--issue ${{ inputs.issue_file }}"
+          ARGS="${{ inputs.issue_file }}"
           [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
           jlo run implementers $ARGS --branch main
 

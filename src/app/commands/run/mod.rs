@@ -46,7 +46,9 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
         return single_role::execute(
             jules_path,
             options.layer,
-            options.issue.as_deref(),
+            options.issue.as_deref().ok_or_else(|| {
+                AppError::ConfigError("Issue file path is required for single-role layers".into())
+            })?,
             options.dry_run,
             options.branch.as_deref(),
             is_ci,

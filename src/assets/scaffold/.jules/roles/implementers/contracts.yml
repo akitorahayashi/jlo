@@ -7,7 +7,7 @@ constraints:
   - Issue file path is authoritative (includes workstream)
 
 inputs:
-  - Local issue file path (provided via --issue flag)
+  - Local issue file path (provided as argument)
   - Issue content embedded in prompt
 
 outputs:

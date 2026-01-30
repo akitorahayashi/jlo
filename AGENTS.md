@@ -94,8 +94,8 @@ tests/
 - `jlo template [-l layer] [-n name]` (alias: `tp`): Create custom role (observers, deciders only)
 - `jlo run observers [--role <name>]`: Run observer agents
 - `jlo run deciders [--role <name>]`: Run decider agents
-- `jlo run planners --issue <path>`: Run planner (single-role, issue-driven)
-- `jlo run implementers --issue <path>`: Run implementer (single-role, issue-driven)
+- `jlo run planners <path>`: Run planner (single-role, issue-driven)
+- `jlo run implementers <path>`: Run implementer (single-role, issue-driven)
 - `jlo setup gen [path]` (alias: `s g`): Generate `install.sh` and `env.toml`
 - `jlo setup list` (alias: `s ls`): List available components
 - `jlo setup list --detail <component>`: Show component details

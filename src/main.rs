@@ -124,28 +124,26 @@ enum RunLayer {
     /// Run planner agent (single-role, issue-driven)
     #[clap(visible_alias = "p")]
     Planners {
+        /// Local issue file path (required)
+        issue: PathBuf,
         /// Show assembled prompts without executing
         #[arg(long)]
         dry_run: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
-        /// Local issue file path (required)
-        #[arg(long)]
-        issue: Option<PathBuf>,
     },
     /// Run implementer agent (single-role, issue-driven)
     #[clap(visible_alias = "i")]
     Implementers {
+        /// Local issue file path (required)
+        issue: PathBuf,
         /// Show assembled prompts without executing
         #[arg(long)]
         dry_run: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
-        /// Local issue file path (required)
-        #[arg(long)]
-        issue: Option<PathBuf>,
     },
 }
 
@@ -209,10 +207,10 @@ fn run_agents(layer: RunLayer) -> Result<(), AppError> {
             (Layer::Deciders, role, dry_run, branch, None)
         }
         RunLayer::Planners { dry_run, branch, issue } => {
-            (Layer::Planners, None, dry_run, branch, issue)
+            (Layer::Planners, None, dry_run, branch, Some(issue))
         }
         RunLayer::Implementers { dry_run, branch, issue } => {
-            (Layer::Implementers, None, dry_run, branch, issue)
+            (Layer::Implementers, None, dry_run, branch, Some(issue))
         }
     };
 

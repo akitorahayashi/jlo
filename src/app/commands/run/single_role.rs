@@ -17,13 +17,13 @@ const IMPLEMENTER_WORKFLOW_NAME: &str = "jules-run-implementer.yml";
 pub fn execute(
     jules_path: &Path,
     layer: Layer,
-    issue_path: Option<&Path>,
+    issue_path: &Path,
     dry_run: bool,
     branch: Option<&str>,
     is_ci: bool,
 ) -> Result<RunResult, AppError> {
-    // Validate issue file requirement
-    let path = issue_path.ok_or(AppError::IssueFileRequired)?;
+    // Validate issue file requirement (now guaranteed by Clap)
+    let path = issue_path;
 
     if !path.exists() {
         return Err(AppError::IssueFileNotFound(path.display().to_string()));

@@ -221,7 +221,7 @@ fn run_implementers_requires_issue_file() {
         .args(["run", "implementers"])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Issue file required"));
+        .stderr(predicate::str::contains("required arguments were not provided"));
 }
 
 #[test]
@@ -235,7 +235,7 @@ fn run_planners_requires_issue_file() {
         .args(["run", "planners"])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Issue file required"));
+        .stderr(predicate::str::contains("required arguments were not provided"));
 }
 
 #[test]
@@ -246,12 +246,7 @@ fn run_implementers_with_missing_issue_file() {
     ctx.cli().args(["init"]).assert().success();
 
     ctx.cli()
-        .args([
-            "run",
-            "implementers",
-            "--issue",
-            ".jules/workstreams/generic/issues/nonexistent.yml",
-        ])
+        .args(["run", "implementers", ".jules/workstreams/generic/issues/nonexistent.yml"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Issue file not found"));
@@ -279,7 +274,6 @@ fn run_implementers_dry_run_with_issue_file() {
         .args([
             "run",
             "implementers",
-            "--issue",
             ".jules/workstreams/generic/issues/medium/test_issue.yml",
             "--dry-run",
         ])
@@ -311,7 +305,6 @@ fn run_planners_dry_run_with_issue_file() {
         .args([
             "run",
             "planners",
-            "--issue",
             ".jules/workstreams/generic/issues/medium/test_issue.yml",
             "--dry-run",
         ])

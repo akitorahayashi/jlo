@@ -46,10 +46,10 @@ jlo run observers --branch custom      # Override starting branch
 
 ```bash
 # Run planner for a specific issue
-jlo run planners --issue .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
+jlo run planners .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
 
 # Run implementer for a specific issue
-jlo run implementers --issue .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
+jlo run implementers .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
 ```
 
 Single-role layers are issue-driven and do not support the `--role` flag.
@@ -58,7 +58,7 @@ Single-role layers are issue-driven and do not support the `--role` flag.
 - `--role <name>`: Run specific role(s) instead of all configured (multi-role layers only)
 - `--dry-run`: Show assembled prompts without API calls
 - `--branch <name>`: Override the default starting branch
-- `--issue <path>`: Local issue file (required for planners and implementers)
+- `<path>`: Local issue file (required for planners and implementers)
 
 **Configuration**: Agent roles are configured in `.jules/config.toml`:
 

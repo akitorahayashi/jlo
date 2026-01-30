@@ -137,8 +137,8 @@ jobs:
           fi
 
           # Run planner in dry-run mode
-          echo "=== Running: jlo run planners --issue $ISSUE_PATH --dry-run ==="
-          jlo run planners --issue "$ISSUE_PATH" --dry-run
+          echo "=== Running: jlo run planners $ISSUE_PATH --dry-run ==="
+          jlo run planners "$ISSUE_PATH" --dry-run
 
           echo "✅ Planner CLI dry-run succeeded"
 
@@ -181,8 +181,8 @@ jobs:
           fi
 
           # Run implementer in dry-run mode
-          echo "=== Running: jlo run implementers --issue $ISSUE_PATH --dry-run ==="
-          jlo run implementers --issue "$ISSUE_PATH" --dry-run
+          echo "=== Running: jlo run implementers $ISSUE_PATH --dry-run ==="
+          jlo run implementers "$ISSUE_PATH" --dry-run
 
           echo "✅ Implementer CLI dry-run succeeded"
 

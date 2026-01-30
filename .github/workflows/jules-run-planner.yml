@@ -1,7 +1,7 @@
 # Jules Run Planner
 #
 # Manual execution of the planner layer for a specific issue.
-# Separated from the main orchestration workflow to allow targeted execution.
+# Separated from the orchestration workflow to allow targeted execution.
 
 name: Jules Run Planner
 
@@ -51,6 +51,6 @@ jobs:
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         run: |
-          ARGS="--issue ${{ inputs.issue_file }}"
+          ARGS="${{ inputs.issue_file }}"
           [ "${{ inputs.dry_run }}" = "true" ] && ARGS="$ARGS --dry-run"
           jlo run planners $ARGS
