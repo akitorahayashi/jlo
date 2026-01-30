@@ -28,9 +28,7 @@ jobs:
           token: ${{ secrets.JLO_BOT_TOKEN }}
 
       - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+        uses: ./.github/actions/configure-git
 
       - name: Create test issue
         id: create
@@ -38,7 +36,8 @@ jobs:
         run: |
           set -euo pipefail
           RANDOM_ID=$(printf '%04x' "$RANDOM")
-          BRANCH="jules-e2e-single-role-setup-${RANDOM_ID}"
+          # Use jules-planner- prefix to ensure this setup PR is auto-merged
+          BRANCH="jules-planner-e2e-setup-${RANDOM_ID}"
           WORKSTREAM="generic"
 
           ISSUE_TEMPLATE=".jules/roles/deciders/issue.yml"
@@ -197,11 +196,10 @@ jobs:
           echo "✅ Correctly failed when issue is missing"
 
   # ============================================================
-  # Cleanup
+  # Test Auto-Merge Logic
   # ============================================================
-  cleanup:
-    if: always()
-    needs: [setup, test-planner, test-implementer]
+  test-automerge-logic:
+    needs: setup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -211,9 +209,66 @@ jobs:
           token: ${{ secrets.JLO_BOT_TOKEN }}
 
       - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Create implementer PR
+        id: create-pr
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          set -euo pipefail
+          # Use a deterministic but unique branch name for this run
+          RANDOM_ID=$(printf '%04x' "$RANDOM")
+          BRANCH="jules-implementer-e2e-${RANDOM_ID}"
+          
+          # Create a dummy change
+          git checkout -b "$BRANCH"
+          echo "dummy content $RANDOM_ID" > .jules/dummy_implementer.txt
+          git add .jules/dummy_implementer.txt
+          git commit -m "E2E: Dummy implementer change"
+          git push origin "$BRANCH"
+          
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+          PR_URL=$(gh pr create \
+            --base jules \
+            --head "$BRANCH" \
+            --title "[E2E Implementer] Verify No Auto-Merge" \
+            --body "This PR should NOT be auto-merged.")
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Verify NO auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          echo "Waiting 30 seconds to ensure auto-merge doesn't trigger..."
+          sleep 30
+          
+          STATE=$(gh pr view "${{ steps.create-pr.outputs.pr_url }}" --json state -q '.state')
+          if [ "$STATE" == "MERGED" ]; then
+            echo "❌ Error: Implementer PR was auto-merged! verification failed."
+            exit 1
+          fi
+          
+          echo "✅ Implementer PR state is $STATE (not MERGED). Logic verified."
+
+  # ============================================================
+  # Cleanup
+  # ============================================================
+  cleanup:
+    if: always()
+    needs: [setup, test-planner, test-implementer, test-automerge-logic]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
 
       - name: Clean up test artifacts
         env:
@@ -223,14 +278,16 @@ jobs:
           WORKSTREAM="generic"
 
           # Close any open E2E PRs
-          gh pr list --state open --json number,headRefName --jq '.[] | select(.headRefName | startswith("jules-e2e-single-role-")) | .number' | while read -r pr_num; do
+          # Close any open E2E PRs
+          gh pr list --state open --json number,headRefName --jq '.[] | select(.headRefName | startswith("jules-planner-e2e-setup-") or startswith("jules-implementer-e2e-")) | .number' | while read -r pr_num; do
             echo "Closing PR #$pr_num"
             gh pr close "$pr_num" --delete-branch || true
           done
 
           # Delete leftover E2E branches
           git fetch --prune
-          git branch -r | grep -E 'jules-e2e-single-role-' | sed 's#origin/##' | while read -r branch; do
+          git fetch --prune
+          git branch -r | grep -E 'jules-planner-e2e-setup-|jules-implementer-e2e-' | sed 's#origin/##' | while read -r branch; do
             echo "Deleting branch: $branch"
             git push origin --delete "$branch" || true
           done
