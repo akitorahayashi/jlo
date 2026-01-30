@@ -80,8 +80,15 @@ pub fn execute(
 
     // Execute with appropriate client
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
-    let session_id =
-        execute_session(jules_path, layer, &starting_branch, &source, &client, &issue_content, path)?;
+    let session_id = execute_session(
+        jules_path,
+        layer,
+        &starting_branch,
+        &source,
+        &client,
+        &issue_content,
+        path,
+    )?;
 
     Ok(RunResult {
         roles: vec![layer.dir_name().to_string()],

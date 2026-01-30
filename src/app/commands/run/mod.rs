@@ -43,13 +43,15 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
 
     // Single-role layers (Planners, Implementers) are issue-driven
     if options.layer.is_single_role() {
+        let issue_path = options.issue.as_deref().ok_or_else(|| {
+            AppError::ConfigError(
+                "Issue path is required for single-role layers but was not provided.".to_string(),
+            )
+        })?;
         return single_role::execute(
             jules_path,
             options.layer,
-            options
-                .issue
-                .as_deref()
-                .expect("Issue path is required for single-role layers and guaranteed by clap"),
+            issue_path,
             options.dry_run,
             options.branch.as_deref(),
             is_ci,
