@@ -94,7 +94,10 @@ Implementers modify source code and require human review.
     |   +-- <category>/
     |       +-- *.yml
     +-- issues/         # [Transit] Consolidated problems
-        +-- *.yml
+        +-- index.md    # Declarative index of issues
+        +-- low/
+        +-- medium/
+        +-- high/
 ```
 
 ## Configuration Files
@@ -121,7 +124,7 @@ Each observer:
 2. Reads role.yml (specialized focus)
 3. Reads feedbacks/, abstracts patterns, updates role.yml
 4. Reads notes/ for current state
-5. **Reads .jules/exchange/issues/*.yml to check for open issues**
+5. **Reads .jules/exchange/issues/index.md to check for open issues**
 6. Updates notes/ declaratively
 7. **Skips observations already covered by open issues (deduplication)**
 8. Writes exchange/events/**/*.yml when observations warrant
@@ -134,14 +137,15 @@ Each observer:
 Triage agent:
 1. Reads contracts.yml (layer behavior)
 2. Reads all exchange/events/**/*.yml
-3. **Reads existing .jules/exchange/issues/*.yml to identify merge candidates**
+3. **Reads .jules/exchange/issues/index.md and existing issues to identify merge candidates**
 4. Validates observations (do they exist in codebase?)
 5. Merges related events sharing root cause
-6. **Merges events into existing issues when related (appends sources, updates content)**
-7. Creates new issues for genuinely new problems (using fingerprint as filename)
-8. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
-9. Writes feedback for recurring rejections
-10. Deletes processed events
+6. **Merges events into existing issues when related (updates content)**
+7. Creates new issues for genuinely new problems (using fingerprint as filename, placing in priority folder)
+8. **Updates .jules/exchange/issues/index.md**
+9. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
+10. Writes feedback for recurring rejections
+11. Deletes processed events
 
 **Decider answers**: "Is this real? Should these events merge into one issue?"
 
@@ -149,7 +153,7 @@ Triage agent:
 
 Specifier agent (runs only for `requires_deep_analysis: true`):
 1. Reads contracts.yml (layer behavior)
-2. Reads target issue from exchange/issues/
+2. Reads target issue from exchange/issues/<priority>/
 3. **Reviews deep_analysis_reason to understand scope**
 4. Analyzes full system impact and dependency tree
 5. Expands issue with detailed analysis (affected_areas, constraints, risks)
@@ -165,14 +169,14 @@ Implementation is invoked manually via `workflow_dispatch` with a local issue fi
 
 ```bash
 # Example: Run implementer with a specific issue
-jlo run implementers --issue .jules/exchange/issues/auth_inconsistency.yml
+jlo run implementers --issue .jules/exchange/issues/medium/auth_inconsistency.yml
 ```
 
 The implementer reads the issue content (embedded in prompt) and produces code changes.
 The issue file must exist; missing files fail fast before agent execution.
 
 **Issue Lifecycle**:
-1. User selects an issue file from `.jules/exchange/issues/` on the `jules` branch.
+1. User selects an issue file from `.jules/exchange/issues/<priority>/` on the `jules` branch.
 2. Workflow validates the file exists and passes content to the implementer.
 3. After successful dispatch, the issue file is automatically deleted from the `jules` branch.
 4. The implementer works on `main` branch and creates a PR for human review.
@@ -200,7 +204,7 @@ Feedback files are preserved for audit (never deleted).
 
 ## Issue Lifecycle
 
-- Issues have `status: open|closed` to track lifecycle.
+- Issues are organized by priority (`low`, `medium`, `high`) and tracked in `index.md`.
 - Open issues suppress duplicate observations from observers.
 - Issue filenames use stable fingerprints (e.g. `auth_inconsistency.yml`).
 - Related events are merged into existing issues, not duplicated.
