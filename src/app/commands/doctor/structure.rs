@@ -402,7 +402,8 @@ fn ensure_workstream_template_exists(
     }
 
     if !options.fix {
-        diagnostics.push_error(full_path.display().to_string(), "Missing scheduled.toml");
+        diagnostics
+            .push_error(full_path.display().to_string(), format!("Missing {}", template_path));
         return;
     }
 
