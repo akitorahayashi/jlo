@@ -1,0 +1,31 @@
+schema_version: 1
+
+# Metadata
+id: "q2w3e4"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "cov"
+confidence: "high"
+
+# Content
+title: "Untested CI/Production Execution Paths"
+statement: |
+  Critical logic paths specific to CI execution (e.g., `is_ci` branches in `run` command) are completely excluded from the test harness.
+  The integration tests force local mode or dry-run, meaning the code that actually runs in production (CI) is never executed by the test suite.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/run/single_role.rs"
+    loc:
+      - "execute"
+    note: "Contains `if !is_ci { return execute_local_dispatch(...) }`. Tests only cover this path or dry-run, skipping `execute_session`."
+
+  - path: "tests/cli_commands.rs"
+    loc:
+      - "run_implementers_dry_run_with_issue_file"
+    note: "Explicitly removes `GITHUB_ACTIONS` env var to force local path, leaving CI path untested."
+
+tags:
+  - "risk:critical"
+  - "testing-strategy"
+  - "production-risk"
