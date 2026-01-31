@@ -1,0 +1,20 @@
+schema_version: 1
+id: "tx0003"
+created_at: "2024-05-21"
+author_role: "taxonomy"
+confidence: "low"
+title: "Setup command vs Install artifact ambiguity"
+statement: |
+  The "setup" command generates an "install" script, creating a mild ambiguity between the command verb and the generated artifact name.
+evidence:
+  - path: "src/app/commands/setup/mod.rs"
+    loc:
+      - "mod.rs"
+    note: "Command is 'setup'."
+  - path: "src/assets/catalog/install.sh"
+    loc:
+      - "install.sh"
+    note: "Artifact is 'install.sh'."
+tags:
+  - "naming"
+  - "cli"
