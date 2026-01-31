@@ -1,0 +1,126 @@
+mod diagnostics;
+mod naming;
+mod quality;
+mod schema;
+mod semantic;
+mod structure;
+mod yaml;
+
+use std::collections::HashSet;
+use std::path::Path;
+
+use crate::domain::AppError;
+use crate::services::{list_event_states, list_issue_labels, read_enum_values};
+
+pub use diagnostics::{Diagnostic, Diagnostics, Severity};
+
+#[derive(Debug, Clone, Default)]
+pub struct DoctorOptions {
+    pub fix: bool,
+    pub strict: bool,
+    pub workstream: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct DoctorOutcome {
+    pub errors: usize,
+    pub warnings: usize,
+    pub exit_code: i32,
+}
+
+pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
+    if !jules_path.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    let root = jules_path.parent().unwrap_or(Path::new(".")).to_path_buf();
+    let issue_labels = list_issue_labels()?;
+    let event_states = list_event_states()?;
+    let event_confidence = read_enum_values(".jules/roles/observers/event.yml", "confidence")?;
+    let issue_priorities = read_enum_values(".jules/roles/deciders/issue.yml", "priority")?;
+
+    let mut diagnostics = Diagnostics::default();
+    let mut applied_fixes = Vec::new();
+
+    let workstreams = structure::collect_workstreams(jules_path, options.workstream.as_deref())?;
+
+    let run_config = structure::read_run_config(jules_path, &mut diagnostics)?;
+
+    structure::structural_checks(
+        structure::StructuralInputs {
+            jules_path,
+            root: &root,
+            workstreams: &workstreams,
+            issue_labels: &issue_labels,
+            event_states: &event_states,
+            run_config: &run_config,
+            options: &options,
+            applied_fixes: &mut applied_fixes,
+        },
+        &mut diagnostics,
+    );
+
+    let mut prompt_workstreams = HashSet::new();
+    let prompt_entries = schema::collect_prompt_entries(jules_path, &mut diagnostics)?;
+    for prompt in &prompt_entries {
+        if let Some(ws) = &prompt.workstream {
+            prompt_workstreams.insert(ws.clone());
+        }
+    }
+
+    schema::schema_checks(
+        schema::SchemaInputs {
+            jules_path,
+            root: &root,
+            workstreams: &workstreams,
+            issue_labels: &issue_labels,
+            event_states: &event_states,
+            event_confidence: &event_confidence,
+            issue_priorities: &issue_priorities,
+            prompt_entries: &prompt_entries,
+        },
+        &mut diagnostics,
+    );
+
+    naming::naming_checks(jules_path, &workstreams, &issue_labels, &event_states, &mut diagnostics);
+
+    let semantic_context = semantic::semantic_context(jules_path, &workstreams, &issue_labels);
+    semantic::semantic_checks(
+        jules_path,
+        &workstreams,
+        &prompt_workstreams,
+        &run_config,
+        &semantic_context,
+        &mut diagnostics,
+    );
+
+    quality::quality_checks(
+        jules_path,
+        &workstreams,
+        &issue_labels,
+        &event_states,
+        &mut diagnostics,
+    );
+
+    diagnostics.emit();
+
+    let errors = diagnostics.error_count();
+    let warnings = diagnostics.warning_count();
+    let exit_code = if errors > 0 {
+        1
+    } else if warnings > 0 && options.strict {
+        2
+    } else {
+        0
+    };
+
+    if errors == 0 && warnings == 0 {
+        println!("All checks passed.");
+    } else {
+        eprintln!("Check failed: {} error(s), {} warning(s) found.", errors, warnings);
+    }
+
+    let _ = applied_fixes;
+
+    Ok(DoctorOutcome { errors, warnings, exit_code })
+}

@@ -18,11 +18,10 @@ This file is human-oriented. Agents must read `.jules/JULES.md` for the formal c
 
 | Document | Audience | Contains |
 |----------|----------|----------|
-| `AGENTS.md` | All LLM tools | Repository conventions (exposed to Codex, Claude, etc.) |
 | `.jules/JULES.md` | Jules agents | Jules-specific contracts and schemas |
 | `.jules/README.md` | Humans | This guide |
 
-**Rule**: Jules-internal details stay in `.jules/`. `AGENTS.md` remains tool-agnostic.
+**Rule**: Jules-internal details stay in `.jules/`.
 
 ## Role Flow
 
@@ -65,14 +64,13 @@ Implementers modify source code and require human review.
 +-- workstreams/        # Workstream containers
 |   +-- <workstream>/   # e.g. generic/
 |       +-- events/     # Raw observations
-|       |   +-- *.yml
+|       |   +-- pending/
+|       |   |   +-- *.yml
+|       |   +-- decided/
+|       |       +-- *.yml
 |       +-- issues/     # Consolidated problems
 |           +-- index.md
-|           +-- feats/
-|           +-- refacts/
-|           +-- bugs/
-|           +-- tests/
-|           +-- docs/
+|           +-- <label>/
 |
 +-- roles/              # Role definitions (global)
     +-- observers/      # Multi-role layer
@@ -151,7 +149,7 @@ Each observer:
 5. **Reads .jules/workstreams/<workstream>/issues/index.md to check for open issues**
 6. Updates notes/ declaratively
 7. **Skips observations already covered by open issues (deduplication)**
-8. Writes workstreams/<workstream>/events/*.yml when observations warrant
+8. Writes workstreams/<workstream>/events/pending/*.yml when observations warrant
 9. Publishes changes as a PR (branch naming follows the convention below)
 
 **Stateful**: Maintains `notes/` and receives feedback via `feedbacks/`.
@@ -160,7 +158,7 @@ Each observer:
 
 Triage agent:
 1. Reads contracts.yml (layer behavior)
-2. Reads all workstreams/<workstream>/events/*.yml
+2. Reads all workstreams/<workstream>/events/pending/*.yml
 3. **Reads .jules/workstreams/<workstream>/issues/index.md and existing issues to identify merge candidates**
 4. Validates observations (do they exist in codebase?)
 5. Merges related events sharing root cause
@@ -169,7 +167,7 @@ Triage agent:
 8. **Updates .jules/workstreams/<workstream>/issues/index.md**
 9. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
 10. Writes feedback for recurring rejections
-11. Deletes processed events
+11. Moves processed events to workstreams/<workstream>/events/decided/
 
 **Decider answers**: "Is this real? Should these events merge into one issue?"
 
@@ -177,7 +175,7 @@ Triage agent:
 
 Specifier agent (runs only for `requires_deep_analysis: true`):
 1. Reads contracts.yml (layer behavior)
-2. Reads target issue from workstreams/<workstream>/issues/<type>/
+2. Reads target issue from workstreams/<workstream>/issues/<label>/
 3. **Reviews deep_analysis_reason to understand scope**
 4. Analyzes full system impact and dependency tree
 5. Expands issue with detailed analysis (affected_areas, constraints, risks)
@@ -193,14 +191,14 @@ Implementation is invoked manually via `workflow_dispatch` with a local issue fi
 
 ```bash
 # Example: Run implementer with a specific issue
-jlo run implementers --issue .jules/workstreams/generic/issues/bugs/auth_inconsistency.yml
+jlo run implementers --issue .jules/workstreams/generic/issues/<label>/auth_inconsistency.yml
 ```
 
 The implementer reads the issue content (embedded in prompt) and produces code changes.
 The issue file must exist; missing files fail fast before agent execution.
 
 **Issue Lifecycle**:
-1. User selects an issue file from `.jules/workstreams/<workstream>/issues/<type>/` on the `jules` branch.
+1. User selects an issue file from `.jules/workstreams/<workstream>/issues/<label>/` on the `jules` branch.
 2. Workflow validates the file exists and passes content to the implementer.
 3. After successful dispatch, the issue file is automatically deleted from the `jules` branch.
 4. The implementer works on `main` branch and creates a PR for human review.
@@ -209,7 +207,7 @@ The issue file must exist; missing files fail fast before agent execution.
 ## Feedback Loop
 
 ```
-Observer creates events in workstreams/<workstream>/events/
+Observer creates events in workstreams/<workstream>/events/pending/
        |
        v
 Decider validates, may reject or merge
@@ -228,7 +226,7 @@ Feedback files are preserved for audit (never deleted).
 
 ## Issue Lifecycle
 
-- Issues are organized by type (`feats`, `refacts`, `bugs`, `tests`, `docs`) and tracked in `index.md`.
+- Issues are organized by label directories defined by the scaffold and tracked in `index.md`.
 - Open issues suppress duplicate observations from observers.
 - Issue filenames use stable ids (e.g. `auth_inconsistency.yml`).
 - Related events are merged into existing issues, not duplicated.

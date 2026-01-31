@@ -127,6 +127,39 @@ fn help_lists_visible_aliases() {
     );
 }
 
+#[test]
+#[serial]
+fn doctor_passes_on_fresh_workspace() {
+    let ctx = TestContext::new();
+
+    ctx.cli().arg("init").assert().success();
+
+    ctx.cli().args(["doctor"]).assert().success();
+}
+
+#[test]
+#[serial]
+fn doctor_reports_schema_errors() {
+    let ctx = TestContext::new();
+
+    ctx.cli().arg("init").assert().success();
+
+    let event_dir = ctx.work_dir().join(".jules/workstreams/generic/events/pending");
+    std::fs::create_dir_all(&event_dir).unwrap();
+    let event_path = event_dir.join("bad-event.yml");
+    std::fs::write(
+        &event_path,
+        "schema_version: 1\nid: abc123\nissue_id: \"\"\ncreated_at: 2026-01-01\nauthor_role: tester\nconfidence: low\ntitle: Bad event\nstatement: too short\nevidence: []\n",
+    )
+    .unwrap();
+
+    ctx.cli()
+        .args(["doctor"])
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("evidence must have entries"));
+}
+
 // =============================================================================
 // Setup Command Tests
 // =============================================================================

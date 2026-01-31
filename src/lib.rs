@@ -12,12 +12,13 @@ use std::path::Path;
 
 use app::{
     AppContext,
-    commands::{init, run, setup, template, update},
+    commands::{doctor, init, run, setup, template, update},
 };
 use domain::Layer;
 use ports::{NoopClipboard, WorkspaceStore};
 use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 
+pub use app::commands::doctor::{DoctorOptions, DoctorOutcome};
 pub use app::commands::run::{RunOptions, RunResult};
 pub use app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
 pub use app::commands::template::TemplateOutcome;
@@ -136,4 +137,19 @@ pub fn update(dry_run: bool, workflows: bool) -> Result<UpdateResult, AppError> 
 
     let options = UpdateOptions { dry_run, workflows };
     update::execute(&workspace.jules_path(), options)
+}
+
+// =============================================================================
+// Doctor Command API
+// =============================================================================
+
+/// Validate the `.jules/` workspace structure and content.
+pub fn doctor(options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
+    let workspace = FilesystemWorkspaceStore::current()?;
+
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    doctor::execute(&workspace.jules_path(), options)
 }
