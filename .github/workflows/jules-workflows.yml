@@ -45,6 +45,7 @@ jobs:
       ENTRY_POINT: ${{ inputs.entry_point || 'observers' }}
       WAIT_MINUTES: ${{ inputs.wait_minutes || 15 }}
       ROUTING_LABELS: ${{ inputs.routing_labels || 'docs,tests' }}
+      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
