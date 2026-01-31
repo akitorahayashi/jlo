@@ -43,6 +43,10 @@ pub enum AppError {
     RunConfigInvalid(String),
     /// Role not found in config for layer.
     RoleNotInConfig { role: String, layer: String },
+    /// Workstream schedule file missing.
+    ScheduleConfigMissing(String),
+    /// Workstream schedule file is malformed.
+    ScheduleConfigInvalid(String),
 
     /// Issue file not found at path.
     IssueFileNotFound(String),
@@ -109,6 +113,12 @@ impl Display for AppError {
             AppError::RoleNotInConfig { role, layer } => {
                 write!(f, "Role '{}' not found in config for layer '{}'", role, layer)
             }
+            AppError::ScheduleConfigMissing(path) => {
+                write!(f, "Schedule config not found: {}", path)
+            }
+            AppError::ScheduleConfigInvalid(reason) => {
+                write!(f, "Invalid schedule config: {}", reason)
+            }
 
             AppError::IssueFileNotFound(path) => {
                 write!(f, "Issue file not found: {}", path)
@@ -157,12 +167,14 @@ impl AppError {
             | AppError::MalformedEnvToml(_)
             | AppError::RunConfigInvalid(_)
             | AppError::RoleNotInConfig { .. }
+            | AppError::ScheduleConfigInvalid(_)
             | AppError::SingleRoleLayerTemplate(_) => io::ErrorKind::InvalidInput,
             AppError::WorkspaceNotFound
             | AppError::SetupNotInitialized
             | AppError::SetupConfigMissing
             | AppError::ComponentNotFound { .. }
             | AppError::RunConfigMissing
+            | AppError::ScheduleConfigMissing(_)
             | AppError::IssueFileNotFound(_) => io::ErrorKind::NotFound,
             AppError::WorkspaceExists | AppError::RoleExists { .. } => io::ErrorKind::AlreadyExists,
             AppError::ClipboardError(_) => io::ErrorKind::Other,

@@ -189,6 +189,12 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         // Create workstream structure
         fs::create_dir_all(&ws_dir)?;
 
+        let schedule_content = scaffold_file_content(".jules/workstreams/generic/scheduled.toml")
+            .ok_or_else(|| {
+            AppError::config_error("Missing scaffold scheduled.toml template")
+        })?;
+        fs::write(ws_dir.join("scheduled.toml"), schedule_content)?;
+
         // Create events directory with scaffold-defined states
         let events_dir = ws_dir.join("events");
         fs::create_dir_all(&events_dir)?;
