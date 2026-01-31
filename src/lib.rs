@@ -167,7 +167,11 @@ pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
 /// * `dry_run` - Show planned changes without applying
 /// * `workflows` - Include workflow files in update
 /// * `adopt_managed` - Record current default role files as managed baseline
-pub fn update(dry_run: bool, workflows: bool, adopt_managed: bool) -> Result<UpdateResult, AppError> {
+pub fn update(
+    dry_run: bool,
+    workflows: bool,
+    adopt_managed: bool,
+) -> Result<UpdateResult, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
 
     if !workspace.exists() {

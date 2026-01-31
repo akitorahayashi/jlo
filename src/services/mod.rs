@@ -15,8 +15,8 @@ pub use embedded_role_template_store::EmbeddedRoleTemplateStore;
 pub use generator::Generator;
 pub use jules_client_http::HttpJulesClient;
 pub use managed_defaults::{
-    hash_content, hash_file, is_default_role_file, load_manifest, manifest_from_scaffold,
-    manifest_path, write_manifest, ManagedDefaultsManifest,
+    ManagedDefaultsManifest, hash_content, hash_file, is_default_role_file, load_manifest,
+    manifest_from_scaffold, manifest_path, write_manifest,
 };
 pub use resolver::Resolver;
 pub use role_factory::RoleFactory;

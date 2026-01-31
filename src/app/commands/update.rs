@@ -11,7 +11,7 @@ use crate::domain::AppError;
 use crate::ports::RoleTemplateStore;
 use crate::services::EmbeddedRoleTemplateStore;
 use crate::services::{
-    hash_content, is_default_role_file, load_manifest, write_manifest, ManagedDefaultsManifest,
+    ManagedDefaultsManifest, hash_content, is_default_role_file, load_manifest, write_manifest,
 };
 
 /// Files that are managed by jlo and will be overwritten on update.
@@ -204,7 +204,8 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
                 } else {
                     skipped.push(SkippedUpdate {
                         path: path.clone(),
-                        reason: "File missing; treated as local removal and no longer tracked.".to_string(),
+                        reason: "File missing; treated as local removal and no longer tracked."
+                            .to_string(),
                     });
                 }
             } else if full_path.exists() {
@@ -233,8 +234,9 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
                 } else {
                     skipped.push(SkippedUpdate {
                         path: path.clone(),
-                        reason: "Default role removed upstream but modified locally; left in place."
-                            .to_string(),
+                        reason:
+                            "Default role removed upstream but modified locally; left in place."
+                                .to_string(),
                     });
                 }
             }

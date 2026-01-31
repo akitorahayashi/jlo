@@ -24,18 +24,13 @@ pub struct ManagedDefaultsEntry {
 
 impl ManagedDefaultsManifest {
     pub fn from_map(map: BTreeMap<String, String>) -> Self {
-        let files = map
-            .into_iter()
-            .map(|(path, sha256)| ManagedDefaultsEntry { path, sha256 })
-            .collect();
+        let files =
+            map.into_iter().map(|(path, sha256)| ManagedDefaultsEntry { path, sha256 }).collect();
         Self { schema_version: MANIFEST_SCHEMA_VERSION, files }
     }
 
     pub fn to_map(&self) -> BTreeMap<String, String> {
-        self.files
-            .iter()
-            .map(|entry| (entry.path.clone(), entry.sha256.clone()))
-            .collect()
+        self.files.iter().map(|entry| (entry.path.clone(), entry.sha256.clone())).collect()
     }
 }
 
@@ -64,7 +59,10 @@ pub fn load_manifest(jules_path: &Path) -> Result<Option<ManagedDefaultsManifest
     Ok(Some(manifest))
 }
 
-pub fn write_manifest(jules_path: &Path, manifest: &ManagedDefaultsManifest) -> Result<(), AppError> {
+pub fn write_manifest(
+    jules_path: &Path,
+    manifest: &ManagedDefaultsManifest,
+) -> Result<(), AppError> {
     let path = manifest_path(jules_path);
     let content = serde_yaml::to_string(manifest).map_err(|err| {
         AppError::config_error(format!("Failed to serialize {}: {}", path.display(), err))
@@ -87,20 +85,12 @@ pub fn is_default_role_file(path: &str) -> bool {
     let parts: Vec<&str> = path.split('/').collect();
 
     // .jules/roles/<layer>/prompt.yml (single-role layers)
-    if parts.len() == 4
-        && parts[0] == ".jules"
-        && parts[1] == "roles"
-        && parts[3] == "prompt.yml"
-    {
+    if parts.len() == 4 && parts[0] == ".jules" && parts[1] == "roles" && parts[3] == "prompt.yml" {
         return true;
     }
 
     // .jules/roles/<layer>/<role>/prompt.yml (multi-role layers)
-    if parts.len() == 5
-        && parts[0] == ".jules"
-        && parts[1] == "roles"
-        && parts[4] == "prompt.yml"
-    {
+    if parts.len() == 5 && parts[0] == ".jules" && parts[1] == "roles" && parts[4] == "prompt.yml" {
         return true;
     }
 
