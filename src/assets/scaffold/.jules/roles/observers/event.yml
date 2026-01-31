@@ -2,6 +2,7 @@ schema_version: 1
 
 # Metadata
 id: "<6_random_lowercase_alphanumeric_chars>"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
 created_at: "YYYY-MM-DD"
 author_role: "<role>" # e.g. taxonomy
 confidence: "low|medium|high"
