@@ -10,9 +10,6 @@ mod templates {
     pub static ROLE_YML: &str = include_str!("../assets/templates/layers/observers/role.yml");
     pub static OBSERVER: &str = include_str!("../assets/templates/layers/observers/prompt.yml");
     pub static DECIDER: &str = include_str!("../assets/templates/layers/deciders/prompt.yml");
-    pub static PLANNER: &str = include_str!("../assets/templates/layers/planners/prompt.yml");
-    pub static IMPLEMENTER: &str =
-        include_str!("../assets/templates/layers/implementers/prompt.yml");
 }
 
 /// Embedded role template store implementation.
@@ -52,8 +49,7 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
         let template = match layer {
             Layer::Observers => templates::OBSERVER,
             Layer::Deciders => templates::DECIDER,
-            Layer::Planners => templates::PLANNER,
-            Layer::Implementers => templates::IMPLEMENTER,
+            Layer::Planners | Layer::Implementers => "",
         };
 
         template.to_string()
@@ -119,13 +115,10 @@ mod tests {
         assert!(yaml.contains("role: ROLE_NAME"));
         assert!(yaml.contains("layer: deciders"));
 
-        // Single-role layers now return their template
+        // Single-role layers do not provide templates
         let yaml = store.generate_prompt_yaml_template("custom", Layer::Planners);
-        assert!(yaml.contains("role: planner"));
-        assert!(yaml.contains("layer: planners"));
-
+        assert!(yaml.is_empty());
         let yaml = store.generate_prompt_yaml_template("custom", Layer::Implementers);
-        assert!(yaml.contains("role: implementer"));
-        assert!(yaml.contains("layer: implementers"));
+        assert!(yaml.is_empty());
     }
 }

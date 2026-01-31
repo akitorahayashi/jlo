@@ -4,7 +4,7 @@ use dialoguer::Select;
 
 use crate::app::AppContext;
 use crate::domain::{AppError, Layer};
-use crate::ports::{ClipboardWriter, RoleTemplateStore, WorkspaceStore};
+use crate::ports::{RoleTemplateStore, WorkspaceStore};
 use crate::services::RoleFactory;
 
 use super::outcome::TemplateOutcome;
@@ -14,9 +14,9 @@ use super::workstream::resolve_workstream;
 /// Execute the template command.
 ///
 /// Creates a new role directory under the specified layer with
-/// pre-filled role.yml and prompt.yml based on the layer archetype.
-pub fn execute<W, R, C>(
-    ctx: &AppContext<W, R, C>,
+/// pre-filled role.yml and prompt.yml.
+pub fn execute<W, R>(
+    ctx: &AppContext<W, R>,
     layer_arg: Option<&str>,
     role_name_arg: Option<&str>,
     workstream_arg: Option<&str>,
@@ -24,7 +24,6 @@ pub fn execute<W, R, C>(
 where
     W: WorkspaceStore,
     R: RoleTemplateStore,
-    C: ClipboardWriter,
 {
     if !ctx.workspace().exists() {
         return Err(AppError::WorkspaceNotFound);
@@ -43,11 +42,12 @@ where
     }
 
     let layer = resolve_layer(layer_arg)?;
-    create_role(ctx, layer, role_name_arg, workstream_arg)
+
+    create_role_from_template(ctx, layer, role_name_arg, workstream_arg)
 }
 
-pub(super) fn create_role<W, R, C>(
-    ctx: &AppContext<W, R, C>,
+pub(super) fn create_role_from_template<W, R>(
+    ctx: &AppContext<W, R>,
     layer: Layer,
     role_name_arg: Option<&str>,
     workstream_arg: Option<&str>,
@@ -55,7 +55,6 @@ pub(super) fn create_role<W, R, C>(
 where
     W: WorkspaceStore,
     R: RoleTemplateStore,
-    C: ClipboardWriter,
 {
     if layer.is_single_role() {
         return Err(AppError::SingleRoleLayerTemplate(layer.dir_name().to_string()));

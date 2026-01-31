@@ -1,16 +1,15 @@
-use crate::ports::{ClipboardWriter, RoleTemplateStore, WorkspaceStore};
+use crate::ports::{RoleTemplateStore, WorkspaceStore};
 
 /// Application context holding dependencies for command execution.
-pub struct AppContext<W: WorkspaceStore, R: RoleTemplateStore, C: ClipboardWriter> {
+pub struct AppContext<W: WorkspaceStore, R: RoleTemplateStore> {
     workspace: W,
     templates: R,
-    clipboard: C,
 }
 
-impl<W: WorkspaceStore, R: RoleTemplateStore, C: ClipboardWriter> AppContext<W, R, C> {
+impl<W: WorkspaceStore, R: RoleTemplateStore> AppContext<W, R> {
     /// Create a new application context.
-    pub fn new(workspace: W, templates: R, clipboard: C) -> Self {
-        Self { workspace, templates, clipboard }
+    pub fn new(workspace: W, templates: R) -> Self {
+        Self { workspace, templates }
     }
 
     /// Get a reference to the workspace store.
@@ -21,10 +20,5 @@ impl<W: WorkspaceStore, R: RoleTemplateStore, C: ClipboardWriter> AppContext<W, 
     /// Get a reference to the role template store.
     pub fn templates(&self) -> &R {
         &self.templates
-    }
-
-    /// Get a mutable reference to the clipboard writer.
-    pub fn clipboard_mut(&mut self) -> &mut C {
-        &mut self.clipboard
     }
 }

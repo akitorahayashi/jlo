@@ -62,7 +62,7 @@ impl Layer {
     /// Whether this layer has a single, fixed role (no subdirectories).
     ///
     /// Single-role layers (Planners, Implementers) are issue-driven and require
-    /// the `--issue` flag. They do not support template creation or config.toml
+    /// the `--issue` flag. They do not support custom role creation or scheduled
     /// role lists.
     pub fn is_single_role(&self) -> bool {
         matches!(self, Layer::Planners | Layer::Implementers)

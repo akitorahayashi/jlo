@@ -1,15 +1,14 @@
 use crate::app::AppContext;
 use crate::domain::AppError;
-use crate::ports::{ClipboardWriter, RoleTemplateStore, WorkspaceStore};
+use crate::ports::{RoleTemplateStore, WorkspaceStore};
 
 /// Execute the init command.
 ///
 /// Creates both the `.jules/` workspace and `.jules/setup/` directory.
-pub fn execute<W, R, C>(ctx: &AppContext<W, R, C>) -> Result<(), AppError>
+pub fn execute<W, R>(ctx: &AppContext<W, R>) -> Result<(), AppError>
 where
     W: WorkspaceStore,
     R: RoleTemplateStore,
-    C: ClipboardWriter,
 {
     if ctx.workspace().exists() {
         return Err(AppError::WorkspaceExists);
