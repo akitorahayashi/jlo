@@ -51,18 +51,13 @@ jobs:
         run: |
           set -euo pipefail
           matrix=$(jlo schedule export --scope roles --layer observers --workstream "$WORKSTREAM" --format github-matrix | jq -c 'del(.schema_version)')
-          echo "$matrix" > matrix.json
-
-          count=$(jq '.include | length' matrix.json)
+          count=$(echo "$matrix" | jq '.include | length')
           if [ "$count" -gt 0 ]; then
             echo "has_roles=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_roles=false" >> "$GITHUB_OUTPUT"
           fi
-
-          echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
-          cat matrix.json >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   observers:
     needs: observer-matrix
@@ -187,26 +182,18 @@ jobs:
           set -euo pipefail
           if [ "$HAS_PENDING" != "true" ]; then
             echo "has_roles=false" >> "$GITHUB_OUTPUT"
-            echo '{"include":[]}' > matrix.json
-            echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
-            cat matrix.json >> "$GITHUB_OUTPUT"
-            echo "EOF" >> "$GITHUB_OUTPUT"
+            echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           matrix=$(jlo schedule export --scope roles --layer deciders --workstream "$WORKSTREAM" --format github-matrix | jq -c 'del(.schema_version)')
-          echo "$matrix" > matrix.json
-
-          count=$(jq '.include | length' matrix.json)
+          count=$(echo "$matrix" | jq '.include | length')
           if [ "$count" -gt 0 ]; then
             echo "has_roles=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_roles=false" >> "$GITHUB_OUTPUT"
           fi
-
-          echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
-          cat matrix.json >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   deciders:
     needs: decider-matrix
@@ -323,9 +310,7 @@ jobs:
             echo "has_planners=false" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "planner_matrix<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$planner_matrix" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "planner_matrix=$planner_matrix" >> "$GITHUB_OUTPUT"
           echo "new_issues=$new_issues" >> "$GITHUB_OUTPUT"
 
   planners:
@@ -438,9 +423,7 @@ jobs:
             echo "has_implementers=false" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "implementer_matrix<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$implementer_matrix" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "implementer_matrix=$implementer_matrix" >> "$GITHUB_OUTPUT"
 
   implementers:
     needs: inspect-post-planners
