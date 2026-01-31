@@ -37,7 +37,7 @@ Observer -> Decider -> [Planner] -> Implementer
 | Planner | directories under `.jules/roles/planners/` | Issues -> Expanded Issues (deep analysis, optional) |
 | Implementer | directories under `.jules/roles/implementers/` | Issues -> Code changes |
 
-**Execution**: All roles are invoked by GitHub Actions via `jules-invoke`.
+**Execution**: Roles are invoked by GitHub Actions using `jlo run` and workflow dispatch workflows.
 
 **Configuration Language**: All YAML files are written in English for optimal LLM processing.
 
@@ -64,9 +64,7 @@ Implementers modify source code and require human review.
 +-- workstreams/        # Workstream containers
 |   +-- <workstream>/   # e.g. generic/
 |       +-- events/     # Raw observations
-|       |   +-- pending/
-|       |   |   +-- *.yml
-|       |   +-- decided/
+|       |   +-- <state>/
 |       |       +-- *.yml
 |       +-- issues/     # Consolidated problems
 |           +-- index.md
@@ -104,12 +102,12 @@ Implementers modify source code and require human review.
 |-------|------|------------|
 | Observers | Multi-role | `jlo run observers --workstream <name> --scheduled` |
 | Deciders | Multi-role | `jlo run deciders --workstream <name> --scheduled` |
-| Planners | Single-role | `jlo run planners --issue <path>` |
-| Implementers | Single-role | `jlo run implementers --issue <path>` |
+| Planners | Single-role | `jlo run planners <path>` |
+| Implementers | Single-role | `jlo run implementers <path>` |
 
 **Multi-role layers** (Observers, Deciders): Roles are scoped to workstreams and scheduled via `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `prompt.yml`. Custom roles can be created with `jlo template`.
 
-**Single-role layers** (Planners, Implementers): Have a fixed role with `prompt.yml` directly in the layer directory. They are issue-driven and require the `--issue` flag. Template creation is not supported.
+**Single-role layers** (Planners, Implementers): Have a fixed role with `prompt.yml` directly in the layer directory. They are issue-driven and require an issue file path argument. Template creation is not supported.
 
 ## Workstreams
 
@@ -119,6 +117,7 @@ Workstreams isolate events and issues so that decider rules do not mix across un
 - `roles/` remains global (not nested per workstream).
 - Observers and deciders declare their destination workstream in `prompt.yml`.
 - If the workstream directory is missing, execution fails fast.
+- Event state directories are defined by the scaffold templates.
 
 The default scaffold creates a `generic` workstream.
 
@@ -149,7 +148,7 @@ Each observer:
 5. **Reads .jules/workstreams/<workstream>/issues/index.md to check for open issues**
 6. Updates notes/ declaratively
 7. **Skips observations already covered by open issues (deduplication)**
-8. Writes workstreams/<workstream>/events/pending/*.yml when observations warrant
+8. Writes event files under workstreams/<workstream>/events/ in the incoming state directory
 9. Publishes changes as a PR (branch naming follows the convention below)
 
 **Stateful**: Maintains `notes/` and receives feedback via `feedbacks/`.
@@ -158,16 +157,16 @@ Each observer:
 
 Triage agent:
 1. Reads contracts.yml (layer behavior)
-2. Reads all workstreams/<workstream>/events/pending/*.yml
+2. Reads all event files in the workstream incoming state directory
 3. **Reads .jules/workstreams/<workstream>/issues/index.md and existing issues to identify merge candidates**
 4. Validates observations (do they exist in codebase?)
 5. Merges related events sharing root cause
 6. **Merges events into existing issues when related (updates content)**
-7. Creates new issues for genuinely new problems (using id as filename, placing in type folder)
+7. Creates new issues for genuinely new problems (using id as filename, placing in label folder)
 8. **Updates .jules/workstreams/<workstream>/issues/index.md**
 9. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
 10. Writes feedback for recurring rejections
-11. Moves processed events to workstreams/<workstream>/events/decided/
+11. Moves processed events to the processed state directory defined by the scaffold
 
 **Decider answers**: "Is this real? Should these events merge into one issue?"
 
@@ -187,27 +186,27 @@ Specifier agent (runs only for `requires_deep_analysis: true`):
 
 ### 4. Implementation (Via Local Issue)
 
-Implementation is invoked manually via `workflow_dispatch` with a local issue file path.
+Implementation is invoked via workflow dispatch with a local issue file path. Scheduled workflows may also dispatch implementers based on repository policy.
 
 ```bash
 # Example: Run implementer with a specific issue
-jlo run implementers --issue .jules/workstreams/generic/issues/<label>/auth_inconsistency.yml
+jlo run implementers .jules/workstreams/generic/issues/<label>/auth-inconsistency.yml
 ```
 
 The implementer reads the issue content (embedded in prompt) and produces code changes.
 The issue file must exist; missing files fail fast before agent execution.
 
 **Issue Lifecycle**:
-1. User selects an issue file from `.jules/workstreams/<workstream>/issues/<label>/` on the `jules` branch.
-2. Workflow validates the file exists and passes content to the implementer.
-3. After successful dispatch, the issue file is automatically deleted from the `jules` branch.
-4. The implementer works on `main` branch and creates a PR for human review.
-5. When the PR is merged, `sync-jules.yml` syncs `main` back to `jules`.
+1. An issue file is selected from `.jules/workstreams/<workstream>/issues/<label>/` on the `jules` branch.
+2. The workflow validates the file exists and passes content to the implementer.
+3. Issue file retention or deletion is handled by the dispatching workflow policy.
+4. The implementer works on the default code branch and creates a PR for human review.
+5. The `sync-jules.yml` workflow keeps `jules` in sync with the default branch after merges.
 
 ## Feedback Loop
 
 ```
-Observer creates events in workstreams/<workstream>/events/pending/
+Observer creates events in workstreams/<workstream>/events/<state>/
        |
        v
 Decider validates, may reject or merge
@@ -228,7 +227,7 @@ Feedback files are preserved for audit (never deleted).
 
 - Issues are organized by label directories defined by the scaffold and tracked in `index.md`.
 - Open issues suppress duplicate observations from observers.
-- Issue filenames use stable ids (e.g. `auth_inconsistency.yml`).
+- Issue filenames use stable kebab-case identifiers (for example, `auth-inconsistency.yml`).
 - Related events are merged into existing issues, not duplicated.
 
 ## Branch Naming Convention
@@ -244,9 +243,9 @@ jules-implementer-<id>-<short_description>
 
 ## Testing and Validation
 
-The mock pipeline workflow generates synthetic workstream artifacts and exercises the observer → decider → planner transitions without calling external APIs.
+Workflows validate workstreams with `jlo doctor` after each layer execution to detect structural regressions early.
 
 ## Pause/Resume
 
-Set the repository variable `JULES_PAUSED=true` to skip scheduled runs.
+The repository variable `JULES_PAUSED=true` skips scheduled runs.
 The default behavior is active; paused behavior is explicit and visible.

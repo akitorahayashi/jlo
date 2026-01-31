@@ -9,4 +9,10 @@ analysis_points:
   - User-facing text (UI, logs, errors) contradicting code vocabulary
   - New concept introductions lacking alignment with existing terminology
 
+quality_principles:
+  - "Consistency: Similar concepts should have similar names"
+  - "Clarity: Names should clearly convey meaning and intent"
+  - "Brevity: Use concise names without sacrificing clarity"
+  - "Conventionality: Follow established naming conventions in the domain"
+
 learned_exclusions: []
