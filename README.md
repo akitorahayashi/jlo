@@ -28,6 +28,8 @@ Copy the sample workflow from `src/assets/templates/workflows/jules.yml` to your
 | `jlo update [--dry-run] [--workflows]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name]` | `tp` | Create new role from template |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
+| `jlo workstream new <name>` | `w n` | Create new workstream |
+| `jlo workstream list` | `w ls` | List existing workstreams |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
 
@@ -99,10 +101,7 @@ The simplified workflow uses `jlo run` for all agent execution.
 
 | File | Purpose |
 |------|---------|
-| `jules-workflows.yml` | Agent execution (scheduled + manual dispatch) |
-| `jules-automerge.yml` | Auto-merge jules-* branches (optional) |
-| `sync-jules.yml` | Sync main → jules branch (optional) |
-| `jules-e2e-pipeline.yml` | Orchestrate deciders/planners after observer merge |
+| `jules.yml` | Agent execution (scheduled + manual dispatch) |
 
 **Branch Strategy**:
 
