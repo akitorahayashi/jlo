@@ -49,6 +49,18 @@ jobs:
           ref: jules
           fetch-depth: 0
 
+      - name: Validate .jules workspace
+        shell: bash
+        run: |
+          if [ ! -d ".jules" ]; then
+            echo "::error::.jules directory is missing on the 'jules' branch."
+            exit 1
+          fi
+          if ! ls .jules/workstreams/*/scheduled.toml >/dev/null 2>&1; then
+            echo "::error::No workstream scheduled.toml found under .jules/workstreams/."
+            exit 1
+          fi
+
       - name: Install jlo
         uses: ./.github/actions/install-jlo
         with:
@@ -57,6 +69,7 @@ jobs:
       - name: Export enabled workstreams
         id: matrix
         run: |
+          set -euo pipefail
           matrix=$(jlo schedule export --scope workstreams --format github-matrix | jq '{include: .include}')
           echo "$matrix" > matrix.json
 
