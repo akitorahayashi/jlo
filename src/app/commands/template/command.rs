@@ -42,9 +42,6 @@ where
     }
 
     let layer = resolve_layer(layer_arg)?;
-    if layer.is_single_role() {
-        return Err(AppError::SingleRoleLayerTemplate(layer.dir_name().to_string()));
-    }
 
     create_role_from_template(ctx, layer, role_name_arg, workstream_arg)
 }
