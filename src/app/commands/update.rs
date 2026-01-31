@@ -357,13 +357,13 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
         }
     }
 
-    // Update version file
-    let mut version_file = fs::File::create(&version_path)?;
-    writeln!(version_file, "{}", binary_version)?;
-
     if let Some(manifest) = managed_manifest {
         write_manifest(jules_path, &manifest)?;
     }
+
+    // Update version file
+    let mut version_file = fs::File::create(&version_path)?;
+    writeln!(version_file, "{}", binary_version)?;
 
     let updated_paths: Vec<String> = to_update.into_iter().map(|(p, _)| p).collect();
     let created_paths: Vec<String> = to_create.into_iter().map(|(p, _)| p).collect();
