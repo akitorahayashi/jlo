@@ -31,7 +31,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: jules
+  group: jules-debug
   cancel-in-progress: false
 
 jobs:
@@ -71,18 +71,13 @@ jobs:
         run: |
           set -euo pipefail
           matrix=$(jlo schedule export --scope workstreams --format github-matrix | jq -c 'del(.schema_version)')
-          echo "$matrix" > matrix.json
-
-          count=$(jq '.include | length' matrix.json)
+          count=$(echo "$matrix" | jq '.include | length')
           if [ "$count" -gt 0 ]; then
             echo "has_workstreams=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_workstreams=false" >> "$GITHUB_OUTPUT"
           fi
-
-          echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
-          cat matrix.json >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   workstream-pipeline:
     needs: export-workstreams
