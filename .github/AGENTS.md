@@ -127,13 +127,41 @@ jlo init
      - `workflow` (Update GitHub Action workflows)
      - Required for: auto-merge, PR comments, push to jules branch
 
-2. **Variables**:
+2. **Collaborator**:
+   - Invite the bot account (owner of `JLO_BOT_TOKEN`) as a collaborator with write access
+
+3. **Variables**:
    - `JULES_PAUSED` (optional)
    - `JLO_VERSION` (optional)
 
-3. **Branch Protection** (`jules` branch):
+4. **Branch Protection** (`jules` branch):
    - Require status checks to pass
    - Allow auto-merge
+
+5. **Auto-Review Configuration** (disable auto-review, enable on-demand via comments):
+
+   Create `.coderabbit.yaml`:
+   ```yaml
+   reviews:
+     auto_review:
+       enabled: false
+   ```
+
+   Create `.gemini/config.yaml`:
+   ```yaml
+   code_review:
+     disable: false
+     pull_request_opened:
+       summary: false
+       code_review: false
+   ```
+
+   These settings disable automatic review on PR open, but allow manual trigger via:
+   - `/gemini summary`
+   - `/gemini review`
+   - `@coderabbitai review`
+
+   (Triggered by `jules-implementer-review.yml` on implementer PRs)
 
 ### Step 7: Commit and Push
 
