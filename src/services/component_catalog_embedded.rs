@@ -12,11 +12,11 @@ use crate::ports::ComponentCatalog;
 static CATALOG_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/catalog");
 
 /// Service for managing the component catalog.
-pub struct EmbeddedCatalog {
+pub struct EmbeddedComponentCatalog {
     components: BTreeMap<String, Component>,
 }
 
-impl EmbeddedCatalog {
+impl EmbeddedComponentCatalog {
     /// Create a new catalog by loading all embedded components.
     pub fn new() -> Result<Self, AppError> {
         let mut components = BTreeMap::new();
@@ -57,13 +57,13 @@ impl EmbeddedCatalog {
     }
 }
 
-impl Default for EmbeddedCatalog {
+impl Default for EmbeddedComponentCatalog {
     fn default() -> Self {
         Self::new().expect("Failed to load embedded catalog")
     }
 }
 
-impl ComponentCatalog for EmbeddedCatalog {
+impl ComponentCatalog for EmbeddedComponentCatalog {
     fn get(&self, name: &str) -> Option<&Component> {
         self.components.get(name)
     }
@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn loads_embedded_components() {
-        let catalog = EmbeddedCatalog::new().unwrap();
+        let catalog = EmbeddedComponentCatalog::new().unwrap();
         let names = catalog.names();
 
         assert!(names.contains(&"just"), "should contain 'just' component");
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn get_component_by_name() {
-        let catalog = EmbeddedCatalog::new().unwrap();
+        let catalog = EmbeddedComponentCatalog::new().unwrap();
         let just = catalog.get("just").expect("just should exist");
 
         assert_eq!(just.name, "just");
@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn list_all_returns_sorted() {
-        let catalog = EmbeddedCatalog::new().unwrap();
+        let catalog = EmbeddedComponentCatalog::new().unwrap();
         let all = catalog.list_all();
 
         assert!(all.len() >= 3);
