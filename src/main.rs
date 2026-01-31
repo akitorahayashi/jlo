@@ -102,10 +102,10 @@ enum RunLayer {
     #[clap(visible_alias = "o")]
     Observers {
         /// Specific roles to run (manual mode)
-        #[arg(long)]
+        #[arg(short = 'r', long)]
         role: Option<Vec<String>>,
         /// Target workstream
-        #[arg(long)]
+        #[arg(short = 'w', long)]
         workstream: Option<String>,
         /// Run using scheduled.toml roles
         #[arg(long)]
@@ -121,10 +121,10 @@ enum RunLayer {
     #[clap(visible_alias = "d")]
     Deciders {
         /// Specific roles to run (manual mode)
-        #[arg(long)]
+        #[arg(short = 'r', long)]
         role: Option<Vec<String>>,
         /// Target workstream
-        #[arg(long)]
+        #[arg(short = 'w', long)]
         workstream: Option<String>,
         /// Run using scheduled.toml roles
         #[arg(long)]

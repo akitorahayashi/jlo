@@ -44,7 +44,7 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
 
     let workstreams = structure::collect_workstreams(jules_path, options.workstream.as_deref())?;
 
-    let run_config = structure::read_run_config(jules_path, &mut diagnostics)?;
+    let _run_config = structure::read_run_config(jules_path, &mut diagnostics)?;
 
     structure::structural_checks(
         structure::StructuralInputs {
@@ -89,7 +89,6 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         jules_path,
         &workstreams,
         &prompt_workstreams,
-        &run_config,
         &semantic_context,
         &mut diagnostics,
     );

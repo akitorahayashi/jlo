@@ -4,10 +4,7 @@ use std::path::{Path, PathBuf};
 
 use chrono::{NaiveDate, Utc};
 
-use crate::domain::RunConfig;
-
 use super::diagnostics::Diagnostics;
-use super::structure::list_subdirs;
 use super::yaml::{read_yaml_bool, read_yaml_files, read_yaml_string, read_yaml_strings};
 
 const STALE_DEEP_ANALYSIS_THRESHOLD_DAYS: i64 = 7;
@@ -87,7 +84,6 @@ pub fn semantic_checks(
     jules_path: &Path,
     workstreams: &[String],
     prompt_workstreams: &HashSet<String>,
-    run_config: &RunConfig,
     context: &SemanticContext,
     diagnostics: &mut Diagnostics,
 ) {
@@ -167,43 +163,6 @@ pub fn semantic_checks(
         if !prompt_workstreams.contains(workstream) {
             diagnostics
                 .push_error(workstream.clone(), "workstream exists but no prompt references it");
-        }
-    }
-
-    let observers_dir = jules_path.join("roles/observers");
-    let deciders_dir = jules_path.join("roles/deciders");
-
-    let observer_dirs: HashSet<String> = list_subdirs(&observers_dir, diagnostics)
-        .iter()
-        .filter_map(|path| path.file_name().and_then(|name| name.to_str()).map(|s| s.to_string()))
-        .collect();
-
-    let decider_dirs: HashSet<String> = list_subdirs(&deciders_dir, diagnostics)
-        .iter()
-        .filter_map(|path| path.file_name().and_then(|name| name.to_str()).map(|s| s.to_string()))
-        .collect();
-
-    for role in &run_config.agents.observers {
-        if !observer_dirs.contains(role) {
-            diagnostics.push_error(role.clone(), "Observer role missing from filesystem");
-        }
-    }
-
-    for role in &run_config.agents.deciders {
-        if !decider_dirs.contains(role) {
-            diagnostics.push_error(role.clone(), "Decider role missing from filesystem");
-        }
-    }
-
-    for role in observer_dirs {
-        if !run_config.agents.observers.contains(&role) {
-            diagnostics.push_error(role.clone(), "Observer role not listed in config.toml");
-        }
-    }
-
-    for role in decider_dirs {
-        if !run_config.agents.deciders.contains(&role) {
-            diagnostics.push_error(role.clone(), "Decider role not listed in config.toml");
         }
     }
 

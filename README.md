@@ -64,9 +64,9 @@ jlo run implementers .jules/workstreams/generic/issues/<label>/auth_inconsistenc
 Single-role layers are issue-driven and do not support the `--role` flag.
 
 **Flags**:
-- `--workstream <name>`: Target workstream (required for observers/deciders)
+- `-w, --workstream <name>`: Target workstream (required for observers/deciders)
 - `--scheduled`: Use roles from `scheduled.toml`
-- `--role <name>`: Run specific role(s) (manual mode only)
+- `-r, --role <name>`: Run specific role(s) (manual mode only)
 - `--dry-run`: Show assembled prompts without API calls
 - `--branch <name>`: Override the default starting branch
 - `<path>`: Local issue file (required for planners and implementers)
