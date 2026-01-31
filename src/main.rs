@@ -55,6 +55,16 @@ enum Commands {
         #[command(subcommand)]
         layer: RunLayer,
     },
+    /// Export scheduling matrices
+    Schedule {
+        #[command(subcommand)]
+        command: ScheduleCommands,
+    },
+    /// Inspect workstreams for automation
+    Workstreams {
+        #[command(subcommand)]
+        command: WorkstreamCommands,
+    },
     /// Validate .jules/ structure and content
     Doctor {
         /// Attempt to auto-fix recoverable issues
@@ -140,6 +150,38 @@ enum RunLayer {
     },
 }
 
+#[derive(Subcommand)]
+enum ScheduleCommands {
+    /// Export schedule data for automation
+    Export {
+        /// Scope: workstreams or roles
+        #[arg(long)]
+        scope: String,
+        /// Layer (required for roles scope)
+        #[arg(long)]
+        layer: Option<String>,
+        /// Workstream (required for roles scope)
+        #[arg(long)]
+        workstream: Option<String>,
+        /// Output format (default: github-matrix)
+        #[arg(long, default_value = "github-matrix")]
+        format: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum WorkstreamCommands {
+    /// Inspect a workstream and output JSON/YAML
+    Inspect {
+        /// Workstream name
+        #[arg(long)]
+        workstream: String,
+        /// Output format (json or yaml)
+        #[arg(long, default_value = "json")]
+        format: String,
+    },
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -154,6 +196,8 @@ fn main() {
             SetupCommands::List { detail } => run_setup_list(detail).map(|_| 0),
         },
         Commands::Run { layer } => run_agents(layer).map(|_| 0),
+        Commands::Schedule { command } => run_schedule(command).map(|_| 0),
+        Commands::Workstreams { command } => run_workstreams(command).map(|_| 0),
         Commands::Doctor { fix, strict, workstream } => run_doctor(fix, strict, workstream),
     };
 
@@ -260,6 +304,88 @@ fn run_setup_list(detail: Option<String>) -> Result<(), AppError> {
         }
     }
     Ok(())
+}
+
+fn run_schedule(command: ScheduleCommands) -> Result<(), AppError> {
+    match command {
+        ScheduleCommands::Export { scope, layer, workstream, format } => {
+            let scope = parse_schedule_scope(&scope)?;
+            let format = parse_schedule_format(&format)?;
+            let layer = match layer {
+                Some(value) => Some(parse_layer(&value)?),
+                None => None,
+            };
+
+            let output = jlo::schedule_export(jlo::ScheduleExportOptions {
+                scope,
+                layer,
+                workstream,
+                format,
+            })?;
+
+            let json = serde_json::to_string_pretty(&output).map_err(|err| {
+                AppError::config_error(format!("Failed to serialize output: {}", err))
+            })?;
+            println!("{}", json);
+            Ok(())
+        }
+    }
+}
+
+fn run_workstreams(command: WorkstreamCommands) -> Result<(), AppError> {
+    match command {
+        WorkstreamCommands::Inspect { workstream, format } => {
+            let format = parse_workstream_format(&format)?;
+            let output = jlo::workstreams_inspect(jlo::WorkstreamInspectOptions {
+                workstream,
+                format: format.clone(),
+            })?;
+
+            match format {
+                jlo::WorkstreamInspectFormat::Json => {
+                    let json = serde_json::to_string_pretty(&output).map_err(|err| {
+                        AppError::config_error(format!("Failed to serialize output: {}", err))
+                    })?;
+                    println!("{}", json);
+                }
+                jlo::WorkstreamInspectFormat::Yaml => {
+                    let yaml = serde_yaml::to_string(&output).map_err(|err| {
+                        AppError::config_error(format!("Failed to serialize output: {}", err))
+                    })?;
+                    println!("{}", yaml.trim_end());
+                }
+            }
+            Ok(())
+        }
+    }
+}
+
+fn parse_schedule_scope(scope: &str) -> Result<jlo::ScheduleExportScope, AppError> {
+    match scope {
+        "workstreams" => Ok(jlo::ScheduleExportScope::Workstreams),
+        "roles" => Ok(jlo::ScheduleExportScope::Roles),
+        _ => Err(AppError::config_error("Invalid schedule scope")),
+    }
+}
+
+fn parse_schedule_format(format: &str) -> Result<jlo::ScheduleExportFormat, AppError> {
+    match format {
+        "github-matrix" => Ok(jlo::ScheduleExportFormat::GithubMatrix),
+        _ => Err(AppError::config_error("Invalid schedule format")),
+    }
+}
+
+fn parse_workstream_format(format: &str) -> Result<jlo::WorkstreamInspectFormat, AppError> {
+    match format {
+        "json" => Ok(jlo::WorkstreamInspectFormat::Json),
+        "yaml" => Ok(jlo::WorkstreamInspectFormat::Yaml),
+        _ => Err(AppError::config_error("Invalid workstream inspect format")),
+    }
+}
+
+fn parse_layer(value: &str) -> Result<jlo::domain::Layer, AppError> {
+    jlo::domain::Layer::from_dir_name(value)
+        .ok_or_else(|| AppError::InvalidLayer(value.to_string()))
 }
 
 fn run_doctor(fix: bool, strict: bool, workstream: Option<String>) -> Result<i32, AppError> {

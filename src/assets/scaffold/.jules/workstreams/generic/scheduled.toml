@@ -1,0 +1,8 @@
+version = 1
+enabled = true
+
+[observers]
+roles = ["taxonomy", "data_arch", "qa", "consistency"]
+
+[deciders]
+roles = ["triage_generic"]

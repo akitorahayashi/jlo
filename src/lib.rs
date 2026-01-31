@@ -12,7 +12,7 @@ use std::path::Path;
 
 use app::{
     AppContext,
-    commands::{doctor, init, run, setup, template, update},
+    commands::{doctor, init, run, schedule, setup, template, update, workstreams},
 };
 use domain::Layer;
 use ports::{NoopClipboard, WorkspaceStore};
@@ -20,9 +20,15 @@ use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 
 pub use app::commands::doctor::{DoctorOptions, DoctorOutcome};
 pub use app::commands::run::{RunOptions, RunResult};
+pub use app::commands::schedule::{
+    ScheduleExportFormat, ScheduleExportOptions, ScheduleExportScope, ScheduleMatrix,
+};
 pub use app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
 pub use app::commands::template::TemplateOutcome;
 pub use app::commands::update::{UpdateOptions, UpdateResult};
+pub use app::commands::workstreams::{
+    WorkstreamInspectFormat, WorkstreamInspectOptions, WorkstreamInspectOutput,
+};
 pub use domain::AppError;
 
 /// Initialize a new `.jules/` workspace in the current directory.
@@ -89,6 +95,34 @@ pub fn run(
 
     let options = RunOptions { layer, roles, dry_run, branch, issue };
     run::execute(&workspace.jules_path(), options)
+}
+
+// =============================================================================
+// Schedule + Workstream Inspection APIs
+// =============================================================================
+
+/// Export schedule configuration as a machine-readable matrix.
+pub fn schedule_export(options: ScheduleExportOptions) -> Result<ScheduleMatrix, AppError> {
+    let workspace = FilesystemWorkspaceStore::current()?;
+
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    schedule::export(&workspace.jules_path(), options)
+}
+
+/// Inspect a workstream and return state in machine-readable form.
+pub fn workstreams_inspect(
+    options: WorkstreamInspectOptions,
+) -> Result<WorkstreamInspectOutput, AppError> {
+    let workspace = FilesystemWorkspaceStore::current()?;
+
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    workstreams::inspect(&workspace.jules_path(), options)
 }
 
 // =============================================================================

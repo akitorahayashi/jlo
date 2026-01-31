@@ -28,6 +28,8 @@ Copy the sample workflow from `src/assets/templates/workflows/jules.yml` to your
 | `jlo update [--dry-run] [--workflows]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
+| `jlo schedule export` | | Export schedule data for automation |
+| `jlo workstreams inspect` | | Inspect workstream state for automation |
 | `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate `.jules/` structure and content |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
