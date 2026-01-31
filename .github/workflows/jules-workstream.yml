@@ -50,7 +50,7 @@ jobs:
           WORKSTREAM: ${{ inputs.workstream }}
         run: |
           set -euo pipefail
-          matrix=$(jlo schedule export --scope roles --layer observers --workstream "$WORKSTREAM" --format github-matrix | jq '{include: .include}')
+          matrix=$(jlo schedule export --scope roles --layer observers --workstream "$WORKSTREAM" --format github-matrix | jq -c '.')
           echo "$matrix" > matrix.json
 
           count=$(jq '.include | length' matrix.json)
@@ -194,7 +194,7 @@ jobs:
             exit 0
           fi
 
-          matrix=$(jlo schedule export --scope roles --layer deciders --workstream "$WORKSTREAM" --format github-matrix | jq '{include: .include}')
+          matrix=$(jlo schedule export --scope roles --layer deciders --workstream "$WORKSTREAM" --format github-matrix | jq -c '.')
           echo "$matrix" > matrix.json
 
           count=$(jq '.include | length' matrix.json)
@@ -308,7 +308,7 @@ jobs:
           ' inspect.json)
 
           planner_matrix=$(jq -c --argjson before "$ISSUES_BEFORE" --argjson labels "$labels_json" '
-            {schema_version:1, include: [.issues.items[]
+            {include: [.issues.items[]
               | select((($before | index(.path)) | not))
               | select(($labels | index(.label)) != null)
               | select(.requires_deep_analysis == true)
@@ -423,7 +423,7 @@ jobs:
           labels_json=$(printf '%s' "$ROUTING_LABELS" | jq -R 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))')
 
           implementer_matrix=$(jq -c --argjson new "$NEW_ISSUES" --argjson labels "$labels_json" '
-            {schema_version:1, include: [.issues.items[]
+            {include: [.issues.items[]
               | select(($new | index(.path)) != null)
               | select(($labels | index(.label)) != null)
               | select(.requires_deep_analysis == false)
