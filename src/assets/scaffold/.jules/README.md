@@ -68,9 +68,11 @@ Implementers modify source code and require human review.
 |       |   +-- *.yml
 |       +-- issues/     # Consolidated problems
 |           +-- index.md
-|           +-- high/
-|           +-- medium/
-|           +-- low/
+|           +-- feats/
+|           +-- refacts/
+|           +-- bugs/
+|           +-- tests/
+|           +-- docs/
 |
 +-- roles/              # Role definitions (global)
     +-- observers/      # Multi-role layer
@@ -163,7 +165,7 @@ Triage agent:
 4. Validates observations (do they exist in codebase?)
 5. Merges related events sharing root cause
 6. **Merges events into existing issues when related (updates content)**
-7. Creates new issues for genuinely new problems (using fingerprint as filename, placing in priority folder)
+7. Creates new issues for genuinely new problems (using id as filename, placing in type folder)
 8. **Updates .jules/workstreams/<workstream>/issues/index.md**
 9. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
 10. Writes feedback for recurring rejections
@@ -175,7 +177,7 @@ Triage agent:
 
 Specifier agent (runs only for `requires_deep_analysis: true`):
 1. Reads contracts.yml (layer behavior)
-2. Reads target issue from workstreams/<workstream>/issues/<priority>/
+2. Reads target issue from workstreams/<workstream>/issues/<type>/
 3. **Reviews deep_analysis_reason to understand scope**
 4. Analyzes full system impact and dependency tree
 5. Expands issue with detailed analysis (affected_areas, constraints, risks)
@@ -191,14 +193,14 @@ Implementation is invoked manually via `workflow_dispatch` with a local issue fi
 
 ```bash
 # Example: Run implementer with a specific issue
-jlo run implementers --issue .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
+jlo run implementers --issue .jules/workstreams/generic/issues/bugs/auth_inconsistency.yml
 ```
 
 The implementer reads the issue content (embedded in prompt) and produces code changes.
 The issue file must exist; missing files fail fast before agent execution.
 
 **Issue Lifecycle**:
-1. User selects an issue file from `.jules/workstreams/<workstream>/issues/<priority>/` on the `jules` branch.
+1. User selects an issue file from `.jules/workstreams/<workstream>/issues/<type>/` on the `jules` branch.
 2. Workflow validates the file exists and passes content to the implementer.
 3. After successful dispatch, the issue file is automatically deleted from the `jules` branch.
 4. The implementer works on `main` branch and creates a PR for human review.
@@ -226,9 +228,9 @@ Feedback files are preserved for audit (never deleted).
 
 ## Issue Lifecycle
 
-- Issues are organized by priority (`low`, `medium`, `high`) and tracked in `index.md`.
+- Issues are organized by type (`feats`, `refacts`, `bugs`, `tests`, `docs`) and tracked in `index.md`.
 - Open issues suppress duplicate observations from observers.
-- Issue filenames use stable fingerprints (e.g. `auth_inconsistency.yml`).
+- Issue filenames use stable ids (e.g. `auth_inconsistency.yml`).
 - Related events are merged into existing issues, not duplicated.
 
 ## Branch Naming Convention
@@ -239,7 +241,7 @@ All agents must create branches using this format:
 jules-observer-<id>
 jules-decider-<id>
 jules-planner-<id>
-jules-implementer-<fingerprint>-<short_description>
+jules-implementer-<id>-<short_description>
 ```
 
 ## Testing and Validation

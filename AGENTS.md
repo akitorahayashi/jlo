@@ -127,9 +127,11 @@ The setup compiler generates dependency-aware installation scripts for developme
       events/        # Observer outputs
       issues/        # Decider outputs
         index.md
-        high/
-        medium/
-        low/
+        feats/
+        refacts/
+        bugs/
+        tests/
+        docs/
   setup/
     tools.yml      # Tool selection configuration
     env.toml       # Environment variables (generated/merged)

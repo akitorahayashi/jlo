@@ -3,22 +3,36 @@
 This registry tracks active issues in this workstream.
 It serves as the central source of truth for the **Decider** to deduplicate observations.
 
-## High Priority
-> Critical blockers and major defects in [`high/`](./high/).
+## Feats
+> New feature specifications in [`feats/`](./feats/).
 
 | Issue | Summary |
 | :--- | :--- |
 | _No open issues_ | - |
 
-## Medium Priority
-> Standard bugs and improvements in [`medium/`](./medium/).
+## Refacts
+> Code improvements and technical debt in [`refacts/`](./refacts/).
 
 | Issue | Summary |
 | :--- | :--- |
 | _No open issues_ | - |
 
-## Low Priority
-> Minor tweaks and housekeeping in [`low/`](./low/).
+## Bugs
+> Defect reports and fixes in [`bugs/`](./bugs/).
+
+| Issue | Summary |
+| :--- | :--- |
+| _No open issues_ | - |
+
+## Tests
+> Test coverage and infrastructure changes in [`tests/`](./tests/).
+
+| Issue | Summary |
+| :--- | :--- |
+| _No open issues_ | - |
+
+## Docs
+> Documentation updates in [`docs/`](./docs/).
 
 | Issue | Summary |
 | :--- | :--- |
@@ -26,7 +40,7 @@ It serves as the central source of truth for the **Decider** to deduplicate obse
 
 <!--
 Instructions for Decider:
-1. Populate each section with issues from `high/`, `medium/`, and `low/` directories.
+1. Populate each section with issues from `feats/`, `refacts/`, `bugs/`, `tests/`, and `docs/` directories.
 2. Format as `| [Title](./path/to/issue.yml) | Summary content |`.
 3. Keep this index in sync with the file system.
 -->

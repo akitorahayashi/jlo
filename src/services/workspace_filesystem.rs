@@ -205,11 +205,11 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         // Create index.md from scaffold template
         fs::write(issues_dir.join("index.md"), WORKSTREAM_INDEX_MD)?;
 
-        // Create priority directories
-        for priority in ["high", "medium", "low"] {
-            let priority_dir = issues_dir.join(priority);
-            fs::create_dir_all(&priority_dir)?;
-            fs::write(priority_dir.join(".gitkeep"), "")?;
+        // Create issue type directories
+        for issue_type in ["feats", "refacts", "bugs", "tests", "docs"] {
+            let type_dir = issues_dir.join(issue_type);
+            fs::create_dir_all(&type_dir)?;
+            fs::write(type_dir.join(".gitkeep"), "")?;
         }
 
         Ok(())
