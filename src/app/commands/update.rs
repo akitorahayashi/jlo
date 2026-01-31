@@ -1,5 +1,6 @@
 //! Update command implementation for reconciling workspace with embedded scaffold.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -9,6 +10,9 @@ use chrono::Utc;
 use crate::domain::AppError;
 use crate::ports::RoleTemplateStore;
 use crate::services::EmbeddedRoleTemplateStore;
+use crate::services::{
+    hash_content, is_default_role_file, load_manifest, write_manifest, ManagedDefaultsManifest,
+};
 
 /// Files that are managed by jlo and will be overwritten on update.
 ///
@@ -40,10 +44,16 @@ pub struct UpdateResult {
     pub updated: Vec<String>,
     /// Files that were created.
     pub created: Vec<String>,
+    /// Files that were removed.
+    pub removed: Vec<String>,
+    /// Default role files skipped due to local changes or missing baseline.
+    pub skipped: Vec<SkippedUpdate>,
     /// Whether this was a dry run.
     pub dry_run: bool,
     /// Backup directory path (if changes were made).
     pub backup_path: Option<PathBuf>,
+    /// Whether a managed defaults baseline was adopted.
+    pub adopted_managed: bool,
 }
 
 /// Options for the update command.
@@ -54,6 +64,14 @@ pub struct UpdateOptions {
     /// Include workflow files in update.
     /// TODO: Implement workflow file filtering in execute(). Currently unused.
     pub workflows: bool,
+    /// Adopt current default role files as managed baseline (no conditional updates applied).
+    pub adopt_managed: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct SkippedUpdate {
+    pub path: String,
+    pub reason: String,
 }
 
 /// Execute the update command.
@@ -91,13 +109,16 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
         )));
     }
 
-    if version_cmp == 0 {
+    if version_cmp == 0 && !options.adopt_managed {
         println!("Workspace is already at version {}. Nothing to update.", binary_version);
         return Ok(UpdateResult {
             updated: vec![],
             created: vec![],
+            removed: vec![],
+            skipped: vec![],
             dry_run: options.dry_run,
             backup_path: None,
+            adopted_managed: false,
         });
     }
 
@@ -108,12 +129,20 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
     // Plan updates
     let mut to_update: Vec<(String, String)> = Vec::new();
     let mut to_create: Vec<(String, String)> = Vec::new();
+    let mut to_remove: Vec<String> = Vec::new();
+    let mut skipped: Vec<SkippedUpdate> = Vec::new();
+    let mut default_role_files: BTreeMap<String, String> = BTreeMap::new();
 
     for file in &scaffold_files {
         let rel_path = &file.path;
 
         // Check if this is a jlo-managed file
         if !is_jlo_managed(rel_path) {
+            if is_default_role_file(rel_path) {
+                default_role_files.insert(rel_path.clone(), file.content.clone());
+                continue;
+            }
+
             // For non-managed files, only create if missing
             let full_path = root.join(rel_path);
             if !full_path.exists() {
@@ -134,13 +163,106 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
         }
     }
 
+    let mut managed_manifest: Option<ManagedDefaultsManifest> = None;
+    let existing_manifest = load_manifest(jules_path)?;
+
+    if options.adopt_managed {
+        let mut manifest_entries = BTreeMap::new();
+        for (path, content) in &default_role_files {
+            let full_path = root.join(path);
+            if full_path.exists() {
+                let current = fs::read_to_string(&full_path)?;
+                manifest_entries.insert(path.clone(), hash_content(&current));
+            } else {
+                to_create.push((path.clone(), content.clone()));
+                manifest_entries.insert(path.clone(), hash_content(content));
+            }
+        }
+        managed_manifest = Some(ManagedDefaultsManifest::from_map(manifest_entries));
+    } else if let Some(manifest) = existing_manifest {
+        let mut manifest_map = manifest.to_map();
+        let mut next_manifest = BTreeMap::new();
+
+        for (path, content) in &default_role_files {
+            let full_path = root.join(path);
+            if let Some(recorded_hash) = manifest_map.remove(path) {
+                if full_path.exists() {
+                    let current = fs::read_to_string(&full_path)?;
+                    let current_hash = hash_content(&current);
+                    if current_hash == recorded_hash {
+                        if current != *content {
+                            to_update.push((path.clone(), content.clone()));
+                        }
+                        next_manifest.insert(path.clone(), hash_content(content));
+                    } else {
+                        skipped.push(SkippedUpdate {
+                            path: path.clone(),
+                            reason: "Local changes detected; left untouched.".to_string(),
+                        });
+                        next_manifest.insert(path.clone(), recorded_hash);
+                    }
+                } else {
+                    skipped.push(SkippedUpdate {
+                        path: path.clone(),
+                        reason: "File missing; treated as local removal and no longer tracked.".to_string(),
+                    });
+                }
+            } else if full_path.exists() {
+                let current = fs::read_to_string(&full_path)?;
+                if current == *content {
+                    next_manifest.insert(path.clone(), hash_content(content));
+                } else {
+                    skipped.push(SkippedUpdate {
+                        path: path.clone(),
+                        reason: "Untracked file differs from default; not adopting.".to_string(),
+                    });
+                }
+            } else {
+                to_create.push((path.clone(), content.clone()));
+                next_manifest.insert(path.clone(), hash_content(content));
+            }
+        }
+
+        for (path, recorded_hash) in manifest_map {
+            let full_path = root.join(&path);
+            if full_path.exists() {
+                let current = fs::read_to_string(&full_path)?;
+                let current_hash = hash_content(&current);
+                if current_hash == recorded_hash {
+                    to_remove.push(path.clone());
+                } else {
+                    skipped.push(SkippedUpdate {
+                        path: path.clone(),
+                        reason: "Default role removed upstream but modified locally; left in place."
+                            .to_string(),
+                    });
+                }
+            }
+        }
+
+        managed_manifest = Some(ManagedDefaultsManifest::from_map(next_manifest));
+    } else {
+        for (path, content) in &default_role_files {
+            let full_path = root.join(path);
+            if full_path.exists() {
+                skipped.push(SkippedUpdate {
+                    path: path.clone(),
+                    reason: "Managed baseline missing; run update with --adopt-managed to track."
+                        .to_string(),
+                });
+            } else {
+                to_create.push((path.clone(), content.clone()));
+            }
+        }
+    }
+
     // Dry run: just report planned changes
     if options.dry_run {
         println!("=== Dry Run: Update Plan ===\n");
         println!("Current version: {}", workspace_version);
         println!("Target version:  {}\n", binary_version);
 
-        if to_update.is_empty() && to_create.is_empty() {
+        if to_update.is_empty() && to_create.is_empty() && to_remove.is_empty() {
             println!("No changes needed.");
         } else {
             if !to_update.is_empty() {
@@ -155,18 +277,33 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
                     println!("  • {}", path);
                 }
             }
+            if !to_remove.is_empty() {
+                println!("\nFiles to remove:");
+                for path in &to_remove {
+                    println!("  • {}", path);
+                }
+            }
+            if !skipped.is_empty() {
+                println!("\nFiles skipped:");
+                for entry in &skipped {
+                    println!("  • {} ({})", entry.path, entry.reason);
+                }
+            }
         }
 
         return Ok(UpdateResult {
             updated: to_update.into_iter().map(|(p, _)| p).collect(),
             created: to_create.into_iter().map(|(p, _)| p).collect(),
+            removed: to_remove,
+            skipped,
             dry_run: true,
             backup_path: None,
+            adopted_managed: options.adopt_managed,
         });
     }
 
     // Create backup directory
-    let backup_path = if !to_update.is_empty() {
+    let backup_path = if !to_update.is_empty() || !to_remove.is_empty() {
         let timestamp = Utc::now().format("%Y%m%d_%H%M%S").to_string();
         let backup_dir = jules_path.join(".jlo-update").join(&timestamp);
         fs::create_dir_all(&backup_dir)?;
@@ -179,6 +316,16 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
                 fs::create_dir_all(parent)?;
             }
             fs::copy(&src, &dst)?;
+        }
+        for rel_path in &to_remove {
+            let src = root.join(rel_path);
+            if src.exists() {
+                let dst = backup_dir.join(rel_path);
+                if let Some(parent) = dst.parent() {
+                    fs::create_dir_all(parent)?;
+                }
+                fs::copy(&src, &dst)?;
+            }
         }
 
         Some(backup_dir)
@@ -201,14 +348,33 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
         fs::write(&full_path, content)?;
     }
 
+    for rel_path in &to_remove {
+        let full_path = root.join(rel_path);
+        if full_path.exists() {
+            fs::remove_file(&full_path)?;
+        }
+    }
+
     // Update version file
     let mut version_file = fs::File::create(&version_path)?;
     writeln!(version_file, "{}", binary_version)?;
 
+    if let Some(manifest) = managed_manifest {
+        write_manifest(jules_path, &manifest)?;
+    }
+
     let updated_paths: Vec<String> = to_update.into_iter().map(|(p, _)| p).collect();
     let created_paths: Vec<String> = to_create.into_iter().map(|(p, _)| p).collect();
 
-    Ok(UpdateResult { updated: updated_paths, created: created_paths, dry_run: false, backup_path })
+    Ok(UpdateResult {
+        updated: updated_paths,
+        created: created_paths,
+        removed: to_remove,
+        skipped,
+        dry_run: false,
+        backup_path,
+        adopted_managed: options.adopt_managed,
+    })
 }
 
 /// Check if a file path is jlo-managed.

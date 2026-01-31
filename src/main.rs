@@ -29,6 +29,9 @@ enum Commands {
         /// Include workflow files in update
         #[arg(long)]
         workflows: bool,
+        /// Adopt current default role files as managed baseline (skips conditional updates)
+        #[arg(long)]
+        adopt_managed: bool,
     },
     /// Apply a template (workstream or role)
     #[clap(visible_alias = "tp")]
@@ -199,7 +202,9 @@ fn main() {
 
     let result: Result<i32, AppError> = match cli.command {
         Commands::Init => jlo::init().map(|_| 0),
-        Commands::Update { dry_run, workflows } => run_update(dry_run, workflows).map(|_| 0),
+        Commands::Update { dry_run, workflows, adopt_managed } => {
+            run_update(dry_run, workflows, adopt_managed).map(|_| 0)
+        }
         Commands::Template { layer, name, workstream } => {
             jlo::template(layer.as_deref(), name.as_deref(), workstream.as_deref()).map(|_| 0)
         }
@@ -226,12 +231,21 @@ fn main() {
     }
 }
 
-fn run_update(dry_run: bool, workflows: bool) -> Result<(), AppError> {
-    let result = jlo::update(dry_run, workflows)?;
+fn run_update(dry_run: bool, workflows: bool, adopt_managed: bool) -> Result<(), AppError> {
+    let result = jlo::update(dry_run, workflows, adopt_managed)?;
 
     if !result.dry_run {
-        if result.updated.is_empty() && result.created.is_empty() {
+        if result.updated.is_empty() && result.created.is_empty() && result.removed.is_empty() {
             println!("✅ Workspace already up to date");
+            if result.adopted_managed {
+                println!("  Managed baseline recorded for default role files");
+            }
+            if !result.skipped.is_empty() {
+                println!("  Skipped {} file(s):", result.skipped.len());
+                for skipped in &result.skipped {
+                    println!("    - {} ({})", skipped.path, skipped.reason);
+                }
+            }
         } else {
             println!("✅ Updated workspace to version {}", env!("CARGO_PKG_VERSION"));
             if !result.updated.is_empty() {
@@ -239,6 +253,18 @@ fn run_update(dry_run: bool, workflows: bool) -> Result<(), AppError> {
             }
             if !result.created.is_empty() {
                 println!("  Created {} file(s)", result.created.len());
+            }
+            if !result.removed.is_empty() {
+                println!("  Removed {} file(s)", result.removed.len());
+            }
+            if !result.skipped.is_empty() {
+                println!("  Skipped {} file(s):", result.skipped.len());
+                for skipped in &result.skipped {
+                    println!("    - {} ({})", skipped.path, skipped.reason);
+                }
+            }
+            if result.adopted_managed {
+                println!("  Managed baseline recorded for default role files");
             }
             if let Some(backup) = result.backup_path {
                 println!("  Backup at: {}", backup.display());
