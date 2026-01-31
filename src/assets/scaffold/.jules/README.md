@@ -68,9 +68,11 @@ Implementers modify source code and require human review.
 |       |   +-- *.yml
 |       +-- issues/     # Consolidated problems
 |           +-- index.md
-|           +-- high/
-|           +-- medium/
-|           +-- low/
+|           +-- feats/
+|           +-- refacts/
+|           +-- bugs/
+|           +-- tests/
+|           +-- docs/
 |
 +-- roles/              # Role definitions (global)
     +-- observers/      # Multi-role layer
@@ -198,7 +200,7 @@ The implementer reads the issue content (embedded in prompt) and produces code c
 The issue file must exist; missing files fail fast before agent execution.
 
 **Issue Lifecycle**:
-1. User selects an issue file from `.jules/workstreams/<workstream>/issues/<priority>/` on the `jules` branch.
+1. User selects an issue file from `.jules/workstreams/<workstream>/issues/<type>/` on the `jules` branch.
 2. Workflow validates the file exists and passes content to the implementer.
 3. After successful dispatch, the issue file is automatically deleted from the `jules` branch.
 4. The implementer works on `main` branch and creates a PR for human review.
@@ -226,7 +228,7 @@ Feedback files are preserved for audit (never deleted).
 
 ## Issue Lifecycle
 
-- Issues are organized by priority (`low`, `medium`, `high`) and tracked in `index.md`.
+- Issues are organized by type (`feats`, `refacts`, `bugs`, `tests`, `docs`) and tracked in `index.md`.
 - Open issues suppress duplicate observations from observers.
 - Issue filenames use stable fingerprints (e.g. `auth_inconsistency.yml`).
 - Related events are merged into existing issues, not duplicated.

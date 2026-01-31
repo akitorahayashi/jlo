@@ -2,8 +2,8 @@ schema_version: 2
 
 # Metadata
 id: "<6_random_lowercase_alphanumeric_chars>" # stable identity
-fingerprint: "<6_random_lowercase_alphanumeric_chars>" # alias for id
 title: "<Descriptive Title>"
+label: "feats|refacts|bugs|tests|docs"
 priority: "low|medium|high"
 summary: "<One-line statement of the issue>"
 
