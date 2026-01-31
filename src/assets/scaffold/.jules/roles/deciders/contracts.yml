@@ -24,10 +24,10 @@ workflow:
   - 4. Rationalize disputes
   - "5. For events related to an existing issue: merge into that issue (update content)"
   - "6. For new problems: categorize into (feats, refacts, bugs, tests, docs) and cp issue.yml .jules/workstreams/<workstream>/issues/<label>/<kebab-case-title>.yml"
-  - 6a. Populate `source_events` in the new issue with IDs of events that triggered it
-  - 7. Update .jules/workstreams/<workstream>/issues/index.md to reflect the current state of issues
-  - "8. Reject invalid events: Create feedback based on feedback.yml at .jules/roles/observers/<author_role>/feedbacks/<kebab-case-topic>.yml (fill in critique and rejected_content)"
-  - 9. Update metadata of processed events (issue_id) AND move them to .jules/workstreams/<workstream>/events/decided/
+  - 7. Populate `source_events` in the new issue with IDs of events that triggered it
+  - 8. Update .jules/workstreams/<workstream>/issues/index.md to reflect the current state of issues
+  - "9. Reject invalid events: Create feedback based on feedback.yml at .jules/roles/observers/<author_role>/feedbacks/<kebab-case-topic>.yml (fill in critique and rejected_content)"
+  - 10. Update metadata of processed events (issue_id) AND move them to .jules/workstreams/<workstream>/events/decided/
 
 outputs:
   - .jules/workstreams/<workstream>/issues/<label>/*.yml (created or updated)
