@@ -2,6 +2,7 @@ mod component_catalog_embedded;
 mod embedded_role_template_store;
 mod generator;
 mod jules_client_http;
+mod managed_defaults;
 mod resolver;
 mod role_factory;
 mod scaffold_assets;
@@ -13,6 +14,10 @@ pub use component_catalog_embedded::EmbeddedComponentCatalog;
 pub use embedded_role_template_store::EmbeddedRoleTemplateStore;
 pub use generator::Generator;
 pub use jules_client_http::HttpJulesClient;
+pub use managed_defaults::{
+    ManagedDefaultsManifest, hash_content, hash_file, is_default_role_file, load_manifest,
+    manifest_from_scaffold, manifest_path, write_manifest,
+};
 pub use resolver::Resolver;
 pub use role_factory::RoleFactory;
 pub use scaffold_assets::{

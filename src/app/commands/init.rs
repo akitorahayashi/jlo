@@ -1,6 +1,7 @@
 use crate::app::AppContext;
 use crate::domain::AppError;
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::services::{manifest_from_scaffold, write_manifest};
 
 /// Execute the init command.
 ///
@@ -39,6 +40,8 @@ where
     ctx.workspace().create_structure(&scaffold_files)?;
 
     ctx.workspace().write_version(env!("CARGO_PKG_VERSION"))?;
+    let managed_manifest = manifest_from_scaffold(&scaffold_files);
+    write_manifest(&ctx.workspace().jules_path(), &managed_manifest)?;
 
     Ok(())
 }
