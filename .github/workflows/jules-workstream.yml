@@ -49,7 +49,8 @@ jobs:
         env:
           WORKSTREAM: ${{ inputs.workstream }}
         run: |
-          matrix=$(jlo schedule export --scope roles --layer observers --workstream "$WORKSTREAM" --format github-matrix)
+          set -euo pipefail
+          matrix=$(jlo schedule export --scope roles --layer observers --workstream "$WORKSTREAM" --format github-matrix | jq '{include: .include}')
           echo "$matrix" > matrix.json
 
           count=$(jq '.include | length' matrix.json)
@@ -183,16 +184,17 @@ jobs:
           WORKSTREAM: ${{ inputs.workstream }}
           HAS_PENDING: ${{ needs.inspect-workstream.outputs.has_pending }}
         run: |
+          set -euo pipefail
           if [ "$HAS_PENDING" != "true" ]; then
             echo "has_roles=false" >> "$GITHUB_OUTPUT"
-            echo '{"schema_version":1,"include":[]}' > matrix.json
+            echo '{"include":[]}' > matrix.json
             echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
             cat matrix.json >> "$GITHUB_OUTPUT"
             echo "EOF" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          matrix=$(jlo schedule export --scope roles --layer deciders --workstream "$WORKSTREAM" --format github-matrix)
+          matrix=$(jlo schedule export --scope roles --layer deciders --workstream "$WORKSTREAM" --format github-matrix | jq '{include: .include}')
           echo "$matrix" > matrix.json
 
           count=$(jq '.include | length' matrix.json)
