@@ -1,9 +1,9 @@
-use std::fs;
 use std::path::Path;
 
 use serde::Serialize;
 
-use crate::domain::{AppError, Layer, WorkstreamSchedule};
+use crate::domain::{AppError, Layer};
+use crate::services::{list_subdirectories, load_schedule};
 
 #[derive(Debug, Clone)]
 pub enum ScheduleExportScope {
@@ -41,10 +41,6 @@ pub fn export(
     jules_path: &Path,
     options: ScheduleExportOptions,
 ) -> Result<ScheduleMatrix, AppError> {
-    if !jules_path.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
-
     match options.format {
         ScheduleExportFormat::GithubMatrix => {}
     }
@@ -58,18 +54,13 @@ pub fn export(
 fn export_workstreams(jules_path: &Path) -> Result<ScheduleMatrix, AppError> {
     let mut include = Vec::new();
     let workstreams_dir = jules_path.join("workstreams");
-    if !workstreams_dir.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
 
-    let mut entries: Vec<String> = fs::read_dir(&workstreams_dir)?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().is_dir())
-        .map(|entry| entry.file_name().to_string_lossy().to_string())
-        .collect();
-    entries.sort();
-
-    for name in entries {
+    for entry in list_subdirectories(&workstreams_dir)? {
+        let name =
+            entry.file_name().map(|value| value.to_string_lossy().to_string()).unwrap_or_default();
+        if name.is_empty() {
+            continue;
+        }
         let schedule = load_schedule(jules_path, &name)?;
         if schedule.enabled {
             include.push(ScheduleMatrixEntry { workstream: name, role: None });
@@ -117,22 +108,10 @@ fn export_roles(
     Ok(ScheduleMatrix { schema_version: 1, include })
 }
 
-fn load_schedule(jules_path: &Path, workstream: &str) -> Result<WorkstreamSchedule, AppError> {
-    let path = jules_path.join("workstreams").join(workstream).join("scheduled.toml");
-
-    let content = fs::read_to_string(&path).map_err(|err| {
-        if err.kind() == std::io::ErrorKind::NotFound {
-            AppError::ScheduleConfigMissing(path.display().to_string())
-        } else {
-            AppError::config_error(format!("Failed to read {}: {}", path.display(), err))
-        }
-    })?;
-    WorkstreamSchedule::parse_toml(&content).map_err(AppError::ScheduleConfigInvalid)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
     use tempfile::tempdir;
 
     fn write_schedule(root: &Path, ws: &str, content: &str) {

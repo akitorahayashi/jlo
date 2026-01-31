@@ -3,7 +3,8 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::domain::{AppError, WorkstreamSchedule};
+use crate::domain::AppError;
+use crate::services::{list_subdirectories, load_schedule};
 
 #[derive(Debug, Clone)]
 pub enum WorkstreamInspectFormat {
@@ -67,10 +68,6 @@ pub fn inspect(
     jules_path: &Path,
     options: WorkstreamInspectOptions,
 ) -> Result<WorkstreamInspectOutput, AppError> {
-    if !jules_path.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
-
     let ws_dir = jules_path.join("workstreams").join(&options.workstream);
     if !ws_dir.exists() {
         return Err(AppError::config_error(format!(
@@ -112,12 +109,7 @@ fn summarize_events(root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError
     let mut states = Vec::new();
     let mut pending_files = Vec::new();
 
-    let mut state_dirs: Vec<PathBuf> = fs::read_dir(&events_dir)?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().is_dir())
-        .map(|entry| entry.path())
-        .collect();
-    state_dirs.sort();
+    let state_dirs = list_subdirectories(&events_dir)?;
 
     for state_dir in state_dirs {
         let state_name = state_dir
@@ -146,12 +138,7 @@ fn summarize_issues(root: &Path, ws_dir: &Path) -> Result<IssueSummary, AppError
     }
 
     let mut labels = Vec::new();
-    let mut label_dirs: Vec<PathBuf> = fs::read_dir(&issues_dir)?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().is_dir())
-        .map(|entry| entry.path())
-        .collect();
-    label_dirs.sort();
+    let label_dirs = list_subdirectories(&issues_dir)?;
 
     for label_dir in label_dirs {
         let label_name = label_dir
@@ -184,19 +171,6 @@ fn list_yml_files(dir: &Path) -> Result<Vec<PathBuf>, AppError> {
 
 fn to_repo_relative(root: &Path, path: &Path) -> String {
     path.strip_prefix(root).unwrap_or(path).to_string_lossy().to_string()
-}
-
-fn load_schedule(jules_path: &Path, workstream: &str) -> Result<WorkstreamSchedule, AppError> {
-    let path = jules_path.join("workstreams").join(workstream).join("scheduled.toml");
-
-    let content = fs::read_to_string(&path).map_err(|err| {
-        if err.kind() == std::io::ErrorKind::NotFound {
-            AppError::ScheduleConfigMissing(path.display().to_string())
-        } else {
-            AppError::config_error(format!("Failed to read {}: {}", path.display(), err))
-        }
-    })?;
-    WorkstreamSchedule::parse_toml(&content).map_err(AppError::ScheduleConfigInvalid)
 }
 
 #[cfg(test)]

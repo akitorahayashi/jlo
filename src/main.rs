@@ -323,11 +323,7 @@ fn run_schedule(command: ScheduleCommands) -> Result<(), AppError> {
                 format,
             })?;
 
-            let json = serde_json::to_string_pretty(&output).map_err(|err| {
-                AppError::config_error(format!("Failed to serialize output: {}", err))
-            })?;
-            println!("{}", json);
-            Ok(())
+            print_json(&output)
         }
     }
 }
@@ -343,16 +339,10 @@ fn run_workstreams(command: WorkstreamCommands) -> Result<(), AppError> {
 
             match format {
                 jlo::WorkstreamInspectFormat::Json => {
-                    let json = serde_json::to_string_pretty(&output).map_err(|err| {
-                        AppError::config_error(format!("Failed to serialize output: {}", err))
-                    })?;
-                    println!("{}", json);
+                    print_json(&output)?;
                 }
                 jlo::WorkstreamInspectFormat::Yaml => {
-                    let yaml = serde_yaml::to_string(&output).map_err(|err| {
-                        AppError::config_error(format!("Failed to serialize output: {}", err))
-                    })?;
-                    println!("{}", yaml.trim_end());
+                    print_yaml(&output)?;
                 }
             }
             Ok(())
@@ -381,6 +371,20 @@ fn parse_workstream_format(format: &str) -> Result<jlo::WorkstreamInspectFormat,
         "yaml" => Ok(jlo::WorkstreamInspectFormat::Yaml),
         _ => Err(AppError::config_error("Invalid workstream inspect format")),
     }
+}
+
+fn print_json<T: serde::Serialize>(value: &T) -> Result<(), AppError> {
+    let json = serde_json::to_string_pretty(value)
+        .map_err(|err| AppError::config_error(format!("Failed to serialize output: {}", err)))?;
+    println!("{}", json);
+    Ok(())
+}
+
+fn print_yaml<T: serde::Serialize>(value: &T) -> Result<(), AppError> {
+    let yaml = serde_yaml::to_string(value)
+        .map_err(|err| AppError::config_error(format!("Failed to serialize output: {}", err)))?;
+    println!("{}", yaml.trim_end());
+    Ok(())
 }
 
 fn parse_layer(value: &str) -> Result<jlo::domain::Layer, AppError> {
