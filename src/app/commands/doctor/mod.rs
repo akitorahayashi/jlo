@@ -88,6 +88,7 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
     semantic::semantic_checks(
         jules_path,
         &workstreams,
+        &prompt_entries,
         &prompt_workstreams,
         &semantic_context,
         &mut diagnostics,

@@ -36,13 +36,13 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<String>, AppErr
             }
         }
     } else {
-        let requested = input.requested_roles.ok_or_else(|| {
-            AppError::config_error("Manual mode requires at least one --role value")
-        })?;
-        if requested.is_empty() {
-            return Err(AppError::config_error("Manual mode requires at least one --role value"));
-        }
-        requested.clone()
+        input
+            .requested_roles
+            .filter(|roles| !roles.is_empty())
+            .ok_or_else(|| {
+                AppError::config_error("Manual mode requires at least one --role value")
+            })?
+            .clone()
     };
 
     if roles.is_empty() && input.layer == Layer::Deciders && input.scheduled {
@@ -99,17 +99,15 @@ fn read_role_workstream(jules_path: &Path, layer: Layer, role: &str) -> Result<S
         }
     };
 
-    let workstream = map
-        .get(Value::String("workstream".to_string()))
-        .and_then(|value| value.as_str())
-        .ok_or_else(|| {
-            AppError::config_error(format!(
-                "Prompt file {} missing workstream field",
-                prompt_path.display()
-            ))
-        })?;
+    let workstream = map.get("workstream").and_then(Value::as_str).ok_or_else(|| {
+        AppError::config_error(format!(
+            "Prompt file {} missing workstream field",
+            prompt_path.display()
+        ))
+    })?;
 
-    if workstream.trim().is_empty() {
+    let workstream = workstream.trim();
+    if workstream.is_empty() {
         return Err(AppError::config_error(format!(
             "Prompt file {} has empty workstream field",
             prompt_path.display()
