@@ -1,0 +1,22 @@
+schema_version: 1
+id: "asb8k2"
+created_at: "2026-02-01"
+author_role: "structural_arch"
+confidence: "high"
+
+title: "Application layer directly depends on Services layer"
+statement: |
+  Several command modules in `src/app/commands/` (e.g., `init.rs`, `doctor/mod.rs`) directly import and use concrete implementations from `src/services/`. This violates the Dependency Rule where the Application layer should depend only on Ports (interfaces), and Infrastructure (Services) should implement those Ports. This bypass creates tight coupling between use cases and specific infrastructure implementations.
+
+evidence:
+  - path: "src/app/commands/init.rs"
+    loc: "4"
+    note: "use crate::services::{manifest_from_scaffold, write_manifest};"
+  - path: "src/app/commands/doctor/mod.rs"
+    loc: "8"
+    note: "use crate::services::{list_event_states, list_issue_labels, read_enum_values};"
+
+tags:
+  - "dependency-rule"
+  - "layer-bypass"
+  - "coupling"
