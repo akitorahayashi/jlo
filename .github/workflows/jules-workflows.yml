@@ -1,11 +1,6 @@
 # Jules Agent Orchestration
 #
-# Sequential execution of agent layers with wait periods for async processing.
-# Replaces the reactive model (jules-pipeline.yml + jules-workflows.yml) with
-# a single, robust workflow that executes layers in order.
-#
-# Note: Planners and Implementers are single-role, issue-driven layers.
-# They are invoked via separate workflows (jules-run-planner.yml, jules-run-implementer.yml).
+# Orchestrates workstream pipelines using jlo schedule export and inspection outputs.
 
 name: Jules Workflows
 
@@ -26,7 +21,6 @@ on:
         type: number
         default: 15
 
-
 permissions:
   contents: write
   issues: write
@@ -37,15 +31,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # ============================================================
-  # Observers
-  # ============================================================
-  observers:
+  export-workstreams:
     if: >-
       vars.JULES_PAUSED != 'true' &&
-      (github.event_name == 'schedule' ||
-      (github.event_name == 'workflow_dispatch' && inputs.entry_point == 'observers'))
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has_workstreams: ${{ steps.matrix.outputs.has_workstreams }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,51 +50,32 @@ jobs:
         with:
           version: ${{ vars.JLO_VERSION || 'latest' }}
 
-      - name: Run observers
-        env:
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-        run: jlo run observers
-
-      - name: Wait for observers
+      - name: Export enabled workstreams
+        id: matrix
         run: |
-          WAIT_MINS="${{ inputs.wait_minutes }}"
-          WAIT_SECONDS=$((WAIT_MINS * 60))
-          echo "⏳ Waiting ${WAIT_SECONDS}s (${WAIT_MINS} mins) for Jules to complete observer tasks..."
-          sleep "$WAIT_SECONDS"
+          matrix=$(jlo schedule export --scope workstreams --format github-matrix)
+          echo "$matrix" > matrix.json
 
-  # ============================================================
-  # Deciders
-  # ============================================================
-  deciders:
-    needs: observers
-    if: >-
-      vars.JULES_PAUSED != 'true' &&
-      (always() && (needs.observers.result == 'success' || (github.event_name == 'workflow_dispatch' && inputs.entry_point == 'deciders')))
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
-
-      - name: Check for events
-        id: check-events
-        run: |
-          if find .jules/workstreams -path '*/events/*.yml' 2>/dev/null | grep -q .; then
-            echo "has_events=true" >> "$GITHUB_OUTPUT"
-            echo "📋 Found events to process"
+          count=$(jq '.include | length' matrix.json)
+          if [ "$count" -gt 0 ]; then
+            echo "has_workstreams=true" >> "$GITHUB_OUTPUT"
           else
-            echo "has_events=false" >> "$GITHUB_OUTPUT"
-            echo "✅ No events to process"
+            echo "has_workstreams=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Run deciders
-        if: steps.check-events.outputs.has_events == 'true'
-        env:
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-        run: jlo run deciders
+          echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
+          cat matrix.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+  workstream-pipeline:
+    needs: export-workstreams
+    if: needs.export-workstreams.outputs.has_workstreams == 'true'
+    strategy:
+      max-parallel: 1
+      matrix: ${{ fromJson(needs.export-workstreams.outputs.matrix) }}
+    uses: ./.github/workflows/jules-workstream.yml
+    with:
+      workstream: ${{ matrix.workstream }}
+      entry_point: ${{ inputs.entry_point || 'observers' }}
+      wait_minutes: ${{ inputs.wait_minutes || 15 }}
+    secrets: inherit

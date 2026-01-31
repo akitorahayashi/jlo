@@ -247,7 +247,7 @@ pub fn semantic_checks(
                 }
             }
             Err(AppError::ScheduleConfigMissing(_)) => {
-                diagnostics.push_error(workstream.clone(), "Missing scheduled.toml");
+                // structural checks handle missing scheduled.toml (including --fix)
             }
             Err(AppError::ScheduleConfigInvalid(reason)) => {
                 diagnostics

@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::domain::{AppError, Layer, RunConfig};
-use crate::services::scaffold_file_content;
+use crate::services::{scaffold_file_content, workstream_template_content};
 
 use super::DoctorOptions;
 use super::diagnostics::Diagnostics;
@@ -196,6 +196,15 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             continue;
         }
 
+        let scheduled_path = ws_dir.join("scheduled.toml");
+        ensure_workstream_template_exists(
+            scheduled_path,
+            "scheduled.toml",
+            inputs.options,
+            inputs.applied_fixes,
+            diagnostics,
+        );
+
         let events_dir = ws_dir.join("events");
         ensure_directory_exists(
             events_dir.clone(),
@@ -379,6 +388,48 @@ fn attempt_fix_file(
     applied_fixes.push(format!("Restored {}", full_path.display()));
     diagnostics
         .push_warning(full_path.display().to_string(), "Restored missing file from scaffold");
+}
+
+fn ensure_workstream_template_exists(
+    full_path: PathBuf,
+    template_path: &str,
+    options: &DoctorOptions,
+    applied_fixes: &mut Vec<String>,
+    diagnostics: &mut Diagnostics,
+) {
+    if full_path.exists() {
+        return;
+    }
+
+    if !options.fix {
+        diagnostics
+            .push_error(full_path.display().to_string(), format!("Missing {}", template_path));
+        return;
+    }
+
+    let content = match workstream_template_content(template_path) {
+        Ok(content) => content,
+        Err(err) => {
+            diagnostics.push_error(full_path.display().to_string(), err.to_string());
+            return;
+        }
+    };
+
+    if let Some(parent) = full_path.parent()
+        && let Err(err) = fs::create_dir_all(parent)
+    {
+        diagnostics.push_error(full_path.display().to_string(), err.to_string());
+        return;
+    }
+
+    if let Err(err) = fs::write(&full_path, content) {
+        diagnostics.push_error(full_path.display().to_string(), err.to_string());
+        return;
+    }
+
+    applied_fixes.push(format!("Restored {}", full_path.display()));
+    diagnostics
+        .push_warning(full_path.display().to_string(), "Restored missing file from templates");
 }
 
 pub fn list_subdirs(path: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> {

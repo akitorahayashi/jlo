@@ -89,9 +89,9 @@ mod dto {
     use serde::Deserialize;
 
     #[derive(Debug, Clone, Default, Deserialize)]
+    #[serde(deny_unknown_fields)]
     pub struct RunConfigDto {
-        #[serde(default)]
-        pub agents: AgentConfigDto,
+        pub agents: Option<AgentConfigDto>,
         #[serde(default)]
         pub run: RunSettingsDto,
         #[serde(default)]
@@ -99,6 +99,7 @@ mod dto {
     }
 
     #[derive(Debug, Clone, Default, Deserialize)]
+    #[serde(deny_unknown_fields)]
     pub struct AgentConfigDto {
         #[serde(default)]
         pub observers: Vec<String>,
@@ -107,6 +108,7 @@ mod dto {
     }
 
     #[derive(Debug, Clone, Deserialize)]
+    #[serde(deny_unknown_fields)]
     pub struct JulesApiConfigDto {
         #[serde(default = "default_api_url")]
         pub api_url: String,
@@ -146,6 +148,7 @@ mod dto {
     }
 
     #[derive(Debug, Clone, Deserialize)]
+    #[serde(deny_unknown_fields)]
     pub struct RunSettingsDto {
         #[serde(default = "default_branch")]
         pub default_branch: String,
@@ -188,8 +191,15 @@ mod dto {
         type Error = String;
 
         fn try_from(dto: RunConfigDto) -> Result<Self, Self::Error> {
+            if dto.agents.is_some() {
+                return Err(
+                    "Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml."
+                        .to_string(),
+                );
+            }
+
             Ok(RunConfig {
-                agents: dto.agents.into(),
+                agents: AgentConfig::default(),
                 run: dto.run.into(),
                 jules: dto.jules.try_into()?,
             })
@@ -246,34 +256,44 @@ mod tests {
     #[test]
     fn run_config_parses_from_toml() {
         let toml = r#"
-[agents]
-observers = ["taxonomy", "qa"]
-deciders = ["triage_generic"]
-
 [run]
 default_branch = "develop"
 parallel = false
 max_parallel = 5
+
+[jules]
+api_url = "https://example.com/v1/sessions"
+timeout_secs = 10
+max_retries = 1
+retry_delay_ms = 250
 "#;
         let config = RunConfig::parse_toml(toml).unwrap();
 
-        assert_eq!(config.agents.observers, vec!["taxonomy", "qa"]);
-        assert_eq!(config.agents.deciders, vec!["triage_generic"]);
+        assert!(config.agents.observers.is_empty());
+        assert!(config.agents.deciders.is_empty());
         assert_eq!(config.run.default_branch, "develop");
         assert!(!config.run.parallel);
         assert_eq!(config.run.max_parallel, 5);
+        assert_eq!(config.jules.api_url.as_str(), "https://example.com/v1/sessions");
     }
 
     #[test]
     fn run_config_uses_defaults_for_missing_sections() {
-        let toml = r#"
-[agents]
-observers = ["test"]
-"#;
+        let toml = r#""#;
         let config = RunConfig::parse_toml(toml).unwrap();
 
-        assert_eq!(config.agents.observers, vec!["test"]);
+        assert!(config.agents.observers.is_empty());
         assert_eq!(config.run.default_branch, "main");
         assert!(config.run.parallel);
+    }
+
+    #[test]
+    fn run_config_rejects_agents_section() {
+        let toml = r#"
+[agents]
+observers = ["taxonomy"]
+"#;
+        let err = RunConfig::parse_toml(toml).unwrap_err();
+        assert!(err.contains("Legacy [agents] section"));
     }
 }
