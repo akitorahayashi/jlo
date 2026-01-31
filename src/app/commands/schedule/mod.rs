@@ -26,7 +26,6 @@ pub struct ScheduleExportOptions {
 
 #[derive(Debug, Serialize)]
 pub struct ScheduleMatrix {
-    pub schema_version: u32,
     pub include: Vec<ScheduleMatrixEntry>,
 }
 
@@ -67,7 +66,7 @@ fn export_workstreams(jules_path: &Path) -> Result<ScheduleMatrix, AppError> {
         }
     }
 
-    Ok(ScheduleMatrix { schema_version: 1, include })
+    Ok(ScheduleMatrix { include })
 }
 
 fn export_roles(
@@ -105,7 +104,7 @@ fn export_roles(
         .map(|role| ScheduleMatrixEntry { workstream: workstream.clone(), role: Some(role) })
         .collect();
 
-    Ok(ScheduleMatrix { schema_version: 1, include })
+    Ok(ScheduleMatrix { include })
 }
 
 #[cfg(test)]

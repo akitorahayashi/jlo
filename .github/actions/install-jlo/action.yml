@@ -12,7 +12,7 @@ runs:
     - name: Install jlo
       shell: bash
       run: |
-        set -e
+        set -euo pipefail
         VERSION="${{ inputs.version }}"
 
         # Normalize version format
@@ -28,7 +28,13 @@ runs:
         fi
 
         echo "Installing jlo from: $URL"
-        curl -fsSL "$URL" -o jlo
+        curl --fail --silent --show-error --location \
+          --connect-timeout 10 \
+          --max-time 60 \
+          --retry 3 \
+          --retry-delay 2 \
+          --retry-all-errors \
+          "$URL" -o jlo
         chmod +x jlo
         sudo mv jlo /usr/local/bin/
         echo "✅ jlo installed: $(jlo --version 2>/dev/null || echo 'version unknown')"
