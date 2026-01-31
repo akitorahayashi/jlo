@@ -31,7 +31,9 @@ Workstreams isolate events and issues so that decider rules do not mix across un
 
 Workstream directories:
 
-- Events (Observer output, Decider input): `.jules/workstreams/<workstream>/events/*.yml`
+- Events (Observer output, Decider input):
+  - `.jules/workstreams/<workstream>/events/pending/*.yml` (pending)
+  - `.jules/workstreams/<workstream>/events/decided/*.yml` (processed)
 - Issues (Decider/Planner output, Implementer input): `.jules/workstreams/<workstream>/issues/<priority>/*.yml`
 
 ## Workspace Data Flow
@@ -49,7 +51,8 @@ After decider output:
 
 - Issue filenames use stable ids, not dates (e.g. `auth_inconsistency.yml`).
 - Observers check open issues before emitting events to avoid duplicates.
-- Deciders merge related events into existing issues when applicable.
+- Deciders link related events to issues (populating `source_events` in the issue).
+- Events are preserved in the workstream until the issue is resolved by an Implementer.
 - Issues have `status: open|closed` to track lifecycle.
 
 ## Deep Analysis

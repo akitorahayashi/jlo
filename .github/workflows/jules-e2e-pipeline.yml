@@ -1,8 +1,11 @@
 # Jules E2E Pipeline Simulation
 #
-# Simulates the actual Observer → Decider → Planner pipeline flow without
-# calling Jules API. Each phase creates a real branch and PR, triggering
-# the auto-merge workflow.
+# Simulates the actual Observer → Decider (Pipeline)
+# without calling Jules API. Each phase creates a real branch and PR,
+# triggering the auto-merge workflow.
+#
+# Note: Planners and Implementers are explicitly excluded from this E2E flow
+# as they are now single-role, manual-dispatch workflows.
 
 name: Jules E2E Pipeline
 
@@ -56,15 +59,16 @@ jobs:
 
           DATE_STR="$(date -u +%Y-%m-%d)"
           
-          # Schema v1 requires 6-char ID
+          # Schema v2: <kebab-case-description>.yml
           EVENT_ID=$(openssl rand -hex 3)
-          FILENAME="${EVENT_ID}.yml"
+          FILENAME="e2e-pipeline-test-event-${EVENT_ID}.yml"
           EVENT_PATH=".jules/workstreams/$WORKSTREAM/events/${FILENAME}"
 
           mkdir -p ".jules/workstreams/$WORKSTREAM/events"
           cp "$EVENT_TEMPLATE" "$EVENT_PATH"
 
           # Replace placeholders
+          # Note: Internal ID still <6_random_lowercase_alphanumeric_chars>
           sed -i "s#<6_random_lowercase_alphanumeric_chars>#$EVENT_ID#g" "$EVENT_PATH"
           sed -i "s#YYYY-MM-DD#$DATE_STR#g" "$EVENT_PATH"
           sed -i "s#<role>#$ROLE#g" "$EVENT_PATH"
@@ -152,24 +156,27 @@ jobs:
           fi
 
           # Find the event created by observer
-          EVENT_PATH=$(find .jules/workstreams/$WORKSTREAM/events -name "*.yml" -type f | head -n 1 || true)
+          # Match kebab-case e2e filename pattern
+          EVENT_PATH=$(find .jules/workstreams/$WORKSTREAM/events -name "e2e-pipeline-*.yml" -type f | head -n 1 || true)
           if [ -z "$EVENT_PATH" ]; then
-            echo "No event files found to process" >&2
+            echo "No test event files found to process" >&2
             exit 1
           fi
 
-          # Schema v2 requires 6-char ID
+          # Schema v2: issues/<label>/<kebab-case-title>.yml
           ISSUE_ID=$(openssl rand -hex 3)
           PRIORITY="medium"
-          ISSUE_PATH=".jules/workstreams/$WORKSTREAM/issues/$PRIORITY/${ISSUE_ID}.yml"
+          LABEL="tests"
+          TITLE_SLUG="e2e-pipeline-test-issue-${ISSUE_ID}"
+          ISSUE_PATH=".jules/workstreams/$WORKSTREAM/issues/$LABEL/${TITLE_SLUG}.yml"
 
-          mkdir -p ".jules/workstreams/$WORKSTREAM/issues/$PRIORITY"
+          mkdir -p ".jules/workstreams/$WORKSTREAM/issues/$LABEL"
           cp "$ISSUE_TEMPLATE" "$ISSUE_PATH"
 
           # Replace placeholders
-          # Matches both id and fingerprint in schema v2
           sed -i "s#<6_random_lowercase_alphanumeric_chars>#$ISSUE_ID#g" "$ISSUE_PATH"
           sed -i "s#<Descriptive Title>#E2E Pipeline Test Issue#g" "$ISSUE_PATH"
+          sed -i "s#feats|refacts|bugs|tests|docs#$LABEL#g" "$ISSUE_PATH"
           sed -i "s#low|medium|high#$PRIORITY#g" "$ISSUE_PATH"
           sed -i "s#<One-line statement of the issue>#Issue created from E2E pipeline event.#g" "$ISSUE_PATH"
           sed -i "s#<What is wrong or missing - conceptual description>#E2E pipeline validation.#g" "$ISSUE_PATH"
@@ -226,8 +233,6 @@ jobs:
 
   # ============================================================
   # Verification
-  # Planners and Implementers are single-role, issue-driven layers
-  # tested separately via jules-e2e-single-role.yml
   # ============================================================
   verify:
     needs: mock-decider
@@ -245,18 +250,19 @@ jobs:
           WORKSTREAM="generic"
 
           echo "=== Checking event inbox ==="
-          EVENT_COUNT=$(find .jules/workstreams/$WORKSTREAM/events -name "*.yml" -type f 2>/dev/null | wc -l)
+          EVENT_COUNT=$(find .jules/workstreams/$WORKSTREAM/events -name "e2e-pipeline-*.yml" -type f 2>/dev/null | wc -l)
           if [ "$EVENT_COUNT" -gt 0 ]; then
-            echo "❌ Event inbox not empty (found $EVENT_COUNT files)"
-            find .jules/workstreams/$WORKSTREAM/events -name "*.yml" -type f
+            echo "❌ Event inbox not empty (found $EVENT_COUNT test files)"
+            find .jules/workstreams/$WORKSTREAM/events -name "e2e-pipeline-*.yml" -type f
             exit 1
           fi
-          echo "✅ Event inbox is empty"
+          echo "✅ Event inbox is empty (of test files)"
 
           echo "=== Checking issue was created ==="
-          ISSUE_PATH=$(find .jules/workstreams/$WORKSTREAM/issues -name "*.yml" -type f | head -n 1 || true)
+          # Check for issues created by this test run (in 'tests' directory)
+          ISSUE_PATH=$(find .jules/workstreams/$WORKSTREAM/issues -name "e2e-pipeline-*.yml" -type f | head -n 1 || true)
           if [ -z "$ISSUE_PATH" ]; then
-            echo "❌ No issue files found"
+            echo "❌ No test issue files found"
             exit 1
           fi
           echo "✅ Found issue: $ISSUE_PATH"

@@ -119,7 +119,7 @@ The simplified workflow uses `jlo run` for all agent execution.
 **Flow**:
 1. **Sync**: `jules` branch syncs from `main` periodically
 2. **Analysis**: Observers create event files in `.jules/workstreams/<workstream>/events/`
-3. **Triage**: Deciders consolidate events into issue files
+3. **Triage**: Deciders link and consolidate events into issue files
 4. **Expansion**: Planners expand issues requiring deep analysis
 5. **Implementation**: Implementers are triggered manually with a local issue file
 
