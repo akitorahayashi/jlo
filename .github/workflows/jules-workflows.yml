@@ -57,7 +57,7 @@ jobs:
       - name: Export enabled workstreams
         id: matrix
         run: |
-          matrix=$(jlo schedule export --scope workstreams --format github-matrix)
+          matrix=$(jlo schedule export --scope workstreams --format github-matrix | jq '{include: .include}')
           echo "$matrix" > matrix.json
 
           count=$(jq '.include | length' matrix.json)
