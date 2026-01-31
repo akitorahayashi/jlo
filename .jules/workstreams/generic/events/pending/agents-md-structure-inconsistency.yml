@@ -1,0 +1,15 @@
+id: djpmsr
+created_at: "2026-01-31T16:03:57Z"
+author_role: consistency
+confidence: high
+title: "Outdated Project Structure and Tech Stack in AGENTS.md"
+statement: "The Project Structure and Tech Stack sections in `AGENTS.md` reference removed services (clipboard) and outdated filenames (role_template_service, jules_api) in `src/services/`."
+evidence:
+  - "AGENTS.md Tech Stack: `Clipboard: arboard` (but `grep -r clipboard src/` shows no results)."
+  - "AGENTS.md Structure: lists `clipboard_arboard` in `src/services/` (file is missing)."
+  - "AGENTS.md Structure: lists `role_template_service` (renamed to `embedded_role_template_store.rs`)."
+  - "AGENTS.md Structure: lists `jules_api` (renamed to `jules_client_http.rs`)."
+tags:
+  - documentation
+  - structure
+  - outdated
