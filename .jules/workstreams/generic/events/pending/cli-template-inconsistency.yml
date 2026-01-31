@@ -1,13 +1,23 @@
+schema_version: 1
 id: odyrzk
-created_at: "2026-01-31T16:03:57Z"
+created_at: "2026-01-31"
 author_role: consistency
 confidence: high
 title: "CLI help text incorrectly lists single-role layers for template command"
 statement: "The CLI help text for `jlo template --layer` lists `planners` and `implementers` as valid options, but the command implementation explicitly rejects them because they are single-role layers."
 evidence:
-  - "src/main.rs: `/// Layer: observers, deciders, planners, or implementers`"
-  - "src/app/commands/template/command.rs: `if layer.is_single_role() { return Err(AppError::SingleRoleLayerTemplate(...)); }`"
-  - "AGENTS.md: `Single-role layers: Planners and Implementers ... Template creation is not supported.`"
+  - path: "src/main.rs"
+    loc:
+      - "/// Layer: observers, deciders, planners, or implementers"
+    note: "Help text lists all layers"
+  - path: "src/app/commands/template/command.rs"
+    loc:
+      - "if layer.is_single_role() { return Err(AppError::SingleRoleLayerTemplate(...)); }"
+    note: "Implementation rejects single-role layers"
+  - path: "AGENTS.md"
+    loc:
+      - "Single-role layers: Planners and Implementers ... Template creation is not supported."
+    note: "Documentation confirms restriction"
 tags:
   - cli
   - help-text
