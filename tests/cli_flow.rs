@@ -17,7 +17,7 @@ fn user_can_init_and_create_custom_role() {
 
     // Create a custom observer role
     ctx.cli()
-        .args(["template", "-l", "observers", "-n", "security"])
+        .args(["template", "-l", "observers", "-n", "security", "-w", "generic"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Created new role"));
@@ -34,7 +34,10 @@ fn user_can_use_command_aliases() {
     ctx.cli().arg("i").assert().success();
 
     // Use 'tp' alias for template (with a multi-role layer)
-    ctx.cli().args(["tp", "-l", "deciders", "-n", "my-decider"]).assert().success();
+    ctx.cli()
+        .args(["tp", "-l", "deciders", "-n", "my-decider", "-w", "generic"])
+        .assert()
+        .success();
 
     ctx.assert_role_in_layer_exists("deciders", "my-decider");
 }
@@ -81,7 +84,10 @@ fn template_creates_observer_with_notes() {
 
     ctx.cli().arg("init").assert().success();
 
-    ctx.cli().args(["template", "-l", "observers", "-n", "custom-obs"]).assert().success();
+    ctx.cli()
+        .args(["template", "-l", "observers", "-n", "custom-obs", "-w", "generic"])
+        .assert()
+        .success();
 
     // Observer roles should have notes and feedbacks directories, plus role.yml
     let role_path = ctx.jules_path().join("roles/observers/custom-obs");

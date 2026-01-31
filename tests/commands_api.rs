@@ -23,7 +23,7 @@ fn template_creates_role_via_cli() {
     ctx.cli().arg("init").assert().success();
 
     ctx.cli()
-        .args(["template", "-l", "observers", "-n", "my-role"])
+        .args(["template", "-l", "observers", "-n", "my-role", "-w", "generic"])
         .assert()
         .success()
         .stdout(predicate::str::contains("observers/my-role"));
