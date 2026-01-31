@@ -20,4 +20,4 @@ pub use scaffold_assets::{
 };
 pub use workspace_filesystem::FilesystemWorkspaceStore;
 pub use workstream_schedule_filesystem::{list_subdirectories, load_schedule};
-pub use workstream_template_assets::workstream_template_files;
+pub use workstream_template_assets::{workstream_template_content, workstream_template_files};

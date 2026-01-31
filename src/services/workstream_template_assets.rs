@@ -22,6 +22,16 @@ pub fn workstream_template_files() -> Result<Vec<ScaffoldFile>, AppError> {
     Ok(files)
 }
 
+pub fn workstream_template_content(path: &str) -> Result<String, AppError> {
+    let full_path = format!("workstreams/{}", path);
+    let file = TEMPLATES_DIR
+        .get_file(&full_path)
+        .ok_or_else(|| AppError::config_error(format!("Missing workstream template {}", path)))?;
+    file.contents_utf8()
+        .map(|content| content.to_string())
+        .ok_or_else(|| AppError::config_error(format!("Workstream template {} is not UTF-8", path)))
+}
+
 fn collect_files(dir: &Dir, base_path: &Path, files: &mut Vec<ScaffoldFile>) {
     for entry in dir.entries() {
         match entry {

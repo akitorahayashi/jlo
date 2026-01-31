@@ -1,0 +1,252 @@
+name: Jules Workstream
+
+on:
+  workflow_call:
+    inputs:
+      workstream:
+        required: true
+        type: string
+      entry_point:
+        required: false
+        type: string
+        default: observers
+      wait_minutes:
+        required: false
+        type: number
+        default: 15
+    secrets:
+      JULES_API_KEY:
+        required: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  observer-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has_roles: ${{ steps.matrix.outputs.has_roles }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Export observer roles
+        id: matrix
+        env:
+          WORKSTREAM: ${{ inputs.workstream }}
+        run: |
+          matrix=$(jlo schedule export --scope roles --layer observers --workstream "$WORKSTREAM" --format github-matrix)
+          echo "$matrix" > matrix.json
+
+          count=$(jq '.include | length' matrix.json)
+          if [ "$count" -gt 0 ]; then
+            echo "has_roles=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_roles=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
+          cat matrix.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+  observers:
+    needs: observer-matrix
+    if: inputs.entry_point == 'observers' && needs.observer-matrix.outputs.has_roles == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix: ${{ fromJson(needs.observer-matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Run observer
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        run: |
+          jlo run observers --workstream "${{ matrix.workstream }}" --role "${{ matrix.role }}"
+
+  wait-after-observers:
+    needs: observers
+    if: inputs.entry_point == 'observers' && needs.observers.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for observers
+        run: |
+          WAIT_SECONDS=$(( ${{ inputs.wait_minutes }} * 60 ))
+          echo "⏳ Waiting ${WAIT_SECONDS}s for Jules to complete observer tasks..."
+          sleep "$WAIT_SECONDS"
+
+  doctor-after-observers:
+    needs: [observers, wait-after-observers]
+    if: >-
+      always() &&
+      needs.observers.result != 'failure' &&
+      needs.wait-after-observers.result != 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Validate workstream
+        run: jlo doctor --workstream "${{ inputs.workstream }}"
+
+  inspect-workstream:
+    needs: doctor-after-observers
+    runs-on: ubuntu-latest
+    outputs:
+      has_pending: ${{ steps.inspect.outputs.has_pending }}
+      pending_count: ${{ steps.inspect.outputs.pending_count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Inspect workstream
+        id: inspect
+        env:
+          WORKSTREAM: ${{ inputs.workstream }}
+        run: |
+          output=$(jlo workstreams inspect --workstream "$WORKSTREAM" --format json)
+          echo "$output" > inspect.json
+
+          pending=$(jq '.events.pending_files | length' inspect.json)
+          echo "pending_count=$pending" >> "$GITHUB_OUTPUT"
+
+          if [ "$pending" -gt 0 ]; then
+            echo "has_pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_pending=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  decider-matrix:
+    needs: inspect-workstream
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has_roles: ${{ steps.matrix.outputs.has_roles }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Export decider roles
+        id: matrix
+        env:
+          WORKSTREAM: ${{ inputs.workstream }}
+          HAS_PENDING: ${{ needs.inspect-workstream.outputs.has_pending }}
+        run: |
+          if [ "$HAS_PENDING" != "true" ]; then
+            echo "has_roles=false" >> "$GITHUB_OUTPUT"
+            echo '{"schema_version":1,"include":[]}' > matrix.json
+            echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
+            cat matrix.json >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          matrix=$(jlo schedule export --scope roles --layer deciders --workstream "$WORKSTREAM" --format github-matrix)
+          echo "$matrix" > matrix.json
+
+          count=$(jq '.include | length' matrix.json)
+          if [ "$count" -gt 0 ]; then
+            echo "has_roles=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_roles=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
+          cat matrix.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+  deciders:
+    needs: decider-matrix
+    if: needs.decider-matrix.outputs.has_roles == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix: ${{ fromJson(needs.decider-matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Run decider
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        run: |
+          jlo run deciders --workstream "${{ matrix.workstream }}" --role "${{ matrix.role }}"
+
+  wait-after-deciders:
+    needs: deciders
+    if: needs.deciders.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deciders
+        run: |
+          WAIT_SECONDS=$(( ${{ inputs.wait_minutes }} * 60 ))
+          echo "⏳ Waiting ${WAIT_SECONDS}s for Jules to complete decider tasks..."
+          sleep "$WAIT_SECONDS"
+
+  doctor-final:
+    needs: [deciders, wait-after-deciders]
+    if: >-
+      always() &&
+      needs.deciders.result != 'failure' &&
+      needs.wait-after-deciders.result != 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Validate workstream after deciders
+        run: jlo doctor --workstream "${{ inputs.workstream }}"
