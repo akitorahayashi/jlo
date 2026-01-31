@@ -2,7 +2,7 @@ layer: implementers
 branch_prefix: jules-implementer-
 
 constraints:
-  - Branch format: jules-implementer-<fingerprint>-<short_description>
+  - Branch format: jules-implementer-<id>-<short_description>
   - Follow AGENTS.md conventions
   - Issue file path is authoritative (includes workstream)
 

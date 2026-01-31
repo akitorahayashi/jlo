@@ -47,7 +47,7 @@ After decider output:
 
 ## Issue Identity and Deduplication
 
-- Issue filenames use stable fingerprints, not dates (e.g. `auth_inconsistency.yml`).
+- Issue filenames use stable ids, not dates (e.g. `auth_inconsistency.yml`).
 - Observers check open issues before emitting events to avoid duplicates.
 - Deciders merge related events into existing issues when applicable.
 - Issues have `status: open|closed` to track lifecycle.
@@ -76,7 +76,7 @@ Branch names:
 - Observers: `jules-observer-<id>`
 - Deciders: `jules-decider-<id>`
 - Planners: `jules-planner-<id>`
-- Implementers: `jules-implementer-<fingerprint>-<short_description>`
+- Implementers: `jules-implementer-<id>-<short_description>`
 
 `<id>` is 4 alphanumeric characters unless the layer contract specifies otherwise.
 
