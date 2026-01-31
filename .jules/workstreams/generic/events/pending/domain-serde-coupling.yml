@@ -1,0 +1,20 @@
+schema_version: 1
+id: "m4n5q1"
+created_at: "2026-01-31"
+author_role: "structural_arch"
+confidence: "high"
+
+title: "Domain entities coupled to Serde"
+statement: |
+  Domain entities in `setup.rs` and `run_config.rs` derive `serde::Deserialize` or define internal DTOs with serde attributes. This couples the domain model directly to the serialization mechanism, preventing the domain from evolving independently of external formats and enforcing a 1:1 mapping between domain and wire/disk formats.
+
+evidence:
+  - path: "src/domain/setup.rs"
+    loc: "3"
+    note: "Importing serde::Deserialize in domain"
+  - path: "src/domain/run_config.rs"
+    loc: "78"
+    note: "Defining DTOs with serde attributes inside domain module"
+tags:
+  - "domain-purity"
+  - "infrastructure-leakage"
