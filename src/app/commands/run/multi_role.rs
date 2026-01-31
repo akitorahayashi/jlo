@@ -4,8 +4,9 @@ use std::fs;
 use std::path::Path;
 
 use super::RunResult;
-use super::config::{detect_repository_source, load_config, resolve_roles};
+use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_prompt;
+use super::role_selection::{RoleSelectionInput, select_roles};
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
 use crate::services::HttpJulesClient;
@@ -15,19 +16,38 @@ pub fn execute(
     jules_path: &Path,
     layer: Layer,
     roles: Option<&Vec<String>>,
+    workstream: Option<&str>,
+    scheduled: bool,
     dry_run: bool,
     branch: Option<&str>,
 ) -> Result<RunResult, AppError> {
     // Load config
     let config = load_config(jules_path)?;
 
-    // Get roles for the target layer
-    let resolved_roles = resolve_roles(&config, layer, roles)?;
+    let workstream = workstream.ok_or_else(|| {
+        AppError::config_error("Workstream is required for observers and deciders")
+    })?;
+
+    if scheduled && roles.is_some() {
+        return Err(AppError::config_error("Cannot combine --scheduled with --role"));
+    }
+    if !scheduled && roles.is_none() {
+        return Err(AppError::config_error("Manual mode requires --role (or use --scheduled)"));
+    }
+
+    let resolved_roles = select_roles(RoleSelectionInput {
+        jules_path,
+        layer,
+        workstream,
+        scheduled,
+        requested_roles: roles,
+    })?;
 
     if resolved_roles.is_empty() {
         println!(
-            "No roles configured for layer '{}'. Update .jules/config.toml.",
-            layer.dir_name()
+            "No roles configured for layer '{}' in workstream '{}'.",
+            layer.dir_name(),
+            workstream
         );
         return Ok(RunResult { roles: vec![], dry_run, sessions: vec![] });
     }

@@ -72,17 +72,21 @@ pub fn template(
 
 /// Execute Jules agents for a layer.
 ///
-/// Runs agents defined in `.jules/config.toml` for the specified layer.
+/// Runs agents for the specified layer and workstream.
 ///
 /// # Arguments
 /// * `layer` - Target layer (observers, deciders, planners, implementers)
-/// * `roles` - Specific roles to run (None = all from config)
+/// * `roles` - Specific roles to run (manual mode)
+/// * `workstream` - Target workstream (required for observers/deciders)
+/// * `scheduled` - Use scheduled.toml roles (observers/deciders only)
 /// * `dry_run` - Show prompts without executing
 /// * `branch` - Override the starting branch
 /// * `issue` - Local issue file path (required for implementers)
 pub fn run(
     layer: Layer,
     roles: Option<Vec<String>>,
+    workstream: Option<String>,
+    scheduled: bool,
     dry_run: bool,
     branch: Option<String>,
     issue: Option<std::path::PathBuf>,
@@ -93,7 +97,7 @@ pub fn run(
         return Err(AppError::WorkspaceNotFound);
     }
 
-    let options = RunOptions { layer, roles, dry_run, branch, issue };
+    let options = RunOptions { layer, roles, workstream, scheduled, dry_run, branch, issue };
     run::execute(&workspace.jules_path(), options)
 }
 

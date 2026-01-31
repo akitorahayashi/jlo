@@ -1,16 +1,4 @@
-# jlo agent configuration
-# Configure which roles to run for each layer
-
-[agents]
-# Multi-role layers: list roles to run
-observers = ["taxonomy", "data_arch", "qa", "consistency"]
-deciders = ["triage_generic"]
-# Single-role layers (planners, implementers) are issue-driven
-# and do not require configuration here.
-
-[workstreams]
-# Default workstream for scaffold
-default = "generic"
+# jlo execution configuration
 
 [run]
 default_branch = "main"

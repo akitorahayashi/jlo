@@ -15,6 +15,8 @@ use super::yaml::{
 #[derive(Debug, Clone)]
 pub(crate) struct PromptEntry {
     pub path: PathBuf,
+    pub layer: Layer,
+    pub role: String,
     pub workstream: Option<String>,
     pub contracts: Vec<String>,
 }
@@ -163,6 +165,7 @@ fn parse_prompt(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) -> Opt
     let data = load_yaml_mapping(path, diagnostics)?;
 
     let role = get_string(&data, "role");
+    let role_value = role.clone().unwrap_or_default();
     if role.as_deref().unwrap_or("").is_empty() {
         diagnostics.push_error(path.display().to_string(), "Missing role field");
     }
@@ -197,7 +200,7 @@ fn parse_prompt(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) -> Opt
         diagnostics.push_error(path.display().to_string(), "Missing workstream");
     }
 
-    Some(PromptEntry { path: path.to_path_buf(), workstream, contracts })
+    Some(PromptEntry { path: path.to_path_buf(), layer, role: role_value, workstream, contracts })
 }
 
 fn validate_event(

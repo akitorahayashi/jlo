@@ -4,10 +4,11 @@ use std::path::{Path, PathBuf};
 
 use chrono::{NaiveDate, Utc};
 
-use crate::domain::RunConfig;
+use crate::domain::{AppError, Layer};
+use crate::services::load_schedule;
 
 use super::diagnostics::Diagnostics;
-use super::structure::list_subdirs;
+use super::schema::PromptEntry;
 use super::yaml::{read_yaml_bool, read_yaml_files, read_yaml_string, read_yaml_strings};
 
 const STALE_DEEP_ANALYSIS_THRESHOLD_DAYS: i64 = 7;
@@ -86,8 +87,8 @@ pub fn semantic_context(
 pub fn semantic_checks(
     jules_path: &Path,
     workstreams: &[String],
+    prompt_entries: &[PromptEntry],
     prompt_workstreams: &HashSet<String>,
-    run_config: &RunConfig,
     context: &SemanticContext,
     diagnostics: &mut Diagnostics,
 ) {
@@ -170,40 +171,103 @@ pub fn semantic_checks(
         }
     }
 
-    let observers_dir = jules_path.join("roles/observers");
-    let deciders_dir = jules_path.join("roles/deciders");
-
-    let observer_dirs: HashSet<String> = list_subdirs(&observers_dir, diagnostics)
-        .iter()
-        .filter_map(|path| path.file_name().and_then(|name| name.to_str()).map(|s| s.to_string()))
-        .collect();
-
-    let decider_dirs: HashSet<String> = list_subdirs(&deciders_dir, diagnostics)
-        .iter()
-        .filter_map(|path| path.file_name().and_then(|name| name.to_str()).map(|s| s.to_string()))
-        .collect();
-
-    for role in &run_config.agents.observers {
-        if !observer_dirs.contains(role) {
-            diagnostics.push_error(role.clone(), "Observer role missing from filesystem");
+    let mut role_workstreams: HashMap<Layer, HashMap<String, String>> = HashMap::new();
+    for entry in prompt_entries {
+        if entry.layer.is_single_role() {
+            continue;
+        }
+        if entry.role.is_empty() {
+            continue;
+        }
+        let Some(workstream) = entry.workstream.as_ref() else {
+            continue;
+        };
+        let layer_roles = role_workstreams.entry(entry.layer).or_default();
+        if let Some(existing) = layer_roles.insert(entry.role.clone(), workstream.clone())
+            && existing != *workstream
+        {
+            diagnostics.push_error(
+                entry.path.display().to_string(),
+                format!(
+                    "Role '{}' has conflicting workstream values ('{}' vs '{}')",
+                    entry.role, existing, workstream
+                ),
+            );
         }
     }
 
-    for role in &run_config.agents.deciders {
-        if !decider_dirs.contains(role) {
-            diagnostics.push_error(role.clone(), "Decider role missing from filesystem");
+    let mut scheduled_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
+    for workstream in workstreams {
+        match load_schedule(jules_path, workstream) {
+            Ok(schedule) => {
+                for role in schedule.observers.roles {
+                    scheduled_roles.entry(Layer::Observers).or_default().insert(role.clone());
+                    match role_workstreams.get(&Layer::Observers).and_then(|roles| roles.get(&role))
+                    {
+                        Some(role_ws) if role_ws == workstream => {}
+                        Some(role_ws) => {
+                            diagnostics.push_error(
+                                role.clone(),
+                                format!(
+                                    "Observer role '{}' targets workstream '{}' but is scheduled in '{}'",
+                                    role, role_ws, workstream
+                                ),
+                            );
+                        }
+                        None => {
+                            diagnostics.push_error(
+                                role.clone(),
+                                "Observer role listed in scheduled.toml but missing from filesystem",
+                            );
+                        }
+                    }
+                }
+
+                for role in schedule.deciders.roles {
+                    scheduled_roles.entry(Layer::Deciders).or_default().insert(role.clone());
+                    match role_workstreams.get(&Layer::Deciders).and_then(|roles| roles.get(&role))
+                    {
+                        Some(role_ws) if role_ws == workstream => {}
+                        Some(role_ws) => {
+                            diagnostics.push_error(
+                                role.clone(),
+                                format!(
+                                    "Decider role '{}' targets workstream '{}' but is scheduled in '{}'",
+                                    role, role_ws, workstream
+                                ),
+                            );
+                        }
+                        None => {
+                            diagnostics.push_error(
+                                role.clone(),
+                                "Decider role listed in scheduled.toml but missing from filesystem",
+                            );
+                        }
+                    }
+                }
+            }
+            Err(AppError::ScheduleConfigMissing(_)) => {
+                diagnostics.push_error(workstream.clone(), "Missing scheduled.toml");
+            }
+            Err(AppError::ScheduleConfigInvalid(reason)) => {
+                diagnostics
+                    .push_error(workstream.clone(), format!("Invalid scheduled.toml: {}", reason));
+            }
+            Err(err) => {
+                diagnostics.push_error(workstream.clone(), err.to_string());
+            }
         }
     }
 
-    for role in observer_dirs {
-        if !run_config.agents.observers.contains(&role) {
-            diagnostics.push_error(role.clone(), "Observer role not listed in config.toml");
-        }
-    }
-
-    for role in decider_dirs {
-        if !run_config.agents.deciders.contains(&role) {
-            diagnostics.push_error(role.clone(), "Decider role not listed in config.toml");
+    for (layer, roles) in &role_workstreams {
+        let scheduled = scheduled_roles.get(layer).cloned().unwrap_or_default();
+        for role in roles.keys() {
+            if !scheduled.contains(role) {
+                diagnostics.push_warning(
+                    role.clone(),
+                    "Role not listed in any scheduled.toml (dangling role)",
+                );
+            }
         }
     }
 
