@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "dr1c9a"
+issue_id: ""
+created_at: "2024-05-18"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Inefficient Data Transformation in Resolver"
+statement: |
+  The `Resolver::resolve` method clones full `Component` objects (including potentially large `script_content`) into a map to perform topological sorting. This violates the efficiency principle as the sort only requires the dependency graph structure.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/resolver.rs"
+    loc:
+      - "collected.insert(name.to_string(), component.clone())"
+    note: "Clones the full component including script content"
+  - path: "src/domain/setup.rs"
+    loc:
+      - "pub script_content: String"
+    note: "Component struct contains potentially large string data"
+
+tags:
+  - "data-efficiency"
+  - "transformation"
