@@ -18,8 +18,6 @@ cd your-project
 jlo init
 ```
 
-Copy the sample workflow from `src/assets/templates/workflows/jules.yml` to your repository's `.github/workflows/`.
-
 ## Commands
 
 | Command | Alias | Description |

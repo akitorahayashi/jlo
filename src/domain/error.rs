@@ -23,8 +23,6 @@ pub enum AppError {
     RoleNotFound(String),
     /// Role already exists at the specified location.
     RoleExists { role: String, layer: String },
-    /// Clipboard operation failed.
-    ClipboardError(String),
     /// Setup workspace not initialized (.jules/setup/ missing).
     SetupNotInitialized,
     /// Setup config file missing (tools.yml).
@@ -83,9 +81,6 @@ impl Display for AppError {
             AppError::RoleExists { role, layer } => {
                 write!(f, "Role '{}' already exists in layer '{}'", role, layer)
             }
-            AppError::ClipboardError(msg) => {
-                write!(f, "Clipboard error: {}", msg)
-            }
             AppError::SetupNotInitialized => {
                 write!(f, "Setup not initialized. Run 'jlo setup init' first.")
             }
@@ -126,7 +121,7 @@ impl Display for AppError {
             AppError::SingleRoleLayerTemplate(layer) => {
                 write!(
                     f,
-                    "Layer '{}' is single-role and does not support custom templates. Use the built-in role.",
+                    "Layer '{}' is single-role and does not support custom roles. Use the built-in role.",
                     layer
                 )
             }
@@ -177,7 +172,6 @@ impl AppError {
             | AppError::ScheduleConfigMissing(_)
             | AppError::IssueFileNotFound(_) => io::ErrorKind::NotFound,
             AppError::WorkspaceExists | AppError::RoleExists { .. } => io::ErrorKind::AlreadyExists,
-            AppError::ClipboardError(_) => io::ErrorKind::Other,
         }
     }
 }

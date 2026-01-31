@@ -15,7 +15,7 @@ use app::{
     commands::{doctor, init, run, schedule, setup, template, update, workstreams},
 };
 use domain::Layer;
-use ports::{NoopClipboard, WorkspaceStore};
+use ports::WorkspaceStore;
 use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 
 pub use app::commands::doctor::{DoctorOptions, DoctorOutcome};
@@ -35,7 +35,7 @@ pub use domain::AppError;
 pub fn init() -> Result<(), AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
     let templates = EmbeddedRoleTemplateStore::new();
-    let ctx = AppContext::new(workspace, templates, NoopClipboard);
+    let ctx = AppContext::new(workspace, templates);
 
     init::execute(&ctx)?;
     println!("✅ Initialized .jules/ workspace");
@@ -52,7 +52,7 @@ pub fn template(
 ) -> Result<TemplateOutcome, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
     let templates = EmbeddedRoleTemplateStore::new();
-    let ctx = AppContext::new(workspace, templates, NoopClipboard);
+    let ctx = AppContext::new(workspace, templates);
 
     let outcome = template::execute(&ctx, layer, role_name, workstream)?;
     match &outcome {

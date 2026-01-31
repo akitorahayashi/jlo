@@ -4,17 +4,16 @@ use dialoguer::{Input, Select};
 
 use crate::app::AppContext;
 use crate::domain::{AppError, Layer};
-use crate::ports::{ClipboardWriter, RoleTemplateStore, WorkspaceStore};
+use crate::ports::{RoleTemplateStore, WorkspaceStore};
 
-pub(super) fn resolve_workstream<W, R, C>(
-    ctx: &AppContext<W, R, C>,
+pub(super) fn resolve_workstream<W, R>(
+    ctx: &AppContext<W, R>,
     layer: Layer,
     workstream_arg: Option<&str>,
 ) -> Result<Option<String>, AppError>
 where
     W: WorkspaceStore,
     R: RoleTemplateStore,
-    C: ClipboardWriter,
 {
     if !matches!(layer, Layer::Observers | Layer::Deciders) {
         return Ok(None);
@@ -43,11 +42,10 @@ where
     }
 }
 
-fn select_workstream<W, R, C>(ctx: &AppContext<W, R, C>) -> Result<String, AppError>
+fn select_workstream<W, R>(ctx: &AppContext<W, R>) -> Result<String, AppError>
 where
     W: WorkspaceStore,
     R: RoleTemplateStore,
-    C: ClipboardWriter,
 {
     let workstreams = ctx.workspace().list_workstreams()?;
     if workstreams.is_empty() {
@@ -71,11 +69,10 @@ where
     }
 }
 
-pub(super) fn create_workstream<W, R, C>(ctx: &AppContext<W, R, C>) -> Result<String, AppError>
+pub(super) fn create_workstream<W, R>(ctx: &AppContext<W, R>) -> Result<String, AppError>
 where
     W: WorkspaceStore,
     R: RoleTemplateStore,
-    C: ClipboardWriter,
 {
     let name = prompt_workstream_name()?;
     ctx.workspace().create_workstream(&name)?;

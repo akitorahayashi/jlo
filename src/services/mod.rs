@@ -1,4 +1,3 @@
-mod clipboard_writer_arboard;
 mod component_catalog_embedded;
 mod embedded_role_template_store;
 mod generator;
@@ -8,8 +7,8 @@ mod role_factory;
 mod scaffold_assets;
 mod workspace_filesystem;
 mod workstream_schedule_filesystem;
+mod workstream_template_assets;
 
-pub use clipboard_writer_arboard::ArboardClipboardWriter;
 pub use component_catalog_embedded::EmbeddedComponentCatalog;
 pub use embedded_role_template_store::EmbeddedRoleTemplateStore;
 pub use generator::Generator;
@@ -21,3 +20,4 @@ pub use scaffold_assets::{
 };
 pub use workspace_filesystem::FilesystemWorkspaceStore;
 pub use workstream_schedule_filesystem::{list_subdirectories, load_schedule};
+pub use workstream_template_assets::workstream_template_files;

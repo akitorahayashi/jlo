@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use crate::domain::{AppError, JULES_DIR, Layer, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
-use crate::services::{list_event_states, list_issue_labels, scaffold_file_content};
+use crate::services::workstream_template_files;
 
 /// Filesystem-based workspace store implementation.
 #[derive(Debug, Clone)]
@@ -189,41 +189,13 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         // Create workstream structure
         fs::create_dir_all(&ws_dir)?;
 
-        let schedule_content = scaffold_file_content(".jules/workstreams/generic/scheduled.toml")
-            .ok_or_else(|| {
-            AppError::config_error("Missing scaffold scheduled.toml template")
-        })?;
-        fs::write(ws_dir.join("scheduled.toml"), schedule_content)?;
-
-        // Create events directory with scaffold-defined states
-        let events_dir = ws_dir.join("events");
-        fs::create_dir_all(&events_dir)?;
-        let event_states = list_event_states()?;
-        if event_states.is_empty() {
-            return Err(AppError::config_error("Scaffold event states are missing"));
-        }
-        for state in event_states {
-            let state_dir = events_dir.join(&state);
-            fs::create_dir_all(&state_dir)?;
-            fs::write(state_dir.join(".gitkeep"), "")?;
-        }
-
-        // Create issues directory with scaffold-defined labels
-        let issues_dir = ws_dir.join("issues");
-        fs::create_dir_all(&issues_dir)?;
-
-        let index_content = scaffold_file_content(".jules/workstreams/generic/issues/index.md")
-            .ok_or_else(|| AppError::config_error("Missing scaffold issues index"))?;
-        fs::write(issues_dir.join("index.md"), index_content)?;
-
-        let issue_labels = list_issue_labels()?;
-        if issue_labels.is_empty() {
-            return Err(AppError::config_error("Scaffold issue labels are missing"));
-        }
-        for label in issue_labels {
-            let type_dir = issues_dir.join(&label);
-            fs::create_dir_all(&type_dir)?;
-            fs::write(type_dir.join(".gitkeep"), "")?;
+        let template_files = workstream_template_files()?;
+        for file in template_files {
+            let target_path = ws_dir.join(&file.path);
+            if let Some(parent) = target_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::write(target_path, file.content)?;
         }
 
         Ok(())

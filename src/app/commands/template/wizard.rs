@@ -2,9 +2,9 @@ use dialoguer::Select;
 
 use crate::app::AppContext;
 use crate::domain::{AppError, Layer};
-use crate::ports::{ClipboardWriter, RoleTemplateStore, WorkspaceStore};
+use crate::ports::{RoleTemplateStore, WorkspaceStore};
 
-use super::command::create_role;
+use super::command::create_role_from_template;
 use super::outcome::TemplateOutcome;
 use super::workstream::create_workstream;
 
@@ -28,13 +28,10 @@ impl TemplateChoice {
     }
 }
 
-pub(super) fn run_template_wizard<W, R, C>(
-    ctx: &AppContext<W, R, C>,
-) -> Result<TemplateOutcome, AppError>
+pub(super) fn run_template_wizard<W, R>(ctx: &AppContext<W, R>) -> Result<TemplateOutcome, AppError>
 where
     W: WorkspaceStore,
     R: RoleTemplateStore,
-    C: ClipboardWriter,
 {
     let items: Vec<&str> = TemplateChoice::ALL.iter().map(|choice| choice.label()).collect();
 
@@ -50,7 +47,9 @@ where
             let name = create_workstream(ctx)?;
             Ok(TemplateOutcome::Workstream { name })
         }
-        TemplateChoice::ObserverRole => create_role(ctx, Layer::Observers, None, None),
-        TemplateChoice::DeciderRole => create_role(ctx, Layer::Deciders, None, None),
+        TemplateChoice::ObserverRole => {
+            create_role_from_template(ctx, Layer::Observers, None, None)
+        }
+        TemplateChoice::DeciderRole => create_role_from_template(ctx, Layer::Deciders, None, None),
     }
 }

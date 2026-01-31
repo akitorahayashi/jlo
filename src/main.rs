@@ -36,7 +36,7 @@ enum Commands {
         /// Layer: observers, deciders, planners, or implementers
         #[arg(short, long)]
         layer: Option<String>,
-        /// Name for the new role
+        /// Name for the new role (blank role only)
         #[arg(short, long)]
         name: Option<String>,
         /// Target workstream for observers/deciders
