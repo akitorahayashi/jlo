@@ -7,6 +7,7 @@ The project uses GitHub Actions for CI/CD. The workflows are modularized with re
 - **Build**: `build.yml` builds debug and release binaries but does not upload artifacts.
 - **Release**: `release.yml` builds cross-platform binaries and publishes a release.
 - **Agent**: `jules-workflows.yml` manages the Jules agent execution.
+- **Verification**: `verify-installers.yml` performs smoke tests on component installers (manual trigger only).
 
 ## Observations (2026-01-31)
 Analyzed `.github/workflows/` and found several anti-patterns:
@@ -15,9 +16,11 @@ Analyzed `.github/workflows/` and found several anti-patterns:
 2.  **Supply Chain Risk**: Actions are pinned by mutable tags (`v4`, `v1`) rather than immutable SHAs.
 3.  **Implicit Permissions**: Most workflows lack explicit permission scopes, defaulting to repository settings.
 4.  **Artifact Rebuilding**: `release.yml` rebuilds binaries instead of promoting verified artifacts from a build pipeline.
+5.  **Manual Verification Gap**: `verify-installers.yml` is not automated in CI, leaving installer scripts vulnerable to regression.
 
 ## Recommendations
 - Pin toolchains in `setup/action.yml` or enforce consistency across workflows.
 - Switch to SHA pinning for all actions.
 - Add `permissions: read-all` (or specific scopes) to all workflows.
 - Refactor the release pipeline to download artifacts from a successful build workflow run.
+- Add a schedule or change-based trigger to `verify-installers.yml` to ensure installers remain functional.
