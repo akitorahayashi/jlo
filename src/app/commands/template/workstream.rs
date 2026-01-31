@@ -83,23 +83,12 @@ where
 }
 
 fn prompt_workstream_name() -> Result<String, AppError> {
-    if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
-        let name: String = Input::new()
-            .with_prompt("Enter new workstream name")
-            .interact_text()
-            .map_err(|e| AppError::config_error(format!("Failed to read workstream name: {e}")))?;
-
-        return validate_workstream_name(&name).map(|_| name);
-    }
-
-    let mut input = String::new();
-    std::io::stdin()
-        .read_line(&mut input)
+    let name: String = Input::new()
+        .with_prompt("Enter new workstream name")
+        .interact_text()
         .map_err(|e| AppError::config_error(format!("Failed to read workstream name: {e}")))?;
 
-    let name = input.trim().to_string();
-    validate_workstream_name(&name)?;
-    Ok(name)
+    validate_workstream_name(&name).map(|_| name)
 }
 
 fn validate_workstream_name(name: &str) -> Result<(), AppError> {

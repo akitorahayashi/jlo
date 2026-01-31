@@ -1,4 +1,4 @@
-use std::io::{BufRead, IsTerminal};
+use std::io::IsTerminal;
 
 use dialoguer::Select;
 
@@ -117,49 +117,21 @@ fn select_layer() -> Result<Layer, AppError> {
         .map(|layer| format!("{} - {}", layer.display_name(), layer.description()))
         .collect();
 
-    if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
-        let selection = Select::new()
-            .with_prompt("Select a layer")
-            .items(&items)
-            .default(0)
-            .interact()
-            .map_err(|e| AppError::config_error(format!("Layer selection failed: {e}")))?;
+    let selection = Select::new()
+        .with_prompt("Select a layer")
+        .items(&items)
+        .default(0)
+        .interact()
+        .map_err(|e| AppError::config_error(format!("Layer selection failed: {e}")))?;
 
-        Ok(multi_role_layers[selection])
-    } else {
-        let mut input = String::new();
-        let mut stdin = std::io::stdin().lock();
-        stdin
-            .read_line(&mut input)
-            .map_err(|e| AppError::config_error(format!("Failed to read layer: {e}")))?;
-
-        let trimmed = input.trim();
-
-        if let Ok(index) = trimmed.parse::<usize>()
-            && index >= 1
-            && index <= multi_role_layers.len()
-        {
-            return Ok(multi_role_layers[index - 1]);
-        }
-
-        let layer = Layer::from_dir_name(trimmed)
-            .ok_or_else(|| AppError::InvalidLayer(trimmed.to_string()))?;
-
-        if layer.is_single_role() {
-            return Err(AppError::SingleRoleLayerTemplate(layer.dir_name().to_string()));
-        }
-
-        Ok(layer)
-    }
+    Ok(multi_role_layers[selection])
 }
 
 /// Prompt for role name interactively.
 fn prompt_role_name() -> Result<String, AppError> {
-    if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
-        print!("Enter role name: ");
-        use std::io::Write;
-        std::io::stdout().flush()?;
-    }
+    print!("Enter role name: ");
+    use std::io::Write;
+    std::io::stdout().flush()?;
 
     let mut input = String::new();
     std::io::stdin()
