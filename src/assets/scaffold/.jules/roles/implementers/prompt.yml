@@ -2,7 +2,6 @@ role: implementer
 layer: implementers
 
 contracts:
-  - AGENTS.md
   - .jules/JULES.md
   - .jules/roles/implementers/contracts.yml
 

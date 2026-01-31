@@ -145,6 +145,14 @@ impl TestContext {
     pub fn assert_events_structure_exists(&self) {
         let events_path = self.jules_path().join("workstreams/generic/events");
         assert!(events_path.exists(), "workstreams/generic/events should exist");
+        assert!(
+            events_path.join("pending").exists(),
+            "workstreams/generic/events/pending should exist"
+        );
+        assert!(
+            events_path.join("decided").exists(),
+            "workstreams/generic/events/decided should exist"
+        );
     }
 
     /// Assert that the issues directory exists (workstream-based).
@@ -159,6 +167,14 @@ impl TestContext {
         assert!(ws_path.exists(), "workstreams directory should exist");
         assert!(ws_path.join("generic").exists(), "generic workstream should exist");
         assert!(ws_path.join("generic/events").exists(), "generic/events should exist");
+        assert!(
+            ws_path.join("generic/events/pending").exists(),
+            "generic/events/pending should exist"
+        );
+        assert!(
+            ws_path.join("generic/events/decided").exists(),
+            "generic/events/decided should exist"
+        );
         assert!(ws_path.join("generic/issues").exists(), "generic/issues should exist");
     }
 

@@ -3,10 +3,7 @@ use std::path::PathBuf;
 
 use crate::domain::{AppError, JULES_DIR, Layer, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
-
-/// Workstream template content loaded from scaffold (single source of truth).
-static WORKSTREAM_INDEX_MD: &str =
-    include_str!("../assets/scaffold/.jules/workstreams/generic/issues/index.md");
+use crate::services::{list_event_states, list_issue_labels, scaffold_file_content};
 
 /// Filesystem-based workspace store implementation.
 #[derive(Debug, Clone)]
@@ -192,22 +189,33 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         // Create workstream structure
         fs::create_dir_all(&ws_dir)?;
 
-        // Create events directory
+        // Create events directory with scaffold-defined states
         let events_dir = ws_dir.join("events");
         fs::create_dir_all(&events_dir)?;
-        fs::write(events_dir.join(".gitkeep"), "")?;
+        let event_states = list_event_states()?;
+        if event_states.is_empty() {
+            return Err(AppError::config_error("Scaffold event states are missing"));
+        }
+        for state in event_states {
+            let state_dir = events_dir.join(&state);
+            fs::create_dir_all(&state_dir)?;
+            fs::write(state_dir.join(".gitkeep"), "")?;
+        }
 
-        // Create issues directory with priority subdirectories
+        // Create issues directory with scaffold-defined labels
         let issues_dir = ws_dir.join("issues");
         fs::create_dir_all(&issues_dir)?;
-        fs::write(issues_dir.join(".gitkeep"), "")?;
 
-        // Create index.md from scaffold template
-        fs::write(issues_dir.join("index.md"), WORKSTREAM_INDEX_MD)?;
+        let index_content = scaffold_file_content(".jules/workstreams/generic/issues/index.md")
+            .ok_or_else(|| AppError::config_error("Missing scaffold issues index"))?;
+        fs::write(issues_dir.join("index.md"), index_content)?;
 
-        // Create issue type directories
-        for issue_type in ["feats", "refacts", "bugs", "tests", "docs"] {
-            let type_dir = issues_dir.join(issue_type);
+        let issue_labels = list_issue_labels()?;
+        if issue_labels.is_empty() {
+            return Err(AppError::config_error("Scaffold issue labels are missing"));
+        }
+        for label in issue_labels {
+            let type_dir = issues_dir.join(&label);
             fs::create_dir_all(&type_dir)?;
             fs::write(type_dir.join(".gitkeep"), "")?;
         }

@@ -28,6 +28,7 @@ Copy the sample workflow from `src/assets/templates/workflows/jules.yml` to your
 | `jlo update [--dry-run] [--workflows]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
+| `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate `.jules/` structure and content |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
 
@@ -50,10 +51,10 @@ jlo run observers --branch custom      # Override starting branch
 
 ```bash
 # Run planner for a specific issue
-jlo run planners .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
+jlo run planners .jules/workstreams/generic/issues/<label>/auth_inconsistency.yml
 
 # Run implementer for a specific issue
-jlo run implementers .jules/workstreams/generic/issues/medium/auth_inconsistency.yml
+jlo run implementers .jules/workstreams/generic/issues/<label>/auth_inconsistency.yml
 ```
 
 Single-role layers are issue-driven and do not support the `--role` flag.
@@ -84,6 +85,22 @@ default_branch = "main"
 ```
 
 **Environment**: Set `JULES_API_KEY` for API authentication.
+
+### Doctor Command
+
+Validate the `.jules/` workspace after agent execution:
+
+```bash
+jlo doctor
+jlo doctor --workstream generic
+jlo doctor --strict
+jlo doctor --fix
+```
+
+Exit codes:
+- `0`: No errors (warnings allowed unless `--strict`)
+- `1`: Errors detected
+- `2`: Warnings detected with `--strict`
 
 ### Other Examples
 

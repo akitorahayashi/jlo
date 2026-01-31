@@ -55,6 +55,18 @@ enum Commands {
         #[command(subcommand)]
         layer: RunLayer,
     },
+    /// Validate .jules/ structure and content
+    Doctor {
+        /// Attempt to auto-fix recoverable issues
+        #[arg(long)]
+        fix: bool,
+        /// Treat warnings as failures
+        #[arg(long)]
+        strict: bool,
+        /// Limit checks to a specific workstream
+        #[arg(long)]
+        workstream: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -131,22 +143,30 @@ enum RunLayer {
 fn main() {
     let cli = Cli::parse();
 
-    let result: Result<(), AppError> = match cli.command {
-        Commands::Init => jlo::init(),
-        Commands::Update { dry_run, workflows } => run_update(dry_run, workflows),
+    let result: Result<i32, AppError> = match cli.command {
+        Commands::Init => jlo::init().map(|_| 0),
+        Commands::Update { dry_run, workflows } => run_update(dry_run, workflows).map(|_| 0),
         Commands::Template { layer, name, workstream } => {
-            jlo::template(layer.as_deref(), name.as_deref(), workstream.as_deref()).map(|_| ())
+            jlo::template(layer.as_deref(), name.as_deref(), workstream.as_deref()).map(|_| 0)
         }
         Commands::Setup { command } => match command {
-            SetupCommands::Gen { path } => run_setup_gen(path),
-            SetupCommands::List { detail } => run_setup_list(detail),
+            SetupCommands::Gen { path } => run_setup_gen(path).map(|_| 0),
+            SetupCommands::List { detail } => run_setup_list(detail).map(|_| 0),
         },
-        Commands::Run { layer } => run_agents(layer),
+        Commands::Run { layer } => run_agents(layer).map(|_| 0),
+        Commands::Doctor { fix, strict, workstream } => run_doctor(fix, strict, workstream),
     };
 
-    if let Err(e) = result {
-        eprintln!("Error: {}", e);
-        std::process::exit(1);
+    match result {
+        Ok(exit_code) => {
+            if exit_code != 0 {
+                std::process::exit(exit_code);
+            }
+        }
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
     }
 }
 
@@ -240,4 +260,11 @@ fn run_setup_list(detail: Option<String>) -> Result<(), AppError> {
         }
     }
     Ok(())
+}
+
+fn run_doctor(fix: bool, strict: bool, workstream: Option<String>) -> Result<i32, AppError> {
+    let options = jlo::DoctorOptions { fix, strict, workstream };
+    let outcome = jlo::doctor(options)?;
+
+    Ok(outcome.exit_code)
 }

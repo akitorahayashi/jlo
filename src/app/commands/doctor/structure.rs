@@ -1,0 +1,413 @@
+use std::fs;
+use std::path::{Path, PathBuf};
+
+use crate::domain::{AppError, Layer, RunConfig};
+use crate::services::scaffold_file_content;
+
+use super::DoctorOptions;
+use super::diagnostics::Diagnostics;
+
+pub fn collect_workstreams(
+    jules_path: &Path,
+    filter: Option<&str>,
+) -> Result<Vec<String>, AppError> {
+    let workstreams_dir = jules_path.join("workstreams");
+    if !workstreams_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    let mut workstreams = Vec::new();
+    for entry in fs::read_dir(&workstreams_dir)? {
+        let entry = entry?;
+        if entry.path().is_dir() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            workstreams.push(name);
+        }
+    }
+    workstreams.sort();
+
+    if let Some(target) = filter {
+        if !workstreams.contains(&target.to_string()) {
+            return Err(AppError::config_error(format!("Workstream '{}' not found", target)));
+        }
+        return Ok(vec![target.to_string()]);
+    }
+
+    Ok(workstreams)
+}
+
+pub fn read_run_config(
+    jules_path: &Path,
+    diagnostics: &mut Diagnostics,
+) -> Result<RunConfig, AppError> {
+    let config_path = jules_path.join("config.toml");
+    if !config_path.exists() {
+        diagnostics.push_error(config_path.display().to_string(), "Missing .jules/config.toml");
+        return Ok(RunConfig::default());
+    }
+
+    let content = match fs::read_to_string(&config_path) {
+        Ok(content) => content,
+        Err(err) => {
+            diagnostics.push_error(config_path.display().to_string(), err.to_string());
+            return Ok(RunConfig::default());
+        }
+    };
+
+    match RunConfig::parse_toml(&content) {
+        Ok(config) => Ok(config),
+        Err(message) => {
+            diagnostics.push_error(config_path.display().to_string(), message);
+            Ok(RunConfig::default())
+        }
+    }
+}
+
+pub struct StructuralInputs<'a> {
+    pub jules_path: &'a Path,
+    pub root: &'a Path,
+    pub workstreams: &'a [String],
+    pub issue_labels: &'a [String],
+    pub event_states: &'a [String],
+    pub options: &'a DoctorOptions,
+    pub applied_fixes: &'a mut Vec<String>,
+}
+
+pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnostics) {
+    ensure_path_exists(
+        inputs.root,
+        ".jules/JULES.md",
+        inputs.options,
+        inputs.applied_fixes,
+        diagnostics,
+        true,
+    );
+    ensure_path_exists(
+        inputs.root,
+        ".jules/README.md",
+        inputs.options,
+        inputs.applied_fixes,
+        diagnostics,
+        true,
+    );
+    ensure_path_exists(
+        inputs.root,
+        ".jules/config.toml",
+        inputs.options,
+        inputs.applied_fixes,
+        diagnostics,
+        true,
+    );
+    ensure_path_exists(
+        inputs.root,
+        ".jules/.jlo-version",
+        inputs.options,
+        inputs.applied_fixes,
+        diagnostics,
+        true,
+    );
+    ensure_directory_exists(
+        inputs.jules_path.join("roles"),
+        inputs.options,
+        inputs.applied_fixes,
+        diagnostics,
+    );
+    ensure_directory_exists(
+        inputs.jules_path.join("workstreams"),
+        inputs.options,
+        inputs.applied_fixes,
+        diagnostics,
+    );
+
+    check_version_file(inputs.jules_path, diagnostics);
+
+    for layer in Layer::ALL {
+        let layer_dir = inputs.jules_path.join("roles").join(layer.dir_name());
+        if !layer_dir.exists() {
+            diagnostics.push_error(layer_dir.display().to_string(), "Missing layer directory");
+            continue;
+        }
+
+        let contracts = layer_dir.join("contracts.yml");
+        if !contracts.exists() {
+            diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
+        }
+
+        if layer.is_single_role() {
+            let prompt = layer_dir.join("prompt.yml");
+            if !prompt.exists() {
+                diagnostics.push_error(prompt.display().to_string(), "Missing prompt.yml");
+            }
+        } else {
+            match layer {
+                Layer::Observers => {
+                    let event_template = layer_dir.join("event.yml");
+                    if !event_template.exists() {
+                        diagnostics
+                            .push_error(event_template.display().to_string(), "Missing event.yml");
+                    }
+                }
+                Layer::Deciders => {
+                    let issue_template = layer_dir.join("issue.yml");
+                    if !issue_template.exists() {
+                        diagnostics
+                            .push_error(issue_template.display().to_string(), "Missing issue.yml");
+                    }
+                    let feedback_template = layer_dir.join("feedback.yml");
+                    if !feedback_template.exists() {
+                        diagnostics.push_error(
+                            feedback_template.display().to_string(),
+                            "Missing feedback.yml",
+                        );
+                    }
+                }
+                _ => {}
+            }
+
+            for entry in list_subdirs(&layer_dir, diagnostics) {
+                let prompt = entry.join("prompt.yml");
+                if !prompt.exists() {
+                    diagnostics.push_error(prompt.display().to_string(), "Missing prompt.yml");
+                }
+
+                if layer == Layer::Observers {
+                    let role_file = entry.join("role.yml");
+                    if !role_file.exists() {
+                        diagnostics.push_error(role_file.display().to_string(), "Missing role.yml");
+                    }
+                    let notes_dir = entry.join("notes");
+                    if !notes_dir.exists() {
+                        diagnostics.push_error(notes_dir.display().to_string(), "Missing notes/");
+                    }
+                    let feedbacks_dir = entry.join("feedbacks");
+                    if !feedbacks_dir.exists() {
+                        diagnostics
+                            .push_error(feedbacks_dir.display().to_string(), "Missing feedbacks/");
+                    }
+                }
+            }
+        }
+    }
+
+    for workstream in inputs.workstreams {
+        let ws_dir = inputs.jules_path.join("workstreams").join(workstream);
+        if !ws_dir.exists() {
+            diagnostics.push_error(ws_dir.display().to_string(), "Missing workstream directory");
+            continue;
+        }
+
+        let events_dir = ws_dir.join("events");
+        ensure_directory_exists(
+            events_dir.clone(),
+            inputs.options,
+            inputs.applied_fixes,
+            diagnostics,
+        );
+        for state in inputs.event_states {
+            ensure_directory_exists(
+                events_dir.join(state),
+                inputs.options,
+                inputs.applied_fixes,
+                diagnostics,
+            );
+        }
+
+        let issues_dir = ws_dir.join("issues");
+        ensure_directory_exists(
+            issues_dir.clone(),
+            inputs.options,
+            inputs.applied_fixes,
+            diagnostics,
+        );
+        let index_file = issues_dir.join("index.md");
+        if !index_file.exists() {
+            attempt_fix_file(
+                index_file.clone(),
+                ".jules/workstreams/generic/issues/index.md",
+                inputs.options,
+                inputs.applied_fixes,
+                diagnostics,
+            );
+        }
+        for label in inputs.issue_labels {
+            ensure_directory_exists(
+                issues_dir.join(label),
+                inputs.options,
+                inputs.applied_fixes,
+                diagnostics,
+            );
+        }
+    }
+}
+
+fn check_version_file(jules_path: &Path, diagnostics: &mut Diagnostics) {
+    let version_path = jules_path.join(".jlo-version");
+    if !version_path.exists() {
+        return;
+    }
+
+    let content = match fs::read_to_string(&version_path) {
+        Ok(content) => content.trim().to_string(),
+        Err(err) => {
+            diagnostics.push_error(version_path.display().to_string(), err.to_string());
+            return;
+        }
+    };
+
+    let current_version = env!("CARGO_PKG_VERSION");
+    let workspace_parts = parse_version_parts(&content);
+    let current_parts = parse_version_parts(current_version);
+
+    if workspace_parts.is_none() {
+        diagnostics.push_error(version_path.display().to_string(), "Invalid version format");
+        return;
+    }
+
+    if current_parts.is_none() {
+        diagnostics
+            .push_error(version_path.display().to_string(), "Current binary version is invalid");
+        return;
+    }
+
+    if compare_versions(&workspace_parts.unwrap(), &current_parts.unwrap()) > 0 {
+        diagnostics.push_error(
+            version_path.display().to_string(),
+            "Workspace version is newer than the binary",
+        );
+    }
+}
+
+fn parse_version_parts(version: &str) -> Option<Vec<u32>> {
+    let parts: Vec<_> = version.split('.').map(|segment| segment.parse::<u32>()).collect();
+    if parts.iter().any(|part| part.is_err()) {
+        return None;
+    }
+    Some(parts.into_iter().map(|part| part.unwrap()).collect())
+}
+
+fn compare_versions(left: &[u32], right: &[u32]) -> i32 {
+    let max_len = left.len().max(right.len());
+    for idx in 0..max_len {
+        let left_value = *left.get(idx).unwrap_or(&0);
+        let right_value = *right.get(idx).unwrap_or(&0);
+        match left_value.cmp(&right_value) {
+            std::cmp::Ordering::Less => return -1,
+            std::cmp::Ordering::Greater => return 1,
+            std::cmp::Ordering::Equal => {}
+        }
+    }
+    0
+}
+
+fn ensure_directory_exists(
+    path: PathBuf,
+    options: &DoctorOptions,
+    applied_fixes: &mut Vec<String>,
+    diagnostics: &mut Diagnostics,
+) {
+    if path.exists() {
+        return;
+    }
+
+    if options.fix {
+        if let Err(err) = fs::create_dir_all(&path) {
+            diagnostics.push_error(path.display().to_string(), err.to_string());
+        } else {
+            applied_fixes.push(format!("Created directory {}", path.display()));
+            diagnostics.push_warning(path.display().to_string(), "Created missing directory");
+        }
+    } else {
+        diagnostics.push_error(path.display().to_string(), "Missing directory");
+    }
+}
+
+fn ensure_path_exists(
+    root: &Path,
+    rel_path: &str,
+    options: &DoctorOptions,
+    applied_fixes: &mut Vec<String>,
+    diagnostics: &mut Diagnostics,
+    fixable_from_scaffold: bool,
+) {
+    let full_path = root.join(rel_path);
+    if full_path.exists() {
+        return;
+    }
+
+    if options.fix && fixable_from_scaffold {
+        attempt_fix_file(full_path, rel_path, options, applied_fixes, diagnostics);
+    } else {
+        diagnostics.push_error(full_path.display().to_string(), "Missing required file");
+    }
+}
+
+fn attempt_fix_file(
+    full_path: PathBuf,
+    scaffold_path: &str,
+    options: &DoctorOptions,
+    applied_fixes: &mut Vec<String>,
+    diagnostics: &mut Diagnostics,
+) {
+    if !options.fix {
+        diagnostics.push_error(full_path.display().to_string(), "Missing required file");
+        return;
+    }
+
+    let content = match scaffold_file_content(scaffold_path) {
+        Some(content) => content,
+        None => {
+            diagnostics.push_error(
+                full_path.display().to_string(),
+                "Missing required file (no scaffold fix available)",
+            );
+            return;
+        }
+    };
+
+    if let Some(parent) = full_path.parent()
+        && let Err(err) = fs::create_dir_all(parent)
+    {
+        diagnostics.push_error(full_path.display().to_string(), err.to_string());
+        return;
+    }
+
+    if let Err(err) = fs::write(&full_path, content) {
+        diagnostics.push_error(full_path.display().to_string(), err.to_string());
+        return;
+    }
+
+    applied_fixes.push(format!("Restored {}", full_path.display()));
+    diagnostics
+        .push_warning(full_path.display().to_string(), "Restored missing file from scaffold");
+}
+
+pub fn list_subdirs(path: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    match fs::read_dir(path) {
+        Ok(entries) => {
+            for entry in entries {
+                match entry {
+                    Ok(entry) => {
+                        let entry_path = entry.path();
+                        if entry_path.is_dir() {
+                            dirs.push(entry_path);
+                        }
+                    }
+                    Err(err) => {
+                        diagnostics.push_error(
+                            path.display().to_string(),
+                            format!("Failed to read directory entry: {}", err),
+                        );
+                    }
+                }
+            }
+        }
+        Err(err) => {
+            diagnostics.push_error(
+                path.display().to_string(),
+                format!("Failed to read directory: {}", err),
+            );
+        }
+    }
+    dirs
+}

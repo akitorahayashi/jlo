@@ -3,7 +3,6 @@ branch_prefix: jules-implementer-
 
 constraints:
   - Branch format: jules-implementer-<id>-<short_description>
-  - Follow AGENTS.md conventions
   - Issue file path is authoritative (includes workstream)
 
 inputs:
@@ -18,6 +17,5 @@ workflow:
   - 2. Understand targets and acceptance criteria
   - 3. Implement code, tests, documentation
   - 4. Run verification (Decider recommended command)
-  - 5. Run standard verification from AGENTS.md (Format, Lint, Test)
-  - 6. Iterate if verification fails
-  - 7. Create pull request
+  - 5. Iterate if verification fails
+  - 6. Create pull request
