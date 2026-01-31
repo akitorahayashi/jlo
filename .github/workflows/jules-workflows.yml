@@ -31,7 +31,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: jules-debug-2
+  group: jules
   cancel-in-progress: false
 
 jobs:
