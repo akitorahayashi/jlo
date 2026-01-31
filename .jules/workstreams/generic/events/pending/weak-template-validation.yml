@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "tmpl01"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Weak Template Validation"
+statement: |
+  Tests for embedded role templates in `src/services/embedded_role_template_store.rs` only check for string containment (e.g., verifying that a specific phrase exists) but do not validate that the templates are valid YAML.
+  This creates a risk where a syntax error in a template file would pass tests but cause runtime failures when users attempt to generate a role.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/embedded_role_template_store.rs"
+    loc:
+      - "100-130"
+    note: "Test cases verify structure via string matching (e.g., `contains(\"role: ROLE_NAME\")`) but do not parse or validate the YAML structure."
+
+tags:
+  - "testing-strategy"
+  - "reliability"
+  - "risk:medium"
