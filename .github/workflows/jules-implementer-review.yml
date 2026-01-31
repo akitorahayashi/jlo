@@ -2,8 +2,10 @@ name: Jules Implementer Review
 
 on:
   push:
-    branches:
-      - 'jules-implementer-*'
+    branches-ignore:
+      - 'jules-observer-*'
+      - 'jules-decider-*'
+      - 'jules-planner-*'
 
 permissions:
   pull-requests: write

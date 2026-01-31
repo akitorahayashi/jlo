@@ -2,6 +2,8 @@ use std::error::Error;
 use std::fmt::{self, Display};
 use std::io;
 
+use super::Layer;
+
 /// Library-wide error type for jlo operations.
 #[derive(Debug)]
 pub enum AppError {
@@ -67,7 +69,9 @@ impl Display for AppError {
                 )
             }
             AppError::InvalidLayer(name) => {
-                write!(f, "Invalid layer '{}': must be one of observers, deciders, planners", name)
+                let available: Vec<&str> =
+                    Layer::ALL.iter().map(|layer| layer.dir_name()).collect();
+                write!(f, "Invalid layer '{}': must be one of {}", name, available.join(", "))
             }
             AppError::RoleNotFound(query) => {
                 write!(f, "Role '{}' not found", query)

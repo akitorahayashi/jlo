@@ -43,7 +43,7 @@ fn template_creates_new_role() {
     ctx.cli().arg("init").assert().success();
 
     ctx.cli()
-        .args(["template", "-l", "observers", "-n", "custom-role"])
+        .args(["template", "-l", "observers", "-n", "custom-role", "-w", "generic"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Created new role"));
@@ -73,7 +73,7 @@ fn template_fails_for_existing_role() {
     ctx.cli().arg("init").assert().success();
 
     ctx.cli()
-        .args(["template", "-l", "observers", "-n", "taxonomy"])
+        .args(["template", "-l", "observers", "-n", "taxonomy", "-w", "generic"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("already exists"));
@@ -85,10 +85,24 @@ fn template_fails_without_workspace() {
     let ctx = TestContext::new();
 
     ctx.cli()
-        .args(["template", "-l", "observers", "-n", "test"])
+        .args(["template", "-l", "observers", "-n", "test", "-w", "generic"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("No .jules/"));
+}
+
+#[test]
+#[serial]
+fn template_requires_workstream_noninteractive() {
+    let ctx = TestContext::new();
+
+    ctx.cli().arg("init").assert().success();
+
+    ctx.cli()
+        .args(["template", "-l", "observers", "-n", "missing-workstream"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Workstream is required"));
 }
 
 #[test]

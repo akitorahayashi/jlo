@@ -26,12 +26,14 @@ Copy the sample workflow from `src/assets/templates/workflows/jules.yml` to your
 |---------|-------|-------------|
 | `jlo init` | `i` | Create `.jules/` workspace with setup directory |
 | `jlo update [--dry-run] [--workflows]` | `u` | Update workspace to current jlo version |
-| `jlo template [-l layer] [-n name]` | `tp` | Create new role from template |
+| `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
-| `jlo workstream new <name>` | `w n` | Create new workstream |
-| `jlo workstream list` | `w ls` | List existing workstreams |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
+
+### Template Command
+
+`jlo template` opens an interactive wizard to apply a workstream template or create an observer/decider role. When creating roles non-interactively, pass an explicit `--workstream` to avoid defaulting to an unintended workstream.
 
 ### Run Command
 
@@ -87,7 +89,8 @@ default_branch = "main"
 
 ```bash
 jlo init                                    # Initialize workspace
-jlo template -l observers -n security       # Create custom role
+jlo template                                # Open interactive template wizard
+jlo template -l observers -n security -w generic
 
 # Setup compiler
 jlo setup list                              # List available components

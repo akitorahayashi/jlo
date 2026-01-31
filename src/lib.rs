@@ -20,6 +20,7 @@ use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
 
 pub use app::commands::run::{RunOptions, RunResult};
 pub use app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
+pub use app::commands::template::TemplateOutcome;
 pub use app::commands::update::{UpdateOptions, UpdateResult};
 pub use domain::AppError;
 
@@ -34,21 +35,28 @@ pub fn init() -> Result<(), AppError> {
     Ok(())
 }
 
-/// Create a new role from a layer template.
+/// Apply a template for a role or workstream.
 ///
-/// Returns the full path of the created role (layer/role_name).
+/// Returns a `TemplateOutcome` describing the created resource.
 pub fn template(
     layer: Option<&str>,
     role_name: Option<&str>,
     workstream: Option<&str>,
-) -> Result<String, AppError> {
+) -> Result<TemplateOutcome, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
     let templates = EmbeddedRoleTemplateStore::new();
     let ctx = AppContext::new(workspace, templates, NoopClipboard);
 
-    let path = template::execute(&ctx, layer, role_name, workstream)?;
-    println!("✅ Created new role at .jules/roles/{}/", path);
-    Ok(path)
+    let outcome = template::execute(&ctx, layer, role_name, workstream)?;
+    match &outcome {
+        TemplateOutcome::Role { .. } => {
+            println!("✅ Created new role at {}/", outcome.display_path());
+        }
+        TemplateOutcome::Workstream { .. } => {
+            println!("✅ Created new workstream at {}/", outcome.display_path());
+        }
+    }
+    Ok(outcome)
 }
 
 // =============================================================================
@@ -128,30 +136,4 @@ pub fn update(dry_run: bool, workflows: bool) -> Result<UpdateResult, AppError> 
 
     let options = UpdateOptions { dry_run, workflows };
     update::execute(&workspace.jules_path(), options)
-}
-
-// =============================================================================
-// Workstream Command API
-// =============================================================================
-
-/// Create a new workstream.
-pub fn workstream_new(name: &str) -> Result<(), AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-
-    if !workspace.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
-
-    workspace.create_workstream(name)
-}
-
-/// List existing workstreams.
-pub fn workstream_list() -> Result<Vec<String>, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-
-    if !workspace.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
-
-    workspace.list_workstreams()
 }
