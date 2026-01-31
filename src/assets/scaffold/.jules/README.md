@@ -102,12 +102,12 @@ Implementers modify source code and require human review.
 
 | Layer | Type | Invocation |
 |-------|------|------------|
-| Observers | Multi-role | `jlo run observers` |
-| Deciders | Multi-role | `jlo run deciders` |
+| Observers | Multi-role | `jlo run observers --workstream <name> --scheduled` |
+| Deciders | Multi-role | `jlo run deciders --workstream <name> --scheduled` |
 | Planners | Single-role | `jlo run planners --issue <path>` |
 | Implementers | Single-role | `jlo run implementers --issue <path>` |
 
-**Multi-role layers** (Observers, Deciders): Support multiple configurable roles listed in `config.toml`. Each role has its own subdirectory with `prompt.yml`. Custom roles can be created with `jlo template`.
+**Multi-role layers** (Observers, Deciders): Roles are scoped to workstreams and scheduled via `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `prompt.yml`. Custom roles can be created with `jlo template`.
 
 **Single-role layers** (Planners, Implementers): Have a fixed role with `prompt.yml` directly in the layer directory. They are issue-driven and require the `--issue` flag. Template creation is not supported.
 

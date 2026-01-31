@@ -101,9 +101,15 @@ enum RunLayer {
     /// Run observer agents
     #[clap(visible_alias = "o")]
     Observers {
-        /// Specific roles to run (default: all from config)
+        /// Specific roles to run (manual mode)
         #[arg(long)]
         role: Option<Vec<String>>,
+        /// Target workstream
+        #[arg(long)]
+        workstream: Option<String>,
+        /// Run using scheduled.toml roles
+        #[arg(long)]
+        scheduled: bool,
         /// Show assembled prompts without executing
         #[arg(long)]
         dry_run: bool,
@@ -114,9 +120,15 @@ enum RunLayer {
     /// Run decider agents
     #[clap(visible_alias = "d")]
     Deciders {
-        /// Specific roles to run (default: all from config)
+        /// Specific roles to run (manual mode)
         #[arg(long)]
         role: Option<Vec<String>>,
+        /// Target workstream
+        #[arg(long)]
+        workstream: Option<String>,
+        /// Run using scheduled.toml roles
+        #[arg(long)]
+        scheduled: bool,
         /// Show assembled prompts without executing
         #[arg(long)]
         dry_run: bool,
@@ -240,22 +252,22 @@ fn run_update(dry_run: bool, workflows: bool) -> Result<(), AppError> {
 fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     use jlo::domain::Layer;
 
-    let (target_layer, roles, dry_run, branch, issue) = match layer {
-        RunLayer::Observers { role, dry_run, branch } => {
-            (Layer::Observers, role, dry_run, branch, None)
+    let (target_layer, roles, workstream, scheduled, dry_run, branch, issue) = match layer {
+        RunLayer::Observers { role, dry_run, branch, workstream, scheduled } => {
+            (Layer::Observers, role, workstream, scheduled, dry_run, branch, None)
         }
-        RunLayer::Deciders { role, dry_run, branch } => {
-            (Layer::Deciders, role, dry_run, branch, None)
+        RunLayer::Deciders { role, dry_run, branch, workstream, scheduled } => {
+            (Layer::Deciders, role, workstream, scheduled, dry_run, branch, None)
         }
         RunLayer::Planners { dry_run, branch, issue } => {
-            (Layer::Planners, None, dry_run, branch, Some(issue))
+            (Layer::Planners, None, None, false, dry_run, branch, Some(issue))
         }
         RunLayer::Implementers { dry_run, branch, issue } => {
-            (Layer::Implementers, None, dry_run, branch, Some(issue))
+            (Layer::Implementers, None, None, false, dry_run, branch, Some(issue))
         }
     };
 
-    let result = jlo::run(target_layer, roles, dry_run, branch, issue)?;
+    let result = jlo::run(target_layer, roles, workstream, scheduled, dry_run, branch, issue)?;
 
     if !result.dry_run && !result.roles.is_empty() && !result.sessions.is_empty() {
         println!("✅ Created {} Jules session(s)", result.sessions.len());

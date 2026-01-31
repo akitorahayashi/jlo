@@ -3,6 +3,7 @@
 mod config;
 mod multi_role;
 mod prompt;
+mod role_selection;
 mod single_role;
 
 use std::path::Path;
@@ -17,6 +18,10 @@ pub struct RunOptions {
     pub layer: Layer,
     /// Specific roles to run (None = all from config). Only for multi-role layers.
     pub roles: Option<Vec<String>>,
+    /// Workstream for multi-role layers.
+    pub workstream: Option<String>,
+    /// Use scheduled mode for multi-role layers.
+    pub scheduled: bool,
     /// Show assembled prompts without executing.
     pub dry_run: bool,
     /// Override the starting branch.
@@ -63,6 +68,8 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
         jules_path,
         options.layer,
         options.roles.as_ref(),
+        options.workstream.as_deref(),
+        options.scheduled,
         options.dry_run,
         options.branch.as_deref(),
     )

@@ -43,10 +43,12 @@ Copy the sample workflow from `src/assets/templates/workflows/jules.yml` to your
 Execute Jules agents for a specific layer:
 
 ```bash
-jlo run observers                      # Run all observer roles
-jlo run deciders --role triage_generic # Run specific role
-jlo run observers --dry-run            # Show prompts without executing
-jlo run observers --branch custom      # Override starting branch
+jlo run observers --workstream generic --scheduled          # Run scheduled observer roles
+jlo run deciders --workstream generic --scheduled           # Run scheduled decider roles
+jlo run observers --workstream generic --role taxonomy      # Run specific role (manual)
+jlo run observers --workstream generic --role qa --role tax # Run specific roles (manual)
+jlo run observers --workstream generic --scheduled --dry-run # Show prompts without executing
+jlo run observers --workstream generic --scheduled --branch custom # Override starting branch
 ```
 
 **Single-Role Layers** (Planners, Implementers) require an issue file:
@@ -62,21 +64,16 @@ jlo run implementers .jules/workstreams/generic/issues/<label>/auth_inconsistenc
 Single-role layers are issue-driven and do not support the `--role` flag.
 
 **Flags**:
-- `--role <name>`: Run specific role(s) instead of all configured (multi-role layers only)
+- `--workstream <name>`: Target workstream (required for observers/deciders)
+- `--scheduled`: Use roles from `scheduled.toml`
+- `--role <name>`: Run specific role(s) (manual mode only)
 - `--dry-run`: Show assembled prompts without API calls
 - `--branch <name>`: Override the default starting branch
 - `<path>`: Local issue file (required for planners and implementers)
 
-**Configuration**: Agent roles are configured in `.jules/config.toml`:
+**Configuration**: Execution settings are configured in `.jules/config.toml`:
 
 ```toml
-[agents]
-# Multi-role layers: list roles to run
-observers = ["taxonomy", "data_arch", "qa", "consistency"]
-deciders = ["triage_generic"]
-# Single-role layers (planners, implementers) are issue-driven
-# and do not require configuration here.
-
 [run]
 default_branch = "main"
 
