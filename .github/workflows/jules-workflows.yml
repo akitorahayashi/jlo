@@ -20,6 +20,10 @@ on:
         description: 'Minutes to wait between layers (Jules async processing time)'
         type: number
         default: 15
+      routing_labels:
+        description: 'Issue labels eligible for planner/implementer routing (comma-separated)'
+        type: string
+        default: docs,tests
 
 permissions:
   contents: write
@@ -78,4 +82,5 @@ jobs:
       workstream: ${{ matrix.workstream }}
       entry_point: ${{ inputs.entry_point || 'observers' }}
       wait_minutes: ${{ inputs.wait_minutes || 15 }}
+      routing_labels: ${{ inputs.routing_labels || 'docs,tests' }}
     secrets: inherit

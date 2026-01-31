@@ -39,7 +39,7 @@ contracts:
 Agent execution is orchestrated by GitHub Actions using `jlo run`. The `.github/workflows/jules-workflows.yml` coordinates all agent invocations via reusable workflows, delegating the actual execution logic to the CLI.
 
 ## Project Summary
-`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. Specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events and produce issues, Planners expand issues requiring deep analysis, and Implementers are triggered manually from GitHub Issues.
+`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. Specialized agents are organized by their operational responsibilities: Observers analyze code, Deciders screen events and produce issues, Planners expand issues requiring deep analysis, and Implementers are dispatched via workflow policy using local issue files.
 
 ## Branch Strategy
 
@@ -62,7 +62,7 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The `.github/
 - **Date/Time**: `chrono`
 
 ## Key Commands
-- **Format**: `cargo fmt`, `cargo fmt --check`
+- **Format**: `cargo fmt`
 - **Lint**: `cargo clippy --all-targets --all-features -- -D warnings`
 - **Test**: `cargo test --all-targets --all-features`
 
@@ -93,11 +93,13 @@ tests/
 ## CLI Commands
 - `jlo init` (alias: `i`): Create `.jules/` structure with setup directory
 - `jlo update [--dry-run] [--workflows]` (alias: `u`): Update workspace to current jlo version
-- `jlo template [-l layer] [-n name]` (alias: `tp`): Create custom role (observers, deciders only)
-- `jlo run observers [--role <name>]`: Run observer agents
-- `jlo run deciders [--role <name>]`: Run decider agents
+- `jlo template [-l layer] [-n name] [-w workstream]` (alias: `tp`): Create custom role (observers, deciders only)
+- `jlo run observers --workstream <name> [--role <name> | --scheduled]`: Run observer agents
+- `jlo run deciders --workstream <name> [--role <name> | --scheduled]`: Run decider agents
 - `jlo run planners <path>`: Run planner (single-role, issue-driven)
 - `jlo run implementers <path>`: Run implementer (single-role, issue-driven)
+- `jlo schedule export`: Export schedule data for automation workflows
+- `jlo workstreams inspect`: Inspect workstream state for automation workflows
 - `jlo setup gen [path]` (alias: `s g`): Generate `install.sh` and `env.toml`
 - `jlo setup list` (alias: `s ls`): List available components
 - `jlo setup list --detail <component>`: Show component details
@@ -106,14 +108,14 @@ tests/
 
 | Layer | Type | Invocation | Config |
 |-------|------|------------|--------|
-| Observers | Multi-role | `jlo run observers` | `config.toml` |
-| Deciders | Multi-role | `jlo run deciders` | `config.toml` |
+| Observers | Multi-role | `jlo run observers --workstream <name>` | `workstreams/<workstream>/scheduled.toml` |
+| Deciders | Multi-role | `jlo run deciders --workstream <name>` | `workstreams/<workstream>/scheduled.toml` |
 | Planners | Single-role | `jlo run planners <path>` | None |
 | Implementers | Single-role | `jlo run implementers <path>` | None |
 
 **Single-role layers**: Planners and Implementers have a fixed role with `prompt.yml` directly in the layer directory. They are issue-driven and require the issue path as a positional argument. Template creation is not supported.
 
-**Multi-role layers**: Observers and Deciders support multiple configurable roles listed in `config.toml`. Each role has its own subdirectory with `prompt.yml`.
+**Multi-role layers**: Observers and Deciders support multiple configurable roles listed in `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `prompt.yml`.
 
 ## Setup Compiler
 
@@ -127,11 +129,7 @@ The setup compiler generates dependency-aware installation scripts for developme
       events/        # Observer outputs
       issues/        # Decider outputs
         index.md
-        feats/
-        refacts/
-        bugs/
-        tests/
-        docs/
+        <label>/
   setup/
     tools.yml      # Tool selection configuration
     env.toml       # Environment variables (generated/merged)

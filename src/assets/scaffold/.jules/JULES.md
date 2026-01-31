@@ -32,28 +32,26 @@ Workstreams isolate events and issues so that decider rules do not mix across un
 Workstream directories:
 
 - Events (Observer output, Decider input):
-  - `.jules/workstreams/<workstream>/events/pending/*.yml` (pending)
-  - `.jules/workstreams/<workstream>/events/decided/*.yml` (processed)
-- Issues (Decider/Planner output, Implementer input): `.jules/workstreams/<workstream>/issues/<priority>/*.yml`
+  - `.jules/workstreams/<workstream>/events/<state>/*.yml` (state directories defined by the scaffold)
+- Issues (Decider/Planner output, Implementer input): `.jules/workstreams/<workstream>/issues/<label>/*.yml`
 
 ## Workspace Data Flow
 
-The pipeline is file-based and terminates at local issues:
+The pipeline is file-based and uses local issues as the handoff point:
 
 `events -> issues`
 
 After decider output:
 - Issues with `requires_deep_analysis: false` are ready for implementation.
 - Issues with `requires_deep_analysis: true` trigger deep analysis by planners.
-- Implementers are invoked manually via `workflow_dispatch` with a local issue file.
+- Implementers are invoked via workflow dispatch with a local issue file. Scheduled workflows may dispatch implementers according to repository policy.
 
 ## Issue Identity and Deduplication
 
-- Issue filenames use stable ids, not dates (e.g. `auth_inconsistency.yml`).
+- Issue filenames use stable kebab-case identifiers, not dates (e.g. `auth-inconsistency.yml`).
 - Observers check open issues before emitting events to avoid duplicates.
 - Deciders link related events to issues (populating `source_events` in the issue).
-- Events are preserved in the workstream until the issue is resolved by an Implementer.
-- Issues have `status: open|closed` to track lifecycle.
+- Events are preserved in the workstream until an implementation workflow removes them.
 
 ## Deep Analysis
 

@@ -41,11 +41,11 @@ jlo init
 Execute Jules agents for a specific layer:
 
 ```bash
-jlo run observers --workstream generic --scheduled          # Run scheduled observer roles
-jlo run deciders --workstream generic --scheduled           # Run scheduled decider roles
-jlo run observers --workstream generic --role taxonomy      # Run specific role (manual)
-jlo run observers --workstream generic --role qa --role tax # Run specific roles (manual)
-jlo run observers --workstream generic --scheduled --dry-run # Show prompts without executing
+jlo run observers --workstream generic --scheduled            # Run scheduled observer roles
+jlo run deciders --workstream generic --scheduled             # Run scheduled decider roles
+jlo run observers --workstream generic --role <role>          # Run specific role (manual)
+jlo run observers --workstream generic --role <role1> --role <role2> # Run specific roles (manual)
+jlo run observers --workstream generic --scheduled --dry-run   # Show prompts without executing
 jlo run observers --workstream generic --scheduled --branch custom # Override starting branch
 ```
 
@@ -53,10 +53,10 @@ jlo run observers --workstream generic --scheduled --branch custom # Override st
 
 ```bash
 # Run planner for a specific issue
-jlo run planners .jules/workstreams/generic/issues/<label>/auth_inconsistency.yml
+jlo run planners .jules/workstreams/generic/issues/<label>/auth-inconsistency.yml
 
 # Run implementer for a specific issue
-jlo run implementers .jules/workstreams/generic/issues/<label>/auth_inconsistency.yml
+jlo run implementers .jules/workstreams/generic/issues/<label>/auth-inconsistency.yml
 ```
 
 Single-role layers are issue-driven and do not support the `--role` flag.
@@ -114,11 +114,15 @@ jlo setup gen                               # Generate install script
 
 ## GitHub Actions Integration
 
-The simplified workflow uses `jlo run` for all agent execution.
+Workflows use `jlo run` for agent execution and rely on `jlo schedule export` plus
+`jlo workstreams inspect` for orchestration inputs.
 
 | File | Purpose |
 |------|---------|
-| `jules.yml` | Agent execution (scheduled + manual dispatch) |
+| `jules-workflows.yml` | Scheduled orchestration and entry-point dispatch |
+| `jules-workstream.yml` | Per-workstream pipeline (observers → deciders → optional planners/implementers) |
+| `jules-run-planner.yml` | Manual planner dispatch for a specific issue |
+| `jules-run-implementer.yml` | Manual implementer dispatch for a specific issue |
 
 **Branch Strategy**:
 
@@ -132,12 +136,12 @@ The simplified workflow uses `jlo run` for all agent execution.
 
 **Flow**:
 1. **Sync**: `jules` branch syncs from `main` periodically
-2. **Analysis**: Observers create event files in `.jules/workstreams/<workstream>/events/`
+2. **Analysis**: Observers create event files under `.jules/workstreams/<workstream>/events/`
 3. **Triage**: Deciders link and consolidate events into issue files
-4. **Expansion**: Planners expand issues requiring deep analysis
-5. **Implementation**: Implementers are triggered manually with a local issue file
+4. **Expansion**: Planners expand issues that require deep analysis
+5. **Implementation**: Implementers are dispatched by workflow policy or manual dispatch with a local issue file
 
-**Pause/Resume**: Set repository variable `JULES_PAUSED=true` to skip scheduled runs.
+**Pause/Resume**: The repository variable `JULES_PAUSED=true` skips scheduled runs.
 
 ## Documentation
 
@@ -149,6 +153,7 @@ The simplified workflow uses `jlo run` for all agent execution.
 
 ```bash
 cargo build                                                    # Build
-cargo fmt --check && cargo clippy -- -D warnings               # Lint
+cargo fmt                                                      # Format
+cargo clippy --all-targets --all-features -- -D warnings       # Lint
 cargo test --all-targets --all-features                        # Test
 ```
