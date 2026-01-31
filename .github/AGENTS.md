@@ -121,8 +121,11 @@ jlo init
 ### Step 6: Configure Repository
 
 1. **Secrets**:
-   - `JULES_API_KEY`
-   - `JLO_BOT_TOKEN` (Personal Access Token with `repo`, `workflow` scopes)
+   - `JULES_API_KEY`: Jules API key for agent execution
+   - `JLO_BOT_TOKEN`: Personal Access Token (Classic) with scopes:
+     - `repo` (Full control of private repositories)
+     - `workflow` (Update GitHub Action workflows)
+     - Required for: auto-merge, PR comments, push to jules branch
 
 2. **Variables**:
    - `JULES_PAUSED` (optional)
