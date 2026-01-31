@@ -1,13 +1,23 @@
+schema_version: 1
 id: q1mwwx
-created_at: "2026-01-31T16:03:57Z"
+created_at: "2026-01-31"
 author_role: consistency
 confidence: high
 title: "Default API URL mismatch between README and implementation"
 statement: "The README.md documents the default API URL as `https://api.jules.ai/v1/sessions`, but the implementation in `src/domain/run_config.rs` defaults to `https://jules.googleapis.com/v1alpha/sessions`."
 evidence:
-  - "README.md line: `# api_url = \"https://api.jules.ai/v1/sessions\"`"
-  - "src/domain/run_config.rs line: `api_url: Url::parse(\"https://jules.googleapis.com/v1alpha/sessions\")`"
-  - "src/domain/run_config.rs (dto mod) line: `\"https://jules.googleapis.com/v1alpha/sessions\".to_string()`"
+  - path: "README.md"
+    loc:
+      - "# api_url = \"https://api.jules.ai/v1/sessions\""
+    note: "Documentation shows jules.ai URL"
+  - path: "src/domain/run_config.rs"
+    loc:
+      - "api_url: Url::parse(\"https://jules.googleapis.com/v1alpha/sessions\")"
+    note: "Implementation uses googleapis.com URL"
+  - path: "src/domain/run_config.rs"
+    loc:
+      - "\"https://jules.googleapis.com/v1alpha/sessions\".to_string()"
+    note: "DTO default also uses googleapis.com URL"
 tags:
   - documentation
   - configuration

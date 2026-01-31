@@ -8,7 +8,7 @@
 - Planners and Implementers are single-role layers and rely on the fixed scaffold files; they do not support template-based creation of new roles.
 
 ### Removed Functionality
-- Clipboard functionality (`arboard`) has been completely removed from the codebase, despite references in `AGENTS.md`.
+- Clipboard functionality (`arboard`) has been completely removed from the codebase, despite references in `AGENTS.md` and `README.md`.
 
 ### Naming Conventions
 - Service implementations in `src/services/` have drifted from `AGENTS.md` documentation (e.g., `role_template_service` -> `embedded_role_template_store.rs`).
@@ -16,4 +16,4 @@
 ## Active Observations
 - `doc-api-url-mismatch` (q1mwwx): README vs Code API URL.
 - `cli-template-inconsistency` (odyrzk): CLI Help vs Implementation for `template` command.
-- `agents-md-structure-inconsistency` (djpmsr): `AGENTS.md` vs Filesystem structure.
+- `agents-md-structure-inconsistency` (djpmsr): `AGENTS.md` and `README.md` vs Filesystem structure.
