@@ -35,15 +35,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  export-workstreams:
+  run-workstreams:
     if: >-
       vars.JULES_PAUSED != 'true' &&
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-      has_workstreams: ${{ steps.matrix.outputs.has_workstreams }}
+    timeout-minutes: 360
+    env:
+      ENTRY_POINT: ${{ inputs.entry_point || 'observers' }}
+      WAIT_MINUTES: ${{ inputs.wait_minutes || 15 }}
+      ROUTING_LABELS: ${{ inputs.routing_labels || 'docs,tests' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,32 +68,78 @@ jobs:
         with:
           version: ${{ vars.JLO_VERSION || 'latest' }}
 
-      - name: Export enabled workstreams
-        id: matrix
+      - name: Run workstreams
         run: |
           set -euo pipefail
-          matrix=$(
+          workstreams_json=$(
             timeout 20s bash -lc \
               "set -euo pipefail; jlo schedule export --scope workstreams --format github-matrix | jq -c 'del(.schema_version)'"
           ) || { echo "::error::Timed out while generating workstream matrix (jlo schedule export)"; exit 1; }
-          count=$(echo "$matrix" | jq '.include | length')
-          if [ "$count" -gt 0 ]; then
-            echo "has_workstreams=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_workstreams=false" >> "$GITHUB_OUTPUT"
-          fi
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
-  workstream-pipeline:
-    needs: export-workstreams
-    if: needs.export-workstreams.outputs.has_workstreams == 'true'
-    strategy:
-      max-parallel: 1
-      matrix: ${{ fromJson(needs.export-workstreams.outputs.matrix) }}
-    uses: ./.github/workflows/jules-workstream.yml
-    with:
-      workstream: ${{ matrix.workstream }}
-      entry_point: ${{ inputs.entry_point || 'observers' }}
-      wait_minutes: ${{ inputs.wait_minutes || 15 }}
-      routing_labels: ${{ inputs.routing_labels || 'docs,tests' }}
-    secrets: inherit
+          workstreams=$(echo "$workstreams_json" | jq -r '.include[].workstream')
+          if [ -z "$workstreams" ]; then
+            echo "No enabled workstreams."
+            exit 0
+          fi
+
+          labels_json=$(printf '%s' "$ROUTING_LABELS" | jq -R 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))')
+
+          for workstream in $workstreams; do
+            echo "::group::Workstream ${workstream}"
+
+            if [ "$ENTRY_POINT" = "observers" ]; then
+              timeout 20m jlo run observers --workstream "$workstream" --scheduled
+              sleep $((WAIT_MINUTES * 60))
+              timeout 2m jlo doctor --workstream "$workstream"
+            fi
+
+            inspect_before=$(timeout 20s jlo workstreams inspect --workstream "$workstream" --format json)
+            pending=$(echo "$inspect_before" | jq '[.events.items[] | select(.state == "pending")] | length')
+            issues_before=$(echo "$inspect_before" | jq -c '[.issues.items[].path]')
+
+            if [ "$pending" -gt 0 ]; then
+              timeout 20m jlo run deciders --workstream "$workstream" --scheduled
+              sleep $((WAIT_MINUTES * 60))
+              timeout 2m jlo doctor --workstream "$workstream"
+            else
+              echo "No pending events; skipping deciders."
+            fi
+
+            inspect_after=$(timeout 20s jlo workstreams inspect --workstream "$workstream" --format json)
+
+            new_issues=$(echo "$inspect_after" | jq -c --argjson before "$issues_before" '
+              [ .issues.items[].path | select(($before | index(.)) | not) ]
+            ')
+
+            planners=$(echo "$inspect_after" | jq -r --argjson before "$issues_before" --argjson labels "$labels_json" '
+              .issues.items[]
+              | select((($before | index(.path)) | not))
+              | select(($labels | index(.label)) != null)
+              | select(.requires_deep_analysis == true)
+              | .path
+            ')
+
+            for issue in $planners; do
+              timeout 20m jlo run planners "$issue"
+            done
+
+            if [ -n "$planners" ]; then
+              sleep $((WAIT_MINUTES * 60))
+              timeout 2m jlo doctor --workstream "$workstream"
+            fi
+
+            inspect_after_planners=$(timeout 20s jlo workstreams inspect --workstream "$workstream" --format json)
+            implementers=$(echo "$inspect_after_planners" | jq -r --argjson new "$new_issues" --argjson labels "$labels_json" '
+              .issues.items[]
+              | select(($new | index(.path)) != null)
+              | select(($labels | index(.label)) != null)
+              | select(.requires_deep_analysis == false)
+              | .path
+            ')
+
+            for issue in $implementers; do
+              timeout 20m jlo run implementers "$issue"
+            done
+
+            echo "::endgroup::"
+          done
