@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::domain::AppError;
 use crate::domain::setup::SetupConfig;
-use crate::services::{EmbeddedCatalog, Generator, Resolver};
+use crate::services::{EmbeddedComponentCatalog, Generator, Resolver};
 
 /// Execute the setup gen command.
 ///
@@ -42,7 +42,7 @@ pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
     }
 
     // Initialize services
-    let catalog = EmbeddedCatalog::new()?;
+    let catalog = EmbeddedComponentCatalog::new()?;
 
     // Resolve dependencies
     let components = Resolver::resolve(&config.tools, &catalog)?;

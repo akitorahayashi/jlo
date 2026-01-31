@@ -4,11 +4,11 @@ use crate::domain::AppError;
 use crate::ports::ClipboardWriter;
 
 /// Arboard-based clipboard implementation.
-pub struct ArboardClipboard {
+pub struct ArboardClipboardWriter {
     clipboard: Clipboard,
 }
 
-impl ArboardClipboard {
+impl ArboardClipboardWriter {
     /// Create a new arboard clipboard instance.
     pub fn new() -> Result<Self, AppError> {
         let clipboard = Clipboard::new().map_err(|e| AppError::ClipboardError(format!("{}", e)))?;
@@ -16,7 +16,7 @@ impl ArboardClipboard {
     }
 }
 
-impl ClipboardWriter for ArboardClipboard {
+impl ClipboardWriter for ArboardClipboardWriter {
     fn write_text(&mut self, text: &str) -> Result<(), AppError> {
         self.clipboard.set_text(text).map_err(|e| AppError::ClipboardError(format!("{}", e)))
     }

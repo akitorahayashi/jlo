@@ -2,7 +2,7 @@
 
 use crate::domain::AppError;
 use crate::ports::ComponentCatalog;
-use crate::services::EmbeddedCatalog;
+use crate::services::EmbeddedComponentCatalog;
 
 /// Summary information for a component.
 #[derive(Debug, Clone)]
@@ -33,7 +33,7 @@ pub struct EnvVarInfo {
 ///
 /// Returns summaries of all available components.
 pub fn execute() -> Result<Vec<ComponentSummary>, AppError> {
-    let catalog = EmbeddedCatalog::new()?;
+    let catalog = EmbeddedComponentCatalog::new()?;
     let components = catalog.list_all();
 
     Ok(components
@@ -46,7 +46,7 @@ pub fn execute() -> Result<Vec<ComponentSummary>, AppError> {
 ///
 /// Returns detailed information for a specific component.
 pub fn execute_detail(component_name: &str) -> Result<ComponentDetail, AppError> {
-    let catalog = EmbeddedCatalog::new()?;
+    let catalog = EmbeddedComponentCatalog::new()?;
 
     let component = catalog.get(component_name).ok_or_else(|| AppError::ComponentNotFound {
         name: component_name.to_string(),
