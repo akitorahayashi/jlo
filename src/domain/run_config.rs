@@ -6,8 +6,6 @@ use url::Url;
 /// Configuration for agent execution loaded from `.jules/config.toml`.
 #[derive(Debug, Clone, Default)]
 pub struct RunConfig {
-    /// Agent role assignments per layer.
-    pub agents: AgentConfig,
     /// Execution settings.
     pub run: RunSettings,
     /// Jules API settings.
@@ -17,22 +15,16 @@ pub struct RunConfig {
 impl RunConfig {
     /// Parse configuration from TOML content.
     pub fn parse_toml(content: &str) -> Result<Self, String> {
+        let value: toml::Value = toml::from_str(content).map_err(|e| e.to_string())?;
+        if value.get("agents").is_some() {
+            return Err(
+                "Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml."
+                    .to_string(),
+            );
+        }
         let dto: dto::RunConfigDto = toml::from_str(content).map_err(|e| e.to_string())?;
         dto.try_into()
     }
-}
-
-/// Agent role assignments per layer.
-///
-/// Only multi-role layers (observers, deciders) are configured here.
-/// Single-role layers (planners, implementers) are issue-driven and
-/// do not require role configuration.
-#[derive(Debug, Clone, Default)]
-pub struct AgentConfig {
-    /// Observer role names.
-    pub observers: Vec<String>,
-    /// Decider role names.
-    pub deciders: Vec<String>,
 }
 
 /// Jules API configuration.
@@ -91,20 +83,10 @@ mod dto {
     #[derive(Debug, Clone, Default, Deserialize)]
     #[serde(deny_unknown_fields)]
     pub struct RunConfigDto {
-        pub agents: Option<AgentConfigDto>,
         #[serde(default)]
         pub run: RunSettingsDto,
         #[serde(default)]
         pub jules: JulesApiConfigDto,
-    }
-
-    #[derive(Debug, Clone, Default, Deserialize)]
-    #[serde(deny_unknown_fields)]
-    pub struct AgentConfigDto {
-        #[serde(default)]
-        pub observers: Vec<String>,
-        #[serde(default)]
-        pub deciders: Vec<String>,
     }
 
     #[derive(Debug, Clone, Deserialize)]
@@ -191,24 +173,7 @@ mod dto {
         type Error = String;
 
         fn try_from(dto: RunConfigDto) -> Result<Self, Self::Error> {
-            if dto.agents.is_some() {
-                return Err(
-                    "Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml."
-                        .to_string(),
-                );
-            }
-
-            Ok(RunConfig {
-                agents: AgentConfig::default(),
-                run: dto.run.into(),
-                jules: dto.jules.try_into()?,
-            })
-        }
-    }
-
-    impl From<AgentConfigDto> for AgentConfig {
-        fn from(dto: AgentConfigDto) -> Self {
-            AgentConfig { observers: dto.observers, deciders: dto.deciders }
+            Ok(RunConfig { run: dto.run.into(), jules: dto.jules.try_into()? })
         }
     }
 
@@ -245,8 +210,6 @@ mod tests {
     #[test]
     fn run_config_defaults() {
         let config = RunConfig::default();
-        assert!(config.agents.observers.is_empty());
-        assert!(config.agents.deciders.is_empty());
         assert_eq!(config.run.default_branch, "main");
         assert_eq!(config.run.jules_branch, "jules");
         assert!(config.run.parallel);
@@ -269,8 +232,6 @@ retry_delay_ms = 250
 "#;
         let config = RunConfig::parse_toml(toml).unwrap();
 
-        assert!(config.agents.observers.is_empty());
-        assert!(config.agents.deciders.is_empty());
         assert_eq!(config.run.default_branch, "develop");
         assert!(!config.run.parallel);
         assert_eq!(config.run.max_parallel, 5);
@@ -282,7 +243,6 @@ retry_delay_ms = 250
         let toml = r#""#;
         let config = RunConfig::parse_toml(toml).unwrap();
 
-        assert!(config.agents.observers.is_empty());
         assert_eq!(config.run.default_branch, "main");
         assert!(config.run.parallel);
     }
