@@ -190,7 +190,7 @@ Implementation is invoked via workflow dispatch with a local issue file path. Sc
 
 ```bash
 # Example: Run implementer with a specific issue
-jlo run implementers .jules/workstreams/generic/issues/<label>/auth_inconsistency.yml
+jlo run implementers .jules/workstreams/generic/issues/<label>/auth-inconsistency.yml
 ```
 
 The implementer reads the issue content (embedded in prompt) and produces code changes.

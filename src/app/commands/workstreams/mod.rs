@@ -300,26 +300,24 @@ fn read_required_string_list(
 ) -> Result<Vec<String>, AppError> {
     match map.get(Value::String(key.to_string())) {
         Some(Value::Sequence(values)) => {
-            let mut output = Vec::new();
-            for value in values {
-                match value {
-                    Value::String(text) if !text.trim().is_empty() => output.push(text.clone()),
-                    Value::String(_) => {
-                        return Err(AppError::config_error(format!(
-                            "Field '{}' must not contain empty strings in {}",
-                            key,
-                            path.display()
-                        )));
-                    }
-                    _ => {
-                        return Err(AppError::config_error(format!(
-                            "Field '{}' must contain strings in {}",
-                            key,
-                            path.display()
-                        )));
-                    }
-                }
-            }
+            let output: Result<Vec<String>, _> = values
+                .iter()
+                .map(|value| match value {
+                    Value::String(text) if !text.trim().is_empty() => Ok(text.clone()),
+                    Value::String(_) => Err(AppError::config_error(format!(
+                        "Field '{}' must not contain empty strings in {}",
+                        key,
+                        path.display()
+                    ))),
+                    _ => Err(AppError::config_error(format!(
+                        "Field '{}' must contain strings in {}",
+                        key,
+                        path.display()
+                    ))),
+                })
+                .collect();
+
+            let output = output?;
 
             if output.is_empty() {
                 return Err(AppError::config_error(format!(
