@@ -3,6 +3,7 @@ name: Jules Implementer Review
 on:
   push:
     branches-ignore:
+      - main
       - 'jules-observer-*'
       - 'jules-decider-*'
       - 'jules-planner-*'
