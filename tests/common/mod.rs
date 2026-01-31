@@ -206,7 +206,7 @@ impl TestContext {
 
     /// Assert that feedbacks directories exist for all observer roles.
     pub fn assert_feedbacks_directories_exist(&self) {
-        let observers = ["taxonomy", "data_arch", "qa"];
+        let observers = ["taxonomy", "data_arch", "qa", "cov", "consistency"];
         for role in &observers {
             let feedbacks_path =
                 self.jules_path().join("roles").join("observers").join(role).join("feedbacks");
@@ -223,6 +223,8 @@ impl TestContext {
         self.assert_role_in_layer_exists("observers", "taxonomy");
         self.assert_role_in_layer_exists("observers", "data_arch");
         self.assert_role_in_layer_exists("observers", "qa");
+        self.assert_role_in_layer_exists("observers", "cov");
+        self.assert_role_in_layer_exists("observers", "consistency");
         self.assert_role_in_layer_exists("deciders", "triage_generic");
 
         // Single-role layers have prompt.yml directly in layer directory

@@ -64,6 +64,10 @@ fn init_creates_complete_layer_structure() {
     assert!(jules.join("roles/observers/data_arch/feedbacks").exists());
     assert!(jules.join("roles/observers/qa/notes").exists());
     assert!(jules.join("roles/observers/qa/feedbacks").exists());
+    assert!(jules.join("roles/observers/cov/notes").exists());
+    assert!(jules.join("roles/observers/cov/feedbacks").exists());
+    assert!(jules.join("roles/observers/consistency/notes").exists());
+    assert!(jules.join("roles/observers/consistency/feedbacks").exists());
 
     // Verify non-observers don't have notes, feedbacks, or role.yml
     assert!(!jules.join("roles/deciders/triage_generic/notes").exists());
