@@ -57,10 +57,8 @@ pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> 
         _ => return Err(AppError::config_error(format!("Expected root mapping in {}", path))),
     };
 
-    let value_str = map
-        .get(Value::String(key.to_string()))
-        .and_then(|value| value.as_str())
-        .unwrap_or("");
+    let value_str =
+        map.get(Value::String(key.to_string())).and_then(|value| value.as_str()).unwrap_or("");
 
     let values: Vec<String> = value_str
         .split('|')
