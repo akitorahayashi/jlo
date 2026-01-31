@@ -1,0 +1,38 @@
+schema_version: 1
+
+# Metadata
+id: "x4p8n2"
+issue_id: ""
+created_at: "2026-01-31"
+author_role: "cov"
+confidence: "high"
+
+# Content
+title: "Untested Command Logic"
+statement: |
+  Complex application logic in CLI commands lacks unit tests, relying entirely on black-box integration tests.
+  This creates a "false safety" where edge cases (e.g., git failures, file permissions, specific error conditions) in critical paths like `init` and `run` are likely uncovered and hard to test.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/init.rs"
+    loc:
+      - "execute"
+    note: "Contains complex logic (git branch check, file writing) but has 0 unit tests."
+
+  - path: "src/app/commands/run/single_role.rs"
+    loc:
+      - "execute"
+      - "execute_local_dispatch"
+    note: "Complex orchestration logic with branching paths (CI vs local, dry-run) is completely untested at the unit level."
+
+  - path: "src/app/commands/run/multi_role.rs"
+    loc:
+      - "execute"
+      - "select_roles"
+    note: "Role selection and validation logic is untested."
+
+tags:
+  - "risk:medium"
+  - "testing-strategy"
+  - "maintenance"
