@@ -53,7 +53,6 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
-            run_config: &run_config,
             options: &options,
             applied_fixes: &mut applied_fixes,
         },
@@ -116,6 +115,8 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
 
     if errors == 0 && warnings == 0 {
         println!("All checks passed.");
+    } else if errors == 0 && !options.strict {
+        eprintln!("Check completed with {} warning(s).", warnings);
     } else {
         eprintln!("Check failed: {} error(s), {} warning(s) found.", errors, warnings);
     }

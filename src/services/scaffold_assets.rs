@@ -1,4 +1,5 @@
 use include_dir::{Dir, DirEntry, include_dir};
+use serde_yaml::Value;
 
 use crate::domain::AppError;
 
@@ -48,31 +49,31 @@ pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> 
     let content = scaffold_file_content(path)
         .ok_or_else(|| AppError::config_error(format!("Missing scaffold file: {}", path)))?;
 
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with(&format!("{}:", key)) {
-            let value = trimmed
-                .split_once(':')
-                .map(|(_, segment)| segment.split('#').next().unwrap_or("").trim())
-                .unwrap_or("");
-            let cleaned = value.trim_matches('"').trim_matches('\'');
-            let mut values: Vec<String> = if cleaned.contains('|') {
-                cleaned.split('|').map(|part| part.trim().to_string()).collect()
-            } else if cleaned.is_empty() {
-                Vec::new()
-            } else {
-                vec![cleaned.to_string()]
-            };
-            values.retain(|item| !item.is_empty());
-            if values.is_empty() {
-                return Err(AppError::config_error(format!(
-                    "No enum values found for {} in {}",
-                    key, path
-                )));
-            }
-            return Ok(values);
-        }
+    let value: Value = serde_yaml::from_str(&content)
+        .map_err(|err| AppError::config_error(format!("Failed to parse {}: {}", path, err)))?;
+
+    let map = match value {
+        Value::Mapping(map) => map,
+        _ => return Err(AppError::config_error(format!("Expected root mapping in {}", path))),
+    };
+
+    let value_str = map
+        .get(Value::String(key.to_string()))
+        .and_then(|value| value.as_str())
+        .unwrap_or("");
+
+    let values: Vec<String> = value_str
+        .split('|')
+        .map(|part| part.trim().to_string())
+        .filter(|part| !part.is_empty())
+        .collect();
+
+    if values.is_empty() {
+        return Err(AppError::config_error(format!(
+            "No enum values found for {} in {}",
+            key, path
+        )));
     }
 
-    Err(AppError::config_error(format!("Enum key '{}' not found in scaffold file {}", key, path)))
+    Ok(values)
 }

@@ -3,6 +3,12 @@ use std::path::Path;
 use super::diagnostics::Diagnostics;
 use super::yaml::{read_yaml_files, read_yaml_string, read_yaml_strings};
 
+const MIN_STATEMENT_LEN: usize = 20;
+const MIN_PROBLEM_LEN: usize = 20;
+const MIN_IMPACT_LEN: usize = 20;
+const MIN_DESIRED_OUTCOME_LEN: usize = 20;
+const MIN_ACCEPTANCE_CRITERIA_LEN: usize = 8;
+
 pub fn quality_checks(
     jules_path: &Path,
     workstreams: &[String],
@@ -16,7 +22,7 @@ pub fn quality_checks(
         for state in event_states {
             for entry in read_yaml_files(&events_dir.join(state)) {
                 if let Some(statement) = read_yaml_string(&entry, "statement")
-                    && statement.trim().len() < 20
+                    && statement.trim().len() < MIN_STATEMENT_LEN
                 {
                     diagnostics
                         .push_warning(entry.display().to_string(), "statement appears too short");
@@ -28,19 +34,19 @@ pub fn quality_checks(
         for label in issue_labels {
             for entry in read_yaml_files(&issues_dir.join(label)) {
                 if let Some(problem) = read_yaml_string(&entry, "problem")
-                    && problem.trim().len() < 20
+                    && problem.trim().len() < MIN_PROBLEM_LEN
                 {
                     diagnostics
                         .push_warning(entry.display().to_string(), "problem appears too short");
                 }
                 if let Some(impact) = read_yaml_string(&entry, "impact")
-                    && impact.trim().len() < 20
+                    && impact.trim().len() < MIN_IMPACT_LEN
                 {
                     diagnostics
                         .push_warning(entry.display().to_string(), "impact appears too short");
                 }
                 if let Some(desired) = read_yaml_string(&entry, "desired_outcome")
-                    && desired.trim().len() < 20
+                    && desired.trim().len() < MIN_DESIRED_OUTCOME_LEN
                 {
                     diagnostics.push_warning(
                         entry.display().to_string(),
@@ -50,7 +56,7 @@ pub fn quality_checks(
 
                 if let Some(criteria) = read_yaml_strings(&entry, "acceptance_criteria") {
                     for item in criteria {
-                        if item.trim().len() < 8 {
+                        if item.trim().len() < MIN_ACCEPTANCE_CRITERIA_LEN {
                             diagnostics.push_warning(
                                 entry.display().to_string(),
                                 "acceptance_criteria entry appears too short",

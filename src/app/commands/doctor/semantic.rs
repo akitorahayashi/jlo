@@ -10,6 +10,8 @@ use super::diagnostics::Diagnostics;
 use super::structure::list_subdirs;
 use super::yaml::{read_yaml_bool, read_yaml_files, read_yaml_string, read_yaml_strings};
 
+const STALE_DEEP_ANALYSIS_THRESHOLD_DAYS: i64 = 7;
+
 #[derive(Debug, Default)]
 pub struct SemanticContext {
     decided_events: HashMap<String, PathBuf>,
@@ -195,17 +197,18 @@ pub fn semantic_checks(
     for path in context.issues.values() {
         if let Some(requires) = read_yaml_bool(path, "requires_deep_analysis")
             && requires
-            && let Some(reason) = read_yaml_string(path, "deep_analysis_reason")
-            && reason.trim().is_empty()
         {
-            diagnostics.push_error(
-                path.display().to_string(),
-                "requires_deep_analysis true without deep_analysis_reason",
-            );
+            match read_yaml_string(path, "deep_analysis_reason") {
+                Some(reason) if !reason.trim().is_empty() => {}
+                _ => {
+                    diagnostics.push_error(
+                        path.display().to_string(),
+                        "requires_deep_analysis true without deep_analysis_reason",
+                    );
+                }
+            }
         }
     }
-
-    let stale_threshold_days = 7;
     for path in context.issues.values() {
         if let Some(requires) = read_yaml_bool(path, "requires_deep_analysis")
             && requires
@@ -213,7 +216,7 @@ pub fn semantic_checks(
             && let Ok(parsed) = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
         {
             let days = (Utc::now().date_naive() - parsed).num_days();
-            if days > stale_threshold_days {
+            if days > STALE_DEEP_ANALYSIS_THRESHOLD_DAYS {
                 diagnostics.push_warning(
                     path.display().to_string(),
                     format!("requires_deep_analysis true for {} days", days),

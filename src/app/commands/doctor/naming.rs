@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use super::diagnostics::Diagnostics;
-use super::yaml::{is_kebab_case, read_yaml_files};
+use super::yaml::is_kebab_case;
 
 pub fn naming_checks(
     jules_path: &Path,
@@ -14,14 +14,14 @@ pub fn naming_checks(
         let ws_dir = jules_path.join("workstreams").join(workstream);
         let events_dir = ws_dir.join("events");
         for state in event_states {
-            for entry in read_yaml_files(&events_dir.join(state)) {
+            for entry in list_files(&events_dir.join(state)) {
                 validate_filename(&entry, diagnostics, "event");
             }
         }
 
         let issues_dir = ws_dir.join("issues");
         for label in issue_labels {
-            for entry in read_yaml_files(&issues_dir.join(label)) {
+            for entry in list_files(&issues_dir.join(label)) {
                 validate_filename(&entry, diagnostics, "issue");
             }
         }
@@ -33,15 +33,21 @@ pub fn naming_checks(
     {
         for entry in entries.flatten() {
             let role_dir = entry.path();
-            let feedback_dir = role_dir.join("feedbacks");
-            for entry in read_yaml_files(&feedback_dir) {
-                validate_filename(&entry, diagnostics, "feedback");
+            if role_dir.is_dir() {
+                let feedback_dir = role_dir.join("feedbacks");
+                for entry in list_files(&feedback_dir) {
+                    validate_filename(&entry, diagnostics, "feedback");
+                }
             }
         }
     }
 }
 
 fn validate_filename(path: &Path, diagnostics: &mut Diagnostics, kind: &str) {
+    if path.file_name().and_then(|name| name.to_str()) == Some(".gitkeep") {
+        return;
+    }
+
     if path.extension().and_then(|ext| ext.to_str()) != Some("yml") {
         diagnostics.push_error(path.display().to_string(), format!("{} file must be .yml", kind));
         return;
@@ -54,4 +60,17 @@ fn validate_filename(path: &Path, diagnostics: &mut Diagnostics, kind: &str) {
             format!("{} filename must be kebab-case", kind),
         );
     }
+}
+
+fn list_files(dir: &Path) -> Vec<std::path::PathBuf> {
+    let mut files = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                files.push(path);
+            }
+        }
+    }
+    files
 }

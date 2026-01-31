@@ -69,7 +69,6 @@ pub struct StructuralInputs<'a> {
     pub workstreams: &'a [String],
     pub issue_labels: &'a [String],
     pub event_states: &'a [String],
-    pub run_config: &'a RunConfig,
     pub options: &'a DoctorOptions,
     pub applied_fixes: &'a mut Vec<String>,
 }
@@ -237,33 +236,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
                 inputs.applied_fixes,
                 diagnostics,
             );
-        }
-    }
-
-    ensure_roles_in_config(inputs.run_config, inputs.jules_path, diagnostics);
-}
-
-fn ensure_roles_in_config(
-    run_config: &RunConfig,
-    jules_path: &Path,
-    diagnostics: &mut Diagnostics,
-) {
-    let observers_dir = jules_path.join("roles/observers");
-    let deciders_dir = jules_path.join("roles/deciders");
-
-    for role in &run_config.agents.observers {
-        let path = observers_dir.join(role);
-        if !path.exists() {
-            diagnostics
-                .push_error(path.display().to_string(), "Role listed in config.toml is missing");
-        }
-    }
-
-    for role in &run_config.agents.deciders {
-        let path = deciders_dir.join(role);
-        if !path.exists() {
-            diagnostics
-                .push_error(path.display().to_string(), "Role listed in config.toml is missing");
         }
     }
 }

@@ -323,6 +323,7 @@ fn validate_issue(
                         path.display().to_string(),
                         "verification_commands must not invoke jules or jlo run",
                     );
+                    break;
                 }
             }
         }
