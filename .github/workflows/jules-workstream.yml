@@ -30,6 +30,7 @@ permissions:
 jobs:
   observer-matrix:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_roles: ${{ steps.matrix.outputs.has_roles }}
@@ -50,7 +51,10 @@ jobs:
           WORKSTREAM: ${{ inputs.workstream }}
         run: |
           set -euo pipefail
-          matrix=$(jlo schedule export --scope roles --layer observers --workstream "$WORKSTREAM" --format github-matrix | jq -c 'del(.schema_version)')
+          matrix=$(
+            timeout 20s bash -lc \
+              "set -euo pipefail; jlo schedule export --scope roles --layer observers --workstream \"$WORKSTREAM\" --format github-matrix | jq -c 'del(.schema_version)'"
+          ) || { echo "::error::Timed out while generating observer role matrix (jlo schedule export)"; exit 1; }
           count=$(echo "$matrix" | jq '.include | length')
           if [ "$count" -gt 0 ]; then
             echo "has_roles=true" >> "$GITHUB_OUTPUT"
@@ -63,6 +67,7 @@ jobs:
     needs: observer-matrix
     if: inputs.entry_point == 'observers' && needs.observer-matrix.outputs.has_roles == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       max-parallel: 1
       matrix: ${{ fromJson(needs.observer-matrix.outputs.matrix) }}
@@ -81,12 +86,13 @@ jobs:
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         run: |
-          jlo run observers --workstream "${{ matrix.workstream }}" --role "${{ matrix.role }}"
+          timeout 20m jlo run observers --workstream "${{ matrix.workstream }}" --role "${{ matrix.role }}"
 
   wait-after-observers:
     needs: observers
     if: inputs.entry_point == 'observers' && needs.observers.result == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Wait for observers
         run: |
@@ -101,6 +107,7 @@ jobs:
       needs.observers.result != 'failure' &&
       needs.wait-after-observers.result != 'failure'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -113,7 +120,7 @@ jobs:
           version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Validate workstream
-        run: jlo doctor --workstream "${{ inputs.workstream }}"
+        run: timeout 2m jlo doctor --workstream "${{ inputs.workstream }}"
 
   inspect-workstream:
     needs: doctor-after-observers
@@ -121,6 +128,7 @@ jobs:
       always() &&
       (inputs.entry_point == 'deciders' || needs.doctor-after-observers.result == 'success')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       has_pending: ${{ steps.inspect.outputs.has_pending }}
       pending_count: ${{ steps.inspect.outputs.pending_count }}
@@ -141,7 +149,8 @@ jobs:
         env:
           WORKSTREAM: ${{ inputs.workstream }}
         run: |
-          output=$(jlo workstreams inspect --workstream "$WORKSTREAM" --format json)
+          set -euo pipefail
+          output=$(timeout 20s jlo workstreams inspect --workstream "$WORKSTREAM" --format json)
           echo "$output" > inspect.json
 
           pending=$(jq '[.events.items[] | select(.state == "pending")] | length' inspect.json)
@@ -159,6 +168,7 @@ jobs:
   decider-matrix:
     needs: inspect-workstream
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_roles: ${{ steps.matrix.outputs.has_roles }}
@@ -186,7 +196,10 @@ jobs:
             exit 0
           fi
 
-          matrix=$(jlo schedule export --scope roles --layer deciders --workstream "$WORKSTREAM" --format github-matrix | jq -c 'del(.schema_version)')
+          matrix=$(
+            timeout 20s bash -lc \
+              "set -euo pipefail; jlo schedule export --scope roles --layer deciders --workstream \"$WORKSTREAM\" --format github-matrix | jq -c 'del(.schema_version)'"
+          ) || { echo "::error::Timed out while generating decider role matrix (jlo schedule export)"; exit 1; }
           count=$(echo "$matrix" | jq '.include | length')
           if [ "$count" -gt 0 ]; then
             echo "has_roles=true" >> "$GITHUB_OUTPUT"
@@ -199,6 +212,7 @@ jobs:
     needs: decider-matrix
     if: needs.decider-matrix.outputs.has_roles == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       max-parallel: 1
       matrix: ${{ fromJson(needs.decider-matrix.outputs.matrix) }}
@@ -217,12 +231,13 @@ jobs:
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         run: |
-          jlo run deciders --workstream "${{ matrix.workstream }}" --role "${{ matrix.role }}"
+          timeout 20m jlo run deciders --workstream "${{ matrix.workstream }}" --role "${{ matrix.role }}"
 
   wait-after-deciders:
     needs: deciders
     if: needs.deciders.result == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Wait for deciders
         run: |
@@ -237,6 +252,7 @@ jobs:
       needs.deciders.result != 'failure' &&
       needs.wait-after-deciders.result != 'failure'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -249,7 +265,7 @@ jobs:
           version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Validate workstream after deciders
-        run: jlo doctor --workstream "${{ inputs.workstream }}"
+        run: timeout 2m jlo doctor --workstream "${{ inputs.workstream }}"
 
   inspect-post-deciders:
     needs: [inspect-workstream, doctor-final]
@@ -258,6 +274,7 @@ jobs:
       needs.inspect-workstream.result != 'failure' &&
       needs.doctor-final.result != 'failure'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       planner_matrix: ${{ steps.route.outputs.planner_matrix }}
       has_planners: ${{ steps.route.outputs.has_planners }}
@@ -280,7 +297,8 @@ jobs:
           ISSUES_BEFORE: ${{ needs.inspect-workstream.outputs.issues_before }}
           ROUTING_LABELS: ${{ inputs.routing_labels }}
         run: |
-          output=$(jlo workstreams inspect --workstream "$WORKSTREAM" --format json)
+          set -euo pipefail
+          output=$(timeout 20s jlo workstreams inspect --workstream "$WORKSTREAM" --format json)
           echo "$output" > inspect.json
 
           if [ -z "$ISSUES_BEFORE" ]; then
@@ -317,6 +335,7 @@ jobs:
     needs: inspect-post-deciders
     if: needs.inspect-post-deciders.outputs.has_planners == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       max-parallel: 1
       matrix: ${{ fromJson(needs.inspect-post-deciders.outputs.planner_matrix) }}
@@ -335,12 +354,13 @@ jobs:
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         run: |
-          jlo run planners "${{ matrix.issue }}"
+          timeout 20m jlo run planners "${{ matrix.issue }}"
 
   wait-after-planners:
     needs: planners
     if: needs.planners.result == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Wait for planners
         run: |
@@ -355,6 +375,7 @@ jobs:
       needs.planners.result != 'failure' &&
       needs.wait-after-planners.result != 'failure'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -367,7 +388,7 @@ jobs:
           version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Validate workstream after planners
-        run: jlo doctor --workstream "${{ inputs.workstream }}"
+        run: timeout 2m jlo doctor --workstream "${{ inputs.workstream }}"
 
   inspect-post-planners:
     needs: [inspect-post-deciders, doctor-after-planners]
@@ -376,6 +397,7 @@ jobs:
       needs.inspect-post-deciders.result != 'failure' &&
       (needs.doctor-after-planners.result == 'success' || needs.doctor-after-planners.result == 'skipped')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       implementer_matrix: ${{ steps.route.outputs.implementer_matrix }}
       has_implementers: ${{ steps.route.outputs.has_implementers }}
@@ -397,7 +419,8 @@ jobs:
           NEW_ISSUES: ${{ needs.inspect-post-deciders.outputs.new_issues }}
           ROUTING_LABELS: ${{ inputs.routing_labels }}
         run: |
-          output=$(jlo workstreams inspect --workstream "$WORKSTREAM" --format json)
+          set -euo pipefail
+          output=$(timeout 20s jlo workstreams inspect --workstream "$WORKSTREAM" --format json)
           echo "$output" > inspect.json
 
           if [ -z "$NEW_ISSUES" ]; then
@@ -429,6 +452,7 @@ jobs:
     needs: inspect-post-planners
     if: needs.inspect-post-planners.outputs.has_implementers == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       max-parallel: 1
       matrix: ${{ fromJson(needs.inspect-post-planners.outputs.implementer_matrix) }}
@@ -447,4 +471,4 @@ jobs:
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
         run: |
-          jlo run implementers "${{ matrix.issue }}"
+          timeout 20m jlo run implementers "${{ matrix.issue }}"

@@ -31,7 +31,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: jules-debug
+  group: jules-debug-2
   cancel-in-progress: false
 
 jobs:
@@ -40,6 +40,7 @@ jobs:
       vars.JULES_PAUSED != 'true' &&
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_workstreams: ${{ steps.matrix.outputs.has_workstreams }}
@@ -70,7 +71,10 @@ jobs:
         id: matrix
         run: |
           set -euo pipefail
-          matrix=$(jlo schedule export --scope workstreams --format github-matrix | jq -c 'del(.schema_version)')
+          matrix=$(
+            timeout 20s bash -lc \
+              "set -euo pipefail; jlo schedule export --scope workstreams --format github-matrix | jq -c 'del(.schema_version)'"
+          ) || { echo "::error::Timed out while generating workstream matrix (jlo schedule export)"; exit 1; }
           count=$(echo "$matrix" | jq '.include | length')
           if [ "$count" -gt 0 ]; then
             echo "has_workstreams=true" >> "$GITHUB_OUTPUT"
