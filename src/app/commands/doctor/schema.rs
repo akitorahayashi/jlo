@@ -50,7 +50,7 @@ pub fn collect_prompt_entries(
                 entries.push(entry);
             }
         } else {
-            for role_dir in list_subdirs(&layer_dir) {
+            for role_dir in list_subdirs(&layer_dir, diagnostics) {
                 let prompt_path = role_dir.join("prompt.yml");
                 if prompt_path.exists()
                     && let Some(entry) = parse_prompt(&prompt_path, layer, diagnostics)
@@ -89,21 +89,41 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         }
 
         if layer == Layer::Observers {
-            for role_dir in list_subdirs(&layer_dir) {
+            for role_dir in list_subdirs(&layer_dir, diagnostics) {
                 let role_path = role_dir.join("role.yml");
                 if role_path.exists() {
                     validate_role(&role_path, &role_dir, diagnostics);
                 }
 
                 let feedback_dir = role_dir.join("feedbacks");
-                if feedback_dir.exists()
-                    && let Ok(entries) = fs::read_dir(&feedback_dir)
-                {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.extension().and_then(|ext| ext.to_str()) == Some("yml") {
-                            validate_feedback(&path, diagnostics);
-                            check_placeholders(&path, diagnostics);
+                if feedback_dir.exists() {
+                    match fs::read_dir(&feedback_dir) {
+                        Ok(entries) => {
+                            for entry in entries {
+                                match entry {
+                                    Ok(entry) => {
+                                        let path = entry.path();
+                                        if path.extension().and_then(|ext| ext.to_str())
+                                            == Some("yml")
+                                        {
+                                            validate_feedback(&path, diagnostics);
+                                            check_placeholders(&path, diagnostics);
+                                        }
+                                    }
+                                    Err(err) => {
+                                        diagnostics.push_error(
+                                            feedback_dir.display().to_string(),
+                                            format!("Failed to read directory entry: {}", err),
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            diagnostics.push_error(
+                                feedback_dir.display().to_string(),
+                                format!("Failed to read directory: {}", err),
+                            );
                         }
                     }
                 }
@@ -116,7 +136,7 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         let events_dir = ws_dir.join("events");
         for state in inputs.event_states {
             let state_dir = events_dir.join(state);
-            for entry in read_yaml_files(&state_dir) {
+            for entry in read_yaml_files(&state_dir, diagnostics) {
                 validate_event(&entry, state, inputs.event_confidence, diagnostics);
                 check_placeholders(&entry, diagnostics);
             }
@@ -125,7 +145,7 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         let issues_dir = ws_dir.join("issues");
         for label in inputs.issue_labels {
             let label_dir = issues_dir.join(label);
-            for entry in read_yaml_files(&label_dir) {
+            for entry in read_yaml_files(&label_dir, diagnostics) {
                 validate_issue(
                     &entry,
                     label,
@@ -408,7 +428,11 @@ fn validate_contracts(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) 
 fn check_placeholders(path: &Path, diagnostics: &mut Diagnostics) {
     let content = match fs::read_to_string(path) {
         Ok(content) => content,
-        Err(_) => return,
+        Err(err) => {
+            diagnostics
+                .push_error(path.display().to_string(), format!("Failed to read file: {}", err));
+            return;
+        }
     };
 
     let placeholders = [

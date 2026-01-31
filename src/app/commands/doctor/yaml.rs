@@ -139,46 +139,55 @@ pub fn ensure_id(map: &Mapping, path: &Path, key: &str, diagnostics: &mut Diagno
     }
 }
 
-pub fn read_yaml_files(dir: &Path) -> Vec<PathBuf> {
+pub fn read_yaml_files(dir: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> {
     let mut files = Vec::new();
-    if let Ok(entries) = fs::read_dir(dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file() && path.extension().and_then(|ext| ext.to_str()) == Some("yml") {
-                files.push(path);
+    match fs::read_dir(dir) {
+        Ok(entries) => {
+            for entry in entries {
+                match entry {
+                    Ok(entry) => {
+                        let path = entry.path();
+                        if path.is_file()
+                            && path.extension().and_then(|ext| ext.to_str()) == Some("yml")
+                        {
+                            files.push(path);
+                        }
+                    }
+                    Err(err) => {
+                        diagnostics.push_error(
+                            dir.display().to_string(),
+                            format!("Failed to read directory entry: {}", err),
+                        );
+                    }
+                }
             }
+        }
+        Err(err) => {
+            diagnostics.push_error(
+                dir.display().to_string(),
+                format!("Failed to read directory: {}", err),
+            );
         }
     }
     files
 }
 
-pub fn read_yaml_string(path: &Path, key: &str) -> Option<String> {
-    let content = fs::read_to_string(path).ok()?;
-    let value: serde_yaml::Value = serde_yaml::from_str(&content).ok()?;
-    let map = match value {
-        serde_yaml::Value::Mapping(map) => map,
-        _ => return None,
-    };
+pub fn read_yaml_string(path: &Path, key: &str, diagnostics: &mut Diagnostics) -> Option<String> {
+    let map = load_yaml_mapping(path, diagnostics)?;
     get_string(&map, key)
 }
 
-pub fn read_yaml_strings(path: &Path, key: &str) -> Option<Vec<String>> {
-    let content = fs::read_to_string(path).ok()?;
-    let value: serde_yaml::Value = serde_yaml::from_str(&content).ok()?;
-    let map = match value {
-        serde_yaml::Value::Mapping(map) => map,
-        _ => return None,
-    };
+pub fn read_yaml_strings(
+    path: &Path,
+    key: &str,
+    diagnostics: &mut Diagnostics,
+) -> Option<Vec<String>> {
+    let map = load_yaml_mapping(path, diagnostics)?;
     Some(get_sequence_strings(&map, key))
 }
 
-pub fn read_yaml_bool(path: &Path, key: &str) -> Option<bool> {
-    let content = fs::read_to_string(path).ok()?;
-    let value: serde_yaml::Value = serde_yaml::from_str(&content).ok()?;
-    let map = match value {
-        serde_yaml::Value::Mapping(map) => map,
-        _ => return None,
-    };
+pub fn read_yaml_bool(path: &Path, key: &str, diagnostics: &mut Diagnostics) -> Option<bool> {
+    let map = load_yaml_mapping(path, diagnostics)?;
     get_bool(&map, key)
 }
 

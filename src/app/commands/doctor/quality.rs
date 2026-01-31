@@ -20,8 +20,8 @@ pub fn quality_checks(
         let ws_dir = jules_path.join("workstreams").join(workstream);
         let events_dir = ws_dir.join("events");
         for state in event_states {
-            for entry in read_yaml_files(&events_dir.join(state)) {
-                if let Some(statement) = read_yaml_string(&entry, "statement")
+            for entry in read_yaml_files(&events_dir.join(state), diagnostics) {
+                if let Some(statement) = read_yaml_string(&entry, "statement", diagnostics)
                     && statement.trim().len() < MIN_STATEMENT_LEN
                 {
                     diagnostics
@@ -32,20 +32,20 @@ pub fn quality_checks(
 
         let issues_dir = ws_dir.join("issues");
         for label in issue_labels {
-            for entry in read_yaml_files(&issues_dir.join(label)) {
-                if let Some(problem) = read_yaml_string(&entry, "problem")
+            for entry in read_yaml_files(&issues_dir.join(label), diagnostics) {
+                if let Some(problem) = read_yaml_string(&entry, "problem", diagnostics)
                     && problem.trim().len() < MIN_PROBLEM_LEN
                 {
                     diagnostics
                         .push_warning(entry.display().to_string(), "problem appears too short");
                 }
-                if let Some(impact) = read_yaml_string(&entry, "impact")
+                if let Some(impact) = read_yaml_string(&entry, "impact", diagnostics)
                     && impact.trim().len() < MIN_IMPACT_LEN
                 {
                     diagnostics
                         .push_warning(entry.display().to_string(), "impact appears too short");
                 }
-                if let Some(desired) = read_yaml_string(&entry, "desired_outcome")
+                if let Some(desired) = read_yaml_string(&entry, "desired_outcome", diagnostics)
                     && desired.trim().len() < MIN_DESIRED_OUTCOME_LEN
                 {
                     diagnostics.push_warning(
@@ -54,7 +54,9 @@ pub fn quality_checks(
                     );
                 }
 
-                if let Some(criteria) = read_yaml_strings(&entry, "acceptance_criteria") {
+                if let Some(criteria) =
+                    read_yaml_strings(&entry, "acceptance_criteria", diagnostics)
+                {
                     for item in criteria {
                         if item.trim().len() < MIN_ACCEPTANCE_CRITERIA_LEN {
                             diagnostics.push_warning(
@@ -66,7 +68,9 @@ pub fn quality_checks(
                     }
                 }
 
-                if let Some(commands) = read_yaml_strings(&entry, "verification_commands") {
+                if let Some(commands) =
+                    read_yaml_strings(&entry, "verification_commands", diagnostics)
+                {
                     for command in commands {
                         let lowered = command.to_lowercase();
                         if command.contains('<')

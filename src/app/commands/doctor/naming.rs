@@ -14,30 +14,48 @@ pub fn naming_checks(
         let ws_dir = jules_path.join("workstreams").join(workstream);
         let events_dir = ws_dir.join("events");
         for state in event_states {
-            for entry in list_files(&events_dir.join(state)) {
+            for entry in list_files(&events_dir.join(state), diagnostics) {
                 validate_filename(&entry, diagnostics, "event");
             }
         }
 
         let issues_dir = ws_dir.join("issues");
         for label in issue_labels {
-            for entry in list_files(&issues_dir.join(label)) {
+            for entry in list_files(&issues_dir.join(label), diagnostics) {
                 validate_filename(&entry, diagnostics, "issue");
             }
         }
     }
 
     let observers_dir = jules_path.join("roles/observers");
-    if observers_dir.exists()
-        && let Ok(entries) = std::fs::read_dir(&observers_dir)
-    {
-        for entry in entries.flatten() {
-            let role_dir = entry.path();
-            if role_dir.is_dir() {
-                let feedback_dir = role_dir.join("feedbacks");
-                for entry in list_files(&feedback_dir) {
-                    validate_filename(&entry, diagnostics, "feedback");
+    if observers_dir.exists() {
+        match std::fs::read_dir(&observers_dir) {
+            Ok(entries) => {
+                for entry in entries {
+                    match entry {
+                        Ok(entry) => {
+                            let role_dir = entry.path();
+                            if role_dir.is_dir() {
+                                let feedback_dir = role_dir.join("feedbacks");
+                                for entry in list_files(&feedback_dir, diagnostics) {
+                                    validate_filename(&entry, diagnostics, "feedback");
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            diagnostics.push_error(
+                                observers_dir.display().to_string(),
+                                format!("Failed to read directory entry: {}", err),
+                            );
+                        }
+                    }
                 }
+            }
+            Err(err) => {
+                diagnostics.push_error(
+                    observers_dir.display().to_string(),
+                    format!("Failed to read directory: {}", err),
+                );
             }
         }
     }
@@ -62,14 +80,32 @@ fn validate_filename(path: &Path, diagnostics: &mut Diagnostics, kind: &str) {
     }
 }
 
-fn list_files(dir: &Path) -> Vec<std::path::PathBuf> {
+fn list_files(dir: &Path, diagnostics: &mut Diagnostics) -> Vec<std::path::PathBuf> {
     let mut files = Vec::new();
-    if let Ok(entries) = std::fs::read_dir(dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file() {
-                files.push(path);
+    match std::fs::read_dir(dir) {
+        Ok(entries) => {
+            for entry in entries {
+                match entry {
+                    Ok(entry) => {
+                        let path = entry.path();
+                        if path.is_file() {
+                            files.push(path);
+                        }
+                    }
+                    Err(err) => {
+                        diagnostics.push_error(
+                            dir.display().to_string(),
+                            format!("Failed to read directory entry: {}", err),
+                        );
+                    }
+                }
             }
+        }
+        Err(err) => {
+            diagnostics.push_error(
+                dir.display().to_string(),
+                format!("Failed to read directory: {}", err),
+            );
         }
     }
     files

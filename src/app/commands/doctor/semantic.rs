@@ -26,16 +26,17 @@ pub fn semantic_context(
     jules_path: &Path,
     workstreams: &[String],
     issue_labels: &[String],
+    diagnostics: &mut Diagnostics,
 ) -> SemanticContext {
     let mut context = SemanticContext::default();
 
     for workstream in workstreams {
         let ws_dir = jules_path.join("workstreams").join(workstream);
         let decided_dir = ws_dir.join("events/decided");
-        for entry in read_yaml_files(&decided_dir) {
-            if let Some(id) = read_yaml_string(&entry, "id") {
+        for entry in read_yaml_files(&decided_dir, diagnostics) {
+            if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
                 context.decided_events.insert(id.clone(), entry.clone());
-                if let Some(issue_id) = read_yaml_string(&entry, "issue_id")
+                if let Some(issue_id) = read_yaml_string(&entry, "issue_id", diagnostics)
                     && !issue_id.is_empty()
                 {
                     context.event_issue_map.insert(id, issue_id);
@@ -45,10 +46,12 @@ pub fn semantic_context(
 
         let issues_dir = ws_dir.join("issues");
         for label in issue_labels {
-            for entry in read_yaml_files(&issues_dir.join(label)) {
-                if let Some(id) = read_yaml_string(&entry, "id") {
+            for entry in read_yaml_files(&issues_dir.join(label), diagnostics) {
+                if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
                     context.issues.insert(id.clone(), entry.clone());
-                    if let Some(source_events) = read_yaml_strings(&entry, "source_events") {
+                    if let Some(source_events) =
+                        read_yaml_strings(&entry, "source_events", diagnostics)
+                    {
                         context.issue_sources.insert(id, source_events);
                     }
                 }
@@ -56,13 +59,23 @@ pub fn semantic_context(
         }
 
         let index_path = issues_dir.join("index.md");
-        if let Ok(content) = fs::read_to_string(&index_path) {
-            let parsed = parse_index_entries(&content);
-            if !parsed.entries.is_empty() {
-                context.index_entries.insert(workstream.clone(), parsed.entries);
-            }
-            if !parsed.duplicates.is_empty() {
-                context.index_duplicates.insert(workstream.clone(), parsed.duplicates);
+        if index_path.exists() {
+            match fs::read_to_string(&index_path) {
+                Ok(content) => {
+                    let parsed = parse_index_entries(&content);
+                    if !parsed.entries.is_empty() {
+                        context.index_entries.insert(workstream.clone(), parsed.entries);
+                    }
+                    if !parsed.duplicates.is_empty() {
+                        context.index_duplicates.insert(workstream.clone(), parsed.duplicates);
+                    }
+                }
+                Err(err) => {
+                    diagnostics.push_error(
+                        index_path.display().to_string(),
+                        format!("Failed to read file: {}", err),
+                    );
+                }
             }
         }
     }
@@ -106,7 +119,7 @@ pub fn semantic_checks(
         if let Some(entries) = context.index_entries.get(workstream) {
             let ws_dir = jules_path.join("workstreams").join(workstream).join("issues");
             let mut files = HashSet::new();
-            for entry in walk_issue_files(&ws_dir) {
+            for entry in walk_issue_files(&ws_dir, diagnostics) {
                 if let Ok(rel) = entry.strip_prefix(&ws_dir) {
                     files.insert(rel.to_string_lossy().to_string());
                 }
@@ -160,12 +173,12 @@ pub fn semantic_checks(
     let observers_dir = jules_path.join("roles/observers");
     let deciders_dir = jules_path.join("roles/deciders");
 
-    let observer_dirs: HashSet<String> = list_subdirs(&observers_dir)
+    let observer_dirs: HashSet<String> = list_subdirs(&observers_dir, diagnostics)
         .iter()
         .filter_map(|path| path.file_name().and_then(|name| name.to_str()).map(|s| s.to_string()))
         .collect();
 
-    let decider_dirs: HashSet<String> = list_subdirs(&deciders_dir)
+    let decider_dirs: HashSet<String> = list_subdirs(&deciders_dir, diagnostics)
         .iter()
         .filter_map(|path| path.file_name().and_then(|name| name.to_str()).map(|s| s.to_string()))
         .collect();
@@ -195,10 +208,10 @@ pub fn semantic_checks(
     }
 
     for path in context.issues.values() {
-        if let Some(requires) = read_yaml_bool(path, "requires_deep_analysis")
+        if let Some(requires) = read_yaml_bool(path, "requires_deep_analysis", diagnostics)
             && requires
         {
-            match read_yaml_string(path, "deep_analysis_reason") {
+            match read_yaml_string(path, "deep_analysis_reason", diagnostics) {
                 Some(reason) if !reason.trim().is_empty() => {}
                 _ => {
                     diagnostics.push_error(
@@ -207,20 +220,17 @@ pub fn semantic_checks(
                     );
                 }
             }
-        }
-    }
-    for path in context.issues.values() {
-        if let Some(requires) = read_yaml_bool(path, "requires_deep_analysis")
-            && requires
-            && let Some(date) = read_yaml_string(path, "created_at")
-            && let Ok(parsed) = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
-        {
-            let days = (Utc::now().date_naive() - parsed).num_days();
-            if days > STALE_DEEP_ANALYSIS_THRESHOLD_DAYS {
-                diagnostics.push_warning(
-                    path.display().to_string(),
-                    format!("requires_deep_analysis true for {} days", days),
-                );
+
+            if let Some(date) = read_yaml_string(path, "created_at", diagnostics)
+                && let Ok(parsed) = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
+            {
+                let days = (Utc::now().date_naive() - parsed).num_days();
+                if days > STALE_DEEP_ANALYSIS_THRESHOLD_DAYS {
+                    diagnostics.push_warning(
+                        path.display().to_string(),
+                        format!("requires_deep_analysis true for {} days", days),
+                    );
+                }
             }
         }
     }
@@ -266,14 +276,32 @@ fn parse_index_entries(content: &str) -> IndexParseResult {
     IndexParseResult { entries, duplicates }
 }
 
-fn walk_issue_files(issues_dir: &Path) -> Vec<PathBuf> {
+fn walk_issue_files(issues_dir: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> {
     let mut files = Vec::new();
-    if let Ok(entries) = fs::read_dir(issues_dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                files.extend(read_yaml_files(&path));
+    match fs::read_dir(issues_dir) {
+        Ok(entries) => {
+            for entry in entries {
+                match entry {
+                    Ok(entry) => {
+                        let path = entry.path();
+                        if path.is_dir() {
+                            files.extend(read_yaml_files(&path, diagnostics));
+                        }
+                    }
+                    Err(err) => {
+                        diagnostics.push_error(
+                            issues_dir.display().to_string(),
+                            format!("Failed to read directory entry: {}", err),
+                        );
+                    }
+                }
             }
+        }
+        Err(err) => {
+            diagnostics.push_error(
+                issues_dir.display().to_string(),
+                format!("Failed to read directory: {}", err),
+            );
         }
     }
     files

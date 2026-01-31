@@ -164,7 +164,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
                 _ => {}
             }
 
-            for entry in list_subdirs(&layer_dir) {
+            for entry in list_subdirs(&layer_dir, diagnostics) {
                 let prompt = entry.join("prompt.yml");
                 if !prompt.exists() {
                     diagnostics.push_error(prompt.display().to_string(), "Missing prompt.yml");
@@ -381,14 +381,32 @@ fn attempt_fix_file(
         .push_warning(full_path.display().to_string(), "Restored missing file from scaffold");
 }
 
-pub fn list_subdirs(path: &Path) -> Vec<PathBuf> {
+pub fn list_subdirs(path: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> {
     let mut dirs = Vec::new();
-    if let Ok(entries) = fs::read_dir(path) {
-        for entry in entries.flatten() {
-            let entry_path = entry.path();
-            if entry_path.is_dir() {
-                dirs.push(entry_path);
+    match fs::read_dir(path) {
+        Ok(entries) => {
+            for entry in entries {
+                match entry {
+                    Ok(entry) => {
+                        let entry_path = entry.path();
+                        if entry_path.is_dir() {
+                            dirs.push(entry_path);
+                        }
+                    }
+                    Err(err) => {
+                        diagnostics.push_error(
+                            path.display().to_string(),
+                            format!("Failed to read directory entry: {}", err),
+                        );
+                    }
+                }
             }
+        }
+        Err(err) => {
+            diagnostics.push_error(
+                path.display().to_string(),
+                format!("Failed to read directory: {}", err),
+            );
         }
     }
     dirs

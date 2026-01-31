@@ -83,7 +83,8 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
 
     naming::naming_checks(jules_path, &workstreams, &issue_labels, &event_states, &mut diagnostics);
 
-    let semantic_context = semantic::semantic_context(jules_path, &workstreams, &issue_labels);
+    let semantic_context =
+        semantic::semantic_context(jules_path, &workstreams, &issue_labels, &mut diagnostics);
     semantic::semantic_checks(
         jules_path,
         &workstreams,
@@ -121,7 +122,12 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         eprintln!("Check failed: {} error(s), {} warning(s) found.", errors, warnings);
     }
 
-    let _ = applied_fixes;
+    if !applied_fixes.is_empty() {
+        println!("\nApplied fixes:");
+        for fix in &applied_fixes {
+            println!("- {}", fix);
+        }
+    }
 
     Ok(DoctorOutcome { errors, warnings, exit_code })
 }
