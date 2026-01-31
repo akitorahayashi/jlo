@@ -70,7 +70,7 @@ jobs:
         id: matrix
         run: |
           set -euo pipefail
-          matrix=$(jlo schedule export --scope workstreams --format github-matrix | jq -c '.')
+          matrix=$(jlo schedule export --scope workstreams --format github-matrix | jq -c 'del(.schema_version)')
           echo "$matrix" > matrix.json
 
           count=$(jq '.include | length' matrix.json)

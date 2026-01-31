@@ -50,7 +50,7 @@ jobs:
           WORKSTREAM: ${{ inputs.workstream }}
         run: |
           set -euo pipefail
-          matrix=$(jlo schedule export --scope roles --layer observers --workstream "$WORKSTREAM" --format github-matrix | jq -c '.')
+          matrix=$(jlo schedule export --scope roles --layer observers --workstream "$WORKSTREAM" --format github-matrix | jq -c 'del(.schema_version)')
           echo "$matrix" > matrix.json
 
           count=$(jq '.include | length' matrix.json)
@@ -194,7 +194,7 @@ jobs:
             exit 0
           fi
 
-          matrix=$(jlo schedule export --scope roles --layer deciders --workstream "$WORKSTREAM" --format github-matrix | jq -c '.')
+          matrix=$(jlo schedule export --scope roles --layer deciders --workstream "$WORKSTREAM" --format github-matrix | jq -c 'del(.schema_version)')
           echo "$matrix" > matrix.json
 
           count=$(jq '.include | length' matrix.json)
