@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "f1a2b3"
+issue_id: ""
+created_at: "2024-05-22"
+author_role: "devops"
+confidence: "high"
+
+# Content
+title: "Release Rebuilds Artifacts"
+statement: |
+  The release workflow rebuilds binaries from source instead of consuming verified artifacts from the build workflow. This violates the "Ship artifacts, not scripts" principle and introduces the risk that the released binary differs from the one tested in CI.
+
+# Evidence supporting the observation
+evidence:
+  - path: ".github/workflows/release.yml"
+    loc:
+      - "run: cargo build --release"
+    note: "Release workflow compiles the binary again."
+
+  - path: ".github/workflows/ci-workflows.yml"
+    loc:
+      - "uses: ./.github/workflows/build.yml"
+    note: "CI already runs a build workflow, but its artifacts are not passed to release."
+
+tags:
+  - "artifact-delivery"
+  - "risk"
+  - "anti-pattern"
