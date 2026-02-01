@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "m5n2p1"
+issue_id: ""
+created_at: "2024-05-23"
+author_role: "qa"
+confidence: "medium"
+
+# Content
+title: "ArtifactGenerator mixes logic with filesystem I/O"
+statement: |
+  The `ArtifactGenerator::merge_env_toml` method accepts a file path (`Option<&Path>`) and performs direct filesystem I/O (`std::fs::read_to_string`). This couples the merging logic to the filesystem, forcing unit tests to create temporary files instead of testing pure data transformations.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/artifact_generator.rs"
+    loc:
+      - "fn merge_env_toml"
+    note: "Method reads file directly from disk."
+
+  - path: "src/services/artifact_generator.rs"
+    loc:
+      - "test fn merge_env_toml_preserves_existing"
+    note: "Test requires tempfile creation to verify logic."
+
+tags:
+  - "separation-of-concerns"
+  - "testability"
+  - "io-coupling"
