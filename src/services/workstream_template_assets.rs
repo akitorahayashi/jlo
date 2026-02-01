@@ -62,8 +62,10 @@ mod tests {
         assert!(!files.is_empty(), "Workstream template files should not be empty");
 
         // Verify scheduled.toml is present
-        let scheduled_toml = files.iter().find(|f| f.path == "scheduled.toml");
-        assert!(scheduled_toml.is_some(), "scheduled.toml should be present");
+        assert!(
+            files.iter().any(|f| f.path == "scheduled.toml"),
+            "scheduled.toml should be present"
+        );
     }
 
     #[test]
@@ -76,6 +78,9 @@ mod tests {
     #[test]
     fn test_workstream_template_content_returns_error_for_missing_file() {
         let result = workstream_template_content("non_existent_file.toml");
-        assert!(result.is_err(), "Should return error for missing file");
+        assert!(
+            matches!(result, Err(AppError::ConfigError(_))),
+            "Should return a config error for missing file"
+        );
     }
 }
