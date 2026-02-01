@@ -23,13 +23,13 @@ jlo init
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jlo init` | `i` | Create `.jules/` workspace with setup directory |
-| `jlo update [--dry-run] [--workflows]` | `u` | Update workspace to current jlo version |
+| `jlo update [--dry-run] [--workflows] [--adopt-managed]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo schedule export` | | Export schedule data for automation |
 | `jlo workstreams inspect` | | Inspect workstream state for automation |
 | `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate `.jules/` structure and content |
-| `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
+| `jlo setup gen [path]` | `s g` | Generate `install.sh` script and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
 
 ### Template Command
@@ -76,7 +76,7 @@ Single-role layers are issue-driven and do not support the `--role` flag.
 default_branch = "main"
 
 [jules]
-# api_url = "https://api.jules.ai/v1/sessions"
+# api_url = "https://jules.googleapis.com/v1alpha/sessions"
 # timeout_secs = 30
 # max_retries = 3
 ```

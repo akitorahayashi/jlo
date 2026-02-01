@@ -53,13 +53,23 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The `.github/
 ## Tech Stack
 - **Language**: Rust
 - **CLI Parsing**: `clap`
-- **Clipboard**: `arboard`
 - **YAML Processing**: `serde`, `serde_yaml`
 - **TOML Processing**: `toml`
+- **JSON Processing**: `serde_json`
 - **Hashing**: `sha2`
 - **Embedded scaffold**: `include_dir`
 - **Interactive prompts**: `dialoguer`
 - **Date/Time**: `chrono`
+- **HTTP Client**: `reqwest`
+- **URL Parsing**: `url`
+
+## Terminology
+
+| Term | Definition |
+|------|------------|
+| **Scaffold** | The immutable `.jules/` directory structure and reference assets managed by `jlo init` and `jlo update`. |
+| **Template** | Blueprints for creating new roles or workstreams, applied via `jlo template`. |
+| **Component** | Development tools managed by the setup command (`jlo setup`), defined in `src/assets/catalog/`. |
 
 ## Key Commands
 - **Format**: `cargo fmt`
@@ -74,7 +84,7 @@ src/
 ├── lib.rs             # Public API
 ├── domain/            # Pure types (Layer, RoleId, AppError, setup models)
 ├── ports/             # Trait boundaries
-├── services/          # I/O implementations (catalog, resolver, generator, clipboard_arboard, jules_api, role_template_service, workspace_filesystem)
+├── services/          # I/O implementations (catalog, resolver, generator, jules_api, role_template_service, workspace_filesystem)
 ├── app/
 │   ├── context.rs     # AppContext (DI container)
 │   └── commands/      # init, template, setup
