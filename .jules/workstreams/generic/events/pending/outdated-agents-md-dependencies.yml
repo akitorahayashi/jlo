@@ -1,0 +1,19 @@
+schema_version: 1
+id: "deps01"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "consistency"
+confidence: "high"
+title: "Outdated Dependency Documentation in AGENTS.md"
+statement: |
+  The `AGENTS.md` file lists `arboard` (which has been removed) and omits `reqwest`, `serde_json`, and `url` which are present in `Cargo.toml` and used in the codebase.
+evidence:
+  - path: "AGENTS.md"
+    loc: ["Clipboard: `arboard`"]
+    note: "Lists removed dependency"
+  - path: "Cargo.toml"
+    loc: ["reqwest", "serde_json", "url"]
+    note: "Actual dependencies missing from documentation"
+tags:
+  - "documentation-drift"
+  - "dependencies"
