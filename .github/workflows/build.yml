@@ -31,3 +31,14 @@ jobs:
 
       - name: Build release binary
         run: cargo build --release
+
+      - name: Rename binary
+        run: |
+          cp target/release/jlo jlo-linux-x86_64
+          chmod +x jlo-linux-x86_64
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jlo-linux-x86_64
+          path: jlo-linux-x86_64
