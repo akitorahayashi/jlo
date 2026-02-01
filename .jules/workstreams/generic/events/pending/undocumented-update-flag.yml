@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "a1b2c3"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "AGENTS.md omits --adopt-managed flag for update command"
+statement: |
+  The `AGENTS.md` file lists the `jlo update` command but omits the `--adopt-managed` flag, which is present in the implementation and documented in `README.md`.
+
+# Evidence supporting the observation
+evidence:
+  - path: "AGENTS.md"
+    loc:
+      - "jlo update"
+    note: "Omits [--adopt-managed]"
+  - path: "src/app/cli/mod.rs"
+    loc:
+      - "adopt_managed: bool"
+    note: "Flag exists in implementation"
+
+tags:
+  - "documentation"
+  - "consistency"
