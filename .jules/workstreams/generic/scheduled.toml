@@ -2,7 +2,7 @@ version = 1
 enabled = true
 
 [observers]
-roles = ["taxonomy", "data_arch", "structural_arch", "qa", "cov", "devops", "consistency"]
+roles = ["taxonomy", "data_arch", "structural_arch", "qa", "cov", "devops", "consistency", "rustacean"]
 
 [deciders]
 roles = ["triage_generic"]
