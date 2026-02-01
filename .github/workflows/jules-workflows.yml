@@ -288,7 +288,7 @@ jobs:
               .issues.items[]
               | select(type == "object")
               | select(.label != null)
-              | select(($labels | index(.label)) != null)
+              | select(.label | IN($labels[]))
               | select(.requires_deep_analysis == true)
               | .path
             ')
@@ -302,7 +302,7 @@ jobs:
               .issues.items[]
               | select(type == "object")
               | select(.label != null)
-              | select(($labels | index(.label)) != null)
+              | select(.label | IN($labels[]))
               | select(.requires_deep_analysis == false)
               | .path
             ')
