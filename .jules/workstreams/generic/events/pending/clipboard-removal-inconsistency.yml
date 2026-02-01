@@ -1,0 +1,32 @@
+schema_version: 1
+
+# Metadata
+id: "5b8678"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Stale references to removed clipboard functionality in AGENTS.md"
+statement: |
+  The `AGENTS.md` file references `arboard` and a `clipboard_arboard` service in the Tech Stack and Project Structure sections, but `arboard` is missing from `Cargo.toml`.
+
+# Evidence supporting the observation
+evidence:
+  - path: "Cargo.toml"
+    loc:
+      - "[dependencies]"
+    note: "arboard dependency is missing"
+  - path: "AGENTS.md"
+    loc:
+      - "Clipboard: arboard"
+    note: "Tech Stack section lists arboard"
+  - path: "AGENTS.md"
+    loc:
+      - "clipboard_arboard"
+    note: "Project structure lists clipboard_arboard service"
+
+tags:
+  - "documentation"
+  - "dependencies"
