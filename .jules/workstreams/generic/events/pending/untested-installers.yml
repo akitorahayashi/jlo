@@ -1,0 +1,18 @@
+schema_version: 1
+id: "ins001"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "devops"
+confidence: "high"
+title: "Installer scripts are excluded from automated CI verification"
+statement: |
+  The `verify-installers.yml` workflow is configured to run only on `workflow_dispatch`, meaning changes to installer scripts in `src/assets/catalog/` are not automatically verified on Pull Requests. This creates a blind spot where broken installers can be merged.
+evidence:
+  - path: ".github/workflows/verify-installers.yml"
+    loc:
+      - "on: workflow_dispatch"
+    note: "Workflow trigger is restricted to manual execution only."
+tags:
+  - "testing"
+  - "risk"
+  - "blind-spot"

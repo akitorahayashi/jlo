@@ -1,0 +1,22 @@
+schema_version: 1
+id: "rel001"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "devops"
+confidence: "high"
+title: "Release workflow rebuilds artifacts instead of promoting verified builds"
+statement: |
+  The release workflow compiles binaries from source using `cargo build --release` (or `cross`) rather than downloading and promoting artifacts that were built and tested in the CI pipeline. This violates the principle of "Ship artifacts, not scripts" and introduces the risk of releasing binaries that differ from what was tested.
+evidence:
+  - path: ".github/workflows/release.yml"
+    loc:
+      - "jobs.build.steps"
+    note: "Contains build steps (cargo build --release) instead of artifact download steps."
+  - path: ".github/workflows/build.yml"
+    loc:
+      - "jobs"
+    note: "Does not upload artifacts for consumption by downstream workflows."
+tags:
+  - "delivery"
+  - "integrity"
+  - "anti-pattern"
