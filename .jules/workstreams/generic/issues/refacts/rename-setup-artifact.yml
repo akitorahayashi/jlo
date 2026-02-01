@@ -1,0 +1,23 @@
+schema_version: 2
+id: r4r5s6
+source_events:
+  - "s6t7a8"
+title: Align Setup Command and Artifact Name
+label: refacts
+priority: low
+summary: "Rename setup command or install.sh artifact for consistency."
+problem: |
+  The `jlo setup` command generates `install.sh`. This naming disconnect causes confusion.
+impact: |
+  User confusion about command purpose.
+desired_outcome: |
+  Command and artifact names are aligned.
+affected_areas:
+  - "src/app/commands/setup/"
+acceptance_criteria:
+  - "Rename the command to `install` OR rename the artifact to `setup.sh`."
+  - "Ensure consistency between the action verb and the output artifact."
+verification_commands:
+  - "cargo check"
+requires_deep_analysis: false
+deep_analysis_reason: ""

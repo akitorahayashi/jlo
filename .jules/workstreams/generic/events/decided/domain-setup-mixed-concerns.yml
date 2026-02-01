@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "x9d2m4"
+issue_id: "r1d2s3"
+created_at: "2026-02-01"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Domain and DTO Mixing in Setup Module"
+statement: |
+  The `src/domain/setup.rs` file violates the Boundary Sovereignty principle by mixing core domain entities (`Component`), data transfer objects (`ComponentMeta`), and configuration/process structs (`SetupConfig`) in a single module. This creates coupling between the domain model and external configuration formats (TOML deserialization).
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/setup.rs"
+    loc:
+      - "struct EnvSpec"
+      - "struct Component"
+      - "struct SetupConfig"
+      - "struct ComponentMeta"
+    note: "All these distinct types with different lifecycles and purposes are co-located, with mixed Serde dependencies."
+
+tags:
+  - "boundary-violation"
+  - "coupling"
+  - "domain-purity"

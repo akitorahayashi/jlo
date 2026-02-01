@@ -1,0 +1,23 @@
+schema_version: 2
+id: t4a5r6
+source_events:
+  - "m4n5b6"
+title: Add Property-Based Tests for Resolver
+label: tests
+priority: medium
+summary: "Add proptest to verify resolver correctness."
+problem: |
+  The `Resolver` service relies on limited manual unit tests. Property-based tests are needed to ensure correctness of topological sorting and cycle detection.
+impact: |
+  Potential edge cases in dependency resolution could be missed.
+desired_outcome: |
+  Robust tests covering random graphs.
+affected_areas:
+  - "src/services/resolver.rs"
+acceptance_criteria:
+  - "Add `proptest` dependency."
+  - "Implement property-based tests for `Resolver::resolve` generating random dependency graphs."
+verification_commands:
+  - "grep 'proptest' src/services/resolver.rs"
+requires_deep_analysis: false
+deep_analysis_reason: ""

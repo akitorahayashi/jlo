@@ -1,0 +1,23 @@
+schema_version: 2
+id: r1o2r3
+source_events:
+  - "r3s9c8"
+title: Optimize Dependency Resolver Cloning
+label: refacts
+priority: medium
+summary: "Refactor Resolver to use references or lightweight metadata."
+problem: |
+  The `Resolver::resolve` method in `src/services/resolver.rs` inefficiently clones entire `Component` structs during topological sort.
+impact: |
+  Performance overhead, especially with large scripts.
+desired_outcome: |
+  Efficient resolution without unnecessary cloning.
+affected_areas:
+  - "src/services/resolver.rs"
+acceptance_criteria:
+  - "Refactor `Resolver` to use references or lightweight metadata for the sort algorithm."
+  - "Avoid cloning the full `Component` (especially script content) until necessary."
+verification_commands:
+  - "cargo check"
+requires_deep_analysis: false
+deep_analysis_reason: ""

@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "72aa27"
+issue_id: "d1a2m3"
+created_at: "2026-02-01"
+author_role: "consistency"
+confidence: "medium"
+
+# Content
+title: "Incomplete dependency list in AGENTS.md"
+statement: |
+  The Tech Stack section in `AGENTS.md` omits several key dependencies present in `Cargo.toml`, specifically `reqwest`, `serde_json`, and `url`.
+
+# Evidence supporting the observation
+evidence:
+  - path: "Cargo.toml"
+    loc:
+      - "reqwest"
+      - "serde_json"
+      - "url"
+    note: "Dependencies exist in Cargo.toml"
+  - path: "AGENTS.md"
+    loc:
+      - "Tech Stack"
+    note: "Section omits HTTP and JSON libraries"
+
+tags:
+  - "documentation"
+  - "dependencies"

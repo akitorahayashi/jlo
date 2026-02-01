@@ -1,0 +1,32 @@
+schema_version: 2
+id: r1r2s3
+source_events:
+  - "mixs01"
+  - "g5s4v3"
+  - "s9c8t7"
+title: Restructure Services and Clarify Terminology
+label: refacts
+priority: high
+summary: "Clean up services directory, rename generic services, clarify scaffold/template."
+problem: |
+  The `src/services/` directory is disorganized and uses ambiguous terminology:
+  1. **Mixed Responsibilities**: It contains both Interface Adapters (e.g., `HttpJulesClient`) and Domain Services (e.g., `Resolver`).
+  2. **Generic Naming**: Service names like `Resolver` and `Generator` are too generic and claim the global namespace.
+  3. **Scaffold vs Template Confusion**: The terms are used interchangeably. `EmbeddedRoleTemplateStore` reads from `scaffold`, while `workstream_template_assets` reads from `templates`.
+impact: |
+  Architectural boundaries are blurred, making it hard to understand dependencies. Generic names cause confusion.
+desired_outcome: |
+  Clear separation between adapters and domain services. Unambiguous naming.
+affected_areas:
+  - "src/services/"
+  - "src/domain/"
+  - "src/adapters/"
+acceptance_criteria:
+  - "Rename `Resolver` to `ComponentResolver` and `Generator` to `SetupScriptGenerator`."
+  - "Separate Interface Adapters (e.g., `src/adapters/`) from Domain Services (e.g., `src/domain/services/` or kept in `services` but clearly defined)."
+  - "Clarify 'Scaffold' vs 'Template' terminology in code and filenames. 'Scaffold' should refer to fixed structure, 'Template' to reusable patterns."
+verification_commands:
+  - "cargo check"
+  - "ls src/services"
+requires_deep_analysis: true
+deep_analysis_reason: "This involves moving files, renaming key services, and potentially splitting the `services` directory. It requires a clear architectural plan to distinguish between Domain Services and Interface Adapters."

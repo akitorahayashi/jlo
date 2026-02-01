@@ -1,0 +1,28 @@
+schema_version: 2
+id: d1a2m3
+source_events:
+  - "72aa27"
+  - "5b8678"
+title: Update AGENTS.md to reflect current dependencies and project structure
+label: docs
+priority: medium
+summary: "Sync AGENTS.md with actual Cargo.toml dependencies and remove obsolete clipboard references."
+problem: |
+  The `AGENTS.md` file contains outdated information regarding the project's technology stack and structure. Specifically:
+  1. The "Tech Stack" section omits key dependencies present in `Cargo.toml`, such as `reqwest`, `serde_json`, and `url`.
+  2. The file references removed clipboard functionality (`arboard` dependency and `clipboard_arboard` service) which are no longer in the codebase.
+impact: |
+  Misleading documentation confuses new contributors and agents, leading to hallucinations about available tools or architecture.
+desired_outcome: |
+  `AGENTS.md` accurately reflects the current state of the codebase, including correct dependencies and service structure.
+affected_areas:
+  - "AGENTS.md"
+acceptance_criteria:
+  - "Add `reqwest`, `serde_json`, and `url` to the Tech Stack section in `AGENTS.md`."
+  - "Remove references to `arboard` and `clipboard_arboard` from `AGENTS.md`."
+verification_commands:
+  - "grep 'reqwest' AGENTS.md"
+  - "grep 'serde_json' AGENTS.md"
+  - "! grep 'arboard' AGENTS.md"
+requires_deep_analysis: false
+deep_analysis_reason: ""

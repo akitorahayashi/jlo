@@ -1,0 +1,23 @@
+schema_version: 2
+id: r7r8m9
+source_events:
+  - "m1d2f3"
+title: Rename ManagedDefaults to reflect purpose
+label: refacts
+priority: low
+summary: "Rename ManagedDefaultsManifest to ScaffoldManifest."
+problem: |
+  The term `ManagedDefaults` (in `ManagedDefaultsManifest`) is vague. It actually tracks file integrity/checksums for the scaffold.
+impact: |
+  Confusion about the purpose of the manifest file.
+desired_outcome: |
+  Clear naming that reflects functionality.
+affected_areas:
+  - "src/services/managed_defaults.rs"
+acceptance_criteria:
+  - "Rename `ManagedDefaultsManifest` to something more descriptive, like `ScaffoldManifest` or `IntegrityManifest`."
+  - "Update references in the codebase."
+verification_commands:
+  - "cargo check"
+requires_deep_analysis: false
+deep_analysis_reason: ""

@@ -1,0 +1,23 @@
+schema_version: 2
+id: t1a2i3
+source_events:
+  - "g4h5i6"
+title: Automate Installer Verification
+label: tests
+priority: high
+summary: "Trigger installer verification on PRs automatically."
+problem: |
+  The `verify-installers.yml` workflow is manual-only (`workflow_dispatch`), risking broken installers.
+impact: |
+  Installers might be broken without notice.
+desired_outcome: |
+  Installers are verified on every relevant PR.
+affected_areas:
+  - ".github/workflows/verify-installers.yml"
+acceptance_criteria:
+  - "Configure `verify-installers.yml` to run on PRs that modify `src/assets/catalog/` or `src/app/commands/setup/`."
+  - "Ensure installers are verified automatically."
+verification_commands:
+  - "grep 'pull_request' .github/workflows/verify-installers.yml"
+requires_deep_analysis: false
+deep_analysis_reason: ""

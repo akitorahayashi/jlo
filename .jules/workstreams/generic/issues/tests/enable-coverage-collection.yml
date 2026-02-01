@@ -1,0 +1,23 @@
+schema_version: 2
+id: t7e8c9
+source_events:
+  - "k9l2m3"
+title: Enable Code Coverage Collection
+label: tests
+priority: medium
+summary: "Add coverage tools to CI pipeline."
+problem: |
+  The project lacks code coverage collection, leaving the team blind to regression risks.
+impact: |
+  Unknown test coverage gaps.
+desired_outcome: |
+  Coverage reports are generated on CI.
+affected_areas:
+  - ".github/workflows/run-tests.yml"
+acceptance_criteria:
+  - "Add a code coverage tool (e.g., `tarpaulin` or `grcov`) to the CI pipeline."
+  - "Report coverage metrics (e.g., to Codecov or as a workflow artifact)."
+verification_commands:
+  - "grep 'tarpaulin' .github/workflows/run-tests.yml || grep 'grcov' .github/workflows/run-tests.yml"
+requires_deep_analysis: false
+deep_analysis_reason: ""

@@ -1,0 +1,26 @@
+schema_version: 2
+id: r4r5p6
+source_events:
+  - "l2p5s1"
+  - "publ01"
+title: Restrict Public API Surface in lib.rs
+label: refacts
+priority: medium
+summary: "Reduce public exports in lib.rs to protect internal layers."
+problem: |
+  The `src/lib.rs` file indiscriminately exports internal modules (`app`, `services`, `ports`) as public. This violates encapsulation and exposes implementation details to consumers.
+impact: |
+  Consumers might couple to internal details, making future refactoring breaking changes.
+desired_outcome: |
+  Only the intended public API is exposed.
+affected_areas:
+  - "src/lib.rs"
+  - "src/main.rs"
+acceptance_criteria:
+  - "Modify `src/lib.rs` to only export the necessary public API (if any)."
+  - "Ensure `main.rs` can still access what it needs."
+verification_commands:
+  - "cargo check"
+  - "cargo doc --no-deps --open"
+requires_deep_analysis: false
+deep_analysis_reason: ""

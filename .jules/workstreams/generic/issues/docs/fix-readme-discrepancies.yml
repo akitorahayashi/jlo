@@ -1,0 +1,28 @@
+schema_version: 2
+id: d4f5r6
+source_events:
+  - "944394"
+  - "18e3ee"
+title: Fix discrepancies between README.md and implementation
+label: docs
+priority: medium
+summary: "Align README.md with code regarding API URLs and CLI flags."
+problem: |
+  There are inconsistencies between the documentation in `README.md` and the actual implementation:
+  1. The default API URL in `src/domain/run_config.rs` differs from the one in `README.md`.
+  2. The `jlo update` command supports an `--adopt-managed` flag which is implemented in the CLI but missing from the `README.md` documentation.
+impact: |
+  Users may use incorrect API endpoints or be unaware of useful CLI features.
+desired_outcome: |
+  `README.md` and the implementation are in sync.
+affected_areas:
+  - "README.md"
+  - "src/domain/run_config.rs"
+acceptance_criteria:
+  - "Update `README.md` to match the default API URL in `src/domain/run_config.rs`."
+  - "Add documentation for the `--adopt-managed` flag to the `jlo update` section in `README.md`."
+verification_commands:
+  - "grep -F 'googleapis.com/v1alpha/sessions' README.md"
+  - "grep 'adopt-managed' README.md"
+requires_deep_analysis: false
+deep_analysis_reason: ""

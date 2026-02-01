@@ -1,0 +1,23 @@
+schema_version: 2
+id: b7r8w9
+source_events:
+  - "f1a2b3"
+title: Stop Rebuilding Artifacts in Release Workflow
+label: bugs
+priority: high
+summary: "Use verified build artifacts in release workflow instead of recompiling."
+problem: |
+  The release workflow rebuilds binaries from source instead of using artifacts from the build workflow. This violates 'Ship what you test' and introduces risk.
+impact: |
+  Risk of shipping different bits than tested.
+desired_outcome: |
+  Release workflow uses upstream artifacts.
+affected_areas:
+  - ".github/workflows/release.yml"
+acceptance_criteria:
+  - "Modify `.github/workflows/release.yml` to download artifacts from the `build` workflow (or a preceding build step) instead of recompiling."
+  - "Ensure the released binary is bit-for-bit identical to the verified artifact."
+verification_commands:
+  - "! grep 'cargo build' .github/workflows/release.yml"
+requires_deep_analysis: false
+deep_analysis_reason: ""

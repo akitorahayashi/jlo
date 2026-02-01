@@ -1,0 +1,24 @@
+schema_version: 2
+id: t7f8t9
+source_events:
+  - "h7j2k9"
+title: Fix Global State Modification in Test Harness
+label: tests
+priority: medium
+summary: "Refactor TestContext to allow parallel execution."
+problem: |
+  The integration test harness modifies global state (`HOME`, CWD), forcing serial execution and preventing parallel testing.
+impact: |
+  Slow tests and potential flakiness.
+desired_outcome: |
+  Tests are isolated and can run in parallel.
+affected_areas:
+  - "tests/common/mod.rs"
+acceptance_criteria:
+  - "Refactor `TestContext` to avoid modifying global state."
+  - "Pass configuration (like home dir) explicitly to the application components being tested."
+  - "Enable parallel test execution."
+verification_commands:
+  - "cargo test"
+requires_deep_analysis: false
+deep_analysis_reason: ""

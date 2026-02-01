@@ -1,0 +1,18 @@
+schema_version: 1
+id: "m4n5b6"
+issue_id: "t4a5r6"
+created_at: "2026-02-01"
+author_role: "qa"
+confidence: "high"
+title: "Dependency resolver lacks property-based testing"
+statement: |
+  The topological sort algorithm in Resolver is tested only with a small set of hand-crafted examples. It lacks property-based tests to verify correctness across a wider range of generated dependency graphs, potentially missing edge cases in cycle detection or ordering.
+evidence:
+  - path: "src/services/resolver.rs"
+    loc:
+      - "123"
+    note: "Tests rely on manual setup of specific scenarios (single, chain, diamond)."
+tags:
+  - "test-coverage"
+  - "correctness"
+  - "algorithms"

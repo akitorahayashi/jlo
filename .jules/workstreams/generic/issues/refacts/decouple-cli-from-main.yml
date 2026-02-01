@@ -1,0 +1,25 @@
+schema_version: 2
+id: r7c8f9
+source_events:
+  - "clic01"
+title: Decouple CLI Logic from Binary Entry Point
+label: refacts
+priority: medium
+summary: "Move CLI structs and enums to a dedicated adapter module."
+problem: |
+  The CLI definition (`Cli` struct, `Commands` enum) and argument parsing logic reside in `src/main.rs`. This couples the CLI interface directly to the binary, hindering testability and reuse.
+impact: |
+  Cannot test CLI parsing logic in isolation.
+desired_outcome: |
+  CLI logic is in a separate module/adapter.
+affected_areas:
+  - "src/main.rs"
+  - "src/adapters/cli.rs"
+acceptance_criteria:
+  - "Move CLI structs and enums to a dedicated adapter module (e.g., `src/adapters/cli` or `src/ports/cli`)."
+  - "Ensure `main.rs` is a thin wrapper that initializes the CLI adapter and invokes the application."
+verification_commands:
+  - "cargo check"
+  - "test -f src/adapters/cli.rs || test -f src/ports/cli.rs"
+requires_deep_analysis: false
+deep_analysis_reason: ""

@@ -1,0 +1,23 @@
+schema_version: 2
+id: r4f5d6
+source_events:
+  - "depv01"
+title: Fix Dependency Inversion Violations in App Layer
+label: refacts
+priority: high
+summary: "Refactor commands to depend on traits defined in ports."
+problem: |
+  The `app` layer (commands) directly imports concrete implementations from `services`, bypassing the `ports` abstraction. This violates the hexagonal architecture principles.
+impact: |
+  High coupling between app and services, making it hard to swap implementations or mock for testing.
+desired_outcome: |
+  Commands depend only on ports (traits).
+affected_areas:
+  - "src/app/commands/"
+acceptance_criteria:
+  - "Refactor commands to depend on traits defined in `ports`."
+  - "Use dependency injection (or factory functions) to supply implementations, rather than hardcoding imports in the command logic."
+verification_commands:
+  - "cargo check"
+requires_deep_analysis: false
+deep_analysis_reason: ""

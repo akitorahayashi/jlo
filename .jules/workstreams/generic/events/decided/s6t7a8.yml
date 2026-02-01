@@ -1,0 +1,17 @@
+schema_version: 1
+created_at: 2026-02-01
+id: s6t7a8
+issue_id: "r4r5s6"
+type: observation
+workstream: generic
+layer: observers
+author_role: taxonomy
+confidence: medium
+title: "Setup Command vs Artifact Ambiguity"
+statement: "The `jlo setup` command generates an artifact named `install.sh`, creating a semantic disconnect between the command verb (setup) and the output artifact (install)."
+evidence:
+  - path: "src/app/commands/setup/generate.rs"
+    loc: ["src/app/commands/setup/generate.rs"]
+    note: "Command generates `.jules/setup/install.sh`."
+impact: "Users may be unsure if `setup` runs the setup or just prepares it. The output filename `install.sh` suggests an installation action, while the command `setup` suggests configuration."
+suggestion: "Align the command and artifact: `jlo install gen` -> `install.sh` OR `jlo setup gen` -> `setup.sh`."

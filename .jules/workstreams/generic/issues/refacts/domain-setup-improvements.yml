@@ -1,0 +1,34 @@
+schema_version: 2
+id: r1d2s3
+source_events:
+  - "c5m3p9"
+  - "c9p8o7"
+  - "c2f3g4"
+  - "x9d2m4"
+title: Refactor and clean up Setup domain model
+label: refacts
+priority: high
+summary: "Split setup.rs, separate concerns, and use strict types."
+problem: |
+  The `src/domain/setup.rs` module suffers from several design issues:
+  1. **Mixed Concerns**: It mixes core domain entities (`Component`), data transfer objects (`ComponentMeta`), and configuration (`SetupConfig`) in a single file, violating boundary sovereignty.
+  2. **Primitive Obsession**: The `Component` struct uses `String` for `name` and `dependencies`, missing an opportunity for type safety (`ComponentId` or `ComponentName`).
+  3. **Naming Mismatch**: `SetupConfig` is used to parse `.jules/setup/tools.yml`, but its name implies a broader scope, causing confusion.
+impact: |
+  High coupling makes the code harder to test and maintain. Primitive obsession allows invalid states.
+desired_outcome: |
+  A clean domain model with separated concerns and strong types.
+affected_areas:
+  - "src/domain/setup.rs"
+  - "src/domain/component.rs"
+  - "src/domain/config.rs"
+acceptance_criteria:
+  - "Split `src/domain/setup.rs` into focused modules (e.g., `src/domain/component.rs`, `src/domain/config.rs`)."
+  - "Rename `SetupConfig` to `ToolsConfig` or similar to reflect its purpose."
+  - "Introduce a `ComponentName` or `ComponentId` value object to replace raw strings in `Component`."
+  - "Ensure `ComponentMeta` (DTO) is separated from the domain entity `Component`."
+verification_commands:
+  - "cargo check"
+  - "test -f src/domain/component.rs"
+requires_deep_analysis: true
+deep_analysis_reason: "This issue involves significant changes to the domain model, including separating concerns, renaming core structs, and introducing new types. A plan is needed to ensure these changes propagate correctly through the system without breaking persistence or serialization."

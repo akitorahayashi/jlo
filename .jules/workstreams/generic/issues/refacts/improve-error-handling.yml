@@ -1,0 +1,23 @@
+schema_version: 2
+id: r7i8e9
+source_events:
+  - "e7r4p0"
+title: Improve Error Handling and Remove Primitive Obsession
+label: refacts
+priority: medium
+summary: "Introduce structured error variants in AppError."
+problem: |
+  The `AppError` enum in `src/domain/error.rs` relies on string-wrapping variants like `ConfigError(String)`. This erases type information and forces string parsing for error handling.
+impact: |
+  Fragile error handling logic that breaks when error messages change.
+desired_outcome: |
+  Typed errors that are easy to handle programmatically.
+affected_areas:
+  - "src/domain/error.rs"
+acceptance_criteria:
+  - "Introduce structured error variants in `AppError` to represent specific failure modes (e.g., `MissingConfigFile`, `InvalidConfigValue`)."
+  - "Reduce reliance on generic string-wrapping errors."
+verification_commands:
+  - "cargo check"
+requires_deep_analysis: false
+deep_analysis_reason: ""

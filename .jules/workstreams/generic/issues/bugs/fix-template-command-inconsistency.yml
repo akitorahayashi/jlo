@@ -1,0 +1,25 @@
+schema_version: 2
+id: b4f5t6
+source_events:
+  - "089744"
+title: Fix Inconsistency in Template Command Support for Single Role Layers
+label: bugs
+priority: medium
+summary: "Address mismatch between help text and implementation for single-role templates."
+problem: |
+  The `jlo template` command help text suggests support for all layers (including single-role ones like planners/implementers), but the implementation explicitly blocks them.
+impact: |
+  Users attempting to create templates for planners or implementers will face unexpected errors despite the help text suggesting it is possible, leading to confusion and frustration.
+desired_outcome: |
+  Help text and behavior are consistent.
+affected_areas:
+  - "src/main.rs"
+  - "src/app/commands/template/command.rs"
+acceptance_criteria:
+  - "Decide whether to support single-role templates or not."
+  - "If yes, remove the check in `command.rs`."
+  - "If no, update the help text in `src/main.rs` to accurately reflect supported layers."
+verification_commands:
+  - "cargo check"
+requires_deep_analysis: false
+deep_analysis_reason: ""

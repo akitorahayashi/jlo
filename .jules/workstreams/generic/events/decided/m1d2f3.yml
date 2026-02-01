@@ -1,0 +1,17 @@
+schema_version: 1
+created_at: 2026-02-01
+id: m1d2f3
+issue_id: "r7r8m9"
+type: observation
+workstream: generic
+layer: observers
+author_role: taxonomy
+confidence: medium
+title: "Managed Defaults Naming Vagueness"
+statement: "The term `ManagedDefaults` (in `ManagedDefaultsManifest`) is vague and does not clearly communicate its purpose of tracking file integrity/checksums to detect modifications."
+evidence:
+  - path: "src/services/managed_defaults.rs"
+    loc: ["src/services/managed_defaults.rs"]
+    note: "Struct `ManagedDefaultsManifest` tracks file paths and SHA256 hashes."
+impact: "Confusion about the purpose of `.jlo-managed.yml`. It sounds like configuration defaults rather than an integrity lockfile."
+suggestion: "Rename to `ScaffoldManifest`, `IntegrityManifest`, or `FileStateTracker`."

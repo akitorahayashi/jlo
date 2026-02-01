@@ -1,0 +1,23 @@
+schema_version: 2
+id: t1p2c3
+source_events:
+  - "c7d8e9"
+title: Pin CI Toolchain Version
+label: tests
+priority: high
+summary: "Ensure CI uses the same pinned toolchain as release."
+problem: |
+  CI workflows use `stable` (floating), while release uses `1.90.0` (pinned). This creates drift and reproducibility risks.
+impact: |
+  Code might pass CI but fail release or runtime.
+desired_outcome: |
+  Consistent toolchain across all workflows.
+affected_areas:
+  - ".github/actions/setup/action.yml"
+acceptance_criteria:
+  - "Update `.github/actions/setup/action.yml` to use a pinned Rust version (ideally `1.90.0` to match release, or update release to match)."
+  - "Ensure consistent toolchain usage across CI and Release."
+verification_commands:
+  - "grep '1.90.0' .github/actions/setup/action.yml"
+requires_deep_analysis: false
+deep_analysis_reason: ""

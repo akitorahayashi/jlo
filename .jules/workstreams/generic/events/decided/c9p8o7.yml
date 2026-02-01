@@ -1,0 +1,17 @@
+schema_version: 1
+created_at: 2026-02-01
+id: c9p8o7
+issue_id: "r1d2s3"
+type: observation
+workstream: generic
+layer: observers
+author_role: taxonomy
+confidence: medium
+title: "Component Primitive Obsession"
+statement: "The `Component` domain model uses raw `String` types for `name` and `dependencies`, missing an opportunity to enforce type safety and domain semantics."
+evidence:
+  - path: "src/domain/setup.rs"
+    loc: ["src/domain/setup.rs"]
+    note: "`pub struct Component { pub name: String, pub dependencies: Vec<String>, ... }`"
+impact: "Reduces refactoring safety and expressiveness. A `String` could be anything. A `ComponentId` type would make signatures self-documenting."
+suggestion: "Introduce a `ComponentId` (newtype around String) or similar domain type."
