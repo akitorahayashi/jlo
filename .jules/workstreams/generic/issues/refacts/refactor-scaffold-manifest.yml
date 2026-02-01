@@ -1,0 +1,38 @@
+schema_version: 2
+
+# Metadata
+id: "mnf3w1"
+source_events:
+  - "d4e5f6"
+title: "Refactor Scaffold Manifest Service"
+label: "refacts"
+priority: "medium"
+summary: "Improve cohesion in ScaffoldManifest service."
+
+# Content
+problem: |
+  The `scaffold_manifest.rs` module exhibits low cohesion by mixing the domain definition of `ScaffoldManifest` with low-level hashing utilities (`hash_content`) and specific business rules about file paths (`is_default_role_file`).
+
+impact: |
+  The module is harder to test and maintain.
+  Changes to hashing algorithms or path conventions require modifying the domain entity file.
+
+desired_outcome: |
+  Domain logic, hashing utilities, and business rules are separated into appropriate modules or methods.
+  `ScaffoldManifest` focuses on the data structure and serialization.
+
+# Specifics
+affected_areas:
+  - "src/services/scaffold_manifest.rs"
+
+acceptance_criteria:
+  - "Move `hash_content` and `hash_file` to a utility module (e.g. `src/utils/hash.rs` or similar)."
+  - "Move `is_default_role_file` to a business logic module or appropriate service."
+
+verification_commands:
+  - "cargo test"
+  - "cargo check"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

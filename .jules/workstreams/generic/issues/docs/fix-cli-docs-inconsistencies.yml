@@ -1,0 +1,40 @@
+schema_version: 2
+
+# Metadata
+id: "cli1q2"
+source_events:
+  - "d4e5f6"
+  - "g7h8i9"
+title: "Fix CLI Docs Inconsistencies"
+label: "docs"
+priority: "low"
+summary: "Correct CLI examples for schedule export and workstreams inspect."
+
+# Content
+problem: |
+  Both `README.md` and `AGENTS.md` document `jlo schedule export` and `jlo workstreams inspect` as runnable commands without arguments.
+  However, the implementation requires a `--scope` argument for the former and `--workstream` for the latter.
+
+impact: |
+  Users following the documentation will encounter errors.
+  Automated agents might fail if they rely on the documented examples.
+
+desired_outcome: |
+  Documentation examples are correct, runnable, and reflect the mandatory arguments.
+
+# Specifics
+affected_areas:
+  - "README.md"
+  - "AGENTS.md"
+
+acceptance_criteria:
+  - "`README.md` and `AGENTS.md` examples for `jlo schedule export` include `--scope`."
+  - "`README.md` and `AGENTS.md` examples for `jlo workstreams inspect` include `--workstream`."
+
+verification_commands:
+  - "grep 'schedule export' AGENTS.md"
+  - "grep 'workstreams inspect' AGENTS.md"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

@@ -1,0 +1,39 @@
+schema_version: 2
+
+# Metadata
+id: "arc5u1"
+source_events:
+  - "a1b2c3"
+title: "Fix Service Layer Violation"
+label: "refacts"
+priority: "medium"
+summary: "Decouple EmbeddedComponentCatalog from App layer types."
+
+# Content
+problem: |
+  The `EmbeddedComponentCatalog` service directly imports `ComponentMeta` from `crate::app::config`.
+  This violates the layered architecture where the Service layer should be independent of the Application/CLI layer.
+
+impact: |
+  Increases coupling between layers, making refactoring difficult and reducing testability of the service in isolation.
+
+desired_outcome: |
+  The Service layer defines its own data structures or uses shared Domain types.
+  `ComponentMeta` is either moved to a shared location or mapped to a domain type within the service.
+
+# Specifics
+affected_areas:
+  - "src/services/component_catalog_embedded.rs"
+  - "src/app/config.rs"
+
+acceptance_criteria:
+  - "EmbeddedComponentCatalog no longer imports from `crate::app`."
+  - "Relevant data structures are defined in `domain`, `ports`, or `services`."
+
+verification_commands:
+  - "cargo test"
+  - "cargo check"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
