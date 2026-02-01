@@ -1,0 +1,19 @@
+schema_version: 1
+id: 6dyk79
+created_at: '2026-02-01'
+author_role: taxonomy
+issue_id: ''
+confidence: high
+title: 'Undocumented CLI Flag: --adopt-managed'
+statement: The `jlo update` command supports an `--adopt-managed` flag which is implemented
+  in code but absent from `README.md` documentation.
+evidence:
+- path: src/main.rs
+  note: 'adopt_managed: bool'
+  loc:
+  - src
+  - main.rs
+- path: README.md
+  note: jlo update [--dry-run] [--workflows]
+  loc:
+  - README.md

@@ -1,0 +1,18 @@
+schema_version: 1
+id: 3maz63
+created_at: '2026-02-01'
+author_role: taxonomy
+issue_id: ''
+confidence: high
+title: 'Ghost Dependency Reference: arboard'
+statement: The `AGENTS.md` file references `arboard` (Clipboard) which is not present
+  in `Cargo.toml`, indicating stale documentation.
+evidence:
+- path: AGENTS.md
+  note: '- **Clipboard**: `arboard`'
+  loc:
+  - AGENTS.md
+- path: Cargo.toml
+  note: '[dependencies]'
+  loc:
+  - Cargo.toml
