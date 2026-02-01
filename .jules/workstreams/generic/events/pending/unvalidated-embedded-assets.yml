@@ -1,0 +1,19 @@
+schema_version: 1
+id: evt001
+issue_id: ""
+created_at: "2026-02-01"
+author_role: cov
+confidence: high
+title: Unvalidated embedded assets in scaffold_assets.rs
+statement: |
+  The `scaffold_assets.rs` service loads embedded assets (scaffolds) but only checks for non-empty content during integrity tests.
+  It lacks syntax validation for the embedded YAML/TOML files, creating a risk that broken templates are shipped in the binary.
+evidence:
+  - path: src/services/scaffold_assets.rs
+    loc:
+      - "82-109"
+    note: "Integrity tests only check `!file.contents().is_empty()`."
+tags:
+  - risk
+  - coverage
+  - robustness
