@@ -75,3 +75,37 @@ pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> 
 
     Ok(values)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_scaffold_assets_integrity() {
+        // Ensure the directory is not empty
+        assert!(!SCAFFOLD_DIR.entries().is_empty(), "Scaffold directory should not be empty");
+
+        for entry in SCAFFOLD_DIR.entries() {
+            check_entry(entry);
+        }
+    }
+
+    fn check_entry(entry: &DirEntry) {
+        match entry {
+            DirEntry::File(file) => {
+                // Ensure we can read the content
+                // We allow empty files if they are explicitly placeholders (like .gitkeep), but generally assets should be non-empty.
+                // For now, just checking we can access it is enough to verify inclusion.
+                let path = file.path().to_string_lossy();
+                if !path.ends_with(".gitkeep") {
+                    assert!(!file.contents().is_empty(), "File {} is empty", path);
+                }
+            }
+            DirEntry::Dir(dir) => {
+                for entry in dir.entries() {
+                    check_entry(entry);
+                }
+            }
+        }
+    }
+}

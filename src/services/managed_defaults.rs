@@ -118,3 +118,41 @@ pub fn hash_content(content: &str) -> String {
     let digest = hasher.finalize();
     digest.iter().map(|byte| format!("{:02x}", byte)).collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_managed_defaults_manifest_conversion() {
+        let mut map = BTreeMap::new();
+        map.insert("file1.txt".to_string(), "hash1".to_string());
+        map.insert("file2.txt".to_string(), "hash2".to_string());
+
+        let manifest = ManagedDefaultsManifest::from_map(map.clone());
+        assert_eq!(manifest.schema_version, 1);
+        assert_eq!(manifest.files.len(), 2);
+
+        let round_trip_map = manifest.to_map();
+        assert_eq!(map, round_trip_map);
+    }
+
+    #[test]
+    fn test_hash_content() {
+        let content = "hello world";
+        let hash = hash_content(content);
+        // echo -n "hello world" | shasum -a 256
+        // b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9
+        assert_eq!(hash, "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9");
+    }
+
+    #[test]
+    fn test_is_default_role_file() {
+        assert!(is_default_role_file(".jules/roles/planners/prompt.yml"));
+        assert!(is_default_role_file(".jules/roles/observers/taxonomy/role.yml"));
+        assert!(is_default_role_file(".jules/roles/observers/qa/prompt.yml"));
+
+        assert!(!is_default_role_file("src/main.rs"));
+        assert!(!is_default_role_file(".jules/roles/observers/qa/other.yml"));
+    }
+}
