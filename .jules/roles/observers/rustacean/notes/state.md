@@ -13,6 +13,11 @@ Analysis has focused on:
 2.  **Robustness**: Checked asset loading mechanisms in `src/services/embedded_role_template_store.rs` and `src/services/workstream_template_assets.rs`. Found silent failures when encountering non-UTF8 files.
 3.  **Performance**: Noted existing issue regarding `DependencyResolver` cloning.
 
+## Recent Events
+- `uyd6ru` (2026-02-01): Excessive cloning in DependencyResolver.
+- `0reuur` (2026-02-01): Overuse of stringly-typed errors in AppError.
+- `25ymi7` (2026-02-01): Silent failure in asset loading for non-UTF8 files.
+
 ## Next Steps
 - Continue analyzing concurrency patterns if multi-threading becomes more prominent (currently mostly single-threaded CLI).
 - Review `src/app/commands/` for further error handling improvements.
