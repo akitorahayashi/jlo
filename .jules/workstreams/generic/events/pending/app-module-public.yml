@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "m9d2ka"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-01"
+author_role: "structural_arch"
+confidence: "high"
+
+# Content
+title: "Internal app module is publicly exported"
+statement: |
+  The src/lib.rs file exports the app module publicly (pub mod app),
+  exposing internal command logic and CLI structure to the library's public API.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/lib.rs"
+    loc:
+      - "pub mod app;"
+    note: "The app module containing command logic is exported in the public API."
+
+tags:
+  - "architecture"
+  - "encapsulation"
