@@ -22,7 +22,7 @@ on:
       wait_minutes:
         description: 'Minutes to wait between layers (Jules async processing time)'
         type: number
-        default: 15
+        default: 30
       routing_labels:
         description: 'Issue labels eligible for planner/implementer routing (comma-separated)'
         type: string
@@ -39,7 +39,7 @@ concurrency:
 
 env:
   ENTRY_POINT: ${{ inputs.entry_point || 'observers' }}
-  WAIT_MINUTES: ${{ inputs.wait_minutes || 15 }}
+  WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
   ROUTING_LABELS: ${{ inputs.routing_labels || 'docs,tests' }}
 
 jobs:
