@@ -1,0 +1,28 @@
+schema_version: 1
+# Metadata
+id: "7890ab"
+issue_id: ""
+created_at: "2026-02-02"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Stringly Typed Error Handling and Retry Logic"
+statement: |
+  The application relies heavily on `AppError::ConfigError(String)` for various error conditions, preventing structured error handling. Furthermore, `HttpJulesClient` implements retry logic by parsing these error message strings (e.g., checking for "429"), which is brittle and prone to breakage if error formatting changes.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "ConfigError(String),"
+    note: "Generic string error variant used for many cases."
+  - path: "src/services/jules_client_http.rs"
+    loc:
+      - "msg.contains(\"429\") || msg.contains(\"Server error\")"
+    note: "Retry logic depends on string matching of error messages."
+
+tags:
+  - "error-handling"
+  - "robustness"
+  - "anti-pattern"
