@@ -1,0 +1,18 @@
+schema_version: 1
+id: "ev1002"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "structural_arch"
+confidence: "high"
+title: "Internal modules exported publicly"
+statement: |
+  The root library file `src/lib.rs` exports internal modules `services` and `domain` publicly, exposing implementation details to consumers and violating the principle of public surface minimization.
+evidence:
+  - path: "src/lib.rs"
+    loc:
+      - "pub mod services;"
+      - "pub mod domain;"
+    note: "Unrestricted export of internal modules."
+tags:
+  - "architecture"
+  - "encapsulation"
