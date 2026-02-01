@@ -9,14 +9,10 @@
 - **Direction:** `app -> ports <- services` is the target. Currently `app -> services`.
 
 ### Public Surface
-- **Leak:** `src/lib.rs` exports internal modules (`services`, `domain`) making the API surface massive and hard to evolve.
+- **Leak:** `src/lib.rs` exports the `app` module, which exposes internal command logic and structure.
 
 ### Cohesion
-- **Services:** `src/services` is a flat list of unrelated implementations. `managed_defaults.rs` is a utility grab-bag.
-- **Domain:** `src/domain/setup.rs` mixes domain entities (`Component`) with process configuration, and the filename doesn't match the content.
-
-### Findability
-- **Ambiguity:** `setup.rs` hides `Component`.
+- **Services:** `src/services` is a flat list of unrelated implementations.
 
 ## Exclusions
 (None)
