@@ -1,0 +1,28 @@
+layer: observers
+branch_prefix: jules-observer-
+
+constraints:
+  - Do NOT write to issues/
+  - Do NOT emit events for observations already covered by open issues
+  - Workstream directory must exist (fail fast if missing)
+
+inputs:
+  - Source code and repository files
+  - role.yml (specialized focus)
+  - .jules/roles/observers/<role>/notes/ (declarative memory)
+  - .jules/roles/observers/<role>/feedbacks/ (signals from deciders)
+  - .jules/workstreams/<workstream>/issues/**/*.yml (open issues for suppression)
+
+outputs:
+  - .jules/roles/observers/<role>/notes/ (updated state)
+  - .jules/workstreams/<workstream>/events/pending/*.yml
+
+workflow:
+  - 1. Read .jules/roles/observers/<role>/notes/ to load declarative memory of project structure
+  - 2. Read .jules/roles/observers/<role>/feedbacks/, abstract patterns, update role.yml learned_exclusions
+  - 3. Read .jules/workstreams/<workstream>/issues/**/*.yml where status is 'open' to identify known problems
+  - 4. Analyze specialized domain against exclusions and open issues
+  - 5. Skip observations already covered by open issues (deduplication)
+  - 5a. Check `.jules/workstreams/<workstream>/events/pending/` and `decided/` for similar observations. Duplicate checks prevent context pollution; verify only potential matches.
+  - "6. Record new findings: cp event.yml .jules/workstreams/<workstream>/events/pending/<kebab-case-description>.yml"
+  - 7. Update .jules/roles/observers/<role>/notes/ with new patterns or structural understanding of the project (declarative memory)
