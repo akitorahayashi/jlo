@@ -36,7 +36,7 @@ enum Commands {
     /// Apply a template (workstream or role)
     #[clap(visible_alias = "tp")]
     Template {
-        /// Layer: observers, deciders, planners, or implementers
+        /// Layer: observers or deciders (multi-role layers only)
         #[arg(short, long)]
         layer: Option<String>,
         /// Name for the new role (blank role only)
