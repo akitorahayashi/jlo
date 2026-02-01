@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "tmpl01"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Weak template validation"
+statement: |
+  Tests for `EmbeddedRoleTemplateStore` verify template existence via string containment but do not parse or validate the YAML structure, risking runtime failures.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/embedded_role_template_store.rs"
+    loc:
+      - "assert!(yaml.contains(\"role: ROLE_NAME\"));"
+    note: "Validating via string matching instead of parsing"
+
+tags:
+  - "testing"
+  - "validation"
+  - "robustness"

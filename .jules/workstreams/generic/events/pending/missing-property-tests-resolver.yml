@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "mp3t9r"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "qa"
+confidence: "medium"
+
+# Content
+title: "Missing property tests for Resolver"
+statement: |
+  The `Resolver` service lacks property-based tests (e.g., `proptest`) for its topological sort and cycle detection algorithms, relying only on small, hand-crafted unit tests.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/resolver.rs"
+    loc:
+      - "mod tests"
+    note: "Contains only basic unit tests, no property testing"
+
+tags:
+  - "testing"
+  - "coverage"
+  - "robustness"

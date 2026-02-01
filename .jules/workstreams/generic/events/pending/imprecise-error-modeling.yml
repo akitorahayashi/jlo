@@ -1,0 +1,33 @@
+schema_version: 1
+
+# Metadata
+id: "errm01"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Imprecise error modeling"
+statement: |
+  `AppError` relies on a generic `ConfigError(String)` variant for distinct failure modes (Network, Git, CLI), leading to brittle "stringly typed" error handling and assertions.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "ConfigError(String)"
+    note: "Generic error variant used for multiple failure modes"
+  - path: "src/services/jules_client_http.rs"
+    loc:
+      - "AppError::ConfigError(format!(\"Failed to create HTTP client: {}\", e))"
+    note: "Used for network errors"
+  - path: "src/app/commands/init.rs"
+    loc:
+      - "AppError::ConfigError(format!(\"Failed to run git to check branch: {e}\"))"
+    note: "Used for git command errors"
+
+tags:
+  - "error-handling"
+  - "maintainability"
+  - "diagnosability"
