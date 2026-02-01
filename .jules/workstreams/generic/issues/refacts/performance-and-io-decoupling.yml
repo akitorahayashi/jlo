@@ -1,0 +1,48 @@
+schema_version: 2
+
+# Metadata
+id: "p8x2l1"
+source_events:
+  - "m5n2p1"
+  - "uyd6ru"
+  - "da0001"
+title: "Performance and IO Decoupling"
+label: "refacts"
+priority: "medium"
+summary: "ArtifactGenerator and DependencyResolver mix IO with logic and perform inefficient cloning."
+
+# Content
+problem: |
+  Core services exhibit performance and design issues:
+  1. `ArtifactGenerator::merge_env_toml` mixes file I/O (`std::fs::read_to_string`) with merging logic, making testing dependent on the filesystem.
+  2. `ArtifactGenerator::generate_install_script` creates temporary string vectors and clones component content unnecessarily.
+  3. `DependencyResolver::resolve` inefficiently clones entire `Component` structs (including script content) during topological sorting.
+
+impact: |
+  Mixing I/O with logic hinders unit testing (requiring tempfiles) and violates separation of concerns. Excessive cloning increases memory usage and allocation overhead, especially as the number of components or script size grows.
+
+desired_outcome: |
+  1. `ArtifactGenerator` logic should be pure, accepting string content/structures instead of paths. I/O should be handled at the boundaries (e.g., in the command handler or a separate adapter).
+  2. `DependencyResolver` should operate on references or lightweight IDs during sorting, avoiding deep clones of component content.
+  3. String allocations should be minimized (use `&str`, buffering, etc.).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/services/artifact_generator.rs"
+  - "src/services/dependency_resolver.rs"
+
+acceptance_criteria:
+  - "`ArtifactGenerator::merge_env_toml` accepts `Option<&str>` (content) or `BTreeMap` instead of `Option<&Path>`."
+  - "`DependencyResolver::resolve` performs topological sort without cloning `Component` structs."
+  - "Unit tests for `ArtifactGenerator` do not use `tempfile`."
+
+verification_commands:
+  - "cargo test src/services/artifact_generator.rs"
+  - "cargo test src/services/dependency_resolver.rs"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

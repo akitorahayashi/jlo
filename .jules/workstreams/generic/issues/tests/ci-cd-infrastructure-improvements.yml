@@ -1,0 +1,53 @@
+schema_version: 2
+
+# Metadata
+id: "c6v9b2"
+source_events:
+  - "2k9s8d"
+  - "3k4j5h"
+  - "9s8d7f"
+  - "8d7s6a"
+title: "CI/CD Infrastructure Improvements"
+label: "tests"
+priority: "high"
+summary: "CI pipeline is monolithic, lacks cross-platform checks, has manual installer verification, and partial artifact promotion."
+
+# Content
+problem: |
+  The CI/CD pipeline has several deficiencies:
+  1. `verify-installers.yml` is manual-only, risking regressions in `install.sh`.
+  2. `build.yml` only runs on Linux, leaving macOS/ARM targets untested.
+  3. `ci-workflows.yml` runs on all changes without path filtering, wasting resources.
+  4. `release.yml` rebuilds macOS/ARM binaries instead of promoting artifacts from a trusted build pipeline.
+
+impact: |
+  High risk of shipping broken binaries for non-Linux platforms. Slower feedback loops due to inefficient CI triggers. Potential for release binaries to differ from tested code.
+
+desired_outcome: |
+  1. Installer verification runs automatically on PRs affecting relevant files.
+  2. CI builds and tests on Linux and macOS (and ARM if possible via cross-compilation) for every PR.
+  3. CI workflows use `paths` filters to avoid running on doc-only changes.
+  4. Release workflow downloads pre-built artifacts from the build workflow for all targets.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - ".github/workflows/verify-installers.yml"
+  - ".github/workflows/build.yml"
+  - ".github/workflows/ci-workflows.yml"
+  - ".github/workflows/release.yml"
+
+acceptance_criteria:
+  - "`verify-installers.yml` triggers on `pull_request`."
+  - "`build.yml` matrix includes macOS and ARM targets."
+  - "`ci-workflows.yml` ignores `*.md` files."
+  - "`release.yml` does not run `cargo build`."
+
+verification_commands:
+  - "cat .github/workflows/*.yml"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
