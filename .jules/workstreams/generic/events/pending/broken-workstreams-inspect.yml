@@ -1,0 +1,33 @@
+schema_version: 1
+
+# Metadata
+id: "g7h8i9"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "jlo workstreams inspect example is broken (requires --workstream)"
+statement: |
+  Both `README.md` and `AGENTS.md` document `jlo workstreams inspect` as a runnable command without arguments, but the implementation requires a `--workstream` argument.
+
+# Evidence supporting the observation
+evidence:
+  - path: "README.md"
+    loc:
+      - "jlo workstreams inspect"
+    note: "Documented without arguments"
+  - path: "AGENTS.md"
+    loc:
+      - "jlo workstreams inspect"
+    note: "Documented without arguments"
+  - path: "src/app/cli/mod.rs"
+    loc:
+      - "workstream: String"
+    note: "Argument is mandatory in implementation"
+
+tags:
+  - "documentation"
+  - "broken-example"
+  - "consistency"
