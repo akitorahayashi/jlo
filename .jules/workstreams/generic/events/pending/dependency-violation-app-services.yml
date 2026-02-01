@@ -1,0 +1,25 @@
+schema_version: 1
+id: "ev1001"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "structural_arch"
+confidence: "high"
+title: "App layer bypasses ports to import services directly"
+statement: |
+  The application layer (`src/app`) is importing concrete implementations from `src/services` directly, violating the hexagonal architecture where the app layer should only depend on `ports`.
+evidence:
+  - path: "src/app/commands/init.rs"
+    loc:
+      - "use crate::services::{manifest_from_scaffold, write_manifest};"
+    note: "Command imports services directly."
+  - path: "src/app/commands/run/single_role.rs"
+    loc:
+      - "use crate::services::HttpJulesClient;"
+    note: "Command imports concrete client directly."
+  - path: "src/app/commands/run/multi_role.rs"
+    loc:
+      - "use crate::services::HttpJulesClient;"
+    note: "Command imports concrete client directly."
+tags:
+  - "architecture"
+  - "dependency-violation"

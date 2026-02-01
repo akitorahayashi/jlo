@@ -1,0 +1,19 @@
+schema_version: 1
+id: "ev1004"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "structural_arch"
+confidence: "medium"
+title: "Domain model file name mismatches content"
+statement: |
+  The file `src/domain/setup.rs` contains domain entities `Component` and `EnvSpec`, but is named after the process "setup", creating confusion about where to find these types.
+evidence:
+  - path: "src/domain/setup.rs"
+    loc:
+      - "struct Component"
+      - "struct EnvSpec"
+    note: "File named 'setup' (verb) contains 'Component' (noun)."
+tags:
+  - "architecture"
+  - "naming"
+  - "findability"
