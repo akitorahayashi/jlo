@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "933100"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Leaky Domain Models in Setup"
+statement: |
+  The `src/domain/setup.rs` module violates the principle of Boundary Sovereignty by hosting Data Transfer Objects (DTOs) and configuration models alongside domain entities. `ComponentMeta` and `SetupConfig` are coupled to serialization details (Serde attributes) and reflect external file formats (`meta.toml`, `tools.yml`) rather than pure domain concepts. These types should reside in an adapter or service layer, separated from the core domain logic.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/setup.rs"
+    loc:
+      - "pub struct ComponentMeta"
+    note: "ComponentMeta is a DTO used for parsing TOML, yet it lives in the domain module."
+
+  - path: "src/domain/setup.rs"
+    loc:
+      - "pub struct SetupConfig"
+    note: "SetupConfig is a configuration model for tool installation, leaked into the domain."
+
+tags:
+  - "boundary-sovereignty"
+  - "leaky-abstraction"
+  - "architecture"
