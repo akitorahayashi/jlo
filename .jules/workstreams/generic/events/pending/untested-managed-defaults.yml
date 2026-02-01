@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: unmdef
+issue_id: ""
+created_at: 2026-02-01
+author_role: cov
+confidence: high
+
+# Content
+title: Untested Managed Defaults Logic
+statement: |
+  The `ManagedDefaultsManifest` logic in `src/services/managed_defaults.rs` is critical for ensuring workspace integrity but lacks unit tests. This increases the risk of subtle bugs in manifest parsing, hashing, or version compatibility going unnoticed.
+
+evidence:
+  - path: src/services/managed_defaults.rs
+    loc:
+      - "1-120"
+    note: "File contains complex logic for manifest handling but no `#[cfg(test)]` module or associated unit tests."
+
+tags:
+  - testing
+  - risk
+  - critical-path
