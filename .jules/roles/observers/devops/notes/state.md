@@ -18,7 +18,7 @@ The project uses GitHub Actions for CI/CD. The pipeline is functional but exhibi
 ### 3. Testing Gaps
 - **Observation:** Installer scripts in `src/assets/catalog/` are only verified via a manual `workflow_dispatch` trigger.
 - **Risk:** Regressions in installers may go undetected until a user reports them or a manual test is run.
-- **Status:** Resolved. `verify-installers.yml` now runs on `pull_request`.
+- **Status:** Event `manual-installer-verification`.
 
 ### 4. Supply Chain & Security
 - **Observation:** Dependencies are locked (`Cargo.lock`).
@@ -27,8 +27,7 @@ The project uses GitHub Actions for CI/CD. The pipeline is functional but exhibi
 
 ### 5. Pipeline Efficiency
 - **Observation:** Monolithic CI workflow (`ci-workflows.yml`) runs on every push without path filtering.
-- **Observation:** `verify-installers.yml` runs on every PR without path filtering, executing expensive setup steps for unrelated changes.
-- **Status:** Event `inefficient-installer-verification`.
+- **Status:** Event `monolithic-ci-pipeline`.
 
 ### 6. Platform Coverage
 - **Observation:** CI (`build.yml`) only runs on `ubuntu-latest`. Release supports macOS and ARM.
@@ -38,4 +37,4 @@ The project uses GitHub Actions for CI/CD. The pipeline is functional but exhibi
 ## Recommendations
 1. **Unify Toolchain:** Update `.github/actions/setup` to respect `rust-toolchain.toml` or explicitly pin the version to match `release.yml`. (Done)
 2. **Promote Artifacts:** Modify `build.yml` to upload artifacts and `release.yml` to download them.
-3. **Automate Installer Tests:** Add a `pull_request` trigger to `verify-installers.yml` with path filtering for `src/assets/catalog/`. (Trigger added, filtering pending)
+3. **Automate Installer Tests:** Add a `pull_request` trigger to `verify-installers.yml` with path filtering for `src/assets/catalog/`. (Pending)
