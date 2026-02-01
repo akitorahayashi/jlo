@@ -9,24 +9,32 @@
   - `component_catalog_embedded.rs` (Suffix match)
   - `jules_client_http.rs` (Suffix match)
 - **Generic Names**: `Resolver` and `Generator` are too broad for their specific domain functions.
+- **Asset/Template Fragmentation**: Logic for accessing static assets is split between `RoleTemplateStore` (Port), `scaffold_assets.rs` (Service functions), and `workstream_template_assets.rs` (Service functions).
 
 ### Domain Layer (`src/domain/`)
-- Generally consistent.
 - `SetupConfig` vs `install.sh` artifact.
+- `SetupConfig` struct vs `tools.yml` file.
+- `src/domain/setup.rs` contains `Component`, `EnvSpec`, `ComponentMeta`, which are distinct entities from the setup *process*.
 
 ### CLI
-- "Scaffold" vs "Template": Reasonably consistent distinction (Base vs Additive).
+- "Scaffold" vs "Template": Reasonably consistent distinction (Base vs Additive) in CLI, but internal implementation is muddled.
 - "Setup" command -> `install.sh` generation.
-- "Workstream" command: Only `inspect` is available, limiting "workstream management" vocabulary.
+- "Workstream" command: Only `inspect` is available.
 
 ## Identified Issues
 - `tx0001`: Service filename inconsistency.
 - `tx0002`: Vague "Managed Defaults" terminology.
 - `tx0003`: Setup vs Install ambiguity.
 - `vague-service-names` (x9k2m4): Generic service names `Resolver` and `Generator`.
+- `fav001`: Fragmented Asset and Template Vocabulary (`RoleTemplateStore` vs `scaffold_assets`).
+- `mcd001`: Misplaced Component Domain Entities (in `setup.rs`).
+- `cnm001`: Config Name Mismatch (`SetupConfig` vs `tools.yml`).
 
 ## Recommendations
-- Standardize service filenames to either match the struct name (Prefix) or use a strict `[interface]_[impl]` (Suffix) pattern. Given `embedded_role_template_store.rs` is the outlier in filenames (prefix) but matches the struct name (prefix), while others use suffix filenames but prefix structs, there is a mismatch.
+- Standardize service filenames to either match the struct name (Prefix) or use a strict `[interface]_[impl]` (Suffix) pattern.
 - Rename `ManagedDefaultsManifest` to `ScaffoldManifest` to reflect its role as a state file.
 - Rename `Resolver` to `ComponentResolver` or `DependencyResolver`.
 - Rename `Generator` to `SetupGenerator` or `InstallScriptGenerator`.
+- Unify asset/template access under a single `AssetStore` or `TemplateStore` port, replacing disjointed service functions.
+- Move `Component` and related structs to `src/domain/component.rs` or `src/domain/catalog.rs`.
+- Align `SetupConfig` and `tools.yml` (e.g., rename struct to `ToolsConfig` or file to `setup.yml`).

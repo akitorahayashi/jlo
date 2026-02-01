@@ -1,0 +1,30 @@
+schema_version: 1
+id: fav001
+issue_id: ""
+created_at: "2024-05-20"
+author_role: taxonomy
+confidence: high
+title: "Fragmented Asset and Template Vocabulary"
+statement: |
+  The codebase uses inconsistent vocabulary and architectural patterns for managing static assets (scaffold, templates). The term "Template" is overloaded, and access logic is fragmented across multiple services and ports without a unified abstraction.
+evidence:
+  - path: "src/ports/role_template_store.rs"
+    loc:
+      - "trait RoleTemplateStore { fn scaffold_files..."
+    note: "Port named 'RoleTemplateStore' exposes 'scaffold_files', mixing distinct concepts (Role vs Workspace)."
+  - path: "src/services/scaffold_assets.rs"
+    loc:
+      - "pub fn list_issue_labels..."
+    note: "Service 'scaffold_assets' exposes validation data directly, bypassing the 'Store' abstraction."
+  - path: "src/services/workstream_template_assets.rs"
+    loc:
+      - "pub fn workstream_template_files..."
+    note: "Service 'workstream_template_assets' introduces another isolated asset access point."
+  - path: "src/services/embedded_role_template_store.rs"
+    loc:
+      - "static SCAFFOLD_DIR: Dir = include_dir!..."
+    note: "Multiple services embed the same 'assets/scaffold' directory, leading to duplication."
+tags:
+  - taxonomy
+  - architecture
+  - naming-consistency

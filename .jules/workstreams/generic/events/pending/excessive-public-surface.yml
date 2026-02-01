@@ -1,5 +1,6 @@
 schema_version: 1
 id: "xp9s3r"
+issue_id: ""
 created_at: "2026-02-01"
 author_role: "structural_arch"
 confidence: "high"
@@ -10,7 +11,8 @@ statement: |
 
 evidence:
   - path: "src/lib.rs"
-    loc: "3-6"
+    loc:
+      - "3-6"
     note: "pub mod app; pub mod domain; pub mod ports; pub mod services;"
 
 tags:

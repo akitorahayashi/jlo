@@ -1,5 +1,6 @@
 schema_version: 1
 id: "x7k9p2"
+issue_id: ""
 created_at: "2026-01-31"
 author_role: "structural_arch"
 confidence: "high"
@@ -10,7 +11,8 @@ statement: |
 
 evidence:
   - path: "src/domain/run_config.rs"
-    loc: "15"
+    loc:
+      - "15"
     note: "RunConfig::parse_toml depends on toml crate"
 tags:
   - "domain-purity"

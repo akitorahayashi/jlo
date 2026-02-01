@@ -1,14 +1,16 @@
 schema_version: 1
 id: rbld01
-created_at: "2026-01-31T19:20:00Z"
+issue_id: ""
+created_at: "2026-01-31"
 author_role: devops
-confidence: 90
+confidence: high
 title: "Artifact Rebuilding in Release Pipeline"
 statement: "The release pipeline rebuilds binaries from source instead of promoting verified artifacts from the build pipeline, creating a risk that the released artifact differs from what was tested."
-evidence: >-
-  In `.github/workflows/release.yml`, the `build` job runs `cargo build --release` using toolchain `1.90.0`.
-  In `.github/workflows/build.yml` (used by CI), the `build-release` job runs `cargo build --release` using the default `setup` action (stable).
-  There is no artifact passing between CI and Release; `release.yml` starts from source.
+evidence:
+  - path: ".github/workflows/release.yml"
+    loc:
+      - "jobs.build"
+    note: "Release workflow rebuilds from source."
 tags:
   - ci-cd
   - release
