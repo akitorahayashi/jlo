@@ -1,10 +1,7 @@
 name: Verify Installers
 
 on:
-  workflow_dispatch:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch: # Manual trigger only
 
 jobs:
   verify-install:

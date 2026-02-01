@@ -57,11 +57,6 @@ The orchestration workflow runs the layers in sequence as defined by `jules-work
 - Observer/Decider/Planner: Only `.jules/` changes, auto-merge
 - Implementer: Source code changes, human review required
 
-## Differences for menv
-
-- `.github/actions/setup/` is not required.
-- Workflows unrelated to Jules orchestration are not required.
-
 ## Troubleshooting
 
 ### Auto-merge Fails
