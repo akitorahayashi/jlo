@@ -16,21 +16,20 @@ The project follows a Hexagonal Architecture (Ports and Adapters) pattern, with 
 
 ### Boundary Sovereignty
 - **Positive**: `RunConfig` (`src/domain/run_config.rs`) uses a private `dto` module to handle serialization, keeping the domain type clean.
-- **Negative**: Service layer (`EmbeddedComponentCatalog`) imports DTOs (`ComponentMeta`) directly from the App layer (`src/app/config.rs`), violating architectural boundaries.
 
 ### Data Efficiency
 - **Negative**: The `Resolver` service (`src/services/dependency_resolver.rs`) performs inefficient cloning of heavy objects during dependency resolution.
+- **Negative**: The `ArtifactGenerator` service (`src/services/artifact_generator.rs`) performs inefficient string concatenation and cloning during script generation.
 
 ### Cohesion
 - **Negative**: `ScaffoldManifest` (`src/services/scaffold_manifest.rs`) mixes domain logic with low-level hashing and file path business rules.
 
 ## Active Observations
 1. **Inefficient Dependency Resolution**: `Resolver` clones `Component` structs (Reported as Issue).
-2. **Service-App Layer Violation**: Services import App DTOs.
+2. **Inefficient Artifact Generation**: `ArtifactGenerator` inefficiently builds strings.
 3. **Low Cohesion in ScaffoldManifest**: Mixing hashing/paths with domain.
 4. **Stringly Typed Error Handling**: `AppError` and retry logic rely on strings.
 
 ## Future Focus
 - Monitor for further leakage of DTOs into the domain.
 - Identify opportunities to introduce Value Objects for other primitives (e.g., file paths, checksums).
-- Evaluate data flow in `Generator` service.
