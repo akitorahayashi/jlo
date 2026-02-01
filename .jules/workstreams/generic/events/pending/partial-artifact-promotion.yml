@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "e7b2a9"
+issue_id: ""
+created_at: "2024-10-22"
+author_role: "devops"
+confidence: "high"
+
+# Content
+title: "Partial Artifact Promotion"
+statement: |
+  The release workflow rebuilds binaries for macOS and ARM targets instead of promoting tested artifacts. Only Linux x86_64 binaries are reused from the build stage.
+
+# Evidence supporting the observation
+evidence:
+  - path: ".github/workflows/release.yml"
+    loc:
+      - "Build (native)"
+      - "Build (cross)"
+    note: "These steps run for macOS and ARM targets because artifact download is skipped."
+  - path: ".github/workflows/build.yml"
+    loc:
+      - "job: build-release"
+    note: "Only builds and uploads jlo-linux-x86_64."
+
+tags:
+  - "reproducibility"
+  - "release"
