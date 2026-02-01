@@ -24,8 +24,10 @@ pub enum AutomationMode {
     #[default]
     AutoCreatePr,
     /// Create a draft PR.
+    #[allow(dead_code)]
     DraftPr,
     /// No automatic PR creation.
+    #[allow(dead_code)]
     None,
 }
 
@@ -46,6 +48,7 @@ pub struct SessionResponse {
     /// Session ID.
     pub session_id: String,
     /// Status of the session.
+    #[allow(dead_code)]
     pub status: String,
 }
 

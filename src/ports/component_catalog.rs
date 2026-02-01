@@ -1,6 +1,6 @@
 //! Component catalog port definition.
 
-use crate::domain::setup::Component;
+use crate::domain::Component;
 
 /// Trait for accessing the component catalog.
 pub trait ComponentCatalog {

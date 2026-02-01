@@ -4,8 +4,8 @@ use include_dir::{Dir, include_dir};
 
 use std::collections::BTreeMap;
 
-use crate::domain::AppError;
-use crate::domain::setup::{Component, ComponentMeta};
+use crate::app::config::ComponentMeta;
+use crate::domain::{AppError, Component, ComponentId};
 use crate::ports::ComponentCatalog;
 
 /// Embedded catalog directory.
@@ -49,8 +49,32 @@ impl EmbeddedComponentCatalog {
                     reason: e.to_string(),
                 })?;
 
-            let component = Component::from_meta(dir_name, meta, script_content.to_string());
-            components.insert(component.name.clone(), component);
+            let name_str = meta.name.clone().unwrap_or_else(|| dir_name.to_string());
+            let name_id =
+                ComponentId::new(&name_str).map_err(|_| AppError::InvalidComponentMetadata {
+                    component: dir_name.to_string(),
+                    reason: format!("Invalid component name '{}'", name_str),
+                })?;
+
+            let mut dependencies = Vec::new();
+            for dep in &meta.dependencies {
+                dependencies.push(ComponentId::new(dep).map_err(|_| {
+                    AppError::InvalidComponentMetadata {
+                        component: dir_name.to_string(),
+                        reason: format!("Invalid dependency name '{}'", dep),
+                    }
+                })?);
+            }
+
+            let component = Component {
+                name: name_id,
+                summary: meta.summary,
+                dependencies,
+                env: meta.env,
+                script_content: script_content.to_string(),
+            };
+
+            components.insert(component.name.to_string(), component);
         }
 
         Ok(Self { components })
@@ -96,7 +120,7 @@ mod tests {
         let catalog = EmbeddedComponentCatalog::new().unwrap();
         let just = catalog.get("just").expect("just should exist");
 
-        assert_eq!(just.name, "just");
+        assert_eq!(just.name.as_str(), "just");
         assert!(!just.summary.is_empty());
         assert!(!just.script_content.is_empty());
     }
