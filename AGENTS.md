@@ -102,7 +102,7 @@ tests/
 
 ## CLI Commands
 - `jlo init` (alias: `i`): Create `.jules/` structure with setup directory
-- `jlo update [--dry-run] [--workflows]` (alias: `u`): Update workspace to current jlo version
+- `jlo update [--dry-run] [--workflows] [--adopt-managed]` (alias: `u`): Update workspace to current jlo version; `--adopt-managed` resets the baseline for default role files.
 - `jlo template [-l layer] [-n name] [-w workstream]` (alias: `tp`): Create custom role (observers, deciders only)
 - `jlo run observers --workstream <name> [--role <name> | --scheduled]`: Run observer agents
 - `jlo run deciders --workstream <name> [--role <name> | --scheduled]`: Run decider agents
