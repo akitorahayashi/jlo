@@ -281,10 +281,13 @@ jobs:
 
           for ws in $workstreams; do
             inspect=$(timeout 20s jlo workstreams inspect --workstream "$ws" --format json)
+            echo "Workstream $ws: $(echo "$inspect" | jq -c '{issues_count: (.issues.items | length)}')"
 
             # Planners: requires_deep_analysis == true and matching labels
             planner_issues=$(echo "$inspect" | jq -r --argjson labels "$labels_json" '
               .issues.items[]
+              | select(type == "object")
+              | select(.label != null)
               | select(($labels | index(.label)) != null)
               | select(.requires_deep_analysis == true)
               | .path
@@ -297,6 +300,8 @@ jobs:
             # Implementers: requires_deep_analysis == false and matching labels
             implementer_issues=$(echo "$inspect" | jq -r --argjson labels "$labels_json" '
               .issues.items[]
+              | select(type == "object")
+              | select(.label != null)
               | select(($labels | index(.label)) != null)
               | select(.requires_deep_analysis == false)
               | .path
