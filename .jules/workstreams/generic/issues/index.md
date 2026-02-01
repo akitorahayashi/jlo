@@ -15,7 +15,8 @@ It serves as the central source of truth for the **Decider** to deduplicate obse
 
 | Issue | Summary |
 | :--- | :--- |
-| _No open issues_ | - |
+| [Refactor Architecture and Address Structural Debt](./refacts/refactor-architecture-structure.yml) | Address multiple architectural violations, naming inconsistencies, and boundary leaks to improve codebase maintainability and cohesion. |
+| [Optimize Dependency Resolution Performance](./refacts/optimize-dependency-resolution.yml) | Improve the performance of `Resolver::resolve` by reducing unnecessary cloning. |
 
 ## Bugs
 > Defect reports and fixes in [`bugs/`](./bugs/).
@@ -29,14 +30,14 @@ It serves as the central source of truth for the **Decider** to deduplicate obse
 
 | Issue | Summary |
 | :--- | :--- |
-| _No open issues_ | - |
+| [Improve CI Pipeline and Test Coverage](./tests/improve-ci-and-testing.yml) | Enhance CI reliability, add code coverage reporting, and improve testability of critical paths. |
 
 ## Docs
 > Documentation updates in [`docs/`](./docs/).
 
 | Issue | Summary |
 | :--- | :--- |
-| _No open issues_ | - |
+| [Fix Documentation and CLI Inconsistencies](./docs/fix-documentation-inconsistencies.yml) | Resolve discrepancies between documentation, CLI help text, and actual implementation behavior. |
 
 <!--
 Instructions for Decider:
