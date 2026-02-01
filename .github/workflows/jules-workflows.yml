@@ -171,23 +171,26 @@ jobs:
           workstreams_json='${{ needs.generate-workstream-matrix.outputs.matrix }}'
           workstreams=$(echo "$workstreams_json" | jq -r '.include[].workstream')
 
-          pending_workstreams=()
+          pending_list=""
           for ws in $workstreams; do
             inspect=$(timeout 20s jlo workstreams inspect --workstream "$ws" --format json)
             pending=$(echo "$inspect" | jq '[.events.items[] | select(.state == "pending")] | length')
             if [ "$pending" -gt 0 ]; then
-              pending_workstreams+=("$ws")
+              pending_list="${pending_list}${ws}"$'\n'
               echo "Workstream $ws has $pending pending event(s)"
             else
               echo "Workstream $ws has no pending events"
             fi
           done
 
-          if [ ${#pending_workstreams[@]} -eq 0 ]; then
+          # Trim trailing newline
+          pending_list=$(echo -n "$pending_list" | sed '/^$/d')
+
+          if [ -z "$pending_list" ]; then
             echo "matrix={\"include\":[]}" >> "$GITHUB_OUTPUT"
             echo "has_pending=false" >> "$GITHUB_OUTPUT"
           else
-            matrix_json=$(printf '%s\n' "${pending_workstreams[@]}" | jq -R . | jq -sc '{include: [.[] | {workstream: .}]}')
+            matrix_json=$(echo "$pending_list" | jq -R . | jq -sc '{include: [.[] | {workstream: .}]}')
             echo "matrix=$matrix_json" >> "$GITHUB_OUTPUT"
             echo "has_pending=true" >> "$GITHUB_OUTPUT"
           fi
@@ -273,8 +276,8 @@ jobs:
           workstreams=$(echo "$workstreams_json" | jq -r '.include[].workstream')
           labels_json=$(printf '%s' "$ROUTING_LABELS" | jq -R 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))')
 
-          planners=()
-          implementers=()
+          planner_list=""
+          implementer_list=""
 
           for ws in $workstreams; do
             inspect=$(timeout 20s jlo workstreams inspect --workstream "$ws" --format json)
@@ -287,7 +290,7 @@ jobs:
               | .path
             ')
             for issue in $planner_issues; do
-              planners+=("$issue")
+              planner_list="${planner_list}${issue}"$'\n'
               echo "Planner candidate: $issue"
             done
 
@@ -299,27 +302,31 @@ jobs:
               | .path
             ')
             for issue in $implementer_issues; do
-              implementers+=("$issue")
+              implementer_list="${implementer_list}${issue}"$'\n'
               echo "Implementer candidate: $issue"
             done
           done
 
+          # Trim trailing newlines
+          planner_list=$(echo -n "$planner_list" | sed '/^$/d')
+          implementer_list=$(echo -n "$implementer_list" | sed '/^$/d')
+
           # Planner matrix
-          if [ ${#planners[@]} -eq 0 ]; then
+          if [ -z "$planner_list" ]; then
             echo "planner_matrix={\"include\":[]}" >> "$GITHUB_OUTPUT"
             echo "has_planners=false" >> "$GITHUB_OUTPUT"
           else
-            planner_matrix=$(printf '%s\n' "${planners[@]}" | jq -R . | jq -sc '{include: [.[] | {issue: .}]}')
+            planner_matrix=$(echo "$planner_list" | jq -R . | jq -sc '{include: [.[] | {issue: .}]}')
             echo "planner_matrix=$planner_matrix" >> "$GITHUB_OUTPUT"
             echo "has_planners=true" >> "$GITHUB_OUTPUT"
           fi
 
           # Implementer matrix
-          if [ ${#implementers[@]} -eq 0 ]; then
+          if [ -z "$implementer_list" ]; then
             echo "implementer_matrix={\"include\":[]}" >> "$GITHUB_OUTPUT"
             echo "has_implementers=false" >> "$GITHUB_OUTPUT"
           else
-            implementer_matrix=$(printf '%s\n' "${implementers[@]}" | jq -R . | jq -sc '{include: [.[] | {issue: .}]}')
+            implementer_matrix=$(echo "$implementer_list" | jq -R . | jq -sc '{include: [.[] | {issue: .}]}')
             echo "implementer_matrix=$implementer_matrix" >> "$GITHUB_OUTPUT"
             echo "has_implementers=true" >> "$GITHUB_OUTPUT"
           fi
