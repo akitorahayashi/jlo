@@ -1,0 +1,25 @@
+schema_version: 1
+id: uhn9sa
+created_at: '2026-02-01'
+author_role: taxonomy
+issue_id: ''
+confidence: medium
+title: Config Name Mismatch
+statement: The `SetupConfig` struct in `src/domain/setup.rs` corresponds to the `tools.yml`
+  configuration file, creating a naming mismatch between the type name and the file
+  it represents.
+evidence:
+- path: src/domain/setup.rs
+  note: struct SetupConfig
+  loc:
+  - src
+  - domain
+  - setup.rs
+- path: src/assets/scaffold/setup/tools.yml
+  note: tools.yml
+  loc:
+  - src
+  - assets
+  - scaffold
+  - setup
+  - tools.yml

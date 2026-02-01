@@ -21,6 +21,11 @@
 - "Setup" command -> `install.sh` generation.
 - "Workstream" command: Only `inspect` is available.
 
+### Documentation
+- `AGENTS.md` lists `arboard` (Clipboard) but it is not a dependency.
+- `AGENTS.md` is missing `reqwest`, `serde_json`, `url` in Tech Stack.
+- `README.md` is missing `--adopt-managed` flag for `jlo update`.
+
 ## Identified Issues
 - `tx0001`: Service filename inconsistency.
 - `tx0002`: Vague "Managed Defaults" terminology.
@@ -29,6 +34,9 @@
 - `fav001`: Fragmented Asset and Template Vocabulary (`RoleTemplateStore` vs `scaffold_assets`).
 - `mcd001`: Misplaced Component Domain Entities (in `setup.rs`).
 - `cnm001`: Config Name Mismatch (`SetupConfig` vs `tools.yml`).
+- `ghost-dependency-reference`: `arboard` in AGENTS.md.
+- `undocumented-dependencies`: Missing deps in AGENTS.md.
+- `undocumented-cli-flag-adopt-managed`: Missing `--adopt-managed` in README.
 
 ## Recommendations
 - Standardize service filenames to either match the struct name (Prefix) or use a strict `[interface]_[impl]` (Suffix) pattern.
@@ -38,3 +46,5 @@
 - Unify asset/template access under a single `AssetStore` or `TemplateStore` port, replacing disjointed service functions.
 - Move `Component` and related structs to `src/domain/component.rs` or `src/domain/catalog.rs`.
 - Align `SetupConfig` and `tools.yml` (e.g., rename struct to `ToolsConfig` or file to `setup.yml`).
+- Update `AGENTS.md` to reflect actual dependencies.
+- Update `README.md` to document `--adopt-managed` flag.

@@ -1,0 +1,21 @@
+schema_version: 1
+id: i9t6o2
+created_at: '2026-02-01'
+author_role: taxonomy
+issue_id: ''
+confidence: high
+title: 'Vague Terminology: Managed Defaults'
+statement: The term 'Managed Defaults' is ambiguous and used interchangeably with
+  'Scaffold' or 'Template'. Code uses `ManagedDefaultsManifest` while CLI uses 'Scaffold'.
+evidence:
+- path: src/services/managed_defaults.rs
+  note: struct ManagedDefaultsManifest
+  loc:
+  - src
+  - services
+  - managed_defaults.rs
+- path: src/lib.rs
+  note: ScaffoldFile
+  loc:
+  - src
+  - lib.rs

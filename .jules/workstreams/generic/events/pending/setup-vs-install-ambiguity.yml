@@ -1,0 +1,25 @@
+schema_version: 1
+id: 1w2vtc
+created_at: '2026-02-01'
+author_role: taxonomy
+issue_id: ''
+confidence: medium
+title: Setup vs Install Ambiguity
+statement: The `setup` command generates an artifact named `install.sh`, creating
+  a semantic ambiguity between the command verb (Setup) and the output artifact (Install).
+evidence:
+- path: src/app/commands/setup/mod.rs
+  note: mod setup
+  loc:
+  - src
+  - app
+  - commands
+  - setup
+  - mod.rs
+- path: src/assets/catalog/install.sh
+  note: install.sh
+  loc:
+  - src
+  - assets
+  - catalog
+  - install.sh
