@@ -14,98 +14,55 @@ permissions:
   actions: read
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact: jlo-linux-x86_64
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            artifact: jlo-linux-aarch64
-            cross: true
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact: jlo-darwin-x86_64
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            artifact: jlo-darwin-aarch64
-
-    runs-on: ${{ matrix.os }}
-
+  prepare-artifacts:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download existing artifact (Linux x86_64)
-        if: matrix.artifact == 'jlo-linux-x86_64'
-        id: download-artifact
+      - name: Download artifacts from build workflow
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           RUN_ID=$(gh run list --workflow build.yml --commit ${{ github.sha }} --json databaseId --jq '.[0].databaseId')
-          if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
-            echo "Attempting to download artifact from run $RUN_ID"
-            if gh run download "$RUN_ID" -n "jlo-linux-x86_64"; then
-               # gh run download creates a directory with the artifact name
-               if [ -f "jlo-linux-x86_64/jlo-linux-x86_64" ]; then
-                   mv jlo-linux-x86_64/jlo-linux-x86_64 .
-                   rmdir jlo-linux-x86_64
-                   echo "skipped=true" >> $GITHUB_OUTPUT
-               else
-                   echo "Artifact downloaded but file not found in expected path"
-                   echo "skipped=false" >> $GITHUB_OUTPUT
-               fi
-            else
-               echo "Failed to download artifact"
-               echo "skipped=false" >> $GITHUB_OUTPUT
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" == "null" ]; then
+            echo "No build workflow run found for commit ${{ github.sha }}"
+            exit 1
+          fi
+
+          echo "Downloading artifacts from run $RUN_ID"
+
+          artifacts=("jlo-linux-x86_64" "jlo-linux-aarch64" "jlo-darwin-x86_64" "jlo-darwin-aarch64")
+
+          for artifact in "${artifacts[@]}"; do
+            echo "Downloading $artifact..."
+            gh run download "$RUN_ID" -n "$artifact"
+
+            if [ -d "$artifact" ]; then
+                mv "$artifact/$artifact" .
+                rmdir "$artifact"
             fi
-          else
-            echo "skipped=false" >> $GITHUB_OUTPUT
-          fi
-          if [ -f "jlo-linux-x86_64" ]; then
-             chmod +x jlo-linux-x86_64
-          fi
 
-      - name: Install Rust toolchain
-        if: steps.download-artifact.outputs.skipped != 'true'
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          toolchain: 1.90.0
-          targets: ${{ matrix.target }}
+            chmod +x "$artifact"
+          done
 
-      - name: Install cross (for cross-compilation)
-        if: ${{ matrix.cross && steps.download-artifact.outputs.skipped != 'true' }}
-        run: cargo install cross --locked
-
-      - name: Build (native)
-        if: ${{ !matrix.cross && steps.download-artifact.outputs.skipped != 'true' }}
-        run: cargo build --release --target ${{ matrix.target }}
-
-      - name: Build (cross)
-        if: ${{ matrix.cross && steps.download-artifact.outputs.skipped != 'true' }}
-        run: cross build --release --target ${{ matrix.target }}
-
-      - name: Rename binary
-        if: steps.download-artifact.outputs.skipped != 'true'
-        run: |
-          cp target/${{ matrix.target }}/release/jlo ${{ matrix.artifact }}
-          chmod +x ${{ matrix.artifact }}
-
-      - name: Upload artifact
+      - name: Upload artifacts for release
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
+          name: binaries
+          path: |
+            jlo-linux-x86_64
+            jlo-linux-aarch64
+            jlo-darwin-x86_64
+            jlo-darwin-aarch64
 
   release:
-    needs: build
+    needs: prepare-artifacts
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          merge-multiple: true
+          name: binaries
 
       - name: Create release
         uses: softprops/action-gh-release@v2
