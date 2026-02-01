@@ -98,13 +98,13 @@ mod tests {
                 // For now, just checking we can access it is enough to verify inclusion.
                 let path = file.path().to_string_lossy();
                 if !path.ends_with(".gitkeep") {
-                     assert!(file.contents().len() > 0, "File {} is empty", path);
+                    assert!(!file.contents().is_empty(), "File {} is empty", path);
                 }
             }
             DirEntry::Dir(dir) => {
-                 for entry in dir.entries() {
-                     check_entry(entry);
-                 }
+                for entry in dir.entries() {
+                    check_entry(entry);
+                }
             }
         }
     }

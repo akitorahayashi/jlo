@@ -46,7 +46,20 @@ jobs:
           RUN_ID=$(gh run list --workflow build.yml --commit ${{ github.sha }} --json databaseId --jq '.[0].databaseId')
           if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
             echo "Attempting to download artifact from run $RUN_ID"
-            gh run download "$RUN_ID" -n "jlo-linux-x86_64" && echo "skipped=true" >> $GITHUB_OUTPUT || echo "skipped=false" >> $GITHUB_OUTPUT
+            if gh run download "$RUN_ID" -n "jlo-linux-x86_64"; then
+               # gh run download creates a directory with the artifact name
+               if [ -f "jlo-linux-x86_64/jlo-linux-x86_64" ]; then
+                   mv jlo-linux-x86_64/jlo-linux-x86_64 .
+                   rmdir jlo-linux-x86_64
+                   echo "skipped=true" >> $GITHUB_OUTPUT
+               else
+                   echo "Artifact downloaded but file not found in expected path"
+                   echo "skipped=false" >> $GITHUB_OUTPUT
+               fi
+            else
+               echo "Failed to download artifact"
+               echo "skipped=false" >> $GITHUB_OUTPUT
+            fi
           else
             echo "skipped=false" >> $GITHUB_OUTPUT
           fi
