@@ -5,7 +5,7 @@ use std::path::Path;
 use serde_yaml::Value;
 
 use crate::domain::{AppError, Layer};
-use crate::services::load_schedule;
+use crate::services::workstream_schedule_filesystem::load_schedule;
 
 pub struct RoleSelectionInput<'a> {
     pub jules_path: &'a Path,

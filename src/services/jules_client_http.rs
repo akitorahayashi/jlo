@@ -51,6 +51,7 @@ impl HttpJulesClient {
     }
 
     /// Create from environment variable with default configuration.
+    #[allow(dead_code)]
     pub fn from_env() -> Result<Self, AppError> {
         let api_key = std::env::var("JULES_API_KEY").map_err(|_| {
             AppError::ConfigError("JULES_API_KEY environment variable not set".into())

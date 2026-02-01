@@ -17,6 +17,8 @@ pub enum AppError {
     WorkspaceNotFound,
     /// Role identifier is invalid.
     InvalidRoleId(String),
+    /// Component identifier is invalid.
+    InvalidComponentId(String),
     /// Layer identifier is invalid.
     InvalidLayer(String),
     /// Role not found (fuzzy match failed).
@@ -67,6 +69,13 @@ impl Display for AppError {
                 write!(
                     f,
                     "Invalid role identifier '{}': must be alphanumeric with hyphens or underscores",
+                    id
+                )
+            }
+            AppError::InvalidComponentId(id) => {
+                write!(
+                    f,
+                    "Invalid component identifier '{}': must be alphanumeric with hyphens, underscores, or periods",
                     id
                 )
             }
@@ -155,6 +164,7 @@ impl AppError {
             AppError::Io(err) => err.kind(),
             AppError::ConfigError(_)
             | AppError::InvalidRoleId(_)
+            | AppError::InvalidComponentId(_)
             | AppError::InvalidLayer(_)
             | AppError::RoleNotFound(_)
             | AppError::CircularDependency(_)

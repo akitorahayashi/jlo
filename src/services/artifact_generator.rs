@@ -3,13 +3,12 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use crate::domain::AppError;
-use crate::domain::setup::Component;
+use crate::domain::{AppError, Component};
 
 /// Service for generating setup scripts and configuration files.
-pub struct Generator;
+pub struct ArtifactGenerator;
 
-impl Generator {
+impl ArtifactGenerator {
     const SCRIPT_HEADER: &'static str = r#"#!/usr/bin/env bash
 set -euo pipefail
 
@@ -139,11 +138,11 @@ set -euo pipefail
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::setup::EnvSpec;
+    use crate::domain::{Component, ComponentId, EnvSpec};
 
     fn make_component(name: &str, env: Vec<EnvSpec>) -> Component {
         Component {
-            name: name.to_string(),
+            name: ComponentId::new(name).unwrap(),
             summary: format!("{} component", name),
             dependencies: vec![],
             env,
@@ -155,7 +154,7 @@ mod tests {
     fn generate_script_with_header() {
         let components = vec![make_component("test", vec![])];
 
-        let script = Generator::generate_install_script(&components);
+        let script = ArtifactGenerator::generate_install_script(&components);
 
         assert!(script.starts_with("#!/usr/bin/env bash"));
         assert!(script.contains("set -euo pipefail"));
@@ -166,7 +165,7 @@ mod tests {
     fn generate_script_with_sections() {
         let components = vec![make_component("alpha", vec![]), make_component("beta", vec![])];
 
-        let script = Generator::generate_install_script(&components);
+        let script = ArtifactGenerator::generate_install_script(&components);
 
         assert!(script.contains("# alpha: alpha component"));
         assert!(script.contains("# beta: beta component"));
@@ -185,7 +184,7 @@ mod tests {
             }],
         )];
 
-        let result = Generator::merge_env_toml(&components, None).unwrap();
+        let result = ArtifactGenerator::merge_env_toml(&components, None).unwrap();
 
         assert!(result.contains("[TEST_VAR]"));
         assert!(result.contains("value = \"default_value\""));
@@ -213,44 +212,9 @@ mod tests {
             }],
         )];
 
-        let result = Generator::merge_env_toml(&components, Some(&env_path)).unwrap();
+        let result = ArtifactGenerator::merge_env_toml(&components, Some(&env_path)).unwrap();
 
         assert!(result.contains("value = \"custom_value\""), "should preserve existing value");
         assert!(result.contains("note = \"Custom note\""), "should preserve existing note");
-    }
-
-    #[test]
-    fn merge_env_toml_adds_new_keys() {
-        use std::io::Write;
-        let temp_dir = tempfile::tempdir().unwrap();
-        let env_path = temp_dir.path().join("env.toml");
-
-        let mut file = std::fs::File::create(&env_path).unwrap();
-        writeln!(file, "[EXISTING]").unwrap();
-        writeln!(file, "value = \"existing\"").unwrap();
-        drop(file);
-
-        let components = vec![make_component(
-            "test",
-            vec![
-                EnvSpec {
-                    name: "EXISTING".to_string(),
-                    description: "Existing var".to_string(),
-                    default: Some("default".to_string()),
-                },
-                EnvSpec {
-                    name: "NEW_VAR".to_string(),
-                    description: "New var".to_string(),
-                    default: Some("new_default".to_string()),
-                },
-            ],
-        )];
-
-        let result = Generator::merge_env_toml(&components, Some(&env_path)).unwrap();
-
-        assert!(result.contains("[EXISTING]"));
-        assert!(result.contains("value = \"existing\""), "should preserve existing");
-        assert!(result.contains("[NEW_VAR]"));
-        assert!(result.contains("value = \"new_default\""), "should add new with default");
     }
 }

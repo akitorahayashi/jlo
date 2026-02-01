@@ -11,21 +11,21 @@ use crate::ports::ScaffoldFile;
 const MANIFEST_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ManagedDefaultsManifest {
+pub struct ScaffoldManifest {
     pub schema_version: u32,
-    pub files: Vec<ManagedDefaultsEntry>,
+    pub files: Vec<ScaffoldManifestEntry>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ManagedDefaultsEntry {
+pub struct ScaffoldManifestEntry {
     pub path: String,
     pub sha256: String,
 }
 
-impl ManagedDefaultsManifest {
+impl ScaffoldManifest {
     pub fn from_map(map: BTreeMap<String, String>) -> Self {
         let files =
-            map.into_iter().map(|(path, sha256)| ManagedDefaultsEntry { path, sha256 }).collect();
+            map.into_iter().map(|(path, sha256)| ScaffoldManifestEntry { path, sha256 }).collect();
         Self { schema_version: MANIFEST_SCHEMA_VERSION, files }
     }
 
@@ -38,20 +38,20 @@ pub fn manifest_path(jules_path: &Path) -> PathBuf {
     jules_path.join(".jlo-managed.yml")
 }
 
-pub fn load_manifest(jules_path: &Path) -> Result<Option<ManagedDefaultsManifest>, AppError> {
+pub fn load_manifest(jules_path: &Path) -> Result<Option<ScaffoldManifest>, AppError> {
     let path = manifest_path(jules_path);
     if !path.exists() {
         return Ok(None);
     }
 
     let content = fs::read_to_string(&path)?;
-    let manifest: ManagedDefaultsManifest = serde_yaml::from_str(&content).map_err(|err| {
+    let manifest: ScaffoldManifest = serde_yaml::from_str(&content).map_err(|err| {
         AppError::config_error(format!("Failed to parse {}: {}", path.display(), err))
     })?;
 
     if manifest.schema_version != MANIFEST_SCHEMA_VERSION {
         return Err(AppError::config_error(format!(
-            "Unsupported managed defaults schema version: {} (expected {})",
+            "Unsupported scaffold manifest schema version: {} (expected {})",
             manifest.schema_version, MANIFEST_SCHEMA_VERSION
         )));
     }
@@ -59,10 +59,7 @@ pub fn load_manifest(jules_path: &Path) -> Result<Option<ManagedDefaultsManifest
     Ok(Some(manifest))
 }
 
-pub fn write_manifest(
-    jules_path: &Path,
-    manifest: &ManagedDefaultsManifest,
-) -> Result<(), AppError> {
+pub fn write_manifest(jules_path: &Path, manifest: &ScaffoldManifest) -> Result<(), AppError> {
     let path = manifest_path(jules_path);
     let content = serde_yaml::to_string(manifest).map_err(|err| {
         AppError::config_error(format!("Failed to serialize {}: {}", path.display(), err))
@@ -71,14 +68,14 @@ pub fn write_manifest(
     Ok(())
 }
 
-pub fn manifest_from_scaffold(scaffold_files: &[ScaffoldFile]) -> ManagedDefaultsManifest {
+pub fn manifest_from_scaffold(scaffold_files: &[ScaffoldFile]) -> ScaffoldManifest {
     let mut map = BTreeMap::new();
     for file in scaffold_files {
         if is_default_role_file(&file.path) {
             map.insert(file.path.clone(), hash_content(&file.content));
         }
     }
-    ManagedDefaultsManifest::from_map(map)
+    ScaffoldManifest::from_map(map)
 }
 
 pub fn is_default_role_file(path: &str) -> bool {
@@ -107,6 +104,7 @@ pub fn is_default_role_file(path: &str) -> bool {
     false
 }
 
+#[allow(dead_code)]
 pub fn hash_file(path: &Path) -> Result<String, AppError> {
     let content = fs::read_to_string(path)?;
     Ok(hash_content(&content))
@@ -124,12 +122,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_managed_defaults_manifest_conversion() {
+    fn test_scaffold_manifest_conversion() {
         let mut map = BTreeMap::new();
         map.insert("file1.txt".to_string(), "hash1".to_string());
         map.insert("file2.txt".to_string(), "hash2".to_string());
 
-        let manifest = ManagedDefaultsManifest::from_map(map.clone());
+        let manifest = ScaffoldManifest::from_map(map.clone());
         assert_eq!(manifest.schema_version, 1);
         assert_eq!(manifest.files.len(), 2);
 
