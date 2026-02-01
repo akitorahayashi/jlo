@@ -1,5 +1,6 @@
 schema_version: 1
 id: "cl4m9x"
+issue_id: ""
 created_at: "2026-02-01"
 author_role: "structural_arch"
 confidence: "high"
@@ -10,7 +11,7 @@ statement: |
 
 evidence:
   - path: "src/main.rs"
-    loc: "1-280"
+    loc: ["1-280"]
     note: "Entire file contains CLI struct definitions and mapping logic."
 
 tags:

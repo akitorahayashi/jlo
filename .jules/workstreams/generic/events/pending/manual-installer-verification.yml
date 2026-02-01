@@ -1,14 +1,16 @@
 schema_version: 1
 id: mivr01
-created_at: "2026-01-31T19:22:00Z"
+issue_id: ""
+created_at: "2026-01-31"
 author_role: devops
-confidence: 95
+confidence: high
 title: "Manual Installer Verification Gap"
 statement: "The installer verification workflow `verify-installers.yml` is configured to run only on manual dispatch (`workflow_dispatch`), leaving the installer scripts in `src/assets/catalog` untested in CI/CD."
-evidence: >-
-  `.github/workflows/verify-installers.yml` has only `on: workflow_dispatch` trigger.
-  It installs components like `swift`, `uv`, `just` from `src/assets/catalog`.
-  These scripts are not executed in `ci-workflows.yml`, meaning broken install scripts will not block PRs or be detected automatically.
+evidence:
+  - path: ".github/workflows/verify-installers.yml"
+    loc:
+      - "on: workflow_dispatch"
+    note: "Workflow only triggers manually"
 tags:
   - ci-cd
   - reliability
