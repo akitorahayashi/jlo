@@ -2,7 +2,7 @@ schema_version: 1
 id: 6dyk79
 created_at: '2026-02-01'
 author_role: taxonomy
-issue_id: ''
+issue_id: 'x4j7r2'
 confidence: high
 title: 'Undocumented CLI Flag: --adopt-managed'
 statement: The `jlo update` command supports an `--adopt-managed` flag which is implemented

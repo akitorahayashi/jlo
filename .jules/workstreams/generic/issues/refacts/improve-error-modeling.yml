@@ -1,0 +1,41 @@
+schema_version: 2
+
+# Metadata
+id: "l7k6j5"
+source_events:
+  - "errm01"
+title: "Improve Error Modeling"
+label: "refacts"
+priority: "medium"
+summary: "AppError relies on a generic ConfigError(String) variant for distinct failure modes."
+
+# Content
+problem: |
+  The `AppError` enum uses a generic `ConfigError(String)` variant to represent diverse failure modes like Network errors, Git command failures, and actual configuration issues. This "stringly typed" error handling makes it impossible to programmatically distinguish and handle specific errors (e.g., retry logic).
+
+impact: |
+  Brittle error handling, poor diagnosability, and inability to implement sophisticated recovery strategies.
+
+desired_outcome: |
+  `AppError` has distinct, typed variants for major failure modes (Network, Git, IO, Config).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/error.rs"
+  - "src/services/"
+  - "src/app/commands/"
+
+acceptance_criteria:
+  - "`AppError` expanded with variants like `NetworkError`, `GitError`, `ExternalCommandError`."
+  - "Call sites updated to use specific variants instead of `ConfigError`."
+  - "Error messages are preserved or improved."
+
+verification_commands:
+  - "grep 'ConfigError' src/ -r" # Should reduce count significantly
+
+# Analysis Flags
+requires_deep_analysis: true
+deep_analysis_reason: "Replacing a pervasive error variant requires auditing all call sites and potentially redesigning error handling flow across the application."

@@ -1,0 +1,38 @@
+schema_version: 2
+
+# Metadata
+id: "x4j7r2"
+source_events:
+  - "6dyk79"
+  - "q9l3v2"
+title: "Undocumented CLI Options"
+label: "docs"
+priority: "low"
+summary: "The `jlo update` command supports an `--adopt-managed` flag that is not documented in README.md."
+
+# Content
+problem: |
+  The `jlo update` command implementation supports an `--adopt-managed` flag (verified in `src/app/commands/update.rs`), but this option is not listed in the `README.md` command reference.
+
+impact: |
+  Users are unaware of the ability to adopt managed defaults during updates, potentially leading to manual effort or inconsistent states.
+
+desired_outcome: |
+  `README.md` accurately documents the `--adopt-managed` flag for the update command.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "README.md"
+
+acceptance_criteria:
+  - "README.md includes `--adopt-managed` in the `jlo update` command syntax."
+
+verification_commands:
+  - "grep 'adopt-managed' README.md"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

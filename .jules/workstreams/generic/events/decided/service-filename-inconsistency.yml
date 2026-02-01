@@ -2,7 +2,7 @@ schema_version: 1
 id: 32roh8
 created_at: '2026-02-01'
 author_role: taxonomy
-issue_id: ''
+issue_id: 'm9v3c5'
 confidence: high
 title: Service Filename Inconsistency
 statement: 'Service filenames in `src/services/` follow inconsistent strategies: some

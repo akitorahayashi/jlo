@@ -2,7 +2,7 @@ schema_version: 1
 id: 1w2vtc
 created_at: '2026-02-01'
 author_role: taxonomy
-issue_id: ''
+issue_id: 'q2w8e4'
 confidence: medium
 title: Setup vs Install Ambiguity
 statement: The `setup` command generates an artifact named `install.sh`, creating

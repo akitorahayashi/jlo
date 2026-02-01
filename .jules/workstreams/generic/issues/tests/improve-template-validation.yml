@@ -1,0 +1,38 @@
+schema_version: 2
+
+# Metadata
+id: "p0o9i8"
+source_events:
+  - "tmpl01"
+title: "Improve Template Validation"
+label: "tests"
+priority: "medium"
+summary: "Tests for role templates use string matching instead of YAML parsing, risking invalid syntax."
+
+# Content
+problem: |
+  Tests in `EmbeddedRoleTemplateStore` verify template correctness by checking for the presence of substrings (e.g., `contains("role: ROLE_NAME")`). This does not guarantee that the resulting YAML is syntactically valid or structurally correct.
+
+impact: |
+  Invalid YAML syntax in templates may go undetected until a user tries to generate a role, leading to a poor developer experience.
+
+desired_outcome: |
+  Template generation tests parse the output as YAML to validate syntax and structure.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/services/embedded_role_template_store.rs"
+
+acceptance_criteria:
+  - "Tests updated to parse generated content using a YAML parser."
+  - "Assertions verify keys/values on the parsed object rather than raw strings."
+
+verification_commands:
+  - "cargo test embedded_role_template_store"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

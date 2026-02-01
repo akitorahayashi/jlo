@@ -1,0 +1,39 @@
+schema_version: 2
+
+# Metadata
+id: "h4g3f2"
+source_events:
+  - "sf1l3r"
+title: "Fix Silent Scaffold Loading Failure"
+label: "bugs"
+priority: "high"
+summary: "EmbeddedRoleTemplateStore silently ignores non-UTF8 files."
+
+# Content
+problem: |
+  The `EmbeddedRoleTemplateStore::collect_files` method silently skips files that do not contain valid UTF-8 text (returning `None` from `contents_utf8()`). This hides issues with binary assets or encoding mismatches.
+
+impact: |
+  Critical assets may be missing from the generated scaffold without any indication to the user or developer.
+
+desired_outcome: |
+  The scaffold loader attempts to load all files and errors explicitly if a file cannot be read or processed.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/services/embedded_role_template_store.rs"
+
+acceptance_criteria:
+  - "`collect_files` modified to handle or report encoding errors."
+  - "If binary files are intended to be supported, `ScaffoldFile` may need update (currently String content)."
+  - "At minimum, non-UTF8 files should trigger a warning or error, not silent omission."
+
+verification_commands:
+  - "cargo test embedded_role_template_store"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

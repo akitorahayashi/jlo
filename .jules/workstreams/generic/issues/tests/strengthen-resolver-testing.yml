@@ -1,0 +1,39 @@
+schema_version: 2
+
+# Metadata
+id: "u8i9o0"
+source_events:
+  - "mp3t9r"
+title: "Strengthen Resolver Testing"
+label: "tests"
+priority: "medium"
+summary: "The dependency resolver lacks property-based tests to ensure correctness under complex graphs."
+
+# Content
+problem: |
+  The `Resolver` service currently relies only on small, hand-crafted unit tests. It lacks property-based testing to systematically verify topological sorting and cycle detection against a wide range of random dependency graphs.
+
+impact: |
+  Edge cases in dependency resolution (e.g., complex cycles, large graphs) may go undetected, leading to broken setups or infinite loops.
+
+desired_outcome: |
+  `Resolver` correctness is verified with property-based tests (e.g., using `proptest`).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/services/resolver.rs"
+
+acceptance_criteria:
+  - "Property tests added to `src/services/resolver.rs`."
+  - "Tests generate random valid (DAG) and invalid (cyclic) graphs."
+  - "Verification ensures topological order constraints are met for all outputs."
+
+verification_commands:
+  - "cargo test resolver"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

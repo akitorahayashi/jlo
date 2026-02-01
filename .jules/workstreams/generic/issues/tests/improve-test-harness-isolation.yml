@@ -1,0 +1,41 @@
+schema_version: 2
+
+# Metadata
+id: "r7t6y1"
+source_events:
+  - "gsmt01"
+title: "Improve Test Harness Isolation"
+label: "tests"
+priority: "high"
+summary: "Test harness modifies global process state, forcing serial execution and reducing reliability."
+
+# Content
+problem: |
+  The `TestContext` harness in `tests/common/mod.rs` modifies the global `HOME` environment variable and the current working directory. This forces all tests to run serially (`#[serial]`) to avoid race conditions and pollution.
+
+impact: |
+  Slow test execution (no parallelism), flaky tests if serial guards are missed, and poor simulation of real-world concurrent usage.
+
+desired_outcome: |
+  Tests run in complete isolation without modifying global process state, allowing for parallel execution.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "tests/common/mod.rs"
+  - "tests/cli_commands.rs"
+
+acceptance_criteria:
+  - "`TestContext` no longer sets global `HOME` or CWD."
+  - "Tests pass without the `#[serial]` attribute."
+  - "Application logic is refactored to accept context (env, cwd) explicitly, OR tests use subprocesses."
+
+verification_commands:
+  - "cargo test -- --test-threads=1" # Baseline
+  - "grep 'serial' tests/cli_commands.rs"
+
+# Analysis Flags
+requires_deep_analysis: true
+deep_analysis_reason: "Refactoring the test harness to avoid global state modification is a significant architectural change that may require changing how the application accepts configuration or switching to subprocess-based testing."

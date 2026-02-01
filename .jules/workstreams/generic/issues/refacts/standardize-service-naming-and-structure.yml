@@ -1,0 +1,47 @@
+schema_version: 2
+
+# Metadata
+id: "m9v3c5"
+source_events:
+  - "pmv4cp"
+  - "32roh8"
+  - "pu45q1"
+title: "Standardize Service Naming and Structure"
+label: "refacts"
+priority: "medium"
+summary: "Inconsistent service naming, filename strategies, and misplaced domain entities create confusion."
+
+# Content
+problem: |
+  The codebase suffers from structural inconsistencies:
+  1. `Resolver` and `Generator` in `src/services/` are overly generic names.
+  2. Service filenames vary between prefix-matching (`embedded_role_template_store.rs`) and suffix-matching (`component_catalog_embedded.rs`).
+  3. `src/domain/setup.rs` is a catch-all for `Component` and `EnvSpec`, which are distinct domain entities.
+
+impact: |
+  Increases cognitive load for developers navigating the codebase and increases the risk of naming collisions as the project grows.
+
+desired_outcome: |
+  Services are named specifically (e.g., `DependencyResolver`), filenames follow a strict convention, and domain entities are modularized.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/services/"
+  - "src/domain/setup.rs"
+
+acceptance_criteria:
+  - "`Resolver` struct and file renamed to express domain (e.g. `DependencyResolver`)."
+  - "`Generator` struct and file renamed to express domain (e.g. `ArtifactGenerator`)."
+  - "Service filenames standardized (e.g., consistent suffix or direct mapping)."
+  - "`Component` and `EnvSpec` moved to dedicated domain module (e.g. `src/domain/component.rs`)."
+
+verification_commands:
+  - "ls src/services/"
+  - "ls src/domain/"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

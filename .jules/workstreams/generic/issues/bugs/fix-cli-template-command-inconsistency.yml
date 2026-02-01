@@ -1,0 +1,39 @@
+schema_version: 2
+
+# Metadata
+id: "d1s2a3"
+source_events:
+  - "w8n4k7"
+title: "Fix CLI Template Command Inconsistency"
+label: "bugs"
+priority: "low"
+summary: "CLI help text lists single-role layers for template command, but implementation forbids them."
+
+# Content
+problem: |
+  The CLI help text for `jlo template` (derived from the `Layer` enum doc comments) lists all layers (Observers, Deciders, Planners, Implementers). However, `src/app/commands/template/command.rs` explicitly forbids template generation for single-role layers (Planners, Implementers), leading to a misleading user experience.
+
+impact: |
+  Users may attempt to generate templates for Planners/Implementers based on help text and receive an error, causing frustration.
+
+desired_outcome: |
+  The CLI interface accurately reflects the supported capabilities.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/main.rs"
+  - "src/app/commands/template/command.rs"
+
+acceptance_criteria:
+  - "CLI help text matches implemented behavior (e.g. by filtering options or clarifying doc comments)."
+  - "OR: The error message is improved to clarify that single-role layers do not use user-definable templates."
+
+verification_commands:
+  - "cargo run -- template --help"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

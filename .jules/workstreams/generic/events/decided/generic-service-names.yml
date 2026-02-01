@@ -2,7 +2,7 @@ schema_version: 1
 id: pmv4cp
 created_at: '2026-02-01'
 author_role: taxonomy
-issue_id: ''
+issue_id: 'm9v3c5'
 confidence: high
 title: Generic Service Names
 statement: The structs `Resolver` and `Generator` in `src/services/` use overly generic

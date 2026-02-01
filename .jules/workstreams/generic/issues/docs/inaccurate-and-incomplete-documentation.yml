@@ -1,0 +1,52 @@
+schema_version: 2
+
+# Metadata
+id: "8k2m9p" # stable identity
+source_events:
+  - "x7k2m9"
+  - "3maz63"
+  - "m5j8h4"
+  - "b4n1p8"
+  - "z2c6x1"
+  - "2ri9s6"
+title: "Inaccurate and Incomplete Documentation"
+label: "docs"
+priority: "medium"
+summary: "AGENTS.md and README.md contain stale, incomplete, or conflicting information regarding API URLs, dependencies, and command structure."
+
+# Content
+problem: |
+  The documentation (`AGENTS.md` and `README.md`) has drifted from the actual implementation. Specifically:
+  1. API URLs in README.md (`jules.ai`) differ from `run_config.rs` (`googleapis.com`).
+  2. `AGENTS.md` references removed dependencies (arboard) and omits new ones (reqwest, url, serde_json).
+  3. `AGENTS.md` lists only a subset of CLI commands, omitting `doctor`, `update`, `run`, `schedule`, `workstreams`.
+  4. Terminology around "Scaffold" vs "Templates" is ambiguous in `AGENTS.md`.
+
+impact: |
+  New developers or agents will be misled, leading to confusion, incorrect usage, or implementation errors based on stale information.
+
+desired_outcome: |
+  Documentation accurately reflects the codebase, including correct API URLs, current dependencies, full command list, and clear terminology.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "AGENTS.md"
+  - "README.md"
+
+acceptance_criteria:
+  - "AGENTS.md lists all actual dependencies and removes ghosts."
+  - "AGENTS.md lists all CLI commands found in src/app/commands/."
+  - "README.md and src/domain/run_config.rs agree on the API URL."
+  - "AGENTS.md clarifies scaffold vs template terminology."
+
+verification_commands:
+  - "grep 'api_url' README.md"
+  - "cat AGENTS.md"
+  - "cat Cargo.toml"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

@@ -1,0 +1,48 @@
+schema_version: 2
+
+# Metadata
+id: "q2w8e4"
+source_events:
+  - "uhn9sa"
+  - "nbg8wz"
+  - "1w2vtc"
+  - "i9t6o2"
+title: "Clarify Domain Terminology"
+label: "refacts"
+priority: "low"
+summary: "Ambiguous terms (Setup/Install, Scaffold/Template/Managed Defaults) and config mismatches need rationalization."
+
+# Content
+problem: |
+  Multiple terminological inconsistencies exist:
+  1. `SetupConfig` struct maps to `tools.yml` (naming mismatch).
+  2. `setup` command generates `install.sh` (verb mismatch).
+  3. "Managed Defaults", "Scaffold", and "Templates" are used interchangeably across services and CLI help.
+
+impact: |
+  Conceptual confusion makes it difficult to reason about the system's behavior and communicate about features.
+
+desired_outcome: |
+  Terminology is consistent across code, configuration, and user-facing artifacts.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/setup.rs"
+  - "src/services/managed_defaults.rs"
+  - "src/app/commands/setup/"
+
+acceptance_criteria:
+  - "`SetupConfig` renamed to match config file (e.g. `ToolsConfig`)."
+  - "Ambiguity between `setup` command and `install.sh` artifact resolved."
+  - "Unified vocabulary established for 'Managed Defaults' vs 'Scaffold'."
+
+verification_commands:
+  - "grep -r 'SetupConfig' src/"
+  - "grep -r 'ManagedDefaults' src/"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
