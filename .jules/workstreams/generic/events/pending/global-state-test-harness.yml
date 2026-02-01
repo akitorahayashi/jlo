@@ -1,0 +1,33 @@
+schema_version: 1
+
+# Metadata
+id: "gsmt01"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Test harness modifies global process state"
+statement: |
+  The `TestContext` harness modifies global process state (`HOME` env var, CWD) via `env::set_var` and `env::set_current_dir`, forcing serial test execution and preventing parallel feedback.
+
+# Evidence supporting the observation
+evidence:
+  - path: "tests/common/mod.rs"
+    loc:
+      - "unsafe { env::set_var(\"HOME\", root.path()); }"
+    note: "Sets global HOME environment variable"
+  - path: "tests/common/mod.rs"
+    loc:
+      - "env::set_current_dir(&self.work_dir)"
+    note: "Changes current working directory globally"
+  - path: "tests/cli_commands.rs"
+    loc:
+      - "#[serial]"
+    note: "Tests forced to run serially"
+
+tags:
+  - "test-architecture"
+  - "performance"
+  - "isolation"
