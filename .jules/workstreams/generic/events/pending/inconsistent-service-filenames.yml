@@ -1,0 +1,33 @@
+schema_version: 1
+
+# Metadata
+id: "tx0004"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "taxonomy"
+confidence: "medium"
+
+# Content
+title: "Inconsistent Service Filenames (Prefix vs Suffix)"
+statement: |
+  Service filenames in `src/services/` follow inconsistent naming strategies. `embedded_role_template_store.rs` uses a prefix strategy (matching the struct `EmbeddedRoleTemplateStore`), while `component_catalog_embedded.rs` and `jules_client_http.rs` use a suffix strategy (Noun-Noun-Adjective) despite the structs being `EmbeddedComponentCatalog` and `HttpJulesClient` respectively.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/embedded_role_template_store.rs"
+    loc:
+      - "filename"
+    note: "Matches struct name (Prefix strategy)."
+  - path: "src/services/component_catalog_embedded.rs"
+    loc:
+      - "filename"
+    note: "Inverted from struct `EmbeddedComponentCatalog` (Suffix strategy)."
+  - path: "src/services/jules_client_http.rs"
+    loc:
+      - "filename"
+    note: "Inverted from struct `HttpJulesClient` (Suffix strategy)."
+
+tags:
+  - "naming"
+  - "consistency"
+  - "file-structure"

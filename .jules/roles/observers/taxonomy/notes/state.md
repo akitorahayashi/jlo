@@ -1,0 +1,19 @@
+# Taxonomy State
+
+## Identified Patterns
+
+### Service Naming
+- Services in `src/services/` generally follow `Type` = `Filename` (snake_case) but with inconsistent ordering (Prefix vs Suffix).
+- `Resolver` and `Generator` are overly generic.
+
+### CLI vs Domain
+- `setup` command maps to `install` behavior.
+- `scaffold` vs `template` terminology is overloaded in both CLI (`jlo template`, `jlo update`) and internal services.
+
+### Architecture
+- `src/main.rs` is heavy, containing CLI definitions.
+
+## Vocabulary Map
+- **Scaffold**: The immutable `.jules/` directory structure and reference assets.
+- **Template**: Blueprints for creating new roles/workstreams.
+- **Component**: An installable tool managed by `jlo setup`.
