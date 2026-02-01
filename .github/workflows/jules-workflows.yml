@@ -305,11 +305,9 @@ jobs:
           ref: jules
           fetch-depth: 0
 
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
-
       - name: Run implementer for ${{ matrix.issue }}
-        run: |
-          timeout 20m jlo run implementers "${{ matrix.issue }}"
+        uses: ./.github/actions/run-implementer
+        with:
+          issue_file: ${{ matrix.issue }}
+          jlo_version: ${{ vars.JLO_VERSION || 'latest' }}
+          target_branch: main
