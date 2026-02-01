@@ -108,7 +108,7 @@ tests/
 - `jlo run deciders --workstream <name> [--role <name> | --scheduled]`: Run decider agents
 - `jlo run planners <path>`: Run planner (single-role, issue-driven)
 - `jlo run implementers <path>`: Run implementer (single-role, issue-driven)
-- `jlo schedule export --scope <scope>`: Export schedule data for automation workflows
+- `jlo schedule export --scope <scope>`: Export schedule data for automation workflows (scope: `workstreams` or `roles`)
 - `jlo workstreams inspect --workstream <name>`: Inspect workstream state for automation workflows
 - `jlo setup gen [path]` (alias: `s g`): Generate `install.sh` and `env.toml`
 - `jlo setup list` (alias: `s ls`): List available components
