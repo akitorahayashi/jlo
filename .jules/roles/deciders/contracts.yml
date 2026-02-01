@@ -12,7 +12,7 @@ constraints:
   - Aggregate all valid events into issues
   - Move processed events to decided/ directory; DO NOT DELETE.
   - When requires_deep_analysis is true, deep_analysis_reason MUST be non-empty
-  - Use randomly generated 6-char alphanumeric ID for issue IDs
+  - Use randomly generated 6-char lowercase alphanumeric ID for issue IDs
   - Use kebab-case title as filename
   - Ensure verification_commands are realistic and executable (e.g. `cargo test`, `npm test`); DO NOT use recursive/hypothetical commands (e.g. launching jules VM, launch simulators)
   - Never read or write outside your workstream directory
