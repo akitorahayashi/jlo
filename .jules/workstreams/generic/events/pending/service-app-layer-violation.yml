@@ -1,0 +1,24 @@
+schema_version: 1
+# Metadata
+id: "a1b2c3"
+issue_id: ""
+created_at: "2026-02-02"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Architectural Violation: Service Layer Depends on App Layer"
+statement: |
+  The `EmbeddedComponentCatalog` service directly imports `ComponentMeta` from `crate::app::config`. This violates the layered architecture where the Service layer should be independent of the Application layer (CLI/Config). The `ComponentMeta` DTO, which is used for deserializing TOML files, defines the contract for data entering the system and should be located in a shared Port or within the Service layer itself, rather than the App layer.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/component_catalog_embedded.rs"
+    loc:
+      - "use crate::app::config::ComponentMeta;"
+    note: "Service module imports from app layer."
+
+tags:
+  - "architecture"
+  - "coupling"
+  - "layer-violation"
