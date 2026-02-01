@@ -60,8 +60,10 @@ pub struct RunSettings {
     /// Branch where .jules/ workspace resides.
     pub jules_branch: String,
     /// Whether to run agents in parallel.
+    #[allow(dead_code)]
     pub parallel: bool,
     /// Maximum number of parallel agent executions.
+    #[allow(dead_code)]
     pub max_parallel: usize,
 }
 

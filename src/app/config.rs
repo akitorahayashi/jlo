@@ -1,7 +1,7 @@
 //! Application configuration and DTOs.
 
-use serde::Deserialize;
 use crate::domain::EnvSpec;
+use serde::Deserialize;
 
 /// Configuration for setup script generation.
 #[derive(Debug, Clone, Default, Deserialize)]

@@ -1,7 +1,7 @@
 //! Component domain model.
 
-use serde::Deserialize;
 use super::component_id::ComponentId;
+use serde::Deserialize;
 
 /// Environment variable specification for a component.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]

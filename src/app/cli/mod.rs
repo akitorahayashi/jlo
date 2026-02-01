@@ -2,8 +2,8 @@
 
 use std::path::PathBuf;
 
-use clap::{Parser, Subcommand};
 use crate::domain::AppError;
+use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name = "jlo")]

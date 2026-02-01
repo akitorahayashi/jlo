@@ -22,7 +22,7 @@ impl DependencyResolver {
         let mut visiting: BTreeSet<ComponentId> = BTreeSet::new();
 
         for name in requested {
-             // Validate ID format first
+            // Validate ID format first
             let id = ComponentId::new(name)?;
             Self::collect_dependencies(&id, catalog, &mut needed, &mut visiting, &mut Vec::new())?;
         }

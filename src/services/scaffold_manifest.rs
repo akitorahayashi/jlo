@@ -59,10 +59,7 @@ pub fn load_manifest(jules_path: &Path) -> Result<Option<ScaffoldManifest>, AppE
     Ok(Some(manifest))
 }
 
-pub fn write_manifest(
-    jules_path: &Path,
-    manifest: &ScaffoldManifest,
-) -> Result<(), AppError> {
+pub fn write_manifest(jules_path: &Path, manifest: &ScaffoldManifest) -> Result<(), AppError> {
     let path = manifest_path(jules_path);
     let content = serde_yaml::to_string(manifest).map_err(|err| {
         AppError::config_error(format!("Failed to serialize {}: {}", path.display(), err))
@@ -107,6 +104,7 @@ pub fn is_default_role_file(path: &str) -> bool {
     false
 }
 
+#[allow(dead_code)]
 pub fn hash_file(path: &Path) -> Result<String, AppError> {
     let content = fs::read_to_string(path)?;
     Ok(hash_content(&content))

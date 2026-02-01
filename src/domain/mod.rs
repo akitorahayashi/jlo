@@ -12,6 +12,6 @@ pub use component_id::ComponentId;
 pub use error::AppError;
 pub use layer::Layer;
 pub use role_id::RoleId;
-pub use run_config::{JulesApiConfig, RunConfig, RunSettings};
-pub use schedule::{ScheduleLayer, WorkstreamSchedule};
+pub use run_config::{JulesApiConfig, RunConfig};
+pub use schedule::WorkstreamSchedule;
 pub use workspace_layout::{JULES_DIR, VERSION_FILE};

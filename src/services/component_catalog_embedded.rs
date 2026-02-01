@@ -50,12 +50,11 @@ impl EmbeddedComponentCatalog {
                 })?;
 
             let name_str = meta.name.clone().unwrap_or_else(|| dir_name.to_string());
-            let name_id = ComponentId::new(&name_str).map_err(|_| {
-                AppError::InvalidComponentMetadata {
+            let name_id =
+                ComponentId::new(&name_str).map_err(|_| AppError::InvalidComponentMetadata {
                     component: dir_name.to_string(),
                     reason: format!("Invalid component name '{}'", name_str),
-                }
-            })?;
+                })?;
 
             let mut dependencies = Vec::new();
             for dep in &meta.dependencies {
