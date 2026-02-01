@@ -1,0 +1,23 @@
+schema_version: 1
+id: "h7j2k9"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "qa"
+confidence: "high"
+title: "Integration tests modify global process state"
+statement: |
+  The integration test harness modifies the global HOME environment variable and current working directory, preventing parallel test execution and enforcing a serial bottleneck.
+evidence:
+  - path: "tests/common/mod.rs"
+    loc:
+      - "51"
+      - "266"
+    note: "TestContext modifies global env vars and CWD."
+  - path: "tests/cli_commands.rs"
+    loc:
+      - "7"
+    note: "Tests must rely on serial_test to avoid race conditions due to shared global state."
+tags:
+  - "test-architecture"
+  - "concurrency"
+  - "determinism"
