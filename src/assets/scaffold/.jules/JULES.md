@@ -79,7 +79,7 @@ Branch names:
 - Planners: `jules-planner-<id>`
 - Implementers: `jules-implementer-<id>-<short_description>`
 
-`<id>` is 4 alphanumeric characters unless the layer contract specifies otherwise.
+`<id>` is 6 lowercase alphanumeric characters unless the layer contract specifies otherwise.
 
 ## Safety Boundaries
 
