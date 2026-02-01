@@ -1,0 +1,43 @@
+schema_version: 2
+
+# Metadata
+id: "a3r5t2"
+source_events:
+  - "25ymi7"
+  - "evt001"
+title: "Asset Loading and Validation Robustness"
+label: "bugs"
+priority: "medium"
+summary: "Asset loading fails silently on non-UTF8 files, and integrity tests are weak."
+
+# Content
+problem: |
+  1. `EmbeddedRoleTemplateStore` (and potentially other loaders) silently ignore files with invalid UTF-8 sequences during iteration. This can lead to missing files in the deployed workspace without any warning.
+  2. `scaffold_assets.rs` integrity tests only check that files are not empty, but do not validate that the embedded content is syntactically valid (YAML/TOML).
+
+impact: |
+  Silent failures conceal corrupted assets, leading to broken deployments that are hard to diagnose. Weak integrity tests increase the risk of shipping broken templates or config files in the binary.
+
+desired_outcome: |
+  1. Asset loading should return a `Result` and fail (or warn loudly) when a file cannot be read as UTF-8.
+  2. Integrity tests should parse embedded YAML/TOML files to ensure syntax validity.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/services/embedded_role_template_store.rs"
+  - "src/services/scaffold_assets.rs"
+
+acceptance_criteria:
+  - "`collect_files` propagates errors or logs warnings for non-UTF8 files."
+  - "New test case parses all embedded YAML/TOML files in `scaffold_assets.rs`."
+
+verification_commands:
+  - "cargo test src/services/embedded_role_template_store.rs"
+  - "cargo test src/services/scaffold_assets.rs"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

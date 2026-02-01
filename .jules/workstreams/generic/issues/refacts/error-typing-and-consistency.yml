@@ -1,0 +1,44 @@
+schema_version: 2
+
+# Metadata
+id: "e9w2q7"
+source_events:
+  - "da0002"
+  - "0reuur"
+  - "x7k9p2"
+title: "Error Typing and Service Naming Consistency"
+label: "refacts"
+priority: "low"
+summary: "AppError uses stringly-typed variants, and HttpJulesClient violates naming conventions."
+
+# Content
+problem: |
+  1. `AppError` relies heavily on `String` payloads for variants like `ConfigError`, `InvalidRoleId`, etc. This "stringly-typed" error handling obscures root causes and prevents consumers from programmatically handling specific failure conditions without parsing error messages.
+  2. `src/services/jules_client_http.rs` defines `HttpJulesClient`, violating the project's naming convention where the filename should match the type (e.g., `http_jules_client.rs`) and consistent prefix/suffix ordering.
+
+impact: |
+  Stringly-typed errors lead to fragile error handling logic and poor developer experience. Inconsistent naming conventions increase cognitive load and make file navigation less intuitive.
+
+desired_outcome: |
+  1. Refactor `AppError` to use structured types (enums or structs) for variants where programmatic handling is beneficial.
+  2. Rename `src/services/jules_client_http.rs` to match the struct name `HttpJulesClient` (or rename the struct), ensuring consistency.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/error.rs"
+  - "src/services/jules_client_http.rs"
+
+acceptance_criteria:
+  - "`AppError::ConfigError` (and others) wrap a specific error type or enum, not just `String`."
+  - "Filename and struct name for the HTTP client match."
+
+verification_commands:
+  - "cargo check"
+  - "cargo test"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

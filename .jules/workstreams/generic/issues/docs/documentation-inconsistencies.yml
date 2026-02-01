@@ -1,0 +1,46 @@
+schema_version: 2
+
+# Metadata
+id: "d7y4h1"
+source_events:
+  - "k9l2v4"
+  - "f8j3p5"
+  - "x7k2m9"
+title: "Documentation Inconsistencies"
+label: "docs"
+priority: "low"
+summary: "Inaccuracies in AGENTS.md and README.md regarding templates, run aliases, and inspect format."
+
+# Content
+problem: |
+  Documentation is out of sync with the implementation:
+  1. `AGENTS.md` states `jlo template` only creates custom roles, but it also supports workstream creation.
+  2. `README.md` and `AGENTS.md` fail to document the `--format` argument for `jlo workstreams inspect`.
+  3. `README.md` and `AGENTS.md` do not document the convenient aliases for `jlo run` subcommands (`o`, `d`, `p`, `i`).
+
+impact: |
+  Inaccurate documentation leads to user confusion and underutilization of features (like workstream templates or short aliases). It lowers trust in the documentation.
+
+desired_outcome: |
+  Update `AGENTS.md` and `README.md` to accurately reflect the current capabilities of the CLI.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "README.md"
+  - "AGENTS.md"
+
+acceptance_criteria:
+  - "`AGENTS.md` mentions `jlo template` supports workstreams."
+  - "`README.md` documents `jlo workstreams inspect --format`."
+  - "`README.md` documents `jlo run` subcommand aliases."
+
+verification_commands:
+  - "cat README.md"
+  - "cat AGENTS.md"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
