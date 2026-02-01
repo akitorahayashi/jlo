@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "ef34gh"
+issue_id: ""
+created_at: "2024-05-22"
+author_role: "qa"
+confidence: "medium"
+
+# Content
+title: "Missing Property-Based Tests for Resolver"
+statement: |
+  The `DependencyResolver` service implements critical graph algorithms (topological sort, cycle detection) but is tested only with a small set of manual example-based unit tests. There are no property-based tests to exhaustively verify invariants (e.g., "dependencies always appear before dependents", "cycles are always rejected") across randomly generated graph structures. This increases the risk of edge-case bugs in complex dependency trees.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/dependency_resolver.rs"
+    loc:
+      - "mod tests"
+    note: "The test module contains only 4 specific scenarios."
+
+  - path: "Cargo.toml"
+    loc:
+      - "[dev-dependencies]"
+    note: "The `proptest` crate (or similar) is missing from dev-dependencies."
+
+tags:
+  - "test-completeness"
+  - "robustness"
+  - "missing-property-tests"
