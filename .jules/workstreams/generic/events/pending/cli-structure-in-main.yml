@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "tx0006"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "taxonomy"
+confidence: "medium"
+
+# Content
+title: "CLI Structure Defined in Main"
+statement: |
+  The `src/main.rs` file contains the definition of CLI structs (`Cli`, `Commands`, etc.) and argument mapping logic. This coupling prevents unit testing of the CLI interface and violates the principle of keeping `main.rs` as a thin entry point.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/main.rs"
+    loc:
+      - "struct Cli"
+      - "enum Commands"
+    note: "CLI definitions are located in the binary entry point."
+
+tags:
+  - "architecture"
+  - "coupling"
+  - "testing"
