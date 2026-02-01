@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "da0003"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "ScaffoldManifest mixes domain and infrastructure"
+statement: |
+  The ScaffoldManifest service exhibits low cohesion by mixing domain logic (manifest schema, validation) with infrastructure concerns (file I/O, hashing content, calculating paths). This violates Boundary Sovereignty.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/scaffold_manifest.rs"
+    loc:
+      - "whole file"
+    note: "Contains ScaffoldManifest struct, hash_content function, load_manifest (I/O), and is_default_role_file (business rule) in one module."
+
+tags:
+  - "cohesion"
+  - "architectural-boundaries"
+  - "separation-of-concerns"
