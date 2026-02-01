@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "9s8d7f"
+issue_id: ""
+created_at: "2024-10-24"
+author_role: "devops"
+confidence: "high"
+
+# Content
+title: "Monolithic CI Pipeline"
+statement: |
+  The `ci-workflows.yml` workflow triggers `lint`, `build`, and `test` jobs on every push and PR to main without `paths` filtering.
+  This causes unnecessary resource consumption and slower feedback loops for changes that do not affect the build (e.g., documentation).
+
+# Evidence supporting the observation
+evidence:
+  - path: ".github/workflows/ci-workflows.yml"
+    loc:
+      - "on:"
+      - "  push:"
+      - "    branches: [ \"main\" ]"
+      - "  pull_request:"
+      - "    branches: [ \"main\" ]"
+    note: "Triggers on all pushes/PRs without path filters."
+
+tags:
+  - "efficiency"
+  - "ci"
+  - "feedback-loop"

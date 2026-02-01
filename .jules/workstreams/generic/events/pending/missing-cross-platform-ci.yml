@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "3k4j5h"
+issue_id: ""
+created_at: "2024-10-24"
+author_role: "devops"
+confidence: "high"
+
+# Content
+title: "Missing Cross-Platform CI"
+statement: |
+  The `build.yml` workflow only runs on `ubuntu-latest`, validating only the Linux x86_64 target.
+  This leaves macOS and ARM targets untested in the commit pipeline, risking build failures or bugs on those platforms that are only detected during release.
+
+# Evidence supporting the observation
+evidence:
+  - path: ".github/workflows/build.yml"
+    loc:
+      - "runs-on: ubuntu-latest"
+    note: "CI build jobs are restricted to Ubuntu environment."
+
+tags:
+  - "coverage"
+  - "cross-platform"
+  - "risk"
