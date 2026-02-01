@@ -1,0 +1,65 @@
+schema_version: 2
+
+# Metadata
+id: "3c4d5e"
+source_events:
+  - "dft001"
+  - "ncovr1"
+  - "rel001"
+  - "ins001"
+  - "unmdef"
+  - "impass"
+title: "Improve CI Pipeline and Test Coverage"
+label: "tests"
+priority: "medium"
+summary: "Enhance CI reliability, add code coverage reporting, and improve testability of critical paths."
+
+# Content
+problem: |
+  The current CI/CD and testing infrastructure has several gaps:
+  - **Toolchain Drift**: CI uses `stable` while project mandates `1.90.0`.
+  - **No Coverage**: No code coverage metrics are collected.
+  - **Release Inefficiency**: Releases rebuild binaries instead of verifying and promoting artifacts from the build pipeline.
+  - **Untested Logic**:
+    - Installer scripts (`src/assets/catalog/`) are not automatically tested.
+    - `ManagedDefaultsManifest` lacks unit tests.
+    - `include_dir!` usage makes service tests depend on the filesystem implicitly.
+
+impact: |
+  - **Reliability**: Different rust versions in CI vs Local can lead to "works on my machine" issues.
+  - **Quality**: Lack of coverage visibility allows untested code to accumulate.
+  - **Risk**: Rebuilding for release introduces a window where the released binary differs from the tested one. Broken installers can ship unnoticed.
+
+desired_outcome: |
+  - CI uses the pinned Rust version (`1.90.0`).
+  - Code coverage is reported (e.g., using `tarpaulin` or `grcov`).
+  - Release workflow downloads artifacts from the build workflow.
+  - Installer verification runs on PRs (or at least schedule/change detection).
+  - `ManagedDefaultsManifest` is fully tested.
+  - Implicit asset dependencies are mocked or tested more explicitly.
+
+constraints: []
+risks:
+  - Changing release workflow requires careful testing to avoid broken releases.
+  - Adding coverage might slow down CI.
+
+# Specifics
+affected_areas:
+  - ".github/workflows/"
+  - "src/services/managed_defaults.rs"
+  - "src/services/scaffold_assets.rs"
+
+acceptance_criteria:
+  - "CI runs with Rust 1.90.0."
+  - "Coverage report is generated in CI."
+  - "Release workflow consumes build artifacts."
+  - "Installers are verified automatically."
+  - "`ManagedDefaultsManifest` has unit tests."
+
+verification_commands:
+  - "cargo test"
+  - "cargo clippy"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

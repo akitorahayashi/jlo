@@ -1,0 +1,85 @@
+schema_version: 2
+
+# Metadata
+id: "9f8a2b"
+source_events:
+  - "tx0006"
+  - "ev1003"
+  - "ev1001"
+  - "tx0003"
+  - "tx0004"
+  - "933100"
+  - "ev1004"
+  - "21b284"
+  - "ev1002"
+  - "tx0005"
+title: "Refactor Architecture and Address Structural Debt"
+label: "refacts"
+priority: "high"
+summary: "Address multiple architectural violations, naming inconsistencies, and boundary leaks to improve codebase maintainability and cohesion."
+
+# Content
+problem: |
+  The codebase has accumulated significant architectural debt that violates the project's design principles.
+  Key issues include:
+  - **Public Surface Leaks**: `src/lib.rs` indiscriminately exports internal modules (`domain`, `services`).
+  - **Leaky Domain Models**: `ComponentMeta` (DTO) and `SetupConfig` (config) leak into the domain layer (`src/domain/setup.rs`).
+  - **Cohesion Violations**: `src/services/mod.rs` flattens all services, obscuring boundaries.
+  - **Layering Violations**: CLI commands in `src/app/commands/` import concrete services directly, bypassing ports.
+  - **Naming Inconsistencies**:
+    - `src/domain/setup.rs` (verb) contains `Component` (noun).
+    - `Resolver` and `Generator` are too generic.
+    - Service filenames use mixed prefix/suffix strategies.
+    - `ManagedDefaultsManifest` is vague.
+  - **Logic in Wrong Places**: CLI structure logic resides in `src/main.rs` instead of an adapter.
+  - **Primitive Obsession**: `Component` uses `String` for `name` and `dependencies` instead of strong types.
+
+impact: |
+  These issues make the codebase harder to understand, test, and maintain.
+  - Leaked internals create accidental public APIs that are hard to change later.
+  - Poor cohesion and layering violations increase coupling, making isolated testing difficult.
+  - Inconsistent naming increases cognitive load for developers.
+  - Primitive obsession allows invalid states to represent domain objects.
+
+desired_outcome: |
+  The codebase should adhere to strict architectural boundaries:
+  - `src/lib.rs` should only export the public API.
+  - Domain models should be pure and separated from DTOs/Config.
+  - Services should be properlyNamespaced and accessed via Ports.
+  - CLI logic should be decoupled from `main.rs`.
+  - Naming should be consistent and descriptive.
+  - Domain types should enforce invariants (e.g., `ComponentId`).
+
+constraints: []
+risks:
+  - Large refactors can cause merge conflicts.
+  - Moving files might break existing imports (though Rust compiler helps here).
+  - Renaming public structs might break consumers (though `jlo` is mostly a binary).
+
+# Specifics
+affected_areas:
+  - "src/lib.rs"
+  - "src/domain/"
+  - "src/services/"
+  - "src/app/commands/"
+  - "src/main.rs"
+
+acceptance_criteria:
+  - "`src/lib.rs` exports are minimized."
+  - "`ComponentMeta` and `SetupConfig` are moved out of `src/domain/`."
+  - "`src/services/mod.rs` does not flatten exports."
+  - "CLI commands import via `ports` or specific service modules, not concrete implementations if possible (or at least consistent)."
+  - "`src/domain/setup.rs` is renamed or split to match content."
+  - "`Resolver` and `Generator` are renamed (e.g., `DependencyResolver`, `ArtifactGenerator`)."
+  - "Service filenames are consistent."
+  - "CLI logic in `src/main.rs` is moved to `src/app/cli/` or similar."
+  - "`Component` uses strong types."
+
+verification_commands:
+  - "cargo check"
+  - "cargo test"
+  - "cargo clippy"
+
+# Analysis Flags
+requires_deep_analysis: true
+deep_analysis_reason: "This issue involves significant structural changes, renaming core domain concepts, and moving files across the codebase. It requires a detailed plan to avoid breaking changes and ensure smooth transition."
