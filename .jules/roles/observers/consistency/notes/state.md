@@ -13,7 +13,13 @@
 ### Naming Conventions
 - Service implementations in `src/services/` have drifted from `AGENTS.md` documentation (e.g., `role_template_service` -> `embedded_role_template_store.rs`).
 
+### Documentation Completeness
+- `AGENTS.md` Project Structure section is significantly incomplete, missing entire directories (`src/app/commands`, `src/domain`) and newer modules.
+- `README.md` Command Reference is missing newer flags (e.g., `--adopt-managed` for `update`).
+
 ## Active Observations
 - `doc-api-url-mismatch` (q1mwwx): README vs Code API URL.
 - `cli-template-inconsistency` (odyrzk): CLI Help vs Implementation for `template` command.
 - `agents-md-structure-inconsistency` (djpmsr): `AGENTS.md` and `README.md` vs Filesystem structure.
+- `incomplete-structure-docs` (inc0mp): `AGENTS.md` missing modules.
+- `undocumented-cli-flags` (und0c1): `README.md` missing flags.

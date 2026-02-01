@@ -1,0 +1,25 @@
+schema_version: 1
+id: inc0mp
+issue_id: ""
+created_at: "2026-01-31"
+author_role: consistency
+confidence: high
+title: "Project Structure Documentation is Incomplete"
+statement: "The Project Structure section in AGENTS.md omits significant parts of the codebase, including several CLI commands, domain types, and test modules."
+evidence:
+  - path: "AGENTS.md"
+    loc:
+      - "commands/      # init, template, setup"
+    note: "Missing commands: update, doctor, run, schedule, workstreams"
+  - path: "AGENTS.md"
+    loc:
+      - "domain/            # Pure types (Layer, RoleId, AppError, setup models)"
+    note: "Missing types: RunConfig, Schedule, WorkspaceLayout"
+  - path: "AGENTS.md"
+    loc:
+      - "tests/"
+    note: "Missing test module: commands_core.rs"
+tags:
+  - documentation
+  - structure
+  - incomplete
