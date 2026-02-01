@@ -1,0 +1,25 @@
+schema_version: 1
+id: "c4d5e6"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "structural_arch"
+confidence: "high"
+title: "Excessive Public Surface in Library Entry Point"
+statement: |
+  `src/lib.rs` exports the entire `app` module as public (`pub mod app;`), exposing the internal application structure, commands, and configuration to external consumers.
+
+  The `src/main.rs` only needs a single entry point (e.g., `cli::run()`).
+
+  Exposing `app` makes the API surface massive and difficult to refactor without breaking changes. It also encourages consumers to depend on internal details of the CLI structure.
+evidence:
+  - path: "src/lib.rs"
+    loc:
+      - "pub mod app;"
+    note: "Entire app module is exported."
+  - path: "src/main.rs"
+    loc:
+      - "jlo::app::cli::run();"
+    note: "Main uses the exposed internal structure."
+tags:
+  - "architecture"
+  - "public-surface"
