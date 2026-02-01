@@ -1,11 +1,14 @@
+mod component;
+mod component_id;
 mod error;
 mod layer;
 mod role_id;
 mod run_config;
 mod schedule;
-pub mod setup;
 mod workspace_layout;
 
+pub use component::{Component, EnvSpec};
+pub use component_id::ComponentId;
 pub use error::AppError;
 pub use layer::Layer;
 pub use role_id::RoleId;

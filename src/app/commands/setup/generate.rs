@@ -2,9 +2,11 @@
 
 use std::path::Path;
 
+use crate::app::config::SetupConfig;
 use crate::domain::AppError;
-use crate::domain::setup::SetupConfig;
-use crate::services::{EmbeddedComponentCatalog, Generator, Resolver};
+use crate::services::artifact_generator::ArtifactGenerator;
+use crate::services::component_catalog_embedded::EmbeddedComponentCatalog;
+use crate::services::dependency_resolver::DependencyResolver;
 
 /// Execute the setup gen command.
 ///
@@ -45,10 +47,10 @@ pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
     let catalog = EmbeddedComponentCatalog::new()?;
 
     // Resolve dependencies
-    let components = Resolver::resolve(&config.tools, &catalog)?;
+    let components = DependencyResolver::resolve(&config.tools, &catalog)?;
 
     // Generate install script
-    let script_content = Generator::generate_install_script(&components);
+    let script_content = ArtifactGenerator::generate_install_script(&components);
     let install_sh = setup_dir.join("install.sh");
     std::fs::write(&install_sh, &script_content)?;
 
@@ -64,11 +66,11 @@ pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
     // Generate/merge env.toml
     let env_toml_path = setup_dir.join("env.toml");
     let existing_path = if env_toml_path.exists() { Some(env_toml_path.as_path()) } else { None };
-    let env_content = Generator::merge_env_toml(&components, existing_path)?;
+    let env_content = ArtifactGenerator::merge_env_toml(&components, existing_path)?;
     std::fs::write(&env_toml_path, &env_content)?;
 
     // Return component names
-    Ok(components.iter().map(|c| c.name.clone()).collect())
+    Ok(components.iter().map(|c| c.name.to_string()).collect())
 }
 
 #[cfg(test)]

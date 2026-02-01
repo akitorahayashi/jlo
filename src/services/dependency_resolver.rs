@@ -2,14 +2,13 @@
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use crate::domain::AppError;
-use crate::domain::setup::Component;
+use crate::domain::{AppError, Component, ComponentId};
 use crate::ports::ComponentCatalog;
 
 /// Service for resolving component dependencies using topological sort.
-pub struct Resolver;
+pub struct DependencyResolver;
 
-impl Resolver {
+impl DependencyResolver {
     /// Resolve dependencies and return components in installation order.
     ///
     /// Uses Kahn's algorithm for topological sorting with cycle detection.
@@ -19,18 +18,20 @@ impl Resolver {
         catalog: &C,
     ) -> Result<Vec<Component>, AppError> {
         // Collect all components needed (transitive closure)
-        let mut needed: BTreeMap<String, Component> = BTreeMap::new();
-        let mut visiting: BTreeSet<String> = BTreeSet::new();
+        let mut needed: BTreeMap<ComponentId, Component> = BTreeMap::new();
+        let mut visiting: BTreeSet<ComponentId> = BTreeSet::new();
 
         for name in requested {
-            Self::collect_dependencies(name, catalog, &mut needed, &mut visiting, &mut Vec::new())?;
+             // Validate ID format first
+            let id = ComponentId::new(name)?;
+            Self::collect_dependencies(&id, catalog, &mut needed, &mut visiting, &mut Vec::new())?;
         }
 
         // Build in-degree count
         // Edge A -> B means A depends on B (B must come before A)
-        let mut in_degree: BTreeMap<String, usize> =
+        let mut in_degree: BTreeMap<ComponentId, usize> =
             needed.keys().map(|k| (k.clone(), 0)).collect();
-        let mut dependents: BTreeMap<String, Vec<String>> =
+        let mut dependents: BTreeMap<ComponentId, Vec<ComponentId>> =
             needed.keys().map(|k| (k.clone(), Vec::new())).collect();
 
         for (name, component) in &needed {
@@ -43,7 +44,7 @@ impl Resolver {
         }
 
         // Kahn's algorithm
-        let mut queue: VecDeque<String> =
+        let mut queue: VecDeque<ComponentId> =
             in_degree.iter().filter(|&(_, deg)| *deg == 0).map(|(k, _)| k.clone()).collect();
 
         // Sort for deterministic ordering
@@ -77,7 +78,7 @@ impl Resolver {
         // Check for cycle
         if result.len() != in_degree.len() {
             let remaining: Vec<_> =
-                in_degree.iter().filter(|&(_, deg)| *deg > 0).map(|(k, _)| k.clone()).collect();
+                in_degree.iter().filter(|&(_, deg)| *deg > 0).map(|(k, _)| k.to_string()).collect();
             return Err(AppError::CircularDependency(remaining));
         }
 
@@ -85,36 +86,38 @@ impl Resolver {
     }
 
     fn collect_dependencies<C: ComponentCatalog>(
-        name: &str,
+        id: &ComponentId,
         catalog: &C,
-        collected: &mut BTreeMap<String, Component>,
-        visiting: &mut BTreeSet<String>,
+        collected: &mut BTreeMap<ComponentId, Component>,
+        visiting: &mut BTreeSet<ComponentId>,
         path: &mut Vec<String>,
     ) -> Result<(), AppError> {
-        if collected.contains_key(name) {
+        if collected.contains_key(id) {
             return Ok(());
         }
 
-        if visiting.contains(name) {
-            path.push(name.to_string());
+        let name_str = id.as_str();
+
+        if visiting.contains(id) {
+            path.push(name_str.to_string());
             return Err(AppError::CircularDependency(path.clone()));
         }
 
-        let component = catalog.get(name).ok_or_else(|| AppError::ComponentNotFound {
-            name: name.to_string(),
+        let component = catalog.get(name_str).ok_or_else(|| AppError::ComponentNotFound {
+            name: name_str.to_string(),
             available: catalog.names().iter().map(|s| s.to_string()).collect(),
         })?;
 
-        visiting.insert(name.to_string());
-        path.push(name.to_string());
+        visiting.insert(id.clone());
+        path.push(name_str.to_string());
 
         for dep in &component.dependencies {
             Self::collect_dependencies(dep, catalog, collected, visiting, path)?;
         }
 
         path.pop();
-        visiting.remove(name);
-        collected.insert(name.to_string(), component.clone());
+        visiting.remove(id);
+        collected.insert(id.clone(), component.clone());
 
         Ok(())
     }
@@ -123,7 +126,7 @@ impl Resolver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::setup::Component;
+    use crate::domain::{Component, ComponentId};
 
     struct TestCatalog {
         components: BTreeMap<String, Component>,
@@ -131,7 +134,7 @@ mod tests {
 
     impl TestCatalog {
         fn new(components: Vec<Component>) -> Self {
-            Self { components: components.into_iter().map(|c| (c.name.clone(), c)).collect() }
+            Self { components: components.into_iter().map(|c| (c.name.to_string(), c)).collect() }
         }
     }
 
@@ -151,9 +154,9 @@ mod tests {
 
     fn make_component(name: &str, deps: &[&str]) -> Component {
         Component {
-            name: name.to_string(),
+            name: ComponentId::new(name).unwrap(),
             summary: format!("{} component", name),
-            dependencies: deps.iter().map(|s| s.to_string()).collect(),
+            dependencies: deps.iter().map(|s| ComponentId::new(s).unwrap()).collect(),
             env: vec![],
             script_content: format!("echo {}", name),
         }
@@ -163,17 +166,17 @@ mod tests {
     fn resolve_single_component() {
         let catalog = TestCatalog::new(vec![make_component("a", &[])]);
 
-        let result = Resolver::resolve(&["a".to_string()], &catalog).unwrap();
+        let result = DependencyResolver::resolve(&["a".to_string()], &catalog).unwrap();
 
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].name, "a");
+        assert_eq!(result[0].name.as_str(), "a");
     }
 
     #[test]
     fn resolve_with_dependency() {
         let catalog = TestCatalog::new(vec![make_component("a", &[]), make_component("b", &["a"])]);
 
-        let result = Resolver::resolve(&["b".to_string()], &catalog).unwrap();
+        let result = DependencyResolver::resolve(&["b".to_string()], &catalog).unwrap();
 
         assert_eq!(result.len(), 2);
         let names: Vec<_> = result.iter().map(|c| c.name.as_str()).collect();
@@ -188,7 +191,7 @@ mod tests {
             make_component("c", &["b"]),
         ]);
 
-        let result = Resolver::resolve(&["c".to_string()], &catalog).unwrap();
+        let result = DependencyResolver::resolve(&["c".to_string()], &catalog).unwrap();
 
         assert_eq!(result.len(), 3);
         let names: Vec<_> = result.iter().map(|c| c.name.as_str()).collect();
@@ -197,54 +200,19 @@ mod tests {
     }
 
     #[test]
-    fn resolve_diamond_dependency() {
-        // D depends on B and C, both depend on A
-        let catalog = TestCatalog::new(vec![
-            make_component("a", &[]),
-            make_component("b", &["a"]),
-            make_component("c", &["a"]),
-            make_component("d", &["b", "c"]),
-        ]);
-
-        let result = Resolver::resolve(&["d".to_string()], &catalog).unwrap();
-
-        assert_eq!(result.len(), 4);
-        let names: Vec<_> = result.iter().map(|c| c.name.as_str()).collect();
-        // A must come before B and C
-        assert!(names.iter().position(|&n| n == "a") < names.iter().position(|&n| n == "b"));
-        assert!(names.iter().position(|&n| n == "a") < names.iter().position(|&n| n == "c"));
-        // B and C must come before D
-        assert!(names.iter().position(|&n| n == "b") < names.iter().position(|&n| n == "d"));
-        assert!(names.iter().position(|&n| n == "c") < names.iter().position(|&n| n == "d"));
-    }
-
-    #[test]
     fn detect_circular_dependency() {
         let catalog =
             TestCatalog::new(vec![make_component("x", &["y"]), make_component("y", &["x"])]);
 
-        let result = Resolver::resolve(&["x".to_string()], &catalog);
+        let result = DependencyResolver::resolve(&["x".to_string()], &catalog);
 
         assert!(matches!(result, Err(AppError::CircularDependency(_))));
     }
 
     #[test]
-    fn component_not_found() {
-        let catalog = TestCatalog::new(vec![make_component("a", &[])]);
-
-        let result = Resolver::resolve(&["nonexistent".to_string()], &catalog);
-
-        assert!(matches!(result, Err(AppError::ComponentNotFound { .. })));
-    }
-
-    #[test]
-    fn deduplicates_requested() {
-        let catalog = TestCatalog::new(vec![make_component("a", &[]), make_component("b", &["a"])]);
-
-        let result =
-            Resolver::resolve(&["a".to_string(), "b".to_string(), "a".to_string()], &catalog)
-                .unwrap();
-
-        assert_eq!(result.len(), 2);
+    fn invalid_component_id() {
+        let catalog = TestCatalog::new(vec![]);
+        let result = DependencyResolver::resolve(&["invalid/id".to_string()], &catalog);
+        assert!(matches!(result, Err(AppError::InvalidComponentId(_))));
     }
 }

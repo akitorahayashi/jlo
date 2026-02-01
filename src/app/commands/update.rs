@@ -9,9 +9,9 @@ use chrono::Utc;
 
 use crate::domain::AppError;
 use crate::ports::RoleTemplateStore;
-use crate::services::EmbeddedRoleTemplateStore;
-use crate::services::{
-    ManagedDefaultsManifest, hash_content, is_default_role_file, load_manifest, write_manifest,
+use crate::services::embedded_role_template_store::EmbeddedRoleTemplateStore;
+use crate::services::scaffold_manifest::{
+    ScaffoldManifest, hash_content, is_default_role_file, load_manifest, write_manifest,
 };
 
 /// Files that are managed by jlo and will be overwritten on update.
@@ -163,7 +163,7 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
         }
     }
 
-    let mut managed_manifest: Option<ManagedDefaultsManifest> = None;
+    let mut managed_manifest: Option<ScaffoldManifest> = None;
     let existing_manifest = load_manifest(jules_path)?;
 
     if options.adopt_managed {
@@ -178,7 +178,7 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
                 manifest_entries.insert(path.clone(), hash_content(content));
             }
         }
-        managed_manifest = Some(ManagedDefaultsManifest::from_map(manifest_entries));
+        managed_manifest = Some(ScaffoldManifest::from_map(manifest_entries));
     } else if let Some(manifest) = existing_manifest {
         let mut manifest_map = manifest.to_map();
         let mut next_manifest = BTreeMap::new();
@@ -242,7 +242,7 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
             }
         }
 
-        managed_manifest = Some(ManagedDefaultsManifest::from_map(next_manifest));
+        managed_manifest = Some(ScaffoldManifest::from_map(next_manifest));
     } else {
         for (path, content) in &default_role_files {
             let full_path = root.join(path);

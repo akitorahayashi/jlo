@@ -2,7 +2,7 @@
 
 use crate::domain::AppError;
 use crate::ports::ComponentCatalog;
-use crate::services::EmbeddedComponentCatalog;
+use crate::services::component_catalog_embedded::EmbeddedComponentCatalog;
 
 /// Summary information for a component.
 #[derive(Debug, Clone)]
@@ -38,7 +38,7 @@ pub fn execute() -> Result<Vec<ComponentSummary>, AppError> {
 
     Ok(components
         .into_iter()
-        .map(|c| ComponentSummary { name: c.name.clone(), summary: c.summary.clone() })
+        .map(|c| ComponentSummary { name: c.name.to_string(), summary: c.summary.clone() })
         .collect())
 }
 
@@ -54,9 +54,9 @@ pub fn execute_detail(component_name: &str) -> Result<ComponentDetail, AppError>
     })?;
 
     Ok(ComponentDetail {
-        name: component.name.clone(),
+        name: component.name.to_string(),
         summary: component.summary.clone(),
-        dependencies: component.dependencies.clone(),
+        dependencies: component.dependencies.iter().map(|d| d.to_string()).collect(),
         env_vars: component
             .env
             .iter()

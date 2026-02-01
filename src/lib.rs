@@ -1,9 +1,9 @@
 //! jlo: Deploy and manage .jules/ workspace scaffolding for organizational memory.
 
 pub mod app;
-pub mod domain;
-pub mod ports;
-pub mod services;
+pub(crate) mod domain;
+pub(crate) mod ports;
+pub(crate) mod services;
 
 #[cfg(test)]
 pub(crate) mod testing;
@@ -14,9 +14,9 @@ use app::{
     AppContext,
     commands::{doctor, init, run, schedule, setup, template, update, workstreams},
 };
-use domain::Layer;
 use ports::WorkspaceStore;
-use services::{EmbeddedRoleTemplateStore, FilesystemWorkspaceStore};
+use services::embedded_role_template_store::EmbeddedRoleTemplateStore;
+use services::workspace_filesystem::FilesystemWorkspaceStore;
 
 pub use app::commands::doctor::{DoctorOptions, DoctorOutcome};
 pub use app::commands::run::{RunOptions, RunResult};
@@ -30,6 +30,7 @@ pub use app::commands::workstreams::{
     WorkstreamInspectFormat, WorkstreamInspectOptions, WorkstreamInspectOutput,
 };
 pub use domain::AppError;
+pub use domain::Layer;
 
 /// Initialize a new `.jules/` workspace in the current directory.
 pub fn init() -> Result<(), AppError> {

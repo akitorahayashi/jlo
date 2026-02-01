@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use chrono::{NaiveDate, Utc};
 
 use crate::domain::{AppError, Layer};
-use crate::services::load_schedule;
+use crate::services::workstream_schedule_filesystem::load_schedule;
 
 use super::diagnostics::Diagnostics;
 use super::schema::PromptEntry;

@@ -10,7 +10,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use crate::domain::AppError;
-use crate::services::{list_event_states, list_issue_labels, read_enum_values};
+use crate::services::scaffold_assets::{list_event_states, list_issue_labels, read_enum_values};
 
 pub use diagnostics::{Diagnostic, Diagnostics, Severity};
 
