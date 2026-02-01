@@ -1,98 +1,117 @@
 # Jules Auto-Merge
 #
-# Enables squash-merge with branch deletion for PRs from observer/decider/planner.
+# Validates Jules PRs with doctor check and enables auto-merge on success.
 # Only applies when:
-#   1. Branch matches jules-{observer,decider,planner}-* pattern
-#   2. All changed files are within .jules/ directory
+#   1. PR targets the jules branch
+#   2. Head branch matches jules-{observer,decider,planner}-* pattern
+#   3. All changed files are within .jules/ directory
+#   4. Doctor validation passes
 #
 # Does NOT apply to:
 #   - jules-implementer-* branches (implementation requires human review)
 #   - Any PR that modifies files outside .jules/
 #
+# Flow:
+#   1. Jules creates PR → doctor runs
+#   2. Doctor fails → Jules detects, fixes, pushes
+#   3. Doctor passes → auto-merge enabled → PR merges when status checks pass
+#
 # Prerequisites:
 # - Repository Settings: Enable "Allow auto-merge"
-# - Branch Protection: Require status checks to pass before merging
+# - Branch Protection: Require this workflow as status check
 
 name: Jules Auto-Merge
 
 on:
-  push:
+  pull_request:
     branches:
-      - 'jules-observer-*'
-      - 'jules-decider-*'
-      - 'jules-planner-*'
+      - jules
+    types: [opened, synchronize, reopened]
 
 jobs:
-  auto-merge:
+  validate-and-automerge:
+    # Only run for observer/decider/planner branches
+    if: >-
+      startsWith(github.head_ref, 'jules-observer-') ||
+      startsWith(github.head_ref, 'jules-decider-') ||
+      startsWith(github.head_ref, 'jules-planner-')
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
     steps:
-      - name: Find PR
-        id: find-pr
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Validate with doctor
+        run: |
+          # Extract workstream from changed files
+          workstreams=$(git diff --name-only origin/jules...HEAD | grep '^\.jules/workstreams/' | cut -d'/' -f3 | sort -u)
+          
+          if [ -z "$workstreams" ]; then
+            echo "No workstream changes detected, running doctor for all workstreams"
+            for ws_dir in .jules/workstreams/*/; do
+              ws=$(basename "$ws_dir")
+              echo "::group::Doctor check for $ws"
+              jlo doctor --workstream "$ws"
+              echo "::endgroup::"
+            done
+          else
+            for ws in $workstreams; do
+              echo "::group::Doctor check for $ws"
+              jlo doctor --workstream "$ws"
+              echo "::endgroup::"
+            done
+          fi
+
+      - name: Check scope (files within .jules/ only)
+        id: scope
         env:
           GH_TOKEN: ${{ github.token }}
-          BRANCH_NAME: ${{ github.ref_name }}
-          REPO: ${{ github.repository }}
         run: |
-          echo "Waiting for PR to be created for branch $BRANCH_NAME..."
-          PR_NUMBER=""
+          changed=$(gh api --paginate "/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[].filename')
           
-          # Retry for up to 60 seconds
-          for i in {1..12}; do
-            PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --repo "$REPO" --json number -q '.[0].number')
-            if [ -n "$PR_NUMBER" ]; then
-              echo "Found PR #$PR_NUMBER"
-              echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-              break
-            fi
-            sleep 5
-            echo "Retrying... ($i/12)"
-          done
-
-          if [ -z "$PR_NUMBER" ]; then
-            echo "No PR found. Skipping auto-merge setup."
-            echo "found=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Check Scope and Enable Auto-Merge
-        if: steps.find-pr.outputs.found == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-          PR_NUMBER: ${{ steps.find-pr.outputs.pr_number }}
-          REPO: ${{ github.repository }}
-        run: |
-          # Check for Draft status
-          IS_DRAFT=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json isDraft -q '.isDraft')
-          if [ "$IS_DRAFT" = "true" ]; then
-             echo "PR is a draft. Skipping auto-merge."
-             exit 0
-          fi
-
-          # Check changed files using paginated API
-          changed=$(gh api --paginate "/repos/$REPO/pulls/$PR_NUMBER/files" --jq '.[].filename')
-          
-          # Check if any file is outside .jules/
           non_jules=$(echo "$changed" | grep -v '^\.jules/' || true)
           
           if [ -n "$non_jules" ]; then
-             echo "::warning::PR modifies files outside .jules/. Auto-merge skipped."
-             echo "$non_jules"
-             exit 0
-          fi
-          
-          # Check if auto-merge is already enabled
-          AUTO_MERGE=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json autoMergeRequest -q '.autoMergeRequest')
-          if [ "$AUTO_MERGE" != "null" ] && [ -n "$AUTO_MERGE" ]; then
-             echo "Auto-merge is already enabled."
-             exit 0
+            echo "::warning::PR modifies files outside .jules/. Auto-merge skipped."
+            echo "$non_jules"
+            echo "in_scope=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "All changes are within .jules/"
+            echo "in_scope=true" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "All changes are within .jules/. Enabling auto-merge..."
+      - name: Enable auto-merge
+        if: steps.scope.outputs.in_scope == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
           
+          # Check if draft
+          IS_DRAFT=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json isDraft -q '.isDraft')
+          if [ "$IS_DRAFT" = "true" ]; then
+            echo "PR is a draft. Skipping auto-merge."
+            exit 0
+          fi
+          
+          # Check if auto-merge already enabled
+          AUTO_MERGE=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json autoMergeRequest -q '.autoMergeRequest')
+          if [ "$AUTO_MERGE" != "null" ] && [ -n "$AUTO_MERGE" ]; then
+            echo "Auto-merge is already enabled."
+            exit 0
+          fi
+          
+          echo "Enabling auto-merge..."
           for i in {1..5}; do
             if gh pr merge "$PR_NUMBER" --auto --squash --delete-branch --repo "$REPO"; then
               echo "✅ Auto-merge enabled successfully."
