@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "sf1l3r"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Silent Scaffold Loading Failure"
+statement: |
+  The `EmbeddedRoleTemplateStore` logic for collecting scaffold files silently ignores any file that is not valid UTF-8.
+  If a binary file (e.g., an image or compiled artifact) is accidentally included in `src/assets/scaffold`, it will be excluded from the generated scaffold without any warning or error, leading to "missing file" bugs that are hard to diagnose.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/embedded_role_template_store.rs"
+    loc:
+      - "collect_files"
+    note: "`if let Some(content) = file.contents_utf8()` silently skips files where utf8 validation fails, with no `else` block to log or error."
+
+tags:
+  - "reliability"
+  - "diagnosability"
+  - "risk:medium"
