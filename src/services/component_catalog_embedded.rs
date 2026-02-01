@@ -12,7 +12,7 @@ use crate::ports::ComponentCatalog;
 static CATALOG_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/catalog");
 
 /// Metadata parsed from meta.toml.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Deserialize)]
 struct ComponentMeta {
     /// Component name (defaults to directory name if missing).
     pub name: Option<String>,
