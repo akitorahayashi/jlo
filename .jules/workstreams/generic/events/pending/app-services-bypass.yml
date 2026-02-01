@@ -1,5 +1,6 @@
 schema_version: 1
 id: "asb8k2"
+issue_id: ""
 created_at: "2026-02-01"
 author_role: "structural_arch"
 confidence: "high"
@@ -10,10 +11,12 @@ statement: |
 
 evidence:
   - path: "src/app/commands/init.rs"
-    loc: "4"
+    loc:
+      - "4"
     note: "use crate::services::{manifest_from_scaffold, write_manifest};"
   - path: "src/app/commands/doctor/mod.rs"
-    loc: "8"
+    loc:
+      - "8"
     note: "use crate::services::{list_event_states, list_issue_labels, read_enum_values};"
 
 tags:

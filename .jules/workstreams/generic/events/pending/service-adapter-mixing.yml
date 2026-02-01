@@ -1,5 +1,6 @@
 schema_version: 1
 id: "r8j3v9"
+issue_id: ""
 created_at: "2026-01-31"
 author_role: "structural_arch"
 confidence: "high"
@@ -10,13 +11,16 @@ statement: |
 
 evidence:
   - path: "src/services/resolver.rs"
-    loc: "1"
+    loc:
+      - "1"
     note: "Domain Service (pure business logic)"
   - path: "src/services/jules_client_http.rs"
-    loc: "1"
+    loc:
+      - "1"
     note: "Infrastructure Adapter (HTTP implementation)"
   - path: "src/services/workspace_filesystem.rs"
-    loc: "1"
+    loc:
+      - "1"
     note: "Infrastructure Adapter (Filesystem implementation)"
 tags:
   - "layer-mixing"
