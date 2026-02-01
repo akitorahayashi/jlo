@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "j8s7d1"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-01"
+author_role: "structural_arch"
+confidence: "high"
+
+# Content
+title: "Services directory lacks cohesion"
+statement: |
+  The src/services directory contains a flat list of unrelated implementations
+  (HTTP, Filesystem, Artifacts), making it a "utils" bucket rather than a
+  domain-driven structure.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/mod.rs"
+    loc:
+      - "mod artifact_generator;"
+      - "mod dependency_resolver;"
+      - "mod jules_client_http;"
+    note: "Flat list of unrelated domains (Build, Algo, Network) in one directory."
+
+tags:
+  - "architecture"
+  - "cohesion"

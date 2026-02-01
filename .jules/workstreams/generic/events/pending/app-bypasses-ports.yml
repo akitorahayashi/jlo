@@ -1,0 +1,31 @@
+schema_version: 1
+
+# Metadata
+id: "kd92la"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-01"
+author_role: "structural_arch"
+confidence: "high"
+
+# Content
+title: "App layer bypasses ports to access services directly"
+statement: |
+  The src/app layer directly imports concrete implementations from src/services,
+  violating the hexagonal architecture where the application core should only
+  depend on src/ports.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/template/command.rs"
+    loc:
+      - "use crate::services::role_factory::RoleFactory;"
+    note: "Command handler directly imports concrete service implementation."
+
+  - path: "src/app/commands/update.rs"
+    loc:
+      - "use crate::services::embedded_role_template_store::EmbeddedRoleTemplateStore;"
+    note: "Update command directly imports concrete service implementation."
+
+tags:
+  - "architecture"
+  - "dependency-violation"
