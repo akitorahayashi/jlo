@@ -31,82 +31,12 @@ jobs:
           ref: jules
           fetch-depth: 0
 
-      - name: Validate inputs
-        env:
-          ISSUE_FILE: ${{ inputs.issue_file }}
-        run: |
-          if [ -z "$ISSUE_FILE" ]; then
-            echo "::error::issue_file is required"
-            exit 1
-          fi
-          # We can't strictly check file existence before checkout/install in all cases if generic,
-          # but here we are on 'jules' branch.
-          if [ ! -f "$ISSUE_FILE" ]; then
-            echo "::error::Issue file not found in repository: $ISSUE_FILE"
-            exit 1
-          fi
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
-
-      - name: Run implementers
+      - name: Run implementer
         env:
           JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-          ISSUE_FILE: ${{ inputs.issue_file }}
-          DRY_RUN: ${{ inputs.dry_run }}
-        run: |
-          args=("$ISSUE_FILE")
-          [ "$DRY_RUN" = "true" ] && args+=("--dry-run")
-          jlo run implementers "${args[@]}" --branch main
-
-      - name: Configure Git
-        if: inputs.dry_run != 'true'
-        uses: ./.github/actions/configure-git
-
-      - name: Delete processed issue and source events
-        if: inputs.dry_run != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN || github.token }}
-          ISSUE_FILE: ${{ inputs.issue_file }}
-        run: |
-          if [ -f "$ISSUE_FILE" ]; then
-            WORKSTREAM=$(echo "$ISSUE_FILE" | awk -F'/workstreams/' '{print $2}' | awk -F'/' '{print $1}')
-            if [ -z "$WORKSTREAM" ]; then
-              echo "Error: Could not determine workstream from $ISSUE_FILE" >&2
-              exit 1
-            fi
-
-            inspect=$(jlo workstreams inspect --workstream "$WORKSTREAM" --format json)
-            echo "$inspect" > inspect.json
-
-            SOURCE_EVENTS=$(jq -c --arg path "$ISSUE_FILE" '.issues.items[] | select(.path == $path) | .source_events' inspect.json)
-            if [ -z "$SOURCE_EVENTS" ] || [ "$SOURCE_EVENTS" = "null" ]; then
-              echo "Error: source_events not found for $ISSUE_FILE" >&2
-              exit 1
-            fi
-
-            EVENT_PATHS=$(jq -r --argjson ids "$SOURCE_EVENTS" '
-              [ .events.items[] | select(.id as $id | ($ids | index($id)) != null) | .path ] | .[]
-            ' inspect.json)
-
-            if [ -z "$EVENT_PATHS" ]; then
-              echo "Error: No event paths found for source_events in $ISSUE_FILE" >&2
-              exit 1
-            fi
-
-            echo "Deleting source events:"
-            echo "$EVENT_PATHS"
-            while read -r path; do
-              [ -n "$path" ] && git rm "$path"
-            done <<< "$EVENT_PATHS"
-
-            # Delete the issue itself
-            git rm "$ISSUE_FILE"
-            
-            # Commit changes
-            git commit -m "Remove processed issue and source events: $(basename "$ISSUE_FILE")"
-            git push origin jules
-            echo "✅ Cleanup complete."
-          fi
+        uses: ./.github/actions/run-implementer
+        with:
+          issue_file: ${{ inputs.issue_file }}
+          dry_run: ${{ inputs.dry_run }}
+          jlo_version: ${{ vars.JLO_VERSION || 'latest' }}
+          target_branch: main
