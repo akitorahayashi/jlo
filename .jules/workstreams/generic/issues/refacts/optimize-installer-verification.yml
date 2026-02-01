@@ -1,0 +1,35 @@
+schema_version: 2
+
+# Metadata
+id: "ci7y12"
+source_events:
+  - "c8d1f3"
+title: "Optimize Installer Verification"
+label: "refacts"
+priority: "medium"
+summary: "Add path filtering to verify-installers workflow."
+
+# Content
+problem: |
+  The `verify-installers.yml` workflow runs on every pull request without path filtering.
+  It executes expensive setup steps even for changes unrelated to the installer catalog.
+
+impact: |
+  Wastes CI compute resources and slows down feedback for developers working on other parts of the system.
+
+desired_outcome: |
+  The workflow only triggers when files in `src/assets/catalog/` (or related paths) are modified.
+
+# Specifics
+affected_areas:
+  - ".github/workflows/verify-installers.yml"
+
+acceptance_criteria:
+  - "Update `.github/workflows/verify-installers.yml` to include `paths` filter for `src/assets/catalog/**`."
+
+verification_commands:
+  - "cat .github/workflows/verify-installers.yml"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

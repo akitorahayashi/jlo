@@ -1,0 +1,37 @@
+schema_version: 2
+
+# Metadata
+id: "tst4r1"
+source_events:
+  - "u7t3s1"
+title: "Test Workstream Assets"
+label: "tests"
+priority: "medium"
+summary: "Add unit tests for workstream_template_assets.rs."
+
+# Content
+problem: |
+  The service `src/services/workstream_template_assets.rs` lacks unit tests.
+  It is responsible for serving templates for new workstreams, a critical function.
+
+impact: |
+  Failures or regressions in this service would block users from creating workstreams.
+  Lack of tests makes refactoring risky.
+
+desired_outcome: |
+  The service has comprehensive unit test coverage ensuring it correctly identifies and returns template files.
+
+# Specifics
+affected_areas:
+  - "src/services/workstream_template_assets.rs"
+
+acceptance_criteria:
+  - "Add a `mod tests` block in `src/services/workstream_template_assets.rs`."
+  - "Verify `collect_files` returns expected assets."
+
+verification_commands:
+  - "cargo test src/services/workstream_template_assets.rs"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
