@@ -51,3 +51,31 @@ fn collect_files(dir: &Dir, base_path: &Path, files: &mut Vec<ScaffoldFile>) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_workstream_template_files_returns_assets() {
+        let files = workstream_template_files().expect("Failed to get workstream template files");
+        assert!(!files.is_empty(), "Workstream template files should not be empty");
+
+        // Verify scheduled.toml is present
+        let scheduled_toml = files.iter().find(|f| f.path == "scheduled.toml");
+        assert!(scheduled_toml.is_some(), "scheduled.toml should be present");
+    }
+
+    #[test]
+    fn test_workstream_template_content_returns_content() {
+        let content = workstream_template_content("scheduled.toml")
+            .expect("Failed to get content for scheduled.toml");
+        assert!(content.contains("version = 1"), "Content should contain 'version = 1'");
+    }
+
+    #[test]
+    fn test_workstream_template_content_returns_error_for_missing_file() {
+        let result = workstream_template_content("non_existent_file.toml");
+        assert!(result.is_err(), "Should return error for missing file");
+    }
+}
