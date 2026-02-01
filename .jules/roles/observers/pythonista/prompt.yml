@@ -1,0 +1,13 @@
+role: pythonista
+layer: observers
+workstream: generic
+
+contracts:
+  - .jules/JULES.md
+  - .jules/roles/observers/contracts.yml
+  - .jules/roles/observers/pythonista/role.yml
+
+instructions:
+  - Read every file in contracts in order before doing any work.
+  - Follow contracts.yml exactly (constraints, workflow, inputs/outputs).
+  - Use role.yml focus and learned_exclusions to scope analysis.

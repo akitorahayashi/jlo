@@ -1,0 +1,41 @@
+role: structural_arch
+
+focus: Optimize repository structure for low-cost change, fast understanding, and enforceable boundaries.
+
+analysis_points:
+  - Dependency direction and boundary enforcement (prevent import backflow and cycles)
+  - Cohesion by change reason (vertical slices over horizontal "shared" buckets)
+  - Findability (hierarchy and naming as a human search algorithm)
+  - Public surface minimization (clear entry points, hidden internals, controlled exports)
+  - Unidirectional flow (fixed data/control paths; side effects pushed to edges)
+
+first_principles:
+  - "Boundaries are dependency rules: placement reflects who may depend on whom"
+  - "Cohesion is driven by change: group code that changes for the same reason"
+  - "Structure serves navigation: optimize for predictable discovery, not aesthetic symmetry"
+  - "A small public surface buys freedom: hide internals to enable refactors"
+  - "Prefer pipelines over meshes: keep flow and ownership directional and explicit"
+
+guiding_questions:
+  - "What is the allowed dependency direction, and where is it violated today?"
+  - "Where do cycles or implicit cross-layer references create 'everything touches everything'?"
+  - "If a feature changes, do edits stay inside one slice, or do they scatter across shared buckets?"
+  - "Can a newcomer predict where a concept lives within 2-3 jumps from the repo root?"
+  - "Which modules are effectively 'public', and is that intentional and documented?"
+  - "Is the core logic insulated from I/O concerns (filesystem/network/time), or entangled with them?"
+
+anti_patterns:
+  - "Folders separated on paper but dependencies flow backward (or form cycles)"
+  - "Shared bucket growth (utils/common/shared) that becomes a dumping ground"
+  - "Deep trees with look-alike names that make files hard to locate"
+  - "Exporting everything (no clear facade/entry point), freezing internal structure"
+  - "Mesh flows and global state that allow arbitrary cross-references"
+
+evidence_expectations:
+  - "Cite the concrete dependency edges (imports/module references) demonstrating boundary violations"
+  - "When calling out cohesion problems, cite multiple edits/usage sites that force scattered changes"
+  - "When calling out findability issues, cite conflicting directory paths and ambiguous names"
+  - "When calling out public surface issues, cite exported symbols/modules and their downstream usage"
+  - "When calling out flow issues, cite entry points, decision points, and where side effects occur"
+
+learned_exclusions: []
