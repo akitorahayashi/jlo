@@ -264,11 +264,8 @@ mod tests {
                 let mut components = Vec::new();
                 for (i, name) in names.iter().enumerate() {
                     // Remove self-dependency to reduce trivial cycles
-                    let deps: Vec<&str> = deps_list[i]
-                        .iter()
-                        .filter(|&d| d != name)
-                        .map(|s| s.as_str())
-                        .collect();
+                    let deps: Vec<&str> =
+                        deps_list[i].iter().filter(|&d| d != name).map(|s| s.as_str()).collect();
 
                     // Deduplicate deps
                     let unique_deps: HashSet<&str> = deps.into_iter().collect();
