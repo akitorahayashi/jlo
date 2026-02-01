@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "uyd6ru"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "rustacean"
+confidence: "high"
+
+# Content
+title: "Excessive cloning in DependencyResolver"
+statement: |
+  DependencyResolver::resolve inefficiently clones Component structs, including potentially large script_content, during topological sorting.
+  The algorithm eagerly clones the entire component subset into a map, and ComponentCatalog::get returns &Component, forcing clones if ownership is required.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/dependency_resolver.rs"
+    loc:
+      - "DependencyResolver::resolve"
+    note: "Method signature returns Vec<Component>, forcing ownership."
+  - path: "src/services/dependency_resolver.rs"
+    loc:
+      - "collect_dependencies"
+    note: "collected.insert(id.clone(), component.clone()) clones entire component."
+
+tags:
+  - "performance"
+  - "ownership"
+  - "technical-debt"
