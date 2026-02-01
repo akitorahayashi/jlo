@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "clic01"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "structural_arch"
+confidence: "high"
+
+# Content
+title: "CLI Logic Coupled to Binary"
+statement: |
+  The CLI definition (structs, enums) and argument parsing logic reside in `src/main.rs`. This couples the CLI interface directly to the binary entry point, making it difficult to test the CLI logic in isolation or reuse it in other contexts (e.g., a library or another tool). It should be moved to a dedicated adapter (e.g., `src/adapters/cli` or `src/ports/cli`).
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/main.rs"
+    loc:
+      - "struct Cli"
+    note: "CLI arguments struct defined in main.rs."
+  - path: "src/main.rs"
+    loc:
+      - "enum Commands"
+    note: "CLI subcommands enum defined in main.rs."
+
+tags:
+  - "architecture"
+  - "testability"
+  - "separation-of-concerns"
