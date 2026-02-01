@@ -1,0 +1,22 @@
+schema_version: 1
+id: "f8j3p5"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "consistency"
+confidence: "high"
+title: "Undocumented format argument for jlo workstreams inspect"
+statement: |
+  The `jlo workstreams inspect` command supports a `--format` argument (default `json`, optional `yaml`) which is not documented in `README.md` or `AGENTS.md`.
+evidence:
+  - path: "src/app/cli/mod.rs"
+    loc:
+      - "WorkstreamCommands::Inspect"
+    note: "Defines format argument"
+  - path: "README.md"
+    loc:
+      - "Commands Table"
+    note: "Does not mention the format flag"
+tags:
+  - "documentation"
+  - "cli"
+  - "consistency"
