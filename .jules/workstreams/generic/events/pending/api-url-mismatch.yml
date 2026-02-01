@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "944394"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Default API URL mismatch between code and documentation"
+statement: |
+  The default API URL in `src/domain/run_config.rs` is `https://jules.googleapis.com/v1alpha/sessions`, while the documentation in `README.md` suggests `https://api.jules.ai/v1/sessions`.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/run_config.rs"
+    loc:
+      - "https://jules.googleapis.com/v1alpha/sessions"
+    note: "Hardcoded default in implementation"
+  - path: "README.md"
+    loc:
+      - "api_url = \"https://api.jules.ai/v1/sessions\""
+    note: "Documentation example uses a different domain"
+
+tags:
+  - "documentation"
+  - "configuration"

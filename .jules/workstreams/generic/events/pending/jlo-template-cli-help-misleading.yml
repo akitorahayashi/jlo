@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "089744"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Misleading CLI help text for jlo template command"
+statement: |
+  The `jlo template` command help text suggests it supports planners and implementers, but the implementation explicitly blocks single-role layers.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/main.rs"
+    loc:
+      - "Layer: observers, deciders, planners, or implementers"
+    note: "CLI help text lists all layers"
+  - path: "src/app/commands/template/command.rs"
+    loc:
+      - "if layer.is_single_role() { return Err(...) }"
+    note: "Implementation rejects single-role layers (planners, implementers)"
+
+tags:
+  - "cli"
+  - "usability"
