@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "z2c6x1"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "consistency"
+confidence: "medium"
+
+# Content
+title: "Ambiguity between Scaffold and Templates in AGENTS.md"
+statement: |
+  `AGENTS.md` implies that `src/assets/templates/` is the source for roles, but Planners and Implementers are actually located in `src/assets/scaffold/.jules/roles/` and are not template-based in the same way.
+
+# Evidence supporting the observation
+evidence:
+  - path: "AGENTS.md"
+    loc:
+      - "src/assets/templates/     # Role templates by layer"
+    note: "Implies all templates are here"
+  - path: "src/assets/scaffold/.jules/roles/"
+    loc:
+      - "planners/"
+      - "implementers/"
+    note: "Single-role layers are in scaffold"
+
+tags:
+  - "documentation"
+  - "concepts"

@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "m5j8h4"
+issue_id: ""
+created_at: "2026-02-01"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Incomplete command structure in AGENTS.md"
+statement: |
+  `AGENTS.md` lists a subset of commands (`init`, `template`, `setup`) under `src/app/commands/`, omitting `doctor`, `update`, `run`, `schedule`, and `workstreams`.
+
+# Evidence supporting the observation
+evidence:
+  - path: "AGENTS.md"
+    loc:
+      - "Project Structure"
+    note: "Lists only init, template, setup"
+  - path: "src/app/commands/"
+    loc:
+      - "dir listing"
+    note: "Contains 8 command modules"
+
+tags:
+  - "documentation"
+  - "structure"
