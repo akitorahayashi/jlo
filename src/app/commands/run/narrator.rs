@@ -13,10 +13,8 @@ use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
 use crate::services::jules_client_http::HttpJulesClient;
 
-/// Maximum number of commits to include in the summary.
+/// Maximum number of commits to include in the bounded sample.
 const MAX_COMMITS: usize = 50;
-/// Maximum number of changed paths to include.
-const MAX_CHANGED_PATHS: usize = 100;
 /// Number of commits to use for bootstrap when no prior summary exists.
 const BOOTSTRAP_COMMIT_COUNT: usize = 20;
 
@@ -37,14 +35,15 @@ pub struct RangeContext {
 #[derive(Debug)]
 pub struct GitContext {
     pub range: RangeContext,
-    pub diffstat: DiffStat,
+    pub stats: Stats,
     pub commits: Vec<CommitInfo>,
-    pub changed_paths: Vec<String>,
     pub truncation_note: String,
 }
 
 #[derive(Debug, Default)]
-pub struct DiffStat {
+pub struct Stats {
+    pub commits_total: u32,
+    pub commits_included: u32,
     pub files_changed: u32,
     pub insertions: u32,
     pub deletions: u32,
@@ -53,9 +52,7 @@ pub struct DiffStat {
 #[derive(Debug)]
 pub struct CommitInfo {
     pub sha: String,
-    pub author: String,
-    pub date: String,
-    pub message: String,
+    pub subject: String,
 }
 
 /// Execute the Narrator layer.
@@ -99,7 +96,7 @@ pub fn execute(
         println!(
             "Narrator execution detected {} commits with {} files changed.",
             git_context.commits.len(),
-            git_context.diffstat.files_changed
+            git_context.stats.files_changed
         );
         println!("Run in CI (GITHUB_ACTIONS=true) to create a Jules session.");
         return Ok(RunResult {
@@ -151,19 +148,33 @@ fn collect_git_context(jules_path: &Path) -> Result<Option<GitContext>, AppError
         return Ok(None);
     }
 
-    // Collect commits
-    let (commits, commits_truncated) = collect_commits(&range)?;
+    // Count total commits in range (for truncation tracking)
+    let commits_total = count_commits(&range)?;
 
-    // Collect changed paths
-    let (changed_paths, paths_truncated) = collect_changed_paths(&range)?;
+    // Collect bounded commit samples
+    let commits = collect_commits(&range)?;
+    let commits_included = commits.len() as u32;
 
     // Collect diffstat
     let diffstat = collect_diffstat(&range)?;
 
-    // Build truncation note
-    let truncation_note = build_truncation_note(commits_truncated, paths_truncated);
+    // Build stats
+    let stats = Stats {
+        commits_total,
+        commits_included,
+        files_changed: diffstat.files_changed,
+        insertions: diffstat.insertions,
+        deletions: diffstat.deletions,
+    };
 
-    Ok(Some(GitContext { range, diffstat, commits, changed_paths, truncation_note }))
+    // Build truncation note
+    let truncation_note = if commits_total > commits_included {
+        format!("Commits truncated to {} of {} total", commits_included, commits_total)
+    } else {
+        String::new()
+    };
+
+    Ok(Some(GitContext { range, stats, commits, truncation_note }))
 }
 
 /// Determine the commit range for the summary.
@@ -283,12 +294,37 @@ fn check_for_changes(range: &RangeContext) -> Result<bool, AppError> {
     Ok(!paths.trim().is_empty())
 }
 
-/// Collect commits in the range, excluding .jules/-only commits.
-fn collect_commits(range: &RangeContext) -> Result<(Vec<CommitInfo>, bool), AppError> {
+/// Count total commits in the range, excluding .jules/-only commits.
+fn count_commits(range: &RangeContext) -> Result<u32, AppError> {
+    let output = Command::new("git")
+        .args([
+            "rev-list",
+            "--count",
+            &format!("{}..{}", range.from_commit, range.to_commit),
+            "--",
+            ".",
+            ":(exclude).jules",
+        ])
+        .output()
+        .map_err(|e| AppError::config_error(format!("Failed to run git rev-list: {}", e)))?;
+
+    if !output.status.success() {
+        return Err(AppError::config_error("Failed to count commits in range"));
+    }
+
+    String::from_utf8_lossy(&output.stdout)
+        .trim()
+        .parse()
+        .map_err(|e| AppError::config_error(format!("Failed to parse commit count: {}", e)))
+}
+
+/// Collect commits in the range (sha + subject only), excluding .jules/-only commits.
+fn collect_commits(range: &RangeContext) -> Result<Vec<CommitInfo>, AppError> {
     let output = Command::new("git")
         .args([
             "log",
-            "--pretty=format:%H|%an|%aI|%s",
+            &format!("-{}", MAX_COMMITS),
+            "--pretty=format:%H|%s",
             &format!("{}..{}", range.from_commit, range.to_commit),
             "--",
             ".",
@@ -303,55 +339,21 @@ fn collect_commits(range: &RangeContext) -> Result<(Vec<CommitInfo>, bool), AppE
 
     let mut commits = Vec::new();
     for line in String::from_utf8_lossy(&output.stdout).lines() {
-        let parts: Vec<&str> = line.splitn(4, '|').collect();
-        if parts.len() == 4 {
-            commits.push(CommitInfo {
-                sha: parts[0].to_string(),
-                author: parts[1].to_string(),
-                date: parts[2].to_string(),
-                message: parts[3].to_string(),
-            });
+        let parts: Vec<&str> = line.splitn(2, '|').collect();
+        if parts.len() == 2 {
+            commits.push(CommitInfo { sha: parts[0].to_string(), subject: parts[1].to_string() });
         }
     }
 
-    let truncated = commits.len() > MAX_COMMITS;
-    if truncated {
-        commits.truncate(MAX_COMMITS);
-    }
-
-    Ok((commits, truncated))
+    Ok(commits)
 }
 
-/// Collect changed paths in the range, excluding .jules/.
-fn collect_changed_paths(range: &RangeContext) -> Result<(Vec<String>, bool), AppError> {
-    let output = Command::new("git")
-        .args([
-            "diff",
-            "--name-only",
-            &format!("{}..{}", range.from_commit, range.to_commit),
-            "--",
-            ".",
-            ":(exclude).jules",
-        ])
-        .output()
-        .map_err(|e| AppError::config_error(format!("Failed to run git diff: {}", e)))?;
-
-    if !output.status.success() {
-        return Err(AppError::config_error("Failed to get changed paths"));
-    }
-
-    let mut paths: Vec<String> = String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .filter(|l| !l.is_empty())
-        .map(String::from)
-        .collect();
-
-    let truncated = paths.len() > MAX_CHANGED_PATHS;
-    if truncated {
-        paths.truncate(MAX_CHANGED_PATHS);
-    }
-
-    Ok((paths, truncated))
+/// Internal struct for parsing diffstat (used to build Stats).
+#[derive(Debug, Default)]
+struct DiffStat {
+    files_changed: u32,
+    insertions: u32,
+    deletions: u32,
 }
 
 /// Collect diffstat for the range using --numstat (machine-readable format).
@@ -399,19 +401,6 @@ fn parse_numstat(output: &str) -> DiffStat {
     stat
 }
 
-/// Build truncation note if needed.
-fn build_truncation_note(commits_truncated: bool, paths_truncated: bool) -> String {
-    match (commits_truncated, paths_truncated) {
-        (true, true) => format!(
-            "Commits truncated to {} and paths truncated to {}",
-            MAX_COMMITS, MAX_CHANGED_PATHS
-        ),
-        (true, false) => format!("Commits truncated to {}", MAX_COMMITS),
-        (false, true) => format!("Paths truncated to {}", MAX_CHANGED_PATHS),
-        (false, false) => String::new(),
-    }
-}
-
 /// Build the full Narrator prompt with git context injected.
 fn build_narrator_prompt(jules_path: &Path, ctx: &GitContext) -> Result<String, AppError> {
     let base_prompt = assemble_single_role_prompt(jules_path, Layer::Narrator)?;
@@ -428,25 +417,23 @@ fn build_narrator_prompt(jules_path: &Path, ctx: &GitContext) -> Result<String, 
         context_section.push_str(&format!("- selection_detail: {}\n", ctx.range.selection_detail));
     }
 
-    context_section.push_str("\n## Diffstat\n");
-    context_section.push_str(&format!("- files_changed: {}\n", ctx.diffstat.files_changed));
-    context_section.push_str(&format!("- insertions: {}\n", ctx.diffstat.insertions));
-    context_section.push_str(&format!("- deletions: {}\n", ctx.diffstat.deletions));
+    context_section.push_str("\n## Stats\n");
+    context_section.push_str(&format!("- commits_total: {}\n", ctx.stats.commits_total));
+    context_section.push_str(&format!("- commits_included: {}\n", ctx.stats.commits_included));
+    context_section.push_str(&format!("- files_changed: {}\n", ctx.stats.files_changed));
+    context_section.push_str(&format!("- insertions: {}\n", ctx.stats.insertions));
+    context_section.push_str(&format!("- deletions: {}\n", ctx.stats.deletions));
 
-    context_section.push_str(&format!("\n## Commits ({} total)\n", ctx.commits.len()));
+    context_section.push_str(&format!(
+        "\n## Commits ({} of {} total)\n",
+        ctx.stats.commits_included, ctx.stats.commits_total
+    ));
     for commit in &ctx.commits {
         context_section.push_str(&format!(
-            "- {} {} {} {}\n",
+            "- {} {}\n",
             &commit.sha[..7.min(commit.sha.len())],
-            commit.date,
-            commit.author,
-            commit.message
+            commit.subject
         ));
-    }
-
-    context_section.push_str(&format!("\n## Changed Paths ({} total)\n", ctx.changed_paths.len()));
-    for path in &ctx.changed_paths {
-        context_section.push_str(&format!("- {}\n", path));
     }
 
     if !ctx.truncation_note.is_empty() {
@@ -471,11 +458,13 @@ fn execute_dry_run(
         ctx.range.from_commit, ctx.range.to_commit, ctx.range.selection_mode
     );
     println!(
-        "Diffstat: {} files, +{} -{}",
-        ctx.diffstat.files_changed, ctx.diffstat.insertions, ctx.diffstat.deletions
+        "Stats: {} commits ({} included), {} files, +{} -{}",
+        ctx.stats.commits_total,
+        ctx.stats.commits_included,
+        ctx.stats.files_changed,
+        ctx.stats.insertions,
+        ctx.stats.deletions
     );
-    println!("Commits: {}", ctx.commits.len());
-    println!("Changed paths: {}", ctx.changed_paths.len());
     if !ctx.truncation_note.is_empty() {
         println!("Truncation: {}", ctx.truncation_note);
     }
