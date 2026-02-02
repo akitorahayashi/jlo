@@ -1,3 +1,3 @@
 fn main() {
-    jlo::app::cli::run();
+    jlo::cli();
 }
