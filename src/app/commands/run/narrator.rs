@@ -309,10 +309,13 @@ fn count_commits(range: &RangeContext) -> Result<u32, AppError> {
         .map_err(|e| AppError::config_error(format!("Failed to run git rev-list: {}", e)))?;
 
     if !output.status.success() {
-        return Ok(0);
+        return Err(AppError::config_error("Failed to count commits in range"));
     }
 
-    Ok(String::from_utf8_lossy(&output.stdout).trim().parse().unwrap_or(0))
+    String::from_utf8_lossy(&output.stdout)
+        .trim()
+        .parse()
+        .map_err(|e| AppError::config_error(format!("Failed to parse commit count: {}", e)))
 }
 
 /// Collect commits in the range (sha + subject only), excluding .jules/-only commits.

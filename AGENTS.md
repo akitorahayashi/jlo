@@ -39,7 +39,7 @@ contracts:
 Agent execution is orchestrated by GitHub Actions using `jlo run`. The `.github/workflows/jules-workflows.yml` coordinates all agent invocations via reusable workflows, delegating the actual execution logic to the CLI.
 
 ## Project Summary
-`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. Specialized agents are organized by their operational responsibilities: Narrator summarizes codebase changes, Observers analyze code, Deciders screen events and produce issues, Planners expand issues requiring deep analysis, and Implementers are dispatched via workflow policy using local issue files.
+`jlo` is a CLI tool that deploys and manages `.jules/` workspace scaffolding for scheduled LLM agent execution. Specialized agents are organized by their operational responsibilities: Narrator provides bounded change summaries to prevent prompt bloat, Observers analyze code, Deciders screen events and produce issues, Planners expand issues requiring deep analysis, and Implementers are dispatched via workflow policy using local issue files.
 
 ## Branch Strategy
 
@@ -127,7 +127,7 @@ tests/
 | Planners | Single-role | `jlo run planners <path>` | None |
 | Implementers | Single-role | `jlo run implementers <path>` | None |
 
-**Single-role layers**: Narrator, Planners and Implementers have a fixed role with `prompt.yml` directly in the layer directory. Narrator produces the changes feed; Planners and Implementers are issue-driven and require the issue path as a positional argument. Template creation is not supported for single-role layers.
+**Single-role layers**: Narrator, Planners and Implementers have a fixed role with `prompt.yml` directly in the layer directory. Narrator produces bounded change summaries to prevent prompt bloat; Planners and Implementers are issue-driven and require the issue path as a positional argument. Template creation is not supported for single-role layers.
 
 **Multi-role layers**: Observers and Deciders support multiple configurable roles listed in `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `prompt.yml`.
 
@@ -139,7 +139,7 @@ The setup compiler generates dependency-aware installation scripts for developme
 ```
 .jules/
   changes/
-    latest.yml     # Narrator output (changes summary)
+    latest.yml     # Narrator output (bounded changes summary)
   workstreams/
     <workstream>/
       events/        # Observer outputs
