@@ -104,10 +104,11 @@ tests/
 - `jlo init` (alias: `i`): Create `.jules/` structure with setup directory
 - `jlo update [--dry-run] [--workflows] [--adopt-managed]` (alias: `u`): Update workspace to current jlo version; `--adopt-managed` resets the baseline for default role files.
 - `jlo template [-l layer] [-n name] [-w workstream]` (alias: `tp`): Apply a template (workstream or role)
-- `jlo run observers --workstream <name> [--role <name> | --scheduled]` (alias: `o`): Run observer agents
-- `jlo run deciders --workstream <name> [--role <name> | --scheduled]` (alias: `d`): Run decider agents
-- `jlo run planners <path>` (alias: `p`): Run planner (single-role, issue-driven)
-- `jlo run implementers <path>` (alias: `i`): Run implementer (single-role, issue-driven)
+- `jlo run` (alias: `r`): Execute Jules agents for a specific layer
+- `jlo run observers (o) --workstream <name> [--role <name> | --scheduled]`: Run observer agents
+- `jlo run deciders (d) --workstream <name> [--role <name> | --scheduled]`: Run decider agents
+- `jlo run planners (p) <path>`: Run planner (single-role, issue-driven)
+- `jlo run implementers (i) <path>`: Run implementer (single-role, issue-driven)
 - `jlo schedule export --scope <scope>`: Export schedule data for automation workflows (scope: `workstreams` or `roles`)
 - `jlo workstreams inspect --workstream <name> [--format json|yaml]`: Inspect workstream state for automation workflows
 - `jlo setup gen [path]` (alias: `s g`): Generate `install.sh` and `env.toml`

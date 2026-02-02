@@ -38,7 +38,7 @@ jlo init
 
 ### Run Command
 
-Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `o` (observers), `d` (deciders), `p` (planners), `i` (implementers).
+Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `o` (observers), `d` (deciders), `p` (planners), `i` (implementers) (e.g., `jlo r o ...`).
 
 ```bash
 jlo run observers --workstream generic --scheduled            # Run scheduled observer roles
