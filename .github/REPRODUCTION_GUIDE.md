@@ -37,6 +37,7 @@ This document describes the repository state required to reproduce the Jules wor
 |------|---------|
 | `jules-generate-workstream-matrix.sh` | Generate workstream matrix output |
 | `jules-generate-decider-matrix.sh` | Generate decider matrix output |
+| `jules-generate-observer-matrix.sh` | Generate observer matrix output |
 | `jules-generate-routing-matrices.sh` | Generate planner/implementer matrix outputs |
 | `jules-delete-processed-issue-and-events.sh` | Delete processed issue and source events |
 
