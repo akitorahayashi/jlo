@@ -13,16 +13,31 @@ jobs:
     permissions:
       contents: write 
     steps:
+      - name: Check if jules branch exists
+        id: check-branch
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          if gh api repos/${{ github.repository }}/branches/jules --silent 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "::notice::jules branch does not exist, skipping sync"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.check-branch.outputs.exists == 'true'
         with:
           ref: jules
           fetch-depth: 0
           token: ${{ secrets.JLO_BOT_TOKEN }}
 
       - name: Configure Git
+        if: steps.check-branch.outputs.exists == 'true'
         uses: ./.github/actions/configure-git
 
       - name: Merge main into jules
+        if: steps.check-branch.outputs.exists == 'true'
         run: |
           git fetch origin main
           # Merge main, preferring main's code changes
@@ -34,4 +49,5 @@ jobs:
           }
 
       - name: Push changes
+        if: steps.check-branch.outputs.exists == 'true'
         run: git push origin jules
