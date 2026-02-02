@@ -11,6 +11,7 @@ use std::path::Path;
 use crate::domain::AppError;
 use crate::services::scaffold_assets::{list_event_states, list_issue_labels, read_enum_values};
 
+#[allow(unused_imports)]
 pub use diagnostics::{Diagnostic, Diagnostics, Severity};
 
 #[derive(Debug, Clone, Default)]

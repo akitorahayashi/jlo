@@ -5,6 +5,7 @@ pub enum Severity {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Diagnostic {
     pub file: String,
     pub message: String,
@@ -38,10 +39,12 @@ impl Diagnostics {
         self.warnings.len()
     }
 
+    #[allow(dead_code)]
     pub fn has_errors(&self) -> bool {
         !self.errors.is_empty()
     }
 
+    #[allow(dead_code)]
     pub fn has_warnings(&self) -> bool {
         !self.warnings.is_empty()
     }

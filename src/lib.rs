@@ -1,6 +1,6 @@
 //! jlo: Deploy and manage .jules/ workspace scaffolding for organizational memory.
 
-pub mod app;
+pub(crate) mod app;
 pub(crate) mod domain;
 pub(crate) mod ports;
 pub(crate) mod services;
@@ -31,6 +31,9 @@ pub use app::commands::workstreams::{
 };
 pub use domain::AppError;
 pub use domain::Layer;
+
+/// Entry point for the CLI.
+pub use app::cli::run as cli;
 
 /// Initialize a new `.jules/` workspace in the current directory.
 pub fn init() -> Result<(), AppError> {
