@@ -350,13 +350,10 @@ fn parse_numstat(output: &str) -> DiffStat {
 
 /// Helper to run git commands and map errors to AppError::GitError.
 fn run_git(args: &[&str]) -> Result<String, AppError> {
-    let output = Command::new("git")
-        .args(args)
-        .output()
-        .map_err(|e| AppError::GitError {
-            command: format!("git {}", args.join(" ")),
-            details: e.to_string(),
-        })?;
+    let output = Command::new("git").args(args).output().map_err(|e| AppError::GitError {
+        command: format!("git {}", args.join(" ")),
+        details: e.to_string(),
+    })?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
