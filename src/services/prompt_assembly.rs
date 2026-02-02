@@ -6,6 +6,7 @@
 
 use std::fs;
 use std::path::Path;
+use std::sync::OnceLock;
 
 use minijinja::{Environment, UndefinedBehavior};
 
@@ -161,6 +162,8 @@ fn load_prompt(path: &Path, context: &PromptContext) -> Result<String, PromptAss
     render_template(&content, context, &path.display().to_string())
 }
 
+static ENV: OnceLock<Environment<'static>> = OnceLock::new();
+
 /// Render a template string using strict Jinja-compatible semantics.
 ///
 /// Only `{{ ... }}` interpolation is allowed. Control structures are rejected.
@@ -176,14 +179,14 @@ fn render_template(
         });
     }
 
-    let mut env = Environment::new();
-    env.set_undefined_behavior(UndefinedBehavior::Strict);
+    let env = ENV.get_or_init(|| {
+        let mut env = Environment::new();
+        env.set_undefined_behavior(UndefinedBehavior::Strict);
+        env
+    });
 
-    env.add_template("inline", template)
-        .map_err(|err| template_render_error(template_name, err))?;
-    let tmpl =
-        env.get_template("inline").map_err(|err| template_render_error(template_name, err))?;
-    tmpl.render(&context.variables).map_err(|err| template_render_error(template_name, err))
+    env.render_str(template, &context.variables)
+        .map_err(|err| template_render_error(template_name, err))
 }
 
 fn disallowed_template_token(template: &str) -> Option<&'static str> {
