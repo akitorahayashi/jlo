@@ -1,8 +1,3 @@
-# Change Summary Schema
-#
-# This file defines the authoritative schema for .jules/changes/latest.yml.
-# Doctor reads allowed enum values from this template; they are not hardcoded elsewhere.
-
 schema_version: 1
 
 id: "xd1cje"
