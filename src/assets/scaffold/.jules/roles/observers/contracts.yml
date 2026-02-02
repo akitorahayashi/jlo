@@ -4,23 +4,25 @@ branch_prefix: jules-observer-
 constraints:
   - Do NOT write to issues/
   - Do NOT emit events for observations already covered by open issues
-  - Workstream directory must exist (fail fast if missing)
 
 inputs:
   - Source code and repository files
   - .jules/changes/latest.yml (recent codebase changes, if present)
-  - role.yml (specialized focus)
-  - .jules/roles/observers/<role>/feedbacks/ (signals from deciders)
-  - .jules/workstreams/<workstream>/issues/**/*.yml (open issues for suppression)
+  - role.yml (Specialized Role Definition - Global)
+  - .jules/workstreams/<workstream>/workstations/<role>/perspective.yml (Workstation Perspective - Local Memory)
+  - .jules/workstreams/<workstream>/exchange/issues/**/*.yml (open issues for suppression)
 
 outputs:
-  - .jules/workstreams/<workstream>/events/pending/*.yml
+  - .jules/workstreams/<workstream>/exchange/events/pending/*.yml
 
 workflow:
-  - 1. Read .jules/changes/latest.yml (if present) for recent codebase changes context
-  - 2. Read .jules/roles/observers/<role>/feedbacks/, abstract patterns, update role.yml learned_exclusions
-  - 3. Read .jules/workstreams/<workstream>/issues/**/*.yml where status is 'open' to identify known problems
-  - 4. Analyze specialized domain against exclusions and open issues
-  - 5. Skip observations already covered by open issues (deduplication)
-  - 5a. Check `.jules/workstreams/<workstream>/events/pending/` and `decided/` for similar observations. Duplicate checks prevent context pollution; verify only potential matches.
-  - "6. Record new findings: cp event.yml .jules/workstreams/<workstream>/events/pending/<kebab-case-description>.yml"
+  - 1. Read .jules/changes/latest.yml (if present) for recent codebase changes context.
+  - 2. Read perspective.yml. This defines your current `goals`, `biases`, and `learned_exclusions`.
+  - 3. Read .jules/roles/observers/<role>/feedbacks/. Abstract valid feedbacks into `learned_exclusions` or `biases` updates for the perspective (do NOT update role.yml).
+  - 4. Analyze specialized domain (from role.yml) against `perspective.learned_exclusions` and open issues.
+  - 5. Skip observations already covered by open issues (deduplication) or excluded by perspective.
+  - 5a. Check `.jules/workstreams/<workstream>/exchange/events/pending/` and `decided/` for similar observations. Duplicate checks prevent context pollution; verify only potential matches.
+  - "6. Record new findings: cp event.yml .jules/workstreams/<workstream>/exchange/events/pending/<kebab-case-description>.yml"
+  - "7. Workstation Maintenance:"
+  - "7a. Record History: Create .jules/workstreams/<workstream>/workstations/<role>/histories/<YYYYMMDD>-<hash>.yml from .jules/roles/observers/schemas/history.yml, documenting inputs, plan, actions, outcomes, and perspective_updates."
+  - "7b. Update Perspective: Update perspective.yml by prepending the new history to `recent_runs` (pruning > 3) and applying `perspective_updates` (merging goals/biases/exclusions)."

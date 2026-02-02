@@ -53,6 +53,19 @@ pub fn assemble_prompt(
         )?;
         let full_path = root.join(&resolved_path);
 
+        // Auto-initialize from schema if missing
+        if !full_path.exists()
+            && let Some(file_name) = Path::new(&resolved_path).file_name()
+        {
+            let schema_path = layer_dir.join("schemas").join(file_name);
+            if schema_path.exists() {
+                if let Some(parent) = full_path.parent() {
+                    let _ = fs::create_dir_all(parent);
+                }
+                let _ = fs::copy(&schema_path, &full_path);
+            }
+        }
+
         if full_path.exists() {
             match fs::read_to_string(&full_path) {
                 Ok(content) => {
