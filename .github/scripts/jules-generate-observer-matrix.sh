@@ -17,17 +17,20 @@ require_command() {
 require_command jq
 require_command jlo
 
-merged='{"include":[]}'
-
-for ws in $(echo "$WORKSTREAMS_JSON" | jq -r '.include[].workstream'); do
-  roles_json=$(
-    bash -lc \
-      "set -euo pipefail; jlo schedule export --scope roles --layer observers --workstream \"$ws\" --format github-matrix | jq -c 'del(.schema_version)'"
-  )
-  merged=$(echo "$merged" "$roles_json" | jq -sc '.[0].include + .[1].include | {include: .}')
-done
+merged=$(
+  echo "$WORKSTREAMS_JSON" | jq -r '.include[].workstream' | \
+  xargs -I{} bash -lc 'set -euo pipefail; jlo schedule export --scope roles --layer observers --workstream "$1" --format github-matrix | jq -c "del(.schema_version)"' -- {} | \
+  jq -sc 'map(.include) | add | {include: .}'
+)
+if [[ -z "$merged" || "$merged" == "null" ]]; then
+  merged='{"include":[]}'
+fi
 
 count=$(echo "$merged" | jq '.include | length')
 echo "matrix=$merged" >> "$GITHUB_OUTPUT"
-echo "has_observers=$( [ "$count" -gt 0 ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+if [ "$count" -gt 0 ]; then
+  echo "has_observers=true" >> "$GITHUB_OUTPUT"
+else
+  echo "has_observers=false" >> "$GITHUB_OUTPUT"
+fi
 echo "Found $count observer role(s)"
