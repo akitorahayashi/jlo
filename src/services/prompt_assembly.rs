@@ -165,23 +165,12 @@ fn render_template(
 
     let mut env = Environment::new();
     env.set_undefined_behavior(UndefinedBehavior::Strict);
-    env.add_template("inline", template).map_err(|err| {
-        PromptAssemblyError::TemplateRenderError {
-            template: template_name.to_string(),
-            reason: err.to_string(),
-        }
-    })?;
 
+    env.add_template("inline", template)
+        .map_err(|err| template_render_error(template_name, err))?;
     let tmpl =
-        env.get_template("inline").map_err(|err| PromptAssemblyError::TemplateRenderError {
-            template: template_name.to_string(),
-            reason: err.to_string(),
-        })?;
-
-    tmpl.render(&context.variables).map_err(|err| PromptAssemblyError::TemplateRenderError {
-        template: template_name.to_string(),
-        reason: err.to_string(),
-    })
+        env.get_template("inline").map_err(|err| template_render_error(template_name, err))?;
+    tmpl.render(&context.variables).map_err(|err| template_render_error(template_name, err))
 }
 
 fn disallowed_template_token(template: &str) -> Option<&'static str> {
@@ -192,6 +181,13 @@ fn disallowed_template_token(template: &str) -> Option<&'static str> {
         return Some("{#");
     }
     None
+}
+
+fn template_render_error(template_name: &str, err: impl std::fmt::Display) -> PromptAssemblyError {
+    PromptAssemblyError::TemplateRenderError {
+        template: template_name.to_string(),
+        reason: err.to_string(),
+    }
 }
 
 #[cfg(test)]
