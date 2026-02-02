@@ -10,7 +10,7 @@ name: Jules Workflows
 
 on:
   schedule:
-    - cron: '0 19 * * *'  # Daily at 19:00 UTC (04:00 JST)
+    - cron: '0 20 * * *'  # Daily at 20:00 UTC (05:00 JST)
   workflow_dispatch:
     inputs:
       entry_point:

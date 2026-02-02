@@ -3,7 +3,7 @@
 # Validates Jules PRs with doctor check and enables auto-merge on success.
 # Only applies when:
 #   1. PR targets the jules branch
-#   2. Head branch matches jules-{observer,decider,planner}-* pattern
+#   2. Head branch matches jules-{narrator,observer,decider,planner}-* pattern
 #   3. All changed files are within .jules/ directory
 #   4. Doctor validation passes
 #
@@ -30,8 +30,9 @@ on:
 
 jobs:
   validate-and-automerge:
-    # Only run for observer/decider/planner branches
+    # Only run for narrator/observer/decider/planner branches
     if: >-
+      startsWith(github.head_ref, 'jules-narrator-') ||
       startsWith(github.head_ref, 'jules-observer-') ||
       startsWith(github.head_ref, 'jules-decider-') ||
       startsWith(github.head_ref, 'jules-planner-')
