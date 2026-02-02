@@ -1,0 +1,21 @@
+schema_version: 1
+
+observer: "rustacean"
+workstream: "generic"
+
+updated_at: "2026-02-02T16:35:00Z"
+
+goals:
+  short_term: []
+
+biases:
+  assumptions: []
+  blind_spots: []
+  heuristics: []
+
+recent_runs:
+  - created_at: "2026-02-02T16:35:00Z"
+    summary: "Identified significant allocation issues in template rendering and Narrator git parsing, plus weak error modeling."
+    history_path: ".jules/workstreams/generic/workstations/rustacean/histories/20260202-fbd0dc.yml"
+
+learned_exclusions: []
