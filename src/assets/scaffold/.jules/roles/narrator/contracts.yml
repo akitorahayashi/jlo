@@ -1,0 +1,25 @@
+layer: narrator
+branch_prefix: jules-narrator-
+
+constraints:
+  - Modify only .jules/changes/latest.yml
+  - MUST exclude .jules/ from all diffs and path lists
+  - If no non-excluded changes exist, produce no output (no-op)
+  - Schema must match change.yml exactly
+  - Truncation must be explicit in summary when lists are bounded
+
+inputs:
+  - Git history (runner-provided range and context)
+  - .jules/changes/latest.yml (previous summary, if exists)
+  - .jules/roles/narrator/change.yml (authoritative schema)
+
+outputs:
+  - .jules/changes/latest.yml (overwritten in-place)
+
+workflow:
+  - 1. Read .jules/roles/narrator/change.yml for schema requirements
+  - 2. Determine range from runner-provided context (previous to_commit or bootstrap)
+  - 3. Collect commits and changed paths (excluding .jules/)
+  - 4. Compute diffstat summary
+  - 5. Generate human-oriented summary in English
+  - 6. Write .jules/changes/latest.yml following schema exactly

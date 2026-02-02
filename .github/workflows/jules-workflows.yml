@@ -3,7 +3,8 @@
 # Orchestrates sequential execution using matrix strategy with max-parallel=1.
 # Each phase reads state, generates a matrix, then executes sequentially.
 #
-# Doctor validation is handled by jules-automerge.yml as a pre-merge gate.
+# Narrator runs first to produce changes context, followed by doctor validation.
+# Doctor validation is also handled by jules-automerge.yml as a pre-merge gate.
 
 name: Jules Workflows
 
@@ -16,9 +17,10 @@ on:
         description: 'Start from layer'
         type: choice
         options:
+          - narrator
           - observers
           - deciders
-        default: observers
+        default: narrator
       wait_minutes:
         description: 'Minutes to wait between layers (Jules async processing time)'
         type: number
@@ -38,18 +40,73 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  ENTRY_POINT: ${{ inputs.entry_point || 'observers' }}
+  ENTRY_POINT: ${{ inputs.entry_point || 'narrator' }}
   WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
   ROUTING_LABELS: ${{ inputs.routing_labels || 'bugs,docs,tests' }}
 
 jobs:
   # ============================================================
-  # Phase 1: Generate workstream matrix
+  # Phase 1: Run narrator (changes feed generation)
   # ============================================================
-  generate-workstream-matrix:
+  run-narrator:
     if: >-
       vars.JULES_PAUSED != 'true' &&
-      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+      (inputs.entry_point || 'narrator') == 'narrator'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Validate .jules workspace exists
+        run: |
+          if [ ! -d ".jules" ]; then
+            echo "::error::.jules directory is missing on the 'jules' branch."
+            exit 1
+          fi
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+        with:
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Run narrator
+        run: |
+          timeout 20m jlo run narrator
+
+      - name: Validate workspace (fail-fast)
+        run: jlo doctor
+
+  # ============================================================
+  # Phase 2: Wait for narrator processing
+  # ============================================================
+  wait-after-narrator:
+    needs: run-narrator
+    if: (inputs.entry_point || 'narrator') == 'narrator'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+        run: |
+          echo "Waiting $WAIT_MINUTES minutes for Jules to process narrator PR..."
+          sleep $((WAIT_MINUTES * 60))
+          echo "Wait complete."
+
+  # ============================================================
+  # Phase 3: Generate workstream matrix
+  # ============================================================
+  generate-workstream-matrix:
+    needs: wait-after-narrator
+    if: |
+      always() &&
+      vars.JULES_PAUSED != 'true' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+      (needs.wait-after-narrator.result == 'success' || needs.wait-after-narrator.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -82,13 +139,13 @@ jobs:
         run: bash .github/scripts/jules-generate-workstream-matrix.sh
 
   # ============================================================
-  # Phase 2: Run observers (sequential via max-parallel=1)
+  # Phase 4: Run observers (sequential via max-parallel=1)
   # ============================================================
   run-observers:
     needs: generate-workstream-matrix
     if: >-
       needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
-      (inputs.entry_point || 'observers') == 'observers'
+      (inputs.entry_point || 'narrator') != 'deciders'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -113,13 +170,13 @@ jobs:
           timeout 20m jlo run observers --workstream "${{ matrix.workstream }}" --scheduled
 
   # ============================================================
-  # Phase 3: Wait for observer processing
+  # Phase 5: Wait for observer processing
   # ============================================================
   wait-after-observers:
     needs: [generate-workstream-matrix, run-observers]
     if: >-
       needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
-      (inputs.entry_point || 'observers') == 'observers'
+      (inputs.entry_point || 'narrator') != 'deciders'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -130,7 +187,7 @@ jobs:
           echo "Wait complete."
 
   # ============================================================
-  # Phase 4: Generate decider matrix (pending events check)
+  # Phase 6: Generate decider matrix (pending events check)
   # ============================================================
   generate-decider-matrix:
     needs: [generate-workstream-matrix, wait-after-observers]
@@ -161,7 +218,7 @@ jobs:
         run: bash .github/scripts/jules-generate-decider-matrix.sh
 
   # ============================================================
-  # Phase 5: Run deciders (sequential via max-parallel=1)
+  # Phase 7: Run deciders (sequential via max-parallel=1)
   # ============================================================
   run-deciders:
     needs: [generate-decider-matrix]
@@ -190,7 +247,7 @@ jobs:
           timeout 20m jlo run deciders --workstream "${{ matrix.workstream }}" --scheduled
 
   # ============================================================
-  # Phase 6: Wait for decider processing
+  # Phase 8: Wait for decider processing
   # ============================================================
   wait-after-deciders:
     needs: [generate-decider-matrix, run-deciders]
@@ -205,7 +262,7 @@ jobs:
           echo "Wait complete."
 
   # ============================================================
-  # Phase 7: Generate planner/implementer matrix (new issues)
+  # Phase 9: Generate planner/implementer matrix (new issues)
   # ============================================================
   generate-planner-matrix:
     needs: [generate-workstream-matrix, generate-decider-matrix, wait-after-deciders]
@@ -239,7 +296,7 @@ jobs:
         run: bash .github/scripts/jules-generate-routing-matrices.sh
 
   # ============================================================
-  # Phase 8: Run planners (sequential via max-parallel=1)
+  # Phase 10: Run planners (sequential via max-parallel=1)
   # ============================================================
   run-planners:
     needs: [generate-planner-matrix]
@@ -268,7 +325,7 @@ jobs:
           timeout 20m jlo run planners "${{ matrix.issue }}"
 
   # ============================================================
-  # Phase 9: Wait for planner processing
+  # Phase 11: Wait for planner processing
   # ============================================================
   wait-after-planners:
     needs: [generate-planner-matrix, run-planners]
@@ -283,7 +340,7 @@ jobs:
           echo "Wait complete."
 
   # ============================================================
-  # Phase 10: Run implementers (sequential via max-parallel=1)
+  # Phase 12: Run implementers (sequential via max-parallel=1)
   # ============================================================
   run-implementers:
     needs: [generate-planner-matrix, wait-after-planners]

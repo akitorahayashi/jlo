@@ -38,29 +38,20 @@ pub fn assemble_prompt(jules_path: &Path, layer: Layer, role: &str) -> Result<St
         prompt_parts.push(format!("\n---\n# Role Configuration\n{}", role_config));
     }
 
-    // 4. Read notes if directory exists
-    let notes_path = role_dir.join("notes");
-    if notes_path.exists() && notes_path.is_dir() {
-        let mut note_contents = Vec::new();
-        for entry in fs::read_dir(&notes_path)? {
-            let entry = entry?;
-            let path = entry.path();
-            if path.is_file()
-                && let Ok(content) = fs::read_to_string(&path)
-            {
-                let filename = path.file_name().unwrap_or_default().to_string_lossy();
-                note_contents.push(format!("## {}\n{}", filename, content));
-            }
-        }
-        if !note_contents.is_empty() {
-            prompt_parts.push(format!("\n---\n# Notes\n{}", note_contents.join("\n\n")));
+    // 4. For observers, include changes/latest.yml if present (Narrator output)
+    if layer == Layer::Observers {
+        let changes_path = jules_path.join("changes").join("latest.yml");
+        if changes_path.exists()
+            && let Ok(changes_content) = fs::read_to_string(&changes_path)
+        {
+            prompt_parts.push(format!("\n---\n# Recent Codebase Changes\n{}", changes_content));
         }
     }
 
     Ok(prompt_parts.join("\n"))
 }
 
-/// Assemble the prompt for a single-role layer (Planners, Implementers).
+/// Assemble the prompt for a single-role layer (Narrator, Planners, Implementers).
 ///
 /// Single-role layers have prompt.yml directly in the layer directory,
 /// not in a role subdirectory.

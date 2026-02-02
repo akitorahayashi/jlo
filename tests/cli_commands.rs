@@ -338,6 +338,74 @@ fn run_planners_dry_run_with_issue_file() {
         .stdout(predicate::str::contains("Would dispatch workflow"));
 }
 
+#[test]
+fn run_narrator_dry_run() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init"]).assert().success();
+
+    // Create first commit (includes both .jules/ and README.md)
+    std::fs::write(ctx.work_dir().join("README.md"), "# Test Project\n").unwrap();
+    std::process::Command::new("git")
+        .args(["add", "."])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git add failed");
+    std::process::Command::new("git")
+        .args(["commit", "-m", "initial"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git commit failed");
+
+    // Create second commit with codebase changes to have a non-empty range
+    std::fs::write(ctx.work_dir().join("README.md"), "# Test Project\n\nUpdated content.\n")
+        .unwrap();
+    std::process::Command::new("git")
+        .args(["add", "README.md"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git add failed");
+    std::process::Command::new("git")
+        .args(["commit", "-m", "update readme"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git commit failed");
+
+    ctx.cli()
+        .env_remove("GITHUB_ACTIONS")
+        .args(["run", "narrator", "--dry-run"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Dry Run: Narrator"))
+        .stdout(predicate::str::contains("Git Context"));
+}
+
+#[test]
+fn run_narrator_skips_when_no_codebase_changes() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init"]).assert().success();
+
+    // Create an initial commit with ONLY .jules/ changes (no codebase changes)
+    std::process::Command::new("git")
+        .args(["add", "."])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git add failed");
+    std::process::Command::new("git")
+        .args(["commit", "-m", "initial"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git commit failed");
+
+    ctx.cli()
+        .env_remove("GITHUB_ACTIONS")
+        .args(["run", "narrator", "--dry-run"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("No codebase changes detected"));
+}
+
 // =============================================================================
 // Update Command Tests
 // =============================================================================

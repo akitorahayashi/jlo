@@ -3,7 +3,9 @@ use std::fmt;
 /// The architectural layers for agent roles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Layer {
-    /// Observers: Read source, update notes, emit events (taxonomy, data_arch, consistency, qa)
+    /// Narrator: Summarize codebase changes, produce changes feed
+    Narrator,
+    /// Observers: Read source and changes, emit events (taxonomy, data_arch, consistency, qa)
     Observers,
     /// Deciders: Read events, emit issues, delete events (triage_generic)
     Deciders,
@@ -15,12 +17,13 @@ pub enum Layer {
 
 impl Layer {
     /// All available layers in order.
-    pub const ALL: [Layer; 4] =
-        [Layer::Observers, Layer::Deciders, Layer::Planners, Layer::Implementers];
+    pub const ALL: [Layer; 5] =
+        [Layer::Narrator, Layer::Observers, Layer::Deciders, Layer::Planners, Layer::Implementers];
 
     /// Directory name for this layer.
     pub fn dir_name(&self) -> &'static str {
         match self {
+            Layer::Narrator => "narrator",
             Layer::Observers => "observers",
             Layer::Deciders => "deciders",
             Layer::Planners => "planners",
@@ -31,6 +34,7 @@ impl Layer {
     /// Human-readable display name.
     pub fn display_name(&self) -> &'static str {
         match self {
+            Layer::Narrator => "Narrator",
             Layer::Observers => "Observer",
             Layer::Deciders => "Decider",
             Layer::Planners => "Planner",
@@ -41,6 +45,7 @@ impl Layer {
     /// Parse a layer from its directory name.
     pub fn from_dir_name(name: &str) -> Option<Layer> {
         match name.to_lowercase().as_str() {
+            "narrator" => Some(Layer::Narrator),
             "observers" | "observer" => Some(Layer::Observers),
             "deciders" | "decider" => Some(Layer::Deciders),
             "planners" | "planner" => Some(Layer::Planners),
@@ -52,7 +57,8 @@ impl Layer {
     /// Description of this layer's responsibilities.
     pub fn description(&self) -> &'static str {
         match self {
-            Layer::Observers => "Read source & notes, emit events. Never write issues.",
+            Layer::Narrator => "Summarize codebase changes, produce changes feed for observers.",
+            Layer::Observers => "Read source and changes, emit events. Never write issues.",
             Layer::Deciders => "Read events, emit issues. Delete processed events.",
             Layer::Planners => "Read issues requiring deep analysis, expand them in-place.",
             Layer::Implementers => "Execute approved tasks, create PRs with code changes.",
@@ -61,10 +67,18 @@ impl Layer {
 
     /// Whether this layer has a single, fixed role (no subdirectories).
     ///
-    /// Single-role layers (Planners, Implementers) are issue-driven and require
-    /// the `--issue` flag. They do not support custom role creation or scheduled
-    /// role lists.
+    /// Single-role layers (Narrator, Planners, Implementers) have prompt.yml directly
+    /// in the layer directory rather than in role subdirectories. They do not support
+    /// custom role creation or scheduled role lists.
     pub fn is_single_role(&self) -> bool {
+        matches!(self, Layer::Narrator | Layer::Planners | Layer::Implementers)
+    }
+
+    /// Whether this layer is issue-driven.
+    ///
+    /// Issue-driven layers (Planners, Implementers) require a local issue file path.
+    /// Narrator is single-role but not issue-driven.
+    pub fn is_issue_driven(&self) -> bool {
         matches!(self, Layer::Planners | Layer::Implementers)
     }
 }
@@ -102,10 +116,20 @@ mod tests {
     }
 
     #[test]
-    fn single_role_layers_are_planners_and_implementers() {
+    fn single_role_layers_include_narrator_planners_implementers() {
+        assert!(Layer::Narrator.is_single_role());
         assert!(!Layer::Observers.is_single_role());
         assert!(!Layer::Deciders.is_single_role());
         assert!(Layer::Planners.is_single_role());
         assert!(Layer::Implementers.is_single_role());
+    }
+
+    #[test]
+    fn issue_driven_layers_are_planners_and_implementers() {
+        assert!(!Layer::Narrator.is_issue_driven());
+        assert!(!Layer::Observers.is_issue_driven());
+        assert!(!Layer::Deciders.is_issue_driven());
+        assert!(Layer::Planners.is_issue_driven());
+        assert!(Layer::Implementers.is_issue_driven());
     }
 }

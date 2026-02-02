@@ -44,12 +44,12 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
     }
 
     fn generate_prompt_yaml_template(&self, _role_id: &str, layer: Layer) -> String {
-        // Single-role layers (Planners, Implementers) don't support template creation
+        // Single-role layers (Narrator, Planners, Implementers) don't support template creation
         // Return the template as-is with placeholders for multi-role layers
         let template = match layer {
             Layer::Observers => templates::OBSERVER,
             Layer::Deciders => templates::DECIDER,
-            Layer::Planners | Layer::Implementers => "",
+            Layer::Narrator | Layer::Planners | Layer::Implementers => "",
         };
 
         template.to_string()

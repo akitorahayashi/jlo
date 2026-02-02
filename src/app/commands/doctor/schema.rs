@@ -79,6 +79,14 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         }
     }
 
+    // Validate changes/latest.yml if present
+    let latest_path = inputs.jules_path.join("changes").join("latest.yml");
+    if latest_path.exists() {
+        let change_template_path =
+            inputs.jules_path.join("roles").join("narrator").join("change.yml");
+        validate_changes_latest(&latest_path, &change_template_path, diagnostics);
+    }
+
     for layer in Layer::ALL {
         let layer_dir = inputs.jules_path.join("roles").join(layer.dir_name());
         if !layer_dir.exists() {
@@ -426,6 +434,102 @@ fn validate_contracts(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) 
     ensure_non_empty_sequence(&data, path, "inputs", diagnostics);
     ensure_non_empty_sequence(&data, path, "outputs", diagnostics);
     ensure_non_empty_sequence(&data, path, "workflow", diagnostics);
+}
+
+/// Validate .jules/changes/latest.yml schema.
+fn validate_changes_latest(path: &Path, template_path: &Path, diagnostics: &mut Diagnostics) {
+    let data = match load_yaml_mapping(path, diagnostics) {
+        Some(data) => data,
+        None => return,
+    };
+
+    // Required fields
+    ensure_int(&data, path, "schema_version", diagnostics, Some(1));
+    ensure_id(&data, path, "id", diagnostics);
+    ensure_non_empty_string(&data, path, "created_at", diagnostics);
+
+    // Validate range mapping
+    if let Some(range) = data.get(serde_yaml::Value::String("range".to_string())) {
+        if let serde_yaml::Value::Mapping(range_map) = range {
+            ensure_non_empty_string(range_map, path, "from_commit", diagnostics);
+            ensure_non_empty_string(range_map, path, "to_commit", diagnostics);
+
+            // Validate selection_mode enum from template
+            let allowed_modes = extract_enum_from_template(template_path, "selection_mode");
+            if !allowed_modes.is_empty() {
+                let allowed_refs: Vec<&str> = allowed_modes.iter().map(|s| s.as_str()).collect();
+                ensure_enum(range_map, path, "selection_mode", &allowed_refs, diagnostics);
+            }
+
+            // Validate .jules/ is in excluded_paths
+            if let Some(excluded) = get_sequence(range_map, "excluded_paths") {
+                let has_jules = excluded.iter().any(|v| {
+                    if let serde_yaml::Value::String(s) = v {
+                        s == ".jules/" || s == ".jules"
+                    } else {
+                        false
+                    }
+                });
+                if !has_jules {
+                    diagnostics.push_error(
+                        path.display().to_string(),
+                        "range.excluded_paths must include .jules/",
+                    );
+                }
+            } else {
+                diagnostics.push_error(path.display().to_string(), "Missing range.excluded_paths");
+            }
+        } else {
+            diagnostics.push_error(path.display().to_string(), "range must be a mapping");
+        }
+    } else {
+        diagnostics.push_error(path.display().to_string(), "Missing range field");
+    }
+
+    // Validate diffstat mapping
+    if let Some(diffstat) = data.get(serde_yaml::Value::String("diffstat".to_string())) {
+        if let serde_yaml::Value::Mapping(diffstat_map) = diffstat {
+            ensure_int(diffstat_map, path, "files_changed", diagnostics, None);
+            ensure_int(diffstat_map, path, "insertions", diagnostics, None);
+            ensure_int(diffstat_map, path, "deletions", diagnostics, None);
+        } else {
+            diagnostics.push_error(path.display().to_string(), "diffstat must be a mapping");
+        }
+    } else {
+        diagnostics.push_error(path.display().to_string(), "Missing diffstat field");
+    }
+
+    // Validate commits list exists
+    if get_sequence(&data, "commits").is_none() {
+        diagnostics.push_error(path.display().to_string(), "Missing commits list");
+    }
+
+    // Validate changed_paths list exists
+    if get_sequence(&data, "changed_paths").is_none() {
+        diagnostics.push_error(path.display().to_string(), "Missing changed_paths list");
+    }
+
+    // Validate summary mapping
+    if let Some(summary) = data.get(serde_yaml::Value::String("summary".to_string())) {
+        if let serde_yaml::Value::Mapping(summary_map) = summary {
+            ensure_non_empty_string(summary_map, path, "overview", diagnostics);
+        } else {
+            diagnostics.push_error(path.display().to_string(), "summary must be a mapping");
+        }
+    } else {
+        diagnostics.push_error(path.display().to_string(), "Missing summary field");
+    }
+}
+
+/// Extract allowed enum values from the change.yml template.
+fn extract_enum_from_template(_template_path: &Path, field: &str) -> Vec<String> {
+    // Read the template and look for the field's comment or value
+    // For simplicity, we hardcode the known values from the template
+    // A more robust implementation would parse the template
+    match field {
+        "selection_mode" => vec!["incremental".to_string(), "bootstrap".to_string()],
+        _ => vec![],
+    }
 }
 
 fn check_placeholders(path: &Path, diagnostics: &mut Diagnostics) {
