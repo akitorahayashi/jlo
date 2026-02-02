@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "wm492a"
+issue_id: ""
+created_at: "2026-02-02"
+author_role: "rustacean"
+confidence: "high"
+
+# Content
+title: "Weak error model in Narrator command"
+statement: |
+  The Narrator command implementation maps all underlying errors (Git execution, parsing) to a generic stringified configuration error, losing domain context and making programmatic error handling impossible.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/run/narrator.rs"
+    loc:
+      - "AppError::config_error(format!(...))"
+    note: "Used in get_head_sha, check_for_changes, count_commits, and others."
+
+tags:
+  - "error-handling"
+  - "anti-pattern"
