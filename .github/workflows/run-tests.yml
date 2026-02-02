@@ -6,7 +6,10 @@ on:
 jobs:
   test:
     name: Run all tests
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     env:
       RUST_BACKTRACE: 1
 
@@ -21,14 +24,17 @@ jobs:
         run: RUST_TEST_THREADS=1 cargo test --all-targets --all-features
 
       - name: Install tarpaulin
+        if: runner.os == 'Linux'
         run: cargo install cargo-tarpaulin
 
       - name: Generate coverage
+        if: runner.os == 'Linux'
         run: cargo tarpaulin --out Xml --output-dir coverage --all-features
         env:
           RUST_TEST_THREADS: 1
 
       - name: Upload coverage
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: code-coverage
