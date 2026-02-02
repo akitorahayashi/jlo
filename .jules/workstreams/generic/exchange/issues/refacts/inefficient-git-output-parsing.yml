@@ -1,0 +1,39 @@
+schema_version: 2
+
+# Metadata
+id: "r2x98b"
+source_events:
+  - "ip736b"
+title: "Inefficient git output parsing"
+label: "refacts"
+priority: "medium"
+summary: "Git output parsing logic allocates intermediate vectors and strings for every line."
+
+# Content
+problem: |
+  The git output parsing logic in `src/app/commands/run/narrator.rs` (specifically `collect_commits` and `parse_numstat`) allocates intermediate vectors and strings for every line of output. This creates unnecessary memory churn and performance overhead, especially when parsing large git logs or diffs.
+
+impact: |
+  This inefficiency increases memory usage and garbage collection pressure (or allocation/deallocation overhead in Rust) during Narrator execution, potentially slowing down the process.
+
+desired_outcome: |
+  The parsing logic should be optimized to minimize allocations. It should use iterators, string slices, or other zero-copy techniques where possible instead of creating new `String` and `Vec` instances for every line.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/app/commands/run/narrator.rs"
+
+acceptance_criteria:
+  - "`collect_commits` avoids creating unnecessary `String` instances for commit parts."
+  - "`parse_numstat` avoids creating unnecessary `Vec<&str>` for every line."
+  - "Narrator functionality remains correct."
+
+verification_commands:
+  - "cargo test"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
