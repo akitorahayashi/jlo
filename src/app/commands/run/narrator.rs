@@ -140,23 +140,25 @@ fn collect_git_context(jules_path: &Path) -> Result<Option<GitContext>, AppError
     let latest_path =
         jules_path.parent().unwrap_or(Path::new(".")).join(".jules/changes/latest.yml");
 
-    let range = determine_range(&latest_path)?;
+    let repo_root = jules_path.parent().unwrap_or(Path::new("."));
+
+    let range = determine_range(&latest_path, repo_root)?;
 
     // Check if there are any non-excluded changes in the range
-    let has_changes = check_for_changes(&range)?;
+    let has_changes = check_for_changes(&range, repo_root)?;
     if !has_changes {
         return Ok(None);
     }
 
     // Count total commits in range (for truncation tracking)
-    let commits_total = count_commits(&range)?;
+    let commits_total = count_commits(&range, repo_root)?;
 
     // Collect bounded commit samples
-    let commits = collect_commits(&range)?;
+    let commits = collect_commits(&range, repo_root)?;
     let commits_included = commits.len() as u32;
 
     // Collect diffstat
-    let diffstat = collect_diffstat(&range)?;
+    let diffstat = collect_diffstat(&range, repo_root)?;
 
     // Build stats
     let stats = Stats {
@@ -178,15 +180,15 @@ fn collect_git_context(jules_path: &Path) -> Result<Option<GitContext>, AppError
 }
 
 /// Determine the commit range for the summary.
-fn determine_range(latest_path: &Path) -> Result<RangeContext, AppError> {
-    let head_sha = get_head_sha()?;
+fn determine_range(latest_path: &Path, repo_root: &Path) -> Result<RangeContext, AppError> {
+    let head_sha = get_head_sha(repo_root)?;
 
     if latest_path.exists()
         && let Ok(content) = fs::read_to_string(latest_path)
         && let Some(prev_to_commit) = extract_to_commit(&content)
     {
         // Verify the commit exists
-        if commit_exists(&prev_to_commit) {
+        if commit_exists(&prev_to_commit, repo_root) {
             return Ok(RangeContext {
                 from_commit: prev_to_commit,
                 to_commit: head_sha,
@@ -197,7 +199,7 @@ fn determine_range(latest_path: &Path) -> Result<RangeContext, AppError> {
     }
 
     // Bootstrap: use recent commits
-    let bootstrap_from = get_nth_ancestor(&head_sha, BOOTSTRAP_COMMIT_COUNT)?;
+    let bootstrap_from = get_nth_ancestor(&head_sha, BOOTSTRAP_COMMIT_COUNT, repo_root)?;
     Ok(RangeContext {
         from_commit: bootstrap_from,
         to_commit: head_sha,
@@ -210,25 +212,25 @@ fn determine_range(latest_path: &Path) -> Result<RangeContext, AppError> {
 }
 
 /// Get the current HEAD SHA.
-fn get_head_sha() -> Result<String, AppError> {
-    run_git(&["rev-parse", "HEAD"])
+fn get_head_sha(repo_root: &Path) -> Result<String, AppError> {
+    run_git(&["rev-parse", "HEAD"], Some(repo_root))
 }
 
 /// Get the Nth ancestor of a commit.
-fn get_nth_ancestor(commit: &str, n: usize) -> Result<String, AppError> {
-    match run_git(&["rev-parse", &format!("{}~{}", commit, n)]) {
+fn get_nth_ancestor(commit: &str, n: usize, repo_root: &Path) -> Result<String, AppError> {
+    match run_git(&["rev-parse", &format!("{}~{}", commit, n)], Some(repo_root)) {
         Ok(sha) => Ok(sha),
         Err(_) => {
             // If we can't go back N commits, use the first commit in the ancestry of the given commit
-            let first = run_git(&["rev-list", "--max-parents=0", commit])?;
+            let first = run_git(&["rev-list", "--max-parents=0", commit], Some(repo_root))?;
             Ok(first.lines().next().unwrap_or("").to_string())
         }
     }
 }
 
 /// Check if a commit exists in the repository.
-fn commit_exists(sha: &str) -> bool {
-    run_git(&["cat-file", "-e", sha]).is_ok()
+fn commit_exists(sha: &str, repo_root: &Path) -> bool {
+    run_git(&["cat-file", "-e", sha], Some(repo_root)).is_ok()
 }
 
 /// Extract to_commit from latest.yml content using proper YAML parsing.
@@ -244,29 +246,35 @@ fn extract_to_commit(content: &str) -> Option<String> {
 }
 
 /// Check if there are any non-.jules/ changes in the range.
-fn check_for_changes(range: &RangeContext) -> Result<bool, AppError> {
-    let output = run_git(&[
-        "diff",
-        "--name-only",
-        &format!("{}..{}", range.from_commit, range.to_commit),
-        "--",
-        ".",
-        ":(exclude).jules",
-    ])?;
+fn check_for_changes(range: &RangeContext, repo_root: &Path) -> Result<bool, AppError> {
+    let output = run_git(
+        &[
+            "diff",
+            "--name-only",
+            &format!("{}..{}", range.from_commit, range.to_commit),
+            "--",
+            ".",
+            ":(exclude).jules",
+        ],
+        Some(repo_root),
+    )?;
 
     Ok(!output.trim().is_empty())
 }
 
 /// Count total commits in the range, excluding .jules/-only commits.
-fn count_commits(range: &RangeContext) -> Result<u32, AppError> {
-    let output = run_git(&[
-        "rev-list",
-        "--count",
-        &format!("{}..{}", range.from_commit, range.to_commit),
-        "--",
-        ".",
-        ":(exclude).jules",
-    ])?;
+fn count_commits(range: &RangeContext, repo_root: &Path) -> Result<u32, AppError> {
+    let output = run_git(
+        &[
+            "rev-list",
+            "--count",
+            &format!("{}..{}", range.from_commit, range.to_commit),
+            "--",
+            ".",
+            ":(exclude).jules",
+        ],
+        Some(repo_root),
+    )?;
 
     output.trim().parse().map_err(|e| AppError::ParseError {
         what: "commit count".to_string(),
@@ -275,16 +283,19 @@ fn count_commits(range: &RangeContext) -> Result<u32, AppError> {
 }
 
 /// Collect commits in the range (sha + subject only), excluding .jules/-only commits.
-fn collect_commits(range: &RangeContext) -> Result<Vec<CommitInfo>, AppError> {
-    let output = run_git(&[
-        "log",
-        &format!("-{}", MAX_COMMITS),
-        "--pretty=format:%H|%s",
-        &format!("{}..{}", range.from_commit, range.to_commit),
-        "--",
-        ".",
-        ":(exclude).jules",
-    ])?;
+fn collect_commits(range: &RangeContext, repo_root: &Path) -> Result<Vec<CommitInfo>, AppError> {
+    let output = run_git(
+        &[
+            "log",
+            &format!("-{}", MAX_COMMITS),
+            "--pretty=format:%H|%s",
+            &format!("{}..{}", range.from_commit, range.to_commit),
+            "--",
+            ".",
+            ":(exclude).jules",
+        ],
+        Some(repo_root),
+    )?;
 
     let mut commits = Vec::new();
     for line in output.lines() {
@@ -306,15 +317,18 @@ struct DiffStat {
 }
 
 /// Collect diffstat for the range using --numstat (machine-readable format).
-fn collect_diffstat(range: &RangeContext) -> Result<DiffStat, AppError> {
-    let output = run_git(&[
-        "diff",
-        "--numstat",
-        &format!("{}..{}", range.from_commit, range.to_commit),
-        "--",
-        ".",
-        ":(exclude).jules",
-    ]);
+fn collect_diffstat(range: &RangeContext, repo_root: &Path) -> Result<DiffStat, AppError> {
+    let output = run_git(
+        &[
+            "diff",
+            "--numstat",
+            &format!("{}..{}", range.from_commit, range.to_commit),
+            "--",
+            ".",
+            ":(exclude).jules",
+        ],
+        Some(repo_root),
+    );
 
     // If git diff fails (e.g. fatal: ambiguous argument), we propagate the error
     // previously it returned Ok(DiffStat::default()), but generic error is bad.
@@ -349,8 +363,14 @@ fn parse_numstat(output: &str) -> DiffStat {
 }
 
 /// Helper to run git commands and map errors to AppError::GitError.
-fn run_git(args: &[&str]) -> Result<String, AppError> {
-    let output = Command::new("git").args(args).output().map_err(|e| AppError::GitError {
+fn run_git(args: &[&str], cwd: Option<&Path>) -> Result<String, AppError> {
+    let mut command = Command::new("git");
+    command.args(args);
+    if let Some(path) = cwd {
+        command.current_dir(path);
+    }
+
+    let output = command.output().map_err(|e| AppError::GitError {
         command: format!("git {}", args.join(" ")),
         details: e.to_string(),
     })?;
@@ -445,43 +465,24 @@ fn execute_dry_run(
 mod tests {
     use super::*;
     use assert_fs::TempDir;
-    use serial_test::serial;
-    use std::env;
 
     #[test]
-    #[serial]
     fn test_git_error_propagation() {
         // Create a temp dir that is NOT a git repo
         let temp = TempDir::new().unwrap();
-        let current_dir = env::current_dir().unwrap();
+        let path = temp.path();
 
-        // Change to temp dir
-        env::set_current_dir(temp.path()).unwrap();
-
-        // Ensure we change back even if test fails
-        let _guard = CallOnDrop { dir: current_dir };
-
-        // Attempt to run get_head_sha, which should fail because it's not a git repo
-        let result = get_head_sha();
+        // Attempt to run get_head_sha using the temp dir as repo root
+        // This should fail because it's not a git repo
+        let result = get_head_sha(path);
 
         assert!(result.is_err());
         match result.unwrap_err() {
             AppError::GitError { command, details } => {
                 assert!(command.contains("git rev-parse HEAD"));
-                // Details might vary depending on git version/environment, but usually complains about not being a git repo
                 assert!(!details.is_empty());
             }
             err => panic!("Expected GitError, got {:?}", err),
-        }
-    }
-
-    struct CallOnDrop {
-        dir: std::path::PathBuf,
-    }
-
-    impl Drop for CallOnDrop {
-        fn drop(&mut self) {
-            let _ = env::set_current_dir(&self.dir);
         }
     }
 }
