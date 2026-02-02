@@ -55,26 +55,25 @@ fn init_creates_complete_layer_structure() {
     ctx.assert_events_structure_exists();
     ctx.assert_issues_directory_exists();
     ctx.assert_all_builtin_roles_exist();
+    ctx.assert_changes_directory_exists();
+    ctx.assert_narrator_exists();
 
-    // Verify observers have notes and feedbacks directories
+    // Verify observers have feedbacks directories (notes were removed)
     let jules = ctx.jules_path();
-    assert!(jules.join("roles/observers/taxonomy/notes").exists());
     assert!(jules.join("roles/observers/taxonomy/feedbacks").exists());
-    assert!(jules.join("roles/observers/data_arch/notes").exists());
     assert!(jules.join("roles/observers/data_arch/feedbacks").exists());
-    assert!(jules.join("roles/observers/qa/notes").exists());
     assert!(jules.join("roles/observers/qa/feedbacks").exists());
-    assert!(jules.join("roles/observers/cov/notes").exists());
     assert!(jules.join("roles/observers/cov/feedbacks").exists());
-    assert!(jules.join("roles/observers/consistency/notes").exists());
     assert!(jules.join("roles/observers/consistency/feedbacks").exists());
 
-    // Verify non-observers don't have notes, feedbacks, or role.yml
-    assert!(!jules.join("roles/deciders/triage_generic/notes").exists());
+    // Verify non-observers don't have feedbacks or role.yml
     assert!(!jules.join("roles/deciders/triage_generic/feedbacks").exists());
     assert!(!jules.join("roles/deciders/triage_generic/role.yml").exists());
 
     // Single-role layers have flat structure (no role subdirectory)
+    assert!(jules.join("roles/narrator/prompt.yml").exists());
+    assert!(jules.join("roles/narrator/contracts.yml").exists());
+    assert!(jules.join("roles/narrator/change.yml").exists());
     assert!(jules.join("roles/planners/prompt.yml").exists());
     assert!(jules.join("roles/planners/contracts.yml").exists());
     assert!(jules.join("roles/implementers/prompt.yml").exists());
@@ -83,7 +82,7 @@ fn init_creates_complete_layer_structure() {
 
 #[test]
 #[serial]
-fn template_creates_observer_with_notes() {
+fn template_creates_observer_with_feedbacks() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
@@ -93,12 +92,10 @@ fn template_creates_observer_with_notes() {
         .assert()
         .success();
 
-    // Observer roles should have notes and feedbacks directories, plus role.yml
+    // Observer roles should have feedbacks directory, plus role.yml
     let role_path = ctx.jules_path().join("roles/observers/custom-obs");
-    let notes_path = role_path.join("notes");
     let feedbacks_path = role_path.join("feedbacks");
     let role_yml = role_path.join("role.yml");
-    assert!(notes_path.exists(), "Observer role should have notes directory");
     assert!(feedbacks_path.exists(), "Observer role should have feedbacks directory");
     assert!(role_yml.exists(), "Observer role should have role.yml");
 }
@@ -109,6 +106,13 @@ fn template_rejects_single_role_layers() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
+
+    // Narrator is single-role and should not accept template creation
+    ctx.cli()
+        .args(["template", "-l", "narrator", "-n", "custom-narrator"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("single-role"));
 
     // Planners are single-role and should not accept template creation
     ctx.cli()

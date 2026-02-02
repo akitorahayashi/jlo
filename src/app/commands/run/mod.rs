@@ -2,6 +2,7 @@
 
 mod config;
 mod multi_role;
+mod narrator;
 mod prompt;
 mod role_selection;
 mod single_role;
@@ -26,7 +27,7 @@ pub struct RunOptions {
     pub dry_run: bool,
     /// Override the starting branch.
     pub branch: Option<String>,
-    /// Local issue file path (required for single-role layers: planners, implementers).
+    /// Local issue file path (required for issue-driven layers: planners, implementers).
     pub issue: Option<PathBuf>,
 }
 
@@ -46,11 +47,16 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
     // Check if we are in CI environment
     let is_ci = std::env::var("GITHUB_ACTIONS").is_ok();
 
-    // Single-role layers (Planners, Implementers) are issue-driven
-    if options.layer.is_single_role() {
+    // Narrator is single-role but not issue-driven
+    if options.layer == Layer::Narrator {
+        return narrator::execute(jules_path, options.dry_run, options.branch.as_deref(), is_ci);
+    }
+
+    // Issue-driven layers (Planners, Implementers) require an issue path
+    if options.layer.is_issue_driven() {
         let issue_path = options.issue.as_deref().ok_or_else(|| {
             AppError::ConfigError(
-                "Issue path is required for single-role layers but was not provided.".to_string(),
+                "Issue path is required for issue-driven layers but was not provided.".to_string(),
             )
         })?;
         return single_role::execute(

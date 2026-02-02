@@ -86,10 +86,27 @@ impl TestContext {
     /// Assert that layer directories exist.
     pub fn assert_layer_structure_exists(&self) {
         let roles_path = self.jules_path().join("roles");
+        assert!(roles_path.join("narrator").exists(), "narrator layer should exist");
         assert!(roles_path.join("observers").exists(), "observers layer should exist");
         assert!(roles_path.join("deciders").exists(), "deciders layer should exist");
         assert!(roles_path.join("planners").exists(), "planners layer should exist");
         assert!(roles_path.join("implementers").exists(), "implementers layer should exist");
+    }
+
+    /// Assert that the changes directory exists.
+    pub fn assert_changes_directory_exists(&self) {
+        let changes_path = self.jules_path().join("changes");
+        assert!(changes_path.exists(), "changes directory should exist");
+    }
+
+    /// Assert that the narrator layer exists with correct structure.
+    pub fn assert_narrator_exists(&self) {
+        self.assert_single_role_layer_exists("narrator");
+        let narrator_path = self.jules_path().join("roles").join("narrator");
+        assert!(
+            narrator_path.join("change.yml").exists(),
+            "narrator change.yml template should exist"
+        );
     }
 
     /// Assert that a role exists within a specific layer.
@@ -118,16 +135,6 @@ impl TestContext {
             self.jules_path().join("roles").join(layer).join(role_id).join("role.yml").exists()
         });
         assert!(found, "Role {} should exist in some layer", role_id);
-    }
-
-    /// Assert that a worker role directory exists (role.yml + notes).
-    pub fn assert_worker_role_exists(&self, role_id: &str) {
-        // Worker roles are in observers layer
-        let role_path = self.jules_path().join("roles").join("observers").join(role_id);
-        assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
-        assert!(role_path.join("role.yml").exists(), "Role role.yml should exist");
-        assert!(role_path.join("prompt.yml").exists(), "Role prompt.yml should exist");
-        assert!(role_path.join("notes").exists(), "Role notes directory should exist");
     }
 
     /// Assert that the events directory structure exists (workstream-based).
@@ -176,6 +183,10 @@ impl TestContext {
     pub fn assert_contracts_exist(&self) {
         let roles_path = self.jules_path().join("roles");
         assert!(
+            roles_path.join("narrator/contracts.yml").exists(),
+            "narrator/contracts.yml should exist"
+        );
+        assert!(
             roles_path.join("observers/contracts.yml").exists(),
             "observers/contracts.yml should exist"
         );
@@ -205,7 +216,7 @@ impl TestContext {
 
     /// Assert that all built-in roles exist in their correct layers.
     ///
-    /// Note: Planners and Implementers are single-role layers with flat structure
+    /// Note: Narrator, Planners and Implementers are single-role layers with flat structure
     /// (prompt.yml directly in the layer directory, not in a role subdirectory).
     pub fn assert_all_builtin_roles_exist(&self) {
         // Multi-role layers have role subdirectories
@@ -217,6 +228,7 @@ impl TestContext {
         self.assert_role_in_layer_exists("deciders", "triage_generic");
 
         // Single-role layers have prompt.yml directly in layer directory
+        self.assert_single_role_layer_exists("narrator");
         self.assert_single_role_layer_exists("planners");
         self.assert_single_role_layer_exists("implementers");
     }

@@ -119,6 +119,13 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         inputs.applied_fixes,
         diagnostics,
     );
+    // Narrator output directory
+    ensure_directory_exists(
+        inputs.jules_path.join("changes"),
+        inputs.options,
+        inputs.applied_fixes,
+        diagnostics,
+    );
 
     check_version_file(inputs.jules_path, diagnostics);
 
@@ -138,6 +145,15 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             let prompt = layer_dir.join("prompt.yml");
             if !prompt.exists() {
                 diagnostics.push_error(prompt.display().to_string(), "Missing prompt.yml");
+            }
+
+            // Narrator requires change.yml schema template
+            if layer == Layer::Narrator {
+                let change_template = layer_dir.join("change.yml");
+                if !change_template.exists() {
+                    diagnostics
+                        .push_error(change_template.display().to_string(), "Missing change.yml");
+                }
             }
         } else {
             match layer {
@@ -176,10 +192,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
                     if !role_file.exists() {
                         diagnostics.push_error(role_file.display().to_string(), "Missing role.yml");
                     }
-                    let notes_dir = entry.join("notes");
-                    if !notes_dir.exists() {
-                        diagnostics.push_error(notes_dir.display().to_string(), "Missing notes/");
-                    }
+                    // Notes directory no longer required (removed in favor of changes feed)
                     let feedbacks_dir = entry.join("feedbacks");
                     if !feedbacks_dir.exists() {
                         diagnostics

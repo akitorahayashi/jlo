@@ -1,0 +1,40 @@
+# Change Summary Schema
+#
+# This file defines the authoritative schema for .jules/changes/latest.yml.
+# Doctor reads allowed enum values from this template; they are not hardcoded elsewhere.
+
+schema_version: 1
+
+id: "<6_random_lowercase_alphanumeric_chars>"
+
+created_at: "YYYY-MM-DDTHH:MM:SSZ"
+
+range:
+  from_commit: "<sha>"
+  to_commit: "<sha>"
+  selection_mode: incremental  # Allowed: incremental, bootstrap
+  selection_detail: ""  # Non-empty when selection_mode is bootstrap
+  excluded_paths:
+    - .jules/
+
+diffstat:
+  files_changed: 0
+  insertions: 0
+  deletions: 0
+
+# Bounded list of commits (max 50). If truncated, summary must note truncation.
+commits:
+  - sha: "<sha>"
+    author: "<author>"
+    date: "YYYY-MM-DDTHH:MM:SSZ"
+    message: "<first line of commit message>"
+
+# Bounded list of changed paths (max 100). If truncated, summary must note truncation.
+changed_paths:
+  - "<path>"
+
+summary:
+  overview: "<high-level description of changes>"
+  notable_areas:
+    - "<area 1>"
+  truncation_note: ""  # Empty unless commits or paths were truncated
