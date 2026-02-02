@@ -52,6 +52,8 @@ pub enum AppError {
     IssueFileNotFound(String),
     /// Template creation not supported for single-role layers.
     SingleRoleLayerTemplate(String),
+    /// Prompt assembly failed.
+    PromptAssemblyError(String),
 }
 
 impl Display for AppError {
@@ -134,6 +136,9 @@ impl Display for AppError {
                     layer
                 )
             }
+            AppError::PromptAssemblyError(reason) => {
+                write!(f, "Prompt assembly failed: {}", reason)
+            }
         }
     }
 }
@@ -173,7 +178,8 @@ impl AppError {
             | AppError::RunConfigInvalid(_)
             | AppError::RoleNotInConfig { .. }
             | AppError::ScheduleConfigInvalid(_)
-            | AppError::SingleRoleLayerTemplate(_) => io::ErrorKind::InvalidInput,
+            | AppError::SingleRoleLayerTemplate(_)
+            | AppError::PromptAssemblyError(_) => io::ErrorKind::InvalidInput,
             AppError::WorkspaceNotFound
             | AppError::SetupNotInitialized
             | AppError::SetupConfigMissing

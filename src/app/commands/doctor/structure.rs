@@ -141,6 +141,19 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
         }
 
+        // Check schemas/ directory (all layers have this)
+        let schemas_dir = layer_dir.join("schemas");
+        if !schemas_dir.exists() {
+            diagnostics.push_error(schemas_dir.display().to_string(), "Missing schemas/");
+        }
+
+        // Check prompt_assembly.yml (all layers have this)
+        let prompt_assembly = layer_dir.join("prompt_assembly.yml");
+        if !prompt_assembly.exists() {
+            diagnostics
+                .push_error(prompt_assembly.display().to_string(), "Missing prompt_assembly.yml");
+        }
+
         if layer.is_single_role() {
             let prompt = layer_dir.join("prompt.yml");
             if !prompt.exists() {
@@ -149,35 +162,30 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
 
             // Narrator requires change.yml schema template
             if layer == Layer::Narrator {
-                let change_template = layer_dir.join("change.yml");
+                let change_template = layer_dir.join("schemas").join("change.yml");
                 if !change_template.exists() {
                     diagnostics
                         .push_error(change_template.display().to_string(), "Missing change.yml");
                 }
             }
         } else {
-            // Check for templates/ directory in multi-role layers
-            if matches!(layer, Layer::Observers | Layer::Deciders) {
-                let templates_dir = layer_dir.join("templates");
-                if !templates_dir.exists() {
-                    diagnostics
-                        .push_error(templates_dir.display().to_string(), "Missing templates/");
-                }
+            // Check for prompt.yml in multi-role layers
+            let prompt = layer_dir.join("prompt.yml");
+            if !prompt.exists() {
+                diagnostics.push_error(prompt.display().to_string(), "Missing prompt.yml");
             }
 
-            // Check for prompt_assembly.yml in multi-role layers
-            let prompt_assembly = layer_dir.join("prompt_assembly.yml");
-            if !prompt_assembly.exists() {
-                diagnostics.push_error(
-                    prompt_assembly.display().to_string(),
-                    "Missing prompt_assembly.yml",
-                );
-            }
-
-            for entry in list_subdirs(&layer_dir, diagnostics) {
-                let role_file = entry.join("role.yml");
-                if !role_file.exists() {
-                    diagnostics.push_error(role_file.display().to_string(), "Missing role.yml");
+            // Check roles/ container directory for multi-role layers
+            let roles_container = layer_dir.join("roles");
+            if !roles_container.exists() {
+                diagnostics
+                    .push_error(roles_container.display().to_string(), "Missing roles/ directory");
+            } else {
+                for entry in list_subdirs(&roles_container, diagnostics) {
+                    let role_file = entry.join("role.yml");
+                    if !role_file.exists() {
+                        diagnostics.push_error(role_file.display().to_string(), "Missing role.yml");
+                    }
                 }
             }
         }
@@ -453,11 +461,6 @@ pub fn list_subdirs(path: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> 
                     Ok(entry) => {
                         let entry_path = entry.path();
                         if entry_path.is_dir() {
-                            // Skip reserved directories that aren't role directories
-                            let name = entry.file_name();
-                            if name == "templates" {
-                                continue;
-                            }
                             dirs.push(entry_path);
                         }
                     }

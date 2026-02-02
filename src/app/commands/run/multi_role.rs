@@ -1,6 +1,5 @@
 //! Multi-role layer execution (Observers, Deciders).
 
-use std::fs;
 use std::path::Path;
 
 use super::RunResult;
@@ -57,7 +56,7 @@ pub fn execute(
         branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
 
     if dry_run {
-        execute_dry_run(jules_path, layer, &resolved_roles, &starting_branch)?;
+        execute_dry_run(jules_path, layer, &resolved_roles, workstream, &starting_branch)?;
         return Ok(RunResult { roles: resolved_roles, dry_run: true, sessions: vec![] });
     }
 
@@ -66,8 +65,15 @@ pub fn execute(
 
     // Execute with appropriate client
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
-    let sessions =
-        execute_roles(jules_path, layer, &resolved_roles, &starting_branch, &source, &client)?;
+    let sessions = execute_roles(
+        jules_path,
+        layer,
+        &resolved_roles,
+        workstream,
+        &starting_branch,
+        &source,
+        &client,
+    )?;
 
     Ok(RunResult { roles: resolved_roles, dry_run: false, sessions })
 }
@@ -77,6 +83,7 @@ fn execute_roles<C: JulesClient>(
     jules_path: &Path,
     layer: Layer,
     roles: &[String],
+    workstream: &str,
     starting_branch: &str,
     source: &str,
     client: &C,
@@ -87,7 +94,7 @@ fn execute_roles<C: JulesClient>(
     for role in roles {
         println!("Executing {} / {}...", layer.dir_name(), role);
 
-        let prompt = assemble_prompt(jules_path, layer, role)?;
+        let prompt = assemble_prompt(jules_path, layer, role, workstream)?;
 
         let request = SessionRequest {
             prompt,
@@ -127,47 +134,36 @@ fn execute_dry_run(
     jules_path: &Path,
     layer: Layer,
     roles: &[String],
+    workstream: &str,
     starting_branch: &str,
 ) -> Result<(), AppError> {
     println!("=== Dry Run: {} ===", layer.display_name());
-    println!("Starting branch: {}\n", starting_branch);
+    println!("Starting branch: {}", starting_branch);
+    println!("Workstream: {}\n", workstream);
 
     for role in roles {
         println!("--- Role: {} ---", role);
 
-        let role_dir = jules_path.join("roles").join(layer.dir_name()).join(role);
-        let prompt_path = role_dir.join("prompt.yml");
+        let role_dir = jules_path.join("roles").join(layer.dir_name()).join("roles").join(role);
+        let role_yml_path = role_dir.join("role.yml");
 
-        if !prompt_path.exists() {
-            println!("  ⚠️  prompt.yml not found at {}\n", prompt_path.display());
+        if !role_yml_path.exists() {
+            println!("  ⚠️  role.yml not found at {}\n", role_yml_path.display());
             continue;
         }
 
         // Read contracts.yml for the layer
         let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
+        let prompt_path = jules_path.join("roles").join(layer.dir_name()).join("prompt.yml");
 
         println!("  Prompt: {}", prompt_path.display());
         if contracts_path.exists() {
             println!("  Contracts: {}", contracts_path.display());
         }
-
-        // Show role.yml if exists (observers only)
-        let role_yml_path = role_dir.join("role.yml");
-        if role_yml_path.exists() {
-            println!("  Role config: {}", role_yml_path.display());
-        }
-
-        // Show notes directory if exists
-        let notes_path = role_dir.join("notes");
-        if notes_path.exists() {
-            let note_count = fs::read_dir(&notes_path)
-                .map(|entries| entries.filter(|e| e.is_ok()).count())
-                .unwrap_or(0);
-            println!("  Notes: {} files", note_count);
-        }
+        println!("  Role config: {}", role_yml_path.display());
 
         // Show assembled prompt length
-        if let Ok(prompt) = assemble_prompt(jules_path, layer, role) {
+        if let Ok(prompt) = assemble_prompt(jules_path, layer, role, workstream) {
             println!("  Assembled prompt: {} chars", prompt.len());
         }
 

@@ -160,28 +160,26 @@ pub fn semantic_checks(
     // Roles are generic and assigned to workstreams via the schedule, not the role.yml
 
     // Collect existing roles from filesystem for each layer
+    // With the new scaffold structure, roles are under .jules/roles/<layer>/roles/<role>/
     let roles_dir = jules_path.join("roles");
     let mut existing_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
     for layer in [Layer::Observers, Layer::Deciders] {
-        let layer_dir = roles_dir.join(layer.dir_name());
-        if layer_dir.exists() {
+        let roles_container = roles_dir.join(layer.dir_name()).join("roles");
+        if roles_container.exists() {
             let mut role_set = HashSet::new();
-            match std::fs::read_dir(&layer_dir) {
+            match std::fs::read_dir(&roles_container) {
                 Ok(entries) => {
                     for entry in entries.flatten() {
                         let path = entry.path();
                         if path.is_dir() {
                             let name = entry.file_name().to_string_lossy().to_string();
-                            // Skip reserved directories
-                            if name != "templates" {
-                                role_set.insert(name);
-                            }
+                            role_set.insert(name);
                         }
                     }
                 }
                 Err(err) => {
                     diagnostics.push_error(
-                        layer_dir.display().to_string(),
+                        roles_container.display().to_string(),
                         format!("Failed to read directory: {}", err),
                     );
                 }

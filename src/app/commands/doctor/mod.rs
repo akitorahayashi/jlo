@@ -36,9 +36,8 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
     let issue_labels = list_issue_labels()?;
     let event_states = list_event_states()?;
     let event_confidence =
-        read_enum_values(".jules/roles/observers/templates/event.yml", "confidence")?;
-    let issue_priorities =
-        read_enum_values(".jules/roles/deciders/templates/issue.yml", "priority")?;
+        read_enum_values(".jules/roles/observers/schemas/event.yml", "confidence")?;
+    let issue_priorities = read_enum_values(".jules/roles/deciders/schemas/issue.yml", "priority")?;
 
     let mut diagnostics = Diagnostics::default();
     let mut applied_fixes = Vec::new();
