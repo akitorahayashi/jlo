@@ -8,6 +8,7 @@ on:
       - 'jules-observer-*'
       - 'jules-decider-*'
       - 'jules-planner-*'
+      - 'jules-narrator-*'
 
 permissions:
   pull-requests: write
