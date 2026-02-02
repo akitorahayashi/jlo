@@ -19,13 +19,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download artifacts from build workflow
+      - name: Download artifacts from CI workflow
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          RUN_ID=$(gh run list --workflow build.yml --commit ${{ github.sha }} --json databaseId --jq '.[0].databaseId')
+          # Look for a successful run of the CI workflow for the current commit
+          RUN_ID=$(gh run list --workflow ci-workflows.yml --commit ${{ github.sha }} --status success --json databaseId --jq '.[0].databaseId')
+
           if [ -z "$RUN_ID" ] || [ "$RUN_ID" == "null" ]; then
-            echo "No build workflow run found for commit ${{ github.sha }}"
+            echo "No successful CI workflow run found for commit ${{ github.sha }}."
+            echo "Please ensure the commit has passed CI before tagging."
             exit 1
           fi
 

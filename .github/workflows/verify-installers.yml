@@ -2,6 +2,11 @@ name: Verify Installers
 
 on:
   workflow_dispatch: # Manual trigger only
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'src/assets/catalog/**'
+      - '.github/workflows/verify-installers.yml'
   pull_request:
     paths:
       - 'src/assets/catalog/**'
