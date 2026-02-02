@@ -2,10 +2,8 @@ mod common;
 
 use common::TestContext;
 use predicates::prelude::*;
-use serial_test::serial;
 
 #[test]
-#[serial]
 fn init_creates_jules_directory() {
     let ctx = TestContext::new();
 
@@ -26,7 +24,6 @@ fn init_creates_jules_directory() {
 }
 
 #[test]
-#[serial]
 fn init_fails_if_jules_exists() {
     let ctx = TestContext::new();
 
@@ -36,7 +33,6 @@ fn init_fails_if_jules_exists() {
 }
 
 #[test]
-#[serial]
 fn template_creates_new_role() {
     let ctx = TestContext::new();
 
@@ -52,7 +48,6 @@ fn template_creates_new_role() {
 }
 
 #[test]
-#[serial]
 fn template_fails_for_invalid_layer() {
     let ctx = TestContext::new();
 
@@ -66,7 +61,6 @@ fn template_fails_for_invalid_layer() {
 }
 
 #[test]
-#[serial]
 fn template_fails_for_existing_role() {
     let ctx = TestContext::new();
 
@@ -80,7 +74,6 @@ fn template_fails_for_existing_role() {
 }
 
 #[test]
-#[serial]
 fn template_fails_without_workspace() {
     let ctx = TestContext::new();
 
@@ -92,7 +85,6 @@ fn template_fails_without_workspace() {
 }
 
 #[test]
-#[serial]
 fn template_requires_workstream_noninteractive() {
     let ctx = TestContext::new();
 
@@ -106,7 +98,6 @@ fn template_requires_workstream_noninteractive() {
 }
 
 #[test]
-#[serial]
 fn version_flag_works() {
     let ctx = TestContext::new();
 
@@ -118,7 +109,6 @@ fn version_flag_works() {
 }
 
 #[test]
-#[serial]
 fn help_lists_visible_aliases() {
     let ctx = TestContext::new();
 
@@ -128,7 +118,6 @@ fn help_lists_visible_aliases() {
 }
 
 #[test]
-#[serial]
 fn doctor_passes_on_fresh_workspace() {
     let ctx = TestContext::new();
 
@@ -138,7 +127,6 @@ fn doctor_passes_on_fresh_workspace() {
 }
 
 #[test]
-#[serial]
 fn doctor_reports_schema_errors() {
     let ctx = TestContext::new();
 
@@ -165,7 +153,6 @@ fn doctor_reports_schema_errors() {
 // =============================================================================
 
 #[test]
-#[serial]
 fn init_creates_setup_structure() {
     let ctx = TestContext::new();
 
@@ -181,7 +168,6 @@ fn init_creates_setup_structure() {
 }
 
 #[test]
-#[serial]
 fn setup_gen_requires_init() {
     let ctx = TestContext::new();
 
@@ -193,7 +179,6 @@ fn setup_gen_requires_init() {
 }
 
 #[test]
-#[serial]
 fn setup_gen_produces_script() {
     let ctx = TestContext::new();
 
@@ -214,7 +199,6 @@ fn setup_gen_produces_script() {
 }
 
 #[test]
-#[serial]
 fn setup_list_shows_components() {
     let ctx = TestContext::new();
 
@@ -229,7 +213,6 @@ fn setup_list_shows_components() {
 }
 
 #[test]
-#[serial]
 fn setup_list_detail_shows_info() {
     let ctx = TestContext::new();
 
@@ -242,7 +225,6 @@ fn setup_list_detail_shows_info() {
 }
 
 #[test]
-#[serial]
 fn setup_list_detail_not_found() {
     let ctx = TestContext::new();
 
@@ -258,7 +240,6 @@ fn setup_list_detail_not_found() {
 // =============================================================================
 
 #[test]
-#[serial]
 fn run_implementers_requires_issue_file() {
     let ctx = TestContext::new();
 
@@ -272,7 +253,6 @@ fn run_implementers_requires_issue_file() {
 }
 
 #[test]
-#[serial]
 fn run_planners_requires_issue_file() {
     let ctx = TestContext::new();
 
@@ -286,7 +266,6 @@ fn run_planners_requires_issue_file() {
 }
 
 #[test]
-#[serial]
 fn run_implementers_with_missing_issue_file() {
     let ctx = TestContext::new();
 
@@ -300,7 +279,6 @@ fn run_implementers_with_missing_issue_file() {
 }
 
 #[test]
-#[serial]
 fn run_implementers_dry_run_with_issue_file() {
     let ctx = TestContext::new();
 
@@ -331,7 +309,6 @@ fn run_implementers_dry_run_with_issue_file() {
 }
 
 #[test]
-#[serial]
 fn run_planners_dry_run_with_issue_file() {
     let ctx = TestContext::new();
 
@@ -366,7 +343,6 @@ fn run_planners_dry_run_with_issue_file() {
 // =============================================================================
 
 #[test]
-#[serial]
 fn update_requires_workspace() {
     let ctx = TestContext::new();
 
@@ -374,7 +350,6 @@ fn update_requires_workspace() {
 }
 
 #[test]
-#[serial]
 fn update_dry_run_shows_plan() {
     let ctx = TestContext::new();
 
@@ -392,7 +367,6 @@ fn update_dry_run_shows_plan() {
 }
 
 #[test]
-#[serial]
 fn update_noop_when_current() {
     let ctx = TestContext::new();
 
@@ -402,7 +376,6 @@ fn update_noop_when_current() {
 }
 
 #[test]
-#[serial]
 fn update_alias_works() {
     let ctx = TestContext::new();
 

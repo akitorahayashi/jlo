@@ -16,8 +16,17 @@ where
     }
 
     // Enforce execution on 'jules' branch to protect main history
+    // Use the workspace root (parent of .jules) as the working directory for git
+    let workspace_root = ctx
+        .workspace()
+        .jules_path()
+        .parent()
+        .ok_or_else(|| AppError::config_error("Invalid workspace path"))?
+        .to_path_buf();
+
     let output = std::process::Command::new("git")
         .args(["branch", "--show-current"])
+        .current_dir(&workspace_root)
         .output()
         .map_err(|e| AppError::ConfigError(format!("Failed to run git to check branch: {e}")))?;
 
