@@ -33,9 +33,7 @@ pub use domain::AppError;
 pub use domain::Layer;
 
 /// Entry point for the CLI.
-pub fn cli() {
-    app::cli::run();
-}
+pub use app::cli::run as cli;
 
 /// Initialize a new `.jules/` workspace in the current directory.
 pub fn init() -> Result<(), AppError> {
