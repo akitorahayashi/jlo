@@ -43,8 +43,6 @@ pub trait WorkspaceStore {
         layer: Layer,
         role_id: &RoleId,
         role_yaml: &str,
-        prompt_yaml: Option<&str>,
-        has_notes: bool,
     ) -> Result<(), AppError>;
 
     /// Create a new workstream directory structure.

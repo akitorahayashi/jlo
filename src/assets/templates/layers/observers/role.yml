@@ -1,9 +1,17 @@
 role: ROLE_NAME
+layer: observers
 
-focus: "# TODO: Describe the specialized analytical focus for this observer"
+profile:
+  focus: "# TODO: Describe the specialized analytical focus for this observer"
+  analysis_points:
+    - "# TODO: List specific patterns or issues to look for"
+  first_principles:
+    - "# TODO: Core beliefs guiding analysis"
+  guiding_questions:
+    - "# TODO: Questions to ask during analysis"
+  anti_patterns:
+    - "# TODO: What to flag as problems"
+  evidence_expectations:
+    - "# TODO: How to document findings"
 
-analysis_points:
-  - "# TODO: List specific patterns or issues to look for"
-  - "# TODO: Add more analysis criteria as needed"
-
-learned_exclusions: []
+instructions: []

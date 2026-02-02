@@ -156,48 +156,28 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
                 }
             }
         } else {
-            match layer {
-                Layer::Observers => {
-                    let event_template = layer_dir.join("event.yml");
-                    if !event_template.exists() {
-                        diagnostics
-                            .push_error(event_template.display().to_string(), "Missing event.yml");
-                    }
+            // Check for templates/ directory in multi-role layers
+            if matches!(layer, Layer::Observers | Layer::Deciders) {
+                let templates_dir = layer_dir.join("templates");
+                if !templates_dir.exists() {
+                    diagnostics
+                        .push_error(templates_dir.display().to_string(), "Missing templates/");
                 }
-                Layer::Deciders => {
-                    let issue_template = layer_dir.join("issue.yml");
-                    if !issue_template.exists() {
-                        diagnostics
-                            .push_error(issue_template.display().to_string(), "Missing issue.yml");
-                    }
-                    let feedback_template = layer_dir.join("feedback.yml");
-                    if !feedback_template.exists() {
-                        diagnostics.push_error(
-                            feedback_template.display().to_string(),
-                            "Missing feedback.yml",
-                        );
-                    }
-                }
-                _ => {}
+            }
+
+            // Check for prompt_assembly.yml in multi-role layers
+            let prompt_assembly = layer_dir.join("prompt_assembly.yml");
+            if !prompt_assembly.exists() {
+                diagnostics.push_error(
+                    prompt_assembly.display().to_string(),
+                    "Missing prompt_assembly.yml",
+                );
             }
 
             for entry in list_subdirs(&layer_dir, diagnostics) {
-                let prompt = entry.join("prompt.yml");
-                if !prompt.exists() {
-                    diagnostics.push_error(prompt.display().to_string(), "Missing prompt.yml");
-                }
-
-                if layer == Layer::Observers {
-                    let role_file = entry.join("role.yml");
-                    if !role_file.exists() {
-                        diagnostics.push_error(role_file.display().to_string(), "Missing role.yml");
-                    }
-                    // Notes directory no longer required (removed in favor of changes feed)
-                    let feedbacks_dir = entry.join("feedbacks");
-                    if !feedbacks_dir.exists() {
-                        diagnostics
-                            .push_error(feedbacks_dir.display().to_string(), "Missing feedbacks/");
-                    }
+                let role_file = entry.join("role.yml");
+                if !role_file.exists() {
+                    diagnostics.push_error(role_file.display().to_string(), "Missing role.yml");
                 }
             }
         }
@@ -219,7 +199,16 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             diagnostics,
         );
 
-        let events_dir = ws_dir.join("events");
+        // Exchange directory structure (events and issues)
+        let exchange_dir = ws_dir.join("exchange");
+        ensure_directory_exists(
+            exchange_dir.clone(),
+            inputs.options,
+            inputs.applied_fixes,
+            diagnostics,
+        );
+
+        let events_dir = exchange_dir.join("events");
         ensure_directory_exists(
             events_dir.clone(),
             inputs.options,
@@ -235,7 +224,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             );
         }
 
-        let issues_dir = ws_dir.join("issues");
+        let issues_dir = exchange_dir.join("issues");
         ensure_directory_exists(
             issues_dir.clone(),
             inputs.options,
@@ -246,7 +235,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         if !index_file.exists() {
             attempt_fix_file(
                 index_file.clone(),
-                ".jules/workstreams/generic/issues/index.md",
+                ".jules/workstreams/generic/exchange/issues/index.md",
                 inputs.options,
                 inputs.applied_fixes,
                 diagnostics,
@@ -260,6 +249,15 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
                 diagnostics,
             );
         }
+
+        // Workstations directory
+        let workstations_dir = ws_dir.join("workstations");
+        ensure_directory_exists(
+            workstations_dir,
+            inputs.options,
+            inputs.applied_fixes,
+            diagnostics,
+        );
     }
 }
 
@@ -455,6 +453,11 @@ pub fn list_subdirs(path: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> 
                     Ok(entry) => {
                         let entry_path = entry.path();
                         if entry_path.is_dir() {
+                            // Skip reserved directories that aren't role directories
+                            let name = entry.file_name();
+                            if name == "templates" {
+                                continue;
+                            }
                             dirs.push(entry_path);
                         }
                     }

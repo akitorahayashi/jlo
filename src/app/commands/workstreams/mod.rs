@@ -117,7 +117,7 @@ pub fn inspect(
 }
 
 fn summarize_events(root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError> {
-    let events_dir = ws_dir.join("events");
+    let events_dir = ws_dir.join("exchange").join("events");
     if !events_dir.exists() {
         return Err(AppError::config_error(format!(
             "Missing events directory: {}",
@@ -156,7 +156,7 @@ fn summarize_events(root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError
 }
 
 fn summarize_issues(root: &Path, ws_dir: &Path) -> Result<IssueSummary, AppError> {
-    let issues_dir = ws_dir.join("issues");
+    let issues_dir = ws_dir.join("exchange").join("issues");
     if !issues_dir.exists() {
         return Err(AppError::config_error(format!(
             "Missing issues directory: {}",
@@ -357,15 +357,16 @@ mod tests {
         let root = dir.path();
         let jules_path = root.join(".jules");
         let ws_dir = jules_path.join("workstreams").join("alpha");
-        fs::create_dir_all(ws_dir.join("events/pending")).unwrap();
-        fs::create_dir_all(ws_dir.join("events/decided")).unwrap();
-        fs::create_dir_all(ws_dir.join("issues/bugs")).unwrap();
-        fs::create_dir_all(ws_dir.join("issues/feats")).unwrap();
+        let exchange_dir = ws_dir.join("exchange");
+        fs::create_dir_all(exchange_dir.join("events/pending")).unwrap();
+        fs::create_dir_all(exchange_dir.join("events/decided")).unwrap();
+        fs::create_dir_all(exchange_dir.join("issues/bugs")).unwrap();
+        fs::create_dir_all(exchange_dir.join("issues/feats")).unwrap();
 
-        fs::write(ws_dir.join("events/pending/one.yml"), "id: abc123\n").unwrap();
-        fs::write(ws_dir.join("events/decided/two.yml"), "id: def456\n").unwrap();
+        fs::write(exchange_dir.join("events/pending/one.yml"), "id: abc123\n").unwrap();
+        fs::write(exchange_dir.join("events/decided/two.yml"), "id: def456\n").unwrap();
         fs::write(
-            ws_dir.join("issues/bugs/bug.yml"),
+            exchange_dir.join("issues/bugs/bug.yml"),
             r#"
 id: abc123
 source_events:

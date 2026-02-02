@@ -19,7 +19,4 @@ pub trait RoleTemplateStore {
 
     /// Generate role.yml content for a new custom role.
     fn generate_role_yaml(&self, role_id: &str, layer: Layer) -> String;
-
-    /// Generate prompt.yml template for a new custom role.
-    fn generate_prompt_yaml_template(&self, role_id: &str, layer: Layer) -> String;
 }
