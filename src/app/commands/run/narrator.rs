@@ -49,7 +49,7 @@ pub struct Stats {
     pub deletions: u32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct CommitInfo {
     pub sha: String,
     pub subject: String,
@@ -337,19 +337,21 @@ fn collect_commits(range: &RangeContext) -> Result<Vec<CommitInfo>, AppError> {
         return Err(AppError::config_error("Failed to get commit log"));
     }
 
+    Ok(parse_commits_log(&String::from_utf8_lossy(&output.stdout)))
+}
+
+fn parse_commits_log(output: &str) -> Vec<CommitInfo> {
     let mut commits = Vec::new();
-    for line in String::from_utf8_lossy(&output.stdout).lines() {
-        let parts: Vec<&str> = line.splitn(2, '|').collect();
-        if parts.len() == 2 {
-            commits.push(CommitInfo { sha: parts[0].to_string(), subject: parts[1].to_string() });
+    for line in output.lines() {
+        if let Some((sha, subject)) = line.split_once('|') {
+            commits.push(CommitInfo { sha: sha.to_string(), subject: subject.to_string() });
         }
     }
-
-    Ok(commits)
+    commits
 }
 
 /// Internal struct for parsing diffstat (used to build Stats).
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq)]
 struct DiffStat {
     files_changed: u32,
     insertions: u32,
@@ -385,14 +387,16 @@ fn parse_numstat(output: &str) -> DiffStat {
     let mut stat = DiffStat::default();
 
     for line in output.lines() {
-        let parts: Vec<&str> = line.split('\t').collect();
-        if parts.len() >= 2 {
+        let mut parts = line.split('\t');
+        if let (Some(insertions_str), Some(deletions_str), Some(_)) =
+            (parts.next(), parts.next(), parts.next())
+        {
             // Skip binary files (marked with "-")
-            if parts[0] != "-" {
-                stat.insertions += parts[0].parse::<u32>().unwrap_or(0);
+            if insertions_str != "-" {
+                stat.insertions += insertions_str.parse::<u32>().unwrap_or(0);
             }
-            if parts[1] != "-" {
-                stat.deletions += parts[1].parse::<u32>().unwrap_or(0);
+            if deletions_str != "-" {
+                stat.deletions += deletions_str.parse::<u32>().unwrap_or(0);
             }
             stat.files_changed += 1;
         }
@@ -474,4 +478,78 @@ fn execute_dry_run(
     println!("{}", prompt);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_commits_log_standard() {
+        let input = "a1b2c3d|Initial commit\ne5f6g7h|Fix bug";
+        let result = parse_commits_log(input);
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].sha, "a1b2c3d");
+        assert_eq!(result[0].subject, "Initial commit");
+        assert_eq!(result[1].sha, "e5f6g7h");
+        assert_eq!(result[1].subject, "Fix bug");
+    }
+
+    #[test]
+    fn test_parse_commits_log_empty() {
+        let input = "";
+        let result = parse_commits_log(input);
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_commits_log_malformed() {
+        let input = "a1b2c3d|Subject\nmalformed_line\n|Empty sha\nsha_only|";
+        let result = parse_commits_log(input);
+
+        // "malformed_line" should be ignored (no |)
+        // "|Empty sha" -> sha="", subject="Empty sha"
+        // "sha_only|" -> sha="sha_only", subject=""
+
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].sha, "a1b2c3d");
+        assert_eq!(result[0].subject, "Subject");
+
+        assert_eq!(result[1].sha, "");
+        assert_eq!(result[1].subject, "Empty sha");
+
+        assert_eq!(result[2].sha, "sha_only");
+        assert_eq!(result[2].subject, "");
+    }
+
+    #[test]
+    fn test_parse_numstat_standard() {
+        let input = "10\t5\tsrc/main.rs\n2\t0\tREADME.md";
+        let result = parse_numstat(input);
+
+        assert_eq!(result.files_changed, 2);
+        assert_eq!(result.insertions, 12);
+        assert_eq!(result.deletions, 5);
+    }
+
+    #[test]
+    fn test_parse_numstat_binary() {
+        let input = "-\t-\timage.png\n5\t2\tsrc/lib.rs";
+        let result = parse_numstat(input);
+
+        assert_eq!(result.files_changed, 2);
+        assert_eq!(result.insertions, 5);
+        assert_eq!(result.deletions, 2);
+    }
+
+    #[test]
+    fn test_parse_numstat_empty() {
+        let input = "";
+        let result = parse_numstat(input);
+
+        assert_eq!(result.files_changed, 0);
+        assert_eq!(result.insertions, 0);
+        assert_eq!(result.deletions, 0);
+    }
 }
