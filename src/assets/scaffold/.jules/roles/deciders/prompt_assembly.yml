@@ -1,0 +1,12 @@
+schema_version: 1
+layer: deciders
+
+runtime_context:
+  workstream: "{{workstream}}"
+  role: "{{role}}"
+
+includes:
+  - title: "Role"
+    path: ".jules/roles/deciders/{{role}}/role.yml"
+  - title: "Layer Contracts"
+    path: ".jules/roles/deciders/contracts.yml"

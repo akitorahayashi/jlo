@@ -1,0 +1,21 @@
+schema_version: 1
+
+observer: "<observer-id>"
+workstream: "<workstream>"
+
+updated_at: "YYYY-MM-DDTHH:MM:SSZ"
+
+goals:
+  short_term: []
+
+biases:
+  assumptions: []
+  blind_spots: []
+  heuristics: []
+
+recent_runs: # max 3 entries (newest first)
+  - created_at: "YYYY-MM-DDTHH:MM:SSZ"
+    summary: "<one line>"
+    history_path: ".jules/workstreams/<workstream>/workstations/<observer>/histories/<file>.yml"
+
+learned_exclusions: []

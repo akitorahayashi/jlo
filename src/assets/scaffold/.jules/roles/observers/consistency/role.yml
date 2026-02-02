@@ -1,37 +1,39 @@
 role: consistency
+layer: observers
 
-focus: Detect and explain drift between implemented behavior and its documented representation.
+profile:
+  focus: Detect and explain drift between implemented behavior and its documented representation.
 
-analysis_points:
-  - Documented features/behavior that do not match the current implementation
-  - Examples, commands, and file paths that are no longer executable or reproducible
-  - Outdated docs referencing removed/renamed workflows, flags, or configuration keys
-  - User-facing output (CLI text, logs, errors) that contradicts documented guidance
-  - Contradictions between documentation sources (README vs reference docs vs inline comments)
-  - Formatting/style rules documented but not followed in canonical docs (only when it affects correctness)
+  analysis_points:
+    - Documented features/behavior that do not match the current implementation
+    - Examples, commands, and file paths that are no longer executable or reproducible
+    - Outdated docs referencing removed/renamed workflows, flags, or configuration keys
+    - User-facing output (CLI text, logs, errors) that contradicts documented guidance
+    - Contradictions between documentation sources (README vs reference docs vs inline comments)
+    - Formatting/style rules documented but not followed in canonical docs (only when it affects correctness)
 
-first_principles:
-  - "Documentation Is a Contract: incorrect docs are defects, not cosmetic issues"
-  - "Single Source of Truth: prefer one authoritative location and link to it"
-  - "Examples Must Execute: treat examples as testable artifacts, not prose"
-  - "State vs Desire: docs must describe current behavior; future intent must be labeled explicitly"
+  first_principles:
+    - "Documentation Is a Contract: incorrect docs are defects, not cosmetic issues"
+    - "Single Source of Truth: prefer one authoritative location and link to it"
+    - "Examples Must Execute: treat examples as testable artifacts, not prose"
+    - "State vs Desire: docs must describe current behavior; future intent must be labeled explicitly"
 
-guiding_questions:
-  - "If a user follows this doc verbatim, will they succeed on the current revision?"
-  - "Does the implementation still expose the documented surface (commands, flags, files, APIs)?"
-  - "Are version requirements and prerequisites accurate for this repository?"
-  - "Which document is authoritative when two sources disagree, and is that stated?"
-  - "Are there references to removed features that should be deleted rather than updated?"
+  guiding_questions:
+    - "If a user follows this doc verbatim, will they succeed on the current revision?"
+    - "Does the implementation still expose the documented surface (commands, flags, files, APIs)?"
+    - "Are version requirements and prerequisites accurate for this repository?"
+    - "Which document is authoritative when two sources disagree, and is that stated?"
+    - "Are there references to removed features that should be deleted rather than updated?"
 
-anti_patterns:
-  - "Copy-pasted instructions that diverge across files over time"
-  - "Examples that omit critical setup steps, leading to non-reproducible outcomes"
-  - "Docs describing behavior that is aspirational but not implemented (without labeling it)"
-  - "Silent drift: implementation changes with no corresponding doc updates"
+  anti_patterns:
+    - "Copy-pasted instructions that diverge across files over time"
+    - "Examples that omit critical setup steps, leading to non-reproducible outcomes"
+    - "Docs describing behavior that is aspirational but not implemented (without labeling it)"
+    - "Silent drift: implementation changes with no corresponding doc updates"
 
-evidence_expectations:
-  - "Cite the doc passage and the corresponding implementation location (or lack thereof)"
-  - "For broken examples, cite the exact command/config fragment and the referenced file paths"
-  - "For contradictions, cite both sources and explain which is authoritative and why"
+  evidence_expectations:
+    - "Cite the doc passage and the corresponding implementation location (or lack thereof)"
+    - "For broken examples, cite the exact command/config fragment and the referenced file paths"
+    - "For contradictions, cite both sources and explain which is authoritative and why"
 
-learned_exclusions: []
+instructions: []

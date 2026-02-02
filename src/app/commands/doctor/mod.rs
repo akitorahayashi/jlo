@@ -6,7 +6,6 @@ mod semantic;
 mod structure;
 mod yaml;
 
-use std::collections::HashSet;
 use std::path::Path;
 
 use crate::domain::AppError;
@@ -36,8 +35,10 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
     let root = jules_path.parent().unwrap_or(Path::new(".")).to_path_buf();
     let issue_labels = list_issue_labels()?;
     let event_states = list_event_states()?;
-    let event_confidence = read_enum_values(".jules/roles/observers/event.yml", "confidence")?;
-    let issue_priorities = read_enum_values(".jules/roles/deciders/issue.yml", "priority")?;
+    let event_confidence =
+        read_enum_values(".jules/roles/observers/templates/event.yml", "confidence")?;
+    let issue_priorities =
+        read_enum_values(".jules/roles/deciders/templates/issue.yml", "priority")?;
 
     let mut diagnostics = Diagnostics::default();
     let mut applied_fixes = Vec::new();
@@ -59,13 +60,7 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         &mut diagnostics,
     );
 
-    let mut prompt_workstreams = HashSet::new();
     let prompt_entries = schema::collect_prompt_entries(jules_path, &mut diagnostics)?;
-    for prompt in &prompt_entries {
-        if let Some(ws) = &prompt.workstream {
-            prompt_workstreams.insert(ws.clone());
-        }
-    }
 
     schema::schema_checks(
         schema::SchemaInputs {
@@ -85,14 +80,7 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
 
     let semantic_context =
         semantic::semantic_context(jules_path, &workstreams, &issue_labels, &mut diagnostics);
-    semantic::semantic_checks(
-        jules_path,
-        &workstreams,
-        &prompt_entries,
-        &prompt_workstreams,
-        &semantic_context,
-        &mut diagnostics,
-    );
+    semantic::semantic_checks(jules_path, &workstreams, &semantic_context, &mut diagnostics);
 
     quality::quality_checks(
         jules_path,

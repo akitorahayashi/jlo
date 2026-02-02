@@ -114,18 +114,8 @@ impl TestContext {
         let role_path = self.jules_path().join("roles").join(layer).join(role_id);
         assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
 
-        // All roles have prompt.yml
-        assert!(role_path.join("prompt.yml").exists(), "Role prompt.yml should exist");
-
-        // Only observers have role.yml
-        if layer == "observers" {
-            assert!(role_path.join("role.yml").exists(), "Observer role.yml should exist");
-        } else {
-            assert!(
-                !role_path.join("role.yml").exists(),
-                "Non-observer should not have role.yml (behavior defined in archetype)"
-            );
-        }
+        // Multi-role layers have role.yml
+        assert!(role_path.join("role.yml").exists(), "Role role.yml should exist");
     }
 
     /// Assert that a role directory exists (legacy compatibility - searches all layers).
@@ -139,22 +129,22 @@ impl TestContext {
 
     /// Assert that the events directory structure exists (workstream-based).
     pub fn assert_events_structure_exists(&self) {
-        let events_path = self.jules_path().join("workstreams/generic/events");
-        assert!(events_path.exists(), "workstreams/generic/events should exist");
+        let events_path = self.jules_path().join("workstreams/generic/exchange/events");
+        assert!(events_path.exists(), "workstreams/generic/exchange/events should exist");
         assert!(
             events_path.join("pending").exists(),
-            "workstreams/generic/events/pending should exist"
+            "workstreams/generic/exchange/events/pending should exist"
         );
         assert!(
             events_path.join("decided").exists(),
-            "workstreams/generic/events/decided should exist"
+            "workstreams/generic/exchange/events/decided should exist"
         );
     }
 
     /// Assert that the issues directory exists (workstream-based).
     pub fn assert_issues_directory_exists(&self) {
-        let issues_path = self.jules_path().join("workstreams/generic/issues");
-        assert!(issues_path.exists(), "workstreams/generic/issues directory should exist");
+        let issues_path = self.jules_path().join("workstreams/generic/exchange/issues");
+        assert!(issues_path.exists(), "workstreams/generic/exchange/issues directory should exist");
     }
 
     /// Assert that workstreams directory structure exists.
@@ -162,16 +152,24 @@ impl TestContext {
         let ws_path = self.jules_path().join("workstreams");
         assert!(ws_path.exists(), "workstreams directory should exist");
         assert!(ws_path.join("generic").exists(), "generic workstream should exist");
-        assert!(ws_path.join("generic/events").exists(), "generic/events should exist");
+        assert!(ws_path.join("generic/exchange").exists(), "generic/exchange should exist");
         assert!(
-            ws_path.join("generic/events/pending").exists(),
-            "generic/events/pending should exist"
+            ws_path.join("generic/exchange/events").exists(),
+            "generic/exchange/events should exist"
         );
         assert!(
-            ws_path.join("generic/events/decided").exists(),
-            "generic/events/decided should exist"
+            ws_path.join("generic/exchange/events/pending").exists(),
+            "generic/exchange/events/pending should exist"
         );
-        assert!(ws_path.join("generic/issues").exists(), "generic/issues should exist");
+        assert!(
+            ws_path.join("generic/exchange/events/decided").exists(),
+            "generic/exchange/events/decided should exist"
+        );
+        assert!(
+            ws_path.join("generic/exchange/issues").exists(),
+            "generic/exchange/issues should exist"
+        );
+        assert!(ws_path.join("generic/workstations").exists(), "generic/workstations should exist");
     }
 
     /// Assert that exchange directory structure exists (for backward compatibility, now checks workstreams).
@@ -204,14 +202,14 @@ impl TestContext {
         );
     }
 
-    /// Assert that feedbacks directories exist for all observer roles.
-    pub fn assert_feedbacks_directories_exist(&self) {
-        let observers = ["taxonomy", "data_arch", "qa", "cov", "consistency"];
-        for role in &observers {
-            let feedbacks_path =
-                self.jules_path().join("roles").join("observers").join(role).join("feedbacks");
-            assert!(feedbacks_path.exists(), "feedbacks directory should exist for {}", role);
-        }
+    /// Assert that templates directories exist for multi-role layers.
+    pub fn assert_layer_templates_exist(&self) {
+        let roles_path = self.jules_path().join("roles");
+        assert!(
+            roles_path.join("observers/templates").exists(),
+            "observers/templates should exist"
+        );
+        assert!(roles_path.join("deciders/templates").exists(), "deciders/templates should exist");
     }
 
     /// Assert that all built-in roles exist in their correct layers.

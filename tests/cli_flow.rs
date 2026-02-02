@@ -58,17 +58,20 @@ fn init_creates_complete_layer_structure() {
     ctx.assert_changes_directory_exists();
     ctx.assert_narrator_exists();
 
-    // Verify observers have feedbacks directories (notes were removed)
+    // Verify multi-role layers have role.yml and templates/ directories
     let jules = ctx.jules_path();
-    assert!(jules.join("roles/observers/taxonomy/feedbacks").exists());
-    assert!(jules.join("roles/observers/data_arch/feedbacks").exists());
-    assert!(jules.join("roles/observers/qa/feedbacks").exists());
-    assert!(jules.join("roles/observers/cov/feedbacks").exists());
-    assert!(jules.join("roles/observers/consistency/feedbacks").exists());
+    assert!(jules.join("roles/observers/taxonomy/role.yml").exists());
+    assert!(jules.join("roles/observers/data_arch/role.yml").exists());
+    assert!(jules.join("roles/observers/qa/role.yml").exists());
+    assert!(jules.join("roles/observers/cov/role.yml").exists());
+    assert!(jules.join("roles/observers/consistency/role.yml").exists());
+    assert!(jules.join("roles/observers/templates").exists());
+    assert!(jules.join("roles/observers/prompt_assembly.yml").exists());
 
-    // Verify non-observers don't have feedbacks or role.yml
-    assert!(!jules.join("roles/deciders/triage_generic/feedbacks").exists());
-    assert!(!jules.join("roles/deciders/triage_generic/role.yml").exists());
+    // Deciders have role.yml
+    assert!(jules.join("roles/deciders/triage_generic/role.yml").exists());
+    assert!(jules.join("roles/deciders/templates").exists());
+    assert!(jules.join("roles/deciders/prompt_assembly.yml").exists());
 
     // Single-role layers have flat structure (no role subdirectory)
     assert!(jules.join("roles/narrator/prompt.yml").exists());
@@ -82,7 +85,7 @@ fn init_creates_complete_layer_structure() {
 
 #[test]
 #[serial]
-fn template_creates_observer_with_feedbacks() {
+fn template_creates_observer_role() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("init").assert().success();
@@ -92,11 +95,9 @@ fn template_creates_observer_with_feedbacks() {
         .assert()
         .success();
 
-    // Observer roles should have feedbacks directory, plus role.yml
+    // Observer roles should have role.yml
     let role_path = ctx.jules_path().join("roles/observers/custom-obs");
-    let feedbacks_path = role_path.join("feedbacks");
     let role_yml = role_path.join("role.yml");
-    assert!(feedbacks_path.exists(), "Observer role should have feedbacks directory");
     assert!(role_yml.exists(), "Observer role should have role.yml");
 }
 
