@@ -128,6 +128,7 @@ mod tests {
     use super::*;
     use crate::domain::{Component, ComponentId};
 
+    #[derive(Debug)]
     struct TestCatalog {
         components: BTreeMap<String, Component>,
     }
@@ -214,5 +215,94 @@ mod tests {
         let catalog = TestCatalog::new(vec![]);
         let result = DependencyResolver::resolve(&["invalid/id".to_string()], &catalog);
         assert!(matches!(result, Err(AppError::InvalidComponentId(_))));
+    }
+
+    use proptest::prelude::*;
+    use std::collections::HashSet;
+
+    // Helper to verify topological order
+    fn verify_topological_order(components: &[Component]) -> bool {
+        let mut seen = HashSet::new();
+        for component in components {
+            for dep in &component.dependencies {
+                // If the dependency is part of the result, it must have been seen already
+                let dep_in_result = components.iter().any(|c| c.name == *dep);
+                if dep_in_result && !seen.contains(dep) {
+                    return false;
+                }
+            }
+            seen.insert(component.name.clone());
+        }
+        true
+    }
+
+    // Strategy to generate a valid ComponentId string
+    fn component_id_strategy() -> impl Strategy<Value = String> {
+        "[a-z][a-z0-9_-]*".prop_map(|s| s)
+    }
+
+    // Strategy to generate a Catalog with random dependencies
+    fn catalog_strategy(size: usize) -> impl Strategy<Value = (Vec<String>, TestCatalog)> {
+        let nodes = prop::collection::vec(component_id_strategy(), 1..size);
+
+        nodes
+            .prop_flat_map(|names| {
+                // Deduplicate names
+                let unique_names: Vec<String> =
+                    names.into_iter().collect::<HashSet<_>>().into_iter().collect();
+                let len = unique_names.len();
+
+                // For each name, generate dependencies (subset of other names)
+                let deps_strategy = prop::collection::vec(
+                    prop::collection::vec(prop::sample::select(unique_names.clone()), 0..len),
+                    len,
+                );
+
+                (Just(unique_names), deps_strategy)
+            })
+            .prop_map(|(names, deps_list)| {
+                let mut components = Vec::new();
+                for (i, name) in names.iter().enumerate() {
+                    // Remove self-dependency to reduce trivial cycles
+                    let deps: Vec<&str> =
+                        deps_list[i].iter().filter(|&d| d != name).map(|s| s.as_str()).collect();
+
+                    // Deduplicate deps
+                    let unique_deps: HashSet<&str> = deps.into_iter().collect();
+                    let unique_deps_vec: Vec<&str> = unique_deps.into_iter().collect();
+
+                    components.push(make_component(name, &unique_deps_vec));
+                }
+
+                (names, TestCatalog::new(components))
+            })
+    }
+
+    proptest! {
+        #[test]
+        fn test_resolve_properties((requests, catalog) in catalog_strategy(10)) {
+            let result = DependencyResolver::resolve(&requests, &catalog);
+
+            match result {
+                Ok(sorted) => {
+                    // Property 1: Result must contain all requested components (and their deps)
+                    for req in &requests {
+                        let id = ComponentId::new(req).unwrap();
+                        prop_assert!(sorted.iter().any(|c| c.name == id));
+                    }
+
+                    // Property 2: Topological order must be respected
+                    prop_assert!(verify_topological_order(&sorted));
+                }
+                Err(AppError::CircularDependency(path)) => {
+                    // Property 3: If cycle detected, it must be a real cycle
+                    prop_assert!(!path.is_empty());
+                }
+                Err(e) => {
+                     // Should not happen with valid IDs
+                     prop_assert!(false, "Unexpected error: {:?}", e);
+                }
+            }
+        }
     }
 }

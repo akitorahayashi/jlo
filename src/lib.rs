@@ -34,7 +34,12 @@ pub use domain::Layer;
 
 /// Initialize a new `.jules/` workspace in the current directory.
 pub fn init() -> Result<(), AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
+    init_at(std::env::current_dir()?)
+}
+
+/// Initialize a new `.jules/` workspace at the specified path.
+pub fn init_at(path: std::path::PathBuf) -> Result<(), AppError> {
+    let workspace = FilesystemWorkspaceStore::new(path);
     let templates = EmbeddedRoleTemplateStore::new();
     let ctx = AppContext::new(workspace, templates);
 
@@ -51,7 +56,17 @@ pub fn template(
     role_name: Option<&str>,
     workstream: Option<&str>,
 ) -> Result<TemplateOutcome, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
+    template_at(layer, role_name, workstream, std::env::current_dir()?)
+}
+
+/// Apply a template for a role or workstream at the specified path.
+pub fn template_at(
+    layer: Option<&str>,
+    role_name: Option<&str>,
+    workstream: Option<&str>,
+    root: std::path::PathBuf,
+) -> Result<TemplateOutcome, AppError> {
+    let workspace = FilesystemWorkspaceStore::new(root);
     let templates = EmbeddedRoleTemplateStore::new();
     let ctx = AppContext::new(workspace, templates);
 

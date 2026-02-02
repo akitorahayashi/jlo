@@ -1,8 +1,6 @@
 //! Shared testing utilities for jlo CLI tests.
 
 use assert_cmd::Command;
-use std::env;
-use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
@@ -12,8 +10,6 @@ use tempfile::TempDir;
 pub struct TestContext {
     root: TempDir,
     work_dir: PathBuf,
-    original_home: Option<OsString>,
-    original_cwd: PathBuf,
 }
 
 #[allow(dead_code)]
@@ -47,14 +43,7 @@ impl TestContext {
             String::from_utf8_lossy(&output.stderr)
         );
 
-        let original_home = env::var_os("HOME");
-        let original_cwd = env::current_dir().expect("Failed to get current directory");
-
-        unsafe {
-            env::set_var("HOME", root.path());
-        }
-
-        Self { root, work_dir, original_home, original_cwd }
+        Self { root, work_dir }
     }
 
     /// Absolute path to the emulated `$HOME` directory.
@@ -260,34 +249,6 @@ impl TestContext {
             )
         } else {
             None
-        }
-    }
-
-    /// Execute a closure after temporarily switching into the work directory.
-    pub fn with_work_dir<F, R>(&self, action: F) -> R
-    where
-        F: FnOnce() -> R,
-    {
-        let original = env::current_dir().expect("Failed to capture current dir");
-        env::set_current_dir(&self.work_dir).expect("Failed to switch current dir");
-        let result = action();
-        env::set_current_dir(original).expect("Failed to restore current dir");
-        result
-    }
-}
-
-impl Drop for TestContext {
-    fn drop(&mut self) {
-        // Restore original CWD first (in case we're still in the temp dir)
-        let _ = env::set_current_dir(&self.original_cwd);
-
-        match &self.original_home {
-            Some(value) => unsafe {
-                env::set_var("HOME", value);
-            },
-            None => unsafe {
-                env::remove_var("HOME");
-            },
         }
     }
 }
