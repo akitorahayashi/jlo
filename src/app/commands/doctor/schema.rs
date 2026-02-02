@@ -100,23 +100,17 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             validate_contracts(&contracts_path, layer, diagnostics);
         }
 
-        if layer == Layer::Observers {
+        if layer == Layer::Observers || layer == Layer::Deciders {
             let roles_container = layer_dir.join("roles");
             if roles_container.exists() {
                 for role_dir in list_subdirs(&roles_container, diagnostics) {
                     let role_path = role_dir.join("role.yml");
                     if role_path.exists() {
-                        validate_role(&role_path, &role_dir, diagnostics);
-                    }
-                }
-            }
-        } else if layer == Layer::Deciders {
-            let roles_container = layer_dir.join("roles");
-            if roles_container.exists() {
-                for role_dir in list_subdirs(&roles_container, diagnostics) {
-                    let role_path = role_dir.join("role.yml");
-                    if role_path.exists() {
-                        validate_decider_role(&role_path, diagnostics);
+                        if layer == Layer::Observers {
+                            validate_role(&role_path, &role_dir, diagnostics);
+                        } else {
+                            validate_decider_role(&role_path, diagnostics);
+                        }
                     }
                 }
             }
