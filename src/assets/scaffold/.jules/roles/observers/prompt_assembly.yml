@@ -1,0 +1,17 @@
+schema_version: 1
+layer: observers
+
+runtime_context:
+  workstream: "{{workstream}}"
+  role: "{{role}}"
+
+includes:
+  - title: "Role"
+    path: ".jules/roles/observers/{{role}}/role.yml"
+  - title: "Layer Contracts"
+    path: ".jules/roles/observers/contracts.yml"
+  - title: "Change Summary"
+    path: ".jules/changes/latest.yml"
+    optional: true
+  - title: "Workstation Perspective"
+    path: ".jules/workstreams/{{workstream}}/workstations/{{role}}/perspective.yml"

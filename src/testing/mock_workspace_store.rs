@@ -98,8 +98,6 @@ impl WorkspaceStore for MockWorkspaceStore {
         layer: Layer,
         role_id: &RoleId,
         _role_yaml: &str,
-        _prompt_yaml: Option<&str>,
-        _has_notes: bool,
     ) -> Result<(), AppError> {
         self.roles.borrow_mut().insert((layer, role_id.as_str().to_string()), true);
         Ok(())

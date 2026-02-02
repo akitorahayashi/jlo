@@ -18,7 +18,8 @@ pub fn quality_checks(
 ) {
     for workstream in workstreams {
         let ws_dir = jules_path.join("workstreams").join(workstream);
-        let events_dir = ws_dir.join("events");
+        let exchange_dir = ws_dir.join("exchange");
+        let events_dir = exchange_dir.join("events");
         for state in event_states {
             for entry in read_yaml_files(&events_dir.join(state), diagnostics) {
                 if let Some(statement) = read_yaml_string(&entry, "statement", diagnostics)
@@ -30,7 +31,7 @@ pub fn quality_checks(
             }
         }
 
-        let issues_dir = ws_dir.join("issues");
+        let issues_dir = exchange_dir.join("issues");
         for label in issue_labels {
             for entry in read_yaml_files(&issues_dir.join(label), diagnostics) {
                 if let Some(problem) = read_yaml_string(&entry, "problem", diagnostics)

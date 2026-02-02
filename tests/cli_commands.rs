@@ -132,7 +132,7 @@ fn doctor_reports_schema_errors() {
 
     ctx.cli().arg("init").assert().success();
 
-    let event_dir = ctx.work_dir().join(".jules/workstreams/generic/events/pending");
+    let event_dir = ctx.work_dir().join(".jules/workstreams/generic/exchange/events/pending");
     std::fs::create_dir_all(&event_dir).unwrap();
     let event_path = event_dir.join("bad-event.yml");
     std::fs::write(

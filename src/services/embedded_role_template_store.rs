@@ -5,11 +5,10 @@ use crate::ports::{RoleTemplateStore, ScaffoldFile};
 
 static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold");
 
-/// Prompt templates for new roles (multi-role layers only)
+/// Role templates for multi-role layers
 mod templates {
-    pub static ROLE_YML: &str = include_str!("../assets/templates/layers/observers/role.yml");
-    pub static OBSERVER: &str = include_str!("../assets/templates/layers/observers/prompt.yml");
-    pub static DECIDER: &str = include_str!("../assets/templates/layers/deciders/prompt.yml");
+    pub static OBSERVER_ROLE: &str = include_str!("../assets/templates/layers/observers/role.yml");
+    pub static DECIDER_ROLE: &str = include_str!("../assets/templates/layers/deciders/role.yml");
 }
 
 /// Embedded role template store implementation.
@@ -35,24 +34,11 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
     }
 
     fn generate_role_yaml(&self, _role_id: &str, layer: Layer) -> String {
-        // Only observers have role.yml
-        if !matches!(layer, Layer::Observers) {
-            return String::new();
+        match layer {
+            Layer::Observers => templates::OBSERVER_ROLE.to_string(),
+            Layer::Deciders => templates::DECIDER_ROLE.to_string(),
+            Layer::Narrator | Layer::Planners | Layer::Implementers => String::new(),
         }
-
-        templates::ROLE_YML.to_string()
-    }
-
-    fn generate_prompt_yaml_template(&self, _role_id: &str, layer: Layer) -> String {
-        // Single-role layers (Narrator, Planners, Implementers) don't support template creation
-        // Return the template as-is with placeholders for multi-role layers
-        let template = match layer {
-            Layer::Observers => templates::OBSERVER,
-            Layer::Deciders => templates::DECIDER,
-            Layer::Narrator | Layer::Planners | Layer::Implementers => "",
-        };
-
-        template.to_string()
     }
 }
 
@@ -89,36 +75,34 @@ mod tests {
     }
 
     #[test]
-    fn generate_role_yaml_has_correct_structure() {
+    fn generate_role_yaml_for_observers() {
         let store = EmbeddedRoleTemplateStore::new();
         let yaml = store.generate_role_yaml("custom", Layer::Observers);
 
         assert!(yaml.contains("role: ROLE_NAME"));
+        assert!(yaml.contains("layer: observers"));
+        assert!(yaml.contains("profile:"));
         assert!(yaml.contains("focus:"));
-        assert!(yaml.contains("learned_exclusions:"));
+        assert!(yaml.contains("instructions:"));
     }
 
     #[test]
-    fn generate_prompt_yaml_template_has_correct_structure() {
+    fn generate_role_yaml_for_deciders() {
         let store = EmbeddedRoleTemplateStore::new();
+        let yaml = store.generate_role_yaml("custom", Layer::Deciders);
 
-        // Test with observer (multi-role layer)
-        let yaml = store.generate_prompt_yaml_template("custom", Layer::Observers);
-        assert!(yaml.contains("role: ROLE_NAME"));
-        assert!(yaml.contains("layer: observers"));
-        assert!(yaml.contains("responsibility:"));
-        assert!(yaml.contains("contracts:"));
-        assert!(yaml.contains("instructions:"));
-
-        // Test with decider (multi-role layer)
-        let yaml = store.generate_prompt_yaml_template("custom", Layer::Deciders);
         assert!(yaml.contains("role: ROLE_NAME"));
         assert!(yaml.contains("layer: deciders"));
+        assert!(yaml.contains("profile:"));
+        assert!(yaml.contains("instructions:"));
+    }
 
-        // Single-role layers do not provide templates
-        let yaml = store.generate_prompt_yaml_template("custom", Layer::Planners);
-        assert!(yaml.is_empty());
-        let yaml = store.generate_prompt_yaml_template("custom", Layer::Implementers);
-        assert!(yaml.is_empty());
+    #[test]
+    fn generate_role_yaml_empty_for_single_role_layers() {
+        let store = EmbeddedRoleTemplateStore::new();
+
+        assert!(store.generate_role_yaml("custom", Layer::Narrator).is_empty());
+        assert!(store.generate_role_yaml("custom", Layer::Planners).is_empty());
+        assert!(store.generate_role_yaml("custom", Layer::Implementers).is_empty());
     }
 }

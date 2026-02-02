@@ -78,7 +78,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
 
     fn role_exists_in_layer(&self, layer: Layer, role_id: &RoleId) -> bool {
         let role_dir = self.role_path_in_layer(layer, role_id.as_str());
-        role_dir.join("prompt.yml").exists() || role_dir.join("role.yml").exists()
+        role_dir.join("role.yml").exists()
     }
 
     fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
@@ -148,32 +148,13 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         layer: Layer,
         role_id: &RoleId,
         role_yaml: &str,
-        prompt_yaml: Option<&str>,
-        has_notes: bool,
     ) -> Result<(), AppError> {
         let role_dir = self.role_path_in_layer(layer, role_id.as_str());
         fs::create_dir_all(&role_dir)?;
 
-        // Only observers have role.yml (specialized focus)
-        if layer == Layer::Observers {
+        // Write role.yml for multi-role layers (observers, deciders)
+        if matches!(layer, Layer::Observers | Layer::Deciders) {
             fs::write(role_dir.join("role.yml"), role_yaml)?;
-        }
-
-        if let Some(prompt_content) = prompt_yaml {
-            fs::write(role_dir.join("prompt.yml"), prompt_content)?;
-        }
-
-        if has_notes {
-            let notes_dir = role_dir.join("notes");
-            fs::create_dir_all(&notes_dir)?;
-            fs::write(notes_dir.join(".gitkeep"), "")?;
-
-            // Observers also have feedbacks/ directory
-            if layer == Layer::Observers {
-                let feedbacks_dir = role_dir.join("feedbacks");
-                fs::create_dir_all(&feedbacks_dir)?;
-                fs::write(feedbacks_dir.join(".gitkeep"), "")?;
-            }
         }
 
         Ok(())
@@ -287,13 +268,11 @@ mod tests {
         ws.create_structure(&[]).unwrap();
 
         let role_id = RoleId::new("my-role").unwrap();
-        ws.scaffold_role_in_layer(Layer::Observers, &role_id, "My role config", None, true)
+        ws.scaffold_role_in_layer(Layer::Observers, &role_id, "role: my-role\nlayer: observers")
             .unwrap();
 
         let role_dir = ws.jules_path().join("roles/observers/my-role");
         assert!(role_dir.join("role.yml").exists());
-        assert!(role_dir.join("notes").exists());
-        assert!(role_dir.join("notes/.gitkeep").exists());
     }
 
     #[test]
@@ -303,47 +282,24 @@ mod tests {
 
         // Create some roles
         let obs_role = RoleId::new("taxonomy").unwrap();
-        ws.scaffold_role_in_layer(
-            Layer::Observers,
-            &obs_role,
-            "role: taxonomy",
-            Some("prompt"),
-            false,
-        )
-        .unwrap();
+        ws.scaffold_role_in_layer(Layer::Observers, &obs_role, "role: taxonomy\nlayer: observers")
+            .unwrap();
 
         let dec_role = RoleId::new("screener").unwrap();
-        ws.scaffold_role_in_layer(
-            Layer::Deciders,
-            &dec_role,
-            "role: screener",
-            Some("prompt"),
-            false,
-        )
-        .unwrap();
+        ws.scaffold_role_in_layer(Layer::Deciders, &dec_role, "role: screener\nlayer: deciders")
+            .unwrap();
 
-        let plan_role = RoleId::new("architect").unwrap();
-        ws.scaffold_role_in_layer(
-            Layer::Planners,
-            &plan_role,
-            "role: architect",
-            Some("prompt"),
-            false,
-        )
-        .unwrap();
+        // Note: Planners is a single-role layer, so we don't create roles in it
 
         let roles = ws.discover_roles().unwrap();
 
-        assert_eq!(roles.len(), 3);
-        // Sort order is by dir_name: deciders, observers, planners
+        assert_eq!(roles.len(), 2);
+        // Sort order is by dir_name: deciders, observers
         assert_eq!(roles[0].layer, Layer::Deciders);
         assert_eq!(roles[0].id, "screener");
 
         assert_eq!(roles[1].layer, Layer::Observers);
         assert_eq!(roles[1].id, "taxonomy");
-
-        assert_eq!(roles[2].layer, Layer::Planners);
-        assert_eq!(roles[2].id, "architect");
     }
 
     #[test]
@@ -352,24 +308,12 @@ mod tests {
         ws.create_structure(&[]).unwrap();
 
         let obs_role = RoleId::new("taxonomy").unwrap();
-        ws.scaffold_role_in_layer(
-            Layer::Observers,
-            &obs_role,
-            "role: taxonomy",
-            Some("prompt"),
-            false,
-        )
-        .unwrap();
+        ws.scaffold_role_in_layer(Layer::Observers, &obs_role, "role: taxonomy\nlayer: observers")
+            .unwrap();
 
         let dec_role = RoleId::new("taxman").unwrap();
-        ws.scaffold_role_in_layer(
-            Layer::Deciders,
-            &dec_role,
-            "role: taxman",
-            Some("prompt"),
-            false,
-        )
-        .unwrap();
+        ws.scaffold_role_in_layer(Layer::Deciders, &dec_role, "role: taxman\nlayer: deciders")
+            .unwrap();
 
         // Exact match
         let found = ws.find_role_fuzzy("taxonomy").unwrap().unwrap();

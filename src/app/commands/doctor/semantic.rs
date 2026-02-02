@@ -8,7 +8,6 @@ use crate::domain::{AppError, Layer};
 use crate::services::workstream_schedule_filesystem::load_schedule;
 
 use super::diagnostics::Diagnostics;
-use super::schema::PromptEntry;
 use super::yaml::{read_yaml_bool, read_yaml_files, read_yaml_string, read_yaml_strings};
 
 const STALE_DEEP_ANALYSIS_THRESHOLD_DAYS: i64 = 7;
@@ -33,7 +32,8 @@ pub fn semantic_context(
 
     for workstream in workstreams {
         let ws_dir = jules_path.join("workstreams").join(workstream);
-        let decided_dir = ws_dir.join("events/decided");
+        let exchange_dir = ws_dir.join("exchange");
+        let decided_dir = exchange_dir.join("events/decided");
         for entry in read_yaml_files(&decided_dir, diagnostics) {
             if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
                 context.decided_events.insert(id.clone(), entry.clone());
@@ -45,7 +45,7 @@ pub fn semantic_context(
             }
         }
 
-        let issues_dir = ws_dir.join("issues");
+        let issues_dir = exchange_dir.join("issues");
         for label in issue_labels {
             for entry in read_yaml_files(&issues_dir.join(label), diagnostics) {
                 if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
@@ -87,8 +87,6 @@ pub fn semantic_context(
 pub fn semantic_checks(
     jules_path: &Path,
     workstreams: &[String],
-    prompt_entries: &[PromptEntry],
-    prompt_workstreams: &HashSet<String>,
     context: &SemanticContext,
     diagnostics: &mut Diagnostics,
 ) {
@@ -118,7 +116,8 @@ pub fn semantic_checks(
 
     for workstream in workstreams {
         if let Some(entries) = context.index_entries.get(workstream) {
-            let ws_dir = jules_path.join("workstreams").join(workstream).join("issues");
+            let ws_dir =
+                jules_path.join("workstreams").join(workstream).join("exchange").join("issues");
             let mut files = HashSet::new();
             for entry in walk_issue_files(&ws_dir, diagnostics) {
                 if let Ok(rel) = entry.strip_prefix(&ws_dir) {
@@ -147,7 +146,7 @@ pub fn semantic_checks(
 
         if let Some(duplicates) = context.index_duplicates.get(workstream) {
             let index_path =
-                jules_path.join("workstreams").join(workstream).join("issues/index.md");
+                jules_path.join("workstreams").join(workstream).join("exchange/issues/index.md");
             for entry in duplicates {
                 diagnostics.push_error(
                     index_path.display().to_string(),
@@ -157,42 +156,29 @@ pub fn semantic_checks(
         }
     }
 
-    for workstream in prompt_workstreams {
-        if !workstreams.contains(workstream) {
-            diagnostics
-                .push_error(workstream.clone(), "workstream referenced in prompt does not exist");
-        }
-    }
+    // Workstream-prompt relationship is now managed through scheduled.toml
+    // Roles are generic and assigned to workstreams via the schedule, not the role.yml
 
-    for workstream in workstreams {
-        if !prompt_workstreams.contains(workstream) {
-            diagnostics
-                .push_error(workstream.clone(), "workstream exists but no prompt references it");
-        }
-    }
-
-    let mut role_workstreams: HashMap<Layer, HashMap<String, String>> = HashMap::new();
-    for entry in prompt_entries {
-        if entry.layer.is_single_role() {
-            continue;
-        }
-        if entry.role.is_empty() {
-            continue;
-        }
-        let Some(workstream) = entry.workstream.as_ref() else {
-            continue;
-        };
-        let layer_roles = role_workstreams.entry(entry.layer).or_default();
-        if let Some(existing) = layer_roles.insert(entry.role.clone(), workstream.clone())
-            && existing != *workstream
-        {
-            diagnostics.push_error(
-                entry.path.display().to_string(),
-                format!(
-                    "Role '{}' has conflicting workstream values ('{}' vs '{}')",
-                    entry.role, existing, workstream
-                ),
-            );
+    // Collect existing roles from filesystem for each layer
+    let roles_dir = jules_path.join("roles");
+    let mut existing_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
+    for layer in [Layer::Observers, Layer::Deciders] {
+        let layer_dir = roles_dir.join(layer.dir_name());
+        if layer_dir.exists() {
+            let mut role_set = HashSet::new();
+            if let Ok(entries) = std::fs::read_dir(&layer_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        let name = entry.file_name().to_string_lossy().to_string();
+                        // Skip reserved directories
+                        if name != "templates" {
+                            role_set.insert(name);
+                        }
+                    }
+                }
+            }
+            existing_roles.insert(layer, role_set);
         }
     }
 
@@ -202,47 +188,29 @@ pub fn semantic_checks(
             Ok(schedule) => {
                 for role in schedule.observers.roles {
                     scheduled_roles.entry(Layer::Observers).or_default().insert(role.clone());
-                    match role_workstreams.get(&Layer::Observers).and_then(|roles| roles.get(&role))
+                    // Validate role exists in filesystem
+                    if !existing_roles
+                        .get(&Layer::Observers)
+                        .is_some_and(|roles| roles.contains(&role))
                     {
-                        Some(role_ws) if role_ws == workstream => {}
-                        Some(role_ws) => {
-                            diagnostics.push_error(
-                                role.clone(),
-                                format!(
-                                    "Observer role '{}' targets workstream '{}' but is scheduled in '{}'",
-                                    role, role_ws, workstream
-                                ),
-                            );
-                        }
-                        None => {
-                            diagnostics.push_error(
-                                role.clone(),
-                                "Observer role listed in scheduled.toml but missing from filesystem",
-                            );
-                        }
+                        diagnostics.push_error(
+                            role.clone(),
+                            "Observer role listed in scheduled.toml but missing from filesystem",
+                        );
                     }
                 }
 
                 for role in schedule.deciders.roles {
                     scheduled_roles.entry(Layer::Deciders).or_default().insert(role.clone());
-                    match role_workstreams.get(&Layer::Deciders).and_then(|roles| roles.get(&role))
+                    // Validate role exists in filesystem
+                    if !existing_roles
+                        .get(&Layer::Deciders)
+                        .is_some_and(|roles| roles.contains(&role))
                     {
-                        Some(role_ws) if role_ws == workstream => {}
-                        Some(role_ws) => {
-                            diagnostics.push_error(
-                                role.clone(),
-                                format!(
-                                    "Decider role '{}' targets workstream '{}' but is scheduled in '{}'",
-                                    role, role_ws, workstream
-                                ),
-                            );
-                        }
-                        None => {
-                            diagnostics.push_error(
-                                role.clone(),
-                                "Decider role listed in scheduled.toml but missing from filesystem",
-                            );
-                        }
+                        diagnostics.push_error(
+                            role.clone(),
+                            "Decider role listed in scheduled.toml but missing from filesystem",
+                        );
                     }
                 }
             }
@@ -259,9 +227,10 @@ pub fn semantic_checks(
         }
     }
 
-    for (layer, roles) in &role_workstreams {
+    // Check for roles that exist but aren't scheduled in any workstream (dangling roles)
+    for (layer, roles) in &existing_roles {
         let scheduled = scheduled_roles.get(layer).cloned().unwrap_or_default();
-        for role in roles.keys() {
+        for role in roles {
             if !scheduled.contains(role) {
                 diagnostics.push_warning(
                     role.clone(),

@@ -15,9 +15,6 @@ use super::yaml::{
 #[derive(Debug, Clone)]
 pub(crate) struct PromptEntry {
     pub path: PathBuf,
-    pub layer: Layer,
-    pub role: String,
-    pub workstream: Option<String>,
     pub contracts: Vec<String>,
 }
 
@@ -45,6 +42,7 @@ pub fn collect_prompt_entries(
         }
 
         if layer.is_single_role() {
+            // Single-role layers have prompt.yml directly in layer directory
             let prompt_path = layer_dir.join("prompt.yml");
             if prompt_path.exists()
                 && let Some(entry) = parse_prompt(&prompt_path, layer, diagnostics)
@@ -52,10 +50,11 @@ pub fn collect_prompt_entries(
                 entries.push(entry);
             }
         } else {
+            // Multi-role layers have role.yml in each role subdirectory
             for role_dir in list_subdirs(&layer_dir, diagnostics) {
-                let prompt_path = role_dir.join("prompt.yml");
-                if prompt_path.exists()
-                    && let Some(entry) = parse_prompt(&prompt_path, layer, diagnostics)
+                let role_path = role_dir.join("role.yml");
+                if role_path.exists()
+                    && let Some(entry) = parse_role_file(&role_path, layer, diagnostics)
                 {
                     entries.push(entry);
                 }
@@ -104,38 +103,12 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
                 if role_path.exists() {
                     validate_role(&role_path, &role_dir, diagnostics);
                 }
-
-                let feedback_dir = role_dir.join("feedbacks");
-                if feedback_dir.exists() {
-                    match fs::read_dir(&feedback_dir) {
-                        Ok(entries) => {
-                            for entry in entries {
-                                match entry {
-                                    Ok(entry) => {
-                                        let path = entry.path();
-                                        if path.extension().and_then(|ext| ext.to_str())
-                                            == Some("yml")
-                                        {
-                                            validate_feedback(&path, diagnostics);
-                                            check_placeholders(&path, diagnostics);
-                                        }
-                                    }
-                                    Err(err) => {
-                                        diagnostics.push_error(
-                                            feedback_dir.display().to_string(),
-                                            format!("Failed to read directory entry: {}", err),
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            diagnostics.push_error(
-                                feedback_dir.display().to_string(),
-                                format!("Failed to read directory: {}", err),
-                            );
-                        }
-                    }
+            }
+        } else if layer == Layer::Deciders {
+            for role_dir in list_subdirs(&layer_dir, diagnostics) {
+                let role_path = role_dir.join("role.yml");
+                if role_path.exists() {
+                    validate_decider_role(&role_path, diagnostics);
                 }
             }
         }
@@ -143,7 +116,9 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
 
     for workstream in inputs.workstreams {
         let ws_dir = inputs.jules_path.join("workstreams").join(workstream);
-        let events_dir = ws_dir.join("events");
+        let exchange_dir = ws_dir.join("exchange");
+
+        let events_dir = exchange_dir.join("events");
         for state in inputs.event_states {
             let state_dir = events_dir.join(state);
             for entry in read_yaml_files(&state_dir, diagnostics) {
@@ -152,7 +127,7 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             }
         }
 
-        let issues_dir = ws_dir.join("issues");
+        let issues_dir = exchange_dir.join("issues");
         for label in inputs.issue_labels {
             let label_dir = issues_dir.join(label);
             for entry in read_yaml_files(&label_dir, diagnostics) {
@@ -173,7 +148,6 @@ fn parse_prompt(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) -> Opt
     let data = load_yaml_mapping(path, diagnostics)?;
 
     let role = get_string(&data, "role");
-    let role_value = role.clone().unwrap_or_default();
     if role.as_deref().unwrap_or("").is_empty() {
         diagnostics.push_error(path.display().to_string(), "Missing role field");
     }
@@ -196,19 +170,18 @@ fn parse_prompt(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) -> Opt
         diagnostics.push_error(path.display().to_string(), "Missing instructions list");
     }
 
-    let workstream = get_string(&data, "workstream");
+    // Single-role layers should not have workstream field
     if layer.is_single_role() {
+        let workstream = get_string(&data, "workstream");
         if workstream.is_some() {
             diagnostics.push_error(
                 path.display().to_string(),
                 "workstream not allowed in single-role layer",
             );
         }
-    } else if workstream.as_deref().unwrap_or("").is_empty() {
-        diagnostics.push_error(path.display().to_string(), "Missing workstream");
     }
 
-    Some(PromptEntry { path: path.to_path_buf(), layer, role: role_value, workstream, contracts })
+    Some(PromptEntry { path: path.to_path_buf(), contracts })
 }
 
 fn validate_event(
@@ -370,19 +343,6 @@ fn validate_issue(
     }
 }
 
-fn validate_feedback(path: &Path, diagnostics: &mut Diagnostics) {
-    let data = match load_yaml_mapping(path, diagnostics) {
-        Some(data) => data,
-        None => return,
-    };
-
-    ensure_date(&data, path, "date", diagnostics);
-    ensure_non_empty_string(&data, path, "topic", diagnostics);
-    ensure_non_empty_string(&data, path, "critique", diagnostics);
-    ensure_non_empty_string(&data, path, "guidance", diagnostics);
-    ensure_non_empty_string(&data, path, "rejected_content", diagnostics);
-}
-
 fn validate_role(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
     let data = match load_yaml_mapping(path, diagnostics) {
         Some(data) => data,
@@ -390,14 +350,27 @@ fn validate_role(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
     };
 
     ensure_non_empty_string(&data, path, "role", diagnostics);
-    ensure_non_empty_string(&data, path, "focus", diagnostics);
 
-    if get_sequence(&data, "analysis_points").map(|seq| seq.is_empty()).unwrap_or(true) {
-        diagnostics.push_error(path.display().to_string(), "analysis_points must have entries");
+    // Check layer field
+    let layer_value = get_string(&data, "layer").unwrap_or_default();
+    if layer_value != "observers" {
+        diagnostics.push_error(path.display().to_string(), "layer must be 'observers'");
     }
 
-    if get_sequence(&data, "learned_exclusions").is_none() {
-        diagnostics.push_error(path.display().to_string(), "learned_exclusions is required");
+    // Check profile section
+    let profile = data.get("profile");
+    if profile.is_none() {
+        diagnostics.push_error(path.display().to_string(), "Missing profile section");
+    } else if let Some(serde_yaml::Value::Mapping(profile_map)) = profile {
+        if get_string(profile_map, "focus").is_none() {
+            diagnostics.push_error(path.display().to_string(), "Missing profile.focus");
+        }
+        if get_sequence(profile_map, "analysis_points").map(|seq| seq.is_empty()).unwrap_or(true) {
+            diagnostics.push_error(
+                path.display().to_string(),
+                "profile.analysis_points must have entries",
+            );
+        }
     }
 
     let role_name = role_dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
@@ -407,6 +380,51 @@ fn validate_role(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
             path.display().to_string(),
             format!("role '{}' does not match directory '{}'", role_value, role_name),
         );
+    }
+}
+
+/// Parse multi-role layer role.yml for entry collection
+fn parse_role_file(
+    path: &Path,
+    layer: Layer,
+    diagnostics: &mut Diagnostics,
+) -> Option<PromptEntry> {
+    let data = load_yaml_mapping(path, diagnostics)?;
+
+    let role = get_string(&data, "role").unwrap_or_default();
+    if role.is_empty() {
+        diagnostics.push_error(path.display().to_string(), "Missing role field");
+    }
+
+    let layer_field = get_string(&data, "layer").unwrap_or_default();
+    if layer_field != layer.dir_name() {
+        diagnostics.push_error(
+            path.display().to_string(),
+            format!("Layer field '{}' does not match {}", layer_field, layer.dir_name()),
+        );
+    }
+
+    // Multi-role layers don't have contracts in role.yml (handled by prompt_assembly.yml)
+    Some(PromptEntry { path: path.to_path_buf(), contracts: vec![] })
+}
+
+/// Validate decider role.yml schema
+fn validate_decider_role(path: &Path, diagnostics: &mut Diagnostics) {
+    let data = match load_yaml_mapping(path, diagnostics) {
+        Some(data) => data,
+        None => return,
+    };
+
+    ensure_non_empty_string(&data, path, "role", diagnostics);
+
+    let layer_value = get_string(&data, "layer").unwrap_or_default();
+    if layer_value != "deciders" {
+        diagnostics.push_error(path.display().to_string(), "layer must be 'deciders'");
+    }
+
+    // Check profile section
+    if data.get("profile").is_none() {
+        diagnostics.push_error(path.display().to_string(), "Missing profile section");
     }
 }
 
