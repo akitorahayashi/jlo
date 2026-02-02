@@ -1,0 +1,8 @@
+version = 1
+enabled = true
+
+[observers]
+roles = ["rustacean"]
+
+[deciders]
+roles = ["triage_generic"]

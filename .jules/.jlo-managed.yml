@@ -1,0 +1,32 @@
+schema_version: 1
+files:
+- path: .jules/roles/deciders/roles/triage_generic/role.yml
+  sha256: cc3694928c7910ee783288744cebdbbc451025e141e73bdea5d5d9f6a486cfaa
+- path: .jules/roles/observers/roles/consistency/role.yml
+  sha256: 7e534892970f88fe01bf1aa2a6c58b1ec09bf6d40bcf5b9c5f24766eb3587641
+- path: .jules/roles/observers/roles/cov/role.yml
+  sha256: 0fc1a8f5c64a4fb293ca439ff6ae05dfa43d98b93daad3293b6027f6f46231c1
+- path: .jules/roles/observers/roles/data_arch/role.yml
+  sha256: baac0ac182f18349907696a359503800dd420a53b5832137f5a72d0f9792e151
+- path: .jules/roles/observers/roles/devops/role.yml
+  sha256: 7743b318248f2406e21a16425cd68e9aaa7d586cfc3b3834770035315ae23b55
+- path: .jules/roles/observers/roles/gopher/role.yml
+  sha256: cc04797361e55fa921e60eba49fe037264591fa1b69d3cce12b583cd6e543cb6
+- path: .jules/roles/observers/roles/observability/role.yml
+  sha256: fd48608199ce54113e63aae02d8b01c4e35ea8934d1beb1769a3a56e161311d3
+- path: .jules/roles/observers/roles/pythonista/role.yml
+  sha256: d918f68d69697c1fcee210c982535f7c95ac7370a420e9899ce541e71913026b
+- path: .jules/roles/observers/roles/qa/role.yml
+  sha256: 877324c6ee15e93a682d516ceef8650626d1fca1bf2f41f867405aa20e7014a1
+- path: .jules/roles/observers/roles/rustacean/role.yml
+  sha256: 5fa736e7e92c818c5f0c045f91361ff74f2f3b31f82d7cd01cb2d1ff8114cc5d
+- path: .jules/roles/observers/roles/structural_arch/role.yml
+  sha256: d3d22988609a632d85e4c62b1b6dadfad5471bb7a0f6e5608e06fb2d388728c5
+- path: .jules/roles/observers/roles/swifter/role.yml
+  sha256: 2c9c5b123ace58d561fa041e6a79ffaada01b1e08cb836f098c409255250ba67
+- path: .jules/roles/observers/roles/taxonomy/role.yml
+  sha256: c8af8654e29e19c0cbecd9c0fa7d93b1a4d0ead8a3f575676236df35634f12f9
+- path: .jules/roles/observers/roles/typescripter/role.yml
+  sha256: 9f3322182f1c6bb1192c32eba81593b32fd64fd6e35274cdcc8864dcc9b61817
+- path: .jules/roles/observers/roles/ui_designer/role.yml
+  sha256: 1e18bfa2d92505ec2d95b62018559beacc2e39a8ac824d86fc4cf89998fa1110
