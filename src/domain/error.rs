@@ -54,6 +54,10 @@ pub enum AppError {
     SingleRoleLayerTemplate(String),
     /// Prompt assembly failed.
     PromptAssemblyError(String),
+    /// Git execution failed.
+    GitError { command: String, details: String },
+    /// Parse error.
+    ParseError { what: String, details: String },
 }
 
 impl Display for AppError {
@@ -61,6 +65,12 @@ impl Display for AppError {
         match self {
             AppError::Io(err) => write!(f, "{}", err),
             AppError::ConfigError(message) => write!(f, "{message}"),
+            AppError::GitError { command, details } => {
+                write!(f, "Git error running '{}': {}", command, details)
+            }
+            AppError::ParseError { what, details } => {
+                write!(f, "Failed to parse {}: {}", what, details)
+            }
             AppError::WorkspaceExists => {
                 write!(f, ".jules/ workspace already exists")
             }
@@ -179,7 +189,8 @@ impl AppError {
             | AppError::RoleNotInConfig { .. }
             | AppError::ScheduleConfigInvalid(_)
             | AppError::SingleRoleLayerTemplate(_)
-            | AppError::PromptAssemblyError(_) => io::ErrorKind::InvalidInput,
+            | AppError::PromptAssemblyError(_)
+            | AppError::ParseError { .. } => io::ErrorKind::InvalidInput,
             AppError::WorkspaceNotFound
             | AppError::SetupNotInitialized
             | AppError::SetupConfigMissing
@@ -188,6 +199,7 @@ impl AppError {
             | AppError::ScheduleConfigMissing(_)
             | AppError::IssueFileNotFound(_) => io::ErrorKind::NotFound,
             AppError::WorkspaceExists | AppError::RoleExists { .. } => io::ErrorKind::AlreadyExists,
+            AppError::GitError { .. } => io::ErrorKind::Other,
         }
     }
 }
