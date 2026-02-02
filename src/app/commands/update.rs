@@ -18,23 +18,42 @@ use crate::services::scaffold_manifest::{
 ///
 /// Managed files are core framework files that:
 /// - Define shared contracts and workflows (contracts.yml)
-/// - Provide shared templates for agent outputs (event.yml, issue.yml, feedback.yml)
+/// - Provide shared schemas for agent outputs (event.yml, issue.yml)
 /// - Document system-wide rules and conventions (README.md, JULES.md)
+/// - Define prompt assembly configuration (prompt_assembly.yml, prompt.yml)
 ///
 /// Files NOT managed (user-customizable):
-/// - Role-specific prompts (prompt.yml, role.yml)
+/// - Role-specific configurations (roles/<role>/role.yml)
 /// - User configuration (config.toml)
 /// - Workstream content (events/, issues/)
 const JLO_MANAGED_FILES: &[&str] = &[
     ".jules/README.md",
     ".jules/JULES.md",
+    // Observers layer
     ".jules/roles/observers/contracts.yml",
-    ".jules/roles/observers/event.yml",
+    ".jules/roles/observers/prompt.yml",
+    ".jules/roles/observers/prompt_assembly.yml",
+    ".jules/roles/observers/schemas/event.yml",
+    ".jules/roles/observers/schemas/history.yml",
+    ".jules/roles/observers/schemas/perspective.yml",
+    // Deciders layer
     ".jules/roles/deciders/contracts.yml",
-    ".jules/roles/deciders/issue.yml",
-    ".jules/roles/deciders/feedback.yml",
+    ".jules/roles/deciders/prompt.yml",
+    ".jules/roles/deciders/prompt_assembly.yml",
+    ".jules/roles/deciders/schemas/issue.yml",
+    // Narrator layer
+    ".jules/roles/narrator/contracts.yml",
+    ".jules/roles/narrator/prompt.yml",
+    ".jules/roles/narrator/prompt_assembly.yml",
+    ".jules/roles/narrator/schemas/change.yml",
+    // Planners layer
     ".jules/roles/planners/contracts.yml",
+    ".jules/roles/planners/prompt.yml",
+    ".jules/roles/planners/prompt_assembly.yml",
+    // Implementers layer
     ".jules/roles/implementers/contracts.yml",
+    ".jules/roles/implementers/prompt.yml",
+    ".jules/roles/implementers/prompt_assembly.yml",
 ];
 
 /// Result of an update operation.

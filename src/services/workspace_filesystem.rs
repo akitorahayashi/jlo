@@ -28,7 +28,8 @@ impl FilesystemWorkspaceStore {
     }
 
     fn role_path_in_layer(&self, layer: Layer, role_id: &str) -> PathBuf {
-        self.jules_path().join("roles").join(layer.dir_name()).join(role_id)
+        // Multi-role layers use a roles/ container for role directories
+        self.jules_path().join("roles").join(layer.dir_name()).join("roles").join(role_id)
     }
 }
 
@@ -85,12 +86,14 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         let mut roles = Vec::new();
 
         for layer in Layer::ALL {
-            let layer_dir = self.jules_path().join("roles").join(layer.dir_name());
-            if !layer_dir.exists() {
+            // For multi-role layers, roles are under .jules/roles/<layer>/roles/
+            let roles_container =
+                self.jules_path().join("roles").join(layer.dir_name()).join("roles");
+            if !roles_container.exists() {
                 continue;
             }
 
-            for entry in fs::read_dir(&layer_dir)? {
+            for entry in fs::read_dir(&roles_container)? {
                 let entry = entry?;
                 if !entry.path().is_dir() {
                     continue;
@@ -271,7 +274,8 @@ mod tests {
         ws.scaffold_role_in_layer(Layer::Observers, &role_id, "role: my-role\nlayer: observers")
             .unwrap();
 
-        let role_dir = ws.jules_path().join("roles/observers/my-role");
+        // With new structure, roles are under roles/ container
+        let role_dir = ws.jules_path().join("roles/observers/roles/my-role");
         assert!(role_dir.join("role.yml").exists());
     }
 

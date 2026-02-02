@@ -7,6 +7,6 @@ runtime_context:
 
 includes:
   - title: "Role"
-    path: ".jules/roles/deciders/{{role}}/role.yml"
+    path: ".jules/roles/deciders/roles/{{role}}/role.yml"
   - title: "Layer Contracts"
     path: ".jules/roles/deciders/contracts.yml"

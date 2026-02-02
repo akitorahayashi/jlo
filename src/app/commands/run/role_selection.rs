@@ -1,8 +1,5 @@
 use std::collections::HashSet;
-use std::fs;
 use std::path::Path;
-
-use serde_yaml::Value;
 
 use crate::domain::{AppError, Layer};
 use crate::services::workstream_schedule_filesystem::load_schedule;
@@ -49,18 +46,13 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<String>, AppErr
         return Ok(vec![]);
     }
 
+    // Validate each role exists in the layer's roles directory
     let mut seen = HashSet::new();
     for role in &roles {
         if !seen.insert(role) {
             return Err(AppError::config_error(format!("Duplicate role '{}' specified", role)));
         }
-        let role_workstream = read_role_workstream(input.jules_path, input.layer, role)?;
-        if role_workstream != input.workstream {
-            return Err(AppError::config_error(format!(
-                "Role '{}' targets workstream '{}' but '{}' was requested",
-                role, role_workstream, input.workstream
-            )));
-        }
+        validate_role_exists(input.jules_path, input.layer, role)?;
     }
 
     Ok(roles)
@@ -74,51 +66,29 @@ fn ensure_workstream_exists(jules_path: &Path, workstream: &str) -> Result<(), A
     Ok(())
 }
 
-fn read_role_workstream(jules_path: &Path, layer: Layer, role: &str) -> Result<String, AppError> {
-    let role_dir = jules_path.join("roles").join(layer.dir_name()).join(role);
-    let prompt_path = role_dir.join("prompt.yml");
-    if !prompt_path.exists() {
+/// Validate that a role exists in the layer's roles directory.
+///
+/// For the new scaffold structure, roles are under:
+/// `.jules/roles/<layer>/roles/<role>/role.yml`
+fn validate_role_exists(jules_path: &Path, layer: Layer, role: &str) -> Result<(), AppError> {
+    let role_dir = jules_path.join("roles").join(layer.dir_name()).join("roles").join(role);
+    let role_yml_path = role_dir.join("role.yml");
+
+    if !role_yml_path.exists() {
         return Err(AppError::RoleNotFound(format!(
-            "{}/{} (prompt.yml not found)",
+            "{}/roles/{} (role.yml not found)",
             layer.dir_name(),
             role
         )));
     }
 
-    let content = fs::read_to_string(&prompt_path)?;
-    let value: Value = serde_yaml::from_str(&content).map_err(|err| {
-        AppError::config_error(format!("Failed to parse {}: {}", prompt_path.display(), err))
-    })?;
-    let map = match value {
-        Value::Mapping(map) => map,
-        _ => {
-            return Err(AppError::config_error(format!(
-                "Prompt file {} must contain a mapping",
-                prompt_path.display()
-            )));
-        }
-    };
-
-    let workstream = map.get("workstream").and_then(Value::as_str).ok_or_else(|| {
-        AppError::config_error(format!(
-            "Prompt file {} missing workstream field",
-            prompt_path.display()
-        ))
-    })?;
-
-    let workstream = workstream.trim();
-    if workstream.is_empty() {
-        return Err(AppError::config_error(format!(
-            "Prompt file {} has empty workstream field",
-            prompt_path.display()
-        )));
-    }
-
-    Ok(workstream.to_string())
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use super::*;
     use tempfile::tempdir;
 
@@ -128,17 +98,15 @@ mod tests {
         fs::write(dir.join("scheduled.toml"), content).unwrap();
     }
 
-    fn write_prompt(root: &Path, layer: Layer, role: &str, workstream: &str) {
-        let dir = root.join(".jules/roles").join(layer.dir_name()).join(role);
+    fn write_role(root: &Path, layer: Layer, role: &str) {
+        let dir = root.join(".jules/roles").join(layer.dir_name()).join("roles").join(role);
         fs::create_dir_all(&dir).unwrap();
-        let prompt = format!(
-            "role: {role}\nlayer: {layer}\nworkstream: {workstream}\n",
+        let role_yml = format!(
+            "role: {role}\nlayer: {layer}\nprofile:\n  focus: test\n",
             role = role,
-            layer = layer.dir_name(),
-            workstream = workstream
+            layer = layer.dir_name()
         );
-        let path = dir.join("prompt.yml");
-        fs::write(&path, prompt).unwrap();
+        fs::write(dir.join("role.yml"), role_yml).unwrap();
     }
 
     #[test]
@@ -160,7 +128,7 @@ roles = ["taxonomy"]
 roles = []
 "#,
         );
-        write_prompt(root, Layer::Observers, "taxonomy", "alpha");
+        write_role(root, Layer::Observers, "taxonomy");
 
         let roles = select_roles(RoleSelectionInput {
             jules_path: &root.join(".jules"),
@@ -175,12 +143,12 @@ roles = []
     }
 
     #[test]
-    fn manual_roles_require_match() {
+    fn manual_roles_require_role_exists() {
         let dir = tempdir().unwrap();
         let root = dir.path();
         fs::create_dir_all(root.join(".jules/workstreams/alpha")).unwrap();
         fs::create_dir_all(root.join(".jules/roles/observers")).unwrap();
-        write_prompt(root, Layer::Observers, "taxonomy", "alpha");
+        write_role(root, Layer::Observers, "taxonomy");
 
         let roles = select_roles(RoleSelectionInput {
             jules_path: &root.join(".jules"),
@@ -195,23 +163,22 @@ roles = []
     }
 
     #[test]
-    fn manual_mismatch_fails() {
+    fn missing_role_fails() {
         let dir = tempdir().unwrap();
         let root = dir.path();
         fs::create_dir_all(root.join(".jules/workstreams/alpha")).unwrap();
         fs::create_dir_all(root.join(".jules/roles/observers")).unwrap();
-        write_prompt(root, Layer::Observers, "taxonomy", "other");
 
         let err = select_roles(RoleSelectionInput {
             jules_path: &root.join(".jules"),
             layer: Layer::Observers,
             workstream: "alpha",
             scheduled: false,
-            requested_roles: Some(&vec!["taxonomy".to_string()]),
+            requested_roles: Some(&vec!["nonexistent".to_string()]),
         })
         .unwrap_err();
 
-        assert!(err.to_string().contains("targets workstream"));
+        assert!(err.to_string().contains("not found"));
     }
 
     #[test]

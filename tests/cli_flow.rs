@@ -58,25 +58,25 @@ fn init_creates_complete_layer_structure() {
     ctx.assert_changes_directory_exists();
     ctx.assert_narrator_exists();
 
-    // Verify multi-role layers have role.yml and templates/ directories
+    // Verify multi-role layers have role.yml under roles/ container and schemas/ directories
     let jules = ctx.jules_path();
-    assert!(jules.join("roles/observers/taxonomy/role.yml").exists());
-    assert!(jules.join("roles/observers/data_arch/role.yml").exists());
-    assert!(jules.join("roles/observers/qa/role.yml").exists());
-    assert!(jules.join("roles/observers/cov/role.yml").exists());
-    assert!(jules.join("roles/observers/consistency/role.yml").exists());
-    assert!(jules.join("roles/observers/templates").exists());
+    assert!(jules.join("roles/observers/roles/taxonomy/role.yml").exists());
+    assert!(jules.join("roles/observers/roles/data_arch/role.yml").exists());
+    assert!(jules.join("roles/observers/roles/qa/role.yml").exists());
+    assert!(jules.join("roles/observers/roles/cov/role.yml").exists());
+    assert!(jules.join("roles/observers/roles/consistency/role.yml").exists());
+    assert!(jules.join("roles/observers/schemas").exists());
     assert!(jules.join("roles/observers/prompt_assembly.yml").exists());
 
-    // Deciders have role.yml
-    assert!(jules.join("roles/deciders/triage_generic/role.yml").exists());
-    assert!(jules.join("roles/deciders/templates").exists());
+    // Deciders have role.yml under roles/ container
+    assert!(jules.join("roles/deciders/roles/triage_generic/role.yml").exists());
+    assert!(jules.join("roles/deciders/schemas").exists());
     assert!(jules.join("roles/deciders/prompt_assembly.yml").exists());
 
-    // Single-role layers have flat structure (no role subdirectory)
+    // Single-role layers have flat structure (no roles subdirectory)
     assert!(jules.join("roles/narrator/prompt.yml").exists());
     assert!(jules.join("roles/narrator/contracts.yml").exists());
-    assert!(jules.join("roles/narrator/change.yml").exists());
+    assert!(jules.join("roles/narrator/schemas/change.yml").exists());
     assert!(jules.join("roles/planners/prompt.yml").exists());
     assert!(jules.join("roles/planners/contracts.yml").exists());
     assert!(jules.join("roles/implementers/prompt.yml").exists());
@@ -95,8 +95,8 @@ fn template_creates_observer_role() {
         .assert()
         .success();
 
-    // Observer roles should have role.yml
-    let role_path = ctx.jules_path().join("roles/observers/custom-obs");
+    // Observer roles should have role.yml under roles/ container
+    let role_path = ctx.jules_path().join("roles/observers/roles/custom-obs");
     let role_yml = role_path.join("role.yml");
     assert!(role_yml.exists(), "Observer role should have role.yml");
 }

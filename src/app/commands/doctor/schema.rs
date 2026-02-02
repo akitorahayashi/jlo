@@ -50,13 +50,16 @@ pub fn collect_prompt_entries(
                 entries.push(entry);
             }
         } else {
-            // Multi-role layers have role.yml in each role subdirectory
-            for role_dir in list_subdirs(&layer_dir, diagnostics) {
-                let role_path = role_dir.join("role.yml");
-                if role_path.exists()
-                    && let Some(entry) = parse_role_file(&role_path, layer, diagnostics)
-                {
-                    entries.push(entry);
+            // Multi-role layers have role.yml in each role subdirectory under roles/
+            let roles_container = layer_dir.join("roles");
+            if roles_container.exists() {
+                for role_dir in list_subdirs(&roles_container, diagnostics) {
+                    let role_path = role_dir.join("role.yml");
+                    if role_path.exists()
+                        && let Some(entry) = parse_role_file(&role_path, layer, diagnostics)
+                    {
+                        entries.push(entry);
+                    }
                 }
             }
         }
@@ -81,9 +84,9 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
     // Validate changes/latest.yml if present
     let latest_path = inputs.jules_path.join("changes").join("latest.yml");
     if latest_path.exists() {
-        let change_template_path =
-            inputs.jules_path.join("roles").join("narrator").join("change.yml");
-        validate_changes_latest(&latest_path, &change_template_path, diagnostics);
+        let change_schema_path =
+            inputs.jules_path.join("roles").join("narrator").join("schemas").join("change.yml");
+        validate_changes_latest(&latest_path, &change_schema_path, diagnostics);
     }
 
     for layer in Layer::ALL {
@@ -97,18 +100,18 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             validate_contracts(&contracts_path, layer, diagnostics);
         }
 
-        if layer == Layer::Observers {
-            for role_dir in list_subdirs(&layer_dir, diagnostics) {
-                let role_path = role_dir.join("role.yml");
-                if role_path.exists() {
-                    validate_role(&role_path, &role_dir, diagnostics);
-                }
-            }
-        } else if layer == Layer::Deciders {
-            for role_dir in list_subdirs(&layer_dir, diagnostics) {
-                let role_path = role_dir.join("role.yml");
-                if role_path.exists() {
-                    validate_decider_role(&role_path, diagnostics);
+        if layer == Layer::Observers || layer == Layer::Deciders {
+            let roles_container = layer_dir.join("roles");
+            if roles_container.exists() {
+                for role_dir in list_subdirs(&roles_container, diagnostics) {
+                    let role_path = role_dir.join("role.yml");
+                    if role_path.exists() {
+                        if layer == Layer::Observers {
+                            validate_role(&role_path, &role_dir, diagnostics);
+                        } else {
+                            validate_decider_role(&role_path, diagnostics);
+                        }
+                    }
                 }
             }
         }
