@@ -21,6 +21,7 @@ This document describes the repository state required to reproduce the Jules wor
 | `jules-run-implementer.yml` | Manual Implementer execution |
 | `jules-automerge.yml` | Auto-merge Observer/Decider/Planner PRs |
 | `jules-implementer-review.yml` | Auto-post review comments on Implementer PRs |
+| `jules-sync.yml` | Sync main branch to jules branch |
 
 ### .github/actions/
 
