@@ -6,35 +6,29 @@
 schema_version: 1
 
 id: "<6_random_lowercase_alphanumeric_chars>"
-
 created_at: "YYYY-MM-DDTHH:MM:SSZ"
 
 range:
-  from_commit: "<sha>"
-  to_commit: "<sha>"
+  from_commit: "<sha>"  # exclusive base
+  to_commit: "<sha>"    # inclusive head
   selection_mode: incremental  # Allowed: incremental, bootstrap
   selection_detail: ""  # Non-empty when selection_mode is bootstrap
   excluded_paths:
     - .jules/
 
-diffstat:
+stats:
+  commits_total: 0
+  commits_included: 0
   files_changed: 0
   insertions: 0
   deletions: 0
 
-# Bounded list of commits (max 50). If truncated, summary must note truncation.
+# Bounded sample list (sha + subject only). Not exhaustive; use stats for scale.
 commits:
   - sha: "<sha>"
-    author: "<author>"
-    date: "YYYY-MM-DDTHH:MM:SSZ"
-    message: "<first line of commit message>"
-
-# Bounded list of changed paths (max 100). If truncated, summary must note truncation.
-changed_paths:
-  - "<path>"
+    subject: "<commit subject line>"
 
 summary:
   overview: "<high-level description of changes>"
-  notable_areas:
-    - "<area 1>"
-  truncation_note: ""  # Empty unless commits or paths were truncated
+  notable_changes: []  # Bounded bullets; keep short
+  truncation_note: ""  # Non-empty when commits_total > commits_included

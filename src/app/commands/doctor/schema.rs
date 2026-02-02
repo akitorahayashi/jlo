@@ -518,27 +518,24 @@ fn validate_changes_latest(path: &Path, template_path: &Path, diagnostics: &mut 
         diagnostics.push_error(path.display().to_string(), "Missing range field");
     }
 
-    // Validate diffstat mapping
-    if let Some(diffstat) = data.get(serde_yaml::Value::String("diffstat".to_string())) {
-        if let serde_yaml::Value::Mapping(diffstat_map) = diffstat {
-            ensure_int(diffstat_map, path, "files_changed", diagnostics, None);
-            ensure_int(diffstat_map, path, "insertions", diagnostics, None);
-            ensure_int(diffstat_map, path, "deletions", diagnostics, None);
+    // Validate stats mapping
+    if let Some(stats) = data.get(serde_yaml::Value::String("stats".to_string())) {
+        if let serde_yaml::Value::Mapping(stats_map) = stats {
+            ensure_int(stats_map, path, "commits_total", diagnostics, None);
+            ensure_int(stats_map, path, "commits_included", diagnostics, None);
+            ensure_int(stats_map, path, "files_changed", diagnostics, None);
+            ensure_int(stats_map, path, "insertions", diagnostics, None);
+            ensure_int(stats_map, path, "deletions", diagnostics, None);
         } else {
-            diagnostics.push_error(path.display().to_string(), "diffstat must be a mapping");
+            diagnostics.push_error(path.display().to_string(), "stats must be a mapping");
         }
     } else {
-        diagnostics.push_error(path.display().to_string(), "Missing diffstat field");
+        diagnostics.push_error(path.display().to_string(), "Missing stats field");
     }
 
     // Validate commits list exists
     if get_sequence(&data, "commits").is_none() {
         diagnostics.push_error(path.display().to_string(), "Missing commits list");
-    }
-
-    // Validate changed_paths list exists
-    if get_sequence(&data, "changed_paths").is_none() {
-        diagnostics.push_error(path.display().to_string(), "Missing changed_paths list");
     }
 
     // Validate summary mapping
