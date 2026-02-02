@@ -7,6 +7,8 @@
 use std::fs;
 use std::path::Path;
 
+use minijinja::{Environment, UndefinedBehavior};
+
 use crate::domain::{
     AssembledPrompt, Layer, PromptAssemblyError, PromptAssemblySpec, PromptContext,
 };
@@ -44,7 +46,11 @@ pub fn assemble_prompt(
     let mut skipped_files = Vec::new();
 
     for include in &spec.includes {
-        let resolved_path = substitute_placeholders(&include.path, context);
+        let resolved_path = render_template(
+            &include.path,
+            context,
+            &format!("prompt_assembly include path ({})", include.title),
+        )?;
         let full_path = root.join(&resolved_path);
 
         if full_path.exists() {
@@ -128,7 +134,7 @@ fn validate_context(
     Ok(())
 }
 
-/// Load the base prompt.yml and substitute placeholders.
+/// Load the base prompt.yml and render templates.
 fn load_prompt(path: &Path, context: &PromptContext) -> Result<String, PromptAssemblyError> {
     if !path.exists() {
         return Err(PromptAssemblyError::PromptNotFound(path.display().to_string()));
@@ -139,17 +145,49 @@ fn load_prompt(path: &Path, context: &PromptContext) -> Result<String, PromptAss
         reason: err.to_string(),
     })?;
 
-    Ok(substitute_placeholders(&content, context))
+    render_template(&content, context, &path.display().to_string())
 }
 
-/// Substitute `{{variable}}` placeholders in a string.
-fn substitute_placeholders(template: &str, context: &PromptContext) -> String {
-    let mut result = template.to_string();
-    for (name, value) in &context.variables {
-        let placeholder = format!("{{{{{}}}}}", name);
-        result = result.replace(&placeholder, value);
+/// Render a template string using strict Jinja-compatible semantics.
+///
+/// Only `{{ ... }}` interpolation is allowed. Control structures are rejected.
+fn render_template(
+    template: &str,
+    context: &PromptContext,
+    template_name: &str,
+) -> Result<String, PromptAssemblyError> {
+    if let Some(token) = disallowed_template_token(template) {
+        return Err(PromptAssemblyError::TemplateSyntaxNotAllowed {
+            template: template_name.to_string(),
+            token: token.to_string(),
+        });
     }
-    result
+
+    let mut env = Environment::new();
+    env.set_undefined_behavior(UndefinedBehavior::Strict);
+
+    env.add_template("inline", template)
+        .map_err(|err| template_render_error(template_name, err))?;
+    let tmpl =
+        env.get_template("inline").map_err(|err| template_render_error(template_name, err))?;
+    tmpl.render(&context.variables).map_err(|err| template_render_error(template_name, err))
+}
+
+fn disallowed_template_token(template: &str) -> Option<&'static str> {
+    if template.contains("{%") {
+        return Some("{%");
+    }
+    if template.contains("{#") {
+        return Some("{#");
+    }
+    None
+}
+
+fn template_render_error(template_name: &str, err: impl std::fmt::Display) -> PromptAssemblyError {
+    PromptAssemblyError::TemplateRenderError {
+        template: template_name.to_string(),
+        reason: err.to_string(),
+    }
 }
 
 #[cfg(test)]
@@ -293,13 +331,42 @@ contracts:
     }
 
     #[test]
-    fn substitute_placeholders_replaces_all() {
-        let template = "workstream: {{workstream}}, role: {{role}}, path: {{workstream}}/{{role}}";
+    fn render_template_replaces_all() {
+        let template =
+            "workstream: {{ workstream }}, role: {{role}}, path: {{workstream}}/{{role}}";
         let context =
             PromptContext::new().with_var("workstream", "generic").with_var("role", "taxonomy");
 
-        let result = substitute_placeholders(template, &context);
+        let result = render_template(template, &context, "inline").unwrap();
 
         assert_eq!(result, "workstream: generic, role: taxonomy, path: generic/taxonomy");
+    }
+
+    #[test]
+    fn render_template_rejects_control_syntax() {
+        let template = "{% if true %}nope{% endif %}";
+        let context = PromptContext::new();
+
+        let result = render_template(template, &context, "inline").unwrap_err();
+
+        match result {
+            PromptAssemblyError::TemplateSyntaxNotAllowed { token, .. } => {
+                assert_eq!(token, "{%");
+            }
+            other => panic!("Expected TemplateSyntaxNotAllowed, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn render_template_fails_on_undefined_variable() {
+        let template = "missing: {{missing}}";
+        let context = PromptContext::new();
+
+        let result = render_template(template, &context, "inline").unwrap_err();
+
+        match result {
+            PromptAssemblyError::TemplateRenderError { .. } => {}
+            other => panic!("Expected TemplateRenderError, got {:?}", other),
+        }
     }
 }
