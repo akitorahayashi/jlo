@@ -1,0 +1,71 @@
+schema_version: 1
+id: x7fxbw
+created_at: '2026-02-02T12:46:01Z'
+range:
+  from_commit: 621c0c961c771e5a4ecea604067543031bb4258e
+  to_commit: 227448033f9b30dc67712a653c82e61faca740f3
+  selection_mode: bootstrap
+  selection_detail: Last 20 commits with non-.jules/ changes
+  excluded_paths:
+  - .jules/
+stats:
+  commits_total: 18
+  commits_included: 18
+  files_changed: 167
+  insertions: 3734
+  deletions: 1913
+commits:
+- sha: '2274480'
+  subject: 'feat: update observer roles in scheduled.toml to include only ''rustacean'''
+- sha: cb0a8d4
+  subject: 'feat: update version to 7.0.0 and enhance AGENTS.md with detailed directory
+    structure and documentation hierarchy'
+- sha: 9ec0916
+  subject: 'feat: bump version to 7.0.0 in Cargo files'
+- sha: 4d4fb56
+  subject: 'feat: add observer matrix generation script to reproduction guide'
+- sha: 01a10c0
+  subject: 'feat: restructure documentation and add GitHub Actions context for workflows
+    (#212)'
+- sha: 0ca3053
+  subject: 'feat: add observer matrix generation script for role-level processing
+    (#210)'
+- sha: a066770
+  subject: "feat: add minijinja dependency and implement template rendering in pr\u2026\
+    \ (#211)"
+- sha: ff99738
+  subject: "Add roles and schemas for observers and planners, implement prompt as\u2026\
+    \ (#209)"
+- sha: c25128a
+  subject: "feat: update Narrator layer to use stats instead of diffstat and impr\u2026\
+    \ (#208)"
+- sha: '7222457'
+  subject: Refactor workstream structure and templates (#207)
+- sha: ceceb76
+  subject: 'feat: Introduce Narrator layer for summarizing codebase changes (#206)'
+- sha: b5f3f17
+  subject: 'feat: enhance jules branch sync workflow with existence check and notifications'
+- sha: 3c230bd
+  subject: Update AGENTS.md and README.md with CLI details (#203)
+- sha: 23aa271
+  subject: CI/CD Infrastructure Improvements (#204)
+- sha: f098a93
+  subject: 'fix(tests): improve dependency verification in topological order check'
+- sha: f28224b
+  subject: Test Isolation and Coverage (#205)
+- sha: c559062
+  subject: 'refactor: Rename GitHub Actions workflow from sync-jules.yml to jules-sync.yml
+    and update the reproduction guide.'
+- sha: 496fc9e
+  subject: 'fix(workflows): update default routing labels to include ''bugs'''
+summary:
+  overview: This update introduces the Narrator layer, refactors workstream structures,
+    establishes version 7.0.0, and enhances documentation and CI/CD infrastructure.
+  notable_changes:
+  - Introduced Narrator layer for codebase change summarization.
+  - Refactored workstream structure and templates.
+  - Updated version to 7.0.0 and enhanced AGENTS.md.
+  - Added observer matrix generation scripts.
+  - Implemented minijinja template rendering.
+  - Improved CI/CD workflows and test isolation.
+  truncation_note: ''
