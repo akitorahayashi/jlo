@@ -15,6 +15,7 @@ pub trait RoleTemplateStore {
     fn scaffold_files(&self) -> Vec<ScaffoldFile>;
 
     /// Get the template for a specific layer.
+    #[allow(dead_code)]
     fn layer_template(&self, layer: Layer) -> &str;
 
     /// Generate role.yml content for a new custom role.
