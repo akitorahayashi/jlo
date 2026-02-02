@@ -222,16 +222,17 @@ mod tests {
 
     // Helper to verify topological order
     fn verify_topological_order(components: &[Component]) -> bool {
-        let mut seen = HashSet::new();
+        let mut seen: HashSet<&ComponentId> = HashSet::new();
+        let component_ids_in_result: HashSet<&ComponentId> =
+            components.iter().map(|c| &c.name).collect();
         for component in components {
             for dep in &component.dependencies {
-                // If the dependency is part of the result, it must have been seen already
-                let dep_in_result = components.iter().any(|c| c.name == *dep);
-                if dep_in_result && !seen.contains(dep) {
+                // If a dependency is also in the result set, it must have been seen already.
+                if component_ids_in_result.contains(dep) && !seen.contains(dep) {
                     return false;
                 }
             }
-            seen.insert(component.name.clone());
+            seen.insert(&component.name);
         }
         true
     }
