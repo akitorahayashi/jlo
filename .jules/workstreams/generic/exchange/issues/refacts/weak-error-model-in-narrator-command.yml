@@ -1,0 +1,39 @@
+schema_version: 2
+
+# Metadata
+id: "r4z34d"
+source_events:
+  - "wm492a"
+title: "Weak error model in Narrator command"
+label: "refacts"
+priority: "medium"
+summary: "The Narrator command implementation uses a generic stringified error model."
+
+# Content
+problem: |
+  The Narrator command implementation in `src/app/commands/run/narrator.rs` maps all underlying errors (such as git execution failures or parsing errors) to a generic `AppError::config_error` with a stringified message. This loses the original error context (type, cause) and makes programmatic error handling or specific recovery logic impossible.
+
+impact: |
+  It leads to brittle error handling and poor user experience (generic error messages). It also makes it difficult to distinguish between different types of failures (e.g., git missing vs. network error vs. parsing error).
+
+desired_outcome: |
+  The error handling should be improved to use specific `AppError` variants or a more robust error type that preserves the underlying cause. Errors should be propagated with context rather than flattened into strings.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/app/commands/run/narrator.rs"
+
+acceptance_criteria:
+  - "Underlying errors in Narrator command are not converted to generic stringified `AppError::config_error`."
+  - "Specific error variants are used where appropriate."
+  - "Error context is preserved."
+
+verification_commands:
+  - "cargo test"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
