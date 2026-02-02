@@ -358,18 +358,26 @@ fn validate_role(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
     }
 
     // Check profile section
-    let profile = data.get("profile");
-    if profile.is_none() {
-        diagnostics.push_error(path.display().to_string(), "Missing profile section");
-    } else if let Some(serde_yaml::Value::Mapping(profile_map)) = profile {
-        if get_string(profile_map, "focus").is_none() {
-            diagnostics.push_error(path.display().to_string(), "Missing profile.focus");
+    match data.get("profile") {
+        Some(serde_yaml::Value::Mapping(profile_map)) => {
+            if get_string(profile_map, "focus").is_none() {
+                diagnostics.push_error(path.display().to_string(), "Missing profile.focus");
+            }
+            if get_sequence(profile_map, "analysis_points")
+                .map(|seq| seq.is_empty())
+                .unwrap_or(true)
+            {
+                diagnostics.push_error(
+                    path.display().to_string(),
+                    "profile.analysis_points must have entries",
+                );
+            }
         }
-        if get_sequence(profile_map, "analysis_points").map(|seq| seq.is_empty()).unwrap_or(true) {
-            diagnostics.push_error(
-                path.display().to_string(),
-                "profile.analysis_points must have entries",
-            );
+        Some(_) => {
+            diagnostics.push_error(path.display().to_string(), "'profile' must be a mapping");
+        }
+        None => {
+            diagnostics.push_error(path.display().to_string(), "Missing profile section");
         }
     }
 
@@ -423,8 +431,14 @@ fn validate_decider_role(path: &Path, diagnostics: &mut Diagnostics) {
     }
 
     // Check profile section
-    if data.get("profile").is_none() {
-        diagnostics.push_error(path.display().to_string(), "Missing profile section");
+    match data.get("profile") {
+        Some(profile) if !profile.is_mapping() => {
+            diagnostics.push_error(path.display().to_string(), "'profile' must be a mapping");
+        }
+        None => {
+            diagnostics.push_error(path.display().to_string(), "Missing profile section");
+        }
+        _ => {}
     }
 }
 

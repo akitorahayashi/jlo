@@ -166,16 +166,24 @@ pub fn semantic_checks(
         let layer_dir = roles_dir.join(layer.dir_name());
         if layer_dir.exists() {
             let mut role_set = HashSet::new();
-            if let Ok(entries) = std::fs::read_dir(&layer_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        let name = entry.file_name().to_string_lossy().to_string();
-                        // Skip reserved directories
-                        if name != "templates" {
-                            role_set.insert(name);
+            match std::fs::read_dir(&layer_dir) {
+                Ok(entries) => {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.is_dir() {
+                            let name = entry.file_name().to_string_lossy().to_string();
+                            // Skip reserved directories
+                            if name != "templates" {
+                                role_set.insert(name);
+                            }
                         }
                     }
+                }
+                Err(err) => {
+                    diagnostics.push_error(
+                        layer_dir.display().to_string(),
+                        format!("Failed to read directory: {}", err),
+                    );
                 }
             }
             existing_roles.insert(layer, role_set);

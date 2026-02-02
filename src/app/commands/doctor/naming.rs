@@ -39,8 +39,11 @@ pub fn naming_checks(
                     continue; // Skip files like .gitkeep
                 }
                 let rejects_dir = path.join("rejects");
-                for file in list_files(&rejects_dir, diagnostics) {
-                    validate_filename(&file, diagnostics, "reject");
+                // Only validate if rejects/ directory exists
+                if rejects_dir.exists() {
+                    for file in list_files(&rejects_dir, diagnostics) {
+                        validate_filename(&file, diagnostics, "reject");
+                    }
                 }
             }
         }
