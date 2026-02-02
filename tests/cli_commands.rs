@@ -344,6 +344,18 @@ fn run_narrator_dry_run() {
 
     ctx.cli().args(["init"]).assert().success();
 
+    // Configure git user for commits
+    std::process::Command::new("git")
+        .args(["config", "user.email", "test@example.com"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git config email failed");
+    std::process::Command::new("git")
+        .args(["config", "user.name", "Test User"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git config name failed");
+
     // Create first commit (includes both .jules/ and README.md)
     std::fs::write(ctx.work_dir().join("README.md"), "# Test Project\n").unwrap();
     std::process::Command::new("git")
@@ -385,6 +397,18 @@ fn run_narrator_skips_when_no_codebase_changes() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init"]).assert().success();
+
+    // Configure git user for commits
+    std::process::Command::new("git")
+        .args(["config", "user.email", "test@example.com"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git config email failed");
+    std::process::Command::new("git")
+        .args(["config", "user.name", "Test User"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git config name failed");
 
     // Create an initial commit with ONLY .jules/ changes (no codebase changes)
     std::process::Command::new("git")
