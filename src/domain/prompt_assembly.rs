@@ -108,6 +108,12 @@ pub enum PromptAssemblyError {
 
     /// Failed to read prompt.yml.
     PromptReadError { path: String, reason: String },
+
+    /// Template syntax is not allowed in this context.
+    TemplateSyntaxNotAllowed { template: String, token: String },
+
+    /// Failed to render a template with the provided context.
+    TemplateRenderError { template: String, reason: String },
 }
 
 impl std::fmt::Display for PromptAssemblyError {
@@ -137,6 +143,12 @@ impl std::fmt::Display for PromptAssemblyError {
             }
             Self::PromptReadError { path, reason } => {
                 write!(f, "Failed to read prompt {}: {}", path, reason)
+            }
+            Self::TemplateSyntaxNotAllowed { template, token } => {
+                write!(f, "Template syntax '{}' is not allowed in {}", token, template)
+            }
+            Self::TemplateRenderError { template, reason } => {
+                write!(f, "Failed to render template {}: {}", template, reason)
             }
         }
     }
