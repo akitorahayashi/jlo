@@ -40,7 +40,7 @@ concurrency:
 env:
   ENTRY_POINT: ${{ inputs.entry_point || 'observers' }}
   WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
-  ROUTING_LABELS: ${{ inputs.routing_labels || 'docs,tests' }}
+  ROUTING_LABELS: ${{ inputs.routing_labels || 'bugs,docs,tests' }}
 
 jobs:
   # ============================================================
