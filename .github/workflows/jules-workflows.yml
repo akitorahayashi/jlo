@@ -26,7 +26,7 @@ on:
       routing_labels:
         description: 'Issue labels eligible for planner/implementer routing (comma-separated)'
         type: string
-        default: docs,tests
+        default: bugs,docs,tests
 
 permissions:
   contents: write
@@ -40,7 +40,7 @@ concurrency:
 env:
   ENTRY_POINT: ${{ inputs.entry_point || 'observers' }}
   WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
-  ROUTING_LABELS: ${{ inputs.routing_labels || 'docs,tests' }}
+  ROUTING_LABELS: ${{ inputs.routing_labels || 'bugs,docs,tests' }}
 
 jobs:
   # ============================================================
