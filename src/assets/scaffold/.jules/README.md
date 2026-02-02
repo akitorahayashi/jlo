@@ -68,12 +68,13 @@ Implementers modify source code and require human review.
 |
 +-- workstreams/        # Workstream containers
 |   +-- <workstream>/   # e.g. generic/
-|       +-- events/     # Raw observations
-|       |   +-- <state>/
-|       |       +-- *.yml
-|       +-- issues/     # Consolidated problems
-|           +-- index.md
-|           +-- <label>/
+|       +-- exchange/   # Exchange container
+|       |   +-- events/     # Raw observations
+|       |   |   +-- <state>/
+|       |   |       +-- *.yml
+|       |   +-- issues/     # Consolidated problems
+|       |       +-- index.md
+|       |       +-- <label>/
 |
 +-- roles/              # Role definitions (global)
     +-- narrator/       # Single-role layer
@@ -167,9 +168,9 @@ Each observer:
 2. Reads `.jules/changes/latest.yml` for recent changes context (if present)
 3. Reads role.yml (specialized focus)
 4. Reads feedbacks/, abstracts patterns, updates role.yml
-5. **Reads .jules/workstreams/<workstream>/issues/index.md to check for open issues**
+5. **Reads .jules/workstreams/<workstream>/exchange/issues/index.md to check for open issues**
 6. **Skips observations already covered by open issues (deduplication)**
-7. Writes event files under workstreams/<workstream>/events/ in the incoming state directory
+7. Writes event files under workstreams/<workstream>/exchange/events/ in the incoming state directory
 8. Publishes changes as a PR (branch naming follows the convention below)
 
 **Stateful**: Receives feedback via `feedbacks/`.
@@ -179,12 +180,12 @@ Each observer:
 Triage agent:
 1. Reads contracts.yml (layer behavior)
 2. Reads all event files in the workstream incoming state directory
-3. **Reads .jules/workstreams/<workstream>/issues/index.md and existing issues to identify merge candidates**
+3. **Reads .jules/workstreams/<workstream>/exchange/issues/index.md and existing issues to identify merge candidates**
 4. Validates observations (do they exist in codebase?)
 5. Merges related events sharing root cause
 6. **Merges events into existing issues when related (updates content)**
 7. Creates new issues for genuinely new problems (using id as filename, placing in label folder)
-8. **Updates .jules/workstreams/<workstream>/issues/index.md**
+8. **Updates .jules/workstreams/<workstream>/exchange/issues/index.md**
 9. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
 10. Writes feedback for recurring rejections
 11. Moves processed events to the processed state directory defined by the scaffold
@@ -195,7 +196,7 @@ Triage agent:
 
 Specifier agent (runs only for `requires_deep_analysis: true`):
 1. Reads contracts.yml (layer behavior)
-2. Reads target issue from workstreams/<workstream>/issues/<label>/
+2. Reads target issue from workstreams/<workstream>/exchange/issues/<label>/
 3. **Reviews deep_analysis_reason to understand scope**
 4. Analyzes full system impact and dependency tree
 5. Expands issue with detailed analysis (affected_areas, constraints, risks)
@@ -211,14 +212,14 @@ Implementation is invoked via workflow dispatch with a local issue file path. Sc
 
 ```bash
 # Example: Run implementer with a specific issue
-jlo run implementers .jules/workstreams/generic/issues/<label>/auth-inconsistency.yml
+jlo run implementers .jules/workstreams/generic/exchange/issues/<label>/auth-inconsistency.yml
 ```
 
 The implementer reads the issue content (embedded in prompt) and produces code changes.
 The issue file must exist; missing files fail fast before agent execution.
 
 **Issue Lifecycle**:
-1. An issue file is selected from `.jules/workstreams/<workstream>/issues/<label>/` on the `jules` branch.
+1. An issue file is selected from `.jules/workstreams/<workstream>/exchange/issues/<label>/` on the `jules` branch.
 2. The workflow validates the file exists and passes content to the implementer.
 3. Issue file retention or deletion is handled by the dispatching workflow policy.
 4. The implementer works on the default code branch and creates a PR for human review.
@@ -227,7 +228,7 @@ The issue file must exist; missing files fail fast before agent execution.
 ## Feedback Loop
 
 ```
-Observer creates events in workstreams/<workstream>/events/<state>/
+Observer creates events in workstreams/<workstream>/exchange/events/<state>/
        |
        v
 Decider validates, may reject or merge

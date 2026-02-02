@@ -2,9 +2,9 @@ layer: deciders
 branch_prefix: jules-decider-
 
 inputs:
-  - .jules/workstreams/<workstream>/events/pending/*.yml
-  - .jules/workstreams/<workstream>/issues/**/*.yml (existing issues)
-  - .jules/workstreams/<workstream>/issues/index.md
+  - .jules/workstreams/<workstream>/exchange/events/pending/*.yml
+  - .jules/workstreams/<workstream>/exchange/issues/**/*.yml (existing issues)
+  - .jules/workstreams/<workstream>/exchange/issues/index.md
 
 constraints:
   - Verify observations events in codebase before accepting
@@ -23,14 +23,14 @@ workflow:
   - 3. Verify observed events exist, check significance, identify related events
   - 4. Rationalize disputes
   - "5. For events related to an existing issue: merge into that issue (update content)"
-  - "6. For new problems: categorize into (feats, refacts, bugs, tests, docs) and cp issue.yml .jules/workstreams/<workstream>/issues/<label>/<kebab-case-title>.yml"
+  - "6. For new problems: categorize into (feats, refacts, bugs, tests, docs) and cp issue.yml .jules/workstreams/<workstream>/exchange/issues/<label>/<kebab-case-title>.yml"
   - 7. Populate `source_events` in the new issue with IDs of events that triggered it
-  - 8. Update .jules/workstreams/<workstream>/issues/index.md to reflect the current state of issues
+  - 8. Update .jules/workstreams/<workstream>/exchange/issues/index.md to reflect the current state of issues
   - "9. Reject invalid events: Create feedback based on feedback.yml at .jules/roles/observers/<author_role>/feedbacks/<kebab-case-topic>.yml (fill in critique and rejected_content)"
-  - 10. Update metadata of processed events (issue_id) AND move them to .jules/workstreams/<workstream>/events/decided/
+  - 10. Update metadata of processed events (issue_id) AND move them to .jules/workstreams/<workstream>/exchange/events/decided/
 
 outputs:
-  - .jules/workstreams/<workstream>/issues/<label>/*.yml (created or updated)
-  - .jules/workstreams/<workstream>/events/decided/*.yml (moved and updated)
-  - .jules/workstreams/<workstream>/issues/index.md
+  - .jules/workstreams/<workstream>/exchange/issues/<label>/*.yml (created or updated)
+  - .jules/workstreams/<workstream>/exchange/events/decided/*.yml (moved and updated)
+  - .jules/workstreams/<workstream>/exchange/issues/index.md
   - .jules/roles/observers/<author_role>/feedbacks/<kebab-case-topic>.yml (rejection feedback)
