@@ -345,43 +345,60 @@ fn run_narrator_dry_run() {
     ctx.cli().args(["init"]).assert().success();
 
     // Configure git user for commits
-    std::process::Command::new("git")
+    let output = std::process::Command::new("git")
         .args(["config", "user.email", "test@example.com"])
         .current_dir(ctx.work_dir())
         .output()
         .expect("git config email failed");
-    std::process::Command::new("git")
+    assert!(output.status.success(), "git config user.email failed");
+
+    let output = std::process::Command::new("git")
         .args(["config", "user.name", "Test User"])
         .current_dir(ctx.work_dir())
         .output()
         .expect("git config name failed");
+    assert!(output.status.success(), "git config user.name failed");
 
     // Create first commit (includes both .jules/ and README.md)
     std::fs::write(ctx.work_dir().join("README.md"), "# Test Project\n").unwrap();
-    std::process::Command::new("git")
+    let output = std::process::Command::new("git")
         .args(["add", "."])
         .current_dir(ctx.work_dir())
         .output()
         .expect("git add failed");
-    std::process::Command::new("git")
+    assert!(output.status.success(), "git add failed");
+
+    let output = std::process::Command::new("git")
         .args(["commit", "-m", "initial"])
         .current_dir(ctx.work_dir())
         .output()
         .expect("git commit failed");
+    assert!(
+        output.status.success(),
+        "git commit failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     // Create second commit with codebase changes to have a non-empty range
     std::fs::write(ctx.work_dir().join("README.md"), "# Test Project\n\nUpdated content.\n")
         .unwrap();
-    std::process::Command::new("git")
+    let output = std::process::Command::new("git")
         .args(["add", "README.md"])
         .current_dir(ctx.work_dir())
         .output()
         .expect("git add failed");
-    std::process::Command::new("git")
+    assert!(output.status.success(), "git add failed");
+
+    let output = std::process::Command::new("git")
         .args(["commit", "-m", "update readme"])
         .current_dir(ctx.work_dir())
         .output()
         .expect("git commit failed");
+    assert!(
+        output.status.success(),
+        "git commit failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
@@ -399,28 +416,38 @@ fn run_narrator_skips_when_no_codebase_changes() {
     ctx.cli().args(["init"]).assert().success();
 
     // Configure git user for commits
-    std::process::Command::new("git")
+    let output = std::process::Command::new("git")
         .args(["config", "user.email", "test@example.com"])
         .current_dir(ctx.work_dir())
         .output()
         .expect("git config email failed");
-    std::process::Command::new("git")
+    assert!(output.status.success(), "git config user.email failed");
+
+    let output = std::process::Command::new("git")
         .args(["config", "user.name", "Test User"])
         .current_dir(ctx.work_dir())
         .output()
         .expect("git config name failed");
+    assert!(output.status.success(), "git config user.name failed");
 
     // Create an initial commit with ONLY .jules/ changes (no codebase changes)
-    std::process::Command::new("git")
+    let output = std::process::Command::new("git")
         .args(["add", "."])
         .current_dir(ctx.work_dir())
         .output()
         .expect("git add failed");
-    std::process::Command::new("git")
+    assert!(output.status.success(), "git add failed");
+
+    let output = std::process::Command::new("git")
         .args(["commit", "-m", "initial"])
         .current_dir(ctx.work_dir())
         .output()
         .expect("git commit failed");
+    assert!(
+        output.status.success(),
+        "git commit failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
