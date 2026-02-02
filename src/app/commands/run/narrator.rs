@@ -220,9 +220,9 @@ fn get_nth_ancestor(commit: &str, n: usize) -> Result<String, AppError> {
         .map_err(|e| AppError::config_error(format!("Failed to run git: {}", e)))?;
 
     if !output.status.success() {
-        // If we can't go back N commits, use the first commit
+        // If we can't go back N commits, use the first commit in the ancestry of the given commit
         let first = Command::new("git")
-            .args(["rev-list", "--max-parents=0", "HEAD"])
+            .args(["rev-list", "--max-parents=0", commit])
             .output()
             .map_err(|e| AppError::config_error(format!("Failed to get first commit: {}", e)))?;
 
@@ -249,19 +249,16 @@ fn commit_exists(sha: &str) -> bool {
         .unwrap_or(false)
 }
 
-/// Extract to_commit from latest.yml content.
+/// Extract to_commit from latest.yml content using proper YAML parsing.
 fn extract_to_commit(content: &str) -> Option<String> {
-    // Simple YAML parsing for to_commit field
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if let Some(rest) = trimmed.strip_prefix("to_commit:") {
-            let value = rest.trim().trim_matches('"').trim_matches('\'');
-            if !value.is_empty() && value.len() >= 7 {
-                return Some(value.to_string());
-            }
-        }
-    }
-    None
+    serde_yaml::from_str::<serde_yaml::Value>(content)
+        .ok()
+        .as_ref()
+        .and_then(|data| data.get("range"))
+        .and_then(|range| range.get("to_commit"))
+        .and_then(|val| val.as_str())
+        .filter(|s| !s.is_empty() && s.len() >= 7)
+        .map(|s| s.to_string())
 }
 
 /// Check if there are any non-.jules/ changes in the range.
@@ -357,12 +354,12 @@ fn collect_changed_paths(range: &RangeContext) -> Result<(Vec<String>, bool), Ap
     Ok((paths, truncated))
 }
 
-/// Collect diffstat for the range, excluding .jules/.
+/// Collect diffstat for the range using --numstat (machine-readable format).
 fn collect_diffstat(range: &RangeContext) -> Result<DiffStat, AppError> {
     let output = Command::new("git")
         .args([
             "diff",
-            "--shortstat",
+            "--numstat",
             &format!("{}..{}", range.from_commit, range.to_commit),
             "--",
             ".",
@@ -375,29 +372,27 @@ fn collect_diffstat(range: &RangeContext) -> Result<DiffStat, AppError> {
         return Ok(DiffStat::default());
     }
 
-    let stat_line = String::from_utf8_lossy(&output.stdout);
-    Ok(parse_diffstat(&stat_line))
+    let numstat_output = String::from_utf8_lossy(&output.stdout);
+    Ok(parse_numstat(&numstat_output))
 }
 
-/// Parse git --shortstat output.
-fn parse_diffstat(line: &str) -> DiffStat {
+/// Parse git --numstat output.
+/// Format: <insertions>\t<deletions>\t<path>
+/// Binary files show "-" for insertions/deletions.
+fn parse_numstat(output: &str) -> DiffStat {
     let mut stat = DiffStat::default();
 
-    // Example: " 5 files changed, 100 insertions(+), 20 deletions(-)"
-    for part in line.split(',') {
-        let trimmed = part.trim();
-        if let Some(rest) =
-            trimmed.strip_suffix(" files changed").or_else(|| trimmed.strip_suffix(" file changed"))
-        {
-            stat.files_changed = rest.trim().parse().unwrap_or(0);
-        } else if let Some(rest) =
-            trimmed.strip_suffix(" insertions(+)").or_else(|| trimmed.strip_suffix(" insertion(+)"))
-        {
-            stat.insertions = rest.trim().parse().unwrap_or(0);
-        } else if let Some(rest) =
-            trimmed.strip_suffix(" deletions(-)").or_else(|| trimmed.strip_suffix(" deletion(-)"))
-        {
-            stat.deletions = rest.trim().parse().unwrap_or(0);
+    for line in output.lines() {
+        let parts: Vec<&str> = line.split('\t').collect();
+        if parts.len() >= 2 {
+            // Skip binary files (marked with "-")
+            if parts[0] != "-" {
+                stat.insertions += parts[0].parse::<u32>().unwrap_or(0);
+            }
+            if parts[1] != "-" {
+                stat.deletions += parts[1].parse::<u32>().unwrap_or(0);
+            }
+            stat.files_changed += 1;
         }
     }
 

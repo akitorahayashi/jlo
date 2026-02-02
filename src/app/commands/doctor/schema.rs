@@ -521,15 +521,27 @@ fn validate_changes_latest(path: &Path, template_path: &Path, diagnostics: &mut 
     }
 }
 
-/// Extract allowed enum values from the change.yml template.
-fn extract_enum_from_template(_template_path: &Path, field: &str) -> Vec<String> {
-    // Read the template and look for the field's comment or value
-    // For simplicity, we hardcode the known values from the template
-    // A more robust implementation would parse the template
-    match field {
-        "selection_mode" => vec!["incremental".to_string(), "bootstrap".to_string()],
-        _ => vec![],
+/// Extract allowed enum values from the change.yml template by parsing comments.
+/// Looks for lines like: `selection_mode: value  # Allowed: value1, value2`
+fn extract_enum_from_template(template_path: &Path, field: &str) -> Vec<String> {
+    let content = match fs::read_to_string(template_path) {
+        Ok(c) => c,
+        Err(_) => return vec![],
+    };
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        // Look for the field name at the start of the line
+        if trimmed.starts_with(&format!("{}:", field)) {
+            // Look for "# Allowed:" comment in the same line
+            if let Some(comment_start) = line.find("# Allowed:") {
+                let allowed_part = &line[comment_start + "# Allowed:".len()..];
+                return allowed_part.split(',').map(|s| s.trim().to_string()).collect();
+            }
+        }
     }
+
+    vec![]
 }
 
 fn check_placeholders(path: &Path, diagnostics: &mut Diagnostics) {
