@@ -81,22 +81,13 @@ pub fn manifest_from_scaffold(scaffold_files: &[ScaffoldFile]) -> ScaffoldManife
 pub fn is_default_role_file(path: &str) -> bool {
     let parts: Vec<&str> = path.split('/').collect();
 
-    // .jules/roles/<layer>/prompt.yml (single-role layers)
-    if parts.len() == 4 && parts[0] == ".jules" && parts[1] == "roles" && parts[3] == "prompt.yml" {
-        return true;
-    }
-
-    // .jules/roles/<layer>/<role>/prompt.yml (multi-role layers)
-    if parts.len() == 5 && parts[0] == ".jules" && parts[1] == "roles" && parts[4] == "prompt.yml" {
-        return true;
-    }
-
-    // .jules/roles/observers/<role>/role.yml
-    if parts.len() == 5
+    // .jules/roles/<layer>/roles/<role>/role.yml (multi-role layers: observers, deciders)
+    // Example: .jules/roles/observers/roles/taxonomy/role.yml
+    if parts.len() == 6
         && parts[0] == ".jules"
         && parts[1] == "roles"
-        && parts[2] == "observers"
-        && parts[4] == "role.yml"
+        && parts[3] == "roles"
+        && parts[5] == "role.yml"
     {
         return true;
     }
@@ -146,11 +137,13 @@ mod tests {
 
     #[test]
     fn test_is_default_role_file() {
-        assert!(is_default_role_file(".jules/roles/planners/prompt.yml"));
-        assert!(is_default_role_file(".jules/roles/observers/taxonomy/role.yml"));
-        assert!(is_default_role_file(".jules/roles/observers/qa/prompt.yml"));
+        // New structure: roles are under roles/ container
+        assert!(is_default_role_file(".jules/roles/observers/roles/taxonomy/role.yml"));
+        assert!(is_default_role_file(".jules/roles/deciders/roles/triage_generic/role.yml"));
 
+        // Not default role files
+        assert!(!is_default_role_file(".jules/roles/planners/prompt.yml")); // prompt.yml is managed
         assert!(!is_default_role_file("src/main.rs"));
-        assert!(!is_default_role_file(".jules/roles/observers/qa/other.yml"));
+        assert!(!is_default_role_file(".jules/roles/observers/roles/qa/other.yml"));
     }
 }

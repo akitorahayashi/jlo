@@ -8,4 +8,4 @@ contracts:
 instructions:
   - Read every file in contracts in order before doing any work.
   - Follow contracts.yml exactly (constraints, workflow, inputs/outputs).
-  - Produce .jules/changes/latest.yml using the schema in change.yml.
+  - Produce .jules/changes/latest.yml using the schema in schemas/change.yml.

@@ -1,0 +1,8 @@
+schema_version: 1
+layer: planners
+
+runtime_context: {}
+
+includes:
+  - title: "Layer Contracts"
+    path: ".jules/roles/planners/contracts.yml"

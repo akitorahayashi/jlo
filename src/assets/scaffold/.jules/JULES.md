@@ -75,11 +75,11 @@ When an issue requires deep analysis:
 ## File Rules
 
 - YAML only (`.yml`) and English only.
-- Artifacts are created by copying the corresponding template and filling its fields:
-  - Changes: `.jules/roles/narrator/change.yml`
-  - Events: `.jules/roles/observers/event.yml`
-  - Issues: `.jules/roles/deciders/issue.yml`
-  - Feedback: `.jules/roles/deciders/feedback.yml`
+- Artifacts are created by copying the corresponding schema and filling its fields:
+  - Changes: `.jules/roles/narrator/schemas/change.yml`
+  - Events: `.jules/roles/observers/schemas/event.yml`
+  - Issues: `.jules/roles/deciders/schemas/issue.yml`
+  - Feedback: `.jules/roles/deciders/schemas/feedback.yml`
 
 ## Git And Branch Rules
 

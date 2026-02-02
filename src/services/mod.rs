@@ -3,6 +3,7 @@ pub mod component_catalog_embedded;
 pub mod dependency_resolver;
 pub mod embedded_role_template_store;
 pub mod jules_client_http;
+pub mod prompt_assembly;
 pub mod role_factory;
 pub mod scaffold_assets;
 pub mod scaffold_manifest;

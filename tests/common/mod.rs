@@ -104,14 +104,15 @@ impl TestContext {
         self.assert_single_role_layer_exists("narrator");
         let narrator_path = self.jules_path().join("roles").join("narrator");
         assert!(
-            narrator_path.join("change.yml").exists(),
-            "narrator change.yml template should exist"
+            narrator_path.join("schemas").join("change.yml").exists(),
+            "narrator schemas/change.yml should exist"
         );
     }
 
     /// Assert that a role exists within a specific layer.
     pub fn assert_role_in_layer_exists(&self, layer: &str, role_id: &str) {
-        let role_path = self.jules_path().join("roles").join(layer).join(role_id);
+        // Multi-role layers have roles under roles/ container
+        let role_path = self.jules_path().join("roles").join(layer).join("roles").join(role_id);
         assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
 
         // Multi-role layers have role.yml
@@ -122,7 +123,14 @@ impl TestContext {
     pub fn assert_role_exists(&self, role_id: &str) {
         let layers = ["observers", "deciders", "planners", "implementers"];
         let found = layers.iter().any(|layer| {
-            self.jules_path().join("roles").join(layer).join(role_id).join("role.yml").exists()
+            // Roles are under roles/ container in multi-role layers
+            self.jules_path()
+                .join("roles")
+                .join(layer)
+                .join("roles")
+                .join(role_id)
+                .join("role.yml")
+                .exists()
         });
         assert!(found, "Role {} should exist in some layer", role_id);
     }
