@@ -52,7 +52,7 @@ jobs:
     if: >-
       vars.JULES_PAUSED != 'true' &&
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
-      env.ENTRY_POINT == 'narrator'
+      (github.event.inputs.entry_point || 'narrator') == 'narrator'
     runs-on: self-hosted
     timeout-minutes: 30
     env:
@@ -87,7 +87,7 @@ jobs:
   # ============================================================
   wait-after-narrator:
     needs: run-narrator
-    if: env.ENTRY_POINT == 'narrator'
+    if: (github.event.inputs.entry_point || 'narrator') == 'narrator'
     runs-on: self-hosted
     timeout-minutes: 60
     steps:
@@ -145,7 +145,7 @@ jobs:
     needs: generate-workstream-matrix
     if: >-
       needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
-      env.ENTRY_POINT != 'deciders'
+      (github.event.inputs.entry_point || 'narrator') != 'deciders'
     runs-on: self-hosted
     timeout-minutes: 10
     outputs:
