@@ -29,7 +29,7 @@ on:
       routing_labels:
         description: 'Issue labels eligible for planner/implementer routing (comma-separated)'
         type: string
-        default: bugs,docs,tests
+        default: bugs,feats,refacts,tests,docs
 
 permissions:
   contents: write
@@ -43,7 +43,7 @@ concurrency:
 env:
   ENTRY_POINT: ${{ github.event.inputs.entry_point || 'narrator' }}
   WAIT_MINUTES: ${{ github.event.inputs.wait_minutes || 30 }}
-  ROUTING_LABELS: ${{ github.event.inputs.routing_labels || 'bugs,docs,tests' }}
+  ROUTING_LABELS: ${{ github.event.inputs.routing_labels || 'bugs,feats,refacts,tests,docs' }}
 
 jobs:
   # ============================================================
