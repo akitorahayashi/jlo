@@ -15,10 +15,7 @@ It serves as the central source of truth for the **Decider** to deduplicate obse
 
 | Issue | Summary |
 | :--- | :--- |
-| [Excessive allocation in template rendering](./refacts/excessive-allocation-in-template-rendering.yml) | The render_template function re-initializes Minijinja Environment for every call. |
-| [Inefficient git output parsing](./refacts/inefficient-git-output-parsing.yml) | Git output parsing logic allocates intermediate vectors and strings for every line. |
-| [Public leak of internal app module](./refacts/public-leak-of-internal-app-module.yml) | The internal `app` module is publicly exposed via `pub mod app;` in `src/lib.rs`. |
-| [Weak error model in Narrator command](./refacts/weak-error-model-in-narrator-command.yml) | The Narrator command implementation uses a generic stringified error model. |
+| _No open issues_ | - |
 
 ## Bugs
 > Defect reports and fixes in [`bugs/`](./bugs/).
