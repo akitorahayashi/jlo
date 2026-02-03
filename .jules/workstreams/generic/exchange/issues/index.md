@@ -15,7 +15,7 @@ It serves as the central source of truth for the **Decider** to deduplicate obse
 
 | Issue | Summary |
 | :--- | :--- |
-| _No open issues_ | - |
+| [Unnecessary cloning in update command](./refacts/unnecessary-cloning-update.yml) | The `update` command performs unnecessary cloning of file paths and contents. |
 
 ## Bugs
 > Defect reports and fixes in [`bugs/`](./bugs/).

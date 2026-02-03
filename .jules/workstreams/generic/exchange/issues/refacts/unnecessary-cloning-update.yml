@@ -1,0 +1,40 @@
+schema_version: 2
+
+# Metadata
+id: "a7t6s3"
+source_events:
+  - "3f584e"
+title: "Unnecessary cloning in update command"
+label: "refacts"
+priority: "low"
+summary: "The `update` command performs unnecessary cloning of file paths and contents."
+
+# Content
+problem: |
+  The `execute` function in `src/app/commands/update.rs` iterates over `&scaffold_files`, forcing cloning of strings (`rel_path`, `content`) when populating `to_create`, `to_update`, and `default_role_files`. This violates the principle of minimizing allocations and "clone must pay rent". Since `scaffold_files` is owned by `execute`, we should consume it to move values instead of cloning them.
+
+impact: |
+  Unnecessary allocations reduce performance and increase memory usage, although likely negligible for small scaffold sizes. However, it sets a bad precedent for ownership practices in the codebase.
+
+desired_outcome: |
+  The `execute` function should iterate over `scaffold_files` by value (consuming it) to allow moving strings into the destination vectors/maps, avoiding clones.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/app/commands/update.rs"
+
+acceptance_criteria:
+  - "The `execute` function uses `into_iter()` or equivalent to consume `scaffold_files`."
+  - "Calls to `.clone()` on `rel_path` and `content` inside the loop are removed."
+  - "The logic for updating/creating files remains functionally identical."
+
+verification_commands:
+  - "cargo test"
+  - "cargo clippy -- -D warnings"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
