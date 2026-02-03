@@ -12,7 +12,9 @@ use std::path::Path;
 
 use app::{
     AppContext,
-    commands::{doctor, init, init_workflows, run, schedule, setup, template, update, workstreams},
+    commands::{
+        doctor, init_scaffold, init_workflows, run, schedule, setup, template, update, workstreams,
+    },
 };
 use ports::WorkspaceStore;
 use services::embedded_role_template_store::EmbeddedRoleTemplateStore;
@@ -47,7 +49,7 @@ pub fn init_at(path: std::path::PathBuf) -> Result<(), AppError> {
     let templates = EmbeddedRoleTemplateStore::new();
     let ctx = AppContext::new(workspace, templates);
 
-    init::execute(&ctx)?;
+    init_scaffold::execute(&ctx)?;
     println!("✅ Initialized .jules/ workspace");
     Ok(())
 }

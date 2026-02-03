@@ -1,5 +1,5 @@
 pub mod doctor;
-pub mod init;
+pub mod init_scaffold;
 pub mod init_workflows;
 pub mod run;
 pub mod schedule;

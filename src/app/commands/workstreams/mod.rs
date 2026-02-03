@@ -38,7 +38,13 @@ pub struct ScheduleSummary {
 
 #[derive(Debug, Serialize)]
 pub struct ScheduleLayerSummary {
-    pub roles: Vec<String>,
+    pub roles: Vec<RoleSummary>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RoleSummary {
+    pub name: String,
+    pub enabled: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -99,8 +105,22 @@ pub fn inspect(
     let schedule_summary = ScheduleSummary {
         version: schedule.version,
         enabled: schedule.enabled,
-        observers: ScheduleLayerSummary { roles: schedule.observers.roles },
-        deciders: ScheduleLayerSummary { roles: schedule.deciders.roles },
+        observers: ScheduleLayerSummary {
+            roles: schedule
+                .observers
+                .roles
+                .iter()
+                .map(|r| RoleSummary { name: r.name.clone(), enabled: r.enabled })
+                .collect(),
+        },
+        deciders: ScheduleLayerSummary {
+            roles: schedule
+                .deciders
+                .roles
+                .iter()
+                .map(|r| RoleSummary { name: r.name.clone(), enabled: r.enabled })
+                .collect(),
+        },
     };
 
     let root = jules_path.parent().unwrap_or(Path::new("."));
@@ -382,7 +402,9 @@ requires_deep_analysis: false
 version = 1
 enabled = true
 [observers]
-roles = ["taxonomy"]
+roles = [
+  { name = "taxonomy", enabled = true },
+]
 [deciders]
 roles = []
 "#,
