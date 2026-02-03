@@ -12,7 +12,19 @@ pub struct WorkstreamSchedule {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScheduleLayer {
-    pub roles: Vec<String>,
+    pub roles: Vec<ScheduledRole>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScheduledRole {
+    pub name: String,
+    pub enabled: bool,
+}
+
+impl ScheduleLayer {
+    pub fn enabled_roles(&self) -> Vec<String> {
+        self.roles.iter().filter(|r| r.enabled).map(|r| r.name.clone()).collect()
+    }
 }
 
 impl WorkstreamSchedule {
@@ -35,19 +47,19 @@ impl WorkstreamSchedule {
             return Err("scheduled.toml enabled=true requires at least one observer role".into());
         }
 
-        Self::validate_roles("observers", &self.observers.roles)?;
-        Self::validate_roles("deciders", &self.deciders.roles)?;
+        Self::validate_roles("observers", &self.observers)?;
+        Self::validate_roles("deciders", &self.deciders)?;
 
         Ok(())
     }
 
-    fn validate_roles(layer: &str, roles: &[String]) -> Result<(), String> {
+    fn validate_roles(layer: &str, schedule_layer: &ScheduleLayer) -> Result<(), String> {
         let mut seen = std::collections::HashSet::new();
-        for role in roles {
-            RoleId::new(role)
-                .map_err(|_| format!("Invalid role id '{}' in {} schedule", role, layer))?;
-            if !seen.insert(role) {
-                return Err(format!("Duplicate role id '{}' in {} schedule", role, layer));
+        for role in &schedule_layer.roles {
+            RoleId::new(&role.name)
+                .map_err(|_| format!("Invalid role id '{}' in {} schedule", role.name, layer))?;
+            if !seen.insert(&role.name) {
+                return Err(format!("Duplicate role id '{}' in {} schedule", role.name, layer));
             }
         }
         Ok(())
@@ -69,7 +81,14 @@ mod dto {
     #[derive(Debug, Clone, Deserialize)]
     #[serde(deny_unknown_fields)]
     pub struct ScheduleLayerDto {
-        pub roles: Option<Vec<String>>,
+        pub roles: Option<Vec<RoleEntryDto>>,
+    }
+
+    #[derive(Debug, Clone, Deserialize)]
+    #[serde(deny_unknown_fields)]
+    pub struct RoleEntryDto {
+        pub name: String,
+        pub enabled: bool,
     }
 
     impl TryFrom<ScheduleDto> for WorkstreamSchedule {
@@ -88,10 +107,16 @@ mod dto {
 
             let observers_roles = observers
                 .roles
-                .ok_or_else(|| "scheduled.toml missing observers.roles".to_string())?;
+                .ok_or_else(|| "scheduled.toml missing observers.roles".to_string())?
+                .into_iter()
+                .map(|r| ScheduledRole { name: r.name, enabled: r.enabled })
+                .collect();
             let deciders_roles = deciders
                 .roles
-                .ok_or_else(|| "scheduled.toml missing deciders.roles".to_string())?;
+                .ok_or_else(|| "scheduled.toml missing deciders.roles".to_string())?
+                .into_iter()
+                .map(|r| ScheduledRole { name: r.name, enabled: r.enabled })
+                .collect();
 
             Ok(WorkstreamSchedule {
                 version,
@@ -114,16 +139,26 @@ version = 1
 enabled = true
 
 [observers]
-roles = ["taxonomy", "qa"]
+roles = [
+  { name = "taxonomy", enabled = true },
+  { name = "qa", enabled = false },
+]
 
 [deciders]
-roles = ["triage_generic"]
+roles = [
+  { name = "triage_generic", enabled = true },
+]
 "#;
         let schedule = WorkstreamSchedule::parse_toml(content).unwrap();
         assert_eq!(schedule.version, 1);
         assert!(schedule.enabled);
-        assert_eq!(schedule.observers.roles, vec!["taxonomy", "qa"]);
-        assert_eq!(schedule.deciders.roles, vec!["triage_generic"]);
+        assert_eq!(schedule.observers.roles.len(), 2);
+        assert_eq!(schedule.observers.roles[0].name, "taxonomy");
+        assert!(schedule.observers.roles[0].enabled);
+        assert_eq!(schedule.observers.roles[1].name, "qa");
+        assert!(!schedule.observers.roles[1].enabled);
+        assert_eq!(schedule.observers.enabled_roles(), vec!["taxonomy"]);
+        assert_eq!(schedule.deciders.enabled_roles(), vec!["triage_generic"]);
     }
 
     #[test]
@@ -159,7 +194,9 @@ version = 1
 enabled = false
 
 [observers]
-roles = ["bad role"]
+roles = [
+  { name = "bad role", enabled = true },
+]
 
 [deciders]
 roles = []

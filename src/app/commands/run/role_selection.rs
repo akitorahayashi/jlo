@@ -24,8 +24,8 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<String>, AppErr
             )));
         }
         match input.layer {
-            Layer::Observers => schedule.observers.roles,
-            Layer::Deciders => schedule.deciders.roles,
+            Layer::Observers => schedule.observers.enabled_roles(),
+            Layer::Deciders => schedule.deciders.enabled_roles(),
             _ => {
                 return Err(AppError::config_error(
                     "Scheduled mode is only supported for observers and deciders",
@@ -123,7 +123,9 @@ mod tests {
 version = 1
 enabled = true
 [observers]
-roles = ["taxonomy"]
+roles = [
+  { name = "taxonomy", enabled = true },
+]
 [deciders]
 roles = []
 "#,
@@ -195,7 +197,9 @@ roles = []
 version = 1
 enabled = true
 [observers]
-roles = ["taxonomy"]
+roles = [
+  { name = "taxonomy", enabled = true },
+]
 [deciders]
 roles = []
 "#,

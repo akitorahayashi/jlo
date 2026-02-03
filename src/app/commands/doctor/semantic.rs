@@ -193,28 +193,28 @@ pub fn semantic_checks(
         match load_schedule(jules_path, workstream) {
             Ok(schedule) => {
                 for role in schedule.observers.roles {
-                    scheduled_roles.entry(Layer::Observers).or_default().insert(role.clone());
+                    scheduled_roles.entry(Layer::Observers).or_default().insert(role.name.clone());
                     // Validate role exists in filesystem
                     if !existing_roles
                         .get(&Layer::Observers)
-                        .is_some_and(|roles| roles.contains(&role))
+                        .is_some_and(|roles| roles.contains(&role.name))
                     {
                         diagnostics.push_error(
-                            role.clone(),
+                            role.name.clone(),
                             "Observer role listed in scheduled.toml but missing from filesystem",
                         );
                     }
                 }
 
                 for role in schedule.deciders.roles {
-                    scheduled_roles.entry(Layer::Deciders).or_default().insert(role.clone());
+                    scheduled_roles.entry(Layer::Deciders).or_default().insert(role.name.clone());
                     // Validate role exists in filesystem
                     if !existing_roles
                         .get(&Layer::Deciders)
-                        .is_some_and(|roles| roles.contains(&role))
+                        .is_some_and(|roles| roles.contains(&role.name))
                     {
                         diagnostics.push_error(
-                            role.clone(),
+                            role.name.clone(),
                             "Decider role listed in scheduled.toml but missing from filesystem",
                         );
                     }

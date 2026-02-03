@@ -2,7 +2,17 @@ version = 1
 enabled = true
 
 [observers]
-roles = ["taxonomy", "data_arch", "structural_arch", "qa", "cov", "devops", "consistency"]
+roles = [
+  { name = "taxonomy", enabled = true },
+  { name = "data_arch", enabled = true },
+  { name = "structural_arch", enabled = true },
+  { name = "qa", enabled = true },
+  { name = "cov", enabled = true },
+  { name = "devops", enabled = true },
+  { name = "consistency", enabled = true },
+]
 
 [deciders]
-roles = ["triage_generic"]
+roles = [
+  { name = "triage_generic", enabled = true },
+]

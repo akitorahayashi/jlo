@@ -2,7 +2,9 @@ version = 1
 enabled = false
 
 [observers]
-roles = []
+roles = [
+  { name = "example_observer", enabled = true },
+]
 
 [deciders]
 roles = []

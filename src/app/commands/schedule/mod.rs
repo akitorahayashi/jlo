@@ -90,8 +90,8 @@ fn export_roles(
     }
 
     let roles = match layer {
-        Layer::Observers => schedule.observers.roles,
-        Layer::Deciders => schedule.deciders.roles,
+        Layer::Observers => schedule.observers.enabled_roles(),
+        Layer::Deciders => schedule.deciders.enabled_roles(),
         _ => {
             return Err(AppError::config_error(
                 "Schedule export roles scope only supports observers or deciders",
@@ -132,7 +132,9 @@ mod tests {
 version = 1
 enabled = true
 [observers]
-roles = ["taxonomy"]
+roles = [
+  { name = "taxonomy", enabled = true },
+]
 [deciders]
 roles = []
 "#,
@@ -145,7 +147,9 @@ roles = []
 version = 1
 enabled = false
 [observers]
-roles = ["taxonomy"]
+roles = [
+  { name = "taxonomy", enabled = true },
+]
 [deciders]
 roles = []
 "#,
@@ -180,9 +184,14 @@ roles = []
 version = 1
 enabled = true
 [observers]
-roles = ["taxonomy", "qa"]
+roles = [
+  { name = "taxonomy", enabled = true },
+  { name = "qa", enabled = true },
+]
 [deciders]
-roles = ["triage_generic"]
+roles = [
+  { name = "triage_generic", enabled = true },
+]
 "#,
         );
 
