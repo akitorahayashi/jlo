@@ -73,8 +73,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Run narrator
         run: |
@@ -132,8 +130,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Generate workstream matrix
         id: matrix
@@ -160,8 +156,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Generate observer matrix
         id: matrix
@@ -187,8 +181,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Run observers sequentially
         env:
@@ -232,8 +224,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Generate decider matrix from pending events
         id: matrix
@@ -259,8 +249,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Run deciders sequentially
         env:
@@ -306,8 +294,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Generate planner and implementer matrices
         id: matrix
@@ -334,8 +320,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Run planners sequentially
         env:
@@ -378,8 +362,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Configure Git
         uses: ./.github/actions/configure-git
