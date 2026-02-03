@@ -1,10 +1,25 @@
 {
   "schema_version": 1,
   "issue_labels": {
-    "bugs": { "color": "d73a4a" },
-    "feats": { "color": "fbca04" },
-    "refacts": { "color": "0e8a16" },
-    "tests": { "color": "5319e7" },
-    "docs": { "color": "0075ca" }
+    "bugs": {
+      "color": "d73a4a",
+      "description": "Something isn't working"
+    },
+    "feats": {
+      "color": "fbca04",
+      "description": "A new feature"
+    },
+    "refacts": {
+      "color": "0e8a16",
+      "description": "A code change that neither fixes a bug nor adds a feature"
+    },
+    "tests": {
+      "color": "5319e7",
+      "description": "Adding missing tests or correcting existing tests"
+    },
+    "docs": {
+      "color": "0075ca",
+      "description": "Documentation only changes"
+    }
   }
 }

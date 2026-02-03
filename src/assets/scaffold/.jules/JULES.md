@@ -96,6 +96,8 @@ Branch names:
 
 `<id>` is 6 lowercase alphanumeric characters unless the layer contract specifies otherwise.
 
+`<label>` is an issue label defined in `.jules/github-labels.json` (e.g., `bugs`, `feats`).
+
 ## Safety Boundaries
 
 - Narrator modifies only `.jules/changes/latest.yml`.
