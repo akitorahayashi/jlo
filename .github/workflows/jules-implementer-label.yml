@@ -44,6 +44,11 @@ jobs:
 
           label_config=".jules/github-labels.json"
           if [ ! -f "$label_config" ]; then
+            # Fallback for self-hosting repositories (like jlo itself)
+            label_config="src/assets/scaffold/.jules/github-labels.json"
+          fi
+
+          if [ ! -f "$label_config" ]; then
             echo "::error::Missing label definition file: $label_config"
             exit 1
           fi
