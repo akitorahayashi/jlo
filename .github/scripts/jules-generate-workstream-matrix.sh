@@ -15,7 +15,7 @@ require_command jq
 require_command jlo
 
 matrix_json=$(
-  bash -lc \
+  bash -c \
     "set -euo pipefail; jlo schedule export --scope workstreams --format github-matrix | jq -c 'del(.schema_version)'"
 )
 
