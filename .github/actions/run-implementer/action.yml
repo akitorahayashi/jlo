@@ -38,6 +38,10 @@ runs:
       with:
         version: ${{ inputs.jlo_version }}
 
+    - name: Configure Git
+      if: ${{ inputs.dry_run != 'true' }}
+      uses: ./.github/actions/configure-git
+
     - name: Run implementers
       shell: bash
       env:
@@ -48,10 +52,6 @@ runs:
         args=("$ISSUE_FILE")
         [ "$DRY_RUN" = "true" ] && args+=("--dry-run")
         jlo run implementers "${args[@]}" --branch "$TARGET_BRANCH"
-
-    - name: Configure Git
-      if: ${{ inputs.dry_run != 'true' }}
-      uses: ./.github/actions/configure-git
 
     - name: Delete processed issue and source events
       if: ${{ inputs.dry_run != 'true' }}

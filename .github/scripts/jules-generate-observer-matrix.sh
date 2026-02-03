@@ -19,7 +19,7 @@ require_command jlo
 
 merged=$(
   echo "$WORKSTREAMS_JSON" | jq -r '.include[].workstream' | \
-  xargs -I{} bash -lc 'set -euo pipefail; jlo schedule export --scope roles --layer observers --workstream "$1" --format github-matrix | jq -c "del(.schema_version)"' -- {} | \
+  xargs -I{} bash -c 'set -euo pipefail; jlo schedule export --scope roles --layer observers --workstream "$1" --format github-matrix | jq -c "del(.schema_version)"' -- {} | \
   jq -sc 'map(.include) | add | {include: .}'
 )
 if [[ -z "$merged" || "$merged" == "null" ]]; then

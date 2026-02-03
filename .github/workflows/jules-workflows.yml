@@ -1,7 +1,8 @@
 # Jules Agent Orchestration
 #
-# Orchestrates sequential execution using matrix strategy with max-parallel=1.
+# Orchestrates sequential execution.
 # Each phase reads state, generates a matrix, then executes sequentially.
+# Observers/planners/implementers run inside a single job to avoid multiple runners.
 #
 # Narrator runs first to produce changes context, followed by doctor validation.
 # Doctor validation is also handled by jules-automerge.yml as a pre-merge gate.
@@ -40,9 +41,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  ENTRY_POINT: ${{ inputs.entry_point || 'narrator' }}
-  WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
-  ROUTING_LABELS: ${{ inputs.routing_labels || 'bugs,docs,tests' }}
+  ENTRY_POINT: ${{ github.event.inputs.entry_point || 'narrator' }}
+  WAIT_MINUTES: ${{ github.event.inputs.wait_minutes || 30 }}
+  ROUTING_LABELS: ${{ github.event.inputs.routing_labels || 'bugs,docs,tests' }}
 
 jobs:
   # ============================================================
@@ -52,7 +53,7 @@ jobs:
     if: >-
       vars.JULES_PAUSED != 'true' &&
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
-      (inputs.entry_point || 'narrator') == 'narrator'
+      env.ENTRY_POINT == 'narrator'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -87,7 +88,7 @@ jobs:
   # ============================================================
   wait-after-narrator:
     needs: run-narrator
-    if: (inputs.entry_point || 'narrator') == 'narrator'
+    if: env.ENTRY_POINT == 'narrator'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -145,7 +146,7 @@ jobs:
     needs: generate-workstream-matrix
     if: >-
       needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
-      (inputs.entry_point || 'narrator') != 'deciders'
+      env.ENTRY_POINT != 'deciders'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -169,17 +170,13 @@ jobs:
         run: bash .github/scripts/jules-generate-observer-matrix.sh
 
   # ============================================================
-  # Phase 5: Run observers (sequential via max-parallel=1)
+  # Phase 5: Run observers (sequential in a single job)
   # ============================================================
   run-observers:
     needs: [generate-workstream-matrix, generate-observer-matrix]
     if: needs.generate-observer-matrix.outputs.has_observers == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix: ${{ fromJson(needs.generate-observer-matrix.outputs.matrix) }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
@@ -193,9 +190,10 @@ jobs:
         with:
           version: ${{ vars.JLO_VERSION || 'latest' }}
 
-      - name: Run observer ${{ matrix.workstream }} / ${{ matrix.role }}
-        run: |
-          timeout 20m jlo run observers --workstream "${{ matrix.workstream }}" --role "${{ matrix.role }}"
+      - name: Run observers sequentially
+        env:
+          OBSERVER_MATRIX: ${{ needs.generate-observer-matrix.outputs.matrix }}
+        run: bash .github/scripts/jules-run-observers-sequential.sh
 
   # ============================================================
   # Phase 6: Wait for observer processing
@@ -244,17 +242,13 @@ jobs:
         run: bash .github/scripts/jules-generate-decider-matrix.sh
 
   # ============================================================
-  # Phase 8: Run deciders (sequential via max-parallel=1)
+  # Phase 8: Run deciders (sequential in a single job)
   # ============================================================
   run-deciders:
     needs: [generate-decider-matrix]
     if: needs.generate-decider-matrix.outputs.has_pending == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix: ${{ fromJson(needs.generate-decider-matrix.outputs.matrix) }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
@@ -268,9 +262,10 @@ jobs:
         with:
           version: ${{ vars.JLO_VERSION || 'latest' }}
 
-      - name: Run decider for ${{ matrix.workstream }}
-        run: |
-          timeout 20m jlo run deciders --workstream "${{ matrix.workstream }}" --scheduled
+      - name: Run deciders sequentially
+        env:
+          DECIDER_MATRIX: ${{ needs.generate-decider-matrix.outputs.matrix }}
+        run: bash .github/scripts/jules-run-deciders-sequential.sh
 
   # ============================================================
   # Phase 9: Wait for decider processing
@@ -322,17 +317,13 @@ jobs:
         run: bash .github/scripts/jules-generate-routing-matrices.sh
 
   # ============================================================
-  # Phase 11: Run planners (sequential via max-parallel=1)
+  # Phase 11: Run planners (sequential in a single job)
   # ============================================================
   run-planners:
     needs: [generate-planner-matrix]
     if: needs.generate-planner-matrix.outputs.has_planners == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix: ${{ fromJson(needs.generate-planner-matrix.outputs.planner_matrix) }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
@@ -346,9 +337,10 @@ jobs:
         with:
           version: ${{ vars.JLO_VERSION || 'latest' }}
 
-      - name: Run planner for ${{ matrix.issue }}
-        run: |
-          timeout 20m jlo run planners "${{ matrix.issue }}"
+      - name: Run planners sequentially
+        env:
+          PLANNER_MATRIX: ${{ needs.generate-planner-matrix.outputs.planner_matrix }}
+        run: bash .github/scripts/jules-run-planners-sequential.sh
 
   # ============================================================
   # Phase 12: Wait for planner processing
@@ -366,7 +358,7 @@ jobs:
           echo "Wait complete."
 
   # ============================================================
-  # Phase 13: Run implementers (sequential via max-parallel=1)
+  # Phase 13: Run implementers (sequential in a single job)
   # ============================================================
   run-implementers:
     needs: [generate-planner-matrix, wait-after-planners]
@@ -376,10 +368,6 @@ jobs:
       (needs.wait-after-planners.result == 'success' || needs.wait-after-planners.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix: ${{ fromJson(needs.generate-planner-matrix.outputs.implementer_matrix) }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
@@ -388,9 +376,15 @@ jobs:
           ref: jules
           fetch-depth: 0
 
-      - name: Run implementer for ${{ matrix.issue }}
-        uses: ./.github/actions/run-implementer
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
         with:
-          issue_file: ${{ matrix.issue }}
-          jlo_version: ${{ vars.JLO_VERSION || 'latest' }}
-          target_branch: main
+          version: ${{ vars.JLO_VERSION || 'latest' }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Run implementers sequentially
+        env:
+          IMPLEMENTER_MATRIX: ${{ needs.generate-planner-matrix.outputs.implementer_matrix }}
+        run: bash .github/scripts/jules-run-implementers-sequential.sh
