@@ -149,33 +149,34 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
     let mut skipped: Vec<SkippedUpdate> = Vec::new();
     let mut default_role_files: BTreeMap<String, String> = BTreeMap::new();
 
-    for file in &scaffold_files {
-        let rel_path = &file.path;
+    for file in scaffold_files {
+        let rel_path = file.path;
+        let content = file.content;
 
         // Check if this is a jlo-managed file
-        if !is_jlo_managed(rel_path) {
-            if is_default_role_file(rel_path) {
-                default_role_files.insert(rel_path.clone(), file.content.clone());
+        if !is_jlo_managed(&rel_path) {
+            if is_default_role_file(&rel_path) {
+                default_role_files.insert(rel_path, content);
                 continue;
             }
 
             // For non-managed files, only create if missing
-            let full_path = root.join(rel_path);
+            let full_path = root.join(&rel_path);
             if !full_path.exists() {
-                to_create.push((rel_path.clone(), file.content.clone()));
+                to_create.push((rel_path, content));
             }
             continue;
         }
 
         // For jlo-managed files, always update
-        let full_path = root.join(rel_path);
+        let full_path = root.join(&rel_path);
         if full_path.exists() {
             let current_content = fs::read_to_string(&full_path)?;
-            if current_content != file.content {
-                to_update.push((rel_path.clone(), file.content.clone()));
+            if current_content != content {
+                to_update.push((rel_path, content));
             }
         } else {
-            to_create.push((rel_path.clone(), file.content.clone()));
+            to_create.push((rel_path, content));
         }
     }
 
