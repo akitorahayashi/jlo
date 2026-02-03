@@ -12,7 +12,7 @@ use std::path::Path;
 
 use app::{
     AppContext,
-    commands::{doctor, init, run, schedule, setup, template, update, workstreams},
+    commands::{doctor, init, init_workflows, run, schedule, setup, template, update, workstreams},
 };
 use ports::WorkspaceStore;
 use services::embedded_role_template_store::EmbeddedRoleTemplateStore;
@@ -31,6 +31,7 @@ pub use app::commands::workstreams::{
 };
 pub use domain::AppError;
 pub use domain::Layer;
+pub use domain::WorkflowRunnerMode;
 
 /// Entry point for the CLI.
 pub use app::cli::run as cli;
@@ -48,6 +49,22 @@ pub fn init_at(path: std::path::PathBuf) -> Result<(), AppError> {
 
     init::execute(&ctx)?;
     println!("✅ Initialized .jules/ workspace");
+    Ok(())
+}
+
+/// Initialize a new workflow kit in the current directory.
+pub fn init_workflows(mode: WorkflowRunnerMode, overwrite: bool) -> Result<(), AppError> {
+    init_workflows_at(std::env::current_dir()?, mode, overwrite)
+}
+
+/// Initialize a new workflow kit at the specified path.
+pub fn init_workflows_at(
+    path: std::path::PathBuf,
+    mode: WorkflowRunnerMode,
+    overwrite: bool,
+) -> Result<(), AppError> {
+    init_workflows::execute_workflows(&path, mode, overwrite)?;
+    println!("✅ Installed workflow kit ({})", mode.label());
     Ok(())
 }
 
@@ -184,20 +201,15 @@ pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
 ///
 /// # Arguments
 /// * `dry_run` - Show planned changes without applying
-/// * `workflows` - Include workflow files in update
 /// * `adopt_managed` - Record current default role files as managed baseline
-pub fn update(
-    dry_run: bool,
-    workflows: bool,
-    adopt_managed: bool,
-) -> Result<UpdateResult, AppError> {
+pub fn update(dry_run: bool, adopt_managed: bool) -> Result<UpdateResult, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
 
     if !workspace.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 
-    let options = UpdateOptions { dry_run, workflows, adopt_managed };
+    let options = UpdateOptions { dry_run, adopt_managed };
     update::execute(&workspace.jules_path(), options)
 }
 

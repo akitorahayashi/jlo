@@ -21,16 +21,16 @@ struct Cli {
 enum Commands {
     /// Create .jules/ workspace structure
     #[clap(visible_alias = "i")]
-    Init,
+    Init {
+        #[command(subcommand)]
+        command: Option<InitCommands>,
+    },
     /// Update .jules/ workspace to current jlo version
     #[clap(visible_alias = "u")]
     Update {
         /// Show planned changes without applying
         #[arg(long)]
         dry_run: bool,
-        /// Include workflow files in update
-        #[arg(long)]
-        workflows: bool,
         /// Adopt current default role files as managed baseline (skips conditional updates)
         #[arg(long)]
         adopt_managed: bool,
@@ -98,6 +98,31 @@ enum SetupCommands {
         /// Show detailed info for a specific component
         #[arg(long)]
         detail: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
+enum InitCommands {
+    /// Create .jules/ workspace structure
+    #[clap(visible_alias = "s")]
+    Scaffold,
+    /// Install GitHub Actions workflow kit
+    #[clap(visible_alias = "w")]
+    Workflows {
+        /// Install the GitHub-hosted runner workflow kit
+        #[arg(
+            short = 'r',
+            long,
+            conflicts_with = "self_hosted",
+            required_unless_present = "self_hosted"
+        )]
+        remote: bool,
+        /// Install the self-hosted runner workflow kit
+        #[arg(short = 's', long, conflicts_with = "remote", required_unless_present = "remote")]
+        self_hosted: bool,
+        /// Overwrite existing kit-owned files
+        #[arg(short = 'o', long)]
+        overwrite: bool,
     },
 }
 
@@ -214,9 +239,9 @@ pub fn run() {
     let cli = Cli::parse();
 
     let result: Result<i32, AppError> = match cli.command {
-        Commands::Init => crate::init().map(|_| 0),
-        Commands::Update { dry_run, workflows, adopt_managed } => {
-            run_update(dry_run, workflows, adopt_managed).map(|_| 0)
+        Commands::Init { command } => run_init(command).map(|_| 0),
+        Commands::Update { dry_run, adopt_managed } => {
+            run_update(dry_run, adopt_managed).map(|_| 0)
         }
         Commands::Template { layer, name, workstream } => {
             crate::template(layer.as_deref(), name.as_deref(), workstream.as_deref()).map(|_| 0)
@@ -244,8 +269,26 @@ pub fn run() {
     }
 }
 
-fn run_update(dry_run: bool, workflows: bool, adopt_managed: bool) -> Result<(), AppError> {
-    let result = crate::update(dry_run, workflows, adopt_managed)?;
+fn run_init(command: Option<InitCommands>) -> Result<(), AppError> {
+    match command.unwrap_or(InitCommands::Scaffold) {
+        InitCommands::Scaffold => crate::init(),
+        InitCommands::Workflows { remote, self_hosted, overwrite } => {
+            let mode = if remote {
+                crate::domain::WorkflowRunnerMode::Remote
+            } else if self_hosted {
+                crate::domain::WorkflowRunnerMode::SelfHosted
+            } else {
+                return Err(AppError::config_error(
+                    "Runner mode is required. Use --remote or --self-hosted.",
+                ));
+            };
+            crate::init_workflows(mode, overwrite)
+        }
+    }
+}
+
+fn run_update(dry_run: bool, adopt_managed: bool) -> Result<(), AppError> {
+    let result = crate::update(dry_run, adopt_managed)?;
 
     if !result.dry_run {
         if result.updated.is_empty() && result.created.is_empty() && result.removed.is_empty() {

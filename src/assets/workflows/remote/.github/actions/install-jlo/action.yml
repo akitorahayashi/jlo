@@ -1,0 +1,40 @@
+name: 'Install jlo'
+description: 'Downloads and installs the jlo CLI binary'
+inputs:
+  version:
+    description: 'jlo version to install (e.g., "v5.0.0", "5.0.0", or "latest")'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install jlo
+      shell: bash
+      run: |
+        set -euo pipefail
+        VERSION="${{ inputs.version }}"
+
+        # Normalize version format
+        if [ "$VERSION" != "latest" ] && [ "${VERSION#v}" = "$VERSION" ]; then
+          VERSION="v${VERSION}"
+        fi
+
+        # Construct download URL
+        if [ "$VERSION" = "latest" ]; then
+          URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
+        else
+          URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
+        fi
+
+        echo "Installing jlo from: $URL"
+        curl --fail --silent --show-error --location \
+          --connect-timeout 10 \
+          --max-time 60 \
+          --retry 3 \
+          --retry-delay 2 \
+          --retry-all-errors \
+          "$URL" -o jlo
+        chmod +x jlo
+        sudo mv jlo /usr/local/bin/
+        echo "✅ jlo installed: $(jlo --version 2>/dev/null || echo 'version unknown')"

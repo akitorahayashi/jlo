@@ -7,6 +7,7 @@ pub mod prompt_assembly;
 pub mod role_factory;
 pub mod scaffold_assets;
 pub mod scaffold_manifest;
+pub mod workflow_kit_assets;
 pub mod workspace_filesystem;
 pub mod workstream_schedule_filesystem;
 pub mod workstream_template_assets;

@@ -6,6 +6,7 @@ mod prompt_assembly;
 mod role_id;
 mod run_config;
 mod schedule;
+mod workflow_runner_mode;
 mod workspace_layout;
 
 pub use component::{Component, EnvSpec};
@@ -18,4 +19,5 @@ pub use prompt_assembly::{
 pub use role_id::RoleId;
 pub use run_config::{JulesApiConfig, RunConfig};
 pub use schedule::WorkstreamSchedule;
+pub use workflow_runner_mode::WorkflowRunnerMode;
 pub use workspace_layout::{JULES_DIR, VERSION_FILE};
