@@ -48,8 +48,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Validate with doctor
         run: |

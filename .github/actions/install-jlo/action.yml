@@ -1,10 +1,5 @@
 name: 'Install jlo'
-description: 'Downloads and installs the jlo CLI binary'
-inputs:
-  version:
-    description: 'jlo version to install (e.g., "v5.0.0", "5.0.0", or "latest")'
-    required: false
-    default: 'latest'
+description: 'Installs the jlo CLI binary pinned to .jules/.jlo-version on the jules branch'
 
 runs:
   using: 'composite'
@@ -13,21 +8,75 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        VERSION="${{ inputs.version }}"
+        : "${GITHUB_PATH:?GITHUB_PATH must be set}"
 
-        # Normalize version format
-        if [ "$VERSION" != "latest" ] && [ "${VERSION#v}" = "$VERSION" ]; then
-          VERSION="v${VERSION}"
+        if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+          echo "::error::install-jlo must run inside a git repository."
+          exit 1
         fi
 
-        # Construct download URL
-        if [ "$VERSION" = "latest" ]; then
-          URL="https://github.com/akitorahayashi/jlo/releases/latest/download/jlo-linux-x86_64"
-        else
-          URL="https://github.com/akitorahayashi/jlo/releases/download/${VERSION}/jlo-linux-x86_64"
+        if ! git remote get-url origin >/dev/null 2>&1; then
+          echo "::error::origin remote not found; cannot fetch jules branch."
+          exit 1
         fi
 
-        echo "Installing jlo from: $URL"
+        if ! git show-ref --verify --quiet refs/remotes/origin/jules; then
+          echo "Fetching origin/jules..."
+          if ! git fetch --quiet --depth=1 origin jules; then
+            echo "::error::jules branch does not exist on origin."
+            exit 1
+          fi
+        fi
+
+        JULES_REF="origin/jules"
+
+        VERSION_RAW="$(git show "${JULES_REF}:.jules/.jlo-version" 2>/dev/null | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        if [ -z "$VERSION_RAW" ]; then
+          echo "::error::.jules/.jlo-version is missing or empty on '${JULES_REF}'."
+          exit 1
+        fi
+
+        VERSION="${VERSION_RAW#v}"
+        TAG_VERSION="v${VERSION}"
+
+        if command -v jlo >/dev/null 2>&1; then
+          INSTALLED_VERSION="$(jlo --version 2>/dev/null | awk '{print $2}' | tr -d '\r' | sed -e 's/^v//' || true)"
+          if [ -n "$INSTALLED_VERSION" ] && [ "$INSTALLED_VERSION" = "$VERSION" ]; then
+            echo "✅ jlo ${VERSION} already installed; skipping download."
+            exit 0
+          fi
+          if [ -n "$INSTALLED_VERSION" ]; then
+            echo "Existing jlo ${INSTALLED_VERSION} does not match expected ${VERSION}; reinstalling."
+          else
+            echo "Existing jlo found but version could not be determined; reinstalling expected ${VERSION}."
+          fi
+        fi
+
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        ARCH=$(uname -m)
+
+        case "$OS" in
+          linux) OS="linux" ;;
+          darwin) OS="darwin" ;;
+          *)
+            echo "::error::Unsupported OS for jlo install: $OS"
+            exit 1
+            ;;
+        esac
+
+        case "$ARCH" in
+          x86_64|amd64) ARCH="x86_64" ;;
+          arm64|aarch64) ARCH="aarch64" ;;
+          *)
+            echo "::error::Unsupported architecture for jlo install: $ARCH"
+            exit 1
+            ;;
+        esac
+
+        ASSET="jlo-${OS}-${ARCH}"
+        URL="https://github.com/akitorahayashi/jlo/releases/download/${TAG_VERSION}/${ASSET}"
+
+        echo "Installing jlo ${VERSION} from: $URL"
         curl --fail --silent --show-error --location \
           --connect-timeout 10 \
           --max-time 60 \
@@ -36,5 +85,10 @@ runs:
           --retry-all-errors \
           "$URL" -o jlo
         chmod +x jlo
-        sudo mv jlo /usr/local/bin/
-        echo "✅ jlo installed: $(jlo --version 2>/dev/null || echo 'version unknown')"
+
+        INSTALL_DIR="${RUNNER_TEMP:-/tmp}/jlo-bin"
+        mkdir -p "$INSTALL_DIR"
+        mv jlo "$INSTALL_DIR/jlo"
+
+        echo "$INSTALL_DIR" >> "$GITHUB_PATH"
+        echo "✅ jlo installed: $($INSTALL_DIR/jlo --version 2>/dev/null || echo 'version unknown')"

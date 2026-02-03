@@ -8,10 +8,6 @@ inputs:
     description: 'Show prompts without executing'
     required: false
     default: 'false'
-  jlo_version:
-    description: 'jlo version to install'
-    required: false
-    default: 'latest'
   target_branch:
     description: 'Target branch for implementer output'
     required: false
@@ -35,8 +31,6 @@ runs:
 
     - name: Install jlo
       uses: ./.github/actions/install-jlo
-      with:
-        version: ${{ inputs.jlo_version }}
 
     - name: Configure Git
       if: ${{ inputs.dry_run != 'true' }}

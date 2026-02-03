@@ -72,8 +72,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Run narrator
         run: |
@@ -131,8 +129,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Generate workstream matrix
         id: matrix
@@ -159,8 +155,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Generate observer matrix
         id: matrix
@@ -190,8 +184,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Run observer ${{ matrix.workstream }} / ${{ matrix.role }}
         run: |
@@ -234,8 +226,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Generate decider matrix from pending events
         id: matrix
@@ -265,8 +255,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Run decider for ${{ matrix.workstream }}
         run: |
@@ -311,8 +299,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Generate planner and implementer matrices
         id: matrix
@@ -343,8 +329,6 @@ jobs:
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
-        with:
-          version: ${{ vars.JLO_VERSION || 'latest' }}
 
       - name: Run planner for ${{ matrix.issue }}
         run: |
@@ -392,5 +376,4 @@ jobs:
         uses: ./.github/actions/run-implementer
         with:
           issue_file: ${{ matrix.issue }}
-          jlo_version: ${{ vars.JLO_VERSION || 'latest' }}
           target_branch: main

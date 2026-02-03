@@ -38,5 +38,4 @@ jobs:
         with:
           issue_file: ${{ inputs.issue_file }}
           dry_run: ${{ inputs.dry_run }}
-          jlo_version: ${{ vars.JLO_VERSION || 'latest' }}
           target_branch: main
