@@ -20,12 +20,10 @@ runs:
           exit 1
         fi
 
-        if ! git show-ref --verify --quiet refs/remotes/origin/jules; then
-          echo "Fetching origin/jules..."
-          if ! git fetch --quiet --depth=1 origin jules; then
-            echo "::error::jules branch does not exist on origin."
-            exit 1
-          fi
+        echo "Fetching origin/jules..."
+        if ! git fetch --quiet --depth=1 origin jules; then
+          echo "::error::jules branch does not exist on origin."
+          exit 1
         fi
 
         JULES_REF="origin/jules"
@@ -40,7 +38,7 @@ runs:
         TAG_VERSION="v${VERSION}"
 
         if command -v jlo >/dev/null 2>&1; then
-          INSTALLED_VERSION="$(jlo --version 2>/dev/null | awk '{print $2}' | tr -d '\r' | sed -e 's/^v//' || true)"
+          INSTALLED_VERSION="$(jlo --version 2>/dev/null | tr -d '\r' | grep -o -E '[0-9]+\\.[0-9]+\\.[0-9]+' | head -n 1 || true)"
           if [ -n "$INSTALLED_VERSION" ] && [ "$INSTALLED_VERSION" = "$VERSION" ]; then
             echo "✅ jlo ${VERSION} already installed; skipping download."
             exit 0
