@@ -1,0 +1,10 @@
+name: 'Configure Git'
+description: 'Set up git user name and email'
+runs:
+  using: "composite"
+  steps:
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config user.name "aria"
+        git config user.email "aria67323@gmail.com"

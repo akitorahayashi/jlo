@@ -1,0 +1,56 @@
+name: Jules Implementer Review
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - jules
+      - 'jules-observer-*'
+      - 'jules-decider-*'
+      - 'jules-planner-*'
+      - 'jules-narrator-*'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  auto-review:
+    runs-on: self-hosted
+    steps:
+      - name: Add Review Comments
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Waiting for PR to be created for branch $BRANCH_NAME..."
+          PR_NUMBER=""
+          
+          # Retry for up to 60 seconds to allow time for PR creation after push
+          for i in {1..12}; do
+            PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --repo "$REPO" --json number -q '.[0].number')
+            if [ -n "$PR_NUMBER" ]; then
+              echo "Found PR #$PR_NUMBER"
+              break
+            fi
+            sleep 5
+            echo "Retrying... ($i/12)"
+          done
+
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No PR found for branch $BRANCH_NAME within timeout. Skipping review comments."
+            exit 0
+          fi
+
+          # Check if we already commented to avoid duplicates (since push triggers on every commit)
+          COMMENTS=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json comments -q '.comments[].body')
+          if echo "$COMMENTS" | grep -q "/gemini summary"; then
+            echo "Review comments already exist. Skipping."
+            exit 0
+          fi
+
+          echo "Posting review comments..."
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "/gemini summary"
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "/gemini review"
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "@coderabbitai review"

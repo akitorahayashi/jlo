@@ -22,8 +22,9 @@ jlo init
 
 | Command | Alias | Description |
 |---------|-------|-------------|
-| `jlo init` | `i` | Create `.jules/` workspace with setup directory |
-| `jlo update [--dry-run] [--workflows] [--adopt-managed]` | `u` | Update workspace to current jlo version |
+| `jlo init [scaffold]` | `i` | Create `.jules/` workspace with setup directory |
+| `jlo init workflows (--remote | --self-hosted) [--overwrite]` | `i w` | Install workflow kit into `.github/` |
+| `jlo update [--dry-run] [--adopt-managed]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo schedule export --scope <scope>` | | Export schedule data for automation (scope: `workstreams` or `roles`) |
@@ -81,7 +82,7 @@ default_branch = "main"
 # max_retries = 3
 ```
 
-**Environment**: Set `JULES_API_KEY` for API authentication.
+**Environment**: Set the API key environment variable referenced by the workflows for authentication.
 
 ### Doctor Command
 
@@ -103,6 +104,8 @@ Exit codes:
 
 ```bash
 jlo init                                    # Initialize workspace
+jlo init workflows --remote                 # Install workflow kit (GitHub-hosted)
+jlo init workflows --self-hosted            # Install workflow kit (self-hosted runners)
 jlo template                                # Open interactive template wizard
 jlo template -l observers -n security -w generic
 
@@ -114,15 +117,16 @@ jlo setup gen                               # Generate install script
 
 ## GitHub Actions Integration
 
+Install the workflow kit with `jlo init workflows` to populate the Jules orchestration files in `.github/`.
+
 Workflows use `jlo run` for agent execution and rely on `jlo schedule export` plus
 `jlo workstreams inspect` for orchestration inputs.
 
-| File | Purpose |
-|------|---------|
-| `jules-workflows.yml` | Scheduled orchestration and entry-point dispatch |
-| `jules-workstream.yml` | Per-workstream pipeline (observers → deciders → optional planners/implementers) |
-| `jules-run-planner.yml` | Manual planner dispatch for a specific issue |
-| `jules-run-implementer.yml` | Manual implementer dispatch for a specific issue |
+Workflow kit layout:
+
+- `.github/workflows/jules-*.yml`
+- `.github/actions/` (Jules composite actions)
+- `.github/scripts/jules-*.sh`
 
 **Branch Strategy**:
 
@@ -141,7 +145,7 @@ Workflows use `jlo run` for agent execution and rely on `jlo schedule export` pl
 4. **Expansion**: Planners expand issues that require deep analysis
 5. **Implementation**: Implementers are dispatched by workflow policy or manual dispatch with a local issue file
 
-**Pause/Resume**: The repository variable `JULES_PAUSED=true` skips scheduled runs.
+**Pause/Resume**: Set the repository pause variable referenced by the workflows to skip scheduled runs.
 
 ## Documentation
 

@@ -17,6 +17,7 @@ src/
 ├── assets/
 │   ├── scaffold/      # Embedded .jules/ structure
 │   ├── templates/     # Role templates by layer
+│   ├── workflows/     # Workflow kit assets
 │   └── catalog/       # Setup component definitions
 └── testing/           # Mock implementations
 tests/
@@ -47,14 +48,16 @@ tests/
 |------|------------|
 | **Scaffold** | The immutable `.jules/` directory structure managed by `jlo init` and `jlo update`. |
 | **Template** | Blueprints for creating new roles or workstreams, applied via `jlo template`. |
+| **Workflow kit** | `.github/` automation assets installed by `jlo init workflows`. |
 | **Component** | Development tools managed by `jlo setup`, defined in `src/assets/catalog/`. |
 
 ## CLI Commands
 
 | Command | Alias | Description |
 |---------|-------|-------------|
-| `jlo init` | `i` | Create `.jules/` structure with setup directory |
-| `jlo update [--dry-run] [--workflows] [--adopt-managed]` | `u` | Update workspace to current jlo version |
+| `jlo init [scaffold]` | `i` | Create `.jules/` structure with setup directory |
+| `jlo init workflows (--remote \| --self-hosted) [--overwrite]` | `i w` | Install workflow kit into `.github/` |
+| `jlo update [--dry-run] [--adopt-managed]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run narrator [--dry-run]` | `r n` | Run narrator (produces changes feed) |
 | `jlo run observers --workstream <name> [--role <name> \| --scheduled]` | `r o` | Run observer agents |

@@ -270,5 +270,5 @@ Workflows validate workstreams with `jlo doctor` after each layer execution to d
 
 ## Pause/Resume
 
-The repository variable `JULES_PAUSED=true` skips scheduled runs.
+Set the repository pause variable referenced by the workflows to skip scheduled runs.
 The default behavior is active; paused behavior is explicit and visible.

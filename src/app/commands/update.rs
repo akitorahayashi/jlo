@@ -80,9 +80,6 @@ pub struct UpdateResult {
 pub struct UpdateOptions {
     /// Show planned changes without applying.
     pub dry_run: bool,
-    /// Include workflow files in update.
-    /// TODO: Implement workflow file filtering in execute(). Currently unused.
-    pub workflows: bool,
     /// Adopt current default role files as managed baseline (no conditional updates applied).
     pub adopt_managed: bool,
 }
