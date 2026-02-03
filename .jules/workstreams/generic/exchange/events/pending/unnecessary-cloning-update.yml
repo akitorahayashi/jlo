@@ -1,0 +1,22 @@
+schema_version: 1
+id: "3f584e"
+issue_id: ""
+created_at: "2026-02-03"
+author_role: "rustacean"
+confidence: "high"
+title: "Unnecessary cloning in update command"
+statement: |
+  The `update` command implementation performs unnecessary cloning of file paths and contents when iterating over scaffold files, violating ownership design principles and "Clone must pay rent" first principle.
+evidence:
+  - path: "src/app/commands/update.rs"
+    loc:
+      - "148-180"
+    note: "Iteration over `&scaffold_files` forces cloning of `rel_path` and `content` into `to_create` and `to_update` vectors."
+  - path: "src/app/commands/update.rs"
+    loc:
+      - "186-248"
+    note: "Iteration over `&default_role_files` forces cloning of keys and values into `manifest_entries` and vectors."
+tags:
+  - "ownership"
+  - "cloning"
+  - "refactoring"
