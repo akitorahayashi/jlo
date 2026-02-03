@@ -23,7 +23,7 @@ jobs:
 
       - name: Apply category label
         env:
-          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH_NAME: ${{ github.head_ref }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
