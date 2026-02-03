@@ -1,0 +1,8 @@
+schema_version: 1
+layer: narrator
+
+runtime_context: {}
+
+includes:
+  - title: "Layer Contracts"
+    path: ".jules/roles/narrator/contracts.yml"

@@ -1,0 +1,19 @@
+version = 1
+enabled = true
+
+[observers]
+roles = [
+  { name = "taxonomy", enabled = false },
+  { name = "data_arch", enabled = false },
+  { name = "structural_arch", enabled = false },
+  { name = "qa", enabled = false },
+  { name = "cov", enabled = false },
+  { name = "devops", enabled = false },
+  { name = "consistency", enabled = false },
+  { name = "rustacean", enabled = true },
+]
+
+[deciders]
+roles = [
+  { name = "triage_generic", enabled = true },
+]
