@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "issue_labels": {
+    "bugs": { "color": "d73a4a" },
+    "feats": { "color": "fbca04" },
+    "refacts": { "color": "0e8a16" },
+    "tests": { "color": "5319e7" },
+    "docs": { "color": "0075ca" }
+  }
+}

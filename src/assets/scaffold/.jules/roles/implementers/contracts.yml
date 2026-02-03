@@ -2,8 +2,9 @@ layer: implementers
 branch_prefix: jules-implementer-
 
 constraints:
-  - Branch format: jules-implementer-<id>-<short_description>
-  - Issue file path is authoritative (includes workstream)
+  - Branch format: jules-implementer-<label>-<id>-<short_description>
+  - <label> must match the issue label (issue.label and issue directory)
+  - Issue file path is authoritative (includes workstream and label)
 
 inputs:
   - Issue content embedded in this prompt
