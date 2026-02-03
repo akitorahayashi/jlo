@@ -5,7 +5,7 @@ id: "<6_random_lowercase_alphanumeric_chars>" # stable identity
 source_events:
   - "<event_id>" # List of event IDs that triggered this issue
 title: "<Descriptive Title>"
-label: "feats|refacts|bugs|tests|docs"
+label: "<issue_label>" # Must match a key in .jules/github-labels.json and the issue directory name
 priority: "low|medium|high"
 summary: "<One-line statement of the issue>"
 

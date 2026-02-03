@@ -29,7 +29,7 @@ The Narrator layer produces `.jules/changes/latest.yml`, summarizing recent code
 - `.jules/changes/latest.yml` is overwritten in-place (no time-series).
 - Narrator excludes `.jules/` from all diffs and path lists.
 - Observers receive this context automatically when present.
-- Schema is defined by `.jules/roles/narrator/change.yml`.
+- Schema is defined by `.jules/roles/narrator/schemas/change.yml`.
 
 ## Workstream Model
 
@@ -42,8 +42,9 @@ Workstreams isolate events and issues so that decider rules do not mix across un
 Workstream directories:
 
 - Events (Observer output, Decider input):
-  - `.jules/workstreams/<workstream>/events/<state>/*.yml` (state directories defined by the scaffold)
-- Issues (Decider/Planner output, Implementer input): `.jules/workstreams/<workstream>/issues/<label>/*.yml`
+  - `.jules/workstreams/<workstream>/exchange/events/<state>/*.yml` (state directories defined by the scaffold)
+- Issues (Decider/Planner output, Implementer input):
+  - `.jules/workstreams/<workstream>/exchange/issues/<label>/*.yml`
 
 ## Workspace Data Flow
 
@@ -91,9 +92,11 @@ Branch names:
 - Observers: `jules-observer-<id>`
 - Deciders: `jules-decider-<id>`
 - Planners: `jules-planner-<id>`
-- Implementers: `jules-implementer-<id>-<short_description>`
+- Implementers: `jules-implementer-<label>-<id>-<short_description>`
 
 `<id>` is 6 lowercase alphanumeric characters unless the layer contract specifies otherwise.
+
+`<label>` is an issue label defined in `.jules/github-labels.json` (e.g., `bugs`, `feats`).
 
 ## Safety Boundaries
 
