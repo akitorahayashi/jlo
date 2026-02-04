@@ -9,9 +9,55 @@ pub enum AppError {
     #[error(transparent)]
     Io(#[from] io::Error),
 
-    /// Configuration or environment issue.
-    #[error("{0}")]
-    Configuration(String),
+    /// Environment variable not set.
+    #[error("Environment variable '{0}' not set")]
+    EnvironmentVariableMissing(String),
+
+    /// External tool execution failed.
+    #[error("External tool '{tool}' failed: {error}")]
+    ExternalToolError { tool: String, error: String },
+
+    /// Jules API error.
+    #[error("Jules API error: {message} (Status: {status:?})")]
+    JulesApiError { message: String, status: Option<u16> },
+
+    /// General validation error.
+    #[error("Validation failed: {0}")]
+    Validation(String),
+
+    /// Missing required argument.
+    #[error("Missing argument: {0}")]
+    MissingArgument(String),
+
+    /// Workstream already exists (unlike WorkspaceExists which is for .jules).
+    #[error("Workstream '{0}' already exists")]
+    WorkstreamExists(String),
+
+    /// Workstreams directory not found.
+    #[error("Workstreams directory not found")]
+    WorkstreamsDirectoryNotFound,
+
+    /// Workspace integrity issue (e.g. missing version file).
+    #[error("Workspace integrity error: {0}")]
+    WorkspaceIntegrity(String),
+
+    /// Workspace version mismatch.
+    #[error(
+        "Workspace version ({workspace}) is newer than binary version ({binary}). Update the jlo binary."
+    )]
+    WorkspaceVersionMismatch { workspace: String, binary: String },
+
+    /// Repository detection failed.
+    #[error("Repository detection failed. Set GITHUB_REPOSITORY or run from a git repository.")]
+    RepositoryDetectionFailed,
+
+    /// Internal error (bug or unexpected state).
+    #[error("Internal error: {0}")]
+    InternalError(String),
+
+    /// Asset loading/parsing error.
+    #[error("Asset error: {0}")]
+    AssetError(String),
 
     /// Workspace already exists at the target location.
     #[error(".jules/ workspace already exists")]
@@ -94,8 +140,8 @@ pub enum AppError {
     SingleRoleLayerTemplate(String),
 
     /// Prompt assembly failed.
-    #[error("Prompt assembly failed: {0}")]
-    PromptAssemblyError(String),
+    #[error(transparent)]
+    PromptAssembly(#[from] crate::domain::prompt_assembly::PromptAssemblyError),
 
     /// Git execution failed.
     #[error("Git error running '{command}': {details}")]
@@ -111,16 +157,11 @@ pub enum AppError {
 }
 
 impl AppError {
-    pub fn config_error<S: Into<String>>(message: S) -> Self {
-        AppError::Configuration(message.into())
-    }
-
     /// Provide an `io::ErrorKind`-like view for callers expecting legacy behavior.
     pub fn kind(&self) -> io::ErrorKind {
         match self {
             AppError::Io(err) => err.kind(),
-            AppError::Configuration(_)
-            | AppError::InvalidRoleId(_)
+            AppError::InvalidRoleId(_)
             | AppError::InvalidComponentId(_)
             | AppError::InvalidLayer { .. }
             | AppError::RoleNotFound(_)
@@ -130,18 +171,30 @@ impl AppError {
             | AppError::RoleNotInConfig { .. }
             | AppError::Schedule(_)
             | AppError::SingleRoleLayerTemplate(_)
-            | AppError::PromptAssemblyError(_)
+            | AppError::PromptAssembly(_)
             | AppError::ParseError { .. }
-            | AppError::TomlParseError(_) => io::ErrorKind::InvalidInput,
+            | AppError::TomlParseError(_)
+            | AppError::Validation(_)
+            | AppError::MissingArgument(_)
+            | AppError::WorkspaceIntegrity(_)
+            | AppError::WorkspaceVersionMismatch { .. }
+            | AppError::JulesApiError { .. }
+            | AppError::InternalError(_)
+            | AppError::AssetError(_) => io::ErrorKind::InvalidInput,
             AppError::WorkspaceNotFound
             | AppError::SetupNotInitialized
             | AppError::SetupConfigMissing
             | AppError::ComponentNotFound { .. }
             | AppError::RunConfigMissing
             | AppError::ScheduleConfigMissing(_)
-            | AppError::IssueFileNotFound(_) => io::ErrorKind::NotFound,
-            AppError::WorkspaceExists | AppError::RoleExists { .. } => io::ErrorKind::AlreadyExists,
-            AppError::GitError { .. } => io::ErrorKind::Other,
+            | AppError::IssueFileNotFound(_)
+            | AppError::WorkstreamsDirectoryNotFound
+            | AppError::EnvironmentVariableMissing(_)
+            | AppError::RepositoryDetectionFailed => io::ErrorKind::NotFound,
+            AppError::WorkspaceExists
+            | AppError::RoleExists { .. }
+            | AppError::WorkstreamExists(_) => io::ErrorKind::AlreadyExists,
+            AppError::GitError { .. } | AppError::ExternalToolError { .. } => io::ErrorKind::Other,
         }
     }
 }

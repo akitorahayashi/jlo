@@ -33,8 +33,8 @@ where
         layer_arg.is_none() && role_name_arg.is_none() && workstream_arg.is_none();
     if should_use_wizard {
         if !(std::io::stdin().is_terminal() && std::io::stdout().is_terminal()) {
-            return Err(AppError::config_error(
-                "Interactive template wizard requires a TTY. Provide --layer and --name (and --workstream for observer/decider roles).",
+            return Err(AppError::MissingArgument(
+                "Interactive template wizard requires a TTY. Provide --layer and --name (and --workstream for observer/decider roles).".into(),
             ));
         }
 
@@ -82,7 +82,9 @@ fn resolve_layer(layer_arg: Option<&str>) -> Result<Layer, AppError> {
             if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
                 Ok(select_layer()?)
             } else {
-                Err(AppError::config_error("Layer is required when running non-interactively."))
+                Err(AppError::MissingArgument(
+                    "Layer is required when running non-interactively.".into(),
+                ))
             }
         }
     }
@@ -95,7 +97,9 @@ fn resolve_role_name(role_name_arg: Option<&str>) -> Result<String, AppError> {
             if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
                 prompt_role_name()
             } else {
-                Err(AppError::config_error("Role name is required when running non-interactively."))
+                Err(AppError::MissingArgument(
+                    "Role name is required when running non-interactively.".into(),
+                ))
             }
         }
     }
@@ -119,7 +123,7 @@ fn select_layer() -> Result<Layer, AppError> {
         .items(&items)
         .default(0)
         .interact()
-        .map_err(|e| AppError::config_error(format!("Layer selection failed: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("Layer selection failed: {e}")))?;
 
     Ok(multi_role_layers[selection])
 }
@@ -133,11 +137,11 @@ fn prompt_role_name() -> Result<String, AppError> {
     let mut input = String::new();
     std::io::stdin()
         .read_line(&mut input)
-        .map_err(|e| AppError::config_error(format!("Failed to read role name: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("Failed to read role name: {e}")))?;
 
     let name = input.trim().to_string();
     if name.is_empty() {
-        return Err(AppError::config_error("Role name cannot be empty"));
+        return Err(AppError::Validation("Role name cannot be empty".into()));
     }
 
     Ok(name)

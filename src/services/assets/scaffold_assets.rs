@@ -8,7 +8,7 @@ static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold
 pub fn list_issue_labels() -> Result<Vec<String>, AppError> {
     let issues_dir = SCAFFOLD_DIR
         .get_dir(".jules/workstreams/generic/exchange/issues")
-        .ok_or_else(|| AppError::config_error("Missing scaffold issues directory"))?;
+        .ok_or_else(|| AppError::InternalError("Missing scaffold issues directory".into()))?;
 
     let mut labels = Vec::new();
     for entry in issues_dir.entries() {
@@ -26,7 +26,7 @@ pub fn list_issue_labels() -> Result<Vec<String>, AppError> {
 pub fn list_event_states() -> Result<Vec<String>, AppError> {
     let events_dir = SCAFFOLD_DIR
         .get_dir(".jules/workstreams/generic/exchange/events")
-        .ok_or_else(|| AppError::config_error("Missing scaffold events directory"))?;
+        .ok_or_else(|| AppError::InternalError("Missing scaffold events directory".into()))?;
 
     let mut states = Vec::new();
     for entry in events_dir.entries() {
@@ -47,14 +47,14 @@ pub fn scaffold_file_content(path: &str) -> Option<String> {
 
 pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> {
     let content = scaffold_file_content(path)
-        .ok_or_else(|| AppError::config_error(format!("Missing scaffold file: {}", path)))?;
+        .ok_or_else(|| AppError::InternalError(format!("Missing scaffold file: {}", path)))?;
 
     let value: Value = serde_yaml::from_str(&content)
-        .map_err(|err| AppError::config_error(format!("Failed to parse {}: {}", path, err)))?;
+        .map_err(|err| AppError::InternalError(format!("Failed to parse {}: {}", path, err)))?;
 
     let map = match value {
         Value::Mapping(map) => map,
-        _ => return Err(AppError::config_error(format!("Expected root mapping in {}", path))),
+        _ => return Err(AppError::InternalError(format!("Expected root mapping in {}", path))),
     };
 
     let value_str =
@@ -67,7 +67,7 @@ pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> 
         .collect();
 
     if values.is_empty() {
-        return Err(AppError::config_error(format!(
+        return Err(AppError::InternalError(format!(
             "No enum values found for {} in {}",
             key, path
         )));

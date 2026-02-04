@@ -24,14 +24,16 @@ pub fn execute(
     let config = load_config(jules_path)?;
 
     let workstream = workstream.ok_or_else(|| {
-        AppError::config_error("Workstream is required for observers and deciders")
+        AppError::MissingArgument("Workstream is required for observers and deciders".into())
     })?;
 
     if scheduled && roles.is_some() {
-        return Err(AppError::config_error("Cannot combine --scheduled with --role"));
+        return Err(AppError::Validation("Cannot combine --scheduled with --role".into()));
     }
     if !scheduled && roles.is_none() {
-        return Err(AppError::config_error("Manual mode requires --role (or use --scheduled)"));
+        return Err(AppError::Validation(
+            "Manual mode requires --role (or use --scheduled)".into(),
+        ));
     }
 
     let resolved_roles = select_roles(RoleSelectionInput {
@@ -127,11 +129,10 @@ fn execute_roles<C: JulesClient>(
     println!("\nCompleted: {}/{} role(s)", sessions.len(), roles.len());
 
     if failures > 0 {
-        return Err(AppError::Configuration(format!(
-            "{} of {} roles failed to execute",
-            failures,
-            roles.len()
-        )));
+        return Err(AppError::JulesApiError {
+            message: format!("{} of {} roles failed to execute", failures, roles.len()),
+            status: None,
+        });
     }
 
     Ok(sessions)

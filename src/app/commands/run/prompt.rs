@@ -20,9 +20,7 @@ pub fn assemble_prompt(
     let context = PromptContext::new().with_var("workstream", workstream).with_var("role", role);
     let fs = RealPromptFs;
 
-    prompt_assembly::assemble_prompt(jules_path, layer, &context, &fs)
-        .map(|result| result.content)
-        .map_err(|err| AppError::PromptAssemblyError(err.to_string()))
+    Ok(prompt_assembly::assemble_prompt(jules_path, layer, &context, &fs)?.content)
 }
 
 /// Assemble the prompt for a single-role layer (Narrator, Planners, Implementers).
@@ -31,9 +29,7 @@ pub fn assemble_prompt(
 /// not in a role subdirectory. They do not require workstream/role context.
 pub fn assemble_single_role_prompt(jules_path: &Path, layer: Layer) -> Result<String, AppError> {
     let fs = RealPromptFs;
-    prompt_assembly::assemble_prompt(jules_path, layer, &PromptContext::new(), &fs)
-        .map(|result| result.content)
-        .map_err(|err| AppError::PromptAssemblyError(err.to_string()))
+    Ok(prompt_assembly::assemble_prompt(jules_path, layer, &PromptContext::new(), &fs)?.content)
 }
 
 /// Assemble the prompt for an issue-driven layer with embedded issue content.
@@ -47,7 +43,5 @@ pub fn assemble_issue_prompt(
     issue_content: &str,
 ) -> Result<String, AppError> {
     let fs = RealPromptFs;
-    prompt_assembly::assemble_with_issue(jules_path, layer, issue_content, &fs)
-        .map(|result| result.content)
-        .map_err(|err| AppError::PromptAssemblyError(err.to_string()))
+    Ok(prompt_assembly::assemble_with_issue(jules_path, layer, issue_content, &fs)?.content)
 }

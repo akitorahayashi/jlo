@@ -20,7 +20,7 @@ where
     let branch = git.get_current_branch()?;
 
     if branch != "jules" {
-        return Err(AppError::Configuration(format!(
+        return Err(AppError::Validation(format!(
             "Init must be run on 'jules' branch (current: '{}').\nPlease run: git checkout -b jules",
             branch
         )));

@@ -46,11 +46,11 @@ pub fn load_manifest(jules_path: &Path) -> Result<Option<ScaffoldManifest>, AppE
 
     let content = fs::read_to_string(&path)?;
     let manifest: ScaffoldManifest = serde_yaml::from_str(&content).map_err(|err| {
-        AppError::config_error(format!("Failed to parse {}: {}", path.display(), err))
+        AppError::ParseError { what: path.display().to_string(), details: err.to_string() }
     })?;
 
     if manifest.schema_version != MANIFEST_SCHEMA_VERSION {
-        return Err(AppError::config_error(format!(
+        return Err(AppError::WorkspaceIntegrity(format!(
             "Unsupported scaffold manifest schema version: {} (expected {})",
             manifest.schema_version, MANIFEST_SCHEMA_VERSION
         )));
@@ -62,7 +62,7 @@ pub fn load_manifest(jules_path: &Path) -> Result<Option<ScaffoldManifest>, AppE
 pub fn write_manifest(jules_path: &Path, manifest: &ScaffoldManifest) -> Result<(), AppError> {
     let path = manifest_path(jules_path);
     let content = serde_yaml::to_string(manifest).map_err(|err| {
-        AppError::config_error(format!("Failed to serialize {}: {}", path.display(), err))
+        AppError::InternalError(format!("Failed to serialize {}: {}", path.display(), err))
     })?;
     fs::write(&path, content)?;
     Ok(())

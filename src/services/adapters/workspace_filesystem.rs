@@ -167,7 +167,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         let ws_dir = self.jules_path().join("workstreams").join(name);
 
         if ws_dir.exists() {
-            return Err(AppError::Configuration(format!("Workstream '{}' already exists", name)));
+            return Err(AppError::WorkstreamExists(name.into()));
         }
 
         // Create workstream structure

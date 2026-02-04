@@ -23,8 +23,9 @@ pub fn parse_config_content(content: &str) -> Result<RunConfig, AppError> {
     // Check for legacy [agents] section
     let value: toml::Value = toml::from_str(content)?;
     if value.get("agents").is_some() {
-        return Err(AppError::config_error(
-            "Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml.",
+        return Err(AppError::Validation(
+            "Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml."
+                .to_string(),
         ));
     }
 
@@ -52,9 +53,7 @@ pub fn detect_repository_source() -> Result<String, AppError> {
         return Ok(format!("sources/github/{}", repo));
     }
 
-    Err(AppError::Configuration(
-        "Could not detect repository. Set GITHUB_REPOSITORY or run from a git repository.".into(),
-    ))
+    Err(AppError::RepositoryDetectionFailed)
 }
 
 /// Parse a GitHub URL to extract owner/repo.

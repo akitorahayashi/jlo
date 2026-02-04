@@ -9,14 +9,14 @@ static TEMPLATES_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/templat
 pub fn workstream_template_files() -> Result<Vec<ScaffoldFile>, AppError> {
     let workstreams_dir = TEMPLATES_DIR
         .get_dir("workstreams")
-        .ok_or_else(|| AppError::config_error("Missing workstream templates directory"))?;
+        .ok_or_else(|| AppError::InternalError("Missing workstream templates directory".into()))?;
 
     let mut files = Vec::new();
     collect_files(workstreams_dir, workstreams_dir.path(), &mut files);
     files.sort_by(|a, b| a.path.cmp(&b.path));
 
     if files.is_empty() {
-        return Err(AppError::config_error("Workstream templates directory has no files"));
+        return Err(AppError::InternalError("Workstream templates directory has no files".into()));
     }
 
     Ok(files)
@@ -26,10 +26,10 @@ pub fn workstream_template_content(path: &str) -> Result<String, AppError> {
     let full_path = format!("workstreams/{}", path);
     let file = TEMPLATES_DIR
         .get_file(&full_path)
-        .ok_or_else(|| AppError::config_error(format!("Missing workstream template {}", path)))?;
-    file.contents_utf8()
-        .map(|content| content.to_string())
-        .ok_or_else(|| AppError::config_error(format!("Workstream template {} is not UTF-8", path)))
+        .ok_or_else(|| AppError::InternalError(format!("Missing workstream template {}", path)))?;
+    file.contents_utf8().map(|content| content.to_string()).ok_or_else(|| {
+        AppError::InternalError(format!("Workstream template {} is not UTF-8", path))
+    })
 }
 
 fn collect_files(dir: &Dir, base_path: &Path, files: &mut Vec<ScaffoldFile>) {
@@ -79,8 +79,8 @@ mod tests {
     fn test_workstream_template_content_returns_error_for_missing_file() {
         let result = workstream_template_content("non_existent_file.toml");
         assert!(
-            matches!(result, Err(AppError::Configuration(_))),
-            "Should return a config error for missing file"
+            matches!(result, Err(AppError::InternalError(_))),
+            "Should return an internal error for missing file"
         );
     }
 }
