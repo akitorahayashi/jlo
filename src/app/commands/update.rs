@@ -9,7 +9,7 @@ use chrono::Utc;
 
 use crate::domain::AppError;
 use crate::ports::RoleTemplateStore;
-use crate::services::scaffold_manifest::{
+use crate::services::assets::scaffold_manifest::{
     ScaffoldManifest, hash_content, is_default_role_file, load_manifest, write_manifest,
 };
 

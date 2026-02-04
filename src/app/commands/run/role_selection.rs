@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use crate::domain::{AppError, Layer};
-use crate::services::workstream_schedule_filesystem::load_schedule;
+use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
 pub struct RoleSelectionInput<'a> {
     pub jules_path: &'a Path,

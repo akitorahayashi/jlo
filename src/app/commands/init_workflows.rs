@@ -3,7 +3,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::domain::{AppError, WorkflowRunnerMode};
-use crate::services::workflow_kit_assets::load_workflow_kit;
+use crate::services::assets::workflow_kit_assets::load_workflow_kit;
 
 /// Execute the workflow kit installation.
 pub fn execute_workflows(
