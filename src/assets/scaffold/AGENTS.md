@@ -11,7 +11,7 @@ See [root AGENTS.md](../../../../AGENTS.md) for design principles.
 ├── changes/
 │   └── latest.yml        # Narrator output (bounded changes summary)
 ├── roles/
-│   ├── narrator/
+│   ├── narrators/
 │   │   ├── prompt.yml    # Entry point
 │   │   ├── contracts.yml # Layer contract
 │   │   └── schemas/
@@ -75,7 +75,7 @@ Schemas define the structure for artifacts produced by agents.
 
 | Schema | Location | Purpose |
 |--------|----------|---------|
-| `change.yml` | `.jules/roles/narrator/schemas/` | Changes summary structure |
+| `change.yml` | `.jules/roles/narrators/schemas/` | Changes summary structure |
 | `event.yml` | `.jules/roles/observers/schemas/` | Observer event structure |
 | `issue.yml` | `.jules/roles/deciders/schemas/` | Issue structure |
 
@@ -101,7 +101,7 @@ Workstreams isolate events and issues so that decider rules do not mix across un
 The pipeline is file-based and uses local issues as the handoff point:
 
 ```
-narrator -> observers -> deciders -> [planners] -> implementers
+narrators -> observers -> deciders -> [planners] -> implementers
 (changes)   (events)    (issues)    (expand)      (code changes)
 ```
 

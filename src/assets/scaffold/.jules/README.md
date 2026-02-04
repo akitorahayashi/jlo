@@ -32,7 +32,7 @@ Narrator -> Observer -> Decider -> [Planner] -> Implementer
 
 | Role Type | Role(s) | Transformation |
 |-----------|---------|----------------|
-| Narrator | `.jules/roles/narrator/` | Git history -> Changes summary |
+| Narrator | `.jules/roles/narrators/` | Git history -> Changes summary |
 | Observer | directories under `.jules/roles/observers/` | Source -> Events (domain-specialized observations) |
 | Decider | directories under `.jules/roles/deciders/` | Events -> Issues (validation + consolidation) |
 | Planner | directories under `.jules/roles/planners/` | Issues -> Expanded Issues (deep analysis, optional) |
@@ -79,7 +79,7 @@ Implementers modify source code and require human review.
 |       |       +-- perspective.yml   # Observer continuity (goals/rules/ignore/log)
 |
 +-- roles/              # Role definitions (global)
-    +-- narrator/       # Single-role layer
+    +-- narrators/      # Single-role layer
     |   +-- contracts.yml    # Narrator contract
     |   +-- prompt.yml       # Run prompt
     |   +-- change.yml       # Schema template for latest.yml
@@ -110,7 +110,7 @@ Implementers modify source code and require human review.
 
 | Layer | Type | Invocation |
 |-------|------|------------|
-| Narrator | Single-role | `jlo run narrator` |
+| Narrator | Single-role | `jlo run narrators` |
 | Observers | Multi-role | `jlo run observers --workstream <name> --scheduled` |
 | Deciders | Multi-role | `jlo run deciders --workstream <name> --scheduled` |
 | Planners | Single-role | `jlo run planners <path>` |
@@ -154,7 +154,7 @@ Agents `cp` these files and fill them out.
 ### 0. Narrator Agent (Scheduled, runs first)
 
 Narrator summarizes codebase changes for observer context:
-1. Reads `.jules/roles/narrator/change.yml` for schema
+1. Reads `.jules/roles/narrators/change.yml` for schema
 2. Determines commit range (previous `to_commit` or bootstrap)
 3. Collects commits and changed paths (excluding `.jules/`)
 4. Writes `.jules/changes/latest.yml`

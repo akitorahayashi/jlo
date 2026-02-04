@@ -75,7 +75,7 @@ pub fn execute(
             // No changes - exit successfully without creating a session
             println!("No codebase changes detected (excluding .jules/). Skipping Narrator.");
             return Ok(RunResult {
-                roles: vec!["narrator".to_string()],
+                roles: vec!["narrators".to_string()],
                 dry_run,
                 sessions: vec![],
             });
@@ -100,7 +100,7 @@ pub fn execute(
         );
         println!("Run in CI (GITHUB_ACTIONS=true) to create a Jules session.");
         return Ok(RunResult {
-            roles: vec!["narrator".to_string()],
+            roles: vec!["narrators".to_string()],
             dry_run: false,
             sessions: vec![],
         });
@@ -123,7 +123,7 @@ pub fn execute(
         Ok(response) => {
             println!("✅ Narrator session created: {}", response.session_id);
             Ok(RunResult {
-                roles: vec!["narrator".to_string()],
+                roles: vec!["narrators".to_string()],
                 dry_run: false,
                 sessions: vec![response.session_id],
             })

@@ -86,7 +86,7 @@ impl TestContext {
     /// Assert that layer directories exist.
     pub fn assert_layer_structure_exists(&self) {
         let roles_path = self.jules_path().join("roles");
-        assert!(roles_path.join("narrator").exists(), "narrator layer should exist");
+        assert!(roles_path.join("narrators").exists(), "narrators layer should exist");
         assert!(roles_path.join("observers").exists(), "observers layer should exist");
         assert!(roles_path.join("deciders").exists(), "deciders layer should exist");
         assert!(roles_path.join("planners").exists(), "planners layer should exist");
@@ -101,11 +101,11 @@ impl TestContext {
 
     /// Assert that the narrator layer exists with correct structure.
     pub fn assert_narrator_exists(&self) {
-        self.assert_single_role_layer_exists("narrator");
-        let narrator_path = self.jules_path().join("roles").join("narrator");
+        self.assert_single_role_layer_exists("narrators");
+        let narrator_path = self.jules_path().join("roles").join("narrators");
         assert!(
             narrator_path.join("schemas").join("change.yml").exists(),
-            "narrator schemas/change.yml should exist"
+            "narrators schemas/change.yml should exist"
         );
     }
 
@@ -189,8 +189,8 @@ impl TestContext {
     pub fn assert_contracts_exist(&self) {
         let roles_path = self.jules_path().join("roles");
         assert!(
-            roles_path.join("narrator/contracts.yml").exists(),
-            "narrator/contracts.yml should exist"
+            roles_path.join("narrators/contracts.yml").exists(),
+            "narrators/contracts.yml should exist"
         );
         assert!(
             roles_path.join("observers/contracts.yml").exists(),
@@ -234,7 +234,7 @@ impl TestContext {
         self.assert_role_in_layer_exists("deciders", "triage_generic");
 
         // Single-role layers have prompt.yml directly in layer directory
-        self.assert_single_role_layer_exists("narrator");
+        self.assert_single_role_layer_exists("narrators");
         self.assert_single_role_layer_exists("planners");
         self.assert_single_role_layer_exists("implementers");
     }

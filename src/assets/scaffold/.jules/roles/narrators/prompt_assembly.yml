@@ -1,8 +1,8 @@
 schema_version: 1
-layer: narrator
+layer: narrators
 
 runtime_context: {}
 
 includes:
   - title: "Layer Contracts"
-    path: ".jules/roles/narrator/contracts.yml"
+    path: ".jules/roles/narrators/contracts.yml"

@@ -85,7 +85,7 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
     let latest_path = inputs.jules_path.join("changes").join("latest.yml");
     if latest_path.exists() {
         let change_schema_path =
-            inputs.jules_path.join("roles").join("narrator").join("schemas").join("change.yml");
+            inputs.jules_path.join("roles").join("narrators").join("schemas").join("change.yml");
         validate_changes_latest(&latest_path, &change_schema_path, diagnostics);
     }
 

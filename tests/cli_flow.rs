@@ -74,9 +74,9 @@ fn init_creates_complete_layer_structure() {
     assert!(jules.join("roles/deciders/prompt_assembly.yml").exists());
 
     // Single-role layers have flat structure (no roles subdirectory)
-    assert!(jules.join("roles/narrator/prompt.yml").exists());
-    assert!(jules.join("roles/narrator/contracts.yml").exists());
-    assert!(jules.join("roles/narrator/schemas/change.yml").exists());
+    assert!(jules.join("roles/narrators/prompt.yml").exists());
+    assert!(jules.join("roles/narrators/contracts.yml").exists());
+    assert!(jules.join("roles/narrators/schemas/change.yml").exists());
     assert!(jules.join("roles/planners/prompt.yml").exists());
     assert!(jules.join("roles/planners/contracts.yml").exists());
     assert!(jules.join("roles/implementers/prompt.yml").exists());
@@ -110,7 +110,7 @@ fn template_rejects_single_role_layers() {
 
     // Narrator is single-role and should not accept template creation
     ctx.cli()
-        .args(["template", "-l", "narrator", "-n", "custom-narrator"])
+        .args(["template", "-l", "narrators", "-n", "custom-narrator"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("single-role"));

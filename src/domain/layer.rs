@@ -23,7 +23,7 @@ impl Layer {
     /// Directory name for this layer.
     pub fn dir_name(&self) -> &'static str {
         match self {
-            Layer::Narrators => "narrator",
+            Layer::Narrators => "narrators",
             Layer::Observers => "observers",
             Layer::Deciders => "deciders",
             Layer::Planners => "planners",
@@ -45,7 +45,7 @@ impl Layer {
     /// Parse a layer from its directory name.
     pub fn from_dir_name(name: &str) -> Option<Layer> {
         match name.to_lowercase().as_str() {
-            "narrator" => Some(Layer::Narrators),
+            "narrators" | "narrator" => Some(Layer::Narrators),
             "observers" | "observer" => Some(Layer::Observers),
             "deciders" | "decider" => Some(Layer::Deciders),
             "planners" | "planner" => Some(Layer::Planners),

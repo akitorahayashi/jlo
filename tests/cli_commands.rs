@@ -402,7 +402,7 @@ fn run_narrator_dry_run() {
 
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
-        .args(["run", "narrator", "--dry-run"])
+        .args(["run", "narrators", "--dry-run"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Dry Run: Narrator"))
@@ -451,7 +451,7 @@ fn run_narrator_skips_when_no_codebase_changes() {
 
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
-        .args(["run", "narrator", "--dry-run"])
+        .args(["run", "narrators", "--dry-run"])
         .assert()
         .success()
         .stdout(predicate::str::contains("No codebase changes detected"));

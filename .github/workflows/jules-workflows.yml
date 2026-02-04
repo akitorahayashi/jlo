@@ -8,10 +8,10 @@ on:
         description: Start from layer
         type: choice
         options:
-        - narrator
+        - narrators
         - observers
         - deciders
-        default: narrator
+        default: narrators
       wait_minutes:
         description: Minutes to wait between layers (Jules async processing time)
         type: number
@@ -28,12 +28,12 @@ concurrency:
   group: jules
   cancel-in-progress: false
 env:
-  ENTRY_POINT: ${{ github.event.inputs.entry_point || 'narrator' }}
+  ENTRY_POINT: ${{ github.event.inputs.entry_point || 'narrators' }}
   WAIT_MINUTES: ${{ github.event.inputs.wait_minutes || 30 }}
   ROUTING_LABELS: ${{ github.event.inputs.routing_labels || 'bugs,feats,refacts,tests,docs' }}
 jobs:
   run-narrator:
-    if: vars.JULES_PAUSED != 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && (github.event.inputs.entry_point || 'narrator') == 'narrator'
+    if: vars.JULES_PAUSED != 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && (github.event.inputs.entry_point || 'narrators') == 'narrators'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -53,7 +53,7 @@ jobs:
       uses: ./.github/actions/install-jlo
     - name: Run narrator
       run: |
-        timeout 20m jlo run narrator
+        timeout 20m jlo run narrators
     - name: Validate workspace (fail-fast)
       run: jlo doctor
   wait-after-narrator:
@@ -103,7 +103,7 @@ jobs:
       run: bash .github/scripts/jules-generate-workstream-matrix.sh
   generate-observer-matrix:
     needs: generate-workstream-matrix
-    if: needs.generate-workstream-matrix.outputs.has_workstreams == 'true' && (github.event.inputs.entry_point || 'narrator') != 'deciders'
+    if: needs.generate-workstream-matrix.outputs.has_workstreams == 'true' && (github.event.inputs.entry_point || 'narrators') != 'deciders'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:

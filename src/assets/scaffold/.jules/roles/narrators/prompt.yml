@@ -1,9 +1,9 @@
-role: narrator
-layer: narrator
+role: narrators
+layer: narrators
 
 contracts:
   - .jules/JULES.md
-  - .jules/roles/narrator/contracts.yml
+  - .jules/roles/narrators/contracts.yml
 
 instructions:
   - Read every file in contracts in order before doing any work.

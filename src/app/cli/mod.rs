@@ -130,7 +130,7 @@ enum InitCommands {
 enum RunLayer {
     /// Run narrator agent (summarizes codebase changes)
     #[clap(visible_alias = "n")]
-    Narrator {
+    Narrators {
         /// Show assembled prompts without executing
         #[arg(long)]
         dry_run: bool,
@@ -336,7 +336,7 @@ fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     use crate::domain::Layer;
 
     let (target_layer, roles, workstream, scheduled, dry_run, branch, issue) = match layer {
-        RunLayer::Narrator { dry_run, branch } => {
+        RunLayer::Narrators { dry_run, branch } => {
             (Layer::Narrators, None, None, false, dry_run, branch, None)
         }
         RunLayer::Observers { role, dry_run, branch, workstream, scheduled } => {

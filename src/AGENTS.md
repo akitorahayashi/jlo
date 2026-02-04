@@ -59,7 +59,7 @@ tests/
 | `jlo init workflows (--remote \| --self-hosted) [--overwrite]` | `i w` | Install workflow kit into `.github/` |
 | `jlo update [--dry-run] [--adopt-managed]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
-| `jlo run narrator [--dry-run]` | `r n` | Run narrator (produces changes feed) |
+| `jlo run narrators [--dry-run]` | `r n` | Run narrator (produces changes feed) |
 | `jlo run observers --workstream <name> [--role <name> \| --scheduled]` | `r o` | Run observer agents |
 | `jlo run deciders --workstream <name> [--role <name> \| --scheduled]` | `r d` | Run decider agents |
 | `jlo run planners <path>` | `r p` | Run planner (issue-driven) |
@@ -82,7 +82,7 @@ cargo test --all-targets --all-features
 
 | Layer | Type | Invocation | Config |
 |-------|------|------------|--------|
-| Narrator | Single-role | `jlo run narrator` | None (git-based) |
+| Narrator | Single-role | `jlo run narrators` | None (git-based) |
 | Observers | Multi-role | `jlo run observers --workstream <name>` | `workstreams/<workstream>/scheduled.toml` |
 | Deciders | Multi-role | `jlo run deciders --workstream <name>` | `workstreams/<workstream>/scheduled.toml` |
 | Planners | Single-role | `jlo run planners <path>` | None (issue path) |

@@ -6,7 +6,7 @@ This file defines the binding rules for Jules agents operating in this repositor
 
 - This file is authoritative for global rules and shared conventions.
 - Each layer contract is authoritative for layer-specific workflows and schemas:
-  - `.jules/roles/narrator/contracts.yml`
+  - `.jules/roles/narrators/contracts.yml`
   - `.jules/roles/observers/contracts.yml`
   - `.jules/roles/deciders/contracts.yml`
   - `.jules/roles/planners/contracts.yml`
@@ -29,7 +29,7 @@ The Narrator layer produces `.jules/changes/latest.yml`, summarizing recent code
 - `.jules/changes/latest.yml` is overwritten in-place (no time-series).
 - Narrator excludes `.jules/` from all diffs and path lists.
 - Observers receive this context automatically when present.
-- Schema is defined by `.jules/roles/narrator/schemas/change.yml`.
+- Schema is defined by `.jules/roles/narrators/schemas/change.yml`.
 
 ## Workstream Model
 
@@ -77,7 +77,7 @@ When an issue requires deep analysis:
 
 - YAML only (`.yml`) and English only.
 - Artifacts are created by copying the corresponding schema and filling its fields:
-  - Changes: `.jules/roles/narrator/schemas/change.yml`
+  - Changes: `.jules/roles/narrators/schemas/change.yml`
   - Events: `.jules/roles/observers/schemas/event.yml`
   - Issues: `.jules/roles/deciders/schemas/issue.yml`
 

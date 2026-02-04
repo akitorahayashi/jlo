@@ -40,10 +40,10 @@ const JLO_MANAGED_FILES: &[&str] = &[
     ".jules/roles/deciders/prompt_assembly.yml",
     ".jules/roles/deciders/schemas/issue.yml",
     // Narrator layer
-    ".jules/roles/narrator/contracts.yml",
-    ".jules/roles/narrator/prompt.yml",
-    ".jules/roles/narrator/prompt_assembly.yml",
-    ".jules/roles/narrator/schemas/change.yml",
+    ".jules/roles/narrators/contracts.yml",
+    ".jules/roles/narrators/prompt.yml",
+    ".jules/roles/narrators/prompt_assembly.yml",
+    ".jules/roles/narrators/schemas/change.yml",
     // Planners layer
     ".jules/roles/planners/contracts.yml",
     ".jules/roles/planners/prompt.yml",
