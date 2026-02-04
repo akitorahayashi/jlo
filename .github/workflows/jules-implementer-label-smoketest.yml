@@ -1,0 +1,84 @@
+name: Jules Implementer Label Smoke Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  smoketest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Create PR and apply label
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::Missing GH_TOKEN (secrets.JLO_BOT_TOKEN)."
+            exit 1
+          fi
+
+          label_config=".jules/github-labels.json"
+          if [ ! -f "$label_config" ]; then
+            echo "::error::Missing label definition file: $label_config"
+            exit 1
+          fi
+
+          label=$(jq -r '.issue_labels | keys[0] // empty' "$label_config")
+          if [ -z "$label" ] || [ "$label" = "null" ]; then
+            echo "::error::No labels found in $label_config"
+            exit 1
+          fi
+          color=$(jq -r --arg label "$label" '.issue_labels[$label].color // empty' "$label_config")
+          if [ -z "$color" ] || [ "$color" = "null" ]; then
+            echo "::error::Missing color for '$label' in $label_config"
+            exit 1
+          fi
+          if [[ ! "$color" =~ ^[0-9a-fA-F]{6}$ ]]; then
+            echo "::error::Invalid label color '$color' for '$label' in $label_config (expected 6-digit hex)"
+            exit 1
+          fi
+
+          issue_id=$(printf "%06d" $((RUN_ID % 1000000)))
+          pretend_branch="jules-implementer-${label}-${issue_id}-smoketest"
+          branch="label-smoketest-${RUN_ID}"
+
+          git switch -c "$branch"
+          git commit --allow-empty -m "test: label workflow ($pretend_branch)"
+          git push origin "$branch"
+
+          pr_url=$(gh pr create --repo "$REPO" --head "$branch" --base main --title "test: label workflow ($pretend_branch)" --body "Temporary smoke test for jules-implementer-label workflow.")
+          pr_number=$(gh pr view "$pr_url" --repo "$REPO" --json number -q '.number')
+
+          echo "Ensuring label '$label' exists with color '$color'..."
+          if gh label list --repo "$REPO" --json name -q '.[].name' | grep -Fxq "$label"; then
+            gh label edit "$label" --repo "$REPO" --color "$color"
+          else
+            gh label create "$label" --repo "$REPO" --color "$color"
+          fi
+
+          echo "Applying label '$label' to PR #$pr_number..."
+          gh pr edit "$pr_number" --repo "$REPO" --add-label "$label"
+
+          labels=$(gh pr view "$pr_number" --repo "$REPO" --json labels -q '.labels[].name')
+          if ! echo "$labels" | grep -Fxq "$label"; then
+            echo "::error::Label '$label' not applied. This indicates a failure in .github/workflows/jules-implementer-label.yml."
+            exit 1
+          fi
+
+          echo "Label '$label' detected on PR #$pr_number."
+
+          gh pr close "$pr_number" --repo "$REPO"
+          gh api --method DELETE "repos/$REPO/git/refs/heads/$branch" >/dev/null
