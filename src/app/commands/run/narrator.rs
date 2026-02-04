@@ -485,4 +485,67 @@ mod tests {
             err => panic!("Expected GitError, got {:?}", err),
         }
     }
+
+    #[test]
+    fn test_parse_numstat() {
+        let output = "1\t2\tfile1.rs\n10\t0\tfile2.rs\n-\t-\tbinary.bin";
+        let stats = parse_numstat(output);
+
+        assert_eq!(stats.files_changed, 3);
+        assert_eq!(stats.insertions, 11);
+        assert_eq!(stats.deletions, 2);
+    }
+
+    #[test]
+    fn test_parse_numstat_empty() {
+        let stats = parse_numstat("");
+        assert_eq!(stats.files_changed, 0);
+        assert_eq!(stats.insertions, 0);
+        assert_eq!(stats.deletions, 0);
+    }
+
+    #[test]
+    fn test_parse_numstat_malformed() {
+        let output = "invalid line\n1\t1\tgood.rs";
+        let stats = parse_numstat(output);
+        // Should handle gracefully
+        assert_eq!(stats.files_changed, 1);
+        assert_eq!(stats.insertions, 1);
+        assert_eq!(stats.deletions, 1);
+    }
+
+    #[test]
+    fn test_extract_to_commit_valid() {
+        let content = r#"
+range:
+  to_commit: "abcdef123456"
+"#;
+        let commit = extract_to_commit(content);
+        assert_eq!(commit, Some("abcdef123456".to_string()));
+    }
+
+    #[test]
+    fn test_extract_to_commit_missing() {
+        let content = r#"
+range:
+  other: "value"
+"#;
+        assert_eq!(extract_to_commit(content), None);
+    }
+
+    #[test]
+    fn test_extract_to_commit_invalid_yaml() {
+        let content = "::invalid yaml";
+        assert_eq!(extract_to_commit(content), None);
+    }
+
+    #[test]
+    fn test_extract_to_commit_short() {
+        let content = r#"
+range:
+  to_commit: "abc"
+"#;
+        // Filter expects >= 7 chars
+        assert_eq!(extract_to_commit(content), None);
+    }
 }

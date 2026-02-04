@@ -211,8 +211,9 @@ pub fn update(dry_run: bool, adopt_managed: bool) -> Result<UpdateResult, AppErr
         return Err(AppError::WorkspaceNotFound);
     }
 
+    let templates = EmbeddedRoleTemplateStore::new();
     let options = UpdateOptions { dry_run, adopt_managed };
-    update::execute(&workspace.jules_path(), options)
+    update::execute(&workspace.jules_path(), options, &templates)
 }
 
 // =============================================================================
