@@ -208,6 +208,58 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
     fn workstream_exists(&self, name: &str) -> bool {
         self.jules_path().join("workstreams").join(name).exists()
     }
+
+    fn read_file(&self, path: &str) -> Result<String, AppError> {
+        let full_path = self.resolve_path(path);
+        fs::read_to_string(full_path).map_err(AppError::Io)
+    }
+
+    fn write_file(&self, path: &str, content: &str) -> Result<(), AppError> {
+        let full_path = self.resolve_path(path);
+        if let Some(parent) = full_path.parent() {
+            fs::create_dir_all(parent).map_err(AppError::Io)?;
+        }
+        fs::write(full_path, content).map_err(AppError::Io)
+    }
+
+    fn remove_file(&self, path: &str) -> Result<(), AppError> {
+        let full_path = self.resolve_path(path);
+        if full_path.exists() {
+            fs::remove_file(full_path).map_err(AppError::Io)?;
+        }
+        Ok(())
+    }
+
+    fn create_dir_all(&self, path: &str) -> Result<(), AppError> {
+        let full_path = self.resolve_path(path);
+        fs::create_dir_all(full_path).map_err(AppError::Io)
+    }
+
+    fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError> {
+        let src_path = self.resolve_path(src);
+        let dst_path = self.resolve_path(dst);
+        if let Some(parent) = dst_path.parent() {
+            fs::create_dir_all(parent).map_err(AppError::Io)?;
+        }
+        fs::copy(src_path, dst_path).map_err(AppError::Io)
+    }
+
+    fn resolve_path(&self, path: &str) -> PathBuf {
+        self.root.join(path)
+    }
+
+    fn canonicalize(&self, path: &str) -> Result<PathBuf, AppError> {
+        // Since we assume CWD is root, passing path (relative or absolute) to fs::canonicalize should work.
+        // But if path is relative, fs::canonicalize resolves against CWD.
+        // We want to resolve against self.root?
+        // If self.root is absolute, and path is relative...
+        let p = if PathBuf::from(path).is_absolute() {
+            PathBuf::from(path)
+        } else {
+            self.root.join(path)
+        };
+        fs::canonicalize(p).map_err(AppError::Io)
+    }
 }
 
 #[cfg(test)]

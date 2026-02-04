@@ -1,14 +1,12 @@
 //! Update command implementation for reconciling workspace with embedded scaffold.
 
 use std::collections::BTreeMap;
-use std::fs;
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use chrono::Utc;
 
 use crate::domain::AppError;
-use crate::ports::RoleTemplateStore;
+use crate::ports::{RoleTemplateStore, WorkspaceStore};
 use crate::services::assets::scaffold_manifest::{
     ScaffoldManifest, hash_content, is_default_role_file, load_manifest, write_manifest,
 };
@@ -89,27 +87,31 @@ pub struct SkippedUpdate {
 }
 
 /// Execute the update command.
-pub fn execute(
-    jules_path: &Path,
+pub fn execute<W>(
+    workspace: &W,
     options: UpdateOptions,
     templates: &impl RoleTemplateStore,
-) -> Result<UpdateResult, AppError> {
-    let version_path = jules_path.join(".jlo-version");
-    let root = jules_path.parent().unwrap_or(Path::new("."));
-
+) -> Result<UpdateResult, AppError>
+where
+    W: WorkspaceStore,
+{
     // Check if workspace exists
-    if !jules_path.exists() {
+    if !workspace.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 
+    let jules_path = workspace.jules_path();
+    let version_path_str = ".jules/.jlo-version";
+
     // Version comparison
     let binary_version = env!("CARGO_PKG_VERSION");
-    let workspace_version = if version_path.exists() {
-        fs::read_to_string(&version_path)?.trim().to_string()
-    } else {
-        return Err(AppError::Configuration(
-            "Missing .jlo-version file. Cannot update workspace without version marker.".into(),
-        ));
+    let workspace_version = match workspace.read_file(version_path_str) {
+        Ok(content) => content.trim().to_string(),
+        Err(_) => {
+            return Err(AppError::Configuration(
+                "Missing .jlo-version file. Cannot update workspace without version marker.".into(),
+            ));
+        }
     };
 
     // Parse versions for comparison
@@ -161,17 +163,15 @@ pub fn execute(
             }
 
             // For non-managed files, only create if missing
-            let full_path = root.join(rel_path);
-            if !full_path.exists() {
+            if !workspace.resolve_path(rel_path).exists() {
                 to_create.push((rel_path.clone(), file.content.clone()));
             }
             continue;
         }
 
         // For jlo-managed files, always update
-        let full_path = root.join(rel_path);
-        if full_path.exists() {
-            let current_content = fs::read_to_string(&full_path)?;
+        if workspace.resolve_path(rel_path).exists() {
+            let current_content = workspace.read_file(rel_path)?;
             if current_content != file.content {
                 to_update.push((rel_path.clone(), file.content.clone()));
             }
@@ -181,14 +181,13 @@ pub fn execute(
     }
 
     let mut managed_manifest: Option<ScaffoldManifest> = None;
-    let existing_manifest = load_manifest(jules_path)?;
+    let existing_manifest = load_manifest(&jules_path)?;
 
     if options.adopt_managed {
         let mut manifest_entries = BTreeMap::new();
         for (path, content) in &default_role_files {
-            let full_path = root.join(path);
-            if full_path.exists() {
-                let current = fs::read_to_string(&full_path)?;
+            if workspace.resolve_path(path).exists() {
+                let current = workspace.read_file(path)?;
                 manifest_entries.insert(path.clone(), hash_content(&current));
             } else {
                 to_create.push((path.clone(), content.clone()));
@@ -201,10 +200,9 @@ pub fn execute(
         let mut next_manifest = BTreeMap::new();
 
         for (path, content) in &default_role_files {
-            let full_path = root.join(path);
             if let Some(recorded_hash) = manifest_map.remove(path) {
-                if full_path.exists() {
-                    let current = fs::read_to_string(&full_path)?;
+                if workspace.resolve_path(path).exists() {
+                    let current = workspace.read_file(path)?;
                     let current_hash = hash_content(&current);
                     if current_hash == recorded_hash {
                         if current != *content {
@@ -225,8 +223,8 @@ pub fn execute(
                             .to_string(),
                     });
                 }
-            } else if full_path.exists() {
-                let current = fs::read_to_string(&full_path)?;
+            } else if workspace.resolve_path(path).exists() {
+                let current = workspace.read_file(path)?;
                 if current == *content {
                     next_manifest.insert(path.clone(), hash_content(content));
                 } else {
@@ -242,9 +240,8 @@ pub fn execute(
         }
 
         for (path, recorded_hash) in manifest_map {
-            let full_path = root.join(&path);
-            if full_path.exists() {
-                let current = fs::read_to_string(&full_path)?;
+            if workspace.resolve_path(&path).exists() {
+                let current = workspace.read_file(&path)?;
                 let current_hash = hash_content(&current);
                 if current_hash == recorded_hash {
                     to_remove.push(path.clone());
@@ -262,8 +259,7 @@ pub fn execute(
         managed_manifest = Some(ScaffoldManifest::from_map(next_manifest));
     } else {
         for (path, content) in &default_role_files {
-            let full_path = root.join(path);
-            if full_path.exists() {
+            if workspace.resolve_path(path).exists() {
                 skipped.push(SkippedUpdate {
                     path: path.clone(),
                     reason: "Managed baseline missing; run update with --adopt-managed to track."
@@ -324,63 +320,48 @@ pub fn execute(
     // Create backup directory
     let backup_path = if !to_update.is_empty() || !to_remove.is_empty() {
         let timestamp = Utc::now().format("%Y%m%d_%H%M%S").to_string();
-        let backup_dir = jules_path.join(".jlo-update").join(&timestamp);
-        fs::create_dir_all(&backup_dir)?;
+        let backup_dir_rel = format!(".jules/.jlo-update/{}", timestamp);
+        workspace.create_dir_all(&backup_dir_rel)?;
 
         // Backup files that will be updated
         for (rel_path, _) in &to_update {
-            let src = root.join(rel_path);
-            let dst = backup_dir.join(rel_path);
-            if let Some(parent) = dst.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            fs::copy(&src, &dst)?;
+            let dst = format!("{}/{}", backup_dir_rel, rel_path);
+            workspace.copy_file(rel_path, &dst)?;
         }
         for rel_path in &to_remove {
-            let src = root.join(rel_path);
-            if src.exists() {
-                let dst = backup_dir.join(rel_path);
-                if let Some(parent) = dst.parent() {
-                    fs::create_dir_all(parent)?;
-                }
-                fs::copy(&src, &dst)?;
+            if workspace.resolve_path(rel_path).exists() {
+                let dst = format!("{}/{}", backup_dir_rel, rel_path);
+                workspace.copy_file(rel_path, &dst)?;
             }
         }
 
-        Some(backup_dir)
+        Some(workspace.resolve_path(&backup_dir_rel))
     } else {
         None
     };
 
     // Apply updates
     for (rel_path, content) in &to_update {
-        let full_path = root.join(rel_path);
-        fs::write(&full_path, content)?;
+        workspace.write_file(rel_path, content)?;
     }
 
     // Create new files
     for (rel_path, content) in &to_create {
-        let full_path = root.join(rel_path);
-        if let Some(parent) = full_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        fs::write(&full_path, content)?;
+        workspace.write_file(rel_path, content)?;
     }
 
     for rel_path in &to_remove {
-        let full_path = root.join(rel_path);
-        if full_path.exists() {
-            fs::remove_file(&full_path)?;
+        if workspace.resolve_path(rel_path).exists() {
+            workspace.remove_file(rel_path)?;
         }
     }
 
     if let Some(manifest) = managed_manifest {
-        write_manifest(jules_path, &manifest)?;
+        write_manifest(&jules_path, &manifest)?;
     }
 
     // Update version file
-    let mut version_file = fs::File::create(&version_path)?;
-    writeln!(version_file, "{}", binary_version)?;
+    workspace.write_file(version_path_str, &format!("{}\n", binary_version))?;
 
     let updated_paths: Vec<String> = to_update.into_iter().map(|(p, _)| p).collect();
     let created_paths: Vec<String> = to_create.into_iter().map(|(p, _)| p).collect();
@@ -419,6 +400,8 @@ fn compare_versions(a: &[u32], b: &[u32]) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+    use std::fs;
 
     #[test]
     fn test_compare_versions() {
@@ -484,7 +467,8 @@ mod tests {
 
         let options = UpdateOptions { dry_run: false, adopt_managed: false };
 
-        let result = execute(&jules_path, options, &mock_store).unwrap();
+        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let result = execute(&workspace, options, &mock_store).unwrap();
 
         assert!(result.created.contains(&".jules/README.md".to_string()));
         assert!(result.created.contains(&".jules/custom.txt".to_string()));
@@ -514,7 +498,8 @@ mod tests {
         };
 
         let options = UpdateOptions { dry_run: false, adopt_managed: false };
-        let result = execute(&jules_path, options, &mock_store).unwrap();
+        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let result = execute(&workspace, options, &mock_store).unwrap();
 
         assert!(result.updated.contains(&".jules/README.md".to_string()));
 
@@ -544,7 +529,8 @@ mod tests {
         };
 
         let options = UpdateOptions { dry_run: false, adopt_managed: false };
-        let result = execute(&jules_path, options, &mock_store).unwrap();
+        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let result = execute(&workspace, options, &mock_store).unwrap();
 
         // Should NOT update unmanaged file
         assert!(!result.updated.contains(&".jules/custom.txt".to_string()));

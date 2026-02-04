@@ -1,59 +1,75 @@
 //! Single-role layer execution (Planners, Implementers).
 
-use std::fs;
 use std::path::Path;
 
 use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
-use crate::ports::{AutomationMode, JulesClient, SessionRequest};
+use crate::ports::{AutomationMode, GitHubPort, JulesClient, SessionRequest, WorkspaceStore};
 use crate::services::adapters::jules_client_http::HttpJulesClient;
 
 const PLANNER_WORKFLOW_NAME: &str = "jules-run-planner.yml";
 const IMPLEMENTER_WORKFLOW_NAME: &str = "jules-run-implementer.yml";
 
 /// Execute a single-role layer (Planners or Implementers).
-pub fn execute(
+#[allow(clippy::too_many_arguments)]
+pub fn execute<H, W>(
     jules_path: &Path,
     layer: Layer,
     issue_path: &Path,
     dry_run: bool,
     branch: Option<&str>,
     is_ci: bool,
-) -> Result<RunResult, AppError> {
-    // Validate issue file requirement (now guaranteed by Clap)
-    let path = issue_path;
+    github: &H,
+    workspace: &W,
+) -> Result<RunResult, AppError>
+where
+    H: GitHubPort,
+    W: WorkspaceStore,
+{
+    // Validate issue file requirement
+    let path_str = issue_path.to_str().ok_or_else(|| {
+        AppError::Configuration("Issue path contains invalid unicode".to_string())
+    })?;
 
-    if !path.exists() {
-        return Err(AppError::IssueFileNotFound(path.display().to_string()));
+    if !issue_path.exists() {
+        return Err(AppError::IssueFileNotFound(path_str.to_string()));
     }
 
     // Security Check: Ensure path is within .jules/workstreams/*/issues
-    let canonical_path = fs::canonicalize(path)?;
-    let abs_jules_path = if jules_path.is_absolute() {
-        jules_path.to_path_buf()
-    } else {
-        std::env::current_dir()?.join(jules_path)
-    };
-    let workstreams_dir = fs::canonicalize(abs_jules_path.join("workstreams"))
+    // We use workspace.canonicalize to resolve absolute path
+    let canonical_path = workspace.canonicalize(path_str)?;
+
+    // We expect workstreams to be in .jules/workstreams relative to workspace root
+    // workspace.jules_path() returns the .jules directory path
+    let workstreams_dir = workspace.jules_path().join("workstreams");
+    // Canonicalize workstreams dir to compare apples to apples (resolve potential symlinks)
+    // We use workspace.canonicalize on the string representation
+    let workstreams_dir_str = workstreams_dir.to_str().ok_or_else(|| {
+        AppError::Configuration("Workstreams path contains invalid unicode".to_string())
+    })?;
+
+    // Note: canonicalize might fail if dir doesn't exist, but it should exist if workspace is valid
+    let canonical_workstreams_dir = workspace
+        .canonicalize(workstreams_dir_str)
         .map_err(|_| AppError::Configuration("Workstreams directory not found".into()))?;
 
     let has_issues_component = canonical_path.components().any(|c| c.as_os_str() == "issues");
-    if !canonical_path.starts_with(&workstreams_dir) || !has_issues_component {
+    if !canonical_path.starts_with(&canonical_workstreams_dir) || !has_issues_component {
         return Err(AppError::Configuration(format!(
             "Issue file must be within {}/*/issues/",
-            workstreams_dir.display()
+            canonical_workstreams_dir.display()
         )));
     }
 
     // Handle Local Dispatch (outside CI)
     if !is_ci {
-        return execute_local_dispatch(&canonical_path, layer, dry_run);
+        return execute_local_dispatch(&canonical_path, layer, dry_run, github, workspace);
     }
 
     // CI Execution: Direct session creation
-    let issue_content = fs::read_to_string(path)?;
+    let issue_content = workspace.read_file(path_str)?;
     let config = load_config(jules_path)?;
 
     // Determine starting branch
@@ -67,7 +83,7 @@ pub fn execute(
     });
 
     if dry_run {
-        execute_dry_run(jules_path, layer, &starting_branch, &issue_content, path)?;
+        execute_dry_run(jules_path, layer, &starting_branch, &issue_content, issue_path)?;
         return Ok(RunResult {
             roles: vec![layer.dir_name().to_string()],
             dry_run: true,
@@ -76,6 +92,12 @@ pub fn execute(
     }
 
     // Determine repository source from git
+    // Note: detect_repository_source currently uses direct git command/config check.
+    // It should also be refactored eventually, but it's in `config.rs`.
+    // For now we leave it as is, or we should use GitPort?
+    // The task didn't explicitly mention config.rs but "Application commands".
+    // I will leave detect_repository_source as is for now as it wasn't listed in affected areas,
+    // though ideally it should be refactored too.
     let source = detect_repository_source()?;
 
     // Execute with appropriate client
@@ -87,7 +109,7 @@ pub fn execute(
         &source,
         &client,
         &issue_content,
-        path,
+        issue_path,
     )?;
 
     Ok(RunResult {
@@ -97,12 +119,18 @@ pub fn execute(
     })
 }
 
-/// Execute local workflow dispatch via gh CLI.
-fn execute_local_dispatch(
+/// Execute local workflow dispatch via GitHubPort.
+fn execute_local_dispatch<H, W>(
     canonical_path: &Path,
     layer: Layer,
     dry_run: bool,
-) -> Result<RunResult, AppError> {
+    github: &H,
+    workspace: &W,
+) -> Result<RunResult, AppError>
+where
+    H: GitHubPort,
+    W: WorkspaceStore,
+{
     let workflow_name = match layer {
         Layer::Planners => PLANNER_WORKFLOW_NAME,
         Layer::Implementers => IMPLEMENTER_WORKFLOW_NAME,
@@ -122,28 +150,21 @@ fn execute_local_dispatch(
     );
 
     // Compute relative path for workflow input
-    let current_dir = std::env::current_dir()?;
-    let relative_path = canonical_path.strip_prefix(&current_dir).unwrap_or(canonical_path);
+    // We resolve relative to workspace root
+    let root = workspace.resolve_path("");
+    // If canonical_path (absolute) starts with root (absolute), strip prefix.
+    // Note: resolve_path returns absolute path if root was absolute (which it is from current_dir).
+    // But we need to make sure 'root' is also canonicalized to match canonical_path?
+    // FilesystemWorkspaceStore::new stores root as is.
+    // We should canonicalize root.
+    let canonical_root = workspace.canonicalize("").unwrap_or(root);
 
-    // Execute: gh workflow run <workflow> -f issue_file=<path>
-    let output = std::process::Command::new("gh")
-        .args([
-            "workflow",
-            "run",
-            workflow_name,
-            "-f",
-            &format!("issue_file={}", relative_path.display()),
-        ])
-        .output()
-        .map_err(|e| AppError::Configuration(format!("Failed to execute gh CLI: {}", e)))?;
+    let relative_path = canonical_path.strip_prefix(&canonical_root).unwrap_or(canonical_path);
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(AppError::Configuration(format!(
-            "Failed to dispatch workflow via gh CLI. Stderr:\n{}",
-            stderr
-        )));
-    }
+    // Execute via port
+    let inputs = &[("issue_file", relative_path.to_str().unwrap_or(""))];
+
+    github.dispatch_workflow(workflow_name, inputs)?;
 
     println!("✅ Workflow dispatched successfully.");
 
