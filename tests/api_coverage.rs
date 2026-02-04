@@ -1,4 +1,6 @@
-use jlo::{init, init_workflows, doctor, DoctorOptions, update, template, setup_list, WorkflowRunnerMode};
+use jlo::{
+    DoctorOptions, WorkflowRunnerMode, doctor, init, init_workflows, setup_list, template, update,
+};
 use serial_test::serial;
 use std::env;
 use tempfile::TempDir;
@@ -29,10 +31,7 @@ fn test_api_coverage_full_flow() {
 
     // 1. Init
     // Initialize git repo because jlo init requires it
-    std::process::Command::new("git")
-        .arg("init")
-        .status()
-        .expect("failed to init git");
+    std::process::Command::new("git").arg("init").status().expect("failed to init git");
 
     // Also need to be on a branch named 'jules' or similar?
     // Memory says: "The `jlo init` command implementation ... strictly enforces that the current git branch is named `jules` before proceeding."
@@ -48,9 +47,7 @@ fn test_api_coverage_full_flow() {
                 .args(["commit", "--allow-empty", "-m", "initial", "--no-gpg-sign"])
                 .status()
                 .and_then(|_| {
-                    std::process::Command::new("git")
-                        .args(["checkout", "-b", "jules"])
-                        .status()
+                    std::process::Command::new("git").args(["checkout", "-b", "jules"]).status()
                 })
         })
         .expect("failed to setup jules branch");
@@ -59,11 +56,8 @@ fn test_api_coverage_full_flow() {
     assert!(temp.path().join(".jules").exists());
 
     // 2. Doctor (fresh init should pass)
-    let doctor_outcome = doctor(DoctorOptions {
-        fix: false,
-        strict: false,
-        workstream: None,
-    }).expect("doctor failed");
+    let doctor_outcome = doctor(DoctorOptions { fix: false, strict: false, workstream: None })
+        .expect("doctor failed");
     assert_eq!(doctor_outcome.exit_code, 0);
 
     // 3. Update (dry run)
