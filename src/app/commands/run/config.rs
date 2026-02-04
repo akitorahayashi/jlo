@@ -3,8 +3,8 @@
 use std::fs;
 use std::path::Path;
 
-use crate::domain::{AppError, RunConfig};
 use super::config_dto::RunConfigDto;
+use crate::domain::{AppError, RunConfig};
 
 /// Load and parse the run configuration.
 pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
@@ -23,7 +23,9 @@ pub fn parse_config_content(content: &str) -> Result<RunConfig, AppError> {
     // Check for legacy [agents] section
     let value: toml::Value = toml::from_str(content)?;
     if value.get("agents").is_some() {
-         return Err(AppError::config_error("Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml."));
+        return Err(AppError::config_error(
+            "Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml.",
+        ));
     }
 
     let dto: RunConfigDto = toml::from_str(content)?;
