@@ -46,5 +46,3 @@ profile:
     - "Cite public API signatures where lifetimes leak and the downstream ergonomics cost"
     - "Cite shared-state primitives (Arc/Mutex/RwLock) and the critical sections they protect"
     - "Cite trait boundaries (generic vs dyn) and where type information is erased or over-specialized"
-
-instructions: []

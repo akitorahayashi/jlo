@@ -34,7 +34,6 @@ const JLO_MANAGED_FILES: &[&str] = &[
     ".jules/roles/observers/prompt.yml",
     ".jules/roles/observers/prompt_assembly.yml",
     ".jules/roles/observers/schemas/event.yml",
-    ".jules/roles/observers/schemas/history.yml",
     ".jules/roles/observers/schemas/perspective.yml",
     // Deciders layer
     ".jules/roles/deciders/contracts.yml",

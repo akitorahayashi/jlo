@@ -75,6 +75,9 @@ Implementers modify source code and require human review.
 |       |   +-- issues/     # Consolidated problems
 |       |       +-- index.md
 |       |       +-- <label>/
+|       +-- workstations/   # Observer state persistence
+|       |   +-- <role>/     # Role-specific workstation
+|       |       +-- perspective.yml   # Observer continuity (goals/rules/ignore/log)
 |
 +-- roles/              # Role definitions (global)
     +-- narrator/       # Single-role layer
@@ -88,12 +91,10 @@ Implementers modify source code and require human review.
     |   +-- <role>/          # Role subdirectory
     |       +-- prompt.yml   # Static: run prompt (includes workstream)
     |       +-- role.yml     # Dynamic: evolving focus
-    |       +-- feedbacks/   # Decider feedback
     |
     +-- deciders/       # Multi-role layer
     |   +-- contracts.yml    # Shared decider contract
     |   +-- issue.yml        # Issue template
-    |   +-- feedback.yml     # Feedback template
     |   +-- <role>/          # Role subdirectory
     |       +-- prompt.yml   # Includes workstream
     |
@@ -143,10 +144,10 @@ Layer-level shared constraints and workflows. All roles in the layer reference t
 Execution parameters and references to contracts.yml. Includes `workstream:` field for observers and deciders.
 
 ### role.yml
-Specialized focus that evolves through feedback loop. Only observers have this (stateful layer).
+Specialized focus for observers. Continuity lives in the workstation perspective file.
 
 ### Templates (*.yml)
-Copyable templates (change.yml, event.yml, issue.yml, feedback.yml) defining the structure of artifacts.
+Copyable templates (change.yml, event.yml, issue.yml) defining the structure of artifacts.
 Agents `cp` these files and fill them out.
 
 ## Workflow
@@ -167,13 +168,13 @@ Each observer:
 1. Reads contracts.yml (layer behavior)
 2. Reads `.jules/changes/latest.yml` for recent changes context (if present)
 3. Reads role.yml (specialized focus)
-4. Reads feedbacks/, abstracts patterns, updates role.yml
+4. Reads `.jules/workstreams/<workstream>/workstations/<role>/perspective.yml`
 5. **Reads .jules/workstreams/<workstream>/exchange/issues/index.md to check for open issues**
 6. **Skips observations already covered by open issues (deduplication)**
 7. Writes event files under workstreams/<workstream>/exchange/events/ in the incoming state directory
-8. Publishes changes as a PR (branch naming follows the convention below)
+8. Updates perspective.yml (goals/rules/ignore/log)
+9. Publishes changes as a PR (branch naming follows the convention below)
 
-**Stateful**: Receives feedback via `feedbacks/`.
 
 ### 2. Decider Agent (Scheduled)
 
@@ -187,8 +188,7 @@ Triage agent:
 7. Creates new issues for genuinely new problems (using id as filename, placing in label folder)
 8. **Updates .jules/workstreams/<workstream>/exchange/issues/index.md**
 9. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
-10. Writes feedback for recurring rejections
-11. Moves processed events to the processed state directory defined by the scaffold
+10. Moves processed events to the processed state directory defined by the scaffold
 
 **Decider answers**: "Is this real? Should these events merge into one issue?"
 
@@ -225,25 +225,14 @@ The issue file must exist; missing files fail fast before agent execution.
 4. The implementer works on the default code branch and creates a PR for human review.
 5. The `sync-jules.yml` workflow keeps `jules` in sync with the default branch after merges.
 
-## Feedback Loop
+## Observer Continuity
 
 ```
 Observer creates events in workstreams/<workstream>/exchange/events/<state>/
        |
        v
-Decider validates, may reject or merge
-       |
-       v (rejection)
-Decider writes feedbacks/{date}_{desc}.yml
-       |
-       v
-Observer reads feedbacks/, updates role.yml
-       |
-       v
-Observer avoids similar observations
+Observer updates perspective.yml (goals/rules/ignore/log)
 ```
-
-Feedback files are preserved for audit (never deleted).
 
 ## Issue Lifecycle
 

@@ -14,7 +14,7 @@ outputs:
   - Pull request
 
 workflow:
-  - 1. Read issue content from the embedded prompt (already provided)
+  - 1. Read issue content from the embedded prompt
   - 2. Understand targets and acceptance criteria
   - 3. Implement code, tests, documentation
   - 4. Run verification (Decider recommended command)
