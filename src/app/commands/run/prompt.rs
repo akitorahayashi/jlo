@@ -6,7 +6,7 @@
 use std::path::Path;
 
 use crate::domain::{AppError, Layer, PromptContext};
-use crate::services::prompt_assembly;
+use crate::services::prompt_assembly::{self, RealPromptFs};
 
 /// Assemble the full prompt for a role in a multi-role layer.
 ///
@@ -18,8 +18,9 @@ pub fn assemble_prompt(
     workstream: &str,
 ) -> Result<String, AppError> {
     let context = PromptContext::new().with_var("workstream", workstream).with_var("role", role);
+    let fs = RealPromptFs;
 
-    prompt_assembly::assemble_prompt(jules_path, layer, &context)
+    prompt_assembly::assemble_prompt(jules_path, layer, &context, &fs)
         .map(|result| result.content)
         .map_err(|err| AppError::PromptAssemblyError(err.to_string()))
 }
@@ -29,7 +30,8 @@ pub fn assemble_prompt(
 /// Single-role layers have prompt.yml directly in the layer directory,
 /// not in a role subdirectory. They do not require workstream/role context.
 pub fn assemble_single_role_prompt(jules_path: &Path, layer: Layer) -> Result<String, AppError> {
-    prompt_assembly::assemble_prompt(jules_path, layer, &PromptContext::new())
+    let fs = RealPromptFs;
+    prompt_assembly::assemble_prompt(jules_path, layer, &PromptContext::new(), &fs)
         .map(|result| result.content)
         .map_err(|err| AppError::PromptAssemblyError(err.to_string()))
 }
@@ -44,7 +46,8 @@ pub fn assemble_issue_prompt(
     layer: Layer,
     issue_content: &str,
 ) -> Result<String, AppError> {
-    prompt_assembly::assemble_with_issue(jules_path, layer, issue_content)
+    let fs = RealPromptFs;
+    prompt_assembly::assemble_with_issue(jules_path, layer, issue_content, &fs)
         .map(|result| result.content)
         .map_err(|err| AppError::PromptAssemblyError(err.to_string()))
 }
