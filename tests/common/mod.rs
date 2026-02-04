@@ -14,13 +14,18 @@ pub struct TestContext {
 
 #[allow(dead_code)]
 impl TestContext {
-    /// Create a new isolated environment.
+    /// Create a new isolated environment with default "jules" branch.
     pub fn new() -> Self {
+        Self::new_on_branch("jules")
+    }
+
+    /// Create a new isolated environment on a specific branch.
+    pub fn new_on_branch(branch_name: &str) -> Self {
         let root = TempDir::new().expect("Failed to create temp directory for tests");
         let work_dir = root.path().join("work");
         fs::create_dir_all(&work_dir).expect("Failed to create test work directory");
 
-        // Initialize git repo and switch to jules branch to satisfy init requirements
+        // Initialize git repo
         let output = std::process::Command::new("git")
             .arg("init")
             .current_dir(&work_dir)
@@ -32,11 +37,12 @@ impl TestContext {
             String::from_utf8_lossy(&output.stderr)
         );
 
+        // Switch to requested branch (forcing creation/reset if needed)
         let output = std::process::Command::new("git")
-            .args(["checkout", "-b", "jules"])
+            .args(["checkout", "-B", branch_name])
             .current_dir(&work_dir)
             .output()
-            .expect("Failed to checkout jules branch");
+            .expect("Failed to checkout branch");
         assert!(
             output.status.success(),
             "git checkout failed: {}",

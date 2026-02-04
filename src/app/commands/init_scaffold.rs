@@ -39,10 +39,10 @@ where
 
     let branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if branch != "jules" {
-        return Err(AppError::Configuration(format!(
-            "Init must be run on 'jules' branch (current: '{}').\nPlease run: git checkout -b jules",
+        println!(
+            "Note: Initializing on '{}' branch. The standard jlo workflow typically uses a 'jules' branch.",
             branch
-        )));
+        );
     }
 
     let scaffold_files = ctx.templates().scaffold_files();

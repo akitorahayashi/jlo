@@ -24,6 +24,19 @@ fn init_creates_jules_directory() {
 }
 
 #[test]
+fn init_works_on_main_branch() {
+    let ctx = TestContext::new_on_branch("main");
+
+    ctx.cli()
+        .arg("init")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Initialized .jules/"));
+
+    ctx.assert_jules_exists();
+}
+
+#[test]
 fn init_fails_if_jules_exists() {
     let ctx = TestContext::new();
 
