@@ -1,0 +1,34 @@
+schema_version: 2
+
+# Metadata
+id: "fffrra"
+source_events: [b9x2k1]
+title: "Quick Start Branch Check"
+label: "bugs"
+priority: "medium"
+summary: "Quick Start fails because `jlo init` requires `jules` branch."
+
+# Content
+problem: |
+  The Quick Start guide instructs users to run `jlo init` directly, but the command implementation strictly enforces execution on a `jules` branch.
+
+impact: |
+  New users cannot follow the Quick Start guide, leading to frustration and abandonment.
+
+desired_outcome: |
+  Either `jlo init` creates the branch automatically, or the check is relaxed/removed for initialization, or documentation is updated (prefer fixing code behavior).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas: [src/app/commands/init_scaffold.rs, README.md]
+
+acceptance_criteria: [User can run `jlo init` on main branch successfully, OR `jlo init` prompts/auto-creates
+    the needed branch]
+
+verification_commands: [cargo test --test cli_commands]
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

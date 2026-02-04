@@ -1,0 +1,34 @@
+schema_version: 2
+
+# Metadata
+id: "ib1uic"
+source_events: [1fwz8k]
+title: "RunConfig Domain/DTO Coupling"
+label: "refacts"
+priority: "medium"
+summary: "RunConfig is tightly coupled to TOML/Serde, acting as a DTO."
+
+# Content
+problem: |
+  The `RunConfig` domain entity is tightly coupled to TOML serialization via Serde attributes, functioning effectively as a DTO. This violates the boundary sovereignty principle and conflates configuration parsing with domain representation.
+
+impact: |
+  Changes to configuration format directly impact domain entities, making refactoring difficult and coupling the domain to external interfaces.
+
+desired_outcome: |
+  RunConfig should be a pure domain entity. Configuration loading should use a separate DTO that maps to RunConfig.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas: [src/domain/run_config.rs, src/app/commands/run/config.rs]
+
+acceptance_criteria: [RunConfig struct has no serde attributes, A separate ConfigDTO struct exists for
+    TOML parsing, Mapping logic exists between DTO and Domain entity]
+
+verification_commands: ['cargo test --lib domain::run_config', 'cargo test --lib app::commands::run::config']
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
