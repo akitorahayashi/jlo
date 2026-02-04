@@ -49,6 +49,17 @@ impl Diagnostics {
         !self.warnings.is_empty()
     }
 
+    #[cfg(test)]
+    pub fn errors(&self) -> &[Diagnostic] {
+        &self.errors
+    }
+
+    #[cfg(test)]
+    #[allow(dead_code)]
+    pub fn warnings(&self) -> &[Diagnostic] {
+        &self.warnings
+    }
+
     pub fn emit(&self) {
         for diagnostic in &self.errors {
             eprintln!("[ERROR] {}: {}", diagnostic.file, diagnostic.message);
