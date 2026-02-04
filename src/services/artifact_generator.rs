@@ -202,7 +202,8 @@ note = "Custom note"
             }],
         )];
 
-        let result = ArtifactGenerator::merge_env_toml(&components, Some(existing_content)).unwrap();
+        let result =
+            ArtifactGenerator::merge_env_toml(&components, Some(existing_content)).unwrap();
 
         assert!(result.contains("value = \"custom_value\""), "should preserve existing value");
         assert!(result.contains("note = \"Custom note\""), "should preserve existing note");
