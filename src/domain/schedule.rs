@@ -36,11 +36,7 @@ pub struct ScheduledRole {
 
 impl ScheduleLayer {
     pub fn enabled_roles(&self) -> Vec<String> {
-        self.roles
-            .iter()
-            .filter(|r| r.enabled)
-            .map(|r| r.name.as_str().to_string())
-            .collect()
+        self.roles.iter().filter(|r| r.enabled).map(|r| r.name.as_str().to_string()).collect()
     }
 }
 
@@ -79,7 +75,8 @@ impl WorkstreamSchedule {
             if !seen.insert(role.name.clone()) {
                 return Err(ScheduleError::ConfigInvalid(format!(
                     "Duplicate role id '{}' in {} schedule",
-                    role.name.as_str(), layer
+                    role.name.as_str(),
+                    layer
                 )));
             }
         }

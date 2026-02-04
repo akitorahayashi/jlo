@@ -1,5 +1,5 @@
-use super::validation::validate_identifier;
 use super::AppError;
+use super::validation::validate_identifier;
 
 /// A validated component identifier.
 ///

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer};
 
-use super::validation::validate_identifier;
 use super::AppError;
+use super::validation::validate_identifier;
 
 /// A validated role identifier.
 ///

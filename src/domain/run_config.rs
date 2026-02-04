@@ -1,8 +1,7 @@
 //! Run configuration domain models.
 
-
-use url::Url;
 use serde::Deserialize;
+use url::Url;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RunConfigError {

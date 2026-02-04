@@ -15,12 +15,7 @@ pub fn validate_identifier(id: &str, allow_dots: bool) -> bool {
     if id == "." || id == ".." {
         return false;
     }
-    id.chars().all(|c| {
-        c.is_alphanumeric()
-            || c == '-'
-            || c == '_'
-            || (allow_dots && c == '.')
-    })
+    id.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || (allow_dots && c == '.'))
 }
 
 #[cfg(test)]

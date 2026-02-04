@@ -127,7 +127,10 @@ pub fn semantic_checks(
         match load_schedule(jules_path, workstream) {
             Ok(schedule) => {
                 for role in schedule.observers.roles {
-                    scheduled_roles.entry(Layer::Observers).or_default().insert(role.name.as_str().to_string());
+                    scheduled_roles
+                        .entry(Layer::Observers)
+                        .or_default()
+                        .insert(role.name.as_str().to_string());
                     // Validate role exists in filesystem
                     if !existing_roles
                         .get(&Layer::Observers)
@@ -141,7 +144,10 @@ pub fn semantic_checks(
                 }
 
                 for role in schedule.deciders.roles {
-                    scheduled_roles.entry(Layer::Deciders).or_default().insert(role.name.as_str().to_string());
+                    scheduled_roles
+                        .entry(Layer::Deciders)
+                        .or_default()
+                        .insert(role.name.as_str().to_string());
                     // Validate role exists in filesystem
                     if !existing_roles
                         .get(&Layer::Deciders)

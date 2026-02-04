@@ -2,7 +2,6 @@ use std::io;
 
 use thiserror::Error;
 
-
 /// Library-wide error type for jlo operations.
 #[derive(Debug, Error)]
 pub enum AppError {
@@ -33,7 +32,9 @@ pub enum AppError {
     InvalidComponentId(String),
 
     /// Layer identifier is invalid.
-    #[error("Invalid layer '{name}': must be one of Narrator, Observers, Deciders, Planners, Implementers")]
+    #[error(
+        "Invalid layer '{name}': must be one of Narrator, Observers, Deciders, Planners, Implementers"
+    )]
     InvalidLayer { name: String },
 
     /// Role not found (fuzzy match failed).
