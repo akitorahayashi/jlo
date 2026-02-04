@@ -1,0 +1,11 @@
+schema_version: 2
+observer: "consistency"
+workstream: "generic"
+updated_at: "2026-02-04T00:00:00Z"
+goals:
+  - "Monitor CLI command documentation vs implementation"
+rules: []
+ignore: []
+log:
+  - at: "2026-02-04T00:00:00Z"
+    summary: "Initialized workstation perspective."
