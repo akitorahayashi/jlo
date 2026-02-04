@@ -1,0 +1,41 @@
+schema_version: 2
+
+# Metadata
+id: "x7k9p2"
+source_events:
+  - "b9c4d3"
+title: "Decouple Artifact Generator IO"
+label: "refacts"
+priority: "medium"
+summary: "Refactor ArtifactGenerator to separate file I/O from generation logic."
+
+# Content
+problem: |
+  `ArtifactGenerator::merge_env_toml` performs direct `std::fs::read_to_string` operations within the logic method.
+  This couples the generation logic to the filesystem, making it difficult to test without side effects and violating the principle of "Isolation beats locking".
+
+impact: |
+  - Testing requires actual files on disk or mocking the filesystem globally.
+  - Harder to reuse the logic in contexts where the filesystem is not the source of truth (e.g., in-memory processing).
+  - Reduced test reliability and performance.
+
+desired_outcome: |
+  `ArtifactGenerator::merge_env_toml` should accept the content string or a reader trait instead of a file path, or the I/O should be lifted to the caller. The method should operate on data, not files.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/services/artifact_generator.rs"
+
+acceptance_criteria:
+  - "`ArtifactGenerator::merge_env_toml` no longer calls `std::fs::read_to_string`."
+  - "Tests for `merge_env_toml` do not require temporary files for input."
+
+verification_commands:
+  - "cargo test services::artifact_generator"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
