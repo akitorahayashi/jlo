@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::domain::RoleId;
+use crate::domain::{AppError, RoleId};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkstreamSchedule {
@@ -28,23 +28,26 @@ impl ScheduleLayer {
 }
 
 impl WorkstreamSchedule {
-    pub fn parse_toml(content: &str) -> Result<Self, String> {
-        let dto: dto::ScheduleDto = toml::from_str(content).map_err(|e| e.to_string())?;
-        let schedule: WorkstreamSchedule = dto.try_into()?;
+    pub fn parse_toml(content: &str) -> Result<Self, AppError> {
+        let dto: dto::ScheduleDto = toml::from_str(content)?;
+        let schedule: WorkstreamSchedule =
+            dto.try_into().map_err(AppError::ScheduleConfigInvalid)?;
         schedule.validate()?;
         Ok(schedule)
     }
 
-    fn validate(&self) -> Result<(), String> {
+    fn validate(&self) -> Result<(), AppError> {
         if self.version != 1 {
-            return Err(format!(
+            return Err(AppError::ScheduleConfigInvalid(format!(
                 "Unsupported scheduled.toml version: {} (expected 1)",
                 self.version
-            ));
+            )));
         }
 
         if self.enabled && self.observers.roles.is_empty() {
-            return Err("scheduled.toml enabled=true requires at least one observer role".into());
+            return Err(AppError::ScheduleConfigInvalid(
+                "scheduled.toml enabled=true requires at least one observer role".into(),
+            ));
         }
 
         Self::validate_roles("observers", &self.observers)?;
@@ -53,13 +56,20 @@ impl WorkstreamSchedule {
         Ok(())
     }
 
-    fn validate_roles(layer: &str, schedule_layer: &ScheduleLayer) -> Result<(), String> {
+    fn validate_roles(layer: &str, schedule_layer: &ScheduleLayer) -> Result<(), AppError> {
         let mut seen = std::collections::HashSet::new();
         for role in &schedule_layer.roles {
-            RoleId::new(&role.name)
-                .map_err(|_| format!("Invalid role id '{}' in {} schedule", role.name, layer))?;
+            RoleId::new(&role.name).map_err(|_| {
+                AppError::ScheduleConfigInvalid(format!(
+                    "Invalid role id '{}' in {} schedule",
+                    role.name, layer
+                ))
+            })?;
             if !seen.insert(&role.name) {
-                return Err(format!("Duplicate role id '{}' in {} schedule", role.name, layer));
+                return Err(AppError::ScheduleConfigInvalid(format!(
+                    "Duplicate role id '{}' in {} schedule",
+                    role.name, layer
+                )));
             }
         }
         Ok(())
@@ -168,7 +178,7 @@ version = 1
 enabled = true
 "#;
         let err = WorkstreamSchedule::parse_toml(content).unwrap_err();
-        assert!(err.contains("missing [observers]"));
+        assert!(err.to_string().contains("missing [observers]"));
     }
 
     #[test]
@@ -184,7 +194,7 @@ roles = []
 roles = []
 "#;
         let err = WorkstreamSchedule::parse_toml(content).unwrap_err();
-        assert!(err.contains("requires at least one observer role"));
+        assert!(err.to_string().contains("requires at least one observer role"));
     }
 
     #[test]
@@ -202,6 +212,6 @@ roles = [
 roles = []
 "#;
         let err = WorkstreamSchedule::parse_toml(content).unwrap_err();
-        assert!(err.contains("Invalid role id"));
+        assert!(err.to_string().contains("Invalid role id"));
     }
 }

@@ -14,7 +14,7 @@ pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
     }
 
     let content = fs::read_to_string(&config_path)?;
-    RunConfig::parse_toml(&content).map_err(AppError::RunConfigInvalid)
+    RunConfig::parse_toml(&content)
 }
 
 /// Detect the repository source from git remote.
