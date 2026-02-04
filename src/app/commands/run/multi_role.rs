@@ -119,7 +119,7 @@ fn execute_roles<C: JulesClient>(
     println!("\nCompleted: {}/{} role(s)", sessions.len(), roles.len());
 
     if failures > 0 {
-        return Err(AppError::ConfigError(format!(
+        return Err(AppError::Configuration(format!(
             "{} of {} roles failed to execute",
             failures,
             roles.len()

@@ -11,7 +11,7 @@ pub enum AppError {
 
     /// Configuration or environment issue.
     #[error("{0}")]
-    ConfigError(String),
+    Configuration(String),
 
     /// Workspace already exists at the target location.
     #[error(".jules/ workspace already exists")]
@@ -32,10 +32,10 @@ pub enum AppError {
     InvalidComponentId(String),
 
     /// Layer identifier is invalid.
-    // Note: We can't easily access Layer::ALL here for the error message formatting without a helper or just hardcoding the list in the message if critical.
-    // For now, simple message.
-    #[error("Invalid layer '{name}': must be one of {available}")]
-    InvalidLayer { name: String, available: String },
+    #[error(
+        "Invalid layer '{name}': must be one of Narrator, Observers, Deciders, Planners, Implementers"
+    )]
+    InvalidLayer { name: String },
 
     /// Role not found (fuzzy match failed).
     #[error("Role '{0}' not found")]
@@ -55,18 +55,11 @@ pub enum AppError {
 
     /// Circular dependency detected during resolution.
     #[error("Circular dependency detected: {0}")]
-    CircularDependency(String), // Changed Vec<String> to String for simpler formatting with thiserror if we join it before or here?
-    // Actually, to join a Vec<String> in the error specifiction is hard.
-    // Let's change the definition to take a pre-formatted string or keep it simple.
-    // The previous implementation did `path.join(" -> ")`.
-    // We can't do that easily in `#[error]`.
-    // Let's assume the caller formats it, or we keep it as is and wait for custom Display implementation?
-    // `thiserror` supports expressions.
-    // `#[error("Circular dependency detected: {}", .0.join(" -> "))]` works if it's a tuple struct.
+    CircularDependency(String),
+
     /// Component not found in catalog.
-    // Same for `available` vec.
     #[error("Component '{name}' not found. Available: {available}")]
-    ComponentNotFound { name: String, available: String }, // formatted string
+    ComponentNotFound { name: String, available: String },
 
     /// Invalid component metadata.
     #[error("Invalid metadata for '{component}': {reason}")]
@@ -123,14 +116,14 @@ pub enum AppError {
 
 impl AppError {
     pub fn config_error<S: Into<String>>(message: S) -> Self {
-        AppError::ConfigError(message.into())
+        AppError::Configuration(message.into())
     }
 
     /// Provide an `io::ErrorKind`-like view for callers expecting legacy behavior.
     pub fn kind(&self) -> io::ErrorKind {
         match self {
             AppError::Io(err) => err.kind(),
-            AppError::ConfigError(_)
+            AppError::Configuration(_)
             | AppError::InvalidRoleId(_)
             | AppError::InvalidComponentId(_)
             | AppError::InvalidLayer { .. }

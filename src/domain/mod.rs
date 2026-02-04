@@ -6,6 +6,7 @@ mod prompt_assembly;
 mod role_id;
 mod run_config;
 mod schedule;
+mod validation;
 mod workflow_runner_mode;
 mod workspace_layout;
 

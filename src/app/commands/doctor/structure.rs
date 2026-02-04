@@ -161,7 +161,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             }
 
             // Narrator requires change.yml schema template
-            if layer == Layer::Narrator {
+            if layer == Layer::Narrators {
                 let change_template = layer_dir.join("schemas").join("change.yml");
                 if !change_template.exists() {
                     diagnostics

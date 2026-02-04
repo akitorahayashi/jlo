@@ -1,4 +1,7 @@
+use serde::{Deserialize, Deserializer};
+
 use super::AppError;
+use super::validation::validate_identifier;
 
 /// A validated role identifier.
 ///
@@ -6,13 +9,13 @@ use super::AppError;
 /// - Non-empty
 /// - Contains only alphanumeric characters, `-`, or `_`
 /// - No path traversal components (/, \, ., ..)
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RoleId(String);
 
 impl RoleId {
     /// Validate and create a new `RoleId`.
     pub fn new(id: &str) -> Result<Self, AppError> {
-        if Self::is_valid(id) {
+        if validate_identifier(id, false) {
             Ok(Self(id.to_string()))
         } else {
             Err(AppError::InvalidRoleId(id.to_string()))
@@ -23,20 +26,27 @@ impl RoleId {
     pub fn as_str(&self) -> &str {
         &self.0
     }
-
-    fn is_valid(id: &str) -> bool {
-        !id.is_empty()
-            && !id.contains('/')
-            && !id.contains('\\')
-            && id != "."
-            && id != ".."
-            && id.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_')
-    }
 }
 
 impl AsRef<str> for RoleId {
     fn as_ref(&self) -> &str {
         self.as_str()
+    }
+}
+
+impl From<RoleId> for String {
+    fn from(val: RoleId) -> Self {
+        val.0
+    }
+}
+
+impl<'de> Deserialize<'de> for RoleId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        RoleId::new(&s).map_err(serde::de::Error::custom)
     }
 }
 

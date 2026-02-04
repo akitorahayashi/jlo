@@ -48,14 +48,14 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
     let is_ci = std::env::var("GITHUB_ACTIONS").is_ok();
 
     // Narrator is single-role but not issue-driven
-    if options.layer == Layer::Narrator {
+    if options.layer == Layer::Narrators {
         return narrator::execute(jules_path, options.dry_run, options.branch.as_deref(), is_ci);
     }
 
     // Issue-driven layers (Planners, Implementers) require an issue path
     if options.layer.is_issue_driven() {
         let issue_path = options.issue.as_deref().ok_or_else(|| {
-            AppError::ConfigError(
+            AppError::Configuration(
                 "Issue path is required for issue-driven layers but was not provided.".to_string(),
             )
         })?;
