@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "z7r5t2"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Inconsistent layer directory naming"
+statement: |
+  The Narrator layer uses a singular directory name 'narrator', while all other layers (observers, deciders, planners, implementers) use plural directory names. This inconsistency requires special handling in the Layer domain model mapping.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/layer.rs"
+    loc:
+      - "fn dir_name"
+      - "fn from_dir_name"
+    note: "Maps Narrators to 'narrator' (singular) while others map to plural forms (e.g., Observers -> 'observers')"
+
+tags:
+  - "taxonomy"
+  - "consistency"
+  - "naming"
