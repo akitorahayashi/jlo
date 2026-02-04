@@ -15,10 +15,12 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "src/AGENTS.md"
-    loc: "See [root AGENTS.md](../AGENTS.md) for design principles."
+    loc:
+      - "See [root AGENTS.md](../AGENTS.md) for design principles."
     note: "Links to root AGENTS.md"
   - path: "AGENTS.md"
-    loc: "See [root AGENTS.md](../../../../AGENTS.md) for design principles."
+    loc:
+      - "See [root AGENTS.md](../../../../AGENTS.md) for design principles."
     note: "Broken relative link (4 levels up from root)."
 
 tags:

@@ -15,7 +15,8 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "README.md"
-    loc: "Architecture table"
+    loc:
+      - "Architecture table"
     note: "Lists \"**Jules (VM)** | Execution: code analysis...\""
 
 tags:

@@ -15,10 +15,12 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "README.md"
-    loc: "Quick Start section"
+    loc:
+      - "Quick Start section"
     note: "Shows `jlo init` being run immediately after `cd your-project`."
   - path: "src/app/commands/init_scaffold.rs"
-    loc: "execute function"
+    loc:
+      - "execute function"
     note: "Enforces `branch == \"jules\"` or returns error."
 
 tags:
