@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "zggxkn"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Narrator logic coupled to side effects prevents unit testing"
+statement: |
+  The `Narrator` implementation in `src/app/commands/run/narrator.rs` tightly couples core logic (git context collection, range determination) with direct side effects (`std::process::Command`, `std::fs`). This prevents unit testing of the logic and forces reliance on slow, coarse-grained integration tests.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/run/narrator.rs"
+    loc:
+      - "80"
+    note: "collect_git_context logic calls private run_git which shells out"
+
+  - path: "src/services/domain/prompt_assembly.rs"
+    loc:
+      - "15"
+    note: "Contrasting example: PromptFs trait decouples filesystem for unit testing"
+
+tags:
+  - "testability"
+  - "refactoring"
+  - "narrator"
