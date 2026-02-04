@@ -458,16 +458,10 @@ includes:
     path: ".jules/roles/planners/contracts.yml"
 "#,
         );
-        mock_fs.add_file(
-            ".jules/roles/planners/prompt.yml",
-            "role: planners\nlayer: planners",
-        );
-        mock_fs.add_file(
-            ".jules/roles/planners/contracts.yml",
-            "layer: planners\nconstraints: []",
-        );
+        mock_fs.add_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners");
+        mock_fs.add_file(".jules/roles/planners/contracts.yml", "layer: planners\nconstraints: []");
 
-        let result = assemble_prompt(&jules_path, Layer::Planners, &PromptContext::new(), &mock_fs);
+        let result = assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_fs);
 
         assert!(result.is_ok());
         let assembled = result.unwrap();
