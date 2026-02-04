@@ -30,6 +30,24 @@ pub use crate::domain::AppError;
 pub use crate::domain::Layer;
 pub use crate::domain::WorkflowRunnerMode;
 
+/// ceate an AppContext for a given path.
+fn create_context(
+    path: std::path::PathBuf,
+) -> AppContext<FilesystemWorkspaceStore, EmbeddedRoleTemplateStore> {
+    let workspace = FilesystemWorkspaceStore::new(path);
+    let templates = EmbeddedRoleTemplateStore::new();
+    AppContext::new(workspace, templates)
+}
+
+/// get and validate the current workspace.
+fn get_current_workspace() -> Result<FilesystemWorkspaceStore, AppError> {
+    let workspace = FilesystemWorkspaceStore::current()?;
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+    Ok(workspace)
+}
+
 /// Initialize a new `.jules/` workspace in the current directory.
 pub fn init() -> Result<(), AppError> {
     init_at(std::env::current_dir()?)
@@ -37,9 +55,7 @@ pub fn init() -> Result<(), AppError> {
 
 /// Initialize a new `.jules/` workspace at the specified path.
 pub fn init_at(path: std::path::PathBuf) -> Result<(), AppError> {
-    let workspace = FilesystemWorkspaceStore::new(path);
-    let templates = EmbeddedRoleTemplateStore::new();
-    let ctx = AppContext::new(workspace, templates);
+    let ctx = create_context(path);
 
     init_scaffold::execute(&ctx)?;
     println!("✅ Initialized .jules/ workspace");
@@ -80,9 +96,7 @@ pub fn template_at(
     workstream: Option<&str>,
     root: std::path::PathBuf,
 ) -> Result<TemplateOutcome, AppError> {
-    let workspace = FilesystemWorkspaceStore::new(root);
-    let templates = EmbeddedRoleTemplateStore::new();
-    let ctx = AppContext::new(workspace, templates);
+    let ctx = create_context(root);
 
     let outcome = template::execute(&ctx, layer, role_name, workstream)?;
     match &outcome {
@@ -121,11 +135,7 @@ pub fn run(
     branch: Option<String>,
     issue: Option<std::path::PathBuf>,
 ) -> Result<RunResult, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-
-    if !workspace.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
+    let workspace = get_current_workspace()?;
 
     let options = RunOptions { layer, roles, workstream, scheduled, dry_run, branch, issue };
     run::execute(&workspace.jules_path(), options)
@@ -137,11 +147,7 @@ pub fn run(
 
 /// Export schedule configuration as a machine-readable matrix.
 pub fn schedule_export(options: ScheduleExportOptions) -> Result<ScheduleMatrix, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-
-    if !workspace.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
+    let workspace = get_current_workspace()?;
 
     schedule::export(&workspace.jules_path(), options)
 }
@@ -150,11 +156,7 @@ pub fn schedule_export(options: ScheduleExportOptions) -> Result<ScheduleMatrix,
 pub fn workstreams_inspect(
     options: WorkstreamInspectOptions,
 ) -> Result<WorkstreamInspectOutput, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-
-    if !workspace.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
+    let workspace = get_current_workspace()?;
 
     workstreams::inspect(&workspace.jules_path(), options)
 }
@@ -197,11 +199,7 @@ pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
 /// * `dry_run` - Show planned changes without applying
 /// * `adopt_managed` - Record current default role files as managed baseline
 pub fn update(dry_run: bool, adopt_managed: bool) -> Result<UpdateResult, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-
-    if !workspace.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
+    let workspace = get_current_workspace()?;
 
     let templates = EmbeddedRoleTemplateStore::new();
     let options = UpdateOptions { dry_run, adopt_managed };
@@ -214,11 +212,7 @@ pub fn update(dry_run: bool, adopt_managed: bool) -> Result<UpdateResult, AppErr
 
 /// Validate the `.jules/` workspace structure and content.
 pub fn doctor(options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-
-    if !workspace.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
+    let workspace = get_current_workspace()?;
 
     doctor::execute(&workspace.jules_path(), options)
 }
