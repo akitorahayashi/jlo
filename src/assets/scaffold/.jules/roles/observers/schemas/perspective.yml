@@ -1,21 +1,22 @@
-schema_version: 1
+schema_version: 2
 
 observer: "<observer-id>"
 workstream: "<workstream>"
 
 updated_at: "YYYY-MM-DDTHH:MM:SSZ"
 
+# Keep this list short (1-3). These goals are the continuity mechanism across runs.
 goals:
-  short_term: []
+  - "<concrete goal>"
 
-biases:
-  assumptions: []
-  blind_spots: []
-  heuristics: []
+# Stable rules of thumb for producing consistent, high-signal events.
+rules: []
 
-recent_runs: # max 3 entries (newest first)
-  - created_at: "YYYY-MM-DDTHH:MM:SSZ"
+# Explicit suppressions to prevent repeated low-value observations.
+ignore: []
+
+# Newest first; keep max 5 entries.
+log:
+  - at: "YYYY-MM-DDTHH:MM:SSZ"
     summary: "<one line>"
-    history_path: ".jules/workstreams/<workstream>/workstations/<observer>/histories/<file>.yml"
-
-learned_exclusions: []
+    events: []

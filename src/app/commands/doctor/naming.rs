@@ -28,25 +28,6 @@ pub fn naming_checks(
             }
         }
 
-        // Validate reject files in workstations
-        let workstations_dir = ws_dir.join("workstations");
-        if workstations_dir.exists()
-            && let Ok(entries) = std::fs::read_dir(&workstations_dir)
-        {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if !path.is_dir() {
-                    continue; // Skip files like .gitkeep
-                }
-                let rejects_dir = path.join("rejects");
-                // Only validate if rejects/ directory exists
-                if rejects_dir.exists() {
-                    for file in list_files(&rejects_dir, diagnostics) {
-                        validate_filename(&file, diagnostics, "reject");
-                    }
-                }
-            }
-        }
     }
 }
 

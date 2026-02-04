@@ -80,7 +80,6 @@ When an issue requires deep analysis:
   - Changes: `.jules/roles/narrator/schemas/change.yml`
   - Events: `.jules/roles/observers/schemas/event.yml`
   - Issues: `.jules/roles/deciders/schemas/issue.yml`
-  - Feedback: `.jules/roles/deciders/schemas/feedback.yml`
 
 ## Git And Branch Rules
 

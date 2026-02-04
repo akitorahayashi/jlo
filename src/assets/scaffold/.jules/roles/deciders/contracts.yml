@@ -10,7 +10,7 @@ constraints:
   - Verify observations events in codebase before accepting
   - Rationalize conflicting events (e.g. deletion overrides renaming)
   - Aggregate all valid events into issues
-  - Move processed events to decided/ directory; DO NOT DELETE.
+  - Move processed events to decided/ directory
   - When requires_deep_analysis is true, deep_analysis_reason MUST be non-empty
   - Use randomly generated 6-char lowercase alphanumeric ID for issue IDs
   - Use kebab-case title as filename
@@ -26,11 +26,9 @@ workflow:
   - "6. For new problems: select an existing issue label from .jules/github-labels.json and cp issue.yml to .jules/workstreams/<workstream>/exchange/issues/<label>/<kebab-case-title>.yml"
   - 7. Populate `source_events` in the new issue with IDs of events that triggered it
   - 8. Update .jules/workstreams/<workstream>/exchange/issues/index.md to reflect the current state of issues
-  - "9. Reject invalid events: Create feedback based on feedback.yml at .jules/roles/observers/<author_role>/feedbacks/<kebab-case-topic>.yml (fill in critique and rejected_content)"
-  - 10. Update metadata of processed events (issue_id) AND move them to .jules/workstreams/<workstream>/exchange/events/decided/
+  - 9. Update metadata of processed events (issue_id) AND move them to .jules/workstreams/<workstream>/exchange/events/decided/
 
 outputs:
   - .jules/workstreams/<workstream>/exchange/issues/<label>/*.yml (created or updated)
   - .jules/workstreams/<workstream>/exchange/events/decided/*.yml (moved and updated)
   - .jules/workstreams/<workstream>/exchange/issues/index.md
-  - .jules/roles/observers/<author_role>/feedbacks/<kebab-case-topic>.yml (rejection feedback)

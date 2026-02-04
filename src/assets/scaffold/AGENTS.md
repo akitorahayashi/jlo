@@ -26,7 +26,6 @@ See [root AGENTS.md](../../../../AGENTS.md) for design principles.
 │   │   ├── contracts.yml
 │   │   ├── schemas/
 │   │   │   ├── issue.yml
-│   │   │   └── feedback.yml
 │   │   └── <role>/
 │   │       └── role.yml
 │   ├── planners/
@@ -80,7 +79,6 @@ Schemas define the structure for artifacts produced by agents.
 | `change.yml` | `.jules/roles/narrator/schemas/` | Changes summary structure |
 | `event.yml` | `.jules/roles/observers/schemas/` | Observer event structure |
 | `issue.yml` | `.jules/roles/deciders/schemas/` | Issue structure |
-| `feedback.yml` | `.jules/roles/deciders/schemas/` | Feedback structure |
 
 **Rule**: Agents copy the schema and fill its fields. Never invent structure.
 
