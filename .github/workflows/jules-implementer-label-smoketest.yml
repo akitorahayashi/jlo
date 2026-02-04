@@ -18,6 +18,9 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.JLO_BOT_TOKEN }}
 
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
       - name: Create PR and apply label
         env:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
