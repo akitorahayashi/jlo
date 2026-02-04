@@ -58,8 +58,9 @@ pub fn execute_workflows(
         }
     }
 
-    // Extract existing schedule if overwriting the main workflow file
-    let preserved_schedule = if overwrite { extract_existing_schedule(root)? } else { None };
+    // Extract existing configuration if overwriting the main workflow file
+    let preserved_config =
+        if overwrite { extract_preserved_config(root)? } else { PreservedConfig::default() };
 
     for file in &kit.files {
         let destination = root.join(&file.path);
@@ -67,10 +68,10 @@ pub fn execute_workflows(
             fs::create_dir_all(parent)?;
         }
 
-        // Merge preserved schedule into the main workflow file
+        // Merge preserved configuration into the main workflow file
         let content = if file.path == SCHEDULE_PRESERVE_FILE {
-            if let Some(ref schedule) = preserved_schedule {
-                merge_schedule_into_workflow(&file.content, schedule)?
+            if preserved_config.has_values() {
+                merge_config_into_workflow(&file.content, &preserved_config)?
             } else {
                 file.content.clone()
             }
@@ -84,13 +85,23 @@ pub fn execute_workflows(
     Ok(())
 }
 
-/// Extract the `on.schedule` block from the existing workflow file.
-/// Returns `None` if the file doesn't exist or has no schedule.
-/// Returns an error if the file exists but cannot be parsed.
-fn extract_existing_schedule(root: &Path) -> Result<Option<Value>, AppError> {
+#[derive(Debug, Default)]
+struct PreservedConfig {
+    schedule: Option<Value>,
+    wait_minutes_default: Option<Value>,
+}
+
+impl PreservedConfig {
+    fn has_values(&self) -> bool {
+        self.schedule.is_some() || self.wait_minutes_default.is_some()
+    }
+}
+
+/// Extract preserved configuration (schedule, wait_minutes) from the existing workflow file.
+fn extract_preserved_config(root: &Path) -> Result<PreservedConfig, AppError> {
     let workflow_path = root.join(SCHEDULE_PRESERVE_FILE);
     if !workflow_path.exists() {
-        return Ok(None);
+        return Ok(PreservedConfig::default());
     }
 
     let content = fs::read_to_string(&workflow_path)?;
@@ -101,31 +112,61 @@ fn extract_existing_schedule(root: &Path) -> Result<Option<Value>, AppError> {
 
     let schedule = yaml.get("on").and_then(|on| on.get("schedule")).cloned();
 
-    Ok(schedule)
+    let wait_minutes_default = yaml
+        .get("on")
+        .and_then(|on| on.get("workflow_dispatch"))
+        .and_then(|wd| wd.get("inputs"))
+        .and_then(|inputs| inputs.get("wait_minutes"))
+        .and_then(|wm| wm.get("default"))
+        .cloned();
+
+    Ok(PreservedConfig { schedule, wait_minutes_default })
 }
 
-/// Merge a preserved schedule into the kit workflow content.
-fn merge_schedule_into_workflow(kit_content: &str, schedule: &Value) -> Result<String, AppError> {
+/// Merge preserved configuration into the kit workflow content.
+fn merge_config_into_workflow(
+    kit_content: &str,
+    config: &PreservedConfig,
+) -> Result<String, AppError> {
     let mut yaml: Value = serde_yaml::from_str(kit_content).map_err(|e| AppError::ParseError {
         what: "workflow kit content".to_string(),
         details: e.to_string(),
     })?;
 
     let root = yaml.as_mapping_mut().ok_or_else(|| {
-        AppError::config_error("Could not preserve schedule: workflow kit root is not a mapping.")
+        AppError::config_error("Could not preserve config: workflow kit root is not a mapping.")
     })?;
 
-    let on_block = root
-        .entry("on".into())
-        .or_insert_with(|| Value::Mapping(Default::default()))
-        .as_mapping_mut()
-        .ok_or_else(|| {
-            AppError::config_error(
-                "Could not preserve schedule: 'on' key in workflow kit is not a mapping.",
-            )
-        })?;
+    if let Some(ref schedule) = config.schedule {
+        let on_block = root
+            .entry("on".into())
+            .or_insert_with(|| Value::Mapping(Default::default()))
+            .as_mapping_mut()
+            .ok_or_else(|| {
+                AppError::config_error(
+                    "Could not preserve schedule: 'on' key in workflow kit is not a mapping.",
+                )
+            })?;
 
-    on_block.insert("schedule".into(), schedule.clone());
+        on_block.insert("schedule".into(), schedule.clone());
+    }
+
+    // Preserve wait_minutes default if both the config has it and the kit template has the path.
+    // Silent degradation: If the kit template changes and the path doesn't exist, we gracefully
+    // skip preservation rather than failing the installation (maintains backward compatibility).
+    if let (Some(wait_minutes), Some(wait_minutes_config)) = (
+        config.wait_minutes_default.as_ref(),
+        root.get_mut("on")
+            .and_then(|v| v.as_mapping_mut())
+            .and_then(|on| on.get_mut("workflow_dispatch"))
+            .and_then(|v| v.as_mapping_mut())
+            .and_then(|wd| wd.get_mut("inputs"))
+            .and_then(|v| v.as_mapping_mut())
+            .and_then(|inputs| inputs.get_mut("wait_minutes"))
+            .and_then(|v| v.as_mapping_mut()),
+    ) {
+        wait_minutes_config.insert("default".into(), wait_minutes.clone());
+    }
 
     serde_yaml::to_string(&yaml).map_err(|e| AppError::ParseError {
         what: "merged workflow content".to_string(),

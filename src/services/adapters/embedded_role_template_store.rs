@@ -5,6 +5,9 @@ use crate::ports::{RoleTemplateStore, ScaffoldFile};
 
 static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold");
 
+/// Internal documentation file that should not be deployed to user scaffolds.
+const INTERNAL_DOC_FILE: &str = "AGENTS.md";
+
 /// Role templates for multi-role layers
 mod templates {
     pub static OBSERVER_ROLE: &str =
@@ -49,7 +52,10 @@ fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
             DirEntry::File(file) => {
                 if let Some(content) = file.contents_utf8() {
                     let path = file.path().to_string_lossy().to_string();
-                    files.push(ScaffoldFile { path, content: content.to_string() });
+                    // Don't include the internal documentation in the deployed scaffold
+                    if path != INTERNAL_DOC_FILE {
+                        files.push(ScaffoldFile { path, content: content.to_string() });
+                    }
                 }
             }
             DirEntry::Dir(subdir) => collect_files(subdir, files),
