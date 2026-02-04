@@ -1,6 +1,15 @@
 use serde::Deserialize;
 
-use crate::domain::{AppError, RoleId};
+use crate::domain::RoleId;
+
+#[derive(Debug, thiserror::Error)]
+pub enum ScheduleError {
+    #[error("Schedule config invalid: {0}")]
+    ConfigInvalid(String),
+
+    #[error("TOML format error: {0}")]
+    Toml(#[from] toml::de::Error),
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkstreamSchedule {
@@ -28,24 +37,23 @@ impl ScheduleLayer {
 }
 
 impl WorkstreamSchedule {
-    pub fn parse_toml(content: &str) -> Result<Self, AppError> {
+    pub fn parse_toml(content: &str) -> Result<Self, ScheduleError> {
         let dto: dto::ScheduleDto = toml::from_str(content)?;
-        let schedule: WorkstreamSchedule =
-            dto.try_into().map_err(AppError::ScheduleConfigInvalid)?;
+        let schedule: WorkstreamSchedule = dto.try_into().map_err(ScheduleError::ConfigInvalid)?;
         schedule.validate()?;
         Ok(schedule)
     }
 
-    fn validate(&self) -> Result<(), AppError> {
+    fn validate(&self) -> Result<(), ScheduleError> {
         if self.version != 1 {
-            return Err(AppError::ScheduleConfigInvalid(format!(
+            return Err(ScheduleError::ConfigInvalid(format!(
                 "Unsupported scheduled.toml version: {} (expected 1)",
                 self.version
             )));
         }
 
         if self.enabled && self.observers.roles.is_empty() {
-            return Err(AppError::ScheduleConfigInvalid(
+            return Err(ScheduleError::ConfigInvalid(
                 "scheduled.toml enabled=true requires at least one observer role".into(),
             ));
         }
@@ -56,17 +64,17 @@ impl WorkstreamSchedule {
         Ok(())
     }
 
-    fn validate_roles(layer: &str, schedule_layer: &ScheduleLayer) -> Result<(), AppError> {
+    fn validate_roles(layer: &str, schedule_layer: &ScheduleLayer) -> Result<(), ScheduleError> {
         let mut seen = std::collections::HashSet::new();
         for role in &schedule_layer.roles {
             RoleId::new(&role.name).map_err(|_| {
-                AppError::ScheduleConfigInvalid(format!(
+                ScheduleError::ConfigInvalid(format!(
                     "Invalid role id '{}' in {} schedule",
                     role.name, layer
                 ))
             })?;
             if !seen.insert(&role.name) {
-                return Err(AppError::ScheduleConfigInvalid(format!(
+                return Err(ScheduleError::ConfigInvalid(format!(
                     "Duplicate role id '{}' in {} schedule",
                     role.name, layer
                 )));
