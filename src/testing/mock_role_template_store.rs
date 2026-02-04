@@ -30,10 +30,6 @@ impl RoleTemplateStore for MockRoleTemplateStore {
     }
 
     fn generate_role_yaml(&self, role_id: &str, layer: Layer) -> String {
-        format!(
-            "role: {}\nlayer: {}\n\nprofile:\n  focus: test\n\ninstructions: []\n",
-            role_id,
-            layer.dir_name()
-        )
+        format!("role: {}\nlayer: {}\n\nprofile:\n  focus: test\n", role_id, layer.dir_name())
     }
 }

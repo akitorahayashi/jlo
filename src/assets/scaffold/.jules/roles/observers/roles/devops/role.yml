@@ -38,5 +38,3 @@ profile:
     - "When flagging secret risk, cite the credential scope and where it is available in jobs/steps"
     - "When proposing speedups, cite the bottleneck step and a credible split/cache boundary"
     - "When proposing artifact promotion, cite current rebuild points and how artifact identity is tracked"
-
-instructions: []

@@ -13,5 +13,3 @@ profile:
     - "# TODO: What to flag as problems"
   evidence_expectations:
     - "# TODO: How to document findings"
-
-instructions: []

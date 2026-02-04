@@ -44,5 +44,3 @@ profile:
     - "When flagging type complexity, cite the type definitions and the concrete maintenance cost"
     - "When flagging failure semantics, cite the API surface and at least one call site showing ambiguity"
     - "When flagging module issues, cite import graphs/barrels and the runtime/tooling configuration involved"
-
-instructions: []

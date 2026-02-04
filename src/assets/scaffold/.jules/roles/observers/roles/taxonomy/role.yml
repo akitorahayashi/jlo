@@ -34,5 +34,3 @@ profile:
     - "Cite each competing name (symbols and paths) and show concrete usage sites for both"
     - "When claiming term collision, show at least two distinct meanings tied to the same token"
     - "When proposing a canonical term, cite the most authoritative existing source (API, CLI, config, docs)"
-
-instructions: []

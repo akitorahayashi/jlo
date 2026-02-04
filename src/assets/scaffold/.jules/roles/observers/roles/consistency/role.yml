@@ -35,5 +35,3 @@ profile:
     - "Cite the doc passage and the corresponding implementation location (or lack thereof)"
     - "For broken examples, cite the exact command/config fragment and the referenced file paths"
     - "For contradictions, cite both sources and explain which is authoritative and why"
-
-instructions: []

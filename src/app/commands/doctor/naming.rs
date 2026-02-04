@@ -27,7 +27,6 @@ pub fn naming_checks(
                 validate_filename(&entry, diagnostics, "issue");
             }
         }
-
     }
 }
 

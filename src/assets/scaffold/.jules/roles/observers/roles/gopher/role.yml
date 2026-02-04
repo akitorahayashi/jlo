@@ -41,5 +41,3 @@ profile:
     - "Cite goroutine launch sites and the concrete shutdown mechanism (ctx, close, errgroup)"
     - "Cite channel send/close ownership and where responsibilities are ambiguous"
     - "Cite interface definitions and their usage sites to justify size and placement"
-
-instructions: []

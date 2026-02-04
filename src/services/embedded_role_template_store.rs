@@ -83,7 +83,6 @@ mod tests {
         assert!(yaml.contains("layer: observers"));
         assert!(yaml.contains("profile:"));
         assert!(yaml.contains("focus:"));
-        assert!(yaml.contains("instructions:"));
     }
 
     #[test]
@@ -94,7 +93,6 @@ mod tests {
         assert!(yaml.contains("role: ROLE_NAME"));
         assert!(yaml.contains("layer: deciders"));
         assert!(yaml.contains("profile:"));
-        assert!(yaml.contains("instructions:"));
     }
 
     #[test]
