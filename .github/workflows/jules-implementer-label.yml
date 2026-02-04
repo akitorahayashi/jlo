@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Read label definitions from main (implementer output targets main).
+          # Checkout main; label definitions are read from the jules branch.
           ref: main
           fetch-depth: 1
 
@@ -32,7 +32,14 @@ jobs:
             exit 1
           fi
 
-          PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --repo "$REPO" --json number -q '.[0].number')
+          PR_NUMBER=""
+          for i in {1..12}; do
+            PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --repo "$REPO" --json number -q '.[0].number')
+            if [ -n "$PR_NUMBER" ]; then
+              break
+            fi
+            sleep 5
+          done
           if [ -z "$PR_NUMBER" ]; then
             echo "::notice::No PR found yet for branch $BRANCH_NAME. Skipping label."
             exit 0
@@ -50,19 +57,20 @@ jobs:
           echo "Detected issue label: $label"
           echo "Detected issue id: $issue_id"
 
-          label_config=".jules/github-labels.json"
-          if [ ! -f "$label_config" ]; then
-            echo "::error::Missing label definition file: $label_config"
+          label_config="$(mktemp)"
+          git fetch origin jules --depth=1
+          if ! git show "origin/jules:.jules/github-labels.json" > "$label_config"; then
+            echo "::error::Missing label definition file on jules branch: .jules/github-labels.json"
             exit 1
           fi
 
           color=$(jq -r --arg label "$label" '.issue_labels[$label].color // empty' "$label_config")
           if [ -z "$color" ] || [ "$color" = "null" ]; then
-            echo "::error::Missing color for '$label' in $label_config"
+            echo "::error::Missing color for '$label' in .jules/github-labels.json on jules branch"
             exit 1
           fi
           if [[ ! "$color" =~ ^[0-9a-fA-F]{6}$ ]]; then
-            echo "::error::Invalid label color '$color' for '$label' in $label_config (expected 6-digit hex)"
+            echo "::error::Invalid label color '$color' for '$label' in .jules/github-labels.json on jules branch (expected 6-digit hex)"
             exit 1
           fi
 
