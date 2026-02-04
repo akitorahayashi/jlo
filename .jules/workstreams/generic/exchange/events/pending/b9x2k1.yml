@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "b9x2k1"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Quick Start fails due to undocumented branch requirement"
+statement: |
+  The Quick Start guide instructs users to run `jlo init` directly, but the command implementation strictly enforces execution on a `jules` branch. A user following the instructions on a default `main` branch will encounter an error.
+
+# Evidence supporting the observation
+evidence:
+  - path: "README.md"
+    loc:
+      - "Quick Start section"
+    note: "Shows `jlo init` being run immediately after `cd your-project`."
+  - path: "src/app/commands/init_scaffold.rs"
+    loc:
+      - "execute function"
+    note: "Enforces `branch == \"jules\"` or returns error."
+
+tags:
+  - "documentation"
+  - "usability"
+  - "quick-start"

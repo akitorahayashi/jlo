@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "z7q3w9"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "consistency"
+confidence: "medium"
+
+# Content
+title: "Ambiguous Architecture Component \"Jules (VM)\""
+statement: |
+  The README Architecture table refers to "Jules (VM)", but other documentation and configuration refer to "Jules API" or "Sessions". "VM" is an ambiguous and potentially misleading term in this context, as it likely refers to the external backend service.
+
+# Evidence supporting the observation
+evidence:
+  - path: "README.md"
+    loc:
+      - "Architecture table"
+    note: "Lists \"**Jules (VM)** | Execution: code analysis...\""
+
+tags:
+  - "documentation"
+  - "terminology"
+  - "architecture"
