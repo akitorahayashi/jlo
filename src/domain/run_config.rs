@@ -8,9 +8,6 @@ pub enum RunConfigError {
     #[error("Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml.")]
     LegacyAgentSection,
 
-    #[error("Run config invalid: {0}")]
-    ConfigInvalid(String),
-
     #[error("TOML format error: {0}")]
     Toml(#[from] toml::de::Error),
 }
