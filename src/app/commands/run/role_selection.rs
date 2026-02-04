@@ -63,10 +63,7 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
 fn ensure_workstream_exists(jules_path: &Path, workstream: &str) -> Result<(), AppError> {
     let path = jules_path.join("workstreams").join(workstream);
     if !path.exists() {
-        return Err(AppError::config_error(format!(
-            "Workstream '{}' not found",
-            workstream
-        )));
+        return Err(AppError::config_error(format!("Workstream '{}' not found", workstream)));
     }
     Ok(())
 }

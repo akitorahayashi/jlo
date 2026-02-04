@@ -114,10 +114,12 @@ roles = [
         assert_eq!(schedule.observers.roles[1].name.as_str(), "qa");
         assert!(!schedule.observers.roles[1].enabled);
 
-        let obs_roles: Vec<String> = schedule.observers.enabled_roles().into_iter().map(|r| r.into()).collect();
+        let obs_roles: Vec<String> =
+            schedule.observers.enabled_roles().into_iter().map(|r| r.into()).collect();
         assert_eq!(obs_roles, vec!["taxonomy"]);
 
-        let dec_roles: Vec<String> = schedule.deciders.enabled_roles().into_iter().map(|r| r.into()).collect();
+        let dec_roles: Vec<String> =
+            schedule.deciders.enabled_roles().into_iter().map(|r| r.into()).collect();
         assert_eq!(dec_roles, vec!["triage_generic"]);
     }
 

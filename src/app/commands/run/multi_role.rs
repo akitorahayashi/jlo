@@ -60,7 +60,7 @@ pub fn execute(
         return Ok(RunResult {
             roles: resolved_roles.into_iter().map(|r| r.into()).collect(),
             dry_run: true,
-            sessions: vec![]
+            sessions: vec![],
         });
     }
 
@@ -82,7 +82,7 @@ pub fn execute(
     Ok(RunResult {
         roles: resolved_roles.into_iter().map(|r| r.into()).collect(),
         dry_run: false,
-        sessions
+        sessions,
     })
 }
 
@@ -152,7 +152,8 @@ fn execute_dry_run(
     for role in roles {
         println!("--- Role: {} ---", role);
 
-        let role_dir = jules_path.join("roles").join(layer.dir_name()).join("roles").join(role.as_str());
+        let role_dir =
+            jules_path.join("roles").join(layer.dir_name()).join("roles").join(role.as_str());
         let role_yml_path = role_dir.join("role.yml");
 
         if !role_yml_path.exists() {

@@ -1,5 +1,5 @@
-use crate::impl_validated_id;
 use super::AppError;
+use crate::impl_validated_id;
 
 /// A validated component identifier.
 ///

@@ -1,6 +1,6 @@
-use serde::{Deserialize, Deserializer};
-use crate::impl_validated_id;
 use super::AppError;
+use crate::impl_validated_id;
+use serde::{Deserialize, Deserializer};
 
 /// A validated role identifier.
 ///
