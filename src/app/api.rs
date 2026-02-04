@@ -57,9 +57,7 @@ pub fn init() -> Result<(), AppError> {
 pub fn init_at(path: std::path::PathBuf) -> Result<(), AppError> {
     let ctx = create_context(path);
 
-    init_scaffold::execute(&ctx)?;
-    println!("✅ Initialized .jules/ workspace");
-    Ok(())
+    init_scaffold::execute(&ctx)
 }
 
 /// Initialize a new workflow kit in the current directory.
@@ -73,9 +71,7 @@ pub fn init_workflows_at(
     mode: WorkflowRunnerMode,
     overwrite: bool,
 ) -> Result<(), AppError> {
-    init_workflows::execute_workflows(&path, mode, overwrite)?;
-    println!("✅ Installed workflow kit ({})", mode.label());
-    Ok(())
+    init_workflows::execute_workflows(&path, mode, overwrite)
 }
 
 /// Apply a template for a role or workstream.
@@ -98,16 +94,7 @@ pub fn template_at(
 ) -> Result<TemplateOutcome, AppError> {
     let ctx = create_context(root);
 
-    let outcome = template::execute(&ctx, layer, role_name, workstream)?;
-    match &outcome {
-        TemplateOutcome::Role { .. } => {
-            println!("✅ Created new role at {}/", outcome.display_path());
-        }
-        TemplateOutcome::Workstream { .. } => {
-            println!("✅ Created new workstream at {}/", outcome.display_path());
-        }
-    }
-    Ok(outcome)
+    template::execute(&ctx, layer, role_name, workstream)
 }
 
 // =============================================================================

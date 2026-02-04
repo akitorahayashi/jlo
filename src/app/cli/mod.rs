@@ -244,8 +244,7 @@ pub fn run() {
             run_update(dry_run, adopt_managed).map(|_| 0)
         }
         Commands::Template { layer, name, workstream } => {
-            crate::app::api::template(layer.as_deref(), name.as_deref(), workstream.as_deref())
-                .map(|_| 0)
+            run_template(layer, name, workstream).map(|_| 0)
         }
         Commands::Setup { command } => match command {
             SetupCommands::Gen { path } => run_setup_gen(path).map(|_| 0),
@@ -272,7 +271,11 @@ pub fn run() {
 
 fn run_init(command: Option<InitCommands>) -> Result<(), AppError> {
     match command.unwrap_or(InitCommands::Scaffold) {
-        InitCommands::Scaffold => crate::app::api::init(),
+        InitCommands::Scaffold => {
+            crate::app::api::init()?;
+            println!("✅ Initialized .jules/ workspace");
+            Ok(())
+        }
         InitCommands::Workflows { remote, self_hosted, overwrite } => {
             let mode = if remote {
                 crate::domain::WorkflowRunnerMode::Remote
@@ -283,9 +286,30 @@ fn run_init(command: Option<InitCommands>) -> Result<(), AppError> {
                     "Runner mode is required. Use --remote or --self-hosted.",
                 ));
             };
-            crate::app::api::init_workflows(mode, overwrite)
+            crate::app::api::init_workflows(mode, overwrite)?;
+            println!("✅ Installed workflow kit ({})", mode.label());
+            Ok(())
         }
     }
+}
+
+fn run_template(
+    layer: Option<String>,
+    name: Option<String>,
+    workstream: Option<String>,
+) -> Result<(), AppError> {
+    let outcome =
+        crate::app::api::template(layer.as_deref(), name.as_deref(), workstream.as_deref())?;
+
+    match &outcome {
+        crate::app::api::TemplateOutcome::Role { .. } => {
+            println!("✅ Created new role at {}/", outcome.display_path());
+        }
+        crate::app::api::TemplateOutcome::Workstream { .. } => {
+            println!("✅ Created new workstream at {}/", outcome.display_path());
+        }
+    }
+    Ok(())
 }
 
 fn run_update(dry_run: bool, adopt_managed: bool) -> Result<(), AppError> {
