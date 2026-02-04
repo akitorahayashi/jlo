@@ -388,7 +388,7 @@ fn run_git(args: &[&str], cwd: Option<&Path>) -> Result<String, AppError> {
 
 /// Build the full Narrator prompt with git context injected.
 fn build_narrator_prompt(jules_path: &Path, ctx: &GitContext) -> Result<String, AppError> {
-    let base_prompt = assemble_single_role_prompt(jules_path, Layer::Narrator)?;
+    let base_prompt = assemble_single_role_prompt(jules_path, Layer::Narrators)?;
 
     // Build the git context section
     let mut context_section = String::new();
@@ -455,7 +455,7 @@ fn execute_dry_run(
     }
 
     println!("\n--- Prompt (base) ---");
-    let prompt = assemble_single_role_prompt(jules_path, Layer::Narrator)?;
+    let prompt = assemble_single_role_prompt(jules_path, Layer::Narrators)?;
     println!("{}", prompt);
 
     Ok(())

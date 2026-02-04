@@ -28,18 +28,18 @@ where
         .args(["branch", "--show-current"])
         .current_dir(&workspace_root)
         .output()
-        .map_err(|e| AppError::ConfigError(format!("Failed to run git to check branch: {e}")))?;
+        .map_err(|e| AppError::Configuration(format!("Failed to run git to check branch: {e}")))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(AppError::ConfigError(format!(
+        return Err(AppError::Configuration(format!(
             "Failed to get current git branch. Is this a git repository?\nDetails: {stderr}"
         )));
     }
 
     let branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if branch != "jules" {
-        return Err(AppError::ConfigError(format!(
+        return Err(AppError::Configuration(format!(
             "Init must be run on 'jules' branch (current: '{}').\nPlease run: git checkout -b jules",
             branch
         )));

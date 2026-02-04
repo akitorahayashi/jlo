@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::collections::HashSet;
 
 use crate::domain::RoleId;
 
@@ -11,7 +12,8 @@ pub enum ScheduleError {
     Toml(#[from] toml::de::Error),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct WorkstreamSchedule {
     pub version: u32,
     pub enabled: bool,
@@ -19,27 +21,28 @@ pub struct WorkstreamSchedule {
     pub deciders: ScheduleLayer,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ScheduleLayer {
     pub roles: Vec<ScheduledRole>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ScheduledRole {
-    pub name: String,
+    pub name: RoleId,
     pub enabled: bool,
 }
 
 impl ScheduleLayer {
     pub fn enabled_roles(&self) -> Vec<String> {
-        self.roles.iter().filter(|r| r.enabled).map(|r| r.name.clone()).collect()
+        self.roles.iter().filter(|r| r.enabled).map(|r| r.name.as_str().to_string()).collect()
     }
 }
 
 impl WorkstreamSchedule {
     pub fn parse_toml(content: &str) -> Result<Self, ScheduleError> {
-        let dto: dto::ScheduleDto = toml::from_str(content)?;
-        let schedule: WorkstreamSchedule = dto.try_into().map_err(ScheduleError::ConfigInvalid)?;
+        let schedule: WorkstreamSchedule = toml::from_str(content)?;
         schedule.validate()?;
         Ok(schedule)
     }
@@ -65,84 +68,19 @@ impl WorkstreamSchedule {
     }
 
     fn validate_roles(layer: &str, schedule_layer: &ScheduleLayer) -> Result<(), ScheduleError> {
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = HashSet::new();
         for role in &schedule_layer.roles {
-            RoleId::new(&role.name).map_err(|_| {
-                ScheduleError::ConfigInvalid(format!(
-                    "Invalid role id '{}' in {} schedule",
-                    role.name, layer
-                ))
-            })?;
-            if !seen.insert(&role.name) {
+            // RoleId is already validated by deserialization.
+            // Check for duplicates.
+            if !seen.insert(role.name.clone()) {
                 return Err(ScheduleError::ConfigInvalid(format!(
                     "Duplicate role id '{}' in {} schedule",
-                    role.name, layer
+                    role.name.as_str(),
+                    layer
                 )));
             }
         }
         Ok(())
-    }
-}
-
-mod dto {
-    use super::*;
-
-    #[derive(Debug, Clone, Deserialize)]
-    #[serde(deny_unknown_fields)]
-    pub struct ScheduleDto {
-        pub version: Option<u32>,
-        pub enabled: Option<bool>,
-        pub observers: Option<ScheduleLayerDto>,
-        pub deciders: Option<ScheduleLayerDto>,
-    }
-
-    #[derive(Debug, Clone, Deserialize)]
-    #[serde(deny_unknown_fields)]
-    pub struct ScheduleLayerDto {
-        pub roles: Option<Vec<RoleEntryDto>>,
-    }
-
-    #[derive(Debug, Clone, Deserialize)]
-    #[serde(deny_unknown_fields)]
-    pub struct RoleEntryDto {
-        pub name: String,
-        pub enabled: bool,
-    }
-
-    impl TryFrom<ScheduleDto> for WorkstreamSchedule {
-        type Error = String;
-
-        fn try_from(dto: ScheduleDto) -> Result<Self, Self::Error> {
-            let version =
-                dto.version.ok_or_else(|| "scheduled.toml missing version".to_string())?;
-            let enabled =
-                dto.enabled.ok_or_else(|| "scheduled.toml missing enabled".to_string())?;
-
-            let observers =
-                dto.observers.ok_or_else(|| "scheduled.toml missing [observers]".to_string())?;
-            let deciders =
-                dto.deciders.ok_or_else(|| "scheduled.toml missing [deciders]".to_string())?;
-
-            let observers_roles = observers
-                .roles
-                .ok_or_else(|| "scheduled.toml missing observers.roles".to_string())?
-                .into_iter()
-                .map(|r| ScheduledRole { name: r.name, enabled: r.enabled })
-                .collect();
-            let deciders_roles = deciders
-                .roles
-                .ok_or_else(|| "scheduled.toml missing deciders.roles".to_string())?
-                .into_iter()
-                .map(|r| ScheduledRole { name: r.name, enabled: r.enabled })
-                .collect();
-
-            Ok(WorkstreamSchedule {
-                version,
-                enabled,
-                observers: ScheduleLayer { roles: observers_roles },
-                deciders: ScheduleLayer { roles: deciders_roles },
-            })
-        }
     }
 }
 
@@ -171,9 +109,9 @@ roles = [
         assert_eq!(schedule.version, 1);
         assert!(schedule.enabled);
         assert_eq!(schedule.observers.roles.len(), 2);
-        assert_eq!(schedule.observers.roles[0].name, "taxonomy");
+        assert_eq!(schedule.observers.roles[0].name.as_str(), "taxonomy");
         assert!(schedule.observers.roles[0].enabled);
-        assert_eq!(schedule.observers.roles[1].name, "qa");
+        assert_eq!(schedule.observers.roles[1].name.as_str(), "qa");
         assert!(!schedule.observers.roles[1].enabled);
         assert_eq!(schedule.observers.enabled_roles(), vec!["taxonomy"]);
         assert_eq!(schedule.deciders.enabled_roles(), vec!["triage_generic"]);
@@ -186,7 +124,8 @@ version = 1
 enabled = true
 "#;
         let err = WorkstreamSchedule::parse_toml(content).unwrap_err();
-        assert!(err.to_string().contains("missing [observers]"));
+        // toml error will complain about missing fields
+        assert!(matches!(err, ScheduleError::Toml(_)));
     }
 
     #[test]
@@ -220,6 +159,8 @@ roles = [
 roles = []
 "#;
         let err = WorkstreamSchedule::parse_toml(content).unwrap_err();
-        assert!(err.to_string().contains("Invalid role id"));
+        // This will be a Toml error because deserialization of RoleId fails
+        assert!(matches!(err, ScheduleError::Toml(_)));
+        assert!(err.to_string().contains("Invalid role identifier"));
     }
 }

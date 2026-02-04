@@ -127,28 +127,34 @@ pub fn semantic_checks(
         match load_schedule(jules_path, workstream) {
             Ok(schedule) => {
                 for role in schedule.observers.roles {
-                    scheduled_roles.entry(Layer::Observers).or_default().insert(role.name.clone());
+                    scheduled_roles
+                        .entry(Layer::Observers)
+                        .or_default()
+                        .insert(role.name.as_str().to_string());
                     // Validate role exists in filesystem
                     if !existing_roles
                         .get(&Layer::Observers)
-                        .is_some_and(|roles| roles.contains(&role.name))
+                        .is_some_and(|roles| roles.contains(role.name.as_str()))
                     {
                         diagnostics.push_error(
-                            role.name.clone(),
+                            role.name.as_str().to_string(),
                             "Observer role listed in scheduled.toml but missing from filesystem",
                         );
                     }
                 }
 
                 for role in schedule.deciders.roles {
-                    scheduled_roles.entry(Layer::Deciders).or_default().insert(role.name.clone());
+                    scheduled_roles
+                        .entry(Layer::Deciders)
+                        .or_default()
+                        .insert(role.name.as_str().to_string());
                     // Validate role exists in filesystem
                     if !existing_roles
                         .get(&Layer::Deciders)
-                        .is_some_and(|roles| roles.contains(&role.name))
+                        .is_some_and(|roles| roles.contains(role.name.as_str()))
                     {
                         diagnostics.push_error(
-                            role.name.clone(),
+                            role.name.as_str().to_string(),
                             "Decider role listed in scheduled.toml but missing from filesystem",
                         );
                     }

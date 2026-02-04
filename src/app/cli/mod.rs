@@ -336,7 +336,7 @@ fn run_agents(layer: RunLayer) -> Result<(), AppError> {
 
     let (target_layer, roles, workstream, scheduled, dry_run, branch, issue) = match layer {
         RunLayer::Narrator { dry_run, branch } => {
-            (Layer::Narrator, None, None, false, dry_run, branch, None)
+            (Layer::Narrators, None, None, false, dry_run, branch, None)
         }
         RunLayer::Observers { role, dry_run, branch, workstream, scheduled } => {
             (Layer::Observers, role, workstream, scheduled, dry_run, branch, None)
@@ -485,11 +485,8 @@ fn print_yaml<T: serde::Serialize>(value: &T) -> Result<(), AppError> {
 }
 
 fn parse_layer(value: &str) -> Result<crate::domain::Layer, AppError> {
-    crate::domain::Layer::from_dir_name(value).ok_or_else(|| {
-        let available =
-            crate::domain::Layer::ALL.iter().map(|l| l.dir_name()).collect::<Vec<_>>().join(", ");
-        AppError::InvalidLayer { name: value.to_string(), available }
-    })
+    crate::domain::Layer::from_dir_name(value)
+        .ok_or_else(|| AppError::InvalidLayer { name: value.to_string() })
 }
 
 fn run_doctor(fix: bool, strict: bool, workstream: Option<String>) -> Result<i32, AppError> {

@@ -39,7 +39,7 @@ impl HttpJulesClient {
         let client = Client::builder()
             .timeout(Duration::from_secs(config.timeout_secs))
             .build()
-            .map_err(|e| AppError::ConfigError(format!("Failed to create HTTP client: {}", e)))?;
+            .map_err(|e| AppError::Configuration(format!("Failed to create HTTP client: {}", e)))?;
 
         Ok(Self {
             api_key,
@@ -54,7 +54,7 @@ impl HttpJulesClient {
     #[allow(dead_code)]
     pub fn from_env() -> Result<Self, AppError> {
         let api_key = std::env::var("JULES_API_KEY").map_err(|_| {
-            AppError::ConfigError("JULES_API_KEY environment variable not set".into())
+            AppError::Configuration("JULES_API_KEY environment variable not set".into())
         })?;
 
         Self::new(api_key, &JulesApiConfig::default())
@@ -63,7 +63,7 @@ impl HttpJulesClient {
     /// Create from environment variable with custom configuration.
     pub fn from_env_with_config(config: &JulesApiConfig) -> Result<Self, AppError> {
         let api_key = std::env::var("JULES_API_KEY").map_err(|_| {
-            AppError::ConfigError("JULES_API_KEY environment variable not set".into())
+            AppError::Configuration("JULES_API_KEY environment variable not set".into())
         })?;
 
         Self::new(api_key, config)
@@ -142,7 +142,7 @@ impl JulesClient for HttpJulesClient {
         }
 
         Err(last_error
-            .unwrap_or_else(|| AppError::ConfigError("Request failed after all retries".into())))
+            .unwrap_or_else(|| AppError::Configuration("Request failed after all retries".into())))
     }
 }
 
@@ -155,37 +155,37 @@ impl HttpJulesClient {
             .header(CONTENT_TYPE, "application/json")
             .json(request)
             .send()
-            .map_err(|e| AppError::ConfigError(format!("HTTP request failed: {}", e)))?;
+            .map_err(|e| AppError::Configuration(format!("HTTP request failed: {}", e)))?;
 
         let status = response.status();
 
         if status.is_success() {
             let api_response: ApiResponse = response
                 .json()
-                .map_err(|e| AppError::ConfigError(format!("Failed to parse response: {}", e)))?;
+                .map_err(|e| AppError::Configuration(format!("Failed to parse response: {}", e)))?;
 
             let session_id = api_response
                 .session_id
                 .or(api_response.id)
-                .ok_or_else(|| AppError::ConfigError("No session ID in response".into()))?;
+                .ok_or_else(|| AppError::Configuration("No session ID in response".into()))?;
 
             Ok(SessionResponse {
                 session_id,
                 status: api_response.status.unwrap_or_else(|| "created".to_string()),
             })
         } else if status.as_u16() == 429 {
-            Err(AppError::ConfigError("Rate limited (429)".into()))
+            Err(AppError::Configuration("Rate limited (429)".into()))
         } else if status.is_server_error() {
-            Err(AppError::ConfigError(format!("Server error ({})", status.as_u16())))
+            Err(AppError::Configuration(format!("Server error ({})", status.as_u16())))
         } else {
             let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
-            Err(AppError::ConfigError(format!("API error ({}): {}", status.as_u16(), error_text)))
+            Err(AppError::Configuration(format!("API error ({}): {}", status.as_u16(), error_text)))
         }
     }
 
     fn is_retryable(error: &AppError) -> bool {
         match error {
-            AppError::ConfigError(msg) => {
+            AppError::Configuration(msg) => {
                 msg.contains("429") || msg.contains("Server error") || msg.contains("timeout")
             }
             _ => false,

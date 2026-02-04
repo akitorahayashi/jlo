@@ -110,7 +110,7 @@ pub fn inspect(
                 .observers
                 .roles
                 .iter()
-                .map(|r| RoleSummary { name: r.name.clone(), enabled: r.enabled })
+                .map(|r| RoleSummary { name: r.name.clone().into(), enabled: r.enabled })
                 .collect(),
         },
         deciders: ScheduleLayerSummary {
@@ -118,7 +118,7 @@ pub fn inspect(
                 .deciders
                 .roles
                 .iter()
-                .map(|r| RoleSummary { name: r.name.clone(), enabled: r.enabled })
+                .map(|r| RoleSummary { name: r.name.clone().into(), enabled: r.enabled })
                 .collect(),
         },
     };
