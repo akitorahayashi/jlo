@@ -163,3 +163,37 @@ jobs:
         "Kit schedule should be present when existing workflow has none"
     );
 }
+
+#[test]
+fn init_workflows_overwrite_preserves_wait_minutes() {
+    let ctx = TestContext::new();
+    let root = ctx.work_dir();
+
+    // Create an existing workflow with a custom wait_minutes default
+    let workflow_path = root.join(".github/workflows/jules-workflows.yml");
+    fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
+    let existing_workflow = r#"name: Jules Workflows
+
+on:
+  workflow_dispatch:
+    inputs:
+      wait_minutes:
+        default: 42
+        description: Custom wait time
+
+jobs:
+  test: {}
+"#;
+    fs::write(&workflow_path, existing_workflow).unwrap();
+
+    ctx.cli().args(["init", "workflows", "--remote", "--overwrite"]).assert().success();
+
+    let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
+    // The preserved default should be present
+    assert!(
+        updated_workflow.contains("default: 42"),
+        "Custom wait_minutes default should be preserved"
+    );
+    // The kit content should still be present
+    assert!(updated_workflow.contains("Jules"), "Workflow name should be present");
+}
