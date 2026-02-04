@@ -1,0 +1,33 @@
+schema_version: 2
+
+# Metadata
+id: "a463ca"
+source_events: [g7h8i9]
+title: "Application Services Renaming"
+label: "refacts"
+priority: "low"
+summary: "Ambiguous naming of Application Services module."
+
+# Content
+problem: |
+  The module `src/services/domain` contains Application Services but is named `domain`, causing confusion with `src/domain`.
+
+impact: |
+  Developer confusion about where to put business logic vs orchestration logic.
+
+desired_outcome: |
+  Rename `src/services/domain` to `src/services/application` or similar.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas: [src/services/domain/mod.rs, src/services/mod.rs]
+
+acceptance_criteria: [Module renamed to accurately reflect contents, Imports updated]
+
+verification_commands: [ls src/services]
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

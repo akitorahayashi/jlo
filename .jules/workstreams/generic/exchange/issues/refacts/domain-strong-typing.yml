@@ -1,0 +1,35 @@
+schema_version: 2
+
+# Metadata
+id: "1n895e"
+source_events: [wc0fao, x9d2k1]
+title: "Domain Strong Typing"
+label: "refacts"
+priority: "medium"
+summary: "RoleId strong type bypass and duplicate validation."
+
+# Content
+problem: |
+  `RoleId` is unwrapped to `String` in ScheduleLayer, bypassing safety. Also `RoleId` and `ComponentId` duplicate validation logic.
+
+impact: |
+  Loss of type safety guarantees. Code duplication.
+
+desired_outcome: |
+  Use `RoleId` throughout the domain. Deduplicate validation logic.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas: [src/domain/schedule.rs, src/app/commands/run/multi_role.rs, src/domain/role_id.rs,
+  src/domain/component_id.rs]
+
+acceptance_criteria: [ScheduleLayer returns `Vec<RoleId>`, Validation logic shared via common helper or
+    trait]
+
+verification_commands: [cargo test --lib domain]
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

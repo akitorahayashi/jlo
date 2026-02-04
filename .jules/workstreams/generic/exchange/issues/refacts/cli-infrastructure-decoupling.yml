@@ -1,0 +1,35 @@
+schema_version: 2
+
+# Metadata
+id: "niu5la"
+source_events: [a1b2c3, zggxkn, q1w2e3]
+title: "CLI Infrastructure Decoupling"
+label: "refacts"
+priority: "high"
+summary: "Application commands directly depend on system shell and filesystem."
+
+# Content
+problem: |
+  Application commands (`init_scaffold`, `narrator`, `single_role`, `update`) directly execute system shell commands (`git`, `gh`) or use `std::fs`, bypassing ports. This prevents unit testing and violates Ports & Adapters.
+
+impact: |
+  Core logic cannot be unit tested in isolation. Tests are slow and flaky. Infrastructure dependencies are implicit.
+
+desired_outcome: |
+  All system interactions (Git, GitHub, FS) are behind Ports/Traits. Commands use these traits via dependency injection.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas: [src/app/commands/run/narrator.rs, src/app/commands/run/single_role.rs, src/app/commands/init_scaffold.rs,
+  src/app/commands/update.rs]
+
+acceptance_criteria: ['Narrator uses a GitPort instead of Command::new', 'Update command uses WorkspaceStore
+    instead of std::fs', Commands accept dependencies via arguments or context]
+
+verification_commands: [cargo test --test cli_commands]
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

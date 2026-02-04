@@ -1,0 +1,34 @@
+schema_version: 2
+
+# Metadata
+id: "iqpiuu"
+source_events: [d4e5f6]
+title: "API Facade Decoupling"
+label: "refacts"
+priority: "medium"
+summary: "API Facade contains direct println! calls."
+
+# Content
+problem: |
+  The API Facade (`src/app/api.rs`) contains direct `println!` calls, mixing business logic invocation with CLI presentation.
+
+impact: |
+  API cannot be reused in non-CLI contexts (e.g., TUI, GUI, Library) without side effects.
+
+desired_outcome: |
+  API functions return structured Result/Objects. CLI layer handles printing.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas: [src/app/api.rs, src/main.rs]
+
+acceptance_criteria: [No `println!` calls in `src/app/api.rs`, 'API functions return `Result<SuccessType,
+    AppError>`']
+
+verification_commands: ['cargo test --lib app::api']
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

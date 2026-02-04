@@ -1,0 +1,33 @@
+schema_version: 2
+
+# Metadata
+id: "tbjjly"
+source_events: [z7r5t2]
+title: "Consistent Layer Naming"
+label: "refacts"
+priority: "low"
+summary: "Inconsistent layer directory naming (singular vs plural)."
+
+# Content
+problem: |
+  Narrator layer uses singular 'narrator', others use plural.
+
+impact: |
+  Inconsistency requires special handling in code.
+
+desired_outcome: |
+  Standardize directory naming (e.g., all plural).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas: [src/domain/layer.rs, .jules/roles/narrator/]
+
+acceptance_criteria: [Layer directories follow consistent pattern, Layer enum mapping is simplified]
+
+verification_commands: ['cargo test --lib domain::layer']
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

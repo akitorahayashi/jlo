@@ -1,0 +1,33 @@
+schema_version: 2
+
+# Metadata
+id: "lpntl8"
+source_events: [cv8f2a]
+title: "Increase Coverage Gate"
+label: "tests"
+priority: "medium"
+summary: "Coverage gate of 30% is too low."
+
+# Content
+problem: |
+  The CI coverage gate is set to 30%, which is insufficient to prevent regressions in critical paths.
+
+impact: |
+  Low quality code can be merged easily. Regressions are likely.
+
+desired_outcome: |
+  Coverage gate increased to a more reasonable level (e.g., 50% or 60%).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas: [.github/workflows/run-tests.yml]
+
+acceptance_criteria: [CI workflow fails under <new_threshold> coverage]
+
+verification_commands: [grep 'fail-under' .github/workflows/run-tests.yml]
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
