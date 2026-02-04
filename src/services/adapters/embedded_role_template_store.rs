@@ -49,7 +49,10 @@ fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
             DirEntry::File(file) => {
                 if let Some(content) = file.contents_utf8() {
                     let path = file.path().to_string_lossy().to_string();
-                    files.push(ScaffoldFile { path, content: content.to_string() });
+                    // Don't include the internal documentation in the deployed scaffold
+                    if path != "AGENTS.md" {
+                        files.push(ScaffoldFile { path, content: content.to_string() });
+                    }
                 }
             }
             DirEntry::Dir(subdir) => collect_files(subdir, files),
