@@ -1,10 +1,9 @@
 name: Jules Implementer Label
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
-    types: [opened, synchronize, reopened, ready_for_review]
+      - jules-implementer-*
 
 permissions:
   contents: read
@@ -13,11 +12,11 @@ permissions:
 
 jobs:
   label-pr:
-    if: startsWith(github.head_ref, 'jules-implementer-')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          # Read label definitions from main (implementer output targets main).
           ref: main
           fetch-depth: 1
 
@@ -29,6 +28,16 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::Missing GH_TOKEN (secrets.JLO_BOT_TOKEN). Refusing to fall back to the default workflow token."
+            exit 1
+          fi
+
+          PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --repo "$REPO" --json number -q '.[0].number')
+          if [ -z "$PR_NUMBER" ]; then
+            echo "::notice::No PR found yet for branch $BRANCH_NAME. Skipping label."
+            exit 0
+          fi
 
           if [[ ! "$BRANCH_NAME" =~ ^jules-implementer-([a-z0-9]+)-([a-z0-9]{6})- ]]; then
             echo "::error::Implementer branch name must follow: jules-implementer-<label>-<id>-<short_description>"
