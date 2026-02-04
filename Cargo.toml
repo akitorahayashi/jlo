@@ -2,7 +2,7 @@
 name = "jlo"
 version = "7.3.0"
 edition = "2024"
-description = "Manage .jules/ workspace scaffolding for organizational memory"
+description = "CLI tool for deploying `.jules/` workspace scaffolding and orchestrating scheduled LLM agent execution."
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
