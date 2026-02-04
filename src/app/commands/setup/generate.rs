@@ -65,8 +65,12 @@ pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
 
     // Generate/merge env.toml
     let env_toml_path = setup_dir.join("env.toml");
-    let existing_path = if env_toml_path.exists() { Some(env_toml_path.as_path()) } else { None };
-    let env_content = ArtifactGenerator::merge_env_toml(&components, existing_path)?;
+    let existing_content = if env_toml_path.exists() {
+        Some(std::fs::read_to_string(&env_toml_path)?)
+    } else {
+        None
+    };
+    let env_content = ArtifactGenerator::merge_env_toml(&components, existing_content.as_deref())?;
     std::fs::write(&env_toml_path, &env_content)?;
 
     // Return component names

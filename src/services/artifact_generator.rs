@@ -1,7 +1,6 @@
 //! Script and config generator service.
 
 use std::collections::BTreeMap;
-use std::path::Path;
 
 use crate::domain::{AppError, Component};
 
@@ -45,16 +44,11 @@ set -euo pipefail
     /// Preserves existing values while adding new keys from components.
     pub fn merge_env_toml(
         components: &[Component],
-        existing_path: Option<&Path>,
+        existing_content: Option<&str>,
     ) -> Result<String, AppError> {
         // Load existing values
-        let existing = if let Some(path) = existing_path {
-            if path.exists() {
-                let content = std::fs::read_to_string(path)?;
-                Self::parse_env_toml(&content)?
-            } else {
-                BTreeMap::new()
-            }
+        let existing = if let Some(content) = existing_content {
+            Self::parse_env_toml(content)?
         } else {
             BTreeMap::new()
         };
@@ -193,15 +187,11 @@ mod tests {
 
     #[test]
     fn merge_env_toml_preserves_existing() {
-        use std::io::Write;
-        let temp_dir = tempfile::tempdir().unwrap();
-        let env_path = temp_dir.path().join("env.toml");
-
-        let mut file = std::fs::File::create(&env_path).unwrap();
-        writeln!(file, "[TEST_VAR]").unwrap();
-        writeln!(file, "value = \"custom_value\"").unwrap();
-        writeln!(file, "note = \"Custom note\"").unwrap();
-        drop(file);
+        let existing_content = r#"
+[TEST_VAR]
+value = "custom_value"
+note = "Custom note"
+"#;
 
         let components = vec![make_component(
             "test",
@@ -212,7 +202,7 @@ mod tests {
             }],
         )];
 
-        let result = ArtifactGenerator::merge_env_toml(&components, Some(&env_path)).unwrap();
+        let result = ArtifactGenerator::merge_env_toml(&components, Some(existing_content)).unwrap();
 
         assert!(result.contains("value = \"custom_value\""), "should preserve existing value");
         assert!(result.contains("note = \"Custom note\""), "should preserve existing note");
