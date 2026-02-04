@@ -1,7 +1,9 @@
+[% if not use_matrix %]
 #!/usr/bin/env bash
 set -euo pipefail
 
 : "${IMPLEMENTER_MATRIX:?IMPLEMENTER_MATRIX must be set}"
+: "${TARGET_BRANCH:?TARGET_BRANCH must be set}"
 
 require_command() {
   local name="$1"
@@ -33,6 +35,7 @@ for row in "${rows[@]}"; do
     exit 1
   fi
   echo "Running implementer for $issue"
-  jlo run implementers "$issue" --branch main
+  jlo run implementers "$issue" --branch "$TARGET_BRANCH"
   ISSUE_FILE="$issue" bash .github/scripts/jules-delete-processed-issue-and-events.sh
 done
+[% endif %]

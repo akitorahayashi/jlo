@@ -1,3 +1,4 @@
+[% if not use_matrix %]
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -33,3 +34,4 @@ for row in "${rows[@]}"; do
   echo "Running observer $workstream / $role"
   timeout 20m jlo run observers --workstream "$workstream" --role "$role"
 done
+[% endif %]

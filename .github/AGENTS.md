@@ -10,7 +10,7 @@ See [root AGENTS.md](../AGENTS.md) for design principles.
 | Observer | `jules` | `jules-observer-*` | ✅ (if `.jules/` only) |
 | Decider | `jules` | `jules-decider-*` | ✅ (if `.jules/` only) |
 | Planner | `jules` | `jules-planner-*` | ✅ (if `.jules/` only) |
-| Implementer | `main` | `jules-implementer-*` | ❌ (human review) |
+| Implementer | `vars.JULES_TARGET_BRANCH` (default `main`) | `jules-implementer-*` | ❌ (human review) |
 
 ## Workflow Files
 
@@ -19,6 +19,10 @@ Jules workflows are installed via `jlo init workflows` and follow these patterns
 - `.github/workflows/jules-*.yml`
 - `.github/actions/` (Jules composite actions)
 - `.github/scripts/jules-*.sh`
+
+Workflow kit sources live under `src/assets/workflows/.github` and are rendered during install based on the runner mode.
+
+When reinstalling the workflow kit with `--overwrite`, the existing `on.schedule` entries in `.github/workflows/jules-workflows.yml` are preserved. Invalid schedule YAML causes the install to fail with an explicit error.
 
 Non-Jules CI workflows remain in `.github/workflows/` alongside the kit.
 

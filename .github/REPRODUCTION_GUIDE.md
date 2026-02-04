@@ -5,6 +5,7 @@ This document describes the repository state required to reproduce the Jules wor
 ## Required Configuration
 
 Configure repository variables and secrets referenced by the workflow kit (see `.github/workflows/jules-*.yml`).
+Set the optional `JULES_TARGET_BRANCH` repository variable to override the implementer base branch (defaults to `main`).
 Branch protection on `jules` must require the workflow status checks and allow auto-merge.
 
 ## Required Files

@@ -36,7 +36,7 @@ jobs:
       startsWith(github.head_ref, 'jules-observer-') ||
       startsWith(github.head_ref, 'jules-decider-') ||
       startsWith(github.head_ref, 'jules-planner-')
-    runs-on: self-hosted
+    runs-on: [[[ runs_on ]]]
     permissions:
       contents: write
       pull-requests: write

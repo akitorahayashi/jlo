@@ -9,7 +9,7 @@ on:
 
 jobs:
   sync:
-    runs-on: self-hosted
+    runs-on: [[[ runs_on ]]]
     permissions:
       contents: write 
     steps:

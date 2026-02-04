@@ -128,6 +128,8 @@ Workflow kit layout:
 - `.github/actions/` (Jules composite actions)
 - `.github/scripts/jules-*.sh`
 
+When reinstalling the workflow kit with `--overwrite`, the existing `on.schedule` entries in `.github/workflows/jules-workflows.yml` are preserved. If the existing schedule cannot be parsed as a YAML sequence, installation fails with an explicit error.
+
 **Branch Strategy**:
 
 | Branch Pattern | Agent Type | Base Branch | Merge Strategy |
@@ -136,7 +138,9 @@ Workflow kit layout:
 | `jules-observer-*` | Observers | `jules` | Auto-merged |
 | `jules-decider-*` | Deciders | `jules` | Auto-merged |
 | `jules-planner-*` | Planners | `jules` | Auto-merged |
-| `jules-implementer-*` | Implementers | `main` | Human review |
+| `jules-implementer-*` | Implementers | `vars.JULES_TARGET_BRANCH` (default `main`) | Human review |
+
+Set the repository variable `JULES_TARGET_BRANCH` to override the implementer base branch used by the workflow kit.
 
 **Flow**:
 1. **Sync**: `jules` branch syncs from `main` periodically

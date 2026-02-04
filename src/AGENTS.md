@@ -48,7 +48,7 @@ tests/
 |------|------------|
 | **Scaffold** | The immutable `.jules/` directory structure managed by `jlo init` and `jlo update`. |
 | **Template** | Blueprints for creating new roles or workstreams, applied via `jlo template`. |
-| **Workflow kit** | `.github/` automation assets installed by `jlo init workflows`. |
+| **Workflow kit** | `.github/` automation assets rendered from `src/assets/workflows/.github` by `jlo init workflows`. |
 | **Component** | Development tools managed by `jlo setup`, defined in `src/assets/catalog/`. |
 
 ## CLI Commands

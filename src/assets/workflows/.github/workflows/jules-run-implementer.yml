@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   implementers:
-    runs-on: self-hosted
+    runs-on: [[[ runs_on ]]]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,4 +38,4 @@ jobs:
         with:
           issue_file: ${{ inputs.issue_file }}
           dry_run: ${{ inputs.dry_run }}
-          target_branch: main
+          target_branch: ${{ vars.JULES_TARGET_BRANCH || 'main' }}

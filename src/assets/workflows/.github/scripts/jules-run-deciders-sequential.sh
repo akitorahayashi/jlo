@@ -1,3 +1,4 @@
+[% if not use_matrix %]
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -32,3 +33,4 @@ for row in "${rows[@]}"; do
   echo "Running decider for $workstream"
   timeout 20m jlo run deciders --workstream "$workstream" --scheduled
 done
+[% endif %]

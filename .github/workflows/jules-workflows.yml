@@ -372,4 +372,5 @@ jobs:
       - name: Run implementers sequentially
         env:
           IMPLEMENTER_MATRIX: ${{ needs.generate-planner-matrix.outputs.implementer_matrix }}
+          TARGET_BRANCH: ${{ vars.JULES_TARGET_BRANCH || 'main' }}
         run: bash .github/scripts/jules-run-implementers-sequential.sh
