@@ -30,7 +30,8 @@ impl ScheduleLayer {
 impl WorkstreamSchedule {
     pub fn parse_toml(content: &str) -> Result<Self, AppError> {
         let dto: dto::ScheduleDto = toml::from_str(content)?;
-        let schedule: WorkstreamSchedule = dto.try_into().map_err(AppError::ScheduleConfigInvalid)?;
+        let schedule: WorkstreamSchedule =
+            dto.try_into().map_err(AppError::ScheduleConfigInvalid)?;
         schedule.validate()?;
         Ok(schedule)
     }
