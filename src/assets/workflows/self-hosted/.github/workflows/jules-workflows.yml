@@ -85,7 +85,9 @@ jobs:
   # ============================================================
   wait-after-narrator:
     needs: run-narrator
-    if: (github.event.inputs.entry_point || 'narrator') == 'narrator'
+    if: |
+      always() &&
+      needs.run-narrator.result == 'success'
     runs-on: self-hosted
     timeout-minutes: 60
     steps:
@@ -167,7 +169,10 @@ jobs:
   # ============================================================
   run-observers:
     needs: [generate-workstream-matrix, generate-observer-matrix]
-    if: needs.generate-observer-matrix.outputs.has_observers == 'true'
+    if: |
+      always() &&
+      needs.generate-observer-matrix.result == 'success' &&
+      needs.generate-observer-matrix.outputs.has_observers == 'true'
     runs-on: self-hosted
     timeout-minutes: 30
     strategy:
@@ -194,7 +199,9 @@ jobs:
   # ============================================================
   wait-after-observers:
     needs: [generate-observer-matrix, run-observers]
-    if: needs.generate-observer-matrix.outputs.has_observers == 'true'
+    if: |
+      always() &&
+      needs.run-observers.result == 'success'
     runs-on: self-hosted
     timeout-minutes: 60
     steps:
@@ -208,10 +215,11 @@ jobs:
   # Phase 7: Generate decider matrix (pending events check)
   # ============================================================
   generate-decider-matrix:
-    needs: [generate-workstream-matrix, wait-after-observers]
+    needs: [generate-workstream-matrix, generate-observer-matrix, wait-after-observers]
     if: |
       always() &&
       needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
+      (needs.generate-observer-matrix.result == 'success' || needs.generate-observer-matrix.result == 'skipped') &&
       (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
     runs-on: self-hosted
     timeout-minutes: 10
@@ -238,7 +246,10 @@ jobs:
   # ============================================================
   run-deciders:
     needs: [generate-decider-matrix]
-    if: needs.generate-decider-matrix.outputs.has_pending == 'true'
+    if: |
+      always() &&
+      needs.generate-decider-matrix.result == 'success' &&
+      needs.generate-decider-matrix.outputs.has_pending == 'true'
     runs-on: self-hosted
     timeout-minutes: 30
     strategy:
@@ -265,7 +276,9 @@ jobs:
   # ============================================================
   wait-after-deciders:
     needs: [generate-decider-matrix, run-deciders]
-    if: needs.generate-decider-matrix.outputs.has_pending == 'true'
+    if: |
+      always() &&
+      needs.run-deciders.result == 'success'
     runs-on: self-hosted
     timeout-minutes: 60
     steps:
@@ -279,10 +292,12 @@ jobs:
   # Phase 10: Generate planner/implementer matrix (new issues)
   # ============================================================
   generate-planner-matrix:
-    needs: [generate-workstream-matrix, generate-decider-matrix, wait-after-deciders]
+    needs: [generate-workstream-matrix, generate-decider-matrix, run-deciders, wait-after-deciders]
     if: |
       always() &&
       needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
+      (needs.generate-decider-matrix.result == 'success' || needs.generate-decider-matrix.result == 'skipped') &&
+      (needs.run-deciders.result == 'success' || needs.run-deciders.result == 'skipped') &&
       (needs.wait-after-deciders.result == 'success' || needs.wait-after-deciders.result == 'skipped')
     runs-on: self-hosted
     timeout-minutes: 10
@@ -312,7 +327,10 @@ jobs:
   # ============================================================
   run-planners:
     needs: [generate-planner-matrix]
-    if: needs.generate-planner-matrix.outputs.has_planners == 'true'
+    if: |
+      always() &&
+      needs.generate-planner-matrix.result == 'success' &&
+      needs.generate-planner-matrix.outputs.has_planners == 'true'
     runs-on: self-hosted
     timeout-minutes: 30
     strategy:
@@ -339,7 +357,9 @@ jobs:
   # ============================================================
   wait-after-planners:
     needs: [generate-planner-matrix, run-planners]
-    if: needs.generate-planner-matrix.outputs.has_planners == 'true'
+    if: |
+      always() &&
+      needs.run-planners.result == 'success'
     runs-on: self-hosted
     timeout-minutes: 60
     steps:
@@ -356,6 +376,7 @@ jobs:
     needs: [generate-planner-matrix, wait-after-planners]
     if: |
       always() &&
+      needs.generate-planner-matrix.result == 'success' &&
       needs.generate-planner-matrix.outputs.has_implementers == 'true' &&
       (needs.wait-after-planners.result == 'success' || needs.wait-after-planners.result == 'skipped')
     runs-on: self-hosted
