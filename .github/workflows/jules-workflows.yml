@@ -59,7 +59,7 @@ jobs:
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.7
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: jules
           fetch-depth: 0
@@ -114,7 +114,7 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_workstreams: ${{ steps.matrix.outputs.has_workstreams }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.7
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: jules
           fetch-depth: 0
@@ -151,7 +151,7 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_observers: ${{ steps.matrix.outputs.has_observers }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.7
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: jules
           fetch-depth: 0
@@ -179,7 +179,7 @@ jobs:
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.7
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: jules
           fetch-depth: 0
@@ -225,7 +225,7 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_pending: ${{ steps.matrix.outputs.has_pending }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.7
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: jules
           fetch-depth: 0
@@ -253,7 +253,7 @@ jobs:
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.7
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: jules
           fetch-depth: 0
@@ -302,7 +302,7 @@ jobs:
       implementer_matrix: ${{ steps.matrix.outputs.implementer_matrix }}
       has_implementers: ${{ steps.matrix.outputs.has_implementers }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.7
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: jules
           fetch-depth: 0
@@ -331,7 +331,7 @@ jobs:
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.7
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: jules
           fetch-depth: 0
@@ -376,7 +376,7 @@ jobs:
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.1.7
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: jules
           fetch-depth: 0
