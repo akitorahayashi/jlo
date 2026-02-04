@@ -3,7 +3,9 @@ use std::path::Path;
 use serde::Serialize;
 
 use crate::domain::{AppError, Layer};
-use crate::services::adapters::workstream_schedule_filesystem::{list_subdirectories, load_schedule};
+use crate::services::adapters::workstream_schedule_filesystem::{
+    list_subdirectories, load_schedule,
+};
 
 #[derive(Debug, Clone)]
 pub enum ScheduleExportScope {
