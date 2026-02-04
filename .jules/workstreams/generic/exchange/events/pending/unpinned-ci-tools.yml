@@ -1,0 +1,31 @@
+schema_version: 1
+
+# Metadata
+id: "u7n3p1"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "devops"
+confidence: "high"
+
+# Content
+title: "Unpinned and inefficient tool installation in CI"
+statement: |
+  CI workflows install critical tools (`cross`, `cargo-tarpaulin`) using `cargo install` without version pinning.
+  This causes non-deterministic builds (breaking on upstream updates) and slows down feedback loops by compiling from source.
+
+# Evidence supporting the observation
+evidence:
+  - path: ".github/workflows/build.yml"
+    loc:
+      - "run: cargo install cross --locked"
+    note: "Installs latest 'cross' from crates.io on every cross-compile job, risking breakage."
+
+  - path: ".github/workflows/run-tests.yml"
+    loc:
+      - "run: cargo install cargo-tarpaulin"
+    note: "Installs latest 'cargo-tarpaulin' from crates.io on every Linux test run, slowing down the pipeline."
+
+tags:
+  - "reproducibility"
+  - "performance"
+  - "ci"

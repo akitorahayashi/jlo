@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: "devops"
+workstream: "generic"
+
+updated_at: "2026-02-04T08:05:17Z"
+
+goals:
+  - "Enforce pinned toolchains and deterministic builds."
+  - "Secure supply chain by pinning action versions."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-04T08:05:17Z"
+    summary: "Initialized devops workstation and identified unpinned toolchains and floating tags."
