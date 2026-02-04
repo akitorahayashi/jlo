@@ -34,8 +34,8 @@ pub enum AppError {
     /// Layer identifier is invalid.
     // Note: We can't easily access Layer::ALL here for the error message formatting without a helper or just hardcoding the list in the message if critical.
     // For now, simple message.
-    #[error("Invalid layer '{0}'")]
-    InvalidLayer(String),
+    #[error("Invalid layer '{name}': must be one of {available}")]
+    InvalidLayer { name: String, available: String },
 
     /// Role not found (fuzzy match failed).
     #[error("Role '{0}' not found")]
@@ -133,7 +133,7 @@ impl AppError {
             AppError::ConfigError(_)
             | AppError::InvalidRoleId(_)
             | AppError::InvalidComponentId(_)
-            | AppError::InvalidLayer(_)
+            | AppError::InvalidLayer { .. }
             | AppError::RoleNotFound(_)
             | AppError::CircularDependency(_)
             | AppError::InvalidComponentMetadata { .. }
