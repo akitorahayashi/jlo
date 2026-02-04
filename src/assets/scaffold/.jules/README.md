@@ -73,7 +73,6 @@ Implementers modify source code and require human review.
 |       |   |   +-- <state>/
 |       |   |       +-- *.yml
 |       |   +-- issues/     # Consolidated problems
-|       |       +-- index.md
 |       |       +-- <label>/
 |       +-- workstations/   # Observer state persistence
 |       |   +-- <role>/     # Role-specific workstation
@@ -169,11 +168,10 @@ Each observer:
 2. Reads `.jules/changes/latest.yml` for recent changes context (if present)
 3. Reads role.yml (specialized focus)
 4. Reads `.jules/workstreams/<workstream>/workstations/<role>/perspective.yml`
-5. **Reads .jules/workstreams/<workstream>/exchange/issues/index.md to check for open issues**
-6. **Skips observations already covered by open issues (deduplication)**
-7. Writes event files under workstreams/<workstream>/exchange/events/ in the incoming state directory
-8. Updates perspective.yml (goals/rules/ignore/log)
-9. Publishes changes as a PR (branch naming follows the convention below)
+5. **Skips observations already covered by open issues (deduplication)**
+6. Writes event files under workstreams/<workstream>/exchange/events/ in the incoming state directory
+7. Updates perspective.yml (goals/rules/ignore/log)
+8. Publishes changes as a PR (branch naming follows the convention below)
 
 
 ### 2. Decider Agent (Scheduled)
@@ -181,14 +179,12 @@ Each observer:
 Triage agent:
 1. Reads contracts.yml (layer behavior)
 2. Reads all event files in the workstream incoming state directory
-3. **Reads .jules/workstreams/<workstream>/exchange/issues/index.md and existing issues to identify merge candidates**
-4. Validates observations (do they exist in codebase?)
-5. Merges related events sharing root cause
-6. **Merges events into existing issues when related (updates content)**
-7. Creates new issues for genuinely new problems (using id as filename, placing in label folder)
-8. **Updates .jules/workstreams/<workstream>/exchange/issues/index.md**
-9. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
-10. Moves processed events to the processed state directory defined by the scaffold
+3. Validates observations (do they exist in codebase?)
+4. Merges related events sharing root cause
+5. **Merges events into existing issues when related (updates content)**
+6. Creates new issues for genuinely new problems (using id as filename, placing in label folder)
+7. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
+8. Moves processed events to the processed state directory defined by the scaffold
 
 **Decider answers**: "Is this real? Should these events merge into one issue?"
 
@@ -236,7 +232,7 @@ Observer updates perspective.yml (goals/rules/ignore/log)
 
 ## Issue Lifecycle
 
-- Issues are organized by label directories defined by the scaffold and tracked in `index.md`.
+- Issues are organized by label directories defined by the scaffold.
 - Open issues suppress duplicate observations from observers.
 - Issue filenames use stable kebab-case identifiers (for example, `auth-inconsistency.yml`).
 - Related events are merged into existing issues, not duplicated.

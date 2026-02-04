@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use chrono::{NaiveDate, Utc};
@@ -18,8 +17,6 @@ pub struct SemanticContext {
     event_issue_map: HashMap<String, String>,
     issues: HashMap<String, PathBuf>,
     issue_sources: HashMap<String, Vec<String>>,
-    index_entries: HashMap<String, HashSet<String>>,
-    index_duplicates: HashMap<String, Vec<String>>,
 }
 
 pub fn semantic_context(
@@ -58,27 +55,6 @@ pub fn semantic_context(
                 }
             }
         }
-
-        let index_path = issues_dir.join("index.md");
-        if index_path.exists() {
-            match fs::read_to_string(&index_path) {
-                Ok(content) => {
-                    let parsed = parse_index_entries(&content);
-                    if !parsed.entries.is_empty() {
-                        context.index_entries.insert(workstream.clone(), parsed.entries);
-                    }
-                    if !parsed.duplicates.is_empty() {
-                        context.index_duplicates.insert(workstream.clone(), parsed.duplicates);
-                    }
-                }
-                Err(err) => {
-                    diagnostics.push_error(
-                        index_path.display().to_string(),
-                        format!("Failed to read file: {}", err),
-                    );
-                }
-            }
-        }
     }
 
     context
@@ -109,48 +85,6 @@ pub fn semantic_checks(
                 diagnostics.push_error(
                     path.display().to_string(),
                     format!("source_events refers to missing event '{}'", source),
-                );
-            }
-        }
-    }
-
-    for workstream in workstreams {
-        if let Some(entries) = context.index_entries.get(workstream) {
-            let ws_dir =
-                jules_path.join("workstreams").join(workstream).join("exchange").join("issues");
-            let mut files = HashSet::new();
-            for entry in walk_issue_files(&ws_dir, diagnostics) {
-                if let Ok(rel) = entry.strip_prefix(&ws_dir) {
-                    files.insert(rel.to_string_lossy().to_string());
-                }
-            }
-
-            for entry in entries {
-                if !files.contains(entry) {
-                    diagnostics.push_error(
-                        ws_dir.join("index.md").display().to_string(),
-                        format!("index entry '{}' has no matching file", entry),
-                    );
-                }
-            }
-
-            for file in files {
-                if !entries.contains(&file) {
-                    diagnostics.push_error(
-                        ws_dir.join("index.md").display().to_string(),
-                        format!("issue file '{}' not listed in index", file),
-                    );
-                }
-            }
-        }
-
-        if let Some(duplicates) = context.index_duplicates.get(workstream) {
-            let index_path =
-                jules_path.join("workstreams").join(workstream).join("exchange/issues/index.md");
-            for entry in duplicates {
-                diagnostics.push_error(
-                    index_path.display().to_string(),
-                    format!("duplicate index entry '{}'", entry),
                 );
             }
         }
@@ -273,75 +207,4 @@ pub fn semantic_checks(
             }
         }
     }
-}
-
-struct IndexParseResult {
-    entries: HashSet<String>,
-    duplicates: Vec<String>,
-}
-
-fn parse_index_entries(content: &str) -> IndexParseResult {
-    let mut counts: HashMap<String, usize> = HashMap::new();
-    let mut in_comment = false;
-    for line in content.lines() {
-        if line.contains("<!--") {
-            in_comment = true;
-        }
-
-        if !in_comment
-            && let Some(start) = line.find("](./")
-            && let Some(end) = line[start + 4..].find(')')
-        {
-            let slice = &line[start + 4..start + 4 + end];
-            if slice.ends_with(".yml") {
-                *counts.entry(slice.to_string()).or_insert(0) += 1;
-            }
-        }
-
-        if line.contains("-->") {
-            in_comment = false;
-        }
-    }
-
-    let mut entries = HashSet::new();
-    let mut duplicates = Vec::new();
-    for (entry, count) in counts {
-        if count > 1 {
-            duplicates.push(entry.clone());
-        }
-        entries.insert(entry);
-    }
-
-    IndexParseResult { entries, duplicates }
-}
-
-fn walk_issue_files(issues_dir: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    match fs::read_dir(issues_dir) {
-        Ok(entries) => {
-            for entry in entries {
-                match entry {
-                    Ok(entry) => {
-                        let path = entry.path();
-                        if path.is_dir() {
-                            files.extend(read_yaml_files(&path, diagnostics));
-                        }
-                    }
-                    Err(err) => {
-                        diagnostics.push_error(
-                            issues_dir.display().to_string(),
-                            format!("Failed to read directory entry: {}", err),
-                        );
-                    }
-                }
-            }
-        }
-        Err(err) => {
-            diagnostics.push_error(
-                issues_dir.display().to_string(),
-                format!("Failed to read directory: {}", err),
-            );
-        }
-    }
-    files
 }

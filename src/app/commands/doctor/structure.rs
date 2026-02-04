@@ -239,16 +239,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             inputs.applied_fixes,
             diagnostics,
         );
-        let index_file = issues_dir.join("index.md");
-        if !index_file.exists() {
-            attempt_fix_file(
-                index_file.clone(),
-                ".jules/workstreams/generic/exchange/issues/index.md",
-                inputs.options,
-                inputs.applied_fixes,
-                diagnostics,
-            );
-        }
         for label in inputs.issue_labels {
             ensure_directory_exists(
                 issues_dir.join(label),
