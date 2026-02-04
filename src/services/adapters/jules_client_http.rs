@@ -199,9 +199,7 @@ impl HttpJulesClient {
     fn is_retryable(error: &AppError) -> bool {
         match error {
             AppError::JulesApiError { message, status } => {
-                if let Some(s) = status
-                    && (*s == 429 || *s >= 500)
-                {
+                if status.is_some_and(|s| s == 429 || s >= 500) {
                     return true;
                 }
                 message.contains("timeout") || message.contains("connect")
