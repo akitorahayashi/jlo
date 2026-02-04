@@ -1,0 +1,23 @@
+schema_version: 2
+
+observer: "data_arch"
+workstream: "generic"
+
+updated_at: "2026-02-04T08:05:56Z"
+
+# Keep this list short (1-3). These goals are the continuity mechanism across runs.
+goals:
+  - "Identify weak typing in domain models where Strong Types exist but are bypassed."
+  - "Identify data duplication between Domain and DTO layers."
+  - "Monitor error model evolution for string-typing regression."
+
+# Stable rules of thumb for producing consistent, high-signal events.
+rules: []
+
+# Explicit suppressions to prevent repeated low-value observations.
+ignore: []
+
+# Newest first; keep max 5 entries.
+log:
+  - at: "2026-02-04T08:05:56Z"
+    summary: "Initialized workstation; identified weak typing in ScheduledRole and DTO duplication in RunConfig."
