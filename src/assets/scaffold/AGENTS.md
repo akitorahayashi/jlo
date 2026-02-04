@@ -1,6 +1,21 @@
 # .jules/ Scaffold Design
 
-See [root AGENTS.md](../../../../AGENTS.md) for design principles.
+## Critical Design Principles
+
+### 1. Prompt Hierarchy (No Duplication)
+Prompts are constructed as a flat list of contracts in `prompt.yml`.
+
+```yaml
+contracts:
+  - .jules/JULES.md (global)
+  - .jules/roles/<layer>/contracts.yml (layer)
+  - .jules/roles/<layer>/<role>/role.yml (role-specific)
+```
+
+**Rule**: Never duplicate content across levels. Each level refines the constraints of the previous one.
+
+### 2. Workflow-Driven Execution
+Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules VM; workflows control scheduling, branching, and merge policies.
 
 ## Directory Structure
 
@@ -60,7 +75,7 @@ See [root AGENTS.md](../../../../AGENTS.md) for design principles.
 
 ## Prompt Hierarchy
 
-See [root AGENTS.md](../../../../AGENTS.md#2-prompt-hierarchy-no-duplication) for the contract structure.
+See "Critical Design Principles" above for the contract structure.
 
 | File | Scope | Content |
 |------|-------|---------|
@@ -113,7 +128,7 @@ narrator -> observers -> deciders -> [planners] -> implementers
 
 ## Setup Compiler
 
-See [src/AGENTS.md](../../../src/AGENTS.md#setup-compiler) for implementation details.
+See `jlo` source code for implementation details.
 
 The setup directory contains:
 - `tools.yml`: User-selected components
