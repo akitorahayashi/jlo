@@ -16,13 +16,13 @@ permissions:
 
 jobs:
   auto-review:
-    runs-on: ubuntu-latest
+    runs-on: {{ runner }}
     steps:
       - name: Add Review Comments
         env:
-          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-          BRANCH_NAME: ${{ github.ref_name }}
-          REPO: ${{ github.repository }}
+          GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+          BRANCH_NAME: {{ gha_expr("github.ref_name") }}
+          REPO: {{ gha_expr("github.repository") }}
         run: |
           echo "Waiting for PR to be created for branch $BRANCH_NAME..."
           PR_NUMBER=""
