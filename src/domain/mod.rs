@@ -18,7 +18,7 @@ pub use prompt_assembly::{
     AssembledPrompt, PromptAssemblyError, PromptAssemblySpec, PromptContext,
 };
 pub use role_id::RoleId;
-pub use run_config::{JulesApiConfig, RunConfig};
+pub use run_config::{JulesApiConfig, RunConfig, RunSettings};
 pub use schedule::WorkstreamSchedule;
 pub use workflow_runner_mode::WorkflowRunnerMode;
 pub use workspace_layout::{JULES_DIR, VERSION_FILE};

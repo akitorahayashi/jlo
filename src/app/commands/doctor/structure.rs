@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::app::commands::run::parse_config_content;
 use crate::domain::{AppError, Layer, RunConfig};
 use crate::services::assets::scaffold_assets::scaffold_file_content;
 use crate::services::assets::workstream_template_assets::workstream_template_content;
@@ -55,7 +56,7 @@ pub fn read_run_config(
         }
     };
 
-    match RunConfig::parse_toml(&content) {
+    match parse_config_content(&content) {
         Ok(config) => Ok(config),
         Err(err) => {
             diagnostics.push_error(config_path.display().to_string(), err.to_string());
