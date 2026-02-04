@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "b9c4d3"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "rustacean"
+confidence: "high"
+
+# Content
+title: "ArtifactGenerator mixes filesystem I/O with generation logic"
+statement: |
+  `ArtifactGenerator::merge_env_toml` performs direct `std::fs::read_to_string` operations.
+  This couples the generation logic to the filesystem, making it harder to test and violating "Isolation beats locking" (functional core).
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/artifact_generator.rs"
+    loc:
+      - "44"
+    note: "Takes `Option<&Path>` and calls `fs::read_to_string` internally"
+
+tags:
+  - "architecture"
+  - "testing"
