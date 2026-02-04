@@ -83,3 +83,83 @@ fn init_workflows_overwrite_respects_unrelated_files() {
     let unrelated_action_content = fs::read_to_string(&unrelated_action).unwrap();
     assert_eq!(unrelated_action_content, "custom action");
 }
+
+#[test]
+fn init_workflows_overwrite_preserves_schedule() {
+    let ctx = TestContext::new();
+    let root = ctx.work_dir();
+
+    // Create an existing workflow with a custom schedule
+    let workflow_path = root.join(".github/workflows/jules-workflows.yml");
+    fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
+    let existing_workflow = r#"name: Jules Workflows
+
+on:
+  schedule:
+    - cron: '0 12 * * 1-5'
+    - cron: '0 6 * * 0'
+  workflow_dispatch: {}
+
+jobs:
+  test: {}
+"#;
+    fs::write(&workflow_path, existing_workflow).unwrap();
+
+    ctx.cli().args(["init", "workflows", "--remote", "--overwrite"]).assert().success();
+
+    let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
+    // The preserved schedule should contain the custom cron entries
+    assert!(
+        updated_workflow.contains("0 12 * * 1-5"),
+        "Custom weekday schedule should be preserved"
+    );
+    assert!(updated_workflow.contains("0 6 * * 0"), "Custom weekend schedule should be preserved");
+    // The kit content should still be present
+    assert!(updated_workflow.contains("Jules"), "Workflow name should be present");
+}
+
+#[test]
+fn init_workflows_overwrite_fails_on_invalid_schedule() {
+    let ctx = TestContext::new();
+    let root = ctx.work_dir();
+
+    // Create an existing workflow with invalid YAML
+    let workflow_path = root.join(".github/workflows/jules-workflows.yml");
+    fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
+    let invalid_yaml = "name: [invalid\n  yaml: content";
+    fs::write(&workflow_path, invalid_yaml).unwrap();
+
+    ctx.cli()
+        .args(["init", "workflows", "--remote", "--overwrite"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Failed to parse"));
+}
+
+#[test]
+fn init_workflows_overwrite_uses_kit_schedule_when_none_exists() {
+    let ctx = TestContext::new();
+    let root = ctx.work_dir();
+
+    // Create an existing workflow without a schedule
+    let workflow_path = root.join(".github/workflows/jules-workflows.yml");
+    fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
+    let existing_workflow = r#"name: Jules Workflows
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  test: {}
+"#;
+    fs::write(&workflow_path, existing_workflow).unwrap();
+
+    ctx.cli().args(["init", "workflows", "--remote", "--overwrite"]).assert().success();
+
+    let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
+    // The kit's default schedule should be present
+    assert!(
+        updated_workflow.contains("schedule"),
+        "Kit schedule should be present when existing workflow has none"
+    );
+}

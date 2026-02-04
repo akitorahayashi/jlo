@@ -46,7 +46,17 @@ The primary orchestration workflow in `.github/workflows/jules-*.yml` orchestrat
 
 ## Required Configuration
 
-Repository variables and secrets referenced by `.github/workflows/jules-*.yml` must be configured for the workflows to run.
+Repository variables and secrets referenced by `.github/workflows/jules-*.yml`:
+
+| Name | Type | Purpose |
+|------|------|---------|
+| `JULES_API_KEY` | Secret | API key for Jules service |
+| `JULES_PAUSED` | Variable | Set to `true` to skip scheduled runs |
+| `JULES_TARGET_BRANCH` | Variable | Target branch for implementer output (default: `main`) |
+
+## Schedule Preservation
+
+When reinstalling the workflow kit with `jlo init workflows --overwrite`, the existing `on.schedule` block in `jules-workflows.yml` is preserved. If the existing file contains invalid YAML, installation fails with an explicit error.
 
 ## Repository Requirements
 

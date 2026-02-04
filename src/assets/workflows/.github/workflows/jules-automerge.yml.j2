@@ -36,14 +36,14 @@ jobs:
       startsWith(github.head_ref, 'jules-observer-') ||
       startsWith(github.head_ref, 'jules-decider-') ||
       startsWith(github.head_ref, 'jules-planner-')
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     permissions:
       contents: write
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: {{ gha_expr("github.head_ref") }}
           fetch-depth: 0
 
       - name: Install jlo
@@ -74,9 +74,9 @@ jobs:
       - name: Check scope (files within .jules/ only)
         id: scope
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: {{ gha_expr("github.token") }}
         run: |
-          changed=$(gh api --paginate "/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[].filename')
+          changed=$(gh api --paginate "/repos/{{ gha_expr('github.repository') }}/pulls/{{ gha_expr('github.event.pull_request.number') }}/files" --jq '.[].filename')
           
           non_jules=$(echo "$changed" | grep -v '^\.jules/' || true)
           
@@ -92,10 +92,10 @@ jobs:
       - name: Enable auto-merge
         if: steps.scope.outputs.in_scope == 'true'
         env:
-          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+          GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
         run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          REPO=${{ github.repository }}
+          PR_NUMBER={{ gha_expr("github.event.pull_request.number") }}
+          REPO={{ gha_expr("github.repository") }}
           
           # Check if draft
           IS_DRAFT=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json isDraft -q '.isDraft')

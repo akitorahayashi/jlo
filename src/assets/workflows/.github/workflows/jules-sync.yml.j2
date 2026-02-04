@@ -9,16 +9,16 @@ on:
 
 jobs:
   sync:
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     permissions:
       contents: write 
     steps:
       - name: Check if jules branch exists
         id: check-branch
         env:
-          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+          GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
         run: |
-          if gh api repos/${{ github.repository }}/branches/jules --silent 2>/dev/null; then
+          if gh api repos/{{ gha_expr("github.repository") }}/branches/jules --silent 2>/dev/null; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -30,7 +30,7 @@ jobs:
         with:
           ref: jules
           fetch-depth: 0
-          token: ${{ secrets.JLO_BOT_TOKEN }}
+          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 
       - name: Configure Git
         if: steps.check-branch.outputs.exists == 'true'

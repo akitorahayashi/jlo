@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   planners:
-    runs-on: ubuntu-latest
+    runs-on: {{ runner }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,7 +33,7 @@ jobs:
 
       - name: Validate inputs
         env:
-          ISSUE_FILE: ${{ inputs.issue_file }}
+          ISSUE_FILE: {{ gha_expr("inputs.issue_file") }}
         run: |
           if [ -z "$ISSUE_FILE" ]; then
             echo "::error::issue_file is required"
@@ -49,9 +49,9 @@ jobs:
 
       - name: Run planners
         env:
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-          ISSUE_FILE: ${{ inputs.issue_file }}
-          DRY_RUN: ${{ inputs.dry_run }}
+          JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
+          ISSUE_FILE: {{ gha_expr("inputs.issue_file") }}
+          DRY_RUN: {{ gha_expr("inputs.dry_run") }}
         run: |
           args=("$ISSUE_FILE")
           [ "$DRY_RUN" = "true" ] && args+=("--dry-run")
