@@ -1,0 +1,40 @@
+schema_version: 1
+
+# Metadata
+id: "c0nf1g"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Redundant RunConfig domain and DTO definitions"
+statement: |
+  The `RunConfig` domain model mirrors its DTO counterparts (`RunConfigDto`, `RunSettingsDto`, `JulesApiConfigDto`) with nearly identical structures and duplicated default value logic. This redundant definition increases maintenance burden and risks inconsistency, as default values are defined in multiple places.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/run_config.rs"
+    loc:
+      - "65-77"
+    note: "RunSettings domain struct definition."
+
+  - path: "src/domain/run_config.rs"
+    loc:
+      - "145-154"
+    note: "RunSettingsDto definition mirrors RunSettings."
+
+  - path: "src/domain/run_config.rs"
+    loc:
+      - "80-87"
+    note: "Default implementation for RunSettings."
+
+  - path: "src/domain/run_config.rs"
+    loc:
+      - "157-165"
+    note: "Default implementation for RunSettingsDto duplicates the same values."
+
+tags:
+  - "redundancy"
+  - "dto-leakage"
+  - "maintenance"
