@@ -14,6 +14,35 @@ use crate::domain::{
     AssembledPrompt, Layer, PromptAssemblyError, PromptAssemblySpec, PromptContext,
 };
 
+/// Abstraction for filesystem operations to enable testing.
+pub trait PromptFs {
+    fn read_to_string(&self, path: &Path) -> std::io::Result<String>;
+    fn exists(&self, path: &Path) -> bool;
+    fn create_dir_all(&self, path: &Path) -> std::io::Result<()>;
+    fn copy(&self, from: &Path, to: &Path) -> std::io::Result<u64>;
+}
+
+/// Real filesystem implementation using std::fs.
+pub struct RealPromptFs;
+
+impl PromptFs for RealPromptFs {
+    fn read_to_string(&self, path: &Path) -> std::io::Result<String> {
+        fs::read_to_string(path)
+    }
+
+    fn exists(&self, path: &Path) -> bool {
+        path.exists()
+    }
+
+    fn create_dir_all(&self, path: &Path) -> std::io::Result<()> {
+        fs::create_dir_all(path)
+    }
+
+    fn copy(&self, from: &Path, to: &Path) -> std::io::Result<u64> {
+        fs::copy(from, to)
+    }
+}
+
 /// Assemble a prompt for the given layer using the prompt assembly spec.
 ///
 /// For multi-role layers (observers, deciders), the context must include
@@ -26,20 +55,21 @@ pub fn assemble_prompt(
     jules_path: &Path,
     layer: Layer,
     context: &PromptContext,
+    fs_impl: &impl PromptFs,
 ) -> Result<AssembledPrompt, PromptAssemblyError> {
     let layer_dir = jules_path.join("roles").join(layer.dir_name());
     let root = jules_path.parent().unwrap_or(Path::new("."));
 
     // Load prompt_assembly.yml
     let assembly_path = layer_dir.join("prompt_assembly.yml");
-    let spec = load_assembly_spec(&assembly_path)?;
+    let spec = load_assembly_spec(&assembly_path, fs_impl)?;
 
     // Validate required context variables
     validate_context(&spec, context)?;
 
     // Load base prompt.yml
     let prompt_path = layer_dir.join("prompt.yml");
-    let base_prompt = load_prompt(&prompt_path, context)?;
+    let base_prompt = load_prompt(&prompt_path, context, fs_impl)?;
 
     // Assemble includes
     let mut parts = vec![base_prompt];
@@ -55,20 +85,20 @@ pub fn assemble_prompt(
         let full_path = root.join(&resolved_path);
 
         // Auto-initialize from schema if missing
-        if !full_path.exists()
+        if !fs_impl.exists(&full_path)
             && let Some(file_name) = Path::new(&resolved_path).file_name()
         {
             let schema_path = layer_dir.join("schemas").join(file_name);
-            if schema_path.exists() {
+            if fs_impl.exists(&schema_path) {
                 if let Some(parent) = full_path.parent() {
-                    let _ = fs::create_dir_all(parent);
+                    let _ = fs_impl.create_dir_all(parent);
                 }
-                let _ = fs::copy(&schema_path, &full_path);
+                let _ = fs_impl.copy(&schema_path, &full_path);
             }
         }
 
-        if full_path.exists() {
-            match fs::read_to_string(&full_path) {
+        if fs_impl.exists(&full_path) {
+            match fs_impl.read_to_string(&full_path) {
                 Ok(content) => {
                     parts.push(format!("\n---\n# {}\n{}", include.title, content));
                     included_files.push(resolved_path);
@@ -105,8 +135,9 @@ pub fn assemble_with_issue(
     jules_path: &Path,
     layer: Layer,
     issue_content: &str,
+    fs_impl: &impl PromptFs,
 ) -> Result<AssembledPrompt, PromptAssemblyError> {
-    let mut result = assemble_prompt(jules_path, layer, &PromptContext::new())?;
+    let mut result = assemble_prompt(jules_path, layer, &PromptContext::new(), fs_impl)?;
 
     result.content.push_str(&format!("\n---\n# Issue\n{}", issue_content));
     result.included_files.push("(issue content embedded)".to_string());
@@ -115,13 +146,16 @@ pub fn assemble_with_issue(
 }
 
 /// Load and parse the prompt assembly spec from a file.
-fn load_assembly_spec(path: &Path) -> Result<PromptAssemblySpec, PromptAssemblyError> {
-    if !path.exists() {
+fn load_assembly_spec(
+    path: &Path,
+    fs_impl: &impl PromptFs,
+) -> Result<PromptAssemblySpec, PromptAssemblyError> {
+    if !fs_impl.exists(path) {
         return Err(PromptAssemblyError::AssemblySpecNotFound(path.display().to_string()));
     }
 
     let content =
-        fs::read_to_string(path).map_err(|err| PromptAssemblyError::InvalidAssemblySpec {
+        fs_impl.read_to_string(path).map_err(|err| PromptAssemblyError::InvalidAssemblySpec {
             path: path.display().to_string(),
             reason: err.to_string(),
         })?;
@@ -149,15 +183,20 @@ fn validate_context(
 }
 
 /// Load the base prompt.yml and render templates.
-fn load_prompt(path: &Path, context: &PromptContext) -> Result<String, PromptAssemblyError> {
-    if !path.exists() {
+fn load_prompt(
+    path: &Path,
+    context: &PromptContext,
+    fs_impl: &impl PromptFs,
+) -> Result<String, PromptAssemblyError> {
+    if !fs_impl.exists(path) {
         return Err(PromptAssemblyError::PromptNotFound(path.display().to_string()));
     }
 
-    let content = fs::read_to_string(path).map_err(|err| PromptAssemblyError::PromptReadError {
-        path: path.display().to_string(),
-        reason: err.to_string(),
-    })?;
+    let content =
+        fs_impl.read_to_string(path).map_err(|err| PromptAssemblyError::PromptReadError {
+            path: path.display().to_string(),
+            reason: err.to_string(),
+        })?;
 
     render_template(&content, context, &path.display().to_string())
 }
@@ -209,7 +248,58 @@ fn template_render_error(template_name: &str, err: impl std::fmt::Display) -> Pr
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
     use tempfile::tempdir;
+
+    struct MockPromptFs {
+        files: Arc<Mutex<HashMap<String, String>>>,
+    }
+
+    impl MockPromptFs {
+        fn new() -> Self {
+            Self { files: Arc::new(Mutex::new(HashMap::new())) }
+        }
+
+        fn add_file(&self, path: &str, content: &str) {
+            self.files.lock().unwrap().insert(path.to_string(), content.to_string());
+        }
+    }
+
+    impl PromptFs for MockPromptFs {
+        fn read_to_string(&self, path: &Path) -> std::io::Result<String> {
+            let path_str = path.to_string_lossy().to_string();
+            self.files
+                .lock()
+                .unwrap()
+                .get(&path_str)
+                .cloned()
+                .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "File not found"))
+        }
+
+        fn exists(&self, path: &Path) -> bool {
+            let path_str = path.to_string_lossy().to_string();
+            self.files.lock().unwrap().contains_key(&path_str)
+        }
+
+        fn create_dir_all(&self, _path: &Path) -> std::io::Result<()> {
+            Ok(())
+        }
+
+        fn copy(&self, from: &Path, to: &Path) -> std::io::Result<u64> {
+            let from_str = from.to_string_lossy().to_string();
+            let to_str = to.to_string_lossy().to_string();
+            let mut files = self.files.lock().unwrap();
+            if let Some(content) = files.get(&from_str).cloned() {
+                files.insert(to_str, content.clone());
+                Ok(content.len() as u64)
+            } else {
+                Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Source file not found"))
+            }
+        }
+    }
+
+    // --- Original tests using RealPromptFs via std::fs ---
 
     fn setup_test_workspace(dir: &Path, layer: &str, single_role: bool) {
         let jules = dir.join(".jules");
@@ -297,7 +387,8 @@ contracts:
         setup_test_workspace(dir.path(), "planners", true);
 
         let jules_path = dir.path().join(".jules");
-        let result = assemble_prompt(&jules_path, Layer::Planners, &PromptContext::new());
+        let fs_impl = RealPromptFs;
+        let result = assemble_prompt(&jules_path, Layer::Planners, &PromptContext::new(), &fs_impl);
 
         assert!(result.is_ok());
         let assembled = result.unwrap();
@@ -314,8 +405,9 @@ contracts:
         let jules_path = dir.path().join(".jules");
         let context =
             PromptContext::new().with_var("workstream", "generic").with_var("role", "test_role");
+        let fs_impl = RealPromptFs;
 
-        let result = assemble_prompt(&jules_path, Layer::Observers, &context);
+        let result = assemble_prompt(&jules_path, Layer::Observers, &context, &fs_impl);
 
         assert!(result.is_ok());
         let assembled = result.unwrap();
@@ -334,8 +426,9 @@ contracts:
         let jules_path = dir.path().join(".jules");
         // Missing 'role' variable
         let context = PromptContext::new().with_var("workstream", "generic");
+        let fs_impl = RealPromptFs;
 
-        let result = assemble_prompt(&jules_path, Layer::Observers, &context);
+        let result = assemble_prompt(&jules_path, Layer::Observers, &context, &fs_impl);
 
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -344,6 +437,43 @@ contracts:
             }
             other => panic!("Expected MissingContextVariable, got {:?}", other),
         }
+    }
+
+    // --- New test using MockPromptFs ---
+
+    #[test]
+    fn test_assemble_prompt_mock_fs() {
+        let mock_fs = MockPromptFs::new();
+        let jules_path = Path::new(".jules");
+
+        // Setup mock files for Planners layer
+        mock_fs.add_file(
+            ".jules/roles/planners/prompt_assembly.yml",
+            r#"
+schema_version: 1
+layer: planners
+runtime_context: {}
+includes:
+  - title: "Contracts"
+    path: ".jules/roles/planners/contracts.yml"
+"#,
+        );
+        mock_fs.add_file(
+            ".jules/roles/planners/prompt.yml",
+            "role: planners\nlayer: planners",
+        );
+        mock_fs.add_file(
+            ".jules/roles/planners/contracts.yml",
+            "layer: planners\nconstraints: []",
+        );
+
+        let result = assemble_prompt(&jules_path, Layer::Planners, &PromptContext::new(), &mock_fs);
+
+        assert!(result.is_ok());
+        let assembled = result.unwrap();
+        assert!(assembled.content.contains("role: planners"));
+        assert!(assembled.content.contains("# Contracts"));
+        assert!(assembled.content.contains("layer: planners"));
     }
 
     #[test]

@@ -9,7 +9,6 @@ use chrono::Utc;
 
 use crate::domain::AppError;
 use crate::ports::RoleTemplateStore;
-use crate::services::embedded_role_template_store::EmbeddedRoleTemplateStore;
 use crate::services::scaffold_manifest::{
     ScaffoldManifest, hash_content, is_default_role_file, load_manifest, write_manifest,
 };
@@ -90,7 +89,11 @@ pub struct SkippedUpdate {
 }
 
 /// Execute the update command.
-pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult, AppError> {
+pub fn execute(
+    jules_path: &Path,
+    options: UpdateOptions,
+    templates: &impl RoleTemplateStore,
+) -> Result<UpdateResult, AppError> {
     let version_path = jules_path.join(".jlo-version");
     let root = jules_path.parent().unwrap_or(Path::new("."));
 
@@ -138,7 +141,6 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
     }
 
     // Load scaffold files
-    let templates = EmbeddedRoleTemplateStore::new();
     let scaffold_files = templates.scaffold_files();
 
     // Plan updates
@@ -433,5 +435,121 @@ mod tests {
         assert!(is_jlo_managed(".jules/roles/observers/contracts.yml"));
         assert!(!is_jlo_managed(".jules/config.toml"));
         assert!(!is_jlo_managed(".jules/roles/observers/taxonomy/prompt.yml"));
+    }
+
+    use crate::domain::Layer;
+    use crate::ports::ScaffoldFile;
+    use assert_fs::TempDir;
+
+    struct MockRoleTemplateStore {
+        files: Vec<ScaffoldFile>,
+    }
+
+    impl RoleTemplateStore for MockRoleTemplateStore {
+        fn scaffold_files(&self) -> Vec<ScaffoldFile> {
+            self.files.clone()
+        }
+
+        fn layer_template(&self, _layer: Layer) -> &str {
+            ""
+        }
+
+        fn generate_role_yaml(&self, _role_id: &str, _layer: Layer) -> String {
+            String::new()
+        }
+    }
+
+    #[test]
+    fn test_update_execute_creates_files() {
+        let temp = TempDir::new().unwrap();
+        let jules_path = temp.path().join(".jules");
+        fs::create_dir_all(&jules_path).unwrap();
+
+        // Write version file (must be older than current to trigger update)
+        let version_path = jules_path.join(".jlo-version");
+        fs::write(&version_path, "0.0.0").unwrap();
+
+        let mock_store = MockRoleTemplateStore {
+            files: vec![
+                ScaffoldFile {
+                    path: ".jules/README.md".to_string(),
+                    content: "# Managed README".to_string(),
+                },
+                ScaffoldFile {
+                    path: ".jules/custom.txt".to_string(),
+                    content: "custom content".to_string(),
+                },
+            ],
+        };
+
+        let options = UpdateOptions { dry_run: false, adopt_managed: false };
+
+        let result = execute(&jules_path, options, &mock_store).unwrap();
+
+        assert!(result.created.contains(&".jules/README.md".to_string()));
+        assert!(result.created.contains(&".jules/custom.txt".to_string()));
+
+        let readme_path = temp.path().join(".jules/README.md");
+        assert_eq!(fs::read_to_string(readme_path).unwrap(), "# Managed README");
+    }
+
+    #[test]
+    fn test_update_execute_updates_managed_files() {
+        let temp = TempDir::new().unwrap();
+        let jules_path = temp.path().join(".jules");
+        fs::create_dir_all(&jules_path).unwrap();
+
+        // Write version file
+        let version_path = jules_path.join(".jlo-version");
+        fs::write(&version_path, "0.0.0").unwrap();
+
+        // Existing managed file with old content
+        fs::write(jules_path.join("README.md"), "# Old Content").unwrap();
+
+        let mock_store = MockRoleTemplateStore {
+            files: vec![ScaffoldFile {
+                path: ".jules/README.md".to_string(),
+                content: "# New Content".to_string(),
+            }],
+        };
+
+        let options = UpdateOptions { dry_run: false, adopt_managed: false };
+        let result = execute(&jules_path, options, &mock_store).unwrap();
+
+        assert!(result.updated.contains(&".jules/README.md".to_string()));
+
+        let readme_path = temp.path().join(".jules/README.md");
+        assert_eq!(fs::read_to_string(readme_path).unwrap(), "# New Content");
+    }
+
+    #[test]
+    fn test_update_execute_skips_unmanaged_existing_files() {
+        let temp = TempDir::new().unwrap();
+        let jules_path = temp.path().join(".jules");
+        fs::create_dir_all(&jules_path).unwrap();
+
+        // Write version file
+        let version_path = jules_path.join(".jlo-version");
+        fs::write(&version_path, "0.0.0").unwrap();
+
+        // Existing unmanaged file
+        fs::write(jules_path.join("custom.txt"), "User Content").unwrap();
+
+        // Template has different content for this file
+        let mock_store = MockRoleTemplateStore {
+            files: vec![ScaffoldFile {
+                path: ".jules/custom.txt".to_string(),
+                content: "Template Content".to_string(),
+            }],
+        };
+
+        let options = UpdateOptions { dry_run: false, adopt_managed: false };
+        let result = execute(&jules_path, options, &mock_store).unwrap();
+
+        // Should NOT update unmanaged file
+        assert!(!result.updated.contains(&".jules/custom.txt".to_string()));
+
+        let custom_path = temp.path().join(".jules/custom.txt");
+        assert_eq!(fs::read_to_string(custom_path).unwrap(), "User Content");
     }
 }
