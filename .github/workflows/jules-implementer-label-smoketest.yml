@@ -30,24 +30,25 @@ jobs:
             exit 1
           fi
 
-          label_config=".jules/github-labels.json"
-          if [ ! -f "$label_config" ]; then
-            echo "::error::Missing label definition file: $label_config"
+          git fetch origin jules --depth=1
+          label_config="$(mktemp)"
+          if ! git show "origin/jules:.jules/github-labels.json" > "$label_config"; then
+            echo "::error::Missing label definition file on jules branch: .jules/github-labels.json"
             exit 1
           fi
 
           label=$(jq -r '.issue_labels | keys[0] // empty' "$label_config")
           if [ -z "$label" ] || [ "$label" = "null" ]; then
-            echo "::error::No labels found in $label_config"
+            echo "::error::No labels found in .jules/github-labels.json on jules branch"
             exit 1
           fi
           color=$(jq -r --arg label "$label" '.issue_labels[$label].color // empty' "$label_config")
           if [ -z "$color" ] || [ "$color" = "null" ]; then
-            echo "::error::Missing color for '$label' in $label_config"
+            echo "::error::Missing color for '$label' in .jules/github-labels.json on jules branch"
             exit 1
           fi
           if [[ ! "$color" =~ ^[0-9a-fA-F]{6}$ ]]; then
-            echo "::error::Invalid label color '$color' for '$label' in $label_config (expected 6-digit hex)"
+            echo "::error::Invalid label color '$color' for '$label' in .jules/github-labels.json on jules branch (expected 6-digit hex)"
             exit 1
           fi
 
