@@ -59,11 +59,8 @@ pub fn execute_workflows(
     }
 
     // Extract existing configuration if overwriting the main workflow file
-    let preserved_config = if overwrite {
-        extract_preserved_config(root)?
-    } else {
-        PreservedConfig { schedule: None, wait_minutes_default: None }
-    };
+    let preserved_config =
+        if overwrite { extract_preserved_config(root)? } else { PreservedConfig::default() };
 
     for file in &kit.files {
         let destination = root.join(&file.path);
@@ -73,9 +70,7 @@ pub fn execute_workflows(
 
         // Merge preserved configuration into the main workflow file
         let content = if file.path == SCHEDULE_PRESERVE_FILE {
-            if preserved_config.schedule.is_some()
-                || preserved_config.wait_minutes_default.is_some()
-            {
+            if preserved_config.has_values() {
                 merge_config_into_workflow(&file.content, &preserved_config)?
             } else {
                 file.content.clone()
@@ -90,16 +85,23 @@ pub fn execute_workflows(
     Ok(())
 }
 
+#[derive(Debug, Default)]
 struct PreservedConfig {
     schedule: Option<Value>,
     wait_minutes_default: Option<Value>,
+}
+
+impl PreservedConfig {
+    fn has_values(&self) -> bool {
+        self.schedule.is_some() || self.wait_minutes_default.is_some()
+    }
 }
 
 /// Extract preserved configuration (schedule, wait_minutes) from the existing workflow file.
 fn extract_preserved_config(root: &Path) -> Result<PreservedConfig, AppError> {
     let workflow_path = root.join(SCHEDULE_PRESERVE_FILE);
     if !workflow_path.exists() {
-        return Ok(PreservedConfig { schedule: None, wait_minutes_default: None });
+        return Ok(PreservedConfig::default());
     }
 
     let content = fs::read_to_string(&workflow_path)?;
@@ -149,20 +151,21 @@ fn merge_config_into_workflow(
         on_block.insert("schedule".into(), schedule.clone());
     }
 
-    #[allow(clippy::collapsible_if)]
-    if let Some(ref wait_minutes) = config.wait_minutes_default {
-        if let Some(wait_minutes_config) = root
-            .get_mut("on")
+    // Preserve wait_minutes default if both the config has it and the kit template has the path.
+    // Silent degradation: If the kit template changes and the path doesn't exist, we gracefully
+    // skip preservation rather than failing the installation (maintains backward compatibility).
+    if let (Some(wait_minutes), Some(wait_minutes_config)) = (
+        config.wait_minutes_default.as_ref(),
+        root.get_mut("on")
             .and_then(|v| v.as_mapping_mut())
             .and_then(|on| on.get_mut("workflow_dispatch"))
             .and_then(|v| v.as_mapping_mut())
             .and_then(|wd| wd.get_mut("inputs"))
             .and_then(|v| v.as_mapping_mut())
             .and_then(|inputs| inputs.get_mut("wait_minutes"))
-            .and_then(|v| v.as_mapping_mut())
-        {
-            wait_minutes_config.insert("default".into(), wait_minutes.clone());
-        }
+            .and_then(|v| v.as_mapping_mut()),
+    ) {
+        wait_minutes_config.insert("default".into(), wait_minutes.clone());
     }
 
     serde_yaml::to_string(&yaml).map_err(|e| AppError::ParseError {

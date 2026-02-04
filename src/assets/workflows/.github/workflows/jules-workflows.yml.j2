@@ -80,7 +80,7 @@ jobs:
 
       - name: Run narrator
         run: |
-          timeout 20m jlo run narrator
+          jlo run narrator
 
       - name: Validate workspace (fail-fast)
         run: jlo doctor
@@ -203,7 +203,7 @@ jobs:
           WORKSTREAM: {{ gha_expr("matrix.workstream") }}
           ROLE: {{ gha_expr("matrix.role") }}
         run: |
-          timeout 20m jlo run observers --workstream "$WORKSTREAM" --role "$ROLE"
+          jlo run observers --workstream "$WORKSTREAM" --role "$ROLE"
 {% else %}
       - name: Run observers sequentially
         env:
@@ -291,7 +291,7 @@ jobs:
         env:
           WORKSTREAM: {{ gha_expr("matrix.workstream") }}
         run: |
-          timeout 20m jlo run deciders --workstream "$WORKSTREAM" --scheduled
+          jlo run deciders --workstream "$WORKSTREAM" --scheduled
 {% else %}
       - name: Run deciders sequentially
         env:
@@ -383,7 +383,7 @@ jobs:
         env:
           ISSUE: {{ gha_expr("matrix.issue") }}
         run: |
-          timeout 20m jlo run planners "$ISSUE"
+          jlo run planners "$ISSUE"
 {% else %}
       - name: Run planners sequentially
         env:
