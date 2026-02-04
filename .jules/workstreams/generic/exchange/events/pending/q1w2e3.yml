@@ -1,0 +1,20 @@
+schema_version: 1
+id: "q1w2e3"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "rustacean"
+confidence: "high"
+title: "Direct filesystem dependency in update command"
+statement: |
+  The `jlo update` command implementation (`execute` function) depends directly on `std::fs`, bypassing the `WorkspaceStore` port. This tightly couples the command to the physical filesystem, hindering testing and future storage abstractions.
+evidence:
+  - path: src/app/commands/update.rs
+    loc:
+      - "use std::fs;"
+      - "fs::read_to_string"
+      - "fs::write"
+    note: "Direct usage of std::fs in domain/command logic"
+tags:
+  - "coupling"
+  - "io"
+  - "testing"
