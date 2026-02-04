@@ -1,0 +1,48 @@
+schema_version: 2
+
+# Metadata
+id: "fb4105"
+source_events:
+  - "p4n8v1"
+  - "f1o4t9"
+  - "u7n3p1"
+title: "CI Hardening"
+label: "refacts"
+priority: "high"
+summary: "Harden CI workflows by pinning dependencies and enforcing coverage."
+
+# Content
+problem: |
+  The CI pipeline has security and reliability gaps:
+  1. Floating GitHub Action tags expose supply chain risks.
+  2. Unpinned tool installation (`cargo install`) causes non-deterministic builds and slows down CI.
+  3. No coverage enforcement or visibility allows test quality to degrade silently.
+
+impact: |
+  Potential for malicious code injection via upstream actions. Flaky builds due to tool updates. Decreasing test coverage over time.
+
+desired_outcome: |
+  A secure and reliable CI pipeline:
+  - All GitHub Actions pinned to immutable commit hashes.
+  - CI tools installed with pinned versions (e.g., using `cargo-binstall` or specific versions).
+  - Coverage gates enforced in CI.
+
+constraints: []
+risks:
+  - CI failures while updating configurations.
+
+# Specifics
+affected_areas:
+  - ".github/workflows/"
+
+acceptance_criteria:
+  - "All `uses` in workflows use commit hashes."
+  - "Tools like `cross` and `cargo-tarpaulin` are pinned."
+  - "Test workflow fails if coverage drops below threshold."
+
+verification_commands:
+  - "grep -r 'uses:' .github/workflows/"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
