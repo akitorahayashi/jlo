@@ -85,7 +85,9 @@ set -euo pipefail
             } else {
                 default.clone().unwrap_or_default()
             };
-            lines.push(format!("value = \"{}\"", value));
+            let value_str = serde_json::to_string(&value)
+                .map_err(|e| AppError::MalformedEnvToml(e.to_string()))?;
+            lines.push(format!("value = {}", value_str));
 
             // Preserve existing note if present, otherwise use component description
             let note = existing
@@ -93,7 +95,9 @@ set -euo pipefail
                 .and_then(|t| t.get("note").cloned())
                 .unwrap_or_else(|| description.clone());
             if !note.is_empty() {
-                lines.push(format!("note = \"{}\"", note));
+                let note_str = serde_json::to_string(&note)
+                    .map_err(|e| AppError::MalformedEnvToml(e.to_string()))?;
+                lines.push(format!("note = {}", note_str));
             }
 
             lines.push(String::new());
