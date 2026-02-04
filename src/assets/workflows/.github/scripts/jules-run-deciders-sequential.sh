@@ -15,18 +15,17 @@ require_command jq
 require_command jlo
 require_command timeout
 
-count=$(echo "$DECIDER_MATRIX" | jq '.include | length')
-if [ "$count" -eq 0 ]; then
+# Extract workstreams directly using jq - single parse with null check
+mapfile -t workstreams < <(echo "$DECIDER_MATRIX" | jq -r '.include[]?.workstream // empty')
+if [ ${#workstreams[@]} -eq 0 ]; then
   echo "No deciders to run."
   exit 0
 fi
 
-echo "Running $count decider workstream(s) sequentially"
-mapfile -t rows < <(echo "$DECIDER_MATRIX" | jq -c '.include[]')
-for row in "${rows[@]}"; do
-  workstream=$(echo "$row" | jq -r '.workstream')
+echo "Running ${#workstreams[@]} decider workstream(s) sequentially"
+for workstream in "${workstreams[@]}"; do
   if [ -z "$workstream" ]; then
-    echo "::error::Invalid decider matrix entry: $row"
+    echo "::error::Empty workstream in matrix"
     exit 1
   fi
   echo "Running decider for $workstream"

@@ -111,11 +111,21 @@ fn merge_schedule_into_workflow(kit_content: &str, schedule: &Value) -> Result<S
         details: e.to_string(),
     })?;
 
-    if let Value::Mapping(root) = &mut yaml
-        && let Some(Value::Mapping(on_block)) = root.get_mut("on")
-    {
-        on_block.insert(Value::String("schedule".to_string()), schedule.clone());
-    }
+    let root = yaml.as_mapping_mut().ok_or_else(|| {
+        AppError::config_error("Could not preserve schedule: workflow kit root is not a mapping.")
+    })?;
+
+    let on_block = root
+        .entry("on".into())
+        .or_insert_with(|| Value::Mapping(Default::default()))
+        .as_mapping_mut()
+        .ok_or_else(|| {
+            AppError::config_error(
+                "Could not preserve schedule: 'on' key in workflow kit is not a mapping.",
+            )
+        })?;
+
+    on_block.insert("schedule".into(), schedule.clone());
 
     serde_yaml::to_string(&yaml).map_err(|e| AppError::ParseError {
         what: "merged workflow content".to_string(),

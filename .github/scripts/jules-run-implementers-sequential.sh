@@ -14,18 +14,17 @@ require_command() {
 require_command jq
 require_command jlo
 
-count=$(echo "$IMPLEMENTER_MATRIX" | jq '.include | length')
-if [ "$count" -eq 0 ]; then
+# Extract issues directly using jq - single parse with null check
+mapfile -t issues < <(echo "$IMPLEMENTER_MATRIX" | jq -r '.include[]?.issue // empty')
+if [ ${#issues[@]} -eq 0 ]; then
   echo "No implementers to run."
   exit 0
 fi
 
-echo "Running $count implementer issue(s) sequentially"
-mapfile -t rows < <(echo "$IMPLEMENTER_MATRIX" | jq -c '.include[]')
-for row in "${rows[@]}"; do
-  issue=$(echo "$row" | jq -r '.issue')
+echo "Running ${#issues[@]} implementer issue(s) sequentially"
+for issue in "${issues[@]}"; do
   if [ -z "$issue" ]; then
-    echo "::error::Invalid implementer matrix entry: $row"
+    echo "::error::Empty issue path in matrix"
     exit 1
   fi
   if [ ! -f "$issue" ]; then

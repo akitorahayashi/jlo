@@ -15,19 +15,18 @@ require_command jq
 require_command jlo
 require_command timeout
 
-count=$(echo "$OBSERVER_MATRIX" | jq '.include | length')
-if [ "$count" -eq 0 ]; then
+# Extract workstream/role pairs using a single jq call (tab-separated)
+mapfile -t entries < <(echo "$OBSERVER_MATRIX" | jq -r '.include[]? | "\(.workstream)\t\(.role)"')
+if [ ${#entries[@]} -eq 0 ]; then
   echo "No observer roles to run."
   exit 0
 fi
 
-echo "Running $count observer role(s) sequentially"
-mapfile -t rows < <(echo "$OBSERVER_MATRIX" | jq -c '.include[]')
-for row in "${rows[@]}"; do
-  workstream=$(echo "$row" | jq -r '.workstream')
-  role=$(echo "$row" | jq -r '.role')
+echo "Running ${#entries[@]} observer role(s) sequentially"
+for entry in "${entries[@]}"; do
+  IFS=$'\t' read -r workstream role <<< "$entry"
   if [ -z "$workstream" ] || [ -z "$role" ]; then
-    echo "::error::Invalid observer matrix entry: $row"
+    echo "::error::Invalid observer matrix entry: missing workstream or role"
     exit 1
   fi
   echo "Running observer $workstream / $role"
