@@ -353,32 +353,14 @@ jobs:
           timeout 20m jlo run planners "${{ matrix.issue }}"
 
   # ============================================================
-  # Phase 12: Wait for planner processing
-  # ============================================================
-  wait-after-planners:
-    needs: [generate-planner-matrix, run-planners]
-    if: |
-      always() &&
-      needs.run-planners.result == 'success'
-    runs-on: self-hosted
-    timeout-minutes: 60
-    steps:
-      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-        run: |
-          echo "Waiting $WAIT_MINUTES minutes for Jules to process planner PRs..."
-          sleep $((WAIT_MINUTES * 60))
-          echo "Wait complete."
-
-  # ============================================================
-  # Phase 13: Run implementers (sequential via max-parallel=1)
+  # Phase 12: Run implementers (sequential via max-parallel=1)
   # ============================================================
   run-implementers:
-    needs: [generate-planner-matrix, wait-after-planners]
+    needs: [generate-planner-matrix]
     if: |
       always() &&
       needs.generate-planner-matrix.result == 'success' &&
-      needs.generate-planner-matrix.outputs.has_implementers == 'true' &&
-      (needs.wait-after-planners.result == 'success' || needs.wait-after-planners.result == 'skipped')
+      needs.generate-planner-matrix.outputs.has_implementers == 'true'
     runs-on: self-hosted
     timeout-minutes: 30
     strategy:

@@ -345,32 +345,14 @@ jobs:
         run: bash .github/scripts/jules-run-planners-sequential.sh
 
   # ============================================================
-  # Phase 12: Wait for planner processing
-  # ============================================================
-  wait-after-planners:
-    needs: [generate-planner-matrix, run-planners]
-    if: |
-      always() &&
-      needs.run-planners.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-        run: |
-          echo "Waiting $WAIT_MINUTES minutes for Jules to process planner PRs..."
-          sleep $((WAIT_MINUTES * 60))
-          echo "Wait complete."
-
-  # ============================================================
-  # Phase 13: Run implementers (sequential in a single job)
+  # Phase 12: Run implementers (sequential in a single job)
   # ============================================================
   run-implementers:
-    needs: [generate-planner-matrix, wait-after-planners]
+    needs: [generate-planner-matrix]
     if: |
       always() &&
       needs.generate-planner-matrix.result == 'success' &&
-      needs.generate-planner-matrix.outputs.has_implementers == 'true' &&
-      (needs.wait-after-planners.result == 'success' || needs.wait-after-planners.result == 'skipped')
+      needs.generate-planner-matrix.outputs.has_implementers == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
