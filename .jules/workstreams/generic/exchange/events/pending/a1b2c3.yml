@@ -1,0 +1,38 @@
+schema_version: 1
+
+# Metadata
+id: "a1b2c3"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "structural_arch"
+confidence: "high"
+
+# Content
+title: "Implicit Infrastructure Dependencies in Application Commands"
+statement: |
+  Application commands directly execute system shell commands (`git`, `gh`) via `std::process::Command`. This tightly couples the application core to the OS environment and specific binary versions, preventing effective unit testing and violating the Hexagonal Architecture "Ports & Adapters" pattern.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/run/narrator.rs"
+    loc:
+      - "run_git function"
+      - "Command::new(\"git\")"
+    note: "Wraps std::process::Command to execute git commands directly."
+
+  - path: "src/app/commands/run/single_role.rs"
+    loc:
+      - "execute_local_dispatch"
+      - "Command::new(\"gh\")"
+    note: "Directly calls 'gh' CLI for workflow dispatch."
+
+  - path: "src/app/commands/init_scaffold.rs"
+    loc:
+      - "execute"
+      - "Command::new(\"git\")"
+    note: "Checks branch name by shelling out to git."
+
+tags:
+  - "coupling"
+  - "testing"
+  - "ports-and-adapters"
