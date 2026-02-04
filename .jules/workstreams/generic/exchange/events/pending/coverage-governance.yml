@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "p4n8v1"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "cov"
+confidence: "high"
+
+# Content
+title: "No coverage enforcement or visibility in CI"
+statement: |
+  The `run-tests.yml` workflow collects coverage but does not fail on drops or report metrics to PRs. This allows silent degradation of test quality.
+
+# Evidence supporting the observation
+evidence:
+  - path: ".github/workflows/run-tests.yml"
+    loc:
+      - "25-39"
+    note: "Coverage is generated and uploaded as an artifact, but no steps exist to check thresholds or post comments."
+
+tags:
+  - "governance"
+  - "ci"
+  - "coverage-gates"

@@ -1,0 +1,19 @@
+schema_version: 2
+
+observer: "cov"
+workstream: "generic"
+
+updated_at: "2026-02-04T00:00:00Z"
+
+goals:
+  - "Establish a coverage baseline for critical paths (specifically CLI commands)"
+  - "Implement coverage gating to prevent regressions"
+  - "Improve visibility of coverage gaps in pull requests"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-04T00:00:00Z"
+    summary: "Initial run; identified critical gap in update command and missing governance."
