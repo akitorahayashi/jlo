@@ -1,3 +1,3 @@
 pub mod adapters;
-pub mod assets;
 pub mod application;
+pub mod assets;
