@@ -8,7 +8,7 @@ use super::prompt::assemble_prompt;
 use super::role_selection::{RoleSelectionInput, select_roles};
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
-use crate::services::jules_client_http::HttpJulesClient;
+use crate::services::adapters::jules_client_http::HttpJulesClient;
 
 /// Execute a multi-role layer (Observers or Deciders).
 pub fn execute(

@@ -5,7 +5,9 @@ use serde::Serialize;
 use serde_yaml::{Mapping, Value};
 
 use crate::domain::AppError;
-use crate::services::workstream_schedule_filesystem::{list_subdirectories, load_schedule};
+use crate::services::adapters::workstream_schedule_filesystem::{
+    list_subdirectories, load_schedule,
+};
 
 #[derive(Debug, Clone)]
 pub enum WorkstreamInspectFormat {

@@ -11,7 +11,7 @@ use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
-use crate::services::jules_client_http::HttpJulesClient;
+use crate::services::adapters::jules_client_http::HttpJulesClient;
 
 /// Maximum number of commits to include in the bounded sample.
 const MAX_COMMITS: usize = 50;
