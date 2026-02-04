@@ -13,7 +13,7 @@ pub fn load_schedule(jules_path: &Path, workstream: &str) -> Result<WorkstreamSc
             AppError::config_error(format!("Failed to read {}: {}", path.display(), err))
         }
     })?;
-    WorkstreamSchedule::parse_toml(&content).map_err(AppError::ScheduleConfigInvalid)
+    WorkstreamSchedule::parse_toml(&content)
 }
 
 pub fn list_subdirectories(dir: &Path) -> Result<Vec<PathBuf>, AppError> {

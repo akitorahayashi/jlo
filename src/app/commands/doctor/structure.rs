@@ -57,8 +57,8 @@ pub fn read_run_config(
 
     match RunConfig::parse_toml(&content) {
         Ok(config) => Ok(config),
-        Err(message) => {
-            diagnostics.push_error(config_path.display().to_string(), message);
+        Err(err) => {
+            diagnostics.push_error(config_path.display().to_string(), err.to_string());
             Ok(RunConfig::default())
         }
     }
