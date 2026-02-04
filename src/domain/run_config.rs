@@ -3,7 +3,17 @@
 use std::str::FromStr;
 use url::Url;
 
-use crate::domain::AppError;
+#[derive(Debug, thiserror::Error)]
+pub enum RunConfigError {
+    #[error("Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml.")]
+    LegacyAgentSection,
+
+    #[error("Run config invalid: {0}")]
+    ConfigInvalid(String),
+
+    #[error("TOML format error: {0}")]
+    Toml(#[from] toml::de::Error),
+}
 
 /// Configuration for agent execution loaded from `.jules/config.toml`.
 #[derive(Debug, Clone, Default)]
@@ -16,16 +26,13 @@ pub struct RunConfig {
 
 impl RunConfig {
     /// Parse configuration from TOML content.
-    pub fn parse_toml(content: &str) -> Result<Self, AppError> {
+    pub fn parse_toml(content: &str) -> Result<Self, RunConfigError> {
         let value: toml::Value = toml::from_str(content)?;
         if value.get("agents").is_some() {
-            return Err(AppError::RunConfigInvalid(
-                "Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml."
-                    .to_string(),
-            ));
+            return Err(RunConfigError::LegacyAgentSection);
         }
         let dto: dto::RunConfigDto = toml::from_str(content)?;
-        dto.try_into().map_err(AppError::RunConfigInvalid)
+        dto.try_into().map_err(RunConfigError::ConfigInvalid)
     }
 }
 
