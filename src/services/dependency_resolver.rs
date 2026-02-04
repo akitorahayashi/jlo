@@ -79,7 +79,7 @@ impl DependencyResolver {
         if result.len() != in_degree.len() {
             let remaining: Vec<_> =
                 in_degree.iter().filter(|&(_, deg)| *deg > 0).map(|(k, _)| k.to_string()).collect();
-            return Err(AppError::CircularDependency(remaining));
+            return Err(AppError::CircularDependency(remaining.join(", ")));
         }
 
         Ok(result)
@@ -100,12 +100,12 @@ impl DependencyResolver {
 
         if visiting.contains(id) {
             path.push(name_str.to_string());
-            return Err(AppError::CircularDependency(path.clone()));
+            return Err(AppError::CircularDependency(path.join(" -> ")));
         }
 
         let component = catalog.get(name_str).ok_or_else(|| AppError::ComponentNotFound {
             name: name_str.to_string(),
-            available: catalog.names().iter().map(|s| s.to_string()).collect(),
+            available: catalog.names().iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", "),
         })?;
 
         visiting.insert(id.clone());

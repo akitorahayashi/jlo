@@ -76,10 +76,10 @@ where
 
 fn resolve_layer(layer_arg: Option<&str>) -> Result<Layer, AppError> {
     match layer_arg {
-        Some(name) => {
-            Ok(Layer::from_dir_name(name)
-                .ok_or_else(|| AppError::InvalidLayer(name.to_string()))?)
-        }
+        Some(name) => Ok(Layer::from_dir_name(name).ok_or_else(|| {
+            let available = Layer::ALL.iter().map(|l| l.dir_name()).collect::<Vec<_>>().join(", ");
+            AppError::InvalidLayer { name: name.to_string(), available }
+        })?),
         None => {
             if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
                 Ok(select_layer()?)
