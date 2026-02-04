@@ -5,7 +5,7 @@ use dialoguer::Select;
 use crate::app::AppContext;
 use crate::domain::{AppError, Layer};
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
-use crate::services::role_factory::RoleFactory;
+use crate::services::domain::role_factory::RoleFactory;
 
 use super::outcome::TemplateOutcome;
 use super::wizard::run_template_wizard;

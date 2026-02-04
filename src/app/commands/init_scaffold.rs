@@ -1,7 +1,7 @@
 use crate::app::AppContext;
 use crate::domain::AppError;
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
-use crate::services::scaffold_manifest::{manifest_from_scaffold, write_manifest};
+use crate::services::assets::scaffold_manifest::{manifest_from_scaffold, write_manifest};
 
 /// Execute the init command.
 ///

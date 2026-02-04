@@ -1,13 +1,3 @@
-pub mod artifact_generator;
-pub mod component_catalog_embedded;
-pub mod dependency_resolver;
-pub mod embedded_role_template_store;
-pub mod jules_client_http;
-pub mod prompt_assembly;
-pub mod role_factory;
-pub mod scaffold_assets;
-pub mod scaffold_manifest;
-pub mod workflow_kit_assets;
-pub mod workspace_filesystem;
-pub mod workstream_schedule_filesystem;
-pub mod workstream_template_assets;
+pub mod adapters;
+pub mod assets;
+pub mod domain;

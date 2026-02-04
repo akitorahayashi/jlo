@@ -244,7 +244,8 @@ pub fn run() {
             run_update(dry_run, adopt_managed).map(|_| 0)
         }
         Commands::Template { layer, name, workstream } => {
-            crate::template(layer.as_deref(), name.as_deref(), workstream.as_deref()).map(|_| 0)
+            crate::app::api::template(layer.as_deref(), name.as_deref(), workstream.as_deref())
+                .map(|_| 0)
         }
         Commands::Setup { command } => match command {
             SetupCommands::Gen { path } => run_setup_gen(path).map(|_| 0),
@@ -271,7 +272,7 @@ pub fn run() {
 
 fn run_init(command: Option<InitCommands>) -> Result<(), AppError> {
     match command.unwrap_or(InitCommands::Scaffold) {
-        InitCommands::Scaffold => crate::init(),
+        InitCommands::Scaffold => crate::app::api::init(),
         InitCommands::Workflows { remote, self_hosted, overwrite } => {
             let mode = if remote {
                 crate::domain::WorkflowRunnerMode::Remote
@@ -282,13 +283,13 @@ fn run_init(command: Option<InitCommands>) -> Result<(), AppError> {
                     "Runner mode is required. Use --remote or --self-hosted.",
                 ));
             };
-            crate::init_workflows(mode, overwrite)
+            crate::app::api::init_workflows(mode, overwrite)
         }
     }
 }
 
 fn run_update(dry_run: bool, adopt_managed: bool) -> Result<(), AppError> {
-    let result = crate::update(dry_run, adopt_managed)?;
+    let result = crate::app::api::update(dry_run, adopt_managed)?;
 
     if !result.dry_run {
         if result.updated.is_empty() && result.created.is_empty() && result.removed.is_empty() {
@@ -352,7 +353,8 @@ fn run_agents(layer: RunLayer) -> Result<(), AppError> {
         }
     };
 
-    let result = crate::run(target_layer, roles, workstream, scheduled, dry_run, branch, issue)?;
+    let result =
+        crate::app::api::run(target_layer, roles, workstream, scheduled, dry_run, branch, issue)?;
 
     if !result.dry_run && !result.roles.is_empty() && !result.sessions.is_empty() {
         println!("✅ Created {} Jules session(s)", result.sessions.len());
@@ -362,7 +364,7 @@ fn run_agents(layer: RunLayer) -> Result<(), AppError> {
 }
 
 fn run_setup_gen(path: Option<PathBuf>) -> Result<(), AppError> {
-    let components = crate::setup_gen(path.as_deref())?;
+    let components = crate::app::api::setup_gen(path.as_deref())?;
     println!("✅ Generated install.sh with {} component(s)", components.len());
     for (i, name) in components.iter().enumerate() {
         println!("  {}. {}", i + 1, name);
@@ -372,7 +374,7 @@ fn run_setup_gen(path: Option<PathBuf>) -> Result<(), AppError> {
 
 fn run_setup_list(detail: Option<String>) -> Result<(), AppError> {
     if let Some(component) = detail {
-        let info = crate::setup_detail(&component)?;
+        let info = crate::app::api::setup_detail(&component)?;
         println!("{}: {}", info.name, info.summary);
         if !info.dependencies.is_empty() {
             println!("\nDependencies:");
@@ -394,7 +396,7 @@ fn run_setup_list(detail: Option<String>) -> Result<(), AppError> {
         println!("\nInstall Script:");
         println!("{}", info.script_content);
     } else {
-        let components = crate::setup_list()?;
+        let components = crate::app::api::setup_list()?;
         println!("Available components:");
         for comp in components {
             println!("  {} - {}", comp.name, comp.summary);
@@ -413,7 +415,7 @@ fn run_schedule(command: ScheduleCommands) -> Result<(), AppError> {
                 None => None,
             };
 
-            let output = crate::schedule_export(crate::ScheduleExportOptions {
+            let output = crate::app::api::schedule_export(crate::ScheduleExportOptions {
                 scope,
                 layer,
                 workstream,
@@ -429,7 +431,7 @@ fn run_workstreams(command: WorkstreamCommands) -> Result<(), AppError> {
     match command {
         WorkstreamCommands::Inspect { workstream, format } => {
             let format = parse_workstream_format(&format)?;
-            let output = crate::workstreams_inspect(crate::WorkstreamInspectOptions {
+            let output = crate::app::api::workstreams_inspect(crate::WorkstreamInspectOptions {
                 workstream,
                 format: format.clone(),
             })?;
@@ -491,7 +493,7 @@ fn parse_layer(value: &str) -> Result<crate::domain::Layer, AppError> {
 
 fn run_doctor(fix: bool, strict: bool, workstream: Option<String>) -> Result<i32, AppError> {
     let options = crate::DoctorOptions { fix, strict, workstream };
-    let outcome = crate::doctor(options)?;
+    let outcome = crate::app::api::doctor(options)?;
 
     Ok(outcome.exit_code)
 }
