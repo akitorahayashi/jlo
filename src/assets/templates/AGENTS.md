@@ -77,7 +77,6 @@ Creates:
   events/
     <state>/          # State directories from template
   issues/
-    index.md
     <label>/          # Label directories from template
 ```
 

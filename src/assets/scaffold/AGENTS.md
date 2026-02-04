@@ -40,7 +40,6 @@ See [root AGENTS.md](../../../../AGENTS.md) for design principles.
 │       │   └── <state>/
 │       │       └── *.yml
 │       └── issues/
-│           ├── index.md
 │           └── <label>/
 │               └── *.yml
 └── setup/
