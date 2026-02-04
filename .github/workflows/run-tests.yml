@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup environment
         uses: ./.github/actions/setup
@@ -25,17 +25,17 @@ jobs:
 
       - name: Install tarpaulin
         if: runner.os == 'Linux'
-        run: cargo install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin --version 0.35.1 --locked
 
       - name: Generate coverage
         if: runner.os == 'Linux'
-        run: cargo tarpaulin --out Xml --output-dir coverage --all-features
+        run: cargo tarpaulin --out Xml --output-dir coverage --all-features --fail-under 30
         env:
           RUST_TEST_THREADS: 1
 
       - name: Upload coverage
         if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: code-coverage
           path: coverage/cobertura.xml

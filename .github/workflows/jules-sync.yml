@@ -25,7 +25,7 @@ jobs:
             echo "::notice::jules branch does not exist, skipping sync"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         if: steps.check-branch.outputs.exists == 'true'
         with:
           ref: jules
