@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "k7m2x9"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "cov"
+confidence: "high"
+
+# Content
+title: "Critical logic in jlo update lacks test coverage"
+statement: |
+  The `execute` function in `src/app/commands/update.rs` contains complex logic for workspace updates, version comparisons, and file management, but has no unit tests. This is a high-risk area for regressions.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/update.rs"
+    loc:
+      - "86-348"
+    note: "The main execute function handles file I/O, backup creation, and logic branches for adopting managed files vs preserving local changes. It is currently untested."
+
+tags:
+  - "coverage-gap"
+  - "risk-high"
+  - "jlo-update"
