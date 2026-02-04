@@ -103,7 +103,7 @@ fn export_roles(
 
     let include = roles
         .into_iter()
-        .map(|role| ScheduleMatrixEntry { workstream: workstream.clone(), role: Some(role) })
+        .map(|role| ScheduleMatrixEntry { workstream: workstream.clone(), role: Some(role.into()) })
         .collect();
 
     Ok(ScheduleMatrix { include })

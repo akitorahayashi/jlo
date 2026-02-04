@@ -1,7 +1,6 @@
 use serde::{Deserialize, Deserializer};
-
+use crate::impl_validated_id;
 use super::AppError;
-use super::validation::validate_identifier;
 
 /// A validated role identifier.
 ///
@@ -12,27 +11,7 @@ use super::validation::validate_identifier;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RoleId(String);
 
-impl RoleId {
-    /// Validate and create a new `RoleId`.
-    pub fn new(id: &str) -> Result<Self, AppError> {
-        if validate_identifier(id, false) {
-            Ok(Self(id.to_string()))
-        } else {
-            Err(AppError::InvalidRoleId(id.to_string()))
-        }
-    }
-
-    /// Return the inner string value.
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl AsRef<str> for RoleId {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
+impl_validated_id!(RoleId, false, AppError::InvalidRoleId);
 
 impl From<RoleId> for String {
     fn from(val: RoleId) -> Self {
@@ -87,5 +66,11 @@ mod tests {
     #[test]
     fn space_in_id_is_invalid() {
         assert!(RoleId::new("has space").is_err());
+    }
+
+    #[test]
+    fn display_impl() {
+        let role = RoleId::new("test-role").unwrap();
+        assert_eq!(format!("{}", role), "test-role");
     }
 }

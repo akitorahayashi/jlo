@@ -18,6 +18,39 @@ pub fn validate_identifier(id: &str, allow_dots: bool) -> bool {
     id.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || (allow_dots && c == '.'))
 }
 
+#[macro_export]
+macro_rules! impl_validated_id {
+    ($name:ident, $allow_dots:expr, $err_variant:path) => {
+        impl $name {
+            /// Validate and create a new instance.
+            pub fn new(id: &str) -> Result<Self, $crate::domain::AppError> {
+                if $crate::domain::validation::validate_identifier(id, $allow_dots) {
+                    Ok(Self(id.to_string()))
+                } else {
+                    Err($err_variant(id.to_string()))
+                }
+            }
+
+            /// Return the inner string value.
+            pub fn as_str(&self) -> &str {
+                &self.0
+            }
+        }
+
+        impl AsRef<str> for $name {
+            fn as_ref(&self) -> &str {
+                self.as_str()
+            }
+        }
+
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", self.0)
+            }
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
