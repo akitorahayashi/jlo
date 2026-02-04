@@ -8,7 +8,7 @@
 |-----------|----------------|
 | **jlo** | Scaffold installation, versioning, prompt asset management |
 | **GitHub Actions** | Orchestration: cron triggers, matrix execution, auto-merge control |
-| **Jules (VM)** | Execution: code analysis, artifact generation, branch/PR creation |
+| **Jules API** | Execution: code analysis, artifact generation, branch/PR creation |
 
 ## Critical Design Principles
 

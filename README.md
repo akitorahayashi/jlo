@@ -8,7 +8,7 @@ CLI tool for deploying `.jules/` workspace scaffolding and orchestrating schedul
 |-----------|----------------|
 | **jlo** | `.jules/` scaffold installation, agent orchestration, prompt assembly |
 | **GitHub Actions** | Workflow triggers: cron schedules, manual dispatch, merge control |
-| **Jules (VM)** | Execution: code analysis, artifact generation, branch/PR creation |
+| **Jules API** | Execution: code analysis, artifact generation, branch/PR creation |
 
 ## Quick Start
 
