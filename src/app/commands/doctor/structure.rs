@@ -259,11 +259,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
     }
 }
 
-fn check_version_file(
-    jules_path: &Path,
-    current_version: &str,
-    diagnostics: &mut Diagnostics,
-) {
+fn check_version_file(jules_path: &Path, current_version: &str, diagnostics: &mut Diagnostics) {
     let version_path = jules_path.join(".jlo-version");
     if !version_path.exists() {
         return;
@@ -533,9 +529,9 @@ mod tests {
         version_file.write_str("2.0.0").unwrap();
         check_version_file(temp.path(), "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 1);
-        assert!(diagnostics.errors()[0]
-            .message
-            .contains("Workspace version is newer than the binary"));
+        assert!(
+            diagnostics.errors()[0].message.contains("Workspace version is newer than the binary")
+        );
 
         // Reset diagnostics
         diagnostics = Diagnostics::default();
