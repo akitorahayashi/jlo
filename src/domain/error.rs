@@ -58,6 +58,8 @@ pub enum AppError {
     GitError { command: String, details: String },
     /// Parse error.
     ParseError { what: String, details: String },
+    /// TOML parsing error.
+    TomlParseError(toml::de::Error),
 }
 
 impl Display for AppError {
@@ -71,6 +73,7 @@ impl Display for AppError {
             AppError::ParseError { what, details } => {
                 write!(f, "Failed to parse {}: {}", what, details)
             }
+            AppError::TomlParseError(err) => write!(f, "TOML parse error: {}", err),
             AppError::WorkspaceExists => {
                 write!(f, ".jules/ workspace already exists")
             }
@@ -168,6 +171,12 @@ impl From<io::Error> for AppError {
     }
 }
 
+impl From<toml::de::Error> for AppError {
+    fn from(value: toml::de::Error) -> Self {
+        AppError::TomlParseError(value)
+    }
+}
+
 impl AppError {
     pub fn config_error<S: Into<String>>(message: S) -> Self {
         AppError::ConfigError(message.into())
@@ -190,7 +199,8 @@ impl AppError {
             | AppError::ScheduleConfigInvalid(_)
             | AppError::SingleRoleLayerTemplate(_)
             | AppError::PromptAssemblyError(_)
-            | AppError::ParseError { .. } => io::ErrorKind::InvalidInput,
+            | AppError::ParseError { .. }
+            | AppError::TomlParseError(_) => io::ErrorKind::InvalidInput,
             AppError::WorkspaceNotFound
             | AppError::SetupNotInitialized
             | AppError::SetupConfigMissing
