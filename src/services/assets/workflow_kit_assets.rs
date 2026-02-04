@@ -27,14 +27,13 @@ pub fn load_workflow_kit(mode: WorkflowRunnerMode) -> Result<WorkflowKitAssets, 
     env.add_function("gha_expr", |expr: &str| -> String { gha_expr(expr) });
 
     // Template context based on runner mode
-    let (runner, use_matrix) = match mode {
-        WorkflowRunnerMode::Remote => ("ubuntu-latest", false),
-        WorkflowRunnerMode::SelfHosted => ("self-hosted", true),
+    let runner = match mode {
+        WorkflowRunnerMode::Remote => "ubuntu-latest",
+        WorkflowRunnerMode::SelfHosted => "self-hosted",
     };
 
     let ctx = context! {
         runner => runner,
-        use_matrix => use_matrix,
     };
 
     let mut files = Vec::new();
@@ -44,7 +43,6 @@ pub fn load_workflow_kit(mode: WorkflowRunnerMode) -> Result<WorkflowKitAssets, 
         &mut files,
         &env,
         &ctx,
-        mode,
     )?;
 
     // Prepend .github/ to all paths since we're including the .github directory directly
@@ -80,7 +78,6 @@ fn collect_and_render_files(
     files: &mut Vec<ScaffoldFile>,
     env: &Environment,
     ctx: &Value,
-    mode: WorkflowRunnerMode,
 ) -> Result<(), AppError> {
     for entry in dir.entries() {
         match entry {
@@ -94,11 +91,6 @@ fn collect_and_render_files(
 
                 let file_path = file.path();
                 let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-
-                // Skip sequential scripts for self-hosted mode (they use matrix instead)
-                if mode == WorkflowRunnerMode::SelfHosted && file_name.contains("-sequential.sh") {
-                    continue;
-                }
 
                 let relative_path = file_path.strip_prefix(base_path).map_err(|_| {
                     AppError::config_error(format!(
@@ -135,9 +127,7 @@ fn collect_and_render_files(
 
                 files.push(ScaffoldFile { path: output_path, content: rendered_content });
             }
-            DirEntry::Dir(subdir) => {
-                collect_and_render_files(subdir, base_path, files, env, ctx, mode)?
-            }
+            DirEntry::Dir(subdir) => collect_and_render_files(subdir, base_path, files, env, ctx)?,
         }
     }
     Ok(())

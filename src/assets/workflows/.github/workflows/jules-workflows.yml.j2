@@ -1,12 +1,9 @@
 # Jules Agent Orchestration
 #
+#
 # Orchestrates sequential execution.
 # Each phase reads state, generates a matrix, then executes sequentially.
-{% if use_matrix %}
-# Uses matrix strategy with max-parallel=1 for per-task visibility in GitHub Actions UI.
-{% else %}
 # Observers/planners/implementers run inside a single job to avoid multiple runners.
-{% endif %}
 #
 # Narrator runs first to produce changes context, followed by doctor validation.
 # Doctor validation is also handled by jules-automerge.yml as a pre-merge gate.
@@ -180,12 +177,6 @@ jobs:
       needs.generate-observer-matrix.outputs.has_observers == 'true'
     runs-on: {{ runner }}
     timeout-minutes: 30
-{% if use_matrix %}
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix: {{ gha_expr("fromJson(needs.generate-observer-matrix.outputs.matrix)") }}
-{% endif %}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
     steps:
@@ -197,19 +188,10 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-{% if use_matrix %}
-      - name: Run observer {{ gha_expr("matrix.workstream") }} / {{ gha_expr("matrix.role") }}
-        env:
-          WORKSTREAM: {{ gha_expr("matrix.workstream") }}
-          ROLE: {{ gha_expr("matrix.role") }}
-        run: |
-          jlo run observers --workstream "$WORKSTREAM" --role "$ROLE"
-{% else %}
       - name: Run observers sequentially
         env:
           OBSERVER_MATRIX: {{ gha_expr("needs.generate-observer-matrix.outputs.matrix") }}
         run: bash .github/scripts/jules-run-observers-sequential.sh
-{% endif %}
 
   # ============================================================
   # Phase 6: Wait for observer processing
@@ -269,12 +251,6 @@ jobs:
       needs.generate-decider-matrix.outputs.has_pending == 'true'
     runs-on: {{ runner }}
     timeout-minutes: 30
-{% if use_matrix %}
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix: {{ gha_expr("fromJson(needs.generate-decider-matrix.outputs.matrix)") }}
-{% endif %}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
     steps:
@@ -286,18 +262,10 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-{% if use_matrix %}
-      - name: Run decider for {{ gha_expr("matrix.workstream") }}
-        env:
-          WORKSTREAM: {{ gha_expr("matrix.workstream") }}
-        run: |
-          jlo run deciders --workstream "$WORKSTREAM" --scheduled
-{% else %}
       - name: Run deciders sequentially
         env:
           DECIDER_MATRIX: {{ gha_expr("needs.generate-decider-matrix.outputs.matrix") }}
         run: bash .github/scripts/jules-run-deciders-sequential.sh
-{% endif %}
 
   # ============================================================
   # Phase 9: Wait for decider processing
@@ -361,12 +329,6 @@ jobs:
       needs.generate-planner-matrix.outputs.has_planners == 'true'
     runs-on: {{ runner }}
     timeout-minutes: 30
-{% if use_matrix %}
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix: {{ gha_expr("fromJson(needs.generate-planner-matrix.outputs.planner_matrix)") }}
-{% endif %}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
     steps:
@@ -378,18 +340,10 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-{% if use_matrix %}
-      - name: Run planner for {{ gha_expr("matrix.issue") }}
-        env:
-          ISSUE: {{ gha_expr("matrix.issue") }}
-        run: |
-          jlo run planners "$ISSUE"
-{% else %}
       - name: Run planners sequentially
         env:
           PLANNER_MATRIX: {{ gha_expr("needs.generate-planner-matrix.outputs.planner_matrix") }}
         run: bash .github/scripts/jules-run-planners-sequential.sh
-{% endif %}
 
   # ============================================================
   # Phase 12: Run implementers
@@ -402,24 +356,15 @@ jobs:
       needs.generate-planner-matrix.outputs.has_implementers == 'true'
     runs-on: {{ runner }}
     timeout-minutes: 30
-{% if use_matrix %}
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix: {{ gha_expr("fromJson(needs.generate-planner-matrix.outputs.implementer_matrix)") }}
-{% endif %}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-{% if not use_matrix %}
       TARGET_BRANCH: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
-{% endif %}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
           fetch-depth: 0
 
-{% if not use_matrix %}
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
@@ -430,10 +375,3 @@ jobs:
         env:
           IMPLEMENTER_MATRIX: {{ gha_expr("needs.generate-planner-matrix.outputs.implementer_matrix") }}
         run: bash .github/scripts/jules-run-implementers-sequential.sh
-{% else %}
-      - name: Run implementer for {{ gha_expr("matrix.issue") }}
-        uses: ./.github/actions/run-implementer
-        with:
-          issue_file: {{ gha_expr("matrix.issue") }}
-          target_branch: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
-{% endif %}
