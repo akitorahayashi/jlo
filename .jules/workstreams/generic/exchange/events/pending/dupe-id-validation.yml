@@ -1,0 +1,31 @@
+schema_version: 1
+
+# Metadata
+id: "evt001"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Duplicate validation logic in RoleId and ComponentId"
+statement: |
+  Both RoleId and ComponentId implement nearly identical string validation logic (alphanumeric check, path traversal prevention, empty check) but duplicate the implementation code instead of sharing a common abstraction. This creates a maintenance burden where changes to ID validation policy must be applied in multiple places.
+
+evidence:
+  - path: "src/domain/role_id.rs"
+    loc:
+      - "RoleId::is_valid"
+      - "impl RoleId"
+    note: "Implements is_valid with checks for empty, slash, dot-dot, and alphanumeric/dash/underscore."
+
+  - path: "src/domain/component_id.rs"
+    loc:
+      - "ComponentId::is_valid"
+      - "impl ComponentId"
+    note: "Implements is_valid with identical checks plus allowing dots."
+
+tags:
+  - "duplication"
+  - "refactor-safety"
+  - "domain-modeling"

@@ -1,0 +1,19 @@
+schema_version: 2
+
+observer: "taxo01"
+workstream: "generic"
+
+updated_at: "2026-02-04T08:08:31Z"
+
+goals:
+  - "Identify duplicate validation logic in domain identifiers."
+  - "Audit error naming conventions for consistency."
+  - "Verify layer naming pluralization consistency."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-04T08:08:31Z"
+    summary: "Initialized workstation and emitted 3 taxonomy events (ID duplication, Error naming, Layer pluralization)."
