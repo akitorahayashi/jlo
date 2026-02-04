@@ -114,6 +114,9 @@ pub enum PromptAssemblyError {
 
     /// Failed to render a template with the provided context.
     TemplateRenderError { template: String, reason: String },
+
+    /// Path traversal detected in include path.
+    PathTraversalDetected { path: String },
 }
 
 impl std::fmt::Display for PromptAssemblyError {
@@ -149,6 +152,9 @@ impl std::fmt::Display for PromptAssemblyError {
             }
             Self::TemplateRenderError { template, reason } => {
                 write!(f, "Failed to render template {}: {}", template, reason)
+            }
+            Self::PathTraversalDetected { path } => {
+                write!(f, "Path traversal detected in include path: {}", path)
             }
         }
     }

@@ -5,7 +5,7 @@
 //! included files with section headers.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Component, Path};
 use std::sync::OnceLock;
 
 use minijinja::{Environment, UndefinedBehavior};
@@ -82,6 +82,7 @@ pub fn assemble_prompt(
             context,
             &format!("prompt_assembly include path ({})", include.title),
         )?;
+        validate_safe_path(&resolved_path)?;
         let full_path = root.join(&resolved_path);
 
         // Auto-initialize from schema if missing
@@ -125,6 +126,25 @@ pub fn assemble_prompt(
     }
 
     Ok(AssembledPrompt { content: parts.join("\n"), included_files, skipped_files })
+}
+
+/// Validate that a path is safe and does not traverse outside the root.
+fn validate_safe_path(path: &str) -> Result<(), PromptAssemblyError> {
+    let p = Path::new(path);
+    if p.is_absolute() {
+        return Err(PromptAssemblyError::PathTraversalDetected { path: path.to_string() });
+    }
+
+    for component in p.components() {
+        match component {
+            Component::Normal(_) => {}
+            Component::CurDir => {}
+            _ => {
+                return Err(PromptAssemblyError::PathTraversalDetected { path: path.to_string() });
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Assemble a prompt for an issue-driven layer (planners, implementers).
@@ -290,12 +310,13 @@ mod tests {
             let from_str = from.to_string_lossy().to_string();
             let to_str = to.to_string_lossy().to_string();
             let mut files = self.files.lock().unwrap();
-            if let Some(content) = files.get(&from_str).cloned() {
-                files.insert(to_str, content.clone());
-                Ok(content.len() as u64)
-            } else {
-                Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Source file not found"))
-            }
+            let content = files.get(&from_str).ok_or_else(|| {
+                std::io::Error::new(std::io::ErrorKind::NotFound, "Source file not found")
+            })?;
+            let content_clone = content.clone();
+            let len = content_clone.len() as u64;
+            files.insert(to_str, content_clone);
+            Ok(len)
         }
     }
 
@@ -507,6 +528,64 @@ includes:
         match result {
             PromptAssemblyError::TemplateRenderError { .. } => {}
             other => panic!("Expected TemplateRenderError, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_assemble_prompt_path_traversal() {
+        let mock_fs = MockPromptFs::new();
+        let jules_path = Path::new(".jules");
+
+        mock_fs.add_file(
+            ".jules/roles/planners/prompt_assembly.yml",
+            r#"
+schema_version: 1
+layer: planners
+runtime_context: {}
+includes:
+  - title: "Malicious"
+    path: "../secret.txt"
+"#,
+        );
+        mock_fs.add_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners");
+
+        let result = assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_fs);
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            PromptAssemblyError::PathTraversalDetected { path } => {
+                assert_eq!(path, "../secret.txt");
+            }
+            other => panic!("Expected PathTraversalDetected, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_assemble_prompt_absolute_path_traversal() {
+        let mock_fs = MockPromptFs::new();
+        let jules_path = Path::new(".jules");
+
+        mock_fs.add_file(
+            ".jules/roles/planners/prompt_assembly.yml",
+            r#"
+schema_version: 1
+layer: planners
+runtime_context: {}
+includes:
+  - title: "Malicious Absolute"
+    path: "/etc/passwd"
+"#,
+        );
+        mock_fs.add_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners");
+
+        let result = assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_fs);
+
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            PromptAssemblyError::PathTraversalDetected { path } => {
+                assert_eq!(path, "/etc/passwd");
+            }
+            other => panic!("Expected PathTraversalDetected, got {:?}", other),
         }
     }
 }
