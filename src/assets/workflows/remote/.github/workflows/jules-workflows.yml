@@ -357,6 +357,7 @@ jobs:
     timeout-minutes: 30
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      TARGET_BRANCH: ${{ vars.JULES_TARGET_BRANCH || 'main' }}
     steps:
       - uses: actions/checkout@v4
         with:

@@ -1,7 +1,12 @@
 # Jules Agent Orchestration
 #
-# Orchestrates sequential execution using matrix strategy with max-parallel=1.
+# Orchestrates sequential execution.
 # Each phase reads state, generates a matrix, then executes sequentially.
+{% if use_matrix %}
+# Uses matrix strategy with max-parallel=1 for per-task visibility in GitHub Actions UI.
+{% else %}
+# Observers/planners/implementers run inside a single job to avoid multiple runners.
+{% endif %}
 #
 # Narrator runs first to produce changes context, followed by doctor validation.
 # Doctor validation is also handled by jules-automerge.yml as a pre-merge gate.
@@ -40,9 +45,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  ENTRY_POINT: ${{ github.event.inputs.entry_point || 'narrator' }}
-  WAIT_MINUTES: ${{ github.event.inputs.wait_minutes || 30 }}
-  ROUTING_LABELS: ${{ github.event.inputs.routing_labels || 'bugs,feats,refacts,tests,docs' }}
+  ENTRY_POINT: {{ gha_expr("github.event.inputs.entry_point || 'narrator'") }}
+  WAIT_MINUTES: {{ gha_expr("github.event.inputs.wait_minutes || 30") }}
+  ROUTING_LABELS: {{ gha_expr("github.event.inputs.routing_labels || 'bugs,feats,refacts,tests,docs'") }}
 
 jobs:
   # ============================================================
@@ -53,10 +58,10 @@ jobs:
       vars.JULES_PAUSED != 'true' &&
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
       (github.event.inputs.entry_point || 'narrator') == 'narrator'
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 30
     env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,10 +93,10 @@ jobs:
     if: |
       always() &&
       needs.run-narrator.result == 'success'
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 60
     steps:
-      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+      - name: Wait {{ gha_expr("env.WAIT_MINUTES") }} minutes for Jules async processing
         run: |
           echo "Waiting $WAIT_MINUTES minutes for Jules to process narrator PR..."
           sleep $((WAIT_MINUTES * 60))
@@ -107,11 +112,11 @@ jobs:
       vars.JULES_PAUSED != 'true' &&
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
       (needs.wait-after-narrator.result == 'success' || needs.wait-after-narrator.result == 'skipped')
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-      has_workstreams: ${{ steps.matrix.outputs.has_workstreams }}
+      matrix: {{ gha_expr("steps.matrix.outputs.matrix") }}
+      has_workstreams: {{ gha_expr("steps.matrix.outputs.has_workstreams") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -144,11 +149,11 @@ jobs:
     if: >-
       needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
       (github.event.inputs.entry_point || 'narrator') != 'deciders'
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-      has_observers: ${{ steps.matrix.outputs.has_observers }}
+      matrix: {{ gha_expr("steps.matrix.outputs.matrix") }}
+      has_observers: {{ gha_expr("steps.matrix.outputs.has_observers") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -161,11 +166,11 @@ jobs:
       - name: Generate observer matrix
         id: matrix
         env:
-          WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.matrix }}
+          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.matrix") }}
         run: bash .github/scripts/jules-generate-observer-matrix.sh
 
   # ============================================================
-  # Phase 5: Run observers (sequential via max-parallel=1)
+  # Phase 5: Run observers
   # ============================================================
   run-observers:
     needs: [generate-workstream-matrix, generate-observer-matrix]
@@ -173,14 +178,16 @@ jobs:
       always() &&
       needs.generate-observer-matrix.result == 'success' &&
       needs.generate-observer-matrix.outputs.has_observers == 'true'
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 30
+{% if use_matrix %}
     strategy:
       fail-fast: false
       max-parallel: 1
-      matrix: ${{ fromJson(needs.generate-observer-matrix.outputs.matrix) }}
+      matrix: {{ gha_expr("fromJson(needs.generate-observer-matrix.outputs.matrix)") }}
+{% endif %}
     env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -190,9 +197,16 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run observer ${{ matrix.workstream }} / ${{ matrix.role }}
+{% if use_matrix %}
+      - name: Run observer {{ gha_expr("matrix.workstream") }} / {{ gha_expr("matrix.role") }}
         run: |
-          timeout 20m jlo run observers --workstream "${{ matrix.workstream }}" --role "${{ matrix.role }}"
+          timeout 20m jlo run observers --workstream "{{ gha_expr('matrix.workstream') }}" --role "{{ gha_expr('matrix.role') }}"
+{% else %}
+      - name: Run observers sequentially
+        env:
+          OBSERVER_MATRIX: {{ gha_expr("needs.generate-observer-matrix.outputs.matrix") }}
+        run: bash .github/scripts/jules-run-observers-sequential.sh
+{% endif %}
 
   # ============================================================
   # Phase 6: Wait for observer processing
@@ -202,10 +216,10 @@ jobs:
     if: |
       always() &&
       needs.run-observers.result == 'success'
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 60
     steps:
-      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+      - name: Wait {{ gha_expr("env.WAIT_MINUTES") }} minutes for Jules async processing
         run: |
           echo "Waiting $WAIT_MINUTES minutes for Jules to process observer PRs..."
           sleep $((WAIT_MINUTES * 60))
@@ -221,11 +235,11 @@ jobs:
       needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
       (needs.generate-observer-matrix.result == 'success' || needs.generate-observer-matrix.result == 'skipped') &&
       (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-      has_pending: ${{ steps.matrix.outputs.has_pending }}
+      matrix: {{ gha_expr("steps.matrix.outputs.matrix") }}
+      has_pending: {{ gha_expr("steps.matrix.outputs.has_pending") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -238,11 +252,11 @@ jobs:
       - name: Generate decider matrix from pending events
         id: matrix
         env:
-          WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.matrix }}
+          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.matrix") }}
         run: bash .github/scripts/jules-generate-decider-matrix.sh
 
   # ============================================================
-  # Phase 8: Run deciders (sequential via max-parallel=1)
+  # Phase 8: Run deciders
   # ============================================================
   run-deciders:
     needs: [generate-decider-matrix]
@@ -250,14 +264,16 @@ jobs:
       always() &&
       needs.generate-decider-matrix.result == 'success' &&
       needs.generate-decider-matrix.outputs.has_pending == 'true'
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 30
+{% if use_matrix %}
     strategy:
       fail-fast: false
       max-parallel: 1
-      matrix: ${{ fromJson(needs.generate-decider-matrix.outputs.matrix) }}
+      matrix: {{ gha_expr("fromJson(needs.generate-decider-matrix.outputs.matrix)") }}
+{% endif %}
     env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -267,9 +283,16 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run decider for ${{ matrix.workstream }}
+{% if use_matrix %}
+      - name: Run decider for {{ gha_expr("matrix.workstream") }}
         run: |
-          timeout 20m jlo run deciders --workstream "${{ matrix.workstream }}" --scheduled
+          timeout 20m jlo run deciders --workstream "{{ gha_expr('matrix.workstream') }}" --scheduled
+{% else %}
+      - name: Run deciders sequentially
+        env:
+          DECIDER_MATRIX: {{ gha_expr("needs.generate-decider-matrix.outputs.matrix") }}
+        run: bash .github/scripts/jules-run-deciders-sequential.sh
+{% endif %}
 
   # ============================================================
   # Phase 9: Wait for decider processing
@@ -279,10 +302,10 @@ jobs:
     if: |
       always() &&
       needs.run-deciders.result == 'success'
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 60
     steps:
-      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+      - name: Wait {{ gha_expr("env.WAIT_MINUTES") }} minutes for Jules async processing
         run: |
           echo "Waiting $WAIT_MINUTES minutes for Jules to process decider PRs..."
           sleep $((WAIT_MINUTES * 60))
@@ -299,13 +322,13 @@ jobs:
       (needs.generate-decider-matrix.result == 'success' || needs.generate-decider-matrix.result == 'skipped') &&
       (needs.run-deciders.result == 'success' || needs.run-deciders.result == 'skipped') &&
       (needs.wait-after-deciders.result == 'success' || needs.wait-after-deciders.result == 'skipped')
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:
-      planner_matrix: ${{ steps.matrix.outputs.planner_matrix }}
-      has_planners: ${{ steps.matrix.outputs.has_planners }}
-      implementer_matrix: ${{ steps.matrix.outputs.implementer_matrix }}
-      has_implementers: ${{ steps.matrix.outputs.has_implementers }}
+      planner_matrix: {{ gha_expr("steps.matrix.outputs.planner_matrix") }}
+      has_planners: {{ gha_expr("steps.matrix.outputs.has_planners") }}
+      implementer_matrix: {{ gha_expr("steps.matrix.outputs.implementer_matrix") }}
+      has_implementers: {{ gha_expr("steps.matrix.outputs.has_implementers") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -318,12 +341,12 @@ jobs:
       - name: Generate planner and implementer matrices
         id: matrix
         env:
-          WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.matrix }}
-          ROUTING_LABELS: ${{ env.ROUTING_LABELS }}
+          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.matrix") }}
+          ROUTING_LABELS: {{ gha_expr("env.ROUTING_LABELS") }}
         run: bash .github/scripts/jules-generate-routing-matrices.sh
 
   # ============================================================
-  # Phase 11: Run planners (sequential via max-parallel=1)
+  # Phase 11: Run planners
   # ============================================================
   run-planners:
     needs: [generate-planner-matrix]
@@ -331,14 +354,16 @@ jobs:
       always() &&
       needs.generate-planner-matrix.result == 'success' &&
       needs.generate-planner-matrix.outputs.has_planners == 'true'
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 30
+{% if use_matrix %}
     strategy:
       fail-fast: false
       max-parallel: 1
-      matrix: ${{ fromJson(needs.generate-planner-matrix.outputs.planner_matrix) }}
+      matrix: {{ gha_expr("fromJson(needs.generate-planner-matrix.outputs.planner_matrix)") }}
+{% endif %}
     env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -348,12 +373,19 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run planner for ${{ matrix.issue }}
+{% if use_matrix %}
+      - name: Run planner for {{ gha_expr("matrix.issue") }}
         run: |
-          timeout 20m jlo run planners "${{ matrix.issue }}"
+          timeout 20m jlo run planners "{{ gha_expr('matrix.issue') }}"
+{% else %}
+      - name: Run planners sequentially
+        env:
+          PLANNER_MATRIX: {{ gha_expr("needs.generate-planner-matrix.outputs.planner_matrix") }}
+        run: bash .github/scripts/jules-run-planners-sequential.sh
+{% endif %}
 
   # ============================================================
-  # Phase 12: Run implementers (sequential via max-parallel=1)
+  # Phase 12: Run implementers
   # ============================================================
   run-implementers:
     needs: [generate-planner-matrix]
@@ -361,22 +393,40 @@ jobs:
       always() &&
       needs.generate-planner-matrix.result == 'success' &&
       needs.generate-planner-matrix.outputs.has_implementers == 'true'
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     timeout-minutes: 30
+{% if use_matrix %}
     strategy:
       fail-fast: false
       max-parallel: 1
-      matrix: ${{ fromJson(needs.generate-planner-matrix.outputs.implementer_matrix) }}
+      matrix: {{ gha_expr("fromJson(needs.generate-planner-matrix.outputs.implementer_matrix)") }}
+{% endif %}
     env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
+{% if not use_matrix %}
+      TARGET_BRANCH: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
+{% endif %}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
           fetch-depth: 0
 
-      - name: Run implementer for ${{ matrix.issue }}
+{% if not use_matrix %}
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Run implementers sequentially
+        env:
+          IMPLEMENTER_MATRIX: {{ gha_expr("needs.generate-planner-matrix.outputs.implementer_matrix") }}
+        run: bash .github/scripts/jules-run-implementers-sequential.sh
+{% else %}
+      - name: Run implementer for {{ gha_expr("matrix.issue") }}
         uses: ./.github/actions/run-implementer
         with:
-          issue_file: ${{ matrix.issue }}
-          target_branch: ${{ vars.JULES_TARGET_BRANCH || 'main' }}
+          issue_file: {{ gha_expr("matrix.issue") }}
+          target_branch: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
+{% endif %}

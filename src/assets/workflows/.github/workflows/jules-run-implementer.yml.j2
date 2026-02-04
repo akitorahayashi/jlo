@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   implementers:
-    runs-on: self-hosted
+    runs-on: {{ runner }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,9 +33,9 @@ jobs:
 
       - name: Run implementer
         env:
-          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
         uses: ./.github/actions/run-implementer
         with:
-          issue_file: ${{ inputs.issue_file }}
-          dry_run: ${{ inputs.dry_run }}
-          target_branch: ${{ vars.JULES_TARGET_BRANCH || 'main' }}
+          issue_file: {{ gha_expr("inputs.issue_file") }}
+          dry_run: {{ gha_expr("inputs.dry_run") }}
+          target_branch: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}

@@ -128,6 +128,15 @@ Workflow kit layout:
 - `.github/actions/` (Jules composite actions)
 - `.github/scripts/jules-*.sh`
 
+**Configuration Variables**:
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `JULES_PAUSED` | Skip scheduled runs when set to `true` | (unset) |
+| `JULES_TARGET_BRANCH` | Target branch for implementer output | `main` |
+
+**Schedule Preservation**: When reinstalling with `jlo init workflows --overwrite`, the existing `on.schedule` block in `jules-workflows.yml` is preserved.
+
 **Branch Strategy**:
 
 | Branch Pattern | Agent Type | Base Branch | Merge Strategy |

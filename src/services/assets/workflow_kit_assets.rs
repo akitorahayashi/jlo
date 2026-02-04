@@ -1,13 +1,12 @@
 use include_dir::{Dir, DirEntry, include_dir};
+use minijinja::{Environment, Value, context};
 use std::collections::BTreeSet;
 use std::path::{Component, Path};
 
 use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::ScaffoldFile;
 
-static WORKFLOWS_REMOTE_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/workflows/remote");
-static WORKFLOWS_SELF_HOSTED_DIR: Dir =
-    include_dir!("$CARGO_MANIFEST_DIR/src/assets/workflows/self-hosted");
+static WORKFLOWS_ASSET_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/workflows/.github");
 
 #[derive(Debug)]
 pub struct WorkflowKitAssets {
@@ -15,14 +14,44 @@ pub struct WorkflowKitAssets {
     pub action_dirs: Vec<String>,
 }
 
+/// Helper function for templates to output GitHub Actions expressions.
+/// Usage in template: {{ gha_expr("github.ref") }} → ${{ github.ref }}
+fn gha_expr(expr: &str) -> String {
+    format!("${{{{ {} }}}}", expr)
+}
+
 pub fn load_workflow_kit(mode: WorkflowRunnerMode) -> Result<WorkflowKitAssets, AppError> {
-    let dir = match mode {
-        WorkflowRunnerMode::Remote => &WORKFLOWS_REMOTE_DIR,
-        WorkflowRunnerMode::SelfHosted => &WORKFLOWS_SELF_HOSTED_DIR,
+    let mut env = Environment::new();
+
+    // Add the gha_expr function to the template environment
+    env.add_function("gha_expr", |expr: &str| -> String { gha_expr(expr) });
+
+    // Template context based on runner mode
+    let (runner, use_matrix) = match mode {
+        WorkflowRunnerMode::Remote => ("ubuntu-latest", false),
+        WorkflowRunnerMode::SelfHosted => ("self-hosted", true),
+    };
+
+    let ctx = context! {
+        runner => runner,
+        use_matrix => use_matrix,
     };
 
     let mut files = Vec::new();
-    collect_files(dir, dir.path(), &mut files)?;
+    collect_and_render_files(
+        &WORKFLOWS_ASSET_DIR,
+        WORKFLOWS_ASSET_DIR.path(),
+        &mut files,
+        &env,
+        &ctx,
+        mode,
+    )?;
+
+    // Prepend .github/ to all paths since we're including the .github directory directly
+    for file in &mut files {
+        file.path = format!(".github/{}", file.path);
+    }
+
     files.sort_by(|a, b| a.path.cmp(&b.path));
 
     if files.is_empty() {
@@ -45,10 +74,13 @@ pub fn load_workflow_kit(mode: WorkflowRunnerMode) -> Result<WorkflowKitAssets, 
     Ok(WorkflowKitAssets { files, action_dirs: action_dirs.into_iter().collect() })
 }
 
-fn collect_files(
+fn collect_and_render_files(
     dir: &Dir,
     base_path: &Path,
     files: &mut Vec<ScaffoldFile>,
+    env: &Environment,
+    ctx: &Value,
+    mode: WorkflowRunnerMode,
 ) -> Result<(), AppError> {
     for entry in dir.entries() {
         match entry {
@@ -59,18 +91,53 @@ fn collect_files(
                         file.path().to_string_lossy()
                     ))
                 })?;
-                let relative_path = file.path().strip_prefix(base_path).map_err(|_| {
+
+                let file_path = file.path();
+                let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+                // Skip sequential scripts for self-hosted mode (they use matrix instead)
+                if mode == WorkflowRunnerMode::SelfHosted && file_name.contains("-sequential.sh") {
+                    continue;
+                }
+
+                let relative_path = file_path.strip_prefix(base_path).map_err(|_| {
                     AppError::config_error(format!(
                         "Workflow kit file has unexpected path: {}",
-                        file.path().to_string_lossy()
+                        file_path.to_string_lossy()
                     ))
                 })?;
-                files.push(ScaffoldFile {
-                    path: relative_path.to_string_lossy().to_string(),
-                    content: content.to_string(),
-                });
+
+                // Determine if this is a template file
+                let (output_path, rendered_content) = if file_name.ends_with(".j2") {
+                    // Render template
+                    let template = env.template_from_str(content).map_err(|e| {
+                        AppError::config_error(format!(
+                            "Failed to parse template '{}': {}",
+                            file_path.to_string_lossy(),
+                            e
+                        ))
+                    })?;
+                    let rendered = template.render(ctx).map_err(|e| {
+                        AppError::config_error(format!(
+                            "Failed to render template '{}': {}",
+                            file_path.to_string_lossy(),
+                            e
+                        ))
+                    })?;
+                    // Remove .j2 extension
+                    let path_str = relative_path.to_string_lossy();
+                    let output = path_str.strip_suffix(".j2").unwrap_or(&path_str).to_string();
+                    (output, rendered)
+                } else {
+                    // Static file - copy as-is
+                    (relative_path.to_string_lossy().to_string(), content.to_string())
+                };
+
+                files.push(ScaffoldFile { path: output_path, content: rendered_content });
             }
-            DirEntry::Dir(subdir) => collect_files(subdir, base_path, files)?,
+            DirEntry::Dir(subdir) => {
+                collect_and_render_files(subdir, base_path, files, env, ctx, mode)?
+            }
         }
     }
     Ok(())
