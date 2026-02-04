@@ -1,0 +1,52 @@
+schema_version: 2
+
+# Metadata
+id: "915dd8"
+source_events:
+  - "app001"
+  - "cli001"
+  - "mix001"
+title: "Structural Cleanup"
+label: "refacts"
+priority: "high"
+summary: "Refactor app and services modules to improve cohesion and reduce coupling."
+
+# Content
+problem: |
+  The codebase suffers from structural issues:
+  1. Low cohesion in `src/app`, mixing CLI presentation with business logic.
+  2. Dependency backflow where `src/app/cli` depends on the crate root facade.
+  3. `src/services` acts as a junk drawer for unrelated concerns (adapters, domain services, assets).
+
+impact: |
+  These issues make the codebase hard to navigate, test, and maintain. Circular dependencies complicate compilation and refactoring.
+
+desired_outcome: |
+  A clean separation of concerns:
+  - CLI presentation logic isolated from application business logic.
+  - Proper dependency flow (Controllers -> Use Cases -> Entities).
+  - Services organized by domain or function, not a generic bucket.
+
+constraints: []
+risks:
+  - Breaking the CLI interface if not careful.
+  - Merge conflicts with ongoing feature work.
+
+# Specifics
+affected_areas:
+  - "src/app"
+  - "src/services"
+  - "src/lib.rs"
+
+acceptance_criteria:
+  - "`src/app` does not contain mixed CLI/Logic concerns."
+  - "`src/app/cli` does not depend on `crate::init`."
+  - "`src/services` is split or organized into meaningful modules."
+
+verification_commands:
+  - "cargo check"
+  - "cargo test"
+
+# Analysis Flags
+requires_deep_analysis: true
+deep_analysis_reason: "Major structural refactoring involving core modules `app` and `services` requires dependency analysis to avoid breaking the CLI or introducing circular dependencies."

@@ -1,0 +1,37 @@
+schema_version: 2
+
+# Metadata
+id: "8a0d61"
+source_events:
+  - "x7k9m2"
+title: "Fix Schedule Export Docs"
+label: "docs"
+priority: "low"
+summary: "Update README to accurately reflect required flags for 'jlo schedule export'."
+
+# Content
+problem: |
+  The README.md documentation for `jlo schedule export` is incorrect. It suggests that `--scope` is the only required argument, but the implementation enforces `--layer` and `--workstream` when `scope=roles`.
+
+impact: |
+  Users following the documentation encounter errors, leading to frustration.
+
+desired_outcome: |
+  Documentation accurately reflects command usage.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "README.md"
+
+acceptance_criteria:
+  - "README.md shows correct usage examples for `schedule export`."
+
+verification_commands:
+  - "cat README.md"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

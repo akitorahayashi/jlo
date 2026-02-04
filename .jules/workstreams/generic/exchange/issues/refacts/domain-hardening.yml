@@ -1,0 +1,59 @@
+schema_version: 2
+
+# Metadata
+id: "bf5688"
+source_events:
+  - "c0nf1g"
+  - "evt001"
+  - "dr1v3r"
+  - "x7y8z9"
+  - "evt002"
+  - "evt003"
+title: "Domain Hardening"
+label: "refacts"
+priority: "medium"
+summary: "Improve domain model quality by removing duplication and enforcing strong typing."
+
+# Content
+problem: |
+  The domain layer exhibits several quality issues:
+  1. Redundant `RunConfig` domain and DTO definitions.
+  2. Duplicated validation logic in `RoleId` and `ComponentId`.
+  3. `ScheduledRole` uses weak `String` typing instead of `RoleId`.
+  4. Domain errors rely on untyped Strings and have inconsistent naming.
+  5. Inconsistent layer naming pluralization.
+
+impact: |
+  Duplication leads to divergence (bugs). Weak typing loses validation guarantees. Inconsistent naming confuses developers.
+
+desired_outcome: |
+  A robust domain model:
+  - Single source of truth for configuration structures.
+  - Shared validation logic for IDs.
+  - `ScheduledRole` uses `RoleId`.
+  - `AppError` uses typed variants and consistent naming.
+  - Layer names are consistently pluralized.
+
+constraints: []
+risks:
+  - Breaking changes to public APIs (though internal).
+  - High churn in domain files.
+
+# Specifics
+affected_areas:
+  - "src/domain"
+
+acceptance_criteria:
+  - "RunConfig DTOs do not duplicate default logic."
+  - "RoleId and ComponentId share validation logic."
+  - "ScheduledRole stores RoleId."
+  - "AppError variants are typed and consistently named."
+  - "Layer enum variants are consistent."
+
+verification_commands:
+  - "cargo check"
+  - "cargo test"
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
