@@ -37,11 +37,11 @@ pub fn execute(
         std::env::current_dir()?.join(jules_path)
     };
     let workstreams_dir = fs::canonicalize(abs_jules_path.join("workstreams"))
-        .map_err(|_| AppError::ConfigError("Workstreams directory not found".into()))?;
+        .map_err(|_| AppError::Configuration("Workstreams directory not found".into()))?;
 
     let has_issues_component = canonical_path.components().any(|c| c.as_os_str() == "issues");
     if !canonical_path.starts_with(&workstreams_dir) || !has_issues_component {
-        return Err(AppError::ConfigError(format!(
+        return Err(AppError::Configuration(format!(
             "Issue file must be within {}/*/issues/",
             workstreams_dir.display()
         )));
@@ -135,11 +135,11 @@ fn execute_local_dispatch(
             &format!("issue_file={}", relative_path.display()),
         ])
         .output()
-        .map_err(|e| AppError::ConfigError(format!("Failed to execute gh CLI: {}", e)))?;
+        .map_err(|e| AppError::Configuration(format!("Failed to execute gh CLI: {}", e)))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(AppError::ConfigError(format!(
+        return Err(AppError::Configuration(format!(
             "Failed to dispatch workflow via gh CLI. Stderr:\n{}",
             stderr
         )));

@@ -37,7 +37,7 @@ pub fn detect_repository_source() -> Result<String, AppError> {
         return Ok(format!("sources/github/{}", repo));
     }
 
-    Err(AppError::ConfigError(
+    Err(AppError::Configuration(
         "Could not detect repository. Set GITHUB_REPOSITORY or run from a git repository.".into(),
     ))
 }

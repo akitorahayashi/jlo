@@ -104,7 +104,7 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
     let workspace_version = if version_path.exists() {
         fs::read_to_string(&version_path)?.trim().to_string()
     } else {
-        return Err(AppError::ConfigError(
+        return Err(AppError::Configuration(
             "Missing .jlo-version file. Cannot update workspace without version marker.".into(),
         ));
     };
@@ -118,7 +118,7 @@ pub fn execute(jules_path: &Path, options: UpdateOptions) -> Result<UpdateResult
     let version_cmp = compare_versions(&binary_parts, &workspace_parts);
 
     if version_cmp < 0 {
-        return Err(AppError::ConfigError(format!(
+        return Err(AppError::Configuration(format!(
             "Workspace version ({}) is newer than binary version ({}). Update the jlo binary.",
             workspace_version, binary_version
         )));

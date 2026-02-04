@@ -37,7 +37,7 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
         match layer {
             Layer::Observers => templates::OBSERVER_ROLE.to_string(),
             Layer::Deciders => templates::DECIDER_ROLE.to_string(),
-            Layer::Narrator | Layer::Planners | Layer::Implementers => String::new(),
+            Layer::Narrators | Layer::Planners | Layer::Implementers => String::new(),
         }
     }
 }
@@ -99,7 +99,7 @@ mod tests {
     fn generate_role_yaml_empty_for_single_role_layers() {
         let store = EmbeddedRoleTemplateStore::new();
 
-        assert!(store.generate_role_yaml("custom", Layer::Narrator).is_empty());
+        assert!(store.generate_role_yaml("custom", Layer::Narrators).is_empty());
         assert!(store.generate_role_yaml("custom", Layer::Planners).is_empty());
         assert!(store.generate_role_yaml("custom", Layer::Implementers).is_empty());
     }

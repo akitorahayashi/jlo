@@ -79,7 +79,7 @@ mod tests {
     fn test_workstream_template_content_returns_error_for_missing_file() {
         let result = workstream_template_content("non_existent_file.toml");
         assert!(
-            matches!(result, Err(AppError::ConfigError(_))),
+            matches!(result, Err(AppError::Configuration(_))),
             "Should return a config error for missing file"
         );
     }

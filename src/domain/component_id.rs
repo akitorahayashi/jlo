@@ -1,3 +1,4 @@
+use super::validation::validate_identifier;
 use super::AppError;
 
 /// A validated component identifier.
@@ -12,7 +13,7 @@ pub struct ComponentId(String);
 impl ComponentId {
     /// Validate and create a new `ComponentId`.
     pub fn new(id: &str) -> Result<Self, AppError> {
-        if Self::is_valid(id) {
+        if validate_identifier(id, true) {
             Ok(Self(id.to_string()))
         } else {
             Err(AppError::InvalidComponentId(id.to_string()))
@@ -22,15 +23,6 @@ impl ComponentId {
     /// Return the inner string value.
     pub fn as_str(&self) -> &str {
         &self.0
-    }
-
-    fn is_valid(id: &str) -> bool {
-        !id.is_empty()
-            && !id.contains('/')
-            && !id.contains('\\')
-            && id != "."
-            && id != ".."
-            && id.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.')
     }
 }
 
