@@ -1,0 +1,19 @@
+schema_version: 2
+
+observer: "struc1"
+workstream: "generic"
+
+updated_at: "2026-02-04T08:07:30Z"
+
+goals:
+  - "Decompose src/services into adapters, assets, and logic"
+  - "Separate CLI presentation from Application commands"
+  - "Enforce unidirectional dependency flow from CLI to Application"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-04T08:07:30Z"
+    summary: "Identified service mixing, app cohesion issues, and CLI backflow."
