@@ -19,4 +19,3 @@ ignore: []
 log:
   - at: "YYYY-MM-DDTHH:MM:SSZ"
     summary: "<one line>"
-    events: []

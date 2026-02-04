@@ -18,7 +18,7 @@ constraints:
   - Never read or write outside your workstream directory
 
 workflow:
-  - "1. Read events (filename: *.yml)"
+  - 1. Read events
   - 2. Read existing issues and index.md
   - 3. Verify observed events exist, check significance, identify related events
   - 4. Rationalize disputes
