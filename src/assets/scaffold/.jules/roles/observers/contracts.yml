@@ -19,9 +19,9 @@ outputs:
   - .jules/workstreams/<workstream>/workstations/<role>/perspective.yml
 
 workflow:
-  - 1. Read role.yml, latest.yml (if present), open issues, and recent events.
-  - 2. Inspect the codebase relevant to your role (files, modules, or changes) and take notes.
-  - 3. Read workstation memory (perspective.yml). If goals are empty, set 1-3 concrete goals informed by the inspection.
-  - 4. Produce 0-3 high-signal findings grounded in the inspected code. Each finding must be evidence-backed and not already covered by open issues.
-  - 5. Emit events for new findings (copy schemas/event.yml and fill it).
-  - 6. Update perspective.yml (set updated_at, refine goals/rules/ignore, prepend a short log entry).
+  - "1. Read role.yml, latest.yml (if present), open issues, and recent events."
+  - "2. Inspect the codebase relevant to your role (files, modules, or changes) and take notes."
+  - "3. Read workstation memory (perspective.yml). If goals are empty, set 1-3 concrete goals informed by the inspection."
+  - "4. Produce 0-3 high-signal findings grounded in the inspected code. Each finding must be evidence-backed and not already covered by open issues."
+  - "5. Emit events for new findings (copy schemas/event.yml and fill it)."
+  - "6. Update perspective.yml (set updated_at, refine goals/rules/ignore, prepend a short log entry)."

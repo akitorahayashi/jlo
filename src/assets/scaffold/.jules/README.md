@@ -75,6 +75,9 @@ Implementers modify source code and require human review.
 |       |   +-- issues/     # Consolidated problems
 |       |       +-- index.md
 |       |       +-- <label>/
+|       +-- workstations/   # Observer state persistence
+|       |   +-- <role>/     # Role-specific workstation
+|       |       +-- perspective.yml   # Observer continuity (goals/rules/ignore/log)
 |
 +-- roles/              # Role definitions (global)
     +-- narrator/       # Single-role layer
