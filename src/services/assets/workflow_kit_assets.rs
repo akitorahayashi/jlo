@@ -136,6 +136,9 @@ fn collect_and_render_files(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+    use yamllint_rs::{FileProcessor, ProcessingOptions, Severity};
 
     #[test]
     fn workflow_kit_assets_load() {
@@ -145,5 +148,76 @@ mod tests {
         let self_hosted =
             load_workflow_kit(WorkflowRunnerMode::SelfHosted).expect("self-hosted assets");
         assert!(!self_hosted.files.is_empty(), "self-hosted kit should have files");
+    }
+
+    #[test]
+    fn workflow_templates_pass_yaml_lint_remote() {
+        validate_yaml_lint(WorkflowRunnerMode::Remote);
+    }
+
+    #[test]
+    fn workflow_templates_pass_yaml_lint_self_hosted() {
+        validate_yaml_lint(WorkflowRunnerMode::SelfHosted);
+    }
+
+    fn validate_yaml_lint(mode: WorkflowRunnerMode) {
+        let kit = load_workflow_kit(mode).expect("should load workflow kit");
+
+        // Configure lint rules appropriate for GitHub Actions workflows
+        let mut config = yamllint_rs::config::Config::new();
+        // Disable line-length: GitHub Actions expressions often exceed 80 chars
+        config.set_rule_enabled("line-length", false);
+        // Disable indentation: yamllint-rs seems to have issues with complex GHA if/run blocks
+        config.set_rule_enabled("indentation", false);
+        // Disable truthy: GHA uses string 'true'/'false' which yamllint dislikes
+        config.set_rule_enabled("truthy", false);
+        // Disable document-start: '---' is not required for GHA workflows
+        config.set_rule_enabled("document-start", false);
+        // Disable comments: Allow tight spacing for inline comments
+        config.set_rule_enabled("comments", false);
+
+        let processor = FileProcessor::with_config(ProcessingOptions::default(), config);
+
+        let mut errors = Vec::new();
+
+        for file in &kit.files {
+            if !file.path.ends_with(".yml") && !file.path.ends_with(".yaml") {
+                continue;
+            }
+
+            let mut temp = NamedTempFile::new().expect("create temp file");
+            temp.write_all(file.content.as_bytes()).expect("write temp file");
+
+            match processor.process_file(temp.path()) {
+                Ok(result) => {
+                    let issues: Vec<_> = result
+                        .issues
+                        .iter()
+                        .filter(|(issue, _)| issue.severity == Severity::Error)
+                        .collect();
+
+                    if !issues.is_empty() {
+                        let mut msg = format!("\n  {}:", file.path);
+                        for (issue, line) in &issues {
+                            msg.push_str(&format!(
+                                "\n    L{}: {} - {}",
+                                issue.line, issue.message, line
+                            ));
+                        }
+                        errors.push(msg);
+                    }
+                }
+                Err(e) => {
+                    errors.push(format!("\n  {}: failed to lint - {}", file.path, e));
+                }
+            }
+        }
+
+        assert!(
+            errors.is_empty(),
+            "YAML lint errors for {} mode:{}",
+            mode.label(),
+            errors.join("")
+        );
     }
 }

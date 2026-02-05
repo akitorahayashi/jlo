@@ -53,7 +53,7 @@ jobs:
         run: |
           # Extract workstream from changed files
           workstreams=$(git diff --name-only origin/jules...HEAD | grep '^\.jules/workstreams/' | cut -d'/' -f3 | sort -u)
-          
+
           if [ -z "$workstreams" ]; then
             echo "No workstream changes detected, running doctor for all workstreams"
             shopt -s nullglob
@@ -77,9 +77,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           changed=$(gh api --paginate "/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[].filename')
-          
+
           non_jules=$(echo "$changed" | grep -v '^\.jules/' || true)
-          
+
           if [ -n "$non_jules" ]; then
             echo "::warning::PR modifies files outside .jules/. Auto-merge skipped."
             echo "$non_jules"
@@ -96,21 +96,21 @@ jobs:
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
           REPO=${{ github.repository }}
-          
+
           # Check if draft
           IS_DRAFT=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json isDraft -q '.isDraft')
           if [ "$IS_DRAFT" = "true" ]; then
             echo "PR is a draft. Skipping auto-merge."
             exit 0
           fi
-          
+
           # Check if auto-merge already enabled
           AUTO_MERGE=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json autoMergeRequest -q '.autoMergeRequest')
           if [ "$AUTO_MERGE" != "null" ] && [ -n "$AUTO_MERGE" ]; then
             echo "Auto-merge is already enabled."
             exit 0
           fi
-          
+
           echo "Enabling auto-merge..."
           for i in {1..5}; do
             if gh pr merge "$PR_NUMBER" --auto --squash --delete-branch --repo "$REPO"; then

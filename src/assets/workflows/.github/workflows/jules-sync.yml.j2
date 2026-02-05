@@ -11,7 +11,7 @@ jobs:
   sync:
     runs-on: {{ runner }}
     permissions:
-      contents: write 
+      contents: write
     steps:
       - name: Check if jules branch exists
         id: check-branch
@@ -51,3 +51,4 @@ jobs:
       - name: Push changes
         if: steps.check-branch.outputs.exists == 'true'
         run: git push origin jules
+

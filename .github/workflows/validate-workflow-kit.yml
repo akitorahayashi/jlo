@@ -71,10 +71,10 @@ jobs:
         run: |
           # Create a temporary test branch
           git checkout -b jules-test-${{ github.run_id }}
-          
+
           # Initialize scaffold
           jlo init scaffold
-          
+
           # Validate scaffold structure
           test -d .jules/roles
           test -d .jules/roles/narrator
@@ -82,11 +82,11 @@ jobs:
           test -d .jules/roles/deciders
           test -d .jules/roles/planners
           test -d .jules/roles/implementers
-          
+
           test -f .jules/config.toml
           test -f .jules/JULES.md
           test -f .jules/github-labels.json
-          
+
           echo "✓ Scaffold structure validated"
 
       - name: Initialize workflows
@@ -98,14 +98,14 @@ jobs:
           test -f .github/workflows/jules-workflows.yml
           test -f .github/actions/install-jlo/action.yml
           test -f .github/actions/configure-git/action.yml
-          
+
           # Required scripts
           test -f .github/scripts/jules-run-narrator.sh
           test -f .github/scripts/jules-run-observers-sequential.sh
           test -f .github/scripts/jules-run-deciders-sequential.sh
           test -f .github/scripts/jules-run-planners-sequential.sh
           test -f .github/scripts/jules-run-implementers-sequential.sh
-          
+
           echo "✓ Workflow structure validated"
 
   # Validate dry-run execution
@@ -135,7 +135,7 @@ jobs:
         run: |
           # Create a temporary test branch
           git checkout -b jules-test-e2e-${{ github.run_id }}
-          
+
           # Initialize scaffold
           jlo init scaffold
           git add .
@@ -146,14 +146,14 @@ jobs:
           # Test --dry-run for each layer (validates prompt assembly without execution)
           echo "Testing narrator dry-run..."
           jlo run narrator --dry-run
-          
+
           echo "Testing observers dry-run (requires workstream)..."
           # Observers require a workstream, skip if no scheduled roles
           jlo run observers --workstream generic --scheduled --dry-run || echo "No scheduled observers"
-          
+
           echo "Testing deciders dry-run..."
           jlo run deciders --workstream generic --scheduled --dry-run || echo "No scheduled deciders"
-          
+
           echo "✓ Dry-run validation completed"
 
   # Validate that workflow template renders correctly with mock inputs
@@ -183,10 +183,10 @@ jobs:
         run: |
           # Create a temporary test branch
           git checkout -b jules-test-template-${{ github.run_id }}
-          
+
           jlo init scaffold
           jlo init workflows --remote --overwrite
-          
+
           # Validate workflow YAML is valid
           pip3 install --quiet pyyaml
           python3 -c "import yaml; yaml.safe_load(open('.github/workflows/jules-workflows.yml'))"
@@ -200,7 +200,7 @@ jobs:
           grep -q "MOCK_MODE:" .github/workflows/jules-workflows.yml || { echo "Missing MOCK_MODE env"; exit 1; }
           grep -q "JULES_MOCK_SCOPE:" .github/workflows/jules-workflows.yml || { echo "Missing JULES_MOCK_SCOPE env"; exit 1; }
           grep -q "JLO_RUN_FLAGS:" .github/workflows/jules-workflows.yml || { echo "Missing JLO_RUN_FLAGS env"; exit 1; }
-          
+
           echo "✓ Mock support validated in workflow"
 
       - name: Check JLO_RUN_FLAGS in scripts
@@ -211,7 +211,7 @@ jobs:
               exit 1
             fi
           done
-          
+
           echo "✓ JLO_RUN_FLAGS validated in all scripts"
 
   # Summary job
@@ -226,12 +226,12 @@ jobs:
           echo "  - Scaffold: ${{ needs.validate-scaffold.result }}"
           echo "  - Mock E2E: ${{ needs.mock-e2e.result }}"
           echo "  - Template: ${{ needs.validate-workflow-template.result }}"
-          
+
           if [[ "${{ needs.validate-scaffold.result }}" != "success" ]] || \
              [[ "${{ needs.mock-e2e.result }}" != "success" ]] || \
              [[ "${{ needs.validate-workflow-template.result }}" != "success" ]]; then
             echo "::error::One or more validation jobs failed"
             exit 1
           fi
-          
+
           echo "✓ All validations passed"
