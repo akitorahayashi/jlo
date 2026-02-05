@@ -125,9 +125,7 @@ struct LayerContract {
 
 /// Extract branch_prefix from contracts.yml content.
 fn extract_branch_prefix(content: &str) -> Option<String> {
-    serde_yaml::from_str::<LayerContract>(content)
-        .ok()
-        .and_then(|c| c.branch_prefix)
+    serde_yaml::from_str::<LayerContract>(content).ok().and_then(|c| c.branch_prefix)
 }
 
 /// Extract issue labels from github-labels.json content.
