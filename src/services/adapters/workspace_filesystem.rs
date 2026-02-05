@@ -209,6 +209,46 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         self.jules_path().join("workstreams").join(name).exists()
     }
 
+    fn path_exists(&self, path: &str) -> bool {
+        self.resolve_path(path).exists()
+    }
+
+    fn list_dirs(&self, path: &str) -> Result<Vec<String>, AppError> {
+        let full_path = self.resolve_path(path);
+        let mut dirs = Vec::new();
+
+        if !full_path.exists() {
+            return Ok(dirs);
+        }
+
+        for entry in fs::read_dir(full_path).map_err(AppError::Io)? {
+            let entry = entry.map_err(AppError::Io)?;
+            if entry.path().is_dir() {
+                dirs.push(entry.file_name().to_string_lossy().to_string());
+            }
+        }
+        dirs.sort();
+        Ok(dirs)
+    }
+
+    fn list_files(&self, path: &str) -> Result<Vec<String>, AppError> {
+        let full_path = self.resolve_path(path);
+        let mut files = Vec::new();
+
+        if !full_path.exists() {
+            return Ok(files);
+        }
+
+        for entry in fs::read_dir(full_path).map_err(AppError::Io)? {
+            let entry = entry.map_err(AppError::Io)?;
+            if entry.path().is_file() {
+                files.push(entry.file_name().to_string_lossy().to_string());
+            }
+        }
+        files.sort();
+        Ok(files)
+    }
+
     fn read_file(&self, path: &str) -> Result<String, AppError> {
         let full_path = self.resolve_path(path);
         fs::read_to_string(full_path).map_err(AppError::Io)

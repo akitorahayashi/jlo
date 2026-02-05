@@ -1,12 +1,10 @@
 use std::collections::BTreeMap;
-use std::fs;
-use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::domain::AppError;
-use crate::ports::ScaffoldFile;
+use crate::ports::{ScaffoldFile, WorkspaceStore};
 
 const MANIFEST_SCHEMA_VERSION: u32 = 1;
 
@@ -34,19 +32,19 @@ impl ScaffoldManifest {
     }
 }
 
-pub fn manifest_path(jules_path: &Path) -> PathBuf {
-    jules_path.join(".jlo-managed.yml")
+pub fn manifest_path_str() -> String {
+    format!(".jules/.jlo-managed.yml")
 }
 
-pub fn load_manifest(jules_path: &Path) -> Result<Option<ScaffoldManifest>, AppError> {
-    let path = manifest_path(jules_path);
-    if !path.exists() {
+pub fn load_manifest(workspace: &impl WorkspaceStore) -> Result<Option<ScaffoldManifest>, AppError> {
+    let path = manifest_path_str();
+    if !workspace.path_exists(&path) {
         return Ok(None);
     }
 
-    let content = fs::read_to_string(&path)?;
+    let content = workspace.read_file(&path)?;
     let manifest: ScaffoldManifest = serde_yaml::from_str(&content).map_err(|err| {
-        AppError::ParseError { what: path.display().to_string(), details: err.to_string() }
+        AppError::ParseError { what: path.clone(), details: err.to_string() }
     })?;
 
     if manifest.schema_version != MANIFEST_SCHEMA_VERSION {
@@ -59,12 +57,14 @@ pub fn load_manifest(jules_path: &Path) -> Result<Option<ScaffoldManifest>, AppE
     Ok(Some(manifest))
 }
 
-pub fn write_manifest(jules_path: &Path, manifest: &ScaffoldManifest) -> Result<(), AppError> {
-    let path = manifest_path(jules_path);
-    let content = serde_yaml::to_string(manifest).map_err(|err| {
-        AppError::InternalError(format!("Failed to serialize {}: {}", path.display(), err))
-    })?;
-    fs::write(&path, content)?;
+pub fn write_manifest(
+    workspace: &impl WorkspaceStore,
+    manifest: &ScaffoldManifest,
+) -> Result<(), AppError> {
+    let path = manifest_path_str();
+    let content = serde_yaml::to_string(manifest)
+        .map_err(|err| AppError::InternalError(format!("Failed to serialize {}: {}", path, err)))?;
+    workspace.write_file(&path, &content)?;
     Ok(())
 }
 
@@ -96,8 +96,8 @@ pub fn is_default_role_file(path: &str) -> bool {
 }
 
 #[allow(dead_code)]
-pub fn hash_file(path: &Path) -> Result<String, AppError> {
-    let content = fs::read_to_string(path)?;
+pub fn hash_file(workspace: &impl WorkspaceStore, path: &str) -> Result<String, AppError> {
+    let content = workspace.read_file(path)?;
     Ok(hash_content(&content))
 }
 

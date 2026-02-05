@@ -1,22 +1,22 @@
 use std::collections::HashSet;
-use std::path::Path;
 
-use crate::domain::{AppError, Layer, RoleId};
+use crate::domain::{AppError, Layer, RoleId, JULES_DIR};
+use crate::ports::WorkspaceStore;
 use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
-pub struct RoleSelectionInput<'a> {
-    pub jules_path: &'a Path,
+pub struct RoleSelectionInput<'a, W> {
     pub layer: Layer,
     pub workstream: &'a str,
     pub scheduled: bool,
     pub requested_roles: Option<&'a Vec<String>>,
+    pub workspace: &'a W,
 }
 
-pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppError> {
-    ensure_workstream_exists(input.jules_path, input.workstream)?;
+pub fn select_roles<W: WorkspaceStore>(input: RoleSelectionInput<'_, W>) -> Result<Vec<RoleId>, AppError> {
+    ensure_workstream_exists(input.workspace, input.workstream)?;
 
     let roles = if input.scheduled {
-        let schedule = load_schedule(input.jules_path, input.workstream)?;
+        let schedule = load_schedule(input.workspace, input.workstream)?;
         if !schedule.enabled {
             return Err(AppError::Validation(format!(
                 "Workstream '{}' is disabled in scheduled.toml",
@@ -54,15 +54,14 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
         if !seen.insert(role) {
             return Err(AppError::Validation(format!("Duplicate role '{}' specified", role)));
         }
-        validate_role_exists(input.jules_path, input.layer, role.as_str())?;
+        validate_role_exists(input.workspace, input.layer, role.as_str())?;
     }
 
     Ok(roles)
 }
 
-fn ensure_workstream_exists(jules_path: &Path, workstream: &str) -> Result<(), AppError> {
-    let path = jules_path.join("workstreams").join(workstream);
-    if !path.exists() {
+fn ensure_workstream_exists(workspace: &impl WorkspaceStore, workstream: &str) -> Result<(), AppError> {
+    if !workspace.workstream_exists(workstream) {
         return Err(AppError::Validation(format!("Workstream '{}' not found", workstream)));
     }
     Ok(())
@@ -72,11 +71,10 @@ fn ensure_workstream_exists(jules_path: &Path, workstream: &str) -> Result<(), A
 ///
 /// For the new scaffold structure, roles are under:
 /// `.jules/roles/<layer>/roles/<role>/role.yml`
-fn validate_role_exists(jules_path: &Path, layer: Layer, role: &str) -> Result<(), AppError> {
-    let role_dir = jules_path.join("roles").join(layer.dir_name()).join("roles").join(role);
-    let role_yml_path = role_dir.join("role.yml");
+fn validate_role_exists(workspace: &impl WorkspaceStore, layer: Layer, role: &str) -> Result<(), AppError> {
+    let role_path = format!("{}/roles/{}/roles/{}/role.yml", JULES_DIR, layer.dir_name(), role);
 
-    if !role_yml_path.exists() {
+    if !workspace.path_exists(&role_path) {
         return Err(AppError::RoleNotFound(format!(
             "{}/roles/{} (role.yml not found)",
             layer.dir_name(),
@@ -90,9 +88,11 @@ fn validate_role_exists(jules_path: &Path, layer: Layer, role: &str) -> Result<(
 #[cfg(test)]
 mod tests {
     use std::fs;
+    use std::path::Path;
 
     use super::*;
     use tempfile::tempdir;
+    use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
     fn write_schedule(root: &Path, ws: &str, content: &str) {
         let dir = root.join(".jules/workstreams").join(ws);
@@ -115,6 +115,9 @@ mod tests {
     fn scheduled_roles_use_schedule() {
         let dir = tempdir().unwrap();
         let root = dir.path();
+        let workspace = FilesystemWorkspaceStore::new(root.to_path_buf());
+        workspace.create_structure(&[]).unwrap();
+
         fs::create_dir_all(root.join(".jules/workstreams/alpha")).unwrap();
         fs::create_dir_all(root.join(".jules/roles/observers")).unwrap();
 
@@ -135,11 +138,11 @@ roles = []
         write_role(root, Layer::Observers, "taxonomy");
 
         let roles = select_roles(RoleSelectionInput {
-            jules_path: &root.join(".jules"),
             layer: Layer::Observers,
             workstream: "alpha",
             scheduled: true,
             requested_roles: None,
+            workspace: &workspace,
         })
         .unwrap();
 
@@ -150,16 +153,19 @@ roles = []
     fn manual_roles_require_role_exists() {
         let dir = tempdir().unwrap();
         let root = dir.path();
+        let workspace = FilesystemWorkspaceStore::new(root.to_path_buf());
+        workspace.create_structure(&[]).unwrap();
+
         fs::create_dir_all(root.join(".jules/workstreams/alpha")).unwrap();
         fs::create_dir_all(root.join(".jules/roles/observers")).unwrap();
         write_role(root, Layer::Observers, "taxonomy");
 
         let roles = select_roles(RoleSelectionInput {
-            jules_path: &root.join(".jules"),
             layer: Layer::Observers,
             workstream: "alpha",
             scheduled: false,
             requested_roles: Some(&vec!["taxonomy".to_string()]),
+            workspace: &workspace,
         })
         .unwrap();
 
@@ -170,15 +176,18 @@ roles = []
     fn missing_role_fails() {
         let dir = tempdir().unwrap();
         let root = dir.path();
+        let workspace = FilesystemWorkspaceStore::new(root.to_path_buf());
+        workspace.create_structure(&[]).unwrap();
+
         fs::create_dir_all(root.join(".jules/workstreams/alpha")).unwrap();
         fs::create_dir_all(root.join(".jules/roles/observers")).unwrap();
 
         let err = select_roles(RoleSelectionInput {
-            jules_path: &root.join(".jules"),
             layer: Layer::Observers,
             workstream: "alpha",
             scheduled: false,
             requested_roles: Some(&vec!["nonexistent".to_string()]),
+            workspace: &workspace,
         })
         .unwrap_err();
 
@@ -189,6 +198,9 @@ roles = []
     fn scheduled_deciders_can_be_empty() {
         let dir = tempdir().unwrap();
         let root = dir.path();
+        let workspace = FilesystemWorkspaceStore::new(root.to_path_buf());
+        workspace.create_structure(&[]).unwrap();
+
         fs::create_dir_all(root.join(".jules/workstreams/alpha")).unwrap();
         fs::create_dir_all(root.join(".jules/roles/deciders")).unwrap();
 
@@ -208,11 +220,11 @@ roles = []
         );
 
         let roles = select_roles(RoleSelectionInput {
-            jules_path: &root.join(".jules"),
             layer: Layer::Deciders,
             workstream: "alpha",
             scheduled: true,
             requested_roles: None,
+            workspace: &workspace,
         })
         .unwrap();
 

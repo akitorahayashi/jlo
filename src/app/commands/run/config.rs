@@ -1,20 +1,18 @@
 //! Run configuration loading and repository detection.
 
-use std::fs;
-use std::path::Path;
-
 use super::config_dto::RunConfigDto;
-use crate::domain::{AppError, RunConfig};
+use crate::domain::{AppError, RunConfig, JULES_DIR};
+use crate::ports::WorkspaceStore;
 
 /// Load and parse the run configuration.
-pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
-    let config_path = jules_path.join("config.toml");
+pub fn load_config(workspace: &impl WorkspaceStore) -> Result<RunConfig, AppError> {
+    let config_path = format!("{}/config.toml", JULES_DIR);
 
-    if !config_path.exists() {
+    if !workspace.path_exists(&config_path) {
         return Err(AppError::RunConfigMissing);
     }
 
-    let content = fs::read_to_string(&config_path)?;
+    let content = workspace.read_file(&config_path)?;
     parse_config_content(&content)
 }
 

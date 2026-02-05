@@ -2,12 +2,10 @@
 //!
 //! The Narrator produces `.jules/changes/latest.yml` summarizing recent codebase changes.
 
-use std::path::Path;
-
 use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
-use crate::domain::{AppError, Layer};
+use crate::domain::{AppError, Layer, JULES_DIR};
 use crate::ports::{
     AutomationMode, CommitInfo, GitPort, JulesClient, SessionRequest, WorkspaceStore,
 };
@@ -51,7 +49,6 @@ pub struct Stats {
 
 /// Execute the Narrator layer.
 pub fn execute<G, W>(
-    jules_path: &Path,
     dry_run: bool,
     branch: Option<&str>,
     is_ci: bool,
@@ -62,14 +59,14 @@ where
     G: GitPort,
     W: WorkspaceStore,
 {
-    let config = load_config(jules_path)?;
+    let config = load_config(workspace)?;
 
     // Determine starting branch (Narrator always uses jules branch)
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
 
     // Perform git preflight to determine range and check for changes
-    let git_context = match collect_git_context(jules_path, git, workspace)? {
+    let git_context = match collect_git_context(git, workspace)? {
         Some(ctx) => ctx,
         None => {
             // No changes - exit successfully without creating a session
@@ -83,7 +80,7 @@ where
     };
 
     if dry_run {
-        execute_dry_run(jules_path, &starting_branch, &git_context)?;
+        execute_dry_run(workspace, &starting_branch, &git_context)?;
         return Ok(RunResult {
             roles: vec!["narrator".to_string()],
             dry_run: true,
@@ -108,7 +105,7 @@ where
 
     // CI Execution: Create session with git context injected into prompt
     let source = detect_repository_source()?;
-    let prompt = build_narrator_prompt(jules_path, &git_context)?;
+    let prompt = build_narrator_prompt(workspace, &git_context)?;
 
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
     let request = SessionRequest {
@@ -137,7 +134,6 @@ where
 
 /// Collect git context for the Narrator, returning None if no changes.
 fn collect_git_context<G, W>(
-    jules_path: &Path,
     git: &G,
     workspace: &W,
 ) -> Result<Option<GitContext>, AppError>
@@ -145,13 +141,10 @@ where
     G: GitPort,
     W: WorkspaceStore,
 {
-    // Construct path to latest.yml relative to workspace root or absolute
-    let latest_path = jules_path.join("changes/latest.yml");
-    let latest_path_str = latest_path
-        .to_str()
-        .ok_or_else(|| AppError::Validation("Jules path contains invalid unicode".to_string()))?;
+    // Construct path to latest.yml relative to workspace root
+    let latest_path = format!("{}/changes/latest.yml", JULES_DIR);
 
-    let range = determine_range(latest_path_str, git, workspace)?;
+    let range = determine_range(&latest_path, git, workspace)?;
 
     // Check if there are any non-excluded changes in the range
     let pathspec = &[".", ":(exclude).jules"];
@@ -203,18 +196,20 @@ where
 {
     let head_sha = git.get_head_sha()?;
 
-    if let Ok(content) = workspace.read_file(latest_path)
-        && let Some(prev_to_commit) = extract_to_commit(&content)
-    {
-        // Verify the commit exists
-        if git.commit_exists(&prev_to_commit) {
-            return Ok(RangeContext {
-                from_commit: prev_to_commit,
-                to_commit: head_sha,
-                selection_mode: "incremental".to_string(),
-                selection_detail: String::new(),
-            });
-        }
+    if workspace.path_exists(latest_path) {
+         if let Ok(content) = workspace.read_file(latest_path) {
+             if let Some(prev_to_commit) = extract_to_commit(&content) {
+                 // Verify the commit exists
+                 if git.commit_exists(&prev_to_commit) {
+                     return Ok(RangeContext {
+                         from_commit: prev_to_commit,
+                         to_commit: head_sha,
+                         selection_mode: "incremental".to_string(),
+                         selection_detail: String::new(),
+                     });
+                 }
+             }
+         }
     }
 
     // Bootstrap: use recent commits
@@ -243,8 +238,8 @@ fn extract_to_commit(content: &str) -> Option<String> {
 }
 
 /// Build the full Narrator prompt with git context injected.
-fn build_narrator_prompt(jules_path: &Path, ctx: &GitContext) -> Result<String, AppError> {
-    let base_prompt = assemble_single_role_prompt(jules_path, Layer::Narrators)?;
+fn build_narrator_prompt(workspace: &impl WorkspaceStore, ctx: &GitContext) -> Result<String, AppError> {
+    let base_prompt = assemble_single_role_prompt(workspace, Layer::Narrators)?;
 
     // Build the git context section
     let mut context_section = String::new();
@@ -286,7 +281,7 @@ fn build_narrator_prompt(jules_path: &Path, ctx: &GitContext) -> Result<String, 
 
 /// Execute a dry run, showing the assembled prompt and context.
 fn execute_dry_run(
-    jules_path: &Path,
+    workspace: &impl WorkspaceStore,
     starting_branch: &str,
     ctx: &GitContext,
 ) -> Result<(), AppError> {
@@ -311,7 +306,7 @@ fn execute_dry_run(
     }
 
     println!("\n--- Prompt (base) ---");
-    let prompt = assemble_single_role_prompt(jules_path, Layer::Narrators)?;
+    let prompt = assemble_single_role_prompt(workspace, Layer::Narrators)?;
     println!("{}", prompt);
 
     Ok(())

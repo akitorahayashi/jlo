@@ -1,11 +1,8 @@
-use std::path::Path;
-
 use serde::Serialize;
 
-use crate::domain::{AppError, Layer};
-use crate::services::adapters::workstream_schedule_filesystem::{
-    list_subdirectories, load_schedule,
-};
+use crate::domain::{AppError, Layer, JULES_DIR};
+use crate::ports::WorkspaceStore;
+use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
 #[derive(Debug, Clone)]
 pub enum ScheduleExportScope {
@@ -39,7 +36,7 @@ pub struct ScheduleMatrixEntry {
 }
 
 pub fn export(
-    jules_path: &Path,
+    workspace: &impl WorkspaceStore,
     options: ScheduleExportOptions,
 ) -> Result<ScheduleMatrix, AppError> {
     match options.format {
@@ -47,22 +44,24 @@ pub fn export(
     }
 
     match options.scope {
-        ScheduleExportScope::Workstreams => export_workstreams(jules_path),
-        ScheduleExportScope::Roles => export_roles(jules_path, options.layer, options.workstream),
+        ScheduleExportScope::Workstreams => export_workstreams(workspace),
+        ScheduleExportScope::Roles => export_roles(workspace, options.layer, options.workstream),
     }
 }
 
-fn export_workstreams(jules_path: &Path) -> Result<ScheduleMatrix, AppError> {
+fn export_workstreams(workspace: &impl WorkspaceStore) -> Result<ScheduleMatrix, AppError> {
     let mut include = Vec::new();
-    let workstreams_dir = jules_path.join("workstreams");
+    let workstreams_dir = format!("{}/workstreams", JULES_DIR);
 
-    for entry in list_subdirectories(&workstreams_dir)? {
-        let name =
-            entry.file_name().map(|value| value.to_string_lossy().to_string()).unwrap_or_default();
+    if !workspace.path_exists(&workstreams_dir) {
+        return Ok(ScheduleMatrix { include });
+    }
+
+    for name in workspace.list_dirs(&workstreams_dir)? {
         if name.is_empty() {
             continue;
         }
-        let schedule = load_schedule(jules_path, &name)?;
+        let schedule = load_schedule(workspace, &name)?;
         if schedule.enabled {
             include.push(ScheduleMatrixEntry { workstream: name, role: None });
         }
@@ -72,7 +71,7 @@ fn export_workstreams(jules_path: &Path) -> Result<ScheduleMatrix, AppError> {
 }
 
 fn export_roles(
-    jules_path: &Path,
+    workspace: &impl WorkspaceStore,
     layer: Option<Layer>,
     workstream: Option<String>,
 ) -> Result<ScheduleMatrix, AppError> {
@@ -83,7 +82,7 @@ fn export_roles(
         AppError::MissingArgument("Missing --workstream for schedule export (roles scope)".into())
     })?;
 
-    let schedule = load_schedule(jules_path, &workstream)?;
+    let schedule = load_schedule(workspace, &workstream)?;
     if !schedule.enabled {
         return Err(AppError::Validation(format!(
             "Workstream '{}' is disabled in scheduled.toml",
@@ -113,7 +112,9 @@ fn export_roles(
 mod tests {
     use super::*;
     use std::fs;
+    use std::path::Path;
     use tempfile::tempdir;
+    use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
     fn write_schedule(root: &Path, ws: &str, content: &str) {
         let dir = root.join(".jules/workstreams").join(ws);
@@ -125,7 +126,8 @@ mod tests {
     fn export_workstreams_returns_enabled_only() {
         let dir = tempdir().unwrap();
         let root = dir.path();
-        let jules_path = root.join(".jules");
+        let workspace = FilesystemWorkspaceStore::new(root.to_path_buf());
+        workspace.create_structure(&[]).unwrap();
 
         write_schedule(
             root,
@@ -158,7 +160,7 @@ roles = []
         );
 
         let output = export(
-            &jules_path,
+            &workspace,
             ScheduleExportOptions {
                 scope: ScheduleExportScope::Workstreams,
                 layer: None,
@@ -177,7 +179,8 @@ roles = []
     fn export_roles_returns_layer_roles() {
         let dir = tempdir().unwrap();
         let root = dir.path();
-        let jules_path = root.join(".jules");
+        let workspace = FilesystemWorkspaceStore::new(root.to_path_buf());
+        workspace.create_structure(&[]).unwrap();
 
         write_schedule(
             root,
@@ -198,7 +201,7 @@ roles = [
         );
 
         let output = export(
-            &jules_path,
+            &workspace,
             ScheduleExportOptions {
                 scope: ScheduleExportScope::Roles,
                 layer: Some(Layer::Observers),

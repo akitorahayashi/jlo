@@ -100,7 +100,6 @@ where
         return Err(AppError::WorkspaceNotFound);
     }
 
-    let jules_path = workspace.jules_path();
     let version_path_str = ".jules/.jlo-version";
 
     // Version comparison
@@ -181,7 +180,7 @@ where
     }
 
     let mut managed_manifest: Option<ScaffoldManifest> = None;
-    let existing_manifest = load_manifest(&jules_path)?;
+    let existing_manifest = load_manifest(workspace)?;
 
     if options.adopt_managed {
         let mut manifest_entries = BTreeMap::new();
@@ -357,7 +356,7 @@ where
     }
 
     if let Some(manifest) = managed_manifest {
-        write_manifest(&jules_path, &manifest)?;
+        write_manifest(workspace, &manifest)?;
     }
 
     // Update version file

@@ -73,7 +73,6 @@ where
     // Narrator is single-role but not issue-driven
     if options.layer == Layer::Narrators {
         return narrator::execute(
-            jules_path,
             options.dry_run,
             options.branch.as_deref(),
             is_ci,
@@ -110,5 +109,6 @@ where
         options.scheduled,
         options.dry_run,
         options.branch.as_deref(),
+        workspace,
     )
 }

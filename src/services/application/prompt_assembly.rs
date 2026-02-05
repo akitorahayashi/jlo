@@ -4,44 +4,15 @@
 //! by reading the base `prompt.yml`, substituting placeholders, and concatenating
 //! included files with section headers.
 
-use std::fs;
 use std::path::{Component, Path};
 use std::sync::OnceLock;
 
 use minijinja::{Environment, UndefinedBehavior};
 
 use crate::domain::{
-    AssembledPrompt, Layer, PromptAssemblyError, PromptAssemblySpec, PromptContext,
+    AssembledPrompt, AppError, Layer, PromptAssemblyError, PromptAssemblySpec, PromptContext, JULES_DIR,
 };
-
-/// Abstraction for filesystem operations to enable testing.
-pub trait PromptFs {
-    fn read_to_string(&self, path: &Path) -> std::io::Result<String>;
-    fn exists(&self, path: &Path) -> bool;
-    fn create_dir_all(&self, path: &Path) -> std::io::Result<()>;
-    fn copy(&self, from: &Path, to: &Path) -> std::io::Result<u64>;
-}
-
-/// Real filesystem implementation using std::fs.
-pub struct RealPromptFs;
-
-impl PromptFs for RealPromptFs {
-    fn read_to_string(&self, path: &Path) -> std::io::Result<String> {
-        fs::read_to_string(path)
-    }
-
-    fn exists(&self, path: &Path) -> bool {
-        path.exists()
-    }
-
-    fn create_dir_all(&self, path: &Path) -> std::io::Result<()> {
-        fs::create_dir_all(path)
-    }
-
-    fn copy(&self, from: &Path, to: &Path) -> std::io::Result<u64> {
-        fs::copy(from, to)
-    }
-}
+use crate::ports::WorkspaceStore;
 
 /// Assemble a prompt for the given layer using the prompt assembly spec.
 ///
@@ -52,28 +23,28 @@ impl PromptFs for RealPromptFs {
 /// For issue-driven layers (planners, implementers), use `assemble_with_issue`
 /// to append issue content to the assembled prompt.
 pub fn assemble_prompt(
-    jules_path: &Path,
+    workspace: &impl WorkspaceStore,
     layer: Layer,
     context: &PromptContext,
-    fs_impl: &impl PromptFs,
 ) -> Result<AssembledPrompt, PromptAssemblyError> {
-    let layer_dir = jules_path.join("roles").join(layer.dir_name());
-    let root = jules_path.parent().unwrap_or(Path::new("."));
+    let layer_dir = Path::new(JULES_DIR).join("roles").join(layer.dir_name());
 
     // Load prompt_assembly.yml
     let assembly_path = layer_dir.join("prompt_assembly.yml");
-    let spec = load_assembly_spec(&assembly_path, fs_impl)?;
+    let assembly_path_str = assembly_path.to_string_lossy().to_string();
+    let spec = load_assembly_spec(&assembly_path_str, workspace)?;
 
     // Validate required context variables
     validate_context(&spec, context)?;
 
     // Load base prompt.yml
     let prompt_path = layer_dir.join("prompt.yml");
-    let base_prompt = load_prompt(&prompt_path, context, fs_impl)?;
+    let prompt_path_str = prompt_path.to_string_lossy().to_string();
+    let base_prompt = load_prompt(&prompt_path_str, context, workspace)?;
 
     // Assemble includes
     let mut parts = vec![base_prompt];
-    let mut included_files = vec![prompt_path.display().to_string()];
+    let mut included_files = vec![prompt_path_str.clone()];
     let mut skipped_files = Vec::new();
 
     for include in &spec.includes {
@@ -83,28 +54,37 @@ pub fn assemble_prompt(
             &format!("prompt_assembly include path ({})", include.title),
         )?;
         validate_safe_path(&resolved_path)?;
-        let full_path = root.join(&resolved_path);
+
+        // Path is relative to workspace root
+        let full_path_str = resolved_path.clone();
 
         // Auto-initialize from schema if missing
-        if !fs_impl.exists(&full_path)
-            && let Some(file_name) = Path::new(&resolved_path).file_name()
-        {
-            let schema_path = layer_dir.join("schemas").join(file_name);
-            if fs_impl.exists(&schema_path) {
-                if let Some(parent) = full_path.parent() {
-                    let _ = fs_impl.create_dir_all(parent);
+        // Check if file exists in workspace
+        if !workspace.path_exists(&full_path_str) {
+             if let Some(file_name) = Path::new(&resolved_path).file_name() {
+                let schema_path = layer_dir.join("schemas").join(file_name);
+                let schema_path_str = schema_path.to_string_lossy().to_string();
+
+                if workspace.path_exists(&schema_path_str) {
+                     // We need to ensure directory exists.
+                     // WorkspaceStore::write_file usually creates dirs, but copy_file might too?
+                     // WorkspaceStore::copy_file docs say generic op.
+                     // Let's assume copy_file creates dirs or we call create_dir_all if needed.
+                     // But we can't easily get parent of string without Path.
+                     // Let's trust copy_file or implement logic.
+                     // In FilesystemWorkspaceStore::copy_file, it creates parents.
+                     let _ = workspace.copy_file(&schema_path_str, &full_path_str);
                 }
-                let _ = fs_impl.copy(&schema_path, &full_path);
-            }
+             }
         }
 
-        if fs_impl.exists(&full_path) {
-            match fs_impl.read_to_string(&full_path) {
+        if workspace.path_exists(&full_path_str) {
+            match workspace.read_file(&full_path_str) {
                 Ok(content) => {
                     parts.push(format!("\n---\n# {}\n{}", include.title, content));
                     included_files.push(resolved_path);
                 }
-                Err(err) => {
+                Err(AppError::Io(err)) => {
                     if include.optional {
                         skipped_files.push(format!("{} (read error: {})", resolved_path, err));
                     } else {
@@ -113,6 +93,13 @@ pub fn assemble_prompt(
                             reason: err.to_string(),
                         });
                     }
+                }
+                Err(err) => {
+                     // Any other error
+                     return Err(PromptAssemblyError::IncludeReadError {
+                            path: resolved_path,
+                            reason: err.to_string(),
+                        });
                 }
             }
         } else if include.optional {
@@ -152,12 +139,11 @@ fn validate_safe_path(path: &str) -> Result<(), PromptAssemblyError> {
 /// This appends the issue content to the base assembled prompt.
 #[allow(dead_code)]
 pub fn assemble_with_issue(
-    jules_path: &Path,
+    workspace: &impl WorkspaceStore,
     layer: Layer,
     issue_content: &str,
-    fs_impl: &impl PromptFs,
 ) -> Result<AssembledPrompt, PromptAssemblyError> {
-    let mut result = assemble_prompt(jules_path, layer, &PromptContext::new(), fs_impl)?;
+    let mut result = assemble_prompt(workspace, layer, &PromptContext::new())?;
 
     result.content.push_str(&format!("\n---\n# Issue\n{}", issue_content));
     result.included_files.push("(issue content embedded)".to_string());
@@ -167,21 +153,21 @@ pub fn assemble_with_issue(
 
 /// Load and parse the prompt assembly spec from a file.
 fn load_assembly_spec(
-    path: &Path,
-    fs_impl: &impl PromptFs,
+    path: &str,
+    workspace: &impl WorkspaceStore,
 ) -> Result<PromptAssemblySpec, PromptAssemblyError> {
-    if !fs_impl.exists(path) {
-        return Err(PromptAssemblyError::AssemblySpecNotFound(path.display().to_string()));
+    if !workspace.path_exists(path) {
+        return Err(PromptAssemblyError::AssemblySpecNotFound(path.to_string()));
     }
 
     let content =
-        fs_impl.read_to_string(path).map_err(|err| PromptAssemblyError::InvalidAssemblySpec {
-            path: path.display().to_string(),
+        workspace.read_file(path).map_err(|err| PromptAssemblyError::InvalidAssemblySpec {
+            path: path.to_string(),
             reason: err.to_string(),
         })?;
 
     serde_yaml::from_str(&content).map_err(|err| PromptAssemblyError::InvalidAssemblySpec {
-        path: path.display().to_string(),
+        path: path.to_string(),
         reason: err.to_string(),
     })
 }
@@ -204,21 +190,21 @@ fn validate_context(
 
 /// Load the base prompt.yml and render templates.
 fn load_prompt(
-    path: &Path,
+    path: &str,
     context: &PromptContext,
-    fs_impl: &impl PromptFs,
+    workspace: &impl WorkspaceStore,
 ) -> Result<String, PromptAssemblyError> {
-    if !fs_impl.exists(path) {
-        return Err(PromptAssemblyError::PromptNotFound(path.display().to_string()));
+    if !workspace.path_exists(path) {
+        return Err(PromptAssemblyError::PromptNotFound(path.to_string()));
     }
 
     let content =
-        fs_impl.read_to_string(path).map_err(|err| PromptAssemblyError::PromptReadError {
-            path: path.display().to_string(),
+        workspace.read_file(path).map_err(|err| PromptAssemblyError::PromptReadError {
+            path: path.to_string(),
             reason: err.to_string(),
         })?;
 
-    render_template(&content, context, &path.display().to_string())
+    render_template(&content, context, path)
 }
 
 static ENV: OnceLock<Environment<'static>> = OnceLock::new();
@@ -268,66 +254,13 @@ fn template_render_error(template_name: &str, err: impl std::fmt::Display) -> Pr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
-    use std::sync::{Arc, Mutex};
-    use tempfile::tempdir;
+    use crate::testing::mock_workspace_store::MockWorkspaceStore;
 
-    struct MockPromptFs {
-        files: Arc<Mutex<HashMap<String, String>>>,
-    }
+    // Helper to setup mock workspace
+    fn setup_mock_workspace(layer: &str, single_role: bool) -> MockWorkspaceStore {
+        let mock_store = MockWorkspaceStore::new();
+        let layer_path = format!(".jules/roles/{}", layer);
 
-    impl MockPromptFs {
-        fn new() -> Self {
-            Self { files: Arc::new(Mutex::new(HashMap::new())) }
-        }
-
-        fn add_file(&self, path: &str, content: &str) {
-            self.files.lock().unwrap().insert(path.to_string(), content.to_string());
-        }
-    }
-
-    impl PromptFs for MockPromptFs {
-        fn read_to_string(&self, path: &Path) -> std::io::Result<String> {
-            let path_str = path.to_string_lossy().to_string();
-            self.files
-                .lock()
-                .unwrap()
-                .get(&path_str)
-                .cloned()
-                .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "File not found"))
-        }
-
-        fn exists(&self, path: &Path) -> bool {
-            let path_str = path.to_string_lossy().to_string();
-            self.files.lock().unwrap().contains_key(&path_str)
-        }
-
-        fn create_dir_all(&self, _path: &Path) -> std::io::Result<()> {
-            Ok(())
-        }
-
-        fn copy(&self, from: &Path, to: &Path) -> std::io::Result<u64> {
-            let from_str = from.to_string_lossy().to_string();
-            let to_str = to.to_string_lossy().to_string();
-            let mut files = self.files.lock().unwrap();
-            let content = files.get(&from_str).ok_or_else(|| {
-                std::io::Error::new(std::io::ErrorKind::NotFound, "Source file not found")
-            })?;
-            let content_clone = content.clone();
-            let len = content_clone.len() as u64;
-            files.insert(to_str, content_clone);
-            Ok(len)
-        }
-    }
-
-    // --- Original tests using RealPromptFs via std::fs ---
-
-    fn setup_test_workspace(dir: &Path, layer: &str, single_role: bool) {
-        let jules = dir.join(".jules");
-        let layer_dir = jules.join("roles").join(layer);
-        fs::create_dir_all(&layer_dir).unwrap();
-
-        // Create prompt_assembly.yml
         let assembly = if single_role {
             format!(
                 r#"schema_version: 1
@@ -362,9 +295,9 @@ includes:
                 layer, layer, layer
             )
         };
-        fs::write(layer_dir.join("prompt_assembly.yml"), assembly).unwrap();
 
-        // Create prompt.yml
+        mock_store.write_file(&format!("{}/prompt_assembly.yml", layer_path), &assembly).unwrap();
+
         let prompt = if single_role {
             format!(
                 r#"role: {}
@@ -389,27 +322,23 @@ contracts:
                 layer, layer, layer
             )
         };
-        fs::write(layer_dir.join("prompt.yml"), prompt).unwrap();
+        mock_store.write_file(&format!("{}/prompt.yml", layer_path), &prompt).unwrap();
 
-        // Create contracts.yml
-        fs::write(layer_dir.join("contracts.yml"), "layer: test\nconstraints: []").unwrap();
+        mock_store.write_file(&format!("{}/contracts.yml", layer_path), "layer: test\nconstraints: []").unwrap();
 
-        // For multi-role, create a role
         if !single_role {
-            let role_dir = layer_dir.join("roles").join("test_role");
-            fs::create_dir_all(&role_dir).unwrap();
-            fs::write(role_dir.join("role.yml"), "role: test_role\nfocus: testing").unwrap();
+             let role_path = format!("{}/roles/test_role", layer_path);
+             mock_store.write_file(&format!("{}/role.yml", role_path), "role: test_role\nfocus: testing").unwrap();
         }
+
+        mock_store
     }
 
     #[test]
     fn assemble_single_role_prompt() {
-        let dir = tempdir().unwrap();
-        setup_test_workspace(dir.path(), "planners", true);
+        let mock_store = setup_mock_workspace("planners", true);
 
-        let jules_path = dir.path().join(".jules");
-        let fs_impl = RealPromptFs;
-        let result = assemble_prompt(&jules_path, Layer::Planners, &PromptContext::new(), &fs_impl);
+        let result = assemble_prompt(&mock_store, Layer::Planners, &PromptContext::new());
 
         assert!(result.is_ok());
         let assembled = result.unwrap();
@@ -420,15 +349,12 @@ contracts:
 
     #[test]
     fn assemble_multi_role_prompt() {
-        let dir = tempdir().unwrap();
-        setup_test_workspace(dir.path(), "observers", false);
+        let mock_store = setup_mock_workspace("observers", false);
 
-        let jules_path = dir.path().join(".jules");
         let context =
             PromptContext::new().with_var("workstream", "generic").with_var("role", "test_role");
-        let fs_impl = RealPromptFs;
 
-        let result = assemble_prompt(&jules_path, Layer::Observers, &context, &fs_impl);
+        let result = assemble_prompt(&mock_store, Layer::Observers, &context);
 
         assert!(result.is_ok());
         let assembled = result.unwrap();
@@ -441,15 +367,12 @@ contracts:
 
     #[test]
     fn missing_context_variable_fails() {
-        let dir = tempdir().unwrap();
-        setup_test_workspace(dir.path(), "observers", false);
+        let mock_store = setup_mock_workspace("observers", false);
 
-        let jules_path = dir.path().join(".jules");
         // Missing 'role' variable
         let context = PromptContext::new().with_var("workstream", "generic");
-        let fs_impl = RealPromptFs;
 
-        let result = assemble_prompt(&jules_path, Layer::Observers, &context, &fs_impl);
+        let result = assemble_prompt(&mock_store, Layer::Observers, &context);
 
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -460,15 +383,12 @@ contracts:
         }
     }
 
-    // --- New test using MockPromptFs ---
-
     #[test]
     fn test_assemble_prompt_mock_fs() {
-        let mock_fs = MockPromptFs::new();
-        let jules_path = Path::new(".jules");
+        let mock_store = MockWorkspaceStore::new();
 
         // Setup mock files for Planners layer
-        mock_fs.add_file(
+        mock_store.write_file(
             ".jules/roles/planners/prompt_assembly.yml",
             r#"
 schema_version: 1
@@ -478,11 +398,11 @@ includes:
   - title: "Contracts"
     path: ".jules/roles/planners/contracts.yml"
 "#,
-        );
-        mock_fs.add_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners");
-        mock_fs.add_file(".jules/roles/planners/contracts.yml", "layer: planners\nconstraints: []");
+        ).unwrap();
+        mock_store.write_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners").unwrap();
+        mock_store.write_file(".jules/roles/planners/contracts.yml", "layer: planners\nconstraints: []").unwrap();
 
-        let result = assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_fs);
+        let result = assemble_prompt(&mock_store, Layer::Planners, &PromptContext::new());
 
         assert!(result.is_ok());
         let assembled = result.unwrap();
@@ -533,10 +453,9 @@ includes:
 
     #[test]
     fn test_assemble_prompt_path_traversal() {
-        let mock_fs = MockPromptFs::new();
-        let jules_path = Path::new(".jules");
+        let mock_store = MockWorkspaceStore::new();
 
-        mock_fs.add_file(
+        mock_store.write_file(
             ".jules/roles/planners/prompt_assembly.yml",
             r#"
 schema_version: 1
@@ -546,10 +465,10 @@ includes:
   - title: "Malicious"
     path: "../secret.txt"
 "#,
-        );
-        mock_fs.add_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners");
+        ).unwrap();
+        mock_store.write_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners").unwrap();
 
-        let result = assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_fs);
+        let result = assemble_prompt(&mock_store, Layer::Planners, &PromptContext::new());
 
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -562,10 +481,9 @@ includes:
 
     #[test]
     fn test_assemble_prompt_absolute_path_traversal() {
-        let mock_fs = MockPromptFs::new();
-        let jules_path = Path::new(".jules");
+        let mock_store = MockWorkspaceStore::new();
 
-        mock_fs.add_file(
+        mock_store.write_file(
             ".jules/roles/planners/prompt_assembly.yml",
             r#"
 schema_version: 1
@@ -575,10 +493,10 @@ includes:
   - title: "Malicious Absolute"
     path: "/etc/passwd"
 "#,
-        );
-        mock_fs.add_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners");
+        ).unwrap();
+        mock_store.write_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners").unwrap();
 
-        let result = assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_fs);
+        let result = assemble_prompt(&mock_store, Layer::Planners, &PromptContext::new());
 
         assert!(result.is_err());
         match result.unwrap_err() {

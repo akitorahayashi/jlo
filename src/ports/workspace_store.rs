@@ -61,6 +61,15 @@ pub trait WorkspaceStore {
 
     // --- Generic File Operations ---
 
+    /// Check if a file or directory exists.
+    fn path_exists(&self, path: &str) -> bool;
+
+    /// List subdirectories in a directory. Returns sorted names (relative to the directory).
+    fn list_dirs(&self, path: &str) -> Result<Vec<String>, AppError>;
+
+    /// List files in a directory. Returns sorted names (relative to the directory).
+    fn list_files(&self, path: &str) -> Result<Vec<String>, AppError>;
+
     /// Read a file as a string.
     fn read_file(&self, path: &str) -> Result<String, AppError>;
 

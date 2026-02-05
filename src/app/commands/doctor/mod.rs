@@ -9,6 +9,7 @@ mod yaml;
 use std::path::Path;
 
 use crate::domain::AppError;
+use crate::ports::WorkspaceStore;
 use crate::services::assets::scaffold_assets::{
     list_event_states, list_issue_labels, read_enum_values,
 };
@@ -30,7 +31,11 @@ pub struct DoctorOutcome {
     pub exit_code: i32,
 }
 
-pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
+pub fn execute(
+    workspace: &impl WorkspaceStore,
+    options: DoctorOptions,
+) -> Result<DoctorOutcome, AppError> {
+    let jules_path = workspace.jules_path();
     if !jules_path.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
@@ -45,13 +50,13 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
     let mut diagnostics = Diagnostics::default();
     let mut applied_fixes = Vec::new();
 
-    let workstreams = structure::collect_workstreams(jules_path, options.workstream.as_deref())?;
+    let workstreams = structure::collect_workstreams(&jules_path, options.workstream.as_deref())?;
 
-    let _run_config = structure::read_run_config(jules_path, &mut diagnostics)?;
+    let _run_config = structure::read_run_config(&jules_path, &mut diagnostics)?;
 
     structure::structural_checks(
         structure::StructuralInputs {
-            jules_path,
+            jules_path: &jules_path,
             root: &root,
             workstreams: &workstreams,
             issue_labels: &issue_labels,
@@ -62,11 +67,11 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         &mut diagnostics,
     );
 
-    let prompt_entries = schema::collect_prompt_entries(jules_path, &mut diagnostics)?;
+    let prompt_entries = schema::collect_prompt_entries(&jules_path, &mut diagnostics)?;
 
     schema::schema_checks(
         schema::SchemaInputs {
-            jules_path,
+            jules_path: &jules_path,
             root: &root,
             workstreams: &workstreams,
             issue_labels: &issue_labels,
@@ -78,14 +83,20 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         &mut diagnostics,
     );
 
-    naming::naming_checks(jules_path, &workstreams, &issue_labels, &event_states, &mut diagnostics);
+    naming::naming_checks(&jules_path, &workstreams, &issue_labels, &event_states, &mut diagnostics);
 
     let semantic_context =
-        semantic::semantic_context(jules_path, &workstreams, &issue_labels, &mut diagnostics);
-    semantic::semantic_checks(jules_path, &workstreams, &semantic_context, &mut diagnostics);
+        semantic::semantic_context(&jules_path, &workstreams, &issue_labels, &mut diagnostics);
+    semantic::semantic_checks(
+        &jules_path,
+        &workstreams,
+        &semantic_context,
+        &mut diagnostics,
+        workspace,
+    );
 
     quality::quality_checks(
-        jules_path,
+        &jules_path,
         &workstreams,
         &issue_labels,
         &event_states,

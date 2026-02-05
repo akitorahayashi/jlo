@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use chrono::{NaiveDate, Utc};
 
 use crate::domain::{AppError, Layer};
+use crate::ports::WorkspaceStore;
 use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
 use super::diagnostics::Diagnostics;
@@ -65,6 +66,7 @@ pub fn semantic_checks(
     workstreams: &[String],
     context: &SemanticContext,
     diagnostics: &mut Diagnostics,
+    workspace: &impl WorkspaceStore,
 ) {
     for (event_id, issue_id) in &context.event_issue_map {
         if !context.issues.contains_key(issue_id)
@@ -124,7 +126,7 @@ pub fn semantic_checks(
 
     let mut scheduled_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
     for workstream in workstreams {
-        match load_schedule(jules_path, workstream) {
+        match load_schedule(workspace, workstream) {
             Ok(schedule) => {
                 for role in schedule.observers.roles {
                     scheduled_roles

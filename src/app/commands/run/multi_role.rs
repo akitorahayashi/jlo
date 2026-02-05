@@ -6,22 +6,24 @@ use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_prompt;
 use super::role_selection::{RoleSelectionInput, select_roles};
-use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{AutomationMode, JulesClient, SessionRequest};
+use crate::domain::{AppError, Layer, RoleId, JULES_DIR};
+use crate::ports::{AutomationMode, JulesClient, SessionRequest, WorkspaceStore};
 use crate::services::adapters::jules_client_http::HttpJulesClient;
 
 /// Execute a multi-role layer (Observers or Deciders).
-pub fn execute(
-    jules_path: &Path,
+#[allow(clippy::too_many_arguments)]
+pub fn execute<W: WorkspaceStore>(
+    _jules_path: &Path,
     layer: Layer,
     roles: Option<&Vec<String>>,
     workstream: Option<&str>,
     scheduled: bool,
     dry_run: bool,
     branch: Option<&str>,
+    workspace: &W,
 ) -> Result<RunResult, AppError> {
     // Load config
-    let config = load_config(jules_path)?;
+    let config = load_config(workspace)?;
 
     let workstream = workstream.ok_or_else(|| {
         AppError::MissingArgument("Workstream is required for observers and deciders".into())
@@ -37,11 +39,11 @@ pub fn execute(
     }
 
     let resolved_roles = select_roles(RoleSelectionInput {
-        jules_path,
         layer,
         workstream,
         scheduled,
         requested_roles: roles,
+        workspace,
     })?;
 
     if resolved_roles.is_empty() {
@@ -58,7 +60,7 @@ pub fn execute(
         branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
 
     if dry_run {
-        execute_dry_run(jules_path, layer, &resolved_roles, workstream, &starting_branch)?;
+        execute_dry_run(workspace, layer, &resolved_roles, workstream, &starting_branch)?;
         return Ok(RunResult {
             roles: resolved_roles.into_iter().map(|r| r.into()).collect(),
             dry_run: true,
@@ -72,7 +74,7 @@ pub fn execute(
     // Execute with appropriate client
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
     let sessions = execute_roles(
-        jules_path,
+        workspace,
         layer,
         &resolved_roles,
         workstream,
@@ -89,8 +91,8 @@ pub fn execute(
 }
 
 /// Execute roles with the given Jules client.
-fn execute_roles<C: JulesClient>(
-    jules_path: &Path,
+fn execute_roles<C: JulesClient, W: WorkspaceStore>(
+    workspace: &W,
     layer: Layer,
     roles: &[RoleId],
     workstream: &str,
@@ -104,7 +106,7 @@ fn execute_roles<C: JulesClient>(
     for role in roles {
         println!("Executing {} / {}...", layer.dir_name(), role);
 
-        let prompt = assemble_prompt(jules_path, layer, role.as_str(), workstream)?;
+        let prompt = assemble_prompt(workspace, layer, role.as_str(), workstream)?;
 
         let request = SessionRequest {
             prompt,
@@ -139,8 +141,8 @@ fn execute_roles<C: JulesClient>(
 }
 
 /// Execute a dry run, showing assembled prompts.
-fn execute_dry_run(
-    jules_path: &Path,
+fn execute_dry_run<W: WorkspaceStore>(
+    workspace: &W,
     layer: Layer,
     roles: &[RoleId],
     workstream: &str,
@@ -153,27 +155,25 @@ fn execute_dry_run(
     for role in roles {
         println!("--- Role: {} ---", role);
 
-        let role_dir =
-            jules_path.join("roles").join(layer.dir_name()).join("roles").join(role.as_str());
-        let role_yml_path = role_dir.join("role.yml");
+        let role_path_str = format!("{}/roles/{}/roles/{}/role.yml", JULES_DIR, layer.dir_name(), role.as_str());
 
-        if !role_yml_path.exists() {
-            println!("  ⚠️  role.yml not found at {}\n", role_yml_path.display());
+        if !workspace.path_exists(&role_path_str) {
+            println!("  ⚠️  role.yml not found at {}\n", role_path_str);
             continue;
         }
 
         // Read contracts.yml for the layer
-        let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
-        let prompt_path = jules_path.join("roles").join(layer.dir_name()).join("prompt.yml");
+        let contracts_path = format!("{}/roles/{}/contracts.yml", JULES_DIR, layer.dir_name());
+        let prompt_path = format!("{}/roles/{}/prompt.yml", JULES_DIR, layer.dir_name());
 
-        println!("  Prompt: {}", prompt_path.display());
-        if contracts_path.exists() {
-            println!("  Contracts: {}", contracts_path.display());
+        println!("  Prompt: {}", prompt_path);
+        if workspace.path_exists(&contracts_path) {
+            println!("  Contracts: {}", contracts_path);
         }
-        println!("  Role config: {}", role_yml_path.display());
+        println!("  Role config: {}", role_path_str);
 
         // Show assembled prompt length
-        if let Ok(prompt) = assemble_prompt(jules_path, layer, role.as_str(), workstream) {
+        if let Ok(prompt) = assemble_prompt(workspace, layer, role.as_str(), workstream) {
             println!("  Assembled prompt: {} chars", prompt.len());
         }
 

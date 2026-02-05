@@ -161,7 +161,7 @@ pub fn run(
 pub fn schedule_export(options: ScheduleExportOptions) -> Result<ScheduleMatrix, AppError> {
     let workspace = get_current_workspace()?;
 
-    schedule::export(&workspace.jules_path(), options)
+    schedule::export(&workspace, options)
 }
 
 /// Inspect a workstream and return state in machine-readable form.
@@ -170,7 +170,7 @@ pub fn workstreams_inspect(
 ) -> Result<WorkstreamInspectOutput, AppError> {
     let workspace = get_current_workspace()?;
 
-    workstreams::inspect(&workspace.jules_path(), options)
+    workstreams::inspect(&workspace, options)
 }
 
 // =============================================================================
@@ -226,5 +226,5 @@ pub fn update(dry_run: bool, adopt_managed: bool) -> Result<UpdateResult, AppErr
 pub fn doctor(options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
     let workspace = get_current_workspace()?;
 
-    doctor::execute(&workspace.jules_path(), options)
+    doctor::execute(&workspace, options)
 }

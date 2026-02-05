@@ -121,6 +121,44 @@ impl WorkspaceStore for MockWorkspaceStore {
         name == "generic"
     }
 
+    fn path_exists(&self, path: &str) -> bool {
+        let path = path.trim_end_matches('/');
+        self.files.borrow().keys().any(|k| k == path || k.starts_with(&format!("{}/", path)))
+    }
+
+    fn list_dirs(&self, path: &str) -> Result<Vec<String>, AppError> {
+        let path = path.trim_end_matches('/');
+        let prefix = if path.is_empty() { "".to_string() } else { format!("{}/", path) };
+        let mut dirs = std::collections::HashSet::new();
+
+        for key in self.files.borrow().keys() {
+            if let Some(rest) = key.strip_prefix(&prefix) {
+                if let Some((dir, _)) = rest.split_once('/') {
+                    dirs.insert(dir.to_string());
+                }
+            }
+        }
+        let mut result: Vec<_> = dirs.into_iter().collect();
+        result.sort();
+        Ok(result)
+    }
+
+    fn list_files(&self, path: &str) -> Result<Vec<String>, AppError> {
+        let path = path.trim_end_matches('/');
+        let prefix = if path.is_empty() { "".to_string() } else { format!("{}/", path) };
+        let mut files = Vec::new();
+
+        for key in self.files.borrow().keys() {
+            if let Some(rest) = key.strip_prefix(&prefix) {
+                if !rest.contains('/') {
+                    files.push(rest.to_string());
+                }
+            }
+        }
+        files.sort();
+        Ok(files)
+    }
+
     fn read_file(&self, path: &str) -> Result<String, AppError> {
         self.files.borrow().get(path).cloned().ok_or_else(|| {
             AppError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "Mock file not found"))

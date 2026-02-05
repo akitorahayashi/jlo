@@ -1,27 +1,20 @@
-use std::fs;
-use std::path::{Path, PathBuf};
+use crate::domain::{AppError, WorkstreamSchedule, JULES_DIR};
+use crate::ports::WorkspaceStore;
 
-use crate::domain::{AppError, WorkstreamSchedule};
+pub fn load_schedule(workspace: &impl WorkspaceStore, workstream: &str) -> Result<WorkstreamSchedule, AppError> {
+    let path = format!("{}/workstreams/{}/scheduled.toml", JULES_DIR, workstream);
 
-pub fn load_schedule(jules_path: &Path, workstream: &str) -> Result<WorkstreamSchedule, AppError> {
-    let path = jules_path.join("workstreams").join(workstream).join("scheduled.toml");
-
-    let content = fs::read_to_string(&path).map_err(|err| {
-        if err.kind() == std::io::ErrorKind::NotFound {
-            AppError::ScheduleConfigMissing(path.display().to_string())
-        } else {
-            AppError::Io(err)
+    let content = workspace.read_file(&path).map_err(|err| {
+        // Map generic Io/NotFound to ScheduleConfigMissing if needed,
+        // but AppError::Io usually wraps std::io::Error.
+        // WorkspaceStore::read_file returns AppError.
+        // If we want to preserve specific error behavior:
+        match err {
+             AppError::Io(ref io_err) if io_err.kind() == std::io::ErrorKind::NotFound => {
+                 AppError::ScheduleConfigMissing(path.clone())
+             }
+             _ => err,
         }
     })?;
     Ok(WorkstreamSchedule::parse_toml(&content)?)
-}
-
-pub fn list_subdirectories(dir: &Path) -> Result<Vec<PathBuf>, AppError> {
-    let mut entries: Vec<PathBuf> = fs::read_dir(dir)?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().is_dir())
-        .map(|entry| entry.path())
-        .collect();
-    entries.sort();
-    Ok(entries)
 }

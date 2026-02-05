@@ -5,7 +5,7 @@ use std::path::Path;
 use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
-use crate::domain::{AppError, Layer};
+use crate::domain::{AppError, Layer, JULES_DIR};
 use crate::ports::{AutomationMode, GitHubPort, JulesClient, SessionRequest, WorkspaceStore};
 use crate::services::adapters::jules_client_http::HttpJulesClient;
 
@@ -15,7 +15,7 @@ const IMPLEMENTER_WORKFLOW_NAME: &str = "jules-run-implementer.yml";
 /// Execute a single-role layer (Planners or Implementers).
 #[allow(clippy::too_many_arguments)]
 pub fn execute<H, W>(
-    jules_path: &Path,
+    _jules_path: &Path,
     layer: Layer,
     issue_path: &Path,
     dry_run: bool,
@@ -33,7 +33,7 @@ where
         .to_str()
         .ok_or_else(|| AppError::Validation("Issue path contains invalid unicode".to_string()))?;
 
-    if !issue_path.exists() {
+    if !workspace.path_exists(path_str) {
         return Err(AppError::IssueFileNotFound(path_str.to_string()));
     }
 
@@ -70,7 +70,7 @@ where
 
     // CI Execution: Direct session creation
     let issue_content = workspace.read_file(path_str)?;
-    let config = load_config(jules_path)?;
+    let config = load_config(workspace)?;
 
     // Determine starting branch
     let starting_branch = branch.map(String::from).unwrap_or_else(|| {
@@ -83,7 +83,7 @@ where
     });
 
     if dry_run {
-        execute_dry_run(jules_path, layer, &starting_branch, &issue_content, issue_path)?;
+        execute_dry_run(workspace, layer, &starting_branch, &issue_content, issue_path)?;
         return Ok(RunResult {
             roles: vec![layer.dir_name().to_string()],
             dry_run: true,
@@ -103,7 +103,7 @@ where
     // Execute with appropriate client
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
     let session_id = execute_session(
-        jules_path,
+        workspace,
         layer,
         &starting_branch,
         &source,
@@ -174,7 +174,7 @@ where
 
 /// Execute a single role with the given Jules client.
 fn execute_session<C: JulesClient>(
-    jules_path: &Path,
+    workspace: &impl WorkspaceStore,
     layer: Layer,
     starting_branch: &str,
     source: &str,
@@ -184,7 +184,7 @@ fn execute_session<C: JulesClient>(
 ) -> Result<String, AppError> {
     println!("Executing {}...", layer.display_name());
 
-    let mut prompt = assemble_single_role_prompt(jules_path, layer)?;
+    let mut prompt = assemble_single_role_prompt(workspace, layer)?;
 
     // Append issue content
     prompt.push_str("\n---\n# Issue Content\n");
@@ -209,7 +209,7 @@ fn execute_session<C: JulesClient>(
 
 /// Execute a dry run for a single-role layer.
 fn execute_dry_run(
-    jules_path: &Path,
+    workspace: &impl WorkspaceStore,
     layer: Layer,
     starting_branch: &str,
     issue_content: &str,
@@ -219,16 +219,15 @@ fn execute_dry_run(
     println!("Starting branch: {}\n", starting_branch);
     println!("Issue content: {} chars\n", issue_content.len());
 
-    let layer_dir = jules_path.join("roles").join(layer.dir_name());
-    let prompt_path = layer_dir.join("prompt.yml");
-    let contracts_path = layer_dir.join("contracts.yml");
+    let prompt_path = format!("{}/roles/{}/prompt.yml", JULES_DIR, layer.dir_name());
+    let contracts_path = format!("{}/roles/{}/contracts.yml", JULES_DIR, layer.dir_name());
 
-    println!("Prompt: {}", prompt_path.display());
-    if contracts_path.exists() {
-        println!("Contracts: {}", contracts_path.display());
+    println!("Prompt: {}", prompt_path);
+    if workspace.path_exists(&contracts_path) {
+        println!("Contracts: {}", contracts_path);
     }
 
-    if let Ok(mut prompt) = assemble_single_role_prompt(jules_path, layer) {
+    if let Ok(mut prompt) = assemble_single_role_prompt(workspace, layer) {
         prompt.push_str("\n---\n# Issue Content\n");
         if layer == Layer::Planners {
             prompt.push_str(&format!("File: {}\n\n", issue_path.display()));

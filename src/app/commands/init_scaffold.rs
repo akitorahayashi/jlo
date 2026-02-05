@@ -31,7 +31,7 @@ where
 
     ctx.workspace().write_version(env!("CARGO_PKG_VERSION"))?;
     let managed_manifest = manifest_from_scaffold(&scaffold_files);
-    write_manifest(&ctx.workspace().jules_path(), &managed_manifest)?;
+    write_manifest(ctx.workspace(), &managed_manifest)?;
 
     Ok(())
 }
