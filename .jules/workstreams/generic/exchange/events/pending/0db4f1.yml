@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "0db4f1"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "devops"
+confidence: "high"
+
+# Content
+title: "Release Workflow Vulnerable to CI Timing Race Condition"
+statement: |
+  The `release.yml` workflow immediately fails if it cannot find a successful CI run for the current commit. If a tag is pushed simultaneously with or shortly after the commit, the CI pipeline may still be running or queued, causing the release workflow to fail instead of waiting.
+
+# Evidence supporting the observation
+evidence:
+  - path: ".github/workflows/release.yml"
+    loc:
+      - "lines 22-26"
+    note: "Queries for successful CI run."
+  - path: ".github/workflows/release.yml"
+    loc:
+      - "lines 28-32"
+    note: "Exits immediately if no successful run is found, without retrying or waiting."
+
+tags:
+  - "recoverability"
+  - "usability"
+  - "race-condition"
