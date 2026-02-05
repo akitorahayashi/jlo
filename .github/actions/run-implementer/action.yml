@@ -52,4 +52,4 @@ runs:
       shell: bash
       env:
         ISSUE_FILE: ${{ inputs.issue_file }}
-      run: bash .github/scripts/jules-delete-processed-issue-and-events.sh
+      run: jlo workflow cleanup processed-issue --issue-file "$ISSUE_FILE" --commit --push

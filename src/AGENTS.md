@@ -64,7 +64,12 @@ tests/
 | `jlo run deciders --workstream <name> [--role <name> \| --scheduled] [--mock]` | `r d` | Run decider agents |
 | `jlo run planners <path> [--mock]` | `r p` | Run planner (issue-driven) |
 | `jlo run implementers <path> [--mock]` | `r i` | Run implementer (issue-driven) |
-| `jlo schedule export --scope <scope>` | | Export schedule data (scope: `workstreams` or `roles`) |
+| `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
+| `jlo workflow matrix workstreams` | | Generate workstream matrix for GitHub Actions |
+| `jlo workflow matrix roles --layer <layer> [--workstreams-json <json>]` | | Generate role matrix for GitHub Actions |
+| `jlo workflow run <layer> [--matrix-json <json>] [--mock]` | | Run layer and return wait-gating metadata |
+| `jlo workflow wait prs --layer <layer> [...]` | | Wait for PRs (merge or label mode) |
+| `jlo workflow cleanup mock --mock-tag <tag>` | | Cleanup mock artifacts |
 | `jlo workstreams inspect --workstream <name> [--format json\|yaml]` | | Inspect workstream state |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |

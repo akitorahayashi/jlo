@@ -28,7 +28,10 @@ jlo init
 | `jlo deinit` | | Remove jlo-managed branch and workflow kit files |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
-| `jlo schedule export --scope <scope> [...]` | | Export schedule data for automation (scope: `workstreams` or `roles`). Note: `roles` scope requires `--layer` and `--workstream`. |
+| `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
+| `jlo workflow matrix <cmd>` | | Generate GitHub Actions matrices |
+| `jlo workflow run <layer> [--matrix-json <json>] [--mock]` | | Run layer with JSON output |
+| `jlo workflow wait prs --layer <layer> [...]` | | Wait for PRs and return status |
 | `jlo workstreams inspect --workstream <name> [--format json (yaml)]` | | Inspect workstream state for automation |
 | `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate `.jules/` structure and content |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` script and `env.toml` |
@@ -137,14 +140,12 @@ jlo setup gen                               # Generate install script
 
 Install the workflow kit with `jlo init workflows` to populate the Jules orchestration files in `.github/`.
 
-Workflows use `jlo run` for agent execution and rely on `jlo schedule export` plus
-`jlo workstreams inspect` for orchestration inputs.
+Workflows use `jlo run` for agent execution and `jlo workflow` commands for orchestration.
 
 Workflow kit layout:
 
 - `.github/workflows/jules-*.yml`
 - `.github/actions/` (Jules composite actions)
-- `.github/scripts/jules-*.sh`
 
 **Configuration Variables**:
 

@@ -15,7 +15,6 @@ The kit layout follows these patterns:
 
 - `.github/workflows/jules-*.yml`
 - `.github/actions/` (Jules composite actions)
-- `.github/scripts/jules-*.sh`
 
 ### Review Configuration
 
@@ -42,7 +41,7 @@ The orchestration workflow under `.github/workflows/jules-*.yml` runs the layers
 ## Self-hosted Runners
 
 The self-hosted workflow kit uses `runs-on: self-hosted` and installs `jlo` into the runner temp directory, adding it to the workflow PATH without requiring `sudo`.
-Self-hosted runners must provide the commands referenced by the kit scripts and workflows; treat the scripts as the authoritative source of required tooling.
+Self-hosted runners must provide the commands referenced by the workflows; treat the workflow templates as the authoritative source of required tooling.
 The installer detects OS/architecture and fails fast if the release assets do not support the runner.
 
 ## Troubleshooting

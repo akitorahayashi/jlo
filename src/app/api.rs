@@ -8,8 +8,7 @@ use std::path::Path;
 use crate::app::{
     AppContext,
     commands::{
-        deinit, doctor, init_scaffold, init_workflows, run, schedule, setup, template, update,
-        workstreams,
+        deinit, doctor, init_scaffold, init_workflows, run, setup, template, update, workstreams,
     },
 };
 use crate::ports::WorkspaceStore;
@@ -21,9 +20,6 @@ use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
 pub use crate::app::commands::run::{RunOptions, RunResult};
-pub use crate::app::commands::schedule::{
-    ScheduleExportFormat, ScheduleExportOptions, ScheduleExportScope, ScheduleMatrix,
-};
 pub use crate::app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
 pub use crate::app::commands::template::TemplateOutcome;
 pub use crate::app::commands::update::{UpdateOptions, UpdateResult};
@@ -154,15 +150,8 @@ pub fn run(
 }
 
 // =============================================================================
-// Schedule + Workstream Inspection APIs
+// Workstream Inspection APIs
 // =============================================================================
-
-/// Export schedule configuration as a machine-readable matrix.
-pub fn schedule_export(options: ScheduleExportOptions) -> Result<ScheduleMatrix, AppError> {
-    let workspace = get_current_workspace()?;
-
-    schedule::export(&workspace.jules_path(), options)
-}
 
 /// Inspect a workstream and return state in machine-readable form.
 pub fn workstreams_inspect(
