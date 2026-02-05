@@ -506,38 +506,48 @@ mod tests {
     }
 
     #[test]
-    fn test_check_version_file() {
+    fn test_check_version_file_missing_is_ok() {
         let temp = assert_fs::TempDir::new().unwrap();
-        let version_file = temp.child(".jlo-version");
         let mut diagnostics = Diagnostics::default();
-
-        // Case 1: File missing (should be ignored, no error)
         check_version_file(temp.path(), "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
+    }
 
-        // Case 2: Version match
-        version_file.write_str("1.0.0").unwrap();
+    #[test]
+    fn test_check_version_file_match_is_ok() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        temp.child(".jlo-version").write_str("1.0.0").unwrap();
+        let mut diagnostics = Diagnostics::default();
         check_version_file(temp.path(), "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
+    }
 
-        // Case 3: Workspace older (OK)
-        version_file.write_str("0.9.0").unwrap();
+    #[test]
+    fn test_check_version_file_workspace_older_is_ok() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        temp.child(".jlo-version").write_str("0.9.0").unwrap();
+        let mut diagnostics = Diagnostics::default();
         check_version_file(temp.path(), "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
+    }
 
-        // Case 4: Workspace newer (Error)
-        version_file.write_str("2.0.0").unwrap();
+    #[test]
+    fn test_check_version_file_workspace_newer_is_error() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        temp.child(".jlo-version").write_str("2.0.0").unwrap();
+        let mut diagnostics = Diagnostics::default();
         check_version_file(temp.path(), "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 1);
         assert!(
             diagnostics.errors()[0].message.contains("Workspace version is newer than the binary")
         );
+    }
 
-        // Reset diagnostics
-        diagnostics = Diagnostics::default();
-
-        // Case 5: Invalid format
-        version_file.write_str("invalid").unwrap();
+    #[test]
+    fn test_check_version_file_invalid_format_is_error() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        temp.child(".jlo-version").write_str("invalid").unwrap();
+        let mut diagnostics = Diagnostics::default();
         check_version_file(temp.path(), "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 1);
         assert!(diagnostics.errors()[0].message.contains("Invalid version format"));

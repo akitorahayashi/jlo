@@ -89,42 +89,46 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_validate_filename() {
+    fn test_validate_filename_valid_case() {
         let mut diagnostics = Diagnostics::default();
-
-        // Valid case
         validate_filename(&PathBuf::from("valid-name.yml"), &mut diagnostics, "test");
         assert_eq!(diagnostics.error_count(), 0);
+    }
 
-        // .gitkeep (ignored)
+    #[test]
+    fn test_validate_filename_ignores_gitkeep() {
+        let mut diagnostics = Diagnostics::default();
         validate_filename(&PathBuf::from(".gitkeep"), &mut diagnostics, "test");
         assert_eq!(diagnostics.error_count(), 0);
+    }
 
-        // Invalid extension
+    #[test]
+    fn test_validate_filename_invalid_extension() {
+        let mut diagnostics = Diagnostics::default();
         validate_filename(&PathBuf::from("valid-name.txt"), &mut diagnostics, "test");
         assert_eq!(diagnostics.error_count(), 1);
         assert!(diagnostics.errors()[0].message.contains("must be .yml"));
+    }
 
-        // Reset
-        diagnostics = Diagnostics::default();
-
-        // Invalid casing (CamelCase)
+    #[test]
+    fn test_validate_filename_invalid_camel_case() {
+        let mut diagnostics = Diagnostics::default();
         validate_filename(&PathBuf::from("InvalidName.yml"), &mut diagnostics, "test");
         assert_eq!(diagnostics.error_count(), 1);
         assert!(diagnostics.errors()[0].message.contains("must be kebab-case"));
+    }
 
-        // Reset
-        diagnostics = Diagnostics::default();
-
-        // Invalid casing (snake_case)
+    #[test]
+    fn test_validate_filename_invalid_snake_case() {
+        let mut diagnostics = Diagnostics::default();
         validate_filename(&PathBuf::from("invalid_name.yml"), &mut diagnostics, "test");
         assert_eq!(diagnostics.error_count(), 1);
         assert!(diagnostics.errors()[0].message.contains("must be kebab-case"));
+    }
 
-        // Reset
-        diagnostics = Diagnostics::default();
-
-        // Invalid characters
+    #[test]
+    fn test_validate_filename_invalid_characters() {
+        let mut diagnostics = Diagnostics::default();
         validate_filename(&PathBuf::from("invalid@name.yml"), &mut diagnostics, "test");
         assert_eq!(diagnostics.error_count(), 1);
         assert!(diagnostics.errors()[0].message.contains("must be kebab-case"));
