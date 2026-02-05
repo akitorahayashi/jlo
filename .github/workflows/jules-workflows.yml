@@ -80,7 +80,7 @@ jobs:
       uses: ./.github/actions/install-jlo
     - name: Run narrator
       id: run
-      run: jlo workflow run narrator $${{ env.JLO_RUN_FLAGS }}
+      run: jlo workflow run --layer narrator $${{ env.JLO_RUN_FLAGS }}
     - name: Validate workspace (fail-fast)
       run: jlo doctor
   wait-after-narrator:
@@ -211,7 +211,7 @@ jobs:
       id: run
       env:
         MATRIX_JSON: ${{ needs.generate-observer-matrix.outputs.json }}
-      run: jlo workflow run observers --matrix-json "$MATRIX_JSON" $${{ env.JLO_RUN_FLAGS }}
+      run: jlo workflow run --layer observers --matrix-json "$MATRIX_JSON" $${{ env.JLO_RUN_FLAGS }}
   wait-after-observers:
     needs:
     - generate-observer-matrix
@@ -310,7 +310,7 @@ jobs:
       id: run
       env:
         MATRIX_JSON: ${{ needs.generate-decider-matrix.outputs.json }}
-      run: jlo workflow run deciders --matrix-json "$MATRIX_JSON" $${{ env.JLO_RUN_FLAGS }}
+      run: jlo workflow run --layer deciders --matrix-json "$MATRIX_JSON" $${{ env.JLO_RUN_FLAGS }}
   wait-after-deciders:
     needs:
     - generate-decider-matrix
@@ -411,7 +411,7 @@ jobs:
       id: run
       env:
         MATRIX_JSON: ${{ toJSON(fromJSON(needs.generate-planner-matrix.outputs.json).planner_matrix) }}
-      run: jlo workflow run planners --matrix-json "$MATRIX_JSON" $${{ env.JLO_RUN_FLAGS }}
+      run: jlo workflow run --layer planners --matrix-json "$MATRIX_JSON" $${{ env.JLO_RUN_FLAGS }}
   wait-after-planners:
     needs:
     - run-planners
@@ -484,7 +484,7 @@ jobs:
       id: run
       env:
         MATRIX_JSON: ${{ toJSON(fromJSON(needs.generate-planner-matrix.outputs.json).implementer_matrix) }}
-      run: jlo workflow run implementers --matrix-json "$MATRIX_JSON" --target-branch "$TARGET_BRANCH" $${{ env.JLO_RUN_FLAGS }}
+      run: jlo workflow run --layer implementers --matrix-json "$MATRIX_JSON" --target-branch "$TARGET_BRANCH" $${{ env.JLO_RUN_FLAGS }}
   wait-after-implementers:
     needs:
     - run-implementers
