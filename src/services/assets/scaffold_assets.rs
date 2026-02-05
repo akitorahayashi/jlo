@@ -53,10 +53,7 @@ pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> 
         .map_err(|e| AppError::InternalError(format!("Error in {}: {}", path, e)))
 }
 
-pub fn parse_enum_values_from_content(
-    content: &str,
-    key: &str,
-) -> Result<Vec<String>, AppError> {
+pub fn parse_enum_values_from_content(content: &str, key: &str) -> Result<Vec<String>, AppError> {
     let value: Value = serde_yaml::from_str(content)
         .map_err(|err| AppError::InternalError(format!("Failed to parse YAML: {}", err)))?;
 
