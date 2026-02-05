@@ -35,10 +35,7 @@ on:
         description: 'Run in mock mode (creates branches/PRs without Jules API)'
         type: boolean
         default: false
-      mock_scope:
-        description: 'Mock scope identifier (required if mock=true)'
-        type: string
-        default: ''
+
   workflow_call:
     inputs:
       entry_point:
@@ -53,9 +50,6 @@ on:
       mock:
         type: boolean
         default: false
-      mock_scope:
-        type: string
-        default: ''
 
 permissions:
   contents: write
@@ -71,8 +65,8 @@ env:
   WAIT_MINUTES: {{ gha_expr("github.event.inputs.wait_minutes || 30") }}
   ROUTING_LABELS: {{ gha_expr("github.event.inputs.routing_labels || 'bugs,feats,refacts,tests,docs'") }}
   MOCK_MODE: {{ gha_expr("github.event.inputs.mock || false") }}
-  MOCK_SCOPE: {{ gha_expr("github.event.inputs.mock_scope || ''") }}
-  JLO_RUN_FLAGS: {{ gha_expr("github.event.inputs.mock == 'true' && format('--mock --mock-scope {0}', github.event.inputs.mock_scope) || ''") }}
+  JULES_MOCK_SCOPE: {{ gha_expr("format('run-{0}', github.run_id)") }}
+  JLO_RUN_FLAGS: {{ gha_expr("github.event.inputs.mock == 'true' && '--mock' || ''") }}
 
 jobs:
   # ============================================================
@@ -372,7 +366,6 @@ jobs:
       mock_pr_number: {{ gha_expr("steps.run-planners.outputs.mock_pr_number") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      JLO_RUN_FLAGS: {{ gha_expr("env.MOCK_MODE == 'true' && format('--mock --mock-scope {0}', env.MOCK_SCOPE) || ''") }}
       GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
     steps:
       - uses: actions/checkout@v4
@@ -405,7 +398,6 @@ jobs:
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
       TARGET_BRANCH: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
-      JLO_RUN_FLAGS: {{ gha_expr("env.MOCK_MODE == 'true' && format('--mock --mock-scope {0}', env.MOCK_SCOPE) || ''") }}
       GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
     steps:
       - uses: actions/checkout@v4

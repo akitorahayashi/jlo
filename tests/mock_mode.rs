@@ -22,23 +22,10 @@ fn mock_requires_gh_token() {
 
     // --mock requires GH_TOKEN environment variable
     ctx.cli()
-        .args(["run", "narrator", "--mock", "--mock-scope", "layer"])
+        .args(["run", "narrator", "--mock"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("GH_TOKEN"));
-}
-
-#[test]
-fn mock_scope_requires_mock() {
-    let ctx = TestContext::new();
-    setup_scaffold(&ctx);
-
-    // --mock-scope without --mock should fail (clap requires dependency)
-    ctx.cli()
-        .args(["run", "narrator", "--mock-scope", "layer"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("--mock"));
 }
 
 #[test]
@@ -48,7 +35,7 @@ fn mock_conflicts_with_dry_run() {
 
     // --mock and --dry-run are mutually exclusive
     ctx.cli()
-        .args(["run", "narrator", "--mock", "--mock-scope", "layer", "--dry-run"])
+        .args(["run", "narrator", "--mock", "--dry-run"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("cannot be used with"));

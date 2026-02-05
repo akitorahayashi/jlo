@@ -69,7 +69,7 @@ where
 }
 
 /// Validate prerequisites for mock mode.
-fn validate_mock_prerequisites(options: &RunOptions) -> Result<(), AppError> {
+fn validate_mock_prerequisites(_options: &RunOptions) -> Result<(), AppError> {
     // Check for GH_TOKEN
     if std::env::var("GH_TOKEN").is_err() {
         return Err(AppError::MissingArgument(
@@ -92,21 +92,13 @@ fn validate_mock_prerequisites(options: &RunOptions) -> Result<(), AppError> {
         });
     }
 
-    // Check mock_scope in CI
-    let is_ci = std::env::var("GITHUB_ACTIONS").is_ok();
-    if is_ci && options.mock_scope.is_none() {
-        return Err(AppError::MissingArgument(
-            "--mock-scope is required when running in GitHub Actions".to_string(),
-        ));
-    }
-
     Ok(())
 }
 
 /// Load mock configuration from workspace files.
 fn load_mock_config<W: WorkspaceStore>(
     jules_path: &Path,
-    options: &RunOptions,
+    _options: &RunOptions,
     workspace: &W,
 ) -> Result<MockConfig, AppError> {
     // Load run config for branch settings
@@ -142,10 +134,11 @@ fn load_mock_config<W: WorkspaceStore>(
     };
 
     // Generate scope if not provided
-    let scope = options
-        .mock_scope
-        .clone()
-        .unwrap_or_else(|| format!("local-{}", Utc::now().format("%Y%m%d%H%M%S")));
+    // Generate scope: env var -> CI default -> local default
+    let scope = std::env::var("JULES_MOCK_SCOPE").ok().unwrap_or_else(|| {
+        let prefix = if std::env::var("GITHUB_ACTIONS").is_ok() { "ci" } else { "local" };
+        format!("{}-{}", prefix, Utc::now().format("%Y%m%d%H%M%S"))
+    });
 
     Ok(MockConfig {
         scope,

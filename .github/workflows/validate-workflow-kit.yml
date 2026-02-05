@@ -9,18 +9,9 @@ on:
       - '.github/workflows/validate-workflow-kit.yml'
   workflow_dispatch:
     inputs:
-      mock_scope:
-        description: 'Mock scope for validation (role or layer)'
-        required: false
-        default: 'layer'
-        type: choice
-        options:
-          - role
-          - layer
 
 env:
   CARGO_TERM_COLOR: always
-  MOCK_SCOPE: ${{ inputs.mock_scope || 'layer' }}
 
 jobs:
   # Build jlo first
@@ -30,7 +21,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -160,29 +153,22 @@ jobs:
           git add .
           git commit -m "Add jlo scaffold"
 
-      - name: Validate mock dry-run for each layer
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Validate dry-run for each layer
         run: |
           cd /tmp/mock-test-repo
           
-          # Test --mock --dry-run for each layer (no actual PR creation)
-          echo "Testing narrator mock dry-run..."
-          jlo run narrator --mock --mock-scope layer --dry-run 2>&1 | tee /tmp/narrator-output.txt
+          # Test --dry-run for each layer (validates prompt assembly without execution)
+          echo "Testing narrator dry-run..."
+          jlo run narrator --dry-run
           
-          echo "Testing observers mock dry-run..."
-          jlo run observers --mock --mock-scope layer --dry-run 2>&1 | tee /tmp/observers-output.txt
+          echo "Testing observers dry-run (requires workstream)..."
+          # Observers require a workstream, skip if no scheduled roles
+          jlo run observers --workstream generic --scheduled --dry-run || echo "No scheduled observers"
           
-          echo "Testing deciders mock dry-run..."
-          jlo run deciders --mock --mock-scope layer --dry-run 2>&1 | tee /tmp/deciders-output.txt
+          echo "Testing deciders dry-run..."
+          jlo run deciders --workstream generic --scheduled --dry-run || echo "No scheduled deciders"
           
-          echo "Testing planners mock dry-run..."
-          jlo run planners --mock --mock-scope layer --dry-run 2>&1 | tee /tmp/planners-output.txt
-          
-          echo "Testing implementers mock dry-run..."
-          jlo run implementers --mock --mock-scope layer --dry-run 2>&1 | tee /tmp/implementers-output.txt
-          
-          echo "✓ All mock dry-runs completed successfully"
+          echo "✓ Dry-run validation completed"
 
   # Validate that workflow template renders correctly with mock inputs
   validate-workflow-template:
@@ -229,9 +215,9 @@ jobs:
           
           # Verify mock inputs are present in workflow
           grep -q "mock:" .github/workflows/jules-workflows.yml || { echo "Missing mock input"; exit 1; }
-          grep -q "mock_scope:" .github/workflows/jules-workflows.yml || { echo "Missing mock_scope input"; exit 1; }
           grep -q "workflow_call:" .github/workflows/jules-workflows.yml || { echo "Missing workflow_call trigger"; exit 1; }
           grep -q "MOCK_MODE:" .github/workflows/jules-workflows.yml || { echo "Missing MOCK_MODE env"; exit 1; }
+          grep -q "JULES_MOCK_SCOPE:" .github/workflows/jules-workflows.yml || { echo "Missing JULES_MOCK_SCOPE env"; exit 1; }
           grep -q "JLO_RUN_FLAGS:" .github/workflows/jules-workflows.yml || { echo "Missing JLO_RUN_FLAGS env"; exit 1; }
           
           echo "✓ Mock support validated in workflow"

@@ -237,12 +237,11 @@ fn init_workflows_includes_mock_support() {
 
     // Mock inputs should be present
     assert!(workflow.contains("mock:"), "Should have mock input");
-    assert!(workflow.contains("mock_scope:"), "Should have mock_scope input");
     assert!(workflow.contains("workflow_call:"), "Should support workflow_call trigger");
 
-    // Mock environment variables should be set
+    // Mock environment variables should be set (JULES_MOCK_SCOPE auto-generated from run_id)
     assert!(workflow.contains("MOCK_MODE:"), "Should set MOCK_MODE env var");
-    assert!(workflow.contains("MOCK_SCOPE:"), "Should set MOCK_SCOPE env var");
+    assert!(workflow.contains("JULES_MOCK_SCOPE:"), "Should set JULES_MOCK_SCOPE env var");
     assert!(workflow.contains("JLO_RUN_FLAGS:"), "Should set JLO_RUN_FLAGS env var");
 }
 

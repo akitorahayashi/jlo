@@ -36,8 +36,6 @@ pub struct RunOptions {
     pub issue: Option<PathBuf>,
     /// Run in mock mode (no Jules API, real git/GitHub operations).
     pub mock: bool,
-    /// Scope identifier for mock mode (required in CI).
-    pub mock_scope: Option<String>,
 }
 
 /// Result of a run execution.

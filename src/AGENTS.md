@@ -59,11 +59,11 @@ tests/
 | `jlo init workflows (--remote \| --self-hosted) [--overwrite]` | `i w` | Install workflow kit into `.github/` |
 | `jlo update [--dry-run] [--adopt-managed]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
-| `jlo run narrator [--dry-run] [--mock --mock-scope <scope>]` | `r n` | Run narrator (produces changes feed) |
-| `jlo run observers --workstream <name> [--role <name> \| --scheduled] [--mock --mock-scope <scope>]` | `r o` | Run observer agents |
-| `jlo run deciders --workstream <name> [--role <name> \| --scheduled] [--mock --mock-scope <scope>]` | `r d` | Run decider agents |
-| `jlo run planners <path> [--mock --mock-scope <scope>]` | `r p` | Run planner (issue-driven) |
-| `jlo run implementers <path> [--mock --mock-scope <scope>]` | `r i` | Run implementer (issue-driven) |
+| `jlo run narrator [--dry-run] [--mock]` | `r n` | Run narrator (produces changes feed) |
+| `jlo run observers --workstream <name> [--role <name> \| --scheduled] [--mock]` | `r o` | Run observer agents |
+| `jlo run deciders --workstream <name> [--role <name> \| --scheduled] [--mock]` | `r d` | Run decider agents |
+| `jlo run planners <path> [--mock]` | `r p` | Run planner (issue-driven) |
+| `jlo run implementers <path> [--mock]` | `r i` | Run implementer (issue-driven) |
 | `jlo schedule export --scope <scope>` | | Export schedule data (scope: `workstreams` or `roles`) |
 | `jlo workstreams inspect --workstream <name> [--format json\|yaml]` | | Inspect workstream state |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
@@ -94,12 +94,7 @@ cargo test --all-targets --all-features
 
 ## Mock Mode
 
-Mock mode (`--mock --mock-scope <role|layer>`) enables E2E workflow validation without Jules API calls:
-
-| Scope | Behavior |
-|-------|----------|
-| `role` | Creates one branch/PR per role |
-| `layer` | Creates one branch/PR for entire layer |
+Mock mode (`--mock`) enables E2E workflow validation without Jules API calls. Scope is auto-generated from `JULES_MOCK_SCOPE` env var or a timestamp.
 
 Mock execution creates real git branches and GitHub PRs with synthetic commit content. Used by the `validate-workflow-kit.yml` CI workflow to verify workflow orchestration.
 
