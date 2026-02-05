@@ -180,8 +180,10 @@ jobs:
     - name: Generate observer matrix
       id: matrix
       env:
-        WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.json }}
-      run: jlo workflow matrix roles --layer observers --workstreams-json "$WORKSTREAMS_JSON"
+        WORKSTREAMS_OUTPUT: ${{ needs.generate-workstream-matrix.outputs.json }}
+      run: |
+        WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
+        jlo workflow matrix roles --layer observers --workstreams-json "$WORKSTREAMS_JSON"
   run-observers:
     needs:
     - generate-workstream-matrix
@@ -280,8 +282,10 @@ jobs:
     - name: Generate decider matrix from pending events
       id: matrix
       env:
-        WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.json }}
-      run: jlo workflow matrix pending-workstreams --workstreams-json "$WORKSTREAMS_JSON"
+        WORKSTREAMS_OUTPUT: ${{ needs.generate-workstream-matrix.outputs.json }}
+      run: |
+        WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
+        jlo workflow matrix pending-workstreams --workstreams-json "$WORKSTREAMS_JSON"
   run-deciders:
     needs:
     - generate-decider-matrix
@@ -381,8 +385,10 @@ jobs:
     - name: Generate planner and implementer matrices
       id: matrix
       env:
-        WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.json }}
-      run: jlo workflow matrix routing --workstreams-json "$WORKSTREAMS_JSON" --routing-labels "$ROUTING_LABELS"
+        WORKSTREAMS_OUTPUT: ${{ needs.generate-workstream-matrix.outputs.json }}
+      run: |
+        WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
+        jlo workflow matrix routing --workstreams-json "$WORKSTREAMS_JSON" --routing-labels "$ROUTING_LABELS"
   run-planners:
     needs:
     - generate-planner-matrix
