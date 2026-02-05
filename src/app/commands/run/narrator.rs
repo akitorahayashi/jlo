@@ -54,7 +54,6 @@ pub fn execute<G, W>(
     jules_path: &Path,
     prompt_preview: bool,
     branch: Option<&str>,
-    is_ci: bool,
     git: &G,
     workspace: &W,
 ) -> Result<RunResult, AppError>
@@ -91,22 +90,7 @@ where
         });
     }
 
-    // Outside CI, show what would happen but don't create session
-    if !is_ci {
-        println!(
-            "Narrator execution detected {} commits with {} files changed.",
-            git_context.commits.len(),
-            git_context.stats.files_changed
-        );
-        println!("Run in CI (GITHUB_ACTIONS=true) to create a Jules session.");
-        return Ok(RunResult {
-            roles: vec!["narrator".to_string()],
-            prompt_preview: false,
-            sessions: vec![],
-        });
-    }
-
-    // CI Execution: Create session with git context injected into prompt
+    // Create session with git context injected into prompt
     let source = detect_repository_source()?;
     let prompt = build_narrator_prompt(jules_path, &git_context)?;
 
