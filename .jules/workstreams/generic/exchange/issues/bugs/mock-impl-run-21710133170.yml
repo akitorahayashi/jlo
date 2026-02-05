@@ -1,0 +1,18 @@
+schema_version: 2
+id: "2f09c1"
+source_events:
+  - "246125"
+title: "Mock issue ready for implementation"
+label: "bugs"
+priority: "medium"
+summary: "This is a mock issue created by jlo --mock for workflow-kit validation. Mock scope: run-21710133170"
+problem: "Mock problem description for validation"
+impact: "Mock impact description for validation"
+desired_outcome: "Mock desired outcome for validation"
+affected_areas:
+  - "workflow"
+acceptance_criteria:
+  - "Mock acceptance criterion"
+verification_commands:
+  - "echo 'mock verification'"
+requires_deep_analysis: false
