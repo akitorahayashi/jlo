@@ -10,7 +10,7 @@ pub struct DiscoveredRole {
 }
 
 /// Port for workspace operations (.jules/ directory management).
-pub trait WorkspaceStore {
+pub trait WorkspacePort {
     /// Check if the workspace exists.
     fn exists(&self) -> bool;
 

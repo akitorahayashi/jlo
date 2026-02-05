@@ -53,7 +53,7 @@ pub struct SessionResponse {
 }
 
 /// Port for Jules API operations.
-pub trait JulesClient {
+pub trait JulesPort {
     /// Create a new Jules session.
     fn create_session(&self, request: SessionRequest) -> Result<SessionResponse, AppError>;
 }

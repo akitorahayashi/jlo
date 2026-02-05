@@ -1,7 +1,7 @@
 //! Setup list command - lists available components.
 
 use crate::domain::AppError;
-use crate::ports::ComponentCatalog;
+use crate::ports::ComponentCatalogPort;
 use crate::services::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 
 /// Summary information for a component.

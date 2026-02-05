@@ -4,7 +4,7 @@ use dialoguer::{Input, Select};
 
 use crate::app::AppContext;
 use crate::domain::{AppError, Layer};
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::ports::{RoleTemplatePort, WorkspacePort};
 
 pub(super) fn resolve_workstream<W, R>(
     ctx: &AppContext<W, R>,
@@ -12,8 +12,8 @@ pub(super) fn resolve_workstream<W, R>(
     workstream_arg: Option<&str>,
 ) -> Result<Option<String>, AppError>
 where
-    W: WorkspaceStore,
-    R: RoleTemplateStore,
+    W: WorkspacePort,
+    R: RoleTemplatePort,
 {
     if !matches!(layer, Layer::Observers | Layer::Deciders) {
         return Ok(None);
@@ -44,8 +44,8 @@ where
 
 fn select_workstream<W, R>(ctx: &AppContext<W, R>) -> Result<String, AppError>
 where
-    W: WorkspaceStore,
-    R: RoleTemplateStore,
+    W: WorkspacePort,
+    R: RoleTemplatePort,
 {
     let workstreams = ctx.workspace().list_workstreams()?;
     if workstreams.is_empty() {
@@ -71,8 +71,8 @@ where
 
 pub(super) fn create_workstream<W, R>(ctx: &AppContext<W, R>) -> Result<String, AppError>
 where
-    W: WorkspaceStore,
-    R: RoleTemplateStore,
+    W: WorkspacePort,
+    R: RoleTemplatePort,
 {
     let name = prompt_workstream_name()?;
     ctx.workspace().create_workstream(&name)?;

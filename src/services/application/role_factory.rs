@@ -1,5 +1,5 @@
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::ports::{RoleTemplatePort, WorkspacePort};
 
 /// Service for creating new agent roles.
 ///
@@ -17,8 +17,8 @@ impl RoleFactory {
         _workstream: Option<&str>,
     ) -> Result<(), AppError>
     where
-        W: WorkspaceStore,
-        T: RoleTemplateStore,
+        W: WorkspacePort,
+        T: RoleTemplatePort,
     {
         let role_id = RoleId::new(role_name)?;
 

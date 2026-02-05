@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use crate::domain::{AppError, Component, ComponentId};
-use crate::ports::ComponentCatalog;
+use crate::ports::ComponentCatalogPort;
 
 /// Service for resolving component dependencies using topological sort.
 pub struct DependencyResolver;
@@ -13,7 +13,7 @@ impl DependencyResolver {
     ///
     /// Uses Kahn's algorithm for topological sorting with cycle detection.
     /// Returns components with dependencies first.
-    pub fn resolve<C: ComponentCatalog>(
+    pub fn resolve<C: ComponentCatalogPort>(
         requested: &[String],
         catalog: &C,
     ) -> Result<Vec<Component>, AppError> {
@@ -85,7 +85,7 @@ impl DependencyResolver {
         Ok(result)
     }
 
-    fn collect_dependencies<C: ComponentCatalog>(
+    fn collect_dependencies<C: ComponentCatalogPort>(
         id: &ComponentId,
         catalog: &C,
         collected: &mut BTreeMap<ComponentId, Component>,
@@ -139,7 +139,7 @@ mod tests {
         }
     }
 
-    impl ComponentCatalog for TestCatalog {
+    impl ComponentCatalogPort for TestCatalog {
         fn get(&self, name: &str) -> Option<&Component> {
             self.components.get(name)
         }

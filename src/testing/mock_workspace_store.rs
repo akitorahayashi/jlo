@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
+use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspacePort};
 
 /// Mock workspace store for testing.
 #[derive(Default)]
 #[allow(dead_code)]
-pub struct MockWorkspaceStore {
+pub struct MockWorkspacePort {
     pub exists: RefCell<bool>,
     pub roles: RefCell<HashMap<(Layer, String), bool>>,
     pub version: RefCell<Option<String>>,
@@ -17,7 +17,7 @@ pub struct MockWorkspaceStore {
 }
 
 #[allow(dead_code)]
-impl MockWorkspaceStore {
+impl MockWorkspacePort {
     pub fn new() -> Self {
         Self::default()
     }
@@ -37,7 +37,7 @@ impl MockWorkspaceStore {
     }
 }
 
-impl WorkspaceStore for MockWorkspaceStore {
+impl WorkspacePort for MockWorkspacePort {
     fn exists(&self) -> bool {
         *self.exists.borrow()
     }

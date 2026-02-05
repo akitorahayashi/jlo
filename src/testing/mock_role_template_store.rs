@@ -1,15 +1,15 @@
 use crate::domain::Layer;
-use crate::ports::{RoleTemplateStore, ScaffoldFile};
+use crate::ports::{RoleTemplatePort, ScaffoldFile};
 
 /// Mock role template store for testing.
 #[derive(Default)]
 #[allow(dead_code)]
-pub struct MockRoleTemplateStore {
+pub struct MockRoleTemplatePort {
     scaffold_files: Vec<ScaffoldFile>,
 }
 
 #[allow(dead_code)]
-impl MockRoleTemplateStore {
+impl MockRoleTemplatePort {
     pub fn new() -> Self {
         Self::default()
     }
@@ -20,7 +20,7 @@ impl MockRoleTemplateStore {
     }
 }
 
-impl RoleTemplateStore for MockRoleTemplateStore {
+impl RoleTemplatePort for MockRoleTemplatePort {
     fn scaffold_files(&self) -> Vec<ScaffoldFile> {
         self.scaffold_files.clone()
     }

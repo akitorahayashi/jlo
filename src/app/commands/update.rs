@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use chrono::Utc;
 
 use crate::domain::AppError;
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::ports::{RoleTemplatePort, WorkspacePort};
 use crate::services::assets::scaffold_manifest::{
     ScaffoldManifest, hash_content, is_default_role_file, load_manifest, write_manifest,
 };
@@ -90,10 +90,10 @@ pub struct SkippedUpdate {
 pub fn execute<W>(
     workspace: &W,
     options: UpdateOptions,
-    templates: &impl RoleTemplateStore,
+    templates: &impl RoleTemplatePort,
 ) -> Result<UpdateResult, AppError>
 where
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     // Check if workspace exists
     if !workspace.exists() {
@@ -400,7 +400,7 @@ fn compare_versions(a: &[u32], b: &[u32]) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+    use crate::services::adapters::workspace_filesystem::FilesystemWorkspacePort;
     use std::fs;
 
     #[test]
@@ -424,11 +424,11 @@ mod tests {
     use crate::ports::ScaffoldFile;
     use assert_fs::TempDir;
 
-    struct MockRoleTemplateStore {
+    struct MockRoleTemplatePort {
         files: Vec<ScaffoldFile>,
     }
 
-    impl RoleTemplateStore for MockRoleTemplateStore {
+    impl RoleTemplatePort for MockRoleTemplatePort {
         fn scaffold_files(&self) -> Vec<ScaffoldFile> {
             self.files.clone()
         }
@@ -452,7 +452,7 @@ mod tests {
         let version_path = jules_path.join(".jlo-version");
         fs::write(&version_path, "0.0.0").unwrap();
 
-        let mock_store = MockRoleTemplateStore {
+        let mock_store = MockRoleTemplatePort {
             files: vec![
                 ScaffoldFile {
                     path: ".jules/README.md".to_string(),
@@ -467,7 +467,7 @@ mod tests {
 
         let options = UpdateOptions { dry_run: false, adopt_managed: false };
 
-        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let workspace = FilesystemWorkspacePort::new(temp.path().to_path_buf());
         let result = execute(&workspace, options, &mock_store).unwrap();
 
         assert!(result.created.contains(&".jules/README.md".to_string()));
@@ -490,7 +490,7 @@ mod tests {
         // Existing managed file with old content
         fs::write(jules_path.join("README.md"), "# Old Content").unwrap();
 
-        let mock_store = MockRoleTemplateStore {
+        let mock_store = MockRoleTemplatePort {
             files: vec![ScaffoldFile {
                 path: ".jules/README.md".to_string(),
                 content: "# New Content".to_string(),
@@ -498,7 +498,7 @@ mod tests {
         };
 
         let options = UpdateOptions { dry_run: false, adopt_managed: false };
-        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let workspace = FilesystemWorkspacePort::new(temp.path().to_path_buf());
         let result = execute(&workspace, options, &mock_store).unwrap();
 
         assert!(result.updated.contains(&".jules/README.md".to_string()));
@@ -521,7 +521,7 @@ mod tests {
         fs::write(jules_path.join("custom.txt"), "User Content").unwrap();
 
         // Template has different content for this file
-        let mock_store = MockRoleTemplateStore {
+        let mock_store = MockRoleTemplatePort {
             files: vec![ScaffoldFile {
                 path: ".jules/custom.txt".to_string(),
                 content: "Template Content".to_string(),
@@ -529,7 +529,7 @@ mod tests {
         };
 
         let options = UpdateOptions { dry_run: false, adopt_managed: false };
-        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let workspace = FilesystemWorkspacePort::new(temp.path().to_path_buf());
         let result = execute(&workspace, options, &mock_store).unwrap();
 
         // Should NOT update unmanaged file

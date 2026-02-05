@@ -8,13 +8,13 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::domain::{AppError, JulesApiConfig};
-use crate::ports::{JulesClient, SessionRequest, SessionResponse};
+use crate::ports::{JulesPort, SessionRequest, SessionResponse};
 
 const X_GOOG_API_KEY: &str = "X-Goog-Api-Key";
 
 /// HTTP client for Jules API.
 #[derive(Clone)]
-pub struct HttpJulesClient {
+pub struct HttpJulesPort {
     api_key: String,
     api_url: Url,
     max_retries: u32,
@@ -22,9 +22,9 @@ pub struct HttpJulesClient {
     client: Client,
 }
 
-impl std::fmt::Debug for HttpJulesClient {
+impl std::fmt::Debug for HttpJulesPort {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("HttpJulesClient")
+        f.debug_struct("HttpJulesPort")
             .field("api_url", &self.api_url)
             .field("max_retries", &self.max_retries)
             .field("retry_delay_ms", &self.retry_delay_ms)
@@ -33,7 +33,7 @@ impl std::fmt::Debug for HttpJulesClient {
     }
 }
 
-impl HttpJulesClient {
+impl HttpJulesPort {
     /// Create a new HTTP client with the given API key and configuration.
     pub fn new(api_key: String, config: &JulesApiConfig) -> Result<Self, AppError> {
         let client = Client::builder()
@@ -107,7 +107,7 @@ struct ApiResponse {
     error: Option<String>,
 }
 
-impl JulesClient for HttpJulesClient {
+impl JulesPort for HttpJulesPort {
     fn create_session(&self, request: SessionRequest) -> Result<SessionResponse, AppError> {
         let api_request = ApiRequest {
             prompt: request.prompt,
@@ -149,7 +149,7 @@ impl JulesClient for HttpJulesClient {
     }
 }
 
-impl HttpJulesClient {
+impl HttpJulesPort {
     fn send_request(&self, request: &ApiRequest) -> Result<SessionResponse, AppError> {
         let response = self
             .client
@@ -239,7 +239,7 @@ mod tests {
             timeout_secs: 1,
         };
 
-        let client = HttpJulesClient::new("fake-key".to_string(), &config).unwrap();
+        let client = HttpJulesPort::new("fake-key".to_string(), &config).unwrap();
         let request = SessionRequest {
             prompt: "test".to_string(),
             source: "github".to_string(),
@@ -265,7 +265,7 @@ mod tests {
             timeout_secs: 1,
         };
 
-        let client = HttpJulesClient::new("fake-key".to_string(), &config).unwrap();
+        let client = HttpJulesPort::new("fake-key".to_string(), &config).unwrap();
         let request = SessionRequest {
             prompt: "test".to_string(),
             source: "github".to_string(),
@@ -291,7 +291,7 @@ mod tests {
             timeout_secs: 1,
         };
 
-        let client = HttpJulesClient::new("fake-key".to_string(), &config).unwrap();
+        let client = HttpJulesPort::new("fake-key".to_string(), &config).unwrap();
         let request = SessionRequest {
             prompt: "test".to_string(),
             source: "github".to_string(),
@@ -318,7 +318,7 @@ mod tests {
             timeout_secs: 1,
         };
 
-        let client = HttpJulesClient::new("fake-key".to_string(), &config).unwrap();
+        let client = HttpJulesPort::new("fake-key".to_string(), &config).unwrap();
         let request = SessionRequest {
             prompt: "test".to_string(),
             source: "github".to_string(),

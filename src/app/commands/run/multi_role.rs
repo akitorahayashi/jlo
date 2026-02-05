@@ -7,8 +7,8 @@ use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_prompt;
 use super::role_selection::{RoleSelectionInput, select_roles};
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{AutomationMode, JulesClient, SessionRequest};
-use crate::services::adapters::jules_client_http::HttpJulesClient;
+use crate::ports::{AutomationMode, JulesPort, SessionRequest};
+use crate::services::adapters::jules_client_http::HttpJulesPort;
 
 /// Execute a multi-role layer (Observers or Deciders).
 pub fn execute(
@@ -70,7 +70,7 @@ pub fn execute(
     let source = detect_repository_source()?;
 
     // Execute with appropriate client
-    let client = HttpJulesClient::from_env_with_config(&config.jules)?;
+    let client = HttpJulesPort::from_env_with_config(&config.jules)?;
     let sessions = execute_roles(
         jules_path,
         layer,
@@ -89,7 +89,7 @@ pub fn execute(
 }
 
 /// Execute roles with the given Jules client.
-fn execute_roles<C: JulesClient>(
+fn execute_roles<C: JulesPort>(
     jules_path: &Path,
     layer: Layer,
     roles: &[RoleId],

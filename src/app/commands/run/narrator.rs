@@ -9,9 +9,9 @@ use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
 use crate::ports::{
-    AutomationMode, CommitInfo, GitPort, JulesClient, SessionRequest, WorkspaceStore,
+    AutomationMode, CommitInfo, GitPort, JulesPort, SessionRequest, WorkspacePort,
 };
-use crate::services::adapters::jules_client_http::HttpJulesClient;
+use crate::services::adapters::jules_client_http::HttpJulesPort;
 
 /// Maximum number of commits to include in the bounded sample.
 const MAX_COMMITS: usize = 50;
@@ -60,7 +60,7 @@ pub fn execute<G, W>(
 ) -> Result<RunResult, AppError>
 where
     G: GitPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     let config = load_config(jules_path)?;
 
@@ -110,7 +110,7 @@ where
     let source = detect_repository_source()?;
     let prompt = build_narrator_prompt(jules_path, &git_context)?;
 
-    let client = HttpJulesClient::from_env_with_config(&config.jules)?;
+    let client = HttpJulesPort::from_env_with_config(&config.jules)?;
     let request = SessionRequest {
         prompt,
         source,
@@ -143,7 +143,7 @@ fn collect_git_context<G, W>(
 ) -> Result<Option<GitContext>, AppError>
 where
     G: GitPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     // Construct path to latest.yml relative to workspace root or absolute
     let latest_path = jules_path.join("changes/latest.yml");
@@ -199,7 +199,7 @@ fn determine_range<G, W>(
 ) -> Result<RangeContext, AppError>
 where
     G: GitPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     let head_sha = git.get_head_sha()?;
 

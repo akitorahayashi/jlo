@@ -1,13 +1,13 @@
 mod component_catalog;
 mod git;
 mod github;
-mod jules_client;
-mod role_template_store;
-mod workspace_store;
+mod jules;
+mod role_template;
+mod workspace;
 
-pub use component_catalog::ComponentCatalog;
+pub use component_catalog::ComponentCatalogPort;
 pub use git::{CommitInfo, DiffStat, GitPort};
 pub use github::{GitHubPort, PullRequestInfo};
-pub use jules_client::{AutomationMode, JulesClient, SessionRequest, SessionResponse};
-pub use role_template_store::{RoleTemplateStore, ScaffoldFile};
-pub use workspace_store::{DiscoveredRole, WorkspaceStore};
+pub use jules::{AutomationMode, JulesPort, SessionRequest, SessionResponse};
+pub use role_template::{RoleTemplatePort, ScaffoldFile};
+pub use workspace::{DiscoveredRole, WorkspacePort};

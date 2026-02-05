@@ -14,7 +14,7 @@ use super::RunOptions;
 use super::RunResult;
 use super::config::load_config;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput};
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::ports::{GitHubPort, GitPort, WorkspacePort};
 
 /// Execute in mock mode.
 pub fn execute<G, H, W>(
@@ -27,7 +27,7 @@ pub fn execute<G, H, W>(
 where
     G: GitPort,
     H: GitHubPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     // Validate mock prerequisites
     validate_mock_prerequisites(options)?;
@@ -96,7 +96,7 @@ fn validate_mock_prerequisites(_options: &RunOptions) -> Result<(), AppError> {
 }
 
 /// Load mock configuration from workspace files.
-fn load_mock_config<W: WorkspaceStore>(
+fn load_mock_config<W: WorkspacePort>(
     jules_path: &Path,
     _options: &RunOptions,
     workspace: &W,
@@ -192,7 +192,7 @@ fn execute_mock_narrator<G, H, W>(
 where
     G: GitPort,
     H: GitHubPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Narrators, &timestamp);
@@ -262,7 +262,7 @@ fn execute_mock_observers<G, H, W>(
 where
     G: GitPort,
     H: GitHubPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     let workstream = options.workstream.as_deref().ok_or_else(|| {
         AppError::MissingArgument("Workstream is required for observers".to_string())
@@ -351,7 +351,7 @@ fn execute_mock_deciders<G, H, W>(
 where
     G: GitPort,
     H: GitHubPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     let workstream = options.workstream.as_deref().ok_or_else(|| {
         AppError::MissingArgument("Workstream is required for deciders".to_string())
@@ -502,7 +502,7 @@ fn execute_mock_planners<G, H, W>(
 where
     G: GitPort,
     H: GitHubPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     let issue_path = options.issue.as_ref().ok_or_else(|| {
         AppError::MissingArgument("Issue path is required for planners".to_string())
@@ -591,7 +591,7 @@ fn execute_mock_implementers<G, H, W>(
 where
     G: GitPort,
     H: GitHubPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     let issue_path = options.issue.as_ref().ok_or_else(|| {
         AppError::MissingArgument("Issue path is required for implementers".to_string())

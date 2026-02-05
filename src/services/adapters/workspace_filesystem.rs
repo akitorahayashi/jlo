@@ -2,16 +2,16 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::domain::{AppError, JULES_DIR, Layer, RoleId, VERSION_FILE};
-use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
+use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspacePort};
 use crate::services::assets::workstream_template_assets::workstream_template_files;
 
 /// Filesystem-based workspace store implementation.
 #[derive(Debug, Clone)]
-pub struct FilesystemWorkspaceStore {
+pub struct FilesystemWorkspacePort {
     root: PathBuf,
 }
 
-impl FilesystemWorkspaceStore {
+impl FilesystemWorkspacePort {
     /// Create a workspace store for the given root directory.
     pub fn new(root: PathBuf) -> Self {
         Self { root }
@@ -33,7 +33,7 @@ impl FilesystemWorkspaceStore {
     }
 }
 
-impl WorkspaceStore for FilesystemWorkspaceStore {
+impl WorkspacePort for FilesystemWorkspacePort {
     fn exists(&self) -> bool {
         self.jules_path().exists()
     }
@@ -267,9 +267,9 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
 
-    fn test_workspace() -> (TempDir, FilesystemWorkspaceStore) {
+    fn test_workspace() -> (TempDir, FilesystemWorkspacePort) {
         let dir = TempDir::new().expect("failed to create temp dir");
-        let ws = FilesystemWorkspaceStore::new(dir.path().to_path_buf());
+        let ws = FilesystemWorkspacePort::new(dir.path().to_path_buf());
         (dir, ws)
     }
 

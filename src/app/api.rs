@@ -12,11 +12,11 @@ use crate::app::{
         workstreams,
     },
 };
-use crate::ports::WorkspaceStore;
-use crate::services::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
+use crate::ports::WorkspacePort;
+use crate::services::adapters::embedded_role_template_store::EmbeddedRoleTemplatePort;
 use crate::services::adapters::git_command::GitCommandAdapter;
 use crate::services::adapters::github_command::GitHubCommandAdapter;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::services::adapters::workspace_filesystem::FilesystemWorkspacePort;
 
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
@@ -37,15 +37,15 @@ pub use crate::domain::WorkflowRunnerMode;
 /// ceate an AppContext for a given path.
 fn create_context(
     path: std::path::PathBuf,
-) -> AppContext<FilesystemWorkspaceStore, EmbeddedRoleTemplateStore> {
-    let workspace = FilesystemWorkspaceStore::new(path);
-    let templates = EmbeddedRoleTemplateStore::new();
+) -> AppContext<FilesystemWorkspacePort, EmbeddedRoleTemplatePort> {
+    let workspace = FilesystemWorkspacePort::new(path);
+    let templates = EmbeddedRoleTemplatePort::new();
     AppContext::new(workspace, templates)
 }
 
 /// get and validate the current workspace.
-fn get_current_workspace() -> Result<FilesystemWorkspaceStore, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
+fn get_current_workspace() -> Result<FilesystemWorkspacePort, AppError> {
+    let workspace = FilesystemWorkspacePort::current()?;
     if !workspace.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
@@ -213,7 +213,7 @@ pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
 pub fn update(dry_run: bool, adopt_managed: bool) -> Result<UpdateResult, AppError> {
     let workspace = get_current_workspace()?;
 
-    let templates = EmbeddedRoleTemplateStore::new();
+    let templates = EmbeddedRoleTemplatePort::new();
     let options = UpdateOptions { dry_run, adopt_managed };
     update::execute(&workspace, options, &templates)
 }

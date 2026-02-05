@@ -1,7 +1,7 @@
 use include_dir::{Dir, DirEntry, include_dir};
 
 use crate::domain::Layer;
-use crate::ports::{RoleTemplateStore, ScaffoldFile};
+use crate::ports::{RoleTemplatePort, ScaffoldFile};
 
 static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold");
 
@@ -17,15 +17,15 @@ mod templates {
 
 /// Embedded role template store implementation.
 #[derive(Debug, Clone, Default)]
-pub struct EmbeddedRoleTemplateStore;
+pub struct EmbeddedRoleTemplatePort;
 
-impl EmbeddedRoleTemplateStore {
+impl EmbeddedRoleTemplatePort {
     pub fn new() -> Self {
         Self
     }
 }
 
-impl RoleTemplateStore for EmbeddedRoleTemplateStore {
+impl RoleTemplatePort for EmbeddedRoleTemplatePort {
     fn scaffold_files(&self) -> Vec<ScaffoldFile> {
         let mut files = Vec::new();
         collect_files(&SCAFFOLD_DIR, &mut files);
@@ -69,21 +69,21 @@ mod tests {
 
     #[test]
     fn scaffold_includes_readme() {
-        let store = EmbeddedRoleTemplateStore::new();
+        let store = EmbeddedRoleTemplatePort::new();
         let files = store.scaffold_files();
         assert!(files.iter().any(|f| f.path == ".jules/README.md"));
     }
 
     #[test]
     fn scaffold_includes_jules_contract() {
-        let store = EmbeddedRoleTemplateStore::new();
+        let store = EmbeddedRoleTemplatePort::new();
         let files = store.scaffold_files();
         assert!(files.iter().any(|f| f.path == ".jules/JULES.md"));
     }
 
     #[test]
     fn generate_role_yaml_for_observers() {
-        let store = EmbeddedRoleTemplateStore::new();
+        let store = EmbeddedRoleTemplatePort::new();
         let yaml = store.generate_role_yaml("custom", Layer::Observers);
 
         assert!(yaml.contains("role: ROLE_NAME"));
@@ -94,7 +94,7 @@ mod tests {
 
     #[test]
     fn generate_role_yaml_for_deciders() {
-        let store = EmbeddedRoleTemplateStore::new();
+        let store = EmbeddedRoleTemplatePort::new();
         let yaml = store.generate_role_yaml("custom", Layer::Deciders);
 
         assert!(yaml.contains("role: ROLE_NAME"));
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn generate_role_yaml_empty_for_single_role_layers() {
-        let store = EmbeddedRoleTemplateStore::new();
+        let store = EmbeddedRoleTemplatePort::new();
 
         assert!(store.generate_role_yaml("custom", Layer::Narrators).is_empty());
         assert!(store.generate_role_yaml("custom", Layer::Planners).is_empty());

@@ -1,12 +1,12 @@
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::ports::{RoleTemplatePort, WorkspacePort};
 
 /// Application context holding dependencies for command execution.
-pub struct AppContext<W: WorkspaceStore, R: RoleTemplateStore> {
+pub struct AppContext<W: WorkspacePort, R: RoleTemplatePort> {
     workspace: W,
     templates: R,
 }
 
-impl<W: WorkspaceStore, R: RoleTemplateStore> AppContext<W, R> {
+impl<W: WorkspacePort, R: RoleTemplatePort> AppContext<W, R> {
     /// Create a new application context.
     pub fn new(workspace: W, templates: R) -> Self {
         Self { workspace, templates }

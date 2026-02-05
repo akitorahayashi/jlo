@@ -6,7 +6,7 @@ use serde::Deserialize;
 use std::collections::BTreeMap;
 
 use crate::domain::{AppError, Component, ComponentId, EnvSpec};
-use crate::ports::ComponentCatalog;
+use crate::ports::ComponentCatalogPort;
 
 /// Embedded catalog directory.
 static CATALOG_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/catalog");
@@ -103,7 +103,7 @@ impl Default for EmbeddedComponentCatalog {
     }
 }
 
-impl ComponentCatalog for EmbeddedComponentCatalog {
+impl ComponentCatalogPort for EmbeddedComponentCatalog {
     fn get(&self, name: &str) -> Option<&Component> {
         self.components.get(name)
     }

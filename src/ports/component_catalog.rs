@@ -3,7 +3,7 @@
 use crate::domain::Component;
 
 /// Trait for accessing the component catalog.
-pub trait ComponentCatalog {
+pub trait ComponentCatalogPort {
     /// Get a component by name.
     fn get(&self, name: &str) -> Option<&Component>;
 

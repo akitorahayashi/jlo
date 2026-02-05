@@ -4,7 +4,7 @@ use dialoguer::Select;
 
 use crate::app::AppContext;
 use crate::domain::{AppError, Layer};
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::ports::{RoleTemplatePort, WorkspacePort};
 use crate::services::application::role_factory::RoleFactory;
 
 use super::outcome::TemplateOutcome;
@@ -22,8 +22,8 @@ pub fn execute<W, R>(
     workstream_arg: Option<&str>,
 ) -> Result<TemplateOutcome, AppError>
 where
-    W: WorkspaceStore,
-    R: RoleTemplateStore,
+    W: WorkspacePort,
+    R: RoleTemplatePort,
 {
     if !ctx.workspace().exists() {
         return Err(AppError::WorkspaceNotFound);
@@ -53,8 +53,8 @@ pub(super) fn create_role_from_template<W, R>(
     workstream_arg: Option<&str>,
 ) -> Result<TemplateOutcome, AppError>
 where
-    W: WorkspaceStore,
-    R: RoleTemplateStore,
+    W: WorkspacePort,
+    R: RoleTemplatePort,
 {
     if layer.is_single_role() {
         return Err(AppError::SingleRoleLayerTemplate(layer.dir_name().to_string()));

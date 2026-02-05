@@ -6,8 +6,8 @@ use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
-use crate::ports::{AutomationMode, GitHubPort, JulesClient, SessionRequest, WorkspaceStore};
-use crate::services::adapters::jules_client_http::HttpJulesClient;
+use crate::ports::{AutomationMode, GitHubPort, JulesPort, SessionRequest, WorkspacePort};
+use crate::services::adapters::jules_client_http::HttpJulesPort;
 
 const PLANNER_WORKFLOW_NAME: &str = "jules-run-planner.yml";
 const IMPLEMENTER_WORKFLOW_NAME: &str = "jules-run-implementer.yml";
@@ -26,7 +26,7 @@ pub fn execute<H, W>(
 ) -> Result<RunResult, AppError>
 where
     H: GitHubPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     // Validate issue file requirement
     let path_str = issue_path
@@ -101,7 +101,7 @@ where
     let source = detect_repository_source()?;
 
     // Execute with appropriate client
-    let client = HttpJulesClient::from_env_with_config(&config.jules)?;
+    let client = HttpJulesPort::from_env_with_config(&config.jules)?;
     let session_id = execute_session(
         jules_path,
         layer,
@@ -129,7 +129,7 @@ fn execute_local_dispatch<H, W>(
 ) -> Result<RunResult, AppError>
 where
     H: GitHubPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     let workflow_name = match layer {
         Layer::Planners => PLANNER_WORKFLOW_NAME,
@@ -155,7 +155,7 @@ where
     // If canonical_path (absolute) starts with root (absolute), strip prefix.
     // Note: resolve_path returns absolute path if root was absolute (which it is from current_dir).
     // But we need to make sure 'root' is also canonicalized to match canonical_path?
-    // FilesystemWorkspaceStore::new stores root as is.
+    // FilesystemWorkspacePort::new stores root as is.
     // We should canonicalize root.
     let canonical_root = workspace.canonicalize("").unwrap_or(root);
 
@@ -173,7 +173,7 @@ where
 }
 
 /// Execute a single role with the given Jules client.
-fn execute_session<C: JulesClient>(
+fn execute_session<C: JulesPort>(
     jules_path: &Path,
     layer: Layer,
     starting_branch: &str,

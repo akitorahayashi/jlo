@@ -2,7 +2,7 @@ use dialoguer::Select;
 
 use crate::app::AppContext;
 use crate::domain::{AppError, Layer};
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::ports::{RoleTemplatePort, WorkspacePort};
 
 use super::command::create_role_from_template;
 use super::outcome::TemplateOutcome;
@@ -30,8 +30,8 @@ impl TemplateChoice {
 
 pub(super) fn run_template_wizard<W, R>(ctx: &AppContext<W, R>) -> Result<TemplateOutcome, AppError>
 where
-    W: WorkspaceStore,
-    R: RoleTemplateStore,
+    W: WorkspacePort,
+    R: RoleTemplatePort,
 {
     let items: Vec<&str> = TemplateChoice::ALL.iter().map(|choice| choice.label()).collect();
 

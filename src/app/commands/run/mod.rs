@@ -15,7 +15,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::domain::{AppError, Layer};
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::ports::{GitHubPort, GitPort, WorkspacePort};
 
 /// Options for the run command.
 #[derive(Debug, Clone)]
@@ -60,7 +60,7 @@ pub fn execute<G, H, W>(
 where
     G: GitPort,
     H: GitHubPort,
-    W: WorkspaceStore,
+    W: WorkspacePort,
 {
     // Handle mock mode
     if options.mock {

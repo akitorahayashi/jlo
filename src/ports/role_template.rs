@@ -10,7 +10,7 @@ pub struct ScaffoldFile {
 }
 
 /// Port for accessing role templates and scaffold content.
-pub trait RoleTemplateStore {
+pub trait RoleTemplatePort {
     /// Get all scaffold files (for workspace initialization).
     fn scaffold_files(&self) -> Vec<ScaffoldFile>;
 
