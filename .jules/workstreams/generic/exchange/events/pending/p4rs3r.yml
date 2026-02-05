@@ -15,7 +15,8 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "src/app/commands/run/mock/config.rs"
-    loc: "118-132"
+    loc:
+      - "118-132"
     note: "Manual parsing logic iterate lines and strips prefixes"
 
 tags:

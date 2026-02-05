@@ -15,7 +15,8 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "src/domain/mock_config.rs"
-    loc: "62-80"
+    loc:
+      - "62-80"
     note: "Methods directly access std::fs and println!"
 
 tags:

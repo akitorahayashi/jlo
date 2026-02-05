@@ -15,10 +15,12 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "src/services/assets/scaffold_manifest.rs"
-    loc: "1-2"
+    loc:
+      - "1-2"
     note: "Imports and uses std::fs"
   - path: "src/services/adapters/workstream_schedule_filesystem.rs"
-    loc: "1-2"
+    loc:
+      - "1-2"
     note: "Imports and uses std::fs"
 
 tags:
