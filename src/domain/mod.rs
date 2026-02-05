@@ -17,11 +17,9 @@ pub use component_id::ComponentId;
 pub use error::AppError;
 pub use layer::Layer;
 pub use mock_config::{MockConfig, MockOutput};
-pub use prompt_assembly::{
-    assemble_prompt, assemble_with_issue, PromptAssetLoader, PromptContext,
-};
 #[allow(unused_imports)]
 pub use prompt_assembly::{AssembledPrompt, PromptAssemblyError, PromptAssemblySpec};
+pub use prompt_assembly::{PromptAssetLoader, PromptContext, assemble_prompt, assemble_with_issue};
 pub use role_id::RoleId;
 pub use run_config::{JulesApiConfig, RunConfig, RunSettings};
 pub use schedule::WorkstreamSchedule;
