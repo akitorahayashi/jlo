@@ -8,7 +8,7 @@
 |-----------|----------------|
 | **jlo** | Scaffold installation, versioning, prompt asset management |
 | **GitHub Actions** | Orchestration: cron triggers, matrix execution, auto-merge control |
-| **Jules (VM)** | Execution: code analysis, artifact generation, branch/PR creation |
+| **Jules API** | Execution: code analysis, artifact generation, branch/PR creation |
 
 ## Critical Design Principles
 
@@ -31,7 +31,7 @@ contracts:
 **Rule**: Never duplicate content across levels. Each level refines the constraints of the previous one.
 
 ### 3. Workflow-Driven Execution
-Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules VM; workflows control scheduling, branching, and merge policies.
+Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules API; workflows control scheduling, branching, and merge policies.
 
 ## Context-Specific Documentation
 
