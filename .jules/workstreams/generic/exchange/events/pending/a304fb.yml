@@ -1,0 +1,35 @@
+schema_version: 1
+
+# Metadata
+id: "a304fb"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Regression to string-typed error variants"
+statement: |
+  The `AppError` domain type utilizes generic string-holding variants (`Validation(String)`, `InternalError(String)`, `AssetError(String)`) instead of structured error types. This prevents consumers from matching on specific failure causes and encourages constructing ad-hoc error messages that are hard to programmatically handle or test.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "Validation(String)"
+    note: "Generic string container for validation errors."
+
+  - path: "src/domain/error.rs"
+    loc:
+      - "InternalError(String)"
+    note: "Generic string container for internal errors."
+
+  - path: "src/app/commands/run/role_selection.rs"
+    loc:
+      - "AppError::Validation(format!"
+    note: "Ad-hoc string construction at usage site."
+
+tags:
+  - "typing"
+  - "error-handling"
+  - "regression"
