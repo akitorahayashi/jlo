@@ -1,0 +1,9 @@
+id: "55b933"
+type: observation
+title: "Mock observation for workflow validation"
+description: |
+  This is a mock observation created by `jlo run --mock` for workflow-kit validation.
+  Scope: run-21705154841
+author_role: mock
+created_at: "2026-02-05T09:00:01.287846530+00:00"
+mock: true
