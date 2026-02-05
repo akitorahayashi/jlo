@@ -21,6 +21,9 @@ pub trait GitPort {
     /// Get the current branch name.
     fn get_current_branch(&self) -> Result<String, AppError>;
 
+    /// Get the URL for a remote.
+    fn get_remote_url(&self, name: &str) -> Result<String, AppError>;
+
     /// Check if a commit exists.
     fn commit_exists(&self, sha: &str) -> bool;
 

@@ -70,7 +70,7 @@ where
 
     // CI Execution: Direct session creation
     let issue_content = workspace.read_file(path_str)?;
-    let config = load_config(jules_path)?;
+    let config = load_config(jules_path, workspace)?;
 
     // Determine starting branch
     let starting_branch = branch.map(String::from).unwrap_or_else(|| {
@@ -83,7 +83,14 @@ where
     });
 
     if dry_run {
-        execute_dry_run(jules_path, layer, &starting_branch, &issue_content, issue_path)?;
+        execute_dry_run(
+            jules_path,
+            layer,
+            &starting_branch,
+            &issue_content,
+            issue_path,
+            workspace,
+        )?;
         return Ok(RunResult {
             roles: vec![layer.dir_name().to_string()],
             dry_run: true,
@@ -110,6 +117,7 @@ where
         &client,
         &issue_content,
         issue_path,
+        workspace,
     )?;
 
     Ok(RunResult {
@@ -173,7 +181,8 @@ where
 }
 
 /// Execute a single role with the given Jules client.
-fn execute_session<C: JulesClient>(
+#[allow(clippy::too_many_arguments)]
+fn execute_session<C: JulesClient, W: WorkspaceStore>(
     jules_path: &Path,
     layer: Layer,
     starting_branch: &str,
@@ -181,10 +190,11 @@ fn execute_session<C: JulesClient>(
     client: &C,
     issue_content: &str,
     issue_path: &Path,
+    workspace: &W,
 ) -> Result<String, AppError> {
     println!("Executing {}...", layer.display_name());
 
-    let mut prompt = assemble_single_role_prompt(jules_path, layer)?;
+    let mut prompt = assemble_single_role_prompt(jules_path, layer, workspace)?;
 
     // Append issue content
     prompt.push_str("\n---\n# Issue Content\n");
@@ -208,12 +218,13 @@ fn execute_session<C: JulesClient>(
 }
 
 /// Execute a dry run for a single-role layer.
-fn execute_dry_run(
+fn execute_dry_run<W: WorkspaceStore>(
     jules_path: &Path,
     layer: Layer,
     starting_branch: &str,
     issue_content: &str,
     issue_path: &Path,
+    workspace: &W,
 ) -> Result<(), AppError> {
     println!("=== Dry Run: {} ===", layer.display_name());
     println!("Starting branch: {}\n", starting_branch);
@@ -228,7 +239,7 @@ fn execute_dry_run(
         println!("Contracts: {}", contracts_path.display());
     }
 
-    if let Ok(mut prompt) = assemble_single_role_prompt(jules_path, layer) {
+    if let Ok(mut prompt) = assemble_single_role_prompt(jules_path, layer, workspace) {
         prompt.push_str("\n---\n# Issue Content\n");
         if layer == Layer::Planners {
             prompt.push_str(&format!("File: {}\n\n", issue_path.display()));

@@ -1,20 +1,22 @@
 //! Run configuration loading and repository detection.
 
-use std::fs;
-use std::path::Path;
-
 use super::config_dto::RunConfigDto;
 use crate::domain::{AppError, RunConfig};
+use std::path::Path;
+
+use crate::ports::WorkspaceStore;
 
 /// Load and parse the run configuration.
-pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
+pub fn load_config(
+    jules_path: &Path,
+    workspace: &impl WorkspaceStore,
+) -> Result<RunConfig, AppError> {
     let config_path = jules_path.join("config.toml");
+    let path_str = config_path.to_str().ok_or_else(|| {
+        AppError::Validation("Config path contains invalid unicode".to_string())
+    })?;
 
-    if !config_path.exists() {
-        return Err(AppError::RunConfigMissing);
-    }
-
-    let content = fs::read_to_string(&config_path)?;
+    let content = workspace.read_file(path_str).map_err(|_| AppError::RunConfigMissing)?;
     parse_config_content(&content)
 }
 

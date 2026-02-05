@@ -5,7 +5,7 @@
 use std::path::Path;
 
 use super::RunResult;
-use super::config::{detect_repository_source, load_config};
+use super::config::load_config;
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
 use crate::ports::{
@@ -62,7 +62,7 @@ where
     G: GitPort,
     W: WorkspaceStore,
 {
-    let config = load_config(jules_path)?;
+    let config = load_config(jules_path, workspace)?;
 
     // Determine starting branch (Narrator always uses jules branch)
     let starting_branch =
@@ -83,7 +83,7 @@ where
     };
 
     if dry_run {
-        execute_dry_run(jules_path, &starting_branch, &git_context)?;
+        execute_dry_run(jules_path, &starting_branch, &git_context, workspace)?;
         return Ok(RunResult {
             roles: vec!["narrator".to_string()],
             dry_run: true,
@@ -107,8 +107,8 @@ where
     }
 
     // CI Execution: Create session with git context injected into prompt
-    let source = detect_repository_source()?;
-    let prompt = build_narrator_prompt(jules_path, &git_context)?;
+    let source = git.get_remote_url("origin")?;
+    let prompt = build_narrator_prompt(jules_path, &git_context, workspace)?;
 
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
     let request = SessionRequest {
@@ -243,8 +243,12 @@ fn extract_to_commit(content: &str) -> Option<String> {
 }
 
 /// Build the full Narrator prompt with git context injected.
-fn build_narrator_prompt(jules_path: &Path, ctx: &GitContext) -> Result<String, AppError> {
-    let base_prompt = assemble_single_role_prompt(jules_path, Layer::Narrators)?;
+fn build_narrator_prompt(
+    jules_path: &Path,
+    ctx: &GitContext,
+    workspace: &impl WorkspaceStore,
+) -> Result<String, AppError> {
+    let base_prompt = assemble_single_role_prompt(jules_path, Layer::Narrators, workspace)?;
 
     // Build the git context section
     let mut context_section = String::new();
@@ -289,6 +293,7 @@ fn execute_dry_run(
     jules_path: &Path,
     starting_branch: &str,
     ctx: &GitContext,
+    workspace: &impl WorkspaceStore,
 ) -> Result<(), AppError> {
     println!("=== Dry Run: Narrator ===");
     println!("Starting branch: {}\n", starting_branch);
@@ -311,7 +316,7 @@ fn execute_dry_run(
     }
 
     println!("\n--- Prompt (base) ---");
-    let prompt = assemble_single_role_prompt(jules_path, Layer::Narrators)?;
+    let prompt = assemble_single_role_prompt(jules_path, Layer::Narrators, workspace)?;
     println!("{}", prompt);
 
     Ok(())
@@ -320,6 +325,217 @@ fn execute_dry_run(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::RoleId;
+    use crate::ports::{DiffStat, DiscoveredRole, ScaffoldFile};
+    use std::collections::HashMap;
+
+    struct MockGitPort {
+        head_sha: String,
+        changes: bool,
+    }
+
+    impl MockGitPort {
+        fn new() -> Self {
+            Self { head_sha: "head123".to_string(), changes: true }
+        }
+    }
+
+    impl GitPort for MockGitPort {
+        fn get_head_sha(&self) -> Result<String, AppError> {
+            Ok(self.head_sha.clone())
+        }
+        fn get_current_branch(&self) -> Result<String, AppError> {
+            Ok("main".to_string())
+        }
+        fn get_remote_url(&self, _name: &str) -> Result<String, AppError> {
+            Ok("https://github.com/owner/repo.git".to_string())
+        }
+        fn commit_exists(&self, _sha: &str) -> bool {
+            true
+        }
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
+            Ok("ancestor123".to_string())
+        }
+        fn has_changes(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<bool, AppError> {
+            Ok(self.changes)
+        }
+        fn count_commits(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<u32, AppError> {
+            Ok(10)
+        }
+        fn collect_commits(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+            _limit: usize,
+        ) -> Result<Vec<CommitInfo>, AppError> {
+            Ok(vec![CommitInfo { sha: "abc".to_string(), subject: "test".to_string() }])
+        }
+        fn get_diffstat(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<DiffStat, AppError> {
+            Ok(DiffStat { files_changed: 1, insertions: 10, deletions: 5 })
+        }
+        fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
+            Ok("".to_string())
+        }
+        fn checkout_branch(&self, _branch: &str, _create: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn push_branch(&self, _branch: &str, _force: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn commit_files(&self, _message: &str, _files: &[&Path]) -> Result<String, AppError> {
+            Ok("newsha".to_string())
+        }
+        fn fetch(&self, _remote: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> {
+            Ok(true)
+        }
+    }
+
+    struct MockWorkspaceStore {
+        files: HashMap<String, String>,
+    }
+
+    impl MockWorkspaceStore {
+        fn new() -> Self {
+            Self { files: HashMap::new() }
+        }
+        fn with_config(mut self) -> Self {
+            self.files.insert(
+                ".jules/config.toml".to_string(),
+                r#"
+[run]
+default_branch = "main"
+[jules]
+api_url = "http://example.com"
+"#
+                .to_string(),
+            );
+            self
+        }
+    }
+
+    impl WorkspaceStore for MockWorkspaceStore {
+        fn exists(&self) -> bool {
+            true
+        }
+        fn jules_path(&self) -> std::path::PathBuf {
+            std::path::PathBuf::from(".jules")
+        }
+        fn read_file(&self, path: &str) -> Result<String, AppError> {
+            self.files
+                .get(path)
+                .cloned()
+                .ok_or(AppError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "not found")))
+        }
+        fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn write_version(&self, _version: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn read_version(&self) -> Result<Option<String>, AppError> {
+            Ok(None)
+        }
+        fn role_exists_in_layer(&self, _layer: Layer, _role_id: &RoleId) -> bool {
+            true
+        }
+        fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
+            Ok(vec![])
+        }
+        fn find_role_fuzzy(&self, _query: &str) -> Result<Option<DiscoveredRole>, AppError> {
+            Ok(None)
+        }
+        fn role_path(&self, _role: &DiscoveredRole) -> Option<std::path::PathBuf> {
+            None
+        }
+        fn scaffold_role_in_layer(
+            &self,
+            _layer: Layer,
+            _role_id: &RoleId,
+            _role_yaml: &str,
+        ) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn create_workstream(&self, _name: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn list_workstreams(&self) -> Result<Vec<String>, AppError> {
+            Ok(vec![])
+        }
+        fn workstream_exists(&self, _name: &str) -> bool {
+            true
+        }
+        fn write_file(&self, _path: &str, _content: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn remove_file(&self, _path: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn copy_file(&self, _src: &str, _dst: &str) -> Result<u64, AppError> {
+            Ok(0)
+        }
+        fn resolve_path(&self, path: &str) -> std::path::PathBuf {
+            std::path::PathBuf::from(path)
+        }
+        fn canonicalize(&self, path: &str) -> Result<std::path::PathBuf, AppError> {
+            Ok(std::path::PathBuf::from(path))
+        }
+    }
+
+    #[test]
+    fn test_execute_no_changes() {
+        let mut git = MockGitPort::new();
+        git.changes = false;
+        let ws = MockWorkspaceStore::new().with_config();
+
+        let result = execute(Path::new(".jules"), false, None, false, &git, &ws).unwrap();
+
+        assert_eq!(result.roles, vec!["narrator"]);
+        assert!(result.sessions.is_empty());
+    }
+
+    #[test]
+    fn test_execute_dry_run() {
+        let git = MockGitPort::new();
+        let mut ws = MockWorkspaceStore::new().with_config();
+        // Setup prompt files
+        ws.files
+            .insert(".jules/roles/narrator/prompt.yml".to_string(), "role: narrator".to_string());
+        ws.files.insert(
+            ".jules/roles/narrator/contracts.yml".to_string(),
+            "layer: narrator\nconstraints: []".to_string(),
+        );
+        ws.files.insert(
+            ".jules/roles/narrator/prompt_assembly.yml".to_string(),
+            "schema_version: 1\nlayer: narrator\nruntime_context: {}\nincludes: []".to_string(),
+        );
+
+        let result = execute(Path::new(".jules"), true, None, false, &git, &ws).unwrap();
+
+        assert!(result.dry_run);
+        assert!(result.sessions.is_empty());
+    }
 
     #[test]
     fn test_extract_to_commit_valid() {

@@ -48,6 +48,10 @@ impl GitPort for GitCommandAdapter {
         self.run(&["branch", "--show-current"], None)
     }
 
+    fn get_remote_url(&self, name: &str) -> Result<String, AppError> {
+        self.run(&["remote", "get-url", name], None)
+    }
+
     fn commit_exists(&self, sha: &str) -> bool {
         self.run(&["cat-file", "-e", sha], None).is_ok()
     }

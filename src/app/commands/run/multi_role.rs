@@ -7,11 +7,12 @@ use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_prompt;
 use super::role_selection::{RoleSelectionInput, select_roles};
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{AutomationMode, JulesClient, SessionRequest};
+use crate::ports::{AutomationMode, JulesClient, SessionRequest, WorkspaceStore};
 use crate::services::adapters::jules_client_http::HttpJulesClient;
 
 /// Execute a multi-role layer (Observers or Deciders).
-pub fn execute(
+#[allow(clippy::too_many_arguments)]
+pub fn execute<W: WorkspaceStore>(
     jules_path: &Path,
     layer: Layer,
     roles: Option<&Vec<String>>,
@@ -19,9 +20,10 @@ pub fn execute(
     scheduled: bool,
     dry_run: bool,
     branch: Option<&str>,
+    workspace: &W,
 ) -> Result<RunResult, AppError> {
     // Load config
-    let config = load_config(jules_path)?;
+    let config = load_config(jules_path, workspace)?;
 
     let workstream = workstream.ok_or_else(|| {
         AppError::MissingArgument("Workstream is required for observers and deciders".into())

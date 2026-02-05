@@ -102,7 +102,7 @@ fn load_mock_config<W: WorkspaceStore>(
     workspace: &W,
 ) -> Result<MockConfig, AppError> {
     // Load run config for branch settings
-    let run_config = load_config(jules_path)?;
+    let run_config = load_config(jules_path, workspace)?;
 
     // Load branch prefixes from contracts.yml files
     let mut branch_prefixes = HashMap::new();

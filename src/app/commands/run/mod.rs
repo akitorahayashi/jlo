@@ -110,5 +110,6 @@ where
         options.scheduled,
         options.dry_run,
         options.branch.as_deref(),
+        workspace,
     )
 }
