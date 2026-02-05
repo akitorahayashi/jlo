@@ -13,7 +13,6 @@ require_command() {
 
 require_command jq
 require_command jlo
-require_command timeout
 
 # Extract issues directly using jq - single parse with null check
 mapfile -t issues < <(echo "$PLANNER_MATRIX" | jq -r '.include[]?.issue // empty')
@@ -30,5 +29,5 @@ for issue in "${issues[@]}"; do
   fi
   echo "Running planner for $issue"
   # shellcheck disable=SC2086
-  timeout 20m jlo run planners "$issue" ${JLO_RUN_FLAGS:-}
+  jlo run planners "$issue" ${JLO_RUN_FLAGS:-}
 done

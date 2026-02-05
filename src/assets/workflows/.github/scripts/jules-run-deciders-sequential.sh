@@ -13,7 +13,6 @@ require_command() {
 
 require_command jq
 require_command jlo
-require_command timeout
 
 # Extract workstreams directly using jq - single parse with null check
 mapfile -t workstreams < <(echo "$DECIDER_MATRIX" | jq -r '.include[]?.workstream // empty')
@@ -30,5 +29,5 @@ for workstream in "${workstreams[@]}"; do
   fi
   echo "Running decider for $workstream"
   # shellcheck disable=SC2086
-  timeout 20m jlo run deciders --workstream "$workstream" --scheduled ${JLO_RUN_FLAGS:-}
+  jlo run deciders --workstream "$workstream" --scheduled ${JLO_RUN_FLAGS:-}
 done
