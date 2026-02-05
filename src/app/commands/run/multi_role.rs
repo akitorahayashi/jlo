@@ -11,6 +11,7 @@ use crate::ports::{AutomationMode, JulesClient, SessionRequest, WorkspaceStore};
 use crate::services::adapters::jules_client_http::HttpJulesClient;
 
 /// Execute a multi-role layer (Observers or Deciders).
+#[allow(clippy::too_many_arguments)]
 pub fn execute<W: WorkspaceStore>(
     jules_path: &Path,
     layer: Layer,
@@ -98,6 +99,7 @@ pub fn execute<W: WorkspaceStore>(
 }
 
 /// Execute roles with the given Jules client.
+#[allow(clippy::too_many_arguments)]
 fn execute_roles<C: JulesClient, W: WorkspaceStore>(
     jules_path: &Path,
     layer: Layer,

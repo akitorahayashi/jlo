@@ -175,6 +175,7 @@ where
 }
 
 /// Execute a single role with the given Jules client.
+#[allow(clippy::too_many_arguments)]
 fn execute_session<C: JulesClient, W: WorkspaceStore>(
     jules_path: &Path,
     layer: Layer,

@@ -6,7 +6,9 @@ use std::path::PathBuf;
 use chrono::Utc;
 
 use crate::domain::AppError;
-use crate::domain::manifest::{ScaffoldManifest, hash_content, is_default_role_file, MANIFEST_FILENAME};
+use crate::domain::manifest::{
+    MANIFEST_FILENAME, ScaffoldManifest, hash_content, is_default_role_file,
+};
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
 
 /// Files that are managed by jlo and will be overwritten on update.

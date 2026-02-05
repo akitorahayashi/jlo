@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use crate::app::AppContext;
 use crate::domain::AppError;
 use crate::domain::manifest::{
-    ScaffoldManifest, hash_content, is_default_role_file, MANIFEST_FILENAME,
+    MANIFEST_FILENAME, ScaffoldManifest, hash_content, is_default_role_file,
 };
 use crate::ports::{GitPort, RoleTemplateStore, WorkspaceStore};
 

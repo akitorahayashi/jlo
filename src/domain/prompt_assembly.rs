@@ -344,11 +344,10 @@ fn load_prompt(
         return Err(PromptAssemblyError::PromptNotFound(path.display().to_string()));
     }
 
-    let content =
-        loader.read_asset(path).map_err(|err| PromptAssemblyError::PromptReadError {
-            path: path.display().to_string(),
-            reason: err.to_string(),
-        })?;
+    let content = loader.read_asset(path).map_err(|err| PromptAssemblyError::PromptReadError {
+        path: path.display().to_string(),
+        reason: err.to_string(),
+    })?;
 
     render_template(&content, context, &path.display().to_string())
 }
@@ -508,9 +507,11 @@ includes:
 "#,
         );
         mock_loader.add_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners");
-        mock_loader.add_file(".jules/roles/planners/contracts.yml", "layer: planners\nconstraints: []");
+        mock_loader
+            .add_file(".jules/roles/planners/contracts.yml", "layer: planners\nconstraints: []");
 
-        let result = assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_loader);
+        let result =
+            assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_loader);
 
         assert!(result.is_ok());
         let assembled = result.unwrap();

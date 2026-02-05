@@ -6,8 +6,8 @@
 use std::path::Path;
 
 use crate::domain::{
-    assemble_prompt as assemble_prompt_domain, assemble_with_issue, AppError, Layer, PromptContext,
-    PromptAssetLoader,
+    AppError, Layer, PromptAssetLoader, PromptContext, assemble_prompt as assemble_prompt_domain,
+    assemble_with_issue,
 };
 
 /// Assemble the full prompt for a role in a multi-role layer.
