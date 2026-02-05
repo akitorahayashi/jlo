@@ -14,6 +14,8 @@ use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 pub struct MatrixPendingWorkstreamsOptions {
     /// Workstreams JSON from `matrix workstreams` output.
     pub workstreams_json: WorkstreamsMatrix,
+    /// Mock mode - treat all workstreams as having pending events.
+    pub mock: bool,
 }
 
 /// Input workstreams matrix (from matrix workstreams output).
@@ -67,17 +69,25 @@ pub fn execute(
         return Err(AppError::WorkspaceNotFound);
     }
 
-    let jules_path = workspace.jules_path();
     let mut include = Vec::new();
 
-    for ws_entry in &options.workstreams_json.include {
-        let pending_dir = jules_path
-            .join("workstreams")
-            .join(&ws_entry.workstream)
-            .join("exchange/events/pending");
-
-        if pending_dir.exists() && has_yml_files(&pending_dir)? {
+    if options.mock {
+        // In mock mode, treat all input workstreams as having pending events
+        for ws_entry in &options.workstreams_json.include {
             include.push(PendingWorkstreamEntry { workstream: ws_entry.workstream.clone() });
+        }
+    } else {
+        let jules_path = workspace.jules_path();
+
+        for ws_entry in &options.workstreams_json.include {
+            let pending_dir = jules_path
+                .join("workstreams")
+                .join(&ws_entry.workstream)
+                .join("exchange/events/pending");
+
+            if pending_dir.exists() && has_yml_files(&pending_dir)? {
+                include.push(PendingWorkstreamEntry { workstream: ws_entry.workstream.clone() });
+            }
         }
     }
 
@@ -155,7 +165,8 @@ mod tests {
             ],
         };
 
-        let output = execute(MatrixPendingWorkstreamsOptions { workstreams_json }).unwrap();
+        let output =
+            execute(MatrixPendingWorkstreamsOptions { workstreams_json, mock: false }).unwrap();
 
         assert_eq!(output.schema_version, 1);
         assert_eq!(output.count, 2);
@@ -179,7 +190,8 @@ mod tests {
         let workstreams_json =
             WorkstreamsMatrix { include: vec![WorkstreamEntry { workstream: "alpha".into() }] };
 
-        let output = execute(MatrixPendingWorkstreamsOptions { workstreams_json }).unwrap();
+        let output =
+            execute(MatrixPendingWorkstreamsOptions { workstreams_json, mock: false }).unwrap();
 
         assert_eq!(output.schema_version, 1);
         assert_eq!(output.count, 0);
