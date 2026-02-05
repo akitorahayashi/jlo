@@ -129,7 +129,7 @@ pub fn template_at(
 /// * `prompt_preview` - Show prompts without executing
 /// * `branch` - Override the starting branch
 /// * `issue` - Local issue file path (required for implementers)
-/// * `mock` - Run in mock mode (no Jules API, scope from JULES_MOCK_SCOPE env)
+/// * `mock` - Run in mock mode (no Jules API, tag from JULES_MOCK_TAG env)
 #[allow(clippy::too_many_arguments)]
 pub fn run(
     layer: Layer,

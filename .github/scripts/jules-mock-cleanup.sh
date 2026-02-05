@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${MOCK_SCOPE:?MOCK_SCOPE must be set}"
+: "${MOCK_TAG:?MOCK_TAG must be set}"
 : "${REPO:?REPO must be set}"
 
 require_command() {
@@ -48,9 +48,9 @@ for branch in $(echo "$branches_json" | jq -r '.[]'); do
     echo "::notice::Branch $branch not found or already deleted"
 done
 
-echo "Deleting mock branches matching scope '$MOCK_SCOPE'..."
-branches_with_scope=$(gh api --paginate "/repos/$REPO/branches?per_page=100" | jq -r --arg scope "$MOCK_SCOPE" '.[] | select(.name | contains($scope)) | .name')
-for branch in $branches_with_scope; do
+echo "Deleting mock branches matching tag '$MOCK_TAG'..."
+branches_with_tag=$(gh api --paginate "/repos/$REPO/branches?per_page=100" | jq -r --arg tag "$MOCK_TAG" '.[] | select(.name | contains($tag)) | .name')
+for branch in $branches_with_tag; do
   gh api -X DELETE "repos/$REPO/git/refs/heads/$branch" >/dev/null 2>&1 || \
     echo "::notice::Branch $branch not found or already deleted"
 done
@@ -60,17 +60,17 @@ git fetch origin jules
 git checkout jules
 git pull --ff-only origin jules
 
-mapfile -t mock_files < <(find .jules/workstreams -type f \( -path "*/exchange/events/*" -o -path "*/exchange/issues/*" \) -name "*${MOCK_SCOPE}*")
+mapfile -t mock_files < <(find .jules/workstreams -type f \( -path "*/exchange/events/*" -o -path "*/exchange/issues/*" \) -name "*${MOCK_TAG}*")
 
 if [ ${#mock_files[@]} -gt 0 ]; then
   printf '%s\n' "${mock_files[@]}" | xargs git rm -f
-  git commit -m "Remove mock artifacts: ${MOCK_SCOPE}"
+  git commit -m "Remove mock artifacts: ${MOCK_TAG}"
   git push origin jules
 else
-  echo "No mock files found for scope $MOCK_SCOPE"
+  echo "No mock files found for tag $MOCK_TAG"
 fi
 
-remaining=$(find .jules/workstreams -type f \( -path "*/exchange/events/*" -o -path "*/exchange/issues/*" \) -name "*${MOCK_SCOPE}*")
+remaining=$(find .jules/workstreams -type f \( -path "*/exchange/events/*" -o -path "*/exchange/issues/*" \) -name "*${MOCK_TAG}*")
 if [ -n "$remaining" ]; then
   echo "::error::Mock artifacts remain after cleanup:"
   echo "$remaining"

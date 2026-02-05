@@ -92,23 +92,23 @@ pub fn load_mock_config<W: WorkspaceStore>(
         )));
     }
 
-    // Generate scope if not provided
-    // Generate scope: env var -> CI default -> local default
-    let scope = std::env::var("JULES_MOCK_SCOPE").ok().unwrap_or_else(|| {
+    // Generate mock tag if not provided
+    // Generate mock tag: env var -> CI default -> local default
+    let mock_tag = std::env::var("JULES_MOCK_TAG").ok().unwrap_or_else(|| {
         let prefix = if std::env::var("GITHUB_ACTIONS").is_ok() { "mock-ci" } else { "mock-local" };
         let generated = format!("{}-{}", prefix, Utc::now().format("%Y%m%d%H%M%S"));
-        println!("Mock scope not set; using {}", generated);
+        println!("Mock tag not set; using {}", generated);
         generated
     });
 
-    if !scope.contains("mock") {
+    if !mock_tag.contains("mock") {
         return Err(AppError::Validation(
-            "JULES_MOCK_SCOPE must include 'mock' to mark mock artifacts.".to_string(),
+            "JULES_MOCK_TAG must include 'mock' to mark mock artifacts.".to_string(),
         ));
     }
 
     Ok(MockConfig {
-        scope,
+        mock_tag,
         branch_prefixes,
         default_branch: run_config.run.default_branch,
         jules_branch: run_config.run.jules_branch,

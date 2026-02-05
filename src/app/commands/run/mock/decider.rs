@@ -65,14 +65,14 @@ where
             let path = entry.path();
             if path
                 .file_name()
-                .map(|n| n.to_string_lossy().contains(&config.scope))
+                .map(|n| n.to_string_lossy().contains(&config.mock_tag))
                 .unwrap_or(false)
             {
                 // Extract event ID from filename (format: mock-{scope}-{event_id}.yml)
                 if let Some(filename) = path.file_name() {
                     let name = filename.to_string_lossy();
                     // Parse event ID from filename
-                    if let Some(id_part) = name.strip_prefix(&format!("mock-{}-", config.scope))
+                    if let Some(id_part) = name.strip_prefix(&format!("mock-{}-", config.mock_tag))
                         && let Some(event_id) = id_part.strip_suffix(".yml")
                     {
                         source_event_ids.push(event_id.to_string());
@@ -108,10 +108,10 @@ where
 
     // Issue 1: requires deep analysis (for planner)
     let planner_issue_id = generate_mock_id();
-    let planner_issue_file = label_dir.join(format!("mock-planner-{}.yml", config.scope));
+    let planner_issue_file = label_dir.join(format!("mock-planner-{}.yml", config.mock_tag));
     let planner_issue_content = mock_issue_template
         .replace("mock01", &planner_issue_id)
-        .replace("test-scope", &config.scope)
+        .replace("test-tag", &config.mock_tag)
         .replace("event1", &planner_event_id)
         .replace(
             "requires_deep_analysis: false",
@@ -132,10 +132,10 @@ where
 
     // Issue 2: ready for implementer
     let impl_issue_id = generate_mock_id();
-    let impl_issue_file = label_dir.join(format!("mock-impl-{}.yml", config.scope));
+    let impl_issue_file = label_dir.join(format!("mock-impl-{}.yml", config.mock_tag));
     let impl_issue_content = mock_issue_template
         .replace("mock01", &impl_issue_id)
-        .replace("test-scope", &config.scope)
+        .replace("test-tag", &config.mock_tag)
         .replace("event1", &impl_event_id)
         .replace("Mock issue for workflow validation", "Mock issue ready for implementation");
 
@@ -149,7 +149,7 @@ where
         if let Some(filename) = dest_file.file_name() {
             let name = filename.to_string_lossy();
             let event_id = if let Some(id_part) =
-                name.strip_prefix(&format!("mock-{}-", config.scope))
+                name.strip_prefix(&format!("mock-{}-", config.mock_tag))
                 && let Some(event_id) = id_part.strip_suffix(".yml")
             {
                 event_id.to_string()
@@ -188,16 +188,16 @@ where
     for f in &moved_src_files {
         files.push(f.as_path());
     }
-    git.commit_files(&format!("[mock-{}] decider: mock issues", config.scope), &files)?;
+    git.commit_files(&format!("[mock-{}] decider: mock issues", config.mock_tag), &files)?;
     git.push_branch(&branch_name, false)?;
 
     // Create PR
     let pr = github.create_pull_request(
         &branch_name,
         &config.jules_branch,
-        &format!("[mock-{}] Decider triage", config.scope),
-        &format!("Mock decider run for workflow validation.\n\nScope: `{}`\nWorkstream: `{}`\n\nCreated issues:\n- `{}` (requires analysis)\n- `{}` (ready for impl)", 
-            config.scope, workstream, planner_issue_id, impl_issue_id),
+        &format!("[mock-{}] Decider triage", config.mock_tag),
+        &format!("Mock decider run for workflow validation.\n\nMock tag: `{}`\nWorkstream: `{}`\n\nCreated issues:\n- `{}` (requires analysis)\n- `{}` (ready for impl)",
+            config.mock_tag, workstream, planner_issue_id, impl_issue_id),
     )?;
 
     println!("Mock deciders: created PR #{} ({})", pr.number, pr.url);
@@ -206,6 +206,6 @@ where
         mock_branch: branch_name,
         mock_pr_number: pr.number,
         mock_pr_url: pr.url,
-        mock_scope: config.scope.clone(),
+        mock_tag: config.mock_tag.clone(),
     })
 }

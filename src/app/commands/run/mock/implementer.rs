@@ -41,7 +41,7 @@ where
     // Implementer branch format: jules-implementer-<label>-<id>-<short_description>
     let prefix = config.branch_prefix(Layer::Implementers)?;
     let issue_id_short = issue_id.chars().take(6).collect::<String>();
-    let branch_name = format!("{}{}-{}-{}", prefix, label, issue_id_short, config.scope);
+    let branch_name = format!("{}{}-{}-{}", prefix, label, issue_id_short, config.mock_tag);
 
     println!("Mock implementers: creating branch {}", branch_name);
 
@@ -52,10 +52,10 @@ where
     git.checkout_branch(&branch_name, true)?;
 
     // Create minimal mock file to have a commit
-    let mock_file_path = format!(".mock-{}", config.scope);
+    let mock_file_path = format!(".mock-{}", config.mock_tag);
     let mock_content = format!(
-        "# Mock implementation marker\n# Scope: {}\n# Issue: {}\n# Created: {}\n",
-        config.scope,
+        "# Mock implementation marker\n# Mock tag: {}\n# Issue: {}\n# Created: {}\n",
+        config.mock_tag,
         issue_id,
         Utc::now().to_rfc3339()
     );
@@ -65,17 +65,20 @@ where
     // Commit and push
     let mock_path = Path::new(&mock_file_path);
     let files: Vec<&Path> = vec![mock_path];
-    git.commit_files(&format!("[mock-{}] implementer: mock implementation", config.scope), &files)?;
+    git.commit_files(
+        &format!("[mock-{}] implementer: mock implementation", config.mock_tag),
+        &files,
+    )?;
     git.push_branch(&branch_name, false)?;
 
     // Create PR targeting default branch (NOT jules)
     let pr = github.create_pull_request(
         &branch_name,
         base_branch,
-        &format!("[mock-{}] Implementation: {}", config.scope, label),
+        &format!("[mock-{}] Implementation: {}", config.mock_tag, label),
         &format!(
-            "Mock implementer run for workflow validation.\n\nScope: `{}`\nIssue: `{}`\nLabel: `{}`\n\n⚠️ This PR targets `{}` (not `jules`) - requires human review.",
-            config.scope,
+            "Mock implementer run for workflow validation.\n\nMock tag: `{}`\nIssue: `{}`\nLabel: `{}`\n\n⚠️ This PR targets `{}` (not `jules`) - requires human review.",
+            config.mock_tag,
             issue_id,
             label,
             base_branch
@@ -89,7 +92,7 @@ where
         mock_branch: branch_name,
         mock_pr_number: pr.number,
         mock_pr_url: pr.url,
-        mock_scope: config.scope.clone(),
+        mock_tag: config.mock_tag.clone(),
     })
 }
 

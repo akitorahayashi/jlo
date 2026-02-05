@@ -71,7 +71,7 @@ jlo run observers --mock            # Mock observer execution
 jlo run deciders --mock             # Mock decider execution
 ```
 
-Mock mode creates real branches and PRs with synthetic commit content, enabling E2E workflow validation in CI. The scope identifier is auto-generated from `JULES_MOCK_SCOPE` env var or a timestamp.
+Mock mode creates real branches and PRs with synthetic commit content, enabling E2E workflow validation in CI. The mock tag is auto-generated from `JULES_MOCK_TAG` env var or a timestamp.
 
 **Flags**:
 - `-w, --workstream <name>`: Target workstream (required for observers/deciders)

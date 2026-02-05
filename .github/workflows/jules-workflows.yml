@@ -45,7 +45,7 @@ env:
   WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
   ROUTING_LABELS: ${{ inputs.routing_labels || 'bugs,feats,refacts,tests,docs' }}
   MOCK_MODE: ${{ inputs.mock || false }}
-  JULES_MOCK_SCOPE: ${{ format('mock-run-{0}', github.run_id) }}
+  JULES_MOCK_TAG: ${{ format('mock-run-{0}', github.run_id) }}
   JLO_RUN_FLAGS: ${{ (inputs.mock || false) && '--mock' || '' }}
 jobs:
   run-narrator:
@@ -518,7 +518,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
       REPO: ${{ github.repository }}
-      MOCK_SCOPE: ${{ format('mock-run-{0}', github.run_id) }}
+      MOCK_TAG: ${{ format('mock-run-{0}', github.run_id) }}
     steps:
     - uses: actions/checkout@v4
       with:

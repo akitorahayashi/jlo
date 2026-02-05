@@ -60,7 +60,7 @@ env:
   WAIT_MINUTES: {{ gha_expr("inputs.wait_minutes || 30") }}
   ROUTING_LABELS: {{ gha_expr("inputs.routing_labels || 'bugs,feats,refacts,tests,docs'") }}
   MOCK_MODE: {{ gha_expr("inputs.mock || false") }}
-  JULES_MOCK_SCOPE: {{ gha_expr("format('mock-run-{0}', github.run_id)") }}
+  JULES_MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.run_id)") }}
   JLO_RUN_FLAGS: {{ gha_expr("(inputs.mock || false) && '--mock' || ''") }}
 
 jobs:
@@ -604,7 +604,7 @@ jobs:
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
       REPO: {{ gha_expr("github.repository") }}
-      MOCK_SCOPE: {{ gha_expr("format('mock-run-{0}', github.run_id)") }}
+      MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.run_id)") }}
     steps:
       - uses: actions/checkout@v4
         with:

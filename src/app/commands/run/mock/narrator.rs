@@ -43,7 +43,7 @@ where
         .replace("2026-02-05T00:00:00Z", &now.to_rfc3339())
         .replace(
             "Mock narrator run for workflow validation",
-            &format!("Mock narrator run for workflow validation\n# Scope: {}", config.scope),
+            &format!("Mock narrator run for workflow validation\n# Mock tag: {}", config.mock_tag),
         );
 
     workspace.write_file(
@@ -53,15 +53,15 @@ where
 
     // Commit and push
     let files: Vec<&Path> = vec![changes_file.as_path()];
-    git.commit_files(&format!("[mock-{}] narrator: mock changes", config.scope), &files)?;
+    git.commit_files(&format!("[mock-{}] narrator: mock changes", config.mock_tag), &files)?;
     git.push_branch(&branch_name, false)?;
 
     // Create PR
     let pr = github.create_pull_request(
         &branch_name,
         &config.jules_branch,
-        &format!("[mock-{}] Narrator changes", config.scope),
-        &format!("Mock narrator run for workflow validation.\n\nScope: `{}`", config.scope),
+        &format!("[mock-{}] Narrator changes", config.mock_tag),
+        &format!("Mock narrator run for workflow validation.\n\nMock tag: `{}`", config.mock_tag),
     )?;
 
     println!("Mock narrator: created PR #{} ({})", pr.number, pr.url);
@@ -70,6 +70,6 @@ where
         mock_branch: branch_name,
         mock_pr_number: pr.number,
         mock_pr_url: pr.url,
-        mock_scope: config.scope.clone(),
+        mock_tag: config.mock_tag.clone(),
     })
 }

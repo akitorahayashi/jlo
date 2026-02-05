@@ -110,7 +110,7 @@ cargo test --test mock_mode       # Mock execution flow
 
 ## Mock Mode
 
-Mock mode (`--mock`) enables E2E workflow validation without Jules API calls. Scope is auto-generated from `JULES_MOCK_SCOPE` env var or a timestamp.
+Mock mode (`--mock`) enables E2E workflow validation without Jules API calls. Mock tag is auto-generated from `JULES_MOCK_TAG` env var or a timestamp.
 
 Mock execution creates real git branches and GitHub PRs with synthetic commit content.
 

@@ -30,7 +30,7 @@ fi
 
 mock_branches=()
 mock_prs=()
-mock_scope=""
+mock_tag=""
 
 echo "Running ${#workstreams[@]} decider workstream(s) sequentially"
 for workstream in "${workstreams[@]}"; do
@@ -50,15 +50,15 @@ for workstream in "${workstreams[@]}"; do
       MOCK_PR_NUMBER=*)
         mock_prs+=("${line#MOCK_PR_NUMBER=}")
         ;;
-      MOCK_SCOPE=*)
-        value="${line#MOCK_SCOPE=}"
-        if [ -z "$mock_scope" ]; then
-          mock_scope="$value"
-        elif [ "$mock_scope" != "$value" ]; then
-          echo "::error::Mock scope mismatch: $mock_scope vs $value"
-          exit 1
-        fi
-        ;;
+    MOCK_TAG=*)
+      value="${line#MOCK_TAG=}"
+      if [ -z "$mock_tag" ]; then
+        mock_tag="$value"
+      elif [ "$mock_tag" != "$value" ]; then
+        echo "::error::Mock tag mismatch: $mock_tag vs $value"
+        exit 1
+      fi
+      ;;
     esac
   done <<< "$output"
 done
@@ -69,6 +69,6 @@ branches_json=$(printf '%s\n' "${mock_branches[@]}" | jq -R . | jq -s 'map(selec
 echo "expected_count=${#workstreams[@]}" >> "$GITHUB_OUTPUT"
 echo "mock_pr_numbers_json=$pr_numbers_json" >> "$GITHUB_OUTPUT"
 echo "mock_branches_json=$branches_json" >> "$GITHUB_OUTPUT"
-if [ -n "$mock_scope" ]; then
-  echo "mock_scope=$mock_scope" >> "$GITHUB_OUTPUT"
+if [ -n "$mock_tag" ]; then
+  echo "mock_tag=$mock_tag" >> "$GITHUB_OUTPUT"
 fi
