@@ -1,0 +1,35 @@
+schema_version: 1
+
+# Metadata
+id: "f4g5h6"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "rustacean"
+confidence: "high"
+
+# Content
+title: "Services and Commands coupled to direct filesystem usage"
+statement: |
+  Several service modules (`scaffold_manifest`, `workstream_schedule_filesystem`) use `std::fs` directly instead of the `WorkspaceStore` abstraction. The `update` command, despite accepting a `WorkspaceStore`, calls `scaffold_manifest` functions that bypass it.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/assets/scaffold_manifest.rs"
+    loc:
+      - "fn load_manifest"
+      - "fn write_manifest"
+    note: "Uses std::fs::read_to_string and std::fs::write directly."
+  - path: "src/app/commands/update.rs"
+    loc:
+      - "fn execute"
+    note: "Calls load_manifest and write_manifest which bypass the injected WorkspaceStore."
+  - path: "src/services/adapters/workstream_schedule_filesystem.rs"
+    loc:
+      - "fn load_schedule"
+      - "fn list_subdirectories"
+    note: "Uses std::fs directly."
+
+tags:
+  - "architecture"
+  - "io-coupling"
+  - "testability"
