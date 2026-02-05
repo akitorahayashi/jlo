@@ -6,7 +6,7 @@ use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_prompt;
 use super::role_selection::{RoleSelectionInput, select_roles};
-use crate::domain::{AppError, Layer};
+use crate::domain::{AppError, Layer, RoleId};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
 use crate::services::adapters::jules_client_http::HttpJulesClient;
 
@@ -57,7 +57,11 @@ pub fn execute(
 
     if dry_run {
         execute_dry_run(jules_path, layer, &resolved_roles, workstream, &starting_branch)?;
-        return Ok(RunResult { roles: resolved_roles, dry_run: true, sessions: vec![] });
+        return Ok(RunResult {
+            roles: resolved_roles.into_iter().map(|r| r.into()).collect(),
+            dry_run: true,
+            sessions: vec![],
+        });
     }
 
     // Determine repository source from git
@@ -75,14 +79,18 @@ pub fn execute(
         &client,
     )?;
 
-    Ok(RunResult { roles: resolved_roles, dry_run: false, sessions })
+    Ok(RunResult {
+        roles: resolved_roles.into_iter().map(|r| r.into()).collect(),
+        dry_run: false,
+        sessions,
+    })
 }
 
 /// Execute roles with the given Jules client.
 fn execute_roles<C: JulesClient>(
     jules_path: &Path,
     layer: Layer,
-    roles: &[String],
+    roles: &[RoleId],
     workstream: &str,
     starting_branch: &str,
     source: &str,
@@ -94,7 +102,7 @@ fn execute_roles<C: JulesClient>(
     for role in roles {
         println!("Executing {} / {}...", layer.dir_name(), role);
 
-        let prompt = assemble_prompt(jules_path, layer, role, workstream)?;
+        let prompt = assemble_prompt(jules_path, layer, role.as_str(), workstream)?;
 
         let request = SessionRequest {
             prompt,
@@ -133,7 +141,7 @@ fn execute_roles<C: JulesClient>(
 fn execute_dry_run(
     jules_path: &Path,
     layer: Layer,
-    roles: &[String],
+    roles: &[RoleId],
     workstream: &str,
     starting_branch: &str,
 ) -> Result<(), AppError> {
@@ -144,7 +152,8 @@ fn execute_dry_run(
     for role in roles {
         println!("--- Role: {} ---", role);
 
-        let role_dir = jules_path.join("roles").join(layer.dir_name()).join("roles").join(role);
+        let role_dir =
+            jules_path.join("roles").join(layer.dir_name()).join("roles").join(role.as_str());
         let role_yml_path = role_dir.join("role.yml");
 
         if !role_yml_path.exists() {
@@ -163,7 +172,7 @@ fn execute_dry_run(
         println!("  Role config: {}", role_yml_path.display());
 
         // Show assembled prompt length
-        if let Ok(prompt) = assemble_prompt(jules_path, layer, role, workstream) {
+        if let Ok(prompt) = assemble_prompt(jules_path, layer, role.as_str(), workstream) {
             println!("  Assembled prompt: {} chars", prompt.len());
         }
 

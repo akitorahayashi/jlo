@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::path::Path;
 
-use crate::domain::{AppError, Layer};
+use crate::domain::{AppError, Layer, RoleId};
 use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
 pub struct RoleSelectionInput<'a> {
@@ -12,7 +12,7 @@ pub struct RoleSelectionInput<'a> {
     pub requested_roles: Option<&'a Vec<String>>,
 }
 
-pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<String>, AppError> {
+pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppError> {
     ensure_workstream_exists(input.jules_path, input.workstream)?;
 
     let roles = if input.scheduled {
@@ -39,7 +39,9 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<String>, AppErr
             .ok_or_else(|| {
                 AppError::config_error("Manual mode requires at least one --role value")
             })?
-            .clone()
+            .iter()
+            .map(|s| RoleId::new(s))
+            .collect::<Result<Vec<RoleId>, AppError>>()?
     };
 
     if roles.is_empty() && input.layer == Layer::Deciders && input.scheduled {
@@ -52,7 +54,7 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<String>, AppErr
         if !seen.insert(role) {
             return Err(AppError::config_error(format!("Duplicate role '{}' specified", role)));
         }
-        validate_role_exists(input.jules_path, input.layer, role)?;
+        validate_role_exists(input.jules_path, input.layer, role.as_str())?;
     }
 
     Ok(roles)
@@ -141,7 +143,7 @@ roles = []
         })
         .unwrap();
 
-        assert_eq!(roles, vec!["taxonomy"]);
+        assert_eq!(roles[0].as_str(), "taxonomy");
     }
 
     #[test]
@@ -161,7 +163,7 @@ roles = []
         })
         .unwrap();
 
-        assert_eq!(roles, vec!["taxonomy"]);
+        assert_eq!(roles[0].as_str(), "taxonomy");
     }
 
     #[test]
