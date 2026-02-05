@@ -347,7 +347,7 @@ fn run_implementers_with_missing_issue_file() {
 }
 
 #[test]
-fn run_implementers_dry_run_with_issue_file() {
+fn run_implementers_prompt_preview_with_issue_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init"]).assert().success();
@@ -368,16 +368,16 @@ fn run_implementers_dry_run_with_issue_file() {
             "run",
             "implementers",
             ".jules/workstreams/generic/issues/medium/test_issue.yml",
-            "--dry-run",
+            "--prompt-preview",
         ])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Dry Run: Local Dispatch"))
+        .stdout(predicate::str::contains("Prompt Preview: Local Dispatch"))
         .stdout(predicate::str::contains("Would dispatch workflow"));
 }
 
 #[test]
-fn run_planners_dry_run_with_issue_file() {
+fn run_planners_prompt_preview_with_issue_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init"]).assert().success();
@@ -398,16 +398,16 @@ fn run_planners_dry_run_with_issue_file() {
             "run",
             "planners",
             ".jules/workstreams/generic/issues/medium/test_issue.yml",
-            "--dry-run",
+            "--prompt-preview",
         ])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Dry Run: Local Dispatch"))
+        .stdout(predicate::str::contains("Prompt Preview: Local Dispatch"))
         .stdout(predicate::str::contains("Would dispatch workflow"));
 }
 
 #[test]
-fn run_narrator_dry_run() {
+fn run_narrator_prompt_preview() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init"]).assert().success();
@@ -470,10 +470,10 @@ fn run_narrator_dry_run() {
 
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
-        .args(["run", "narrator", "--dry-run"])
+        .args(["run", "narrator", "--prompt-preview"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Dry Run: Narrator"))
+        .stdout(predicate::str::contains("Prompt Preview: Narrator"))
         .stdout(predicate::str::contains("Git Context"));
 }
 
@@ -519,7 +519,7 @@ fn run_narrator_skips_when_no_codebase_changes() {
 
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
-        .args(["run", "narrator", "--dry-run"])
+        .args(["run", "narrator", "--prompt-preview"])
         .assert()
         .success()
         .stdout(predicate::str::contains("No codebase changes detected"));
@@ -537,7 +537,7 @@ fn update_requires_workspace() {
 }
 
 #[test]
-fn update_dry_run_shows_plan() {
+fn update_prompt_preview_shows_plan() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init"]).assert().success();
@@ -547,10 +547,10 @@ fn update_dry_run_shows_plan() {
     std::fs::write(&version_file, "0.0.0").expect("write version");
 
     ctx.cli()
-        .args(["update", "--dry-run"])
+        .args(["update", "--prompt-preview"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Dry Run"));
+        .stdout(predicate::str::contains("Prompt Preview"));
 }
 
 #[test]
@@ -568,5 +568,5 @@ fn update_alias_works() {
 
     ctx.cli().args(["init"]).assert().success();
 
-    ctx.cli().args(["u", "--dry-run"]).assert().success();
+    ctx.cli().args(["u", "--prompt-preview"]).assert().success();
 }

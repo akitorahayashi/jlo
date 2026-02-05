@@ -54,3 +54,4 @@ jobs:
           gh pr comment "$PR_NUMBER" --repo "$REPO" --body "/gemini summary"
           gh pr comment "$PR_NUMBER" --repo "$REPO" --body "/gemini review"
           gh pr comment "$PR_NUMBER" --repo "$REPO" --body "@coderabbitai review"
+

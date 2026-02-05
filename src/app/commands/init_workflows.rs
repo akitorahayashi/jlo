@@ -1,4 +1,3 @@
-use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
@@ -11,56 +10,22 @@ use crate::services::assets::workflow_kit_assets::load_workflow_kit;
 const SCHEDULE_PRESERVE_FILE: &str = ".github/workflows/jules-workflows.yml";
 
 /// Execute the workflow kit installation.
-pub fn execute_workflows(
-    root: &Path,
-    mode: WorkflowRunnerMode,
-    overwrite: bool,
-) -> Result<(), AppError> {
+pub fn execute_workflows(root: &Path, mode: WorkflowRunnerMode) -> Result<(), AppError> {
     let kit = load_workflow_kit(mode)?;
-
-    let mut collisions = BTreeSet::new();
-    for file in &kit.files {
-        let destination = root.join(&file.path);
-        if destination.exists() {
-            collisions.insert(file.path.clone());
-        }
-    }
 
     for action_dir in &kit.action_dirs {
         let destination = root.join(action_dir);
         if destination.exists() {
-            collisions.insert(action_dir.clone());
-        }
-    }
-
-    if !overwrite && !collisions.is_empty() {
-        let mut message = format!(
-            "Workflow kit install aborted (mode: {}).\nThe following paths already exist:\n",
-            mode.label()
-        );
-        for path in collisions {
-            message.push_str(&format!("  - {}\n", path));
-        }
-        message.push_str("Re-run with --overwrite to replace kit-owned files.");
-        return Err(AppError::Validation(message));
-    }
-
-    if overwrite {
-        for action_dir in &kit.action_dirs {
-            let destination = root.join(action_dir);
-            if destination.exists() {
-                if destination.is_dir() {
-                    fs::remove_dir_all(&destination)?;
-                } else {
-                    fs::remove_file(&destination)?;
-                }
+            if destination.is_dir() {
+                fs::remove_dir_all(&destination)?;
+            } else {
+                fs::remove_file(&destination)?;
             }
         }
     }
 
-    // Extract existing configuration if overwriting the main workflow file
-    let preserved_config =
-        if overwrite { extract_preserved_config(root)? } else { PreservedConfig::default() };
+    // Extract existing configuration from the main workflow file before overwrite
+    let preserved_config = extract_preserved_config(root)?;
 
     for file in &kit.files {
         let destination = root.join(&file.path);
@@ -154,20 +119,23 @@ fn merge_config_into_workflow(
         on_block.insert("schedule".into(), schedule.clone());
     }
 
-    // Preserve wait_minutes default if both the config has it and the kit template has the path.
-    // Silent degradation: If the kit template changes and the path doesn't exist, we gracefully
-    // skip preservation rather than failing the installation (maintains backward compatibility).
-    if let (Some(wait_minutes), Some(wait_minutes_config)) = (
-        config.wait_minutes_default.as_ref(),
-        root.get_mut("on")
+    if let Some(wait_minutes) = config.wait_minutes_default.as_ref() {
+        let wait_minutes_config = root
+            .get_mut("on")
             .and_then(|v| v.as_mapping_mut())
             .and_then(|on| on.get_mut("workflow_dispatch"))
             .and_then(|v| v.as_mapping_mut())
             .and_then(|wd| wd.get_mut("inputs"))
             .and_then(|v| v.as_mapping_mut())
             .and_then(|inputs| inputs.get_mut("wait_minutes"))
-            .and_then(|v| v.as_mapping_mut()),
-    ) {
+            .and_then(|v| v.as_mapping_mut())
+            .ok_or_else(|| {
+                AppError::Validation(
+                    "Could not preserve wait_minutes: kit template is missing on.workflow_dispatch.inputs.wait_minutes."
+                        .into(),
+                )
+            })?;
+
         wait_minutes_config.insert("default".into(), wait_minutes.clone());
     }
 

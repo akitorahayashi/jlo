@@ -17,7 +17,7 @@ pub fn execute(
     roles: Option<&Vec<String>>,
     workstream: Option<&str>,
     scheduled: bool,
-    dry_run: bool,
+    prompt_preview: bool,
     branch: Option<&str>,
 ) -> Result<RunResult, AppError> {
     // Load config
@@ -50,18 +50,18 @@ pub fn execute(
             layer.dir_name(),
             workstream
         );
-        return Ok(RunResult { roles: vec![], dry_run, sessions: vec![] });
+        return Ok(RunResult { roles: vec![], prompt_preview, sessions: vec![] });
     }
 
     // Determine starting branch (multi-role layers always use jules branch)
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
 
-    if dry_run {
-        execute_dry_run(jules_path, layer, &resolved_roles, workstream, &starting_branch)?;
+    if prompt_preview {
+        execute_prompt_preview(jules_path, layer, &resolved_roles, workstream, &starting_branch)?;
         return Ok(RunResult {
             roles: resolved_roles.into_iter().map(|r| r.into()).collect(),
-            dry_run: true,
+            prompt_preview: true,
             sessions: vec![],
         });
     }
@@ -83,7 +83,7 @@ pub fn execute(
 
     Ok(RunResult {
         roles: resolved_roles.into_iter().map(|r| r.into()).collect(),
-        dry_run: false,
+        prompt_preview: false,
         sessions,
     })
 }
@@ -138,15 +138,15 @@ fn execute_roles<C: JulesClient>(
     Ok(sessions)
 }
 
-/// Execute a dry run, showing assembled prompts.
-fn execute_dry_run(
+/// Execute a prompt preview, showing assembled prompts.
+fn execute_prompt_preview(
     jules_path: &Path,
     layer: Layer,
     roles: &[RoleId],
     workstream: &str,
     starting_branch: &str,
 ) -> Result<(), AppError> {
-    println!("=== Dry Run: {} ===", layer.display_name());
+    println!("=== Prompt Preview: {} ===", layer.display_name());
     println!("Starting branch: {}", starting_branch);
     println!("Workstream: {}\n", workstream);
 

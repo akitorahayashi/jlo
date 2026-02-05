@@ -18,7 +18,7 @@ pub fn execute<H, W>(
     jules_path: &Path,
     layer: Layer,
     issue_path: &Path,
-    dry_run: bool,
+    prompt_preview: bool,
     branch: Option<&str>,
     is_ci: bool,
     github: &H,
@@ -65,7 +65,7 @@ where
 
     // Handle Local Dispatch (outside CI)
     if !is_ci {
-        return execute_local_dispatch(&canonical_path, layer, dry_run, github, workspace);
+        return execute_local_dispatch(&canonical_path, layer, prompt_preview, github, workspace);
     }
 
     // CI Execution: Direct session creation
@@ -82,11 +82,11 @@ where
         }
     });
 
-    if dry_run {
-        execute_dry_run(jules_path, layer, &starting_branch, &issue_content, issue_path)?;
+    if prompt_preview {
+        execute_prompt_preview(jules_path, layer, &starting_branch, &issue_content, issue_path)?;
         return Ok(RunResult {
             roles: vec![layer.dir_name().to_string()],
-            dry_run: true,
+            prompt_preview: true,
             sessions: vec![],
         });
     }
@@ -114,7 +114,7 @@ where
 
     Ok(RunResult {
         roles: vec![layer.dir_name().to_string()],
-        dry_run: false,
+        prompt_preview: false,
         sessions: vec![session_id],
     })
 }
@@ -123,7 +123,7 @@ where
 fn execute_local_dispatch<H, W>(
     canonical_path: &Path,
     layer: Layer,
-    dry_run: bool,
+    prompt_preview: bool,
     github: &H,
     workspace: &W,
 ) -> Result<RunResult, AppError>
@@ -137,10 +137,10 @@ where
         _ => unreachable!("Single-role check already done"),
     };
 
-    if dry_run {
-        println!("=== Dry Run: Local Dispatch ===");
+    if prompt_preview {
+        println!("=== Prompt Preview: Local Dispatch ===");
         println!("Would dispatch workflow '{}' for: {}", workflow_name, canonical_path.display());
-        return Ok(RunResult { roles: vec![], dry_run: true, sessions: vec![] });
+        return Ok(RunResult { roles: vec![], prompt_preview: true, sessions: vec![] });
     }
 
     println!(
@@ -169,7 +169,7 @@ where
     println!("✅ Workflow dispatched successfully.");
 
     let role_name = format!("{}-dispatch", layer.dir_name().trim_end_matches('s'));
-    Ok(RunResult { roles: vec![role_name], dry_run: false, sessions: vec![] })
+    Ok(RunResult { roles: vec![role_name], prompt_preview: false, sessions: vec![] })
 }
 
 /// Execute a single role with the given Jules client.
@@ -207,15 +207,15 @@ fn execute_session<C: JulesClient>(
     Ok(response.session_id)
 }
 
-/// Execute a dry run for a single-role layer.
-fn execute_dry_run(
+/// Execute a prompt preview for a single-role layer.
+fn execute_prompt_preview(
     jules_path: &Path,
     layer: Layer,
     starting_branch: &str,
     issue_content: &str,
     issue_path: &Path,
 ) -> Result<(), AppError> {
-    println!("=== Dry Run: {} ===", layer.display_name());
+    println!("=== Prompt Preview: {} ===", layer.display_name());
     println!("Starting branch: {}\n", starting_branch);
     println!("Issue content: {} chars\n", issue_content.len());
 

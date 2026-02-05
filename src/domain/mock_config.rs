@@ -2,13 +2,13 @@
 
 use std::collections::HashMap;
 
-use crate::domain::Layer;
+use crate::domain::{AppError, Layer};
 
 /// Configuration for mock execution, loaded from workspace files.
 #[derive(Debug, Clone)]
 pub struct MockConfig {
-    /// Mock scope identifier (embedded in branch names and filenames).
-    pub scope: String,
+    /// Mock tag identifier (embedded in branch names and filenames).
+    pub mock_tag: String,
     /// Branch prefixes per layer, from contracts.yml.
     pub branch_prefixes: HashMap<Layer, String>,
     /// Default branch for implementer operations, from config.toml.
@@ -20,17 +20,17 @@ pub struct MockConfig {
 }
 
 impl MockConfig {
-    /// Generate branch name for a layer with scope embedded.
-    pub fn branch_name(&self, layer: Layer, suffix: &str) -> String {
-        let prefix =
-            self.branch_prefixes.get(&layer).map(|s| s.as_str()).unwrap_or_else(|| match layer {
-                Layer::Narrators => "jules-narrator-",
-                Layer::Observers => "jules-observer-",
-                Layer::Deciders => "jules-decider-",
-                Layer::Planners => "jules-planner-",
-                Layer::Implementers => "jules-implementer-",
-            });
-        format!("{}{}-{}", prefix, self.scope, suffix)
+    /// Generate branch name for a layer with mock tag embedded.
+    pub fn branch_prefix(&self, layer: Layer) -> Result<&str, AppError> {
+        self.branch_prefixes.get(&layer).map(|s| s.as_str()).ok_or_else(|| {
+            AppError::Validation(format!("Missing branch_prefix for layer '{}'", layer.dir_name()))
+        })
+    }
+
+    /// Generate branch name for a layer with mock tag embedded.
+    pub fn branch_name(&self, layer: Layer, suffix: &str) -> Result<String, AppError> {
+        let prefix = self.branch_prefix(layer)?;
+        Ok(format!("{}{}-{}", prefix, self.mock_tag, suffix))
     }
 
     /// Get base branch for a layer.
@@ -49,8 +49,8 @@ pub struct MockOutput {
     pub mock_pr_number: u64,
     /// PR URL created by mock execution.
     pub mock_pr_url: String,
-    /// Mock scope used for this execution.
-    pub mock_scope: String,
+    /// Mock tag used for this execution.
+    pub mock_tag: String,
 }
 
 impl MockOutput {
@@ -62,7 +62,7 @@ impl MockOutput {
             writeln!(file, "mock_branch={}", self.mock_branch)?;
             writeln!(file, "mock_pr_number={}", self.mock_pr_number)?;
             writeln!(file, "mock_pr_url={}", self.mock_pr_url)?;
-            writeln!(file, "mock_scope={}", self.mock_scope)?;
+            writeln!(file, "mock_tag={}", self.mock_tag)?;
         }
         Ok(())
     }
@@ -72,7 +72,7 @@ impl MockOutput {
         println!("MOCK_BRANCH={}", self.mock_branch);
         println!("MOCK_PR_NUMBER={}", self.mock_pr_number);
         println!("MOCK_PR_URL={}", self.mock_pr_url);
-        println!("MOCK_SCOPE={}", self.mock_scope);
+        println!("MOCK_TAG={}", self.mock_tag);
     }
 }
 
@@ -81,27 +81,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn branch_name_with_scope() {
+    fn branch_name_with_tag() {
         let mut prefixes = HashMap::new();
         prefixes.insert(Layer::Observers, "jules-observer-".to_string());
         prefixes.insert(Layer::Implementers, "jules-implementer-".to_string());
 
         let config = MockConfig {
-            scope: "run123".to_string(),
+            mock_tag: "run123".to_string(),
             branch_prefixes: prefixes,
             default_branch: "main".to_string(),
             jules_branch: "jules".to_string(),
             issue_labels: vec!["bugs".to_string()],
         };
 
-        assert_eq!(config.branch_name(Layer::Observers, "test"), "jules-observer-run123-test");
-        assert_eq!(config.branch_name(Layer::Implementers, "fix"), "jules-implementer-run123-fix");
+        assert_eq!(
+            config.branch_name(Layer::Observers, "test").unwrap(),
+            "jules-observer-run123-test"
+        );
+        assert_eq!(
+            config.branch_name(Layer::Implementers, "fix").unwrap(),
+            "jules-implementer-run123-fix"
+        );
     }
 
     #[test]
     fn base_branch_selection() {
         let config = MockConfig {
-            scope: "test".to_string(),
+            mock_tag: "test".to_string(),
             branch_prefixes: HashMap::new(),
             default_branch: "main".to_string(),
             jules_branch: "jules".to_string(),

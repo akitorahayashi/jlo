@@ -26,7 +26,7 @@ where
     })?;
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-    let branch_name = config.branch_name(Layer::Observers, &timestamp);
+    let branch_name = config.branch_name(Layer::Observers, &timestamp)?;
 
     println!("Mock observers: creating branch {}", branch_name);
 
@@ -47,19 +47,19 @@ where
 
     // Create mock event 1 (for planner routing)
     let event_id_1 = generate_mock_id();
-    let event_file_1 = events_dir.join(format!("mock-{}-{}.yml", config.scope, event_id_1));
+    let event_file_1 = events_dir.join(format!("mock-{}-{}.yml", config.mock_tag, event_id_1));
     let event_content_1 = mock_event_template
         .replace("mock01", &event_id_1)
         .replace("2026-02-05", &Utc::now().format("%Y-%m-%d").to_string())
-        .replace("test-scope", &config.scope);
+        .replace("test-tag", &config.mock_tag);
 
     // Create mock event 2 (for implementer routing)
     let event_id_2 = generate_mock_id();
-    let event_file_2 = events_dir.join(format!("mock-{}-{}.yml", config.scope, event_id_2));
+    let event_file_2 = events_dir.join(format!("mock-{}-{}.yml", config.mock_tag, event_id_2));
     let event_content_2 = mock_event_template
         .replace("mock01", &event_id_2)
         .replace("2026-02-05", &Utc::now().format("%Y-%m-%d").to_string())
-        .replace("test-scope", &config.scope)
+        .replace("test-tag", &config.mock_tag)
         .replace("workflow validation", "workflow implementation check");
 
     // Ensure directory exists
@@ -77,17 +77,17 @@ where
 
     // Commit and push
     let files: Vec<&Path> = vec![event_file_1.as_path(), event_file_2.as_path()];
-    git.commit_files(&format!("[mock-{}] observer: mock event", config.scope), &files)?;
+    git.commit_files(&format!("[mock-{}] observer: mock event", config.mock_tag), &files)?;
     git.push_branch(&branch_name, false)?;
 
     // Create PR
     let pr = github.create_pull_request(
         &branch_name,
         &config.jules_branch,
-        &format!("[mock-{}] Observer findings", config.scope),
+        &format!("[mock-{}] Observer findings", config.mock_tag),
         &format!(
-            "Mock observer run for workflow validation.\n\nScope: `{}`\nWorkstream: `{}`",
-            config.scope, workstream
+            "Mock observer run for workflow validation.\n\nMock tag: `{}`\nWorkstream: `{}`",
+            config.mock_tag, workstream
         ),
     )?;
 
@@ -97,6 +97,6 @@ where
         mock_branch: branch_name,
         mock_pr_number: pr.number,
         mock_pr_url: pr.url,
-        mock_scope: config.scope.clone(),
+        mock_tag: config.mock_tag.clone(),
     })
 }

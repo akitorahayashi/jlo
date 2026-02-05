@@ -63,8 +63,8 @@ pub struct UpdateResult {
     pub removed: Vec<String>,
     /// Default role files skipped due to local changes or missing baseline.
     pub skipped: Vec<SkippedUpdate>,
-    /// Whether this was a dry run.
-    pub dry_run: bool,
+    /// Whether this was a prompt preview.
+    pub prompt_preview: bool,
     /// Backup directory path (if changes were made).
     pub backup_path: Option<PathBuf>,
     /// Whether a managed defaults baseline was adopted.
@@ -75,7 +75,7 @@ pub struct UpdateResult {
 #[derive(Debug, Default)]
 pub struct UpdateOptions {
     /// Show planned changes without applying.
-    pub dry_run: bool,
+    pub prompt_preview: bool,
     /// Adopt current default role files as managed baseline (no conditional updates applied).
     pub adopt_managed: bool,
 }
@@ -136,7 +136,7 @@ where
             created: vec![],
             removed: vec![],
             skipped: vec![],
-            dry_run: options.dry_run,
+            prompt_preview: options.prompt_preview,
             backup_path: None,
             adopted_managed: false,
         });
@@ -271,9 +271,9 @@ where
         }
     }
 
-    // Dry run: just report planned changes
-    if options.dry_run {
-        println!("=== Dry Run: Update Plan ===\n");
+    // Prompt preview: just report planned changes
+    if options.prompt_preview {
+        println!("=== Prompt Preview: Update Plan ===\n");
         println!("Current version: {}", workspace_version);
         println!("Target version:  {}\n", binary_version);
 
@@ -311,7 +311,7 @@ where
             created: to_create.into_iter().map(|(p, _)| p).collect(),
             removed: to_remove,
             skipped,
-            dry_run: true,
+            prompt_preview: true,
             backup_path: None,
             adopted_managed: options.adopt_managed,
         });
@@ -371,7 +371,7 @@ where
         created: created_paths,
         removed: to_remove,
         skipped,
-        dry_run: false,
+        prompt_preview: false,
         backup_path,
         adopted_managed: options.adopt_managed,
     })
@@ -465,7 +465,7 @@ mod tests {
             ],
         };
 
-        let options = UpdateOptions { dry_run: false, adopt_managed: false };
+        let options = UpdateOptions { prompt_preview: false, adopt_managed: false };
 
         let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
         let result = execute(&workspace, options, &mock_store).unwrap();
@@ -497,7 +497,7 @@ mod tests {
             }],
         };
 
-        let options = UpdateOptions { dry_run: false, adopt_managed: false };
+        let options = UpdateOptions { prompt_preview: false, adopt_managed: false };
         let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
         let result = execute(&workspace, options, &mock_store).unwrap();
 
@@ -528,7 +528,7 @@ mod tests {
             }],
         };
 
-        let options = UpdateOptions { dry_run: false, adopt_managed: false };
+        let options = UpdateOptions { prompt_preview: false, adopt_managed: false };
         let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
         let result = execute(&workspace, options, &mock_store).unwrap();
 

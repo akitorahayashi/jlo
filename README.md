@@ -23,8 +23,8 @@ jlo init
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jlo init [scaffold]` | `i` | Create `.jules/` workspace with setup directory |
-| `jlo init workflows (--remote | --self-hosted) [--overwrite]` | `i w` | Install workflow kit into `.github/` |
-| `jlo update [--dry-run] [--adopt-managed]` | `u` | Update workspace to current jlo version |
+| `jlo init workflows (--remote | --self-hosted)` | `i w` | Install workflow kit into `.github/` |
+| `jlo update [--prompt-preview] [--adopt-managed]` | `u` | Update workspace to current jlo version |
 | `jlo deinit` | | Remove jlo-managed branch and workflow kit files |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
@@ -47,7 +47,7 @@ jlo run observers --workstream generic --scheduled            # Run scheduled ob
 jlo run deciders --workstream generic --scheduled             # Run scheduled decider roles
 jlo run observers --workstream generic --role <role>          # Run specific role (manual)
 jlo run observers --workstream generic --role <role1> --role <role2> # Run specific roles (manual)
-jlo run observers --workstream generic --scheduled --dry-run   # Show prompts without executing
+jlo run observers --workstream generic --scheduled --prompt-preview   # Show prompts without executing
 jlo run observers --workstream generic --scheduled --branch custom # Override starting branch
 ```
 
@@ -71,13 +71,13 @@ jlo run observers --mock            # Mock observer execution
 jlo run deciders --mock             # Mock decider execution
 ```
 
-Mock mode creates real branches and PRs with synthetic commit content, enabling E2E workflow validation in CI. The scope identifier is auto-generated from `JULES_MOCK_SCOPE` env var or a timestamp.
+Mock mode creates real branches and PRs with synthetic commit content, enabling E2E workflow validation in CI. The mock tag is auto-generated from `JULES_MOCK_TAG` env var or a timestamp.
 
 **Flags**:
 - `-w, --workstream <name>`: Target workstream (required for observers/deciders)
 - `--scheduled`: Use roles from `scheduled.toml`
 - `-r, --role <name>`: Run specific role(s) (manual mode only)
-- `--dry-run`: Show assembled prompts without API calls
+- `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)
 - `--branch <name>`: Override the default starting branch
 - `<path>`: Local issue file (required for planners and implementers)
@@ -153,7 +153,7 @@ Workflow kit layout:
 | `JULES_PAUSED` | Skip scheduled runs when set to `true` | (unset) |
 | `JULES_TARGET_BRANCH` | Target branch for implementer output | `main` |
 
-**Schedule Preservation**: When reinstalling with `jlo init workflows --overwrite`, the existing `on.schedule` block in `jules-workflows.yml` is preserved.
+**Schedule Preservation**: When reinstalling with `jlo init workflows`, the existing `on.schedule` block in `jules-workflows.yml` is preserved.
 
 **Branch Strategy**:
 

@@ -12,7 +12,7 @@ on:
         description: 'Issue file path'
         type: string
         required: true
-      dry_run:
+      prompt_preview:
         description: 'Show prompts without executing'
         type: boolean
         default: false
@@ -37,6 +37,5 @@ jobs:
         uses: ./.github/actions/run-implementer
         with:
           issue_file: {{ gha_expr("inputs.issue_file") }}
-          dry_run: {{ gha_expr("inputs.dry_run") }}
+          prompt_preview: {{ gha_expr("inputs.prompt_preview") }}
           target_branch: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
-

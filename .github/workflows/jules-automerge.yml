@@ -3,12 +3,11 @@
 # Validates Jules PRs with doctor check and enables auto-merge on success.
 # Only applies when:
 #   1. PR targets the jules branch
-#   2. Head branch matches jules-{narrator,observer,decider,planner}-* pattern
+#   2. Head branch matches a known branch_prefix from .jules/roles contracts
 #   3. All changed files are within .jules/ directory
 #   4. Doctor validation passes
 #
 # Does NOT apply to:
-#   - jules-implementer-* branches (implementation requires human review)
 #   - Any PR that modifies files outside .jules/
 #
 # Flow:
@@ -30,12 +29,6 @@ on:
 
 jobs:
   validate-and-automerge:
-    # Only run for narrator/observer/decider/planner branches
-    if: >-
-      startsWith(github.head_ref, 'jules-narrator-') ||
-      startsWith(github.head_ref, 'jules-observer-') ||
-      startsWith(github.head_ref, 'jules-decider-') ||
-      startsWith(github.head_ref, 'jules-planner-')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -46,10 +39,55 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
+      - name: Resolve branch prefixes
+        id: prefixes
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          git fetch origin jules --depth=1
+
+          mapfile -t contract_paths < <(git ls-tree -r --name-only origin/jules:.jules/roles | awk '/contracts.yml$/')
+          contract_count=$(printf '%s\n' "${contract_paths[@]}" | wc -l | tr -d ' ')
+          if [ "$contract_count" -eq 0 ]; then
+            echo "::error::No contracts.yml found under .jules/roles on jules branch."
+            exit 1
+          fi
+
+          prefixes=()
+          for path in "${contract_paths[@]}"; do
+            prefix=$(git show "origin/jules:.jules/roles/$path" | awk -F':' '/^branch_prefix:/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); gsub(/["'\'']/, "", $2); print $2; exit}')
+            if [ -n "$prefix" ]; then
+              prefixes+=("$prefix")
+            fi
+          done
+
+          prefix_count=$(printf '%s\n' "${prefixes[@]}" | wc -l | tr -d ' ')
+          if [ "$prefix_count" -eq 0 ]; then
+            echo "::error::No branch_prefix entries found in contracts.yml on jules branch."
+            exit 1
+          fi
+
+          match=false
+          for prefix in "${prefixes[@]}"; do
+            if [[ "$HEAD_REF" == "$prefix"* ]]; then
+              match=true
+              break
+            fi
+          done
+
+          echo "match=$match" >> "$GITHUB_OUTPUT"
+
+          if [ "$match" != "true" ]; then
+            echo "::notice::Branch $HEAD_REF does not match known branch prefixes; skipping auto-merge."
+          fi
+
       - name: Install jlo
+        if: steps.prefixes.outputs.match == 'true'
         uses: ./.github/actions/install-jlo
 
       - name: Validate with doctor
+        if: steps.prefixes.outputs.match == 'true'
         run: |
           # Extract workstream from changed files
           workstreams=$(git diff --name-only origin/jules...HEAD | grep '^\.jules/workstreams/' | cut -d'/' -f3 | sort -u)
@@ -73,6 +111,7 @@ jobs:
 
       - name: Check scope (files within .jules/ only)
         id: scope
+        if: steps.prefixes.outputs.match == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -90,7 +129,7 @@ jobs:
           fi
 
       - name: Enable auto-merge
-        if: steps.scope.outputs.in_scope == 'true'
+        if: steps.prefixes.outputs.match == 'true' && steps.scope.outputs.in_scope == 'true'
         env:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |

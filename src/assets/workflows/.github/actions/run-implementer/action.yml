@@ -4,7 +4,7 @@ inputs:
   issue_file:
     description: 'Issue file path'
     required: true
-  dry_run:
+  prompt_preview:
     description: 'Show prompts without executing'
     required: false
     default: 'false'
@@ -33,22 +33,22 @@ runs:
       uses: ./.github/actions/install-jlo
 
     - name: Configure Git
-      if: ${{ inputs.dry_run != 'true' }}
+      if: ${{ inputs.prompt_preview != 'true' }}
       uses: ./.github/actions/configure-git
 
     - name: Run implementers
       shell: bash
       env:
         ISSUE_FILE: ${{ inputs.issue_file }}
-        DRY_RUN: ${{ inputs.dry_run }}
+        PROMPT_PREVIEW: ${{ inputs.prompt_preview }}
         TARGET_BRANCH: ${{ inputs.target_branch }}
       run: |
         args=("$ISSUE_FILE")
-        [ "$DRY_RUN" = "true" ] && args+=("--dry-run")
+        [ "$PROMPT_PREVIEW" = "true" ] && args+=("--prompt-preview")
         jlo run implementers "${args[@]}" --branch "$TARGET_BRANCH"
 
     - name: Delete processed issue and source events
-      if: ${{ inputs.dry_run != 'true' }}
+      if: ${{ inputs.prompt_preview != 'true' }}
       shell: bash
       env:
         ISSUE_FILE: ${{ inputs.issue_file }}

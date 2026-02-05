@@ -60,9 +60,9 @@ fn test_api_coverage_full_flow() {
         .expect("doctor failed");
     assert_eq!(doctor_outcome.exit_code, 0);
 
-    // 3. Update (dry run)
+    // 3. Update (prompt preview)
     let update_result = update(true, false).expect("update failed");
-    assert!(update_result.dry_run);
+    assert!(update_result.prompt_preview);
 
     // 4. Template (create role in generic workstream)
     // "generic" workstream is created by init
@@ -75,7 +75,7 @@ fn test_api_coverage_full_flow() {
     assert!(role_path.exists(), "Role not found at {:?}", role_path);
 
     // 5. Init workflows
-    init_workflows(WorkflowRunnerMode::Remote, false).expect("init workflows failed");
+    init_workflows(WorkflowRunnerMode::Remote).expect("init workflows failed");
     // Check if one of the workflows exists
     // Note: The actual path depends on what init_workflows does.
     // It usually creates .github/workflows

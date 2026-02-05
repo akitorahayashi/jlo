@@ -73,7 +73,7 @@ where
 
     Ok(RunResult {
         roles: vec![options.layer.dir_name().to_string()],
-        dry_run: false,
+        prompt_preview: false,
         sessions: vec![], // No Jules sessions in mock mode
     })
 }

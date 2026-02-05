@@ -29,7 +29,7 @@ pub struct RunOptions {
     /// Use scheduled mode for multi-role layers.
     pub scheduled: bool,
     /// Show assembled prompts without executing.
-    pub dry_run: bool,
+    pub prompt_preview: bool,
     /// Override the starting branch.
     pub branch: Option<String>,
     /// Local issue file path (required for issue-driven layers: planners, implementers).
@@ -43,9 +43,9 @@ pub struct RunOptions {
 pub struct RunResult {
     /// Roles that were processed.
     pub roles: Vec<String>,
-    /// Whether this was a dry run.
-    pub dry_run: bool,
-    /// Session IDs from Jules (empty if dry_run or mock).
+    /// Whether this was a prompt preview.
+    pub prompt_preview: bool,
+    /// Session IDs from Jules (empty if prompt_preview or mock).
     pub sessions: Vec<String>,
 }
 
@@ -74,7 +74,7 @@ where
     if options.layer == Layer::Narrators {
         return narrator::execute(
             jules_path,
-            options.dry_run,
+            options.prompt_preview,
             options.branch.as_deref(),
             is_ci,
             git,
@@ -93,7 +93,7 @@ where
             jules_path,
             options.layer,
             issue_path,
-            options.dry_run,
+            options.prompt_preview,
             options.branch.as_deref(),
             is_ci,
             github,
@@ -108,7 +108,7 @@ where
         options.roles.as_ref(),
         options.workstream.as_deref(),
         options.scheduled,
-        options.dry_run,
+        options.prompt_preview,
         options.branch.as_deref(),
     )
 }

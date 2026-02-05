@@ -52,7 +52,7 @@ pub struct Stats {
 /// Execute the Narrator layer.
 pub fn execute<G, W>(
     jules_path: &Path,
-    dry_run: bool,
+    prompt_preview: bool,
     branch: Option<&str>,
     is_ci: bool,
     git: &G,
@@ -76,17 +76,17 @@ where
             println!("No codebase changes detected (excluding .jules/). Skipping Narrator.");
             return Ok(RunResult {
                 roles: vec!["narrator".to_string()],
-                dry_run,
+                prompt_preview,
                 sessions: vec![],
             });
         }
     };
 
-    if dry_run {
-        execute_dry_run(jules_path, &starting_branch, &git_context)?;
+    if prompt_preview {
+        execute_prompt_preview(jules_path, &starting_branch, &git_context)?;
         return Ok(RunResult {
             roles: vec!["narrator".to_string()],
-            dry_run: true,
+            prompt_preview: true,
             sessions: vec![],
         });
     }
@@ -101,7 +101,7 @@ where
         println!("Run in CI (GITHUB_ACTIONS=true) to create a Jules session.");
         return Ok(RunResult {
             roles: vec!["narrator".to_string()],
-            dry_run: false,
+            prompt_preview: false,
             sessions: vec![],
         });
     }
@@ -124,7 +124,7 @@ where
             println!("✅ Narrator session created: {}", response.session_id);
             Ok(RunResult {
                 roles: vec!["narrator".to_string()],
-                dry_run: false,
+                prompt_preview: false,
                 sessions: vec![response.session_id],
             })
         }
@@ -284,13 +284,13 @@ fn build_narrator_prompt(jules_path: &Path, ctx: &GitContext) -> Result<String, 
     Ok(format!("{}{}", base_prompt, context_section))
 }
 
-/// Execute a dry run, showing the assembled prompt and context.
-fn execute_dry_run(
+/// Execute a prompt preview, showing the assembled prompt and context.
+fn execute_prompt_preview(
     jules_path: &Path,
     starting_branch: &str,
     ctx: &GitContext,
 ) -> Result<(), AppError> {
-    println!("=== Dry Run: Narrator ===");
+    println!("=== Prompt Preview: Narrator ===");
     println!("Starting branch: {}\n", starting_branch);
 
     println!("--- Git Context ---");

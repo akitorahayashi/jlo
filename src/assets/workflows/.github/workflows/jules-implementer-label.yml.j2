@@ -3,7 +3,7 @@ name: Jules Implementer Label
 on:
   push:
     branches:
-      - jules-implementer-*
+      - 'jules-implementer-*'
 
 permissions:
   contents: read
@@ -16,9 +16,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Checkout main; label definitions are read from the jules branch.
-          ref: main
+          # Checkout jules; label definitions and contracts are read from the jules branch.
+          ref: jules
           fetch-depth: 1
+          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 
       - name: Apply category label
         env:
@@ -29,6 +30,15 @@ jobs:
           set -euo pipefail
           if [ -z "${GH_TOKEN:-}" ]; then
             echo "::error::Missing GH_TOKEN (secrets.JLO_BOT_TOKEN). Refusing to fall back to the default workflow token."
+            exit 1
+          fi
+
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "::error::Missing gh CLI."
+            exit 1
+          fi
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::error::Missing jq."
             exit 1
           fi
 
@@ -57,9 +67,8 @@ jobs:
           echo "Detected issue label: $label"
           echo "Detected issue id: $issue_id"
 
-          label_config="$(mktemp)"
-          git fetch origin jules --depth=1
-          if ! git show "origin/jules:.jules/github-labels.json" > "$label_config"; then
+          label_config=".jules/github-labels.json"
+          if [ ! -f "$label_config" ]; then
             echo "::error::Missing label definition file on jules branch: .jules/github-labels.json"
             exit 1
           fi

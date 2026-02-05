@@ -26,7 +26,7 @@ where
     })?;
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-    let branch_name = config.branch_name(Layer::Deciders, &timestamp);
+    let branch_name = config.branch_name(Layer::Deciders, &timestamp)?;
 
     println!("Mock deciders: creating branch {}", branch_name);
 
@@ -43,13 +43,15 @@ where
     let issues_dir = exchange_dir.join("issues");
 
     // Ensure directories exist
-    std::fs::create_dir_all(&decided_dir).ok();
-    std::fs::create_dir_all(&issues_dir).ok();
+    std::fs::create_dir_all(&decided_dir)?;
+    std::fs::create_dir_all(&issues_dir)?;
 
     // Create two mock issues: one for planner, one for implementer
-    let label = config.issue_labels.first().cloned().unwrap_or_else(|| "bugs".to_string());
+    let label = config.issue_labels.first().cloned().ok_or_else(|| {
+        AppError::Validation("No issue labels available for mock decider".to_string())
+    })?;
     let label_dir = issues_dir.join(&label);
-    std::fs::create_dir_all(&label_dir).ok();
+    std::fs::create_dir_all(&label_dir)?;
 
     let mock_issue_template = include_str!("assets/decider_issue.yml");
 
@@ -58,29 +60,34 @@ where
     let mut moved_src_files: Vec<PathBuf> = Vec::new();
     let mut source_event_ids: Vec<String> = Vec::new();
     if pending_dir.exists() {
-        for entry in std::fs::read_dir(&pending_dir).into_iter().flatten().flatten() {
+        for entry in std::fs::read_dir(&pending_dir)? {
+            let entry = entry?;
             let path = entry.path();
             if path
                 .file_name()
-                .map(|n| n.to_string_lossy().contains(&config.scope))
+                .map(|n| n.to_string_lossy().contains(&config.mock_tag))
                 .unwrap_or(false)
             {
                 // Extract event ID from filename (format: mock-{scope}-{event_id}.yml)
                 if let Some(filename) = path.file_name() {
                     let name = filename.to_string_lossy();
                     // Parse event ID from filename
-                    if let Some(id_part) = name.strip_prefix(&format!("mock-{}-", config.scope))
+                    if let Some(id_part) = name.strip_prefix(&format!("mock-{}-", config.mock_tag))
                         && let Some(event_id) = id_part.strip_suffix(".yml")
                     {
                         source_event_ids.push(event_id.to_string());
                     }
                 }
 
-                let dest = decided_dir.join(path.file_name().unwrap());
-                if std::fs::rename(&path, &dest).is_ok() {
-                    moved_src_files.push(path);
-                    moved_dest_files.push(dest);
-                }
+                let dest = decided_dir.join(path.file_name().ok_or_else(|| {
+                    AppError::Validation(format!(
+                        "Pending event missing filename: {}",
+                        path.display()
+                    ))
+                })?);
+                std::fs::rename(&path, &dest)?;
+                moved_src_files.push(path);
+                moved_dest_files.push(dest);
             }
         }
     }
@@ -101,10 +108,10 @@ where
 
     // Issue 1: requires deep analysis (for planner)
     let planner_issue_id = generate_mock_id();
-    let planner_issue_file = label_dir.join(format!("mock-planner-{}.yml", config.scope));
+    let planner_issue_file = label_dir.join(format!("mock-planner-{}.yml", config.mock_tag));
     let planner_issue_content = mock_issue_template
         .replace("mock01", &planner_issue_id)
-        .replace("test-scope", &config.scope)
+        .replace("test-tag", &config.mock_tag)
         .replace("event1", &planner_event_id)
         .replace(
             "requires_deep_analysis: false",
@@ -125,10 +132,10 @@ where
 
     // Issue 2: ready for implementer
     let impl_issue_id = generate_mock_id();
-    let impl_issue_file = label_dir.join(format!("mock-impl-{}.yml", config.scope));
+    let impl_issue_file = label_dir.join(format!("mock-impl-{}.yml", config.mock_tag));
     let impl_issue_content = mock_issue_template
         .replace("mock01", &impl_issue_id)
-        .replace("test-scope", &config.scope)
+        .replace("test-tag", &config.mock_tag)
         .replace("event1", &impl_event_id)
         .replace("Mock issue for workflow validation", "Mock issue ready for implementation");
 
@@ -142,7 +149,7 @@ where
         if let Some(filename) = dest_file.file_name() {
             let name = filename.to_string_lossy();
             let event_id = if let Some(id_part) =
-                name.strip_prefix(&format!("mock-{}-", config.scope))
+                name.strip_prefix(&format!("mock-{}-", config.mock_tag))
                 && let Some(event_id) = id_part.strip_suffix(".yml")
             {
                 event_id.to_string()
@@ -159,18 +166,32 @@ where
                 continue; // Unknown event, skip update
             };
 
-            if let Ok(content) = std::fs::read_to_string(dest_file) {
-                // Update issue_id in the event file
-                if content.contains("issue_id: \"\"") {
-                    let updated_content = content
-                        .replace("issue_id: \"\"", &format!("issue_id: \"{}\"", assigned_issue_id));
-                    std::fs::write(dest_file, updated_content).ok();
-                } else {
-                    // Append if not present in template (fallback)
-                    let updated_content =
-                        format!("{}\nissue_id: \"{}\"", content, assigned_issue_id);
-                    std::fs::write(dest_file, updated_content).ok();
+            let content = match std::fs::read_to_string(dest_file) {
+                Ok(content) => content,
+                Err(err) => {
+                    println!(
+                        "::warning::Failed to read decided event file {}: {}",
+                        dest_file.display(),
+                        err
+                    );
+                    continue;
                 }
+            };
+
+            // Update issue_id in the event file
+            let updated_content = if content.contains("issue_id: \"\"") {
+                content.replace("issue_id: \"\"", &format!("issue_id: \"{}\"", assigned_issue_id))
+            } else {
+                // Append if not present in template
+                format!("{}\nissue_id: \"{}\"", content, assigned_issue_id)
+            };
+
+            if let Err(err) = std::fs::write(dest_file, updated_content) {
+                println!(
+                    "::warning::Failed to write decided event file {}: {}",
+                    dest_file.display(),
+                    err
+                );
             }
         }
     }
@@ -183,16 +204,16 @@ where
     for f in &moved_src_files {
         files.push(f.as_path());
     }
-    git.commit_files(&format!("[mock-{}] decider: mock issues", config.scope), &files)?;
+    git.commit_files(&format!("[mock-{}] decider: mock issues", config.mock_tag), &files)?;
     git.push_branch(&branch_name, false)?;
 
     // Create PR
     let pr = github.create_pull_request(
         &branch_name,
         &config.jules_branch,
-        &format!("[mock-{}] Decider triage", config.scope),
-        &format!("Mock decider run for workflow validation.\n\nScope: `{}`\nWorkstream: `{}`\n\nCreated issues:\n- `{}` (requires analysis)\n- `{}` (ready for impl)", 
-            config.scope, workstream, planner_issue_id, impl_issue_id),
+        &format!("[mock-{}] Decider triage", config.mock_tag),
+        &format!("Mock decider run for workflow validation.\n\nMock tag: `{}`\nWorkstream: `{}`\n\nCreated issues:\n- `{}` (requires analysis)\n- `{}` (ready for impl)",
+            config.mock_tag, workstream, planner_issue_id, impl_issue_id),
     )?;
 
     println!("Mock deciders: created PR #{} ({})", pr.number, pr.url);
@@ -201,6 +222,6 @@ where
         mock_branch: branch_name,
         mock_pr_number: pr.number,
         mock_pr_url: pr.url,
-        mock_scope: config.scope.clone(),
+        mock_tag: config.mock_tag.clone(),
     })
 }

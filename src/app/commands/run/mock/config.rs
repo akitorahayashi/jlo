@@ -50,38 +50,65 @@ pub fn load_mock_config<W: WorkspaceStore>(
         [Layer::Narrators, Layer::Observers, Layer::Deciders, Layer::Planners, Layer::Implementers]
     {
         let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
+        let contracts_path_str = contracts_path
+            .to_str()
+            .ok_or_else(|| AppError::Validation("Invalid contracts path".to_string()))?;
 
-        if let Ok(content) = workspace.read_file(
-            contracts_path
-                .to_str()
-                .ok_or_else(|| AppError::Validation("Invalid contracts path".to_string()))?,
-        ) && let Some(prefix) = extract_branch_prefix(&content)
-        {
-            branch_prefixes.insert(layer, prefix);
-        }
+        let content = workspace.read_file(contracts_path_str).map_err(|_| {
+            AppError::Validation(format!(
+                "Missing contracts.yml for layer '{}': {}",
+                layer.dir_name(),
+                contracts_path.display()
+            ))
+        })?;
+
+        let prefix = extract_branch_prefix(&content).ok_or_else(|| {
+            AppError::Validation(format!(
+                "Missing branch_prefix in contracts.yml for layer '{}': {}",
+                layer.dir_name(),
+                contracts_path.display()
+            ))
+        })?;
+
+        branch_prefixes.insert(layer, prefix);
     }
 
     // Load issue labels from github-labels.json
     let labels_path = jules_path.join("github-labels.json");
-    let issue_labels = if let Ok(content) = workspace.read_file(
-        labels_path
-            .to_str()
-            .ok_or_else(|| AppError::Validation("Invalid labels path".to_string()))?,
-    ) {
-        extract_issue_labels(&content)?
-    } else {
-        vec!["bugs".to_string(), "feats".to_string(), "refacts".to_string()]
-    };
+    let labels_path_str = labels_path
+        .to_str()
+        .ok_or_else(|| AppError::Validation("Invalid labels path".to_string()))?;
+    let labels_content = workspace.read_file(labels_path_str).map_err(|_| {
+        AppError::Validation(format!(
+            "Missing github-labels.json for mock mode: {}",
+            labels_path.display()
+        ))
+    })?;
+    let issue_labels = extract_issue_labels(&labels_content)?;
+    if issue_labels.is_empty() {
+        return Err(AppError::Validation(format!(
+            "No issue labels defined in github-labels.json: {}",
+            labels_path.display()
+        )));
+    }
 
-    // Generate scope if not provided
-    // Generate scope: env var -> CI default -> local default
-    let scope = std::env::var("JULES_MOCK_SCOPE").ok().unwrap_or_else(|| {
-        let prefix = if std::env::var("GITHUB_ACTIONS").is_ok() { "ci" } else { "local" };
-        format!("{}-{}", prefix, Utc::now().format("%Y%m%d%H%M%S"))
+    // Generate mock tag if not provided
+    // Generate mock tag: env var -> CI default -> local default
+    let mock_tag = std::env::var("JULES_MOCK_TAG").ok().unwrap_or_else(|| {
+        let prefix = if std::env::var("GITHUB_ACTIONS").is_ok() { "mock-ci" } else { "mock-local" };
+        let generated = format!("{}-{}", prefix, Utc::now().format("%Y%m%d%H%M%S"));
+        println!("Mock tag not set; using {}", generated);
+        generated
     });
 
+    if !mock_tag.contains("mock") {
+        return Err(AppError::Validation(
+            "JULES_MOCK_TAG must include 'mock' to mark mock artifacts.".to_string(),
+        ));
+    }
+
     Ok(MockConfig {
-        scope,
+        mock_tag,
         branch_prefixes,
         default_branch: run_config.run.default_branch,
         jules_branch: run_config.run.jules_branch,
