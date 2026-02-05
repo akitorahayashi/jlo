@@ -53,6 +53,15 @@ pub fn init() -> Result<(), AppError> {
     init_at(std::env::current_dir()?)
 }
 
+/// Initialize a new `.jules/` workspace at the specified path.
+pub fn init_at(path: std::path::PathBuf) -> Result<(), AppError> {
+    let ctx = create_context(path.clone());
+
+    let git = GitCommandAdapter::new(path);
+    init_scaffold::execute(&ctx, &git)?;
+    Ok(())
+}
+
 /// Deinitialize jlo assets from the current directory.
 pub fn deinit() -> Result<DeinitOutcome, AppError> {
     deinit_at(std::env::current_dir()?)
@@ -62,15 +71,6 @@ pub fn deinit() -> Result<DeinitOutcome, AppError> {
 pub fn deinit_at(path: std::path::PathBuf) -> Result<DeinitOutcome, AppError> {
     let git = GitCommandAdapter::new(path.clone());
     deinit::execute(&path, &git)
-}
-
-/// Initialize a new `.jules/` workspace at the specified path.
-pub fn init_at(path: std::path::PathBuf) -> Result<(), AppError> {
-    let ctx = create_context(path.clone());
-
-    let git = GitCommandAdapter::new(path);
-    init_scaffold::execute(&ctx, &git)?;
-    Ok(())
 }
 
 /// Initialize a new workflow kit in the current directory.
@@ -200,8 +200,16 @@ pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
 /// * `prompt_preview` - Show planned changes without applying
 /// * `adopt_managed` - Record current default role files as managed baseline
 pub fn update(prompt_preview: bool, adopt_managed: bool) -> Result<UpdateResult, AppError> {
-    let workspace = get_current_workspace()?;
+    update_at(std::env::current_dir()?, prompt_preview, adopt_managed)
+}
 
+/// Update workspace at the specified path.
+pub fn update_at(
+    path: std::path::PathBuf,
+    prompt_preview: bool,
+    adopt_managed: bool,
+) -> Result<UpdateResult, AppError> {
+    let workspace = FilesystemWorkspaceStore::new(path);
     let templates = EmbeddedRoleTemplateStore::new();
     let options = UpdateOptions { prompt_preview, adopt_managed };
     update::execute(&workspace, options, &templates)
@@ -213,7 +221,14 @@ pub fn update(prompt_preview: bool, adopt_managed: bool) -> Result<UpdateResult,
 
 /// Validate the `.jules/` workspace structure and content.
 pub fn doctor(options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
-    let workspace = get_current_workspace()?;
+    doctor_at(std::env::current_dir()?, options)
+}
 
+/// Validate the `.jules/` workspace at the specified path.
+pub fn doctor_at(
+    path: std::path::PathBuf,
+    options: DoctorOptions,
+) -> Result<DoctorOutcome, AppError> {
+    let workspace = FilesystemWorkspaceStore::new(path);
     doctor::execute(&workspace.jules_path(), options)
 }
