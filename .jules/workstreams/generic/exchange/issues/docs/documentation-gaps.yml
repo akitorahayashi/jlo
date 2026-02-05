@@ -1,0 +1,23 @@
+schema_version: 2
+id: z73ozj
+source_events:
+- c8d01k
+- rfxu4x
+title: Address documentation gaps and drift
+label: docs
+priority: medium
+summary: Address documentation gaps and drift
+problem: CLI commands and scaffold files are missing from documentation.
+impact: Users are misled about available features and system structure.
+desired_outcome: Documentation accurately reflects code state.
+constraints: []
+risks: []
+affected_areas:
+- src/AGENTS.md
+- src/assets/scaffold/AGENTS.md
+acceptance_criteria:
+- Fix CLI commands and scaffold files are missing from documentation.
+verification_commands:
+- cat src/AGENTS.md
+requires_deep_analysis: false
+deep_analysis_reason: ''

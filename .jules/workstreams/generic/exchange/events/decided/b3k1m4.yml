@@ -1,0 +1,20 @@
+schema_version: 1
+id: b3k1m4
+issue_id: s6qs2c
+created_at: '2026-02-05'
+author_role: cov
+confidence: high
+title: Critical `structural_checks` logic untested
+statement: 'The `structural_checks` function in `doctor/structure.rs` orchestrates
+  validation but lacks direct unit tests, relying on lower-level helpers.
+
+  '
+evidence:
+- path: src/app/commands/doctor/structure.rs
+  loc:
+  - fn structural_checks
+  note: The function logic is not invoked by the tests in the `mod tests` module.
+tags:
+- coverage
+- risk
+- doctor

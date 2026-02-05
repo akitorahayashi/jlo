@@ -1,0 +1,21 @@
+schema_version: 2
+id: b8o9in
+source_events:
+- 97811a
+title: Remove global state dependencies from tests
+label: tests
+priority: medium
+summary: Remove global state dependencies from tests
+problem: Tests rely on modifying global CWD, forcing serial execution.
+impact: Slow test execution and flakiness.
+desired_outcome: Tests should run in parallel without side effects.
+constraints: []
+risks: []
+affected_areas:
+- tests/api_coverage.rs
+acceptance_criteria:
+- Fix Tests rely on modifying global CWD, forcing serial execution.
+verification_commands:
+- cargo test --test api_coverage
+requires_deep_analysis: false
+deep_analysis_reason: ''

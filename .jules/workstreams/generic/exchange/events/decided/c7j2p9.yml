@@ -1,0 +1,25 @@
+schema_version: 1
+id: c7j2p9
+issue_id: fsdysr
+created_at: '2026-02-05'
+author_role: cov
+confidence: medium
+title: Coverage configuration is implicit in CI
+statement: 'Coverage settings (exclusions, output format) are defined only in `run-tests.yml`
+  arguments, missing a `tarpaulin.toml` for local consistency.
+
+  '
+evidence:
+- path: .github/workflows/run-tests.yml
+  loc:
+  - cargo tarpaulin
+  note: Configuration arguments are hardcoded in the CI workflow.
+- path: .
+  loc:
+  - tarpaulin.toml
+  note: The standard configuration file for tarpaulin is absent from the repository
+    root.
+tags:
+- coverage
+- config
+- ci
