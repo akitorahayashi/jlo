@@ -1,6 +1,6 @@
 use jlo::{
-    DoctorOptions, WorkflowRunnerMode, deinit, doctor, init, init_workflows, setup_gen, setup_list,
-    template, update, workstreams_inspect, WorkstreamInspectFormat, WorkstreamInspectOptions,
+    DoctorOptions, WorkflowRunnerMode, WorkstreamInspectFormat, WorkstreamInspectOptions, deinit,
+    doctor, init, init_workflows, setup_gen, setup_list, template, update, workstreams_inspect,
 };
 use serial_test::serial;
 use std::env;
@@ -97,10 +97,8 @@ fn test_api_coverage_extras() {
     let _guard = CwdGuard::new(temp.path());
 
     let run_git = |args: &[&str]| {
-        let status = std::process::Command::new("git")
-            .args(args)
-            .status()
-            .expect("failed to execute git");
+        let status =
+            std::process::Command::new("git").args(args).status().expect("failed to execute git");
         assert!(status.success(), "git {:?} failed", args);
     };
 
