@@ -576,4 +576,133 @@ mod tests {
         let result = collect_workstreams(temp.path(), Some("ws3"));
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_structural_checks_clean() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        let jules_path = temp.child(".jules");
+        jules_path.create_dir_all().unwrap();
+
+        // Create critical files
+        temp.child(".jules/JULES.md").touch().unwrap();
+        temp.child(".jules/README.md").touch().unwrap();
+        temp.child(".jules/config.toml").touch().unwrap();
+        temp.child(".jules/.jlo-version").write_str(env!("CARGO_PKG_VERSION")).unwrap();
+
+        // Create directories
+        jules_path.child("roles").create_dir_all().unwrap();
+        jules_path.child("workstreams").create_dir_all().unwrap();
+        jules_path.child("changes").create_dir_all().unwrap();
+
+        // Mock layer roles
+        for layer in Layer::ALL {
+            let layer_dir = jules_path.child("roles").child(layer.dir_name());
+            layer_dir.create_dir_all().unwrap();
+            layer_dir.child("contracts.yml").touch().unwrap();
+            layer_dir.child("schemas").create_dir_all().unwrap();
+            layer_dir.child("prompt_assembly.yml").touch().unwrap();
+            layer_dir.child("prompt.yml").touch().unwrap();
+
+            if layer == Layer::Narrators {
+                layer_dir.child("schemas/change.yml").touch().unwrap();
+            }
+            if !layer.is_single_role() {
+                layer_dir.child("roles").create_dir_all().unwrap();
+            }
+        }
+
+        let mut diagnostics = Diagnostics::default();
+        let options = DoctorOptions::default();
+        let mut applied_fixes = Vec::new();
+        let workstreams = Vec::new();
+        let issue_labels = Vec::new();
+        let event_states = Vec::new();
+
+        structural_checks(
+            StructuralInputs {
+                jules_path: jules_path.path(),
+                root: temp.path(),
+                workstreams: &workstreams,
+                issue_labels: &issue_labels,
+                event_states: &event_states,
+                options: &options,
+                applied_fixes: &mut applied_fixes,
+            },
+            &mut diagnostics,
+        );
+
+        assert_eq!(diagnostics.error_count(), 0, "Errors found: {:?}", diagnostics.errors());
+    }
+
+    #[test]
+    fn test_structural_checks_missing_critical_files() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        let jules_path = temp.child(".jules");
+        jules_path.create_dir_all().unwrap();
+
+        // Environment is empty except for .jules directory
+
+        let mut diagnostics = Diagnostics::default();
+        let options = DoctorOptions::default();
+        let mut applied_fixes = Vec::new();
+        let workstreams = Vec::new();
+        let issue_labels = Vec::new();
+        let event_states = Vec::new();
+
+        structural_checks(
+            StructuralInputs {
+                jules_path: jules_path.path(),
+                root: temp.path(),
+                workstreams: &workstreams,
+                issue_labels: &issue_labels,
+                event_states: &event_states,
+                options: &options,
+                applied_fixes: &mut applied_fixes,
+            },
+            &mut diagnostics,
+        );
+
+        assert!(diagnostics.error_count() > 0);
+        let errors = diagnostics.errors();
+        assert!(errors.iter().any(|e| e.file.contains("JULES.md")));
+        assert!(errors.iter().any(|e| e.file.contains("config.toml")));
+    }
+
+    #[test]
+    fn test_structural_checks_fix() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        let jules_path = temp.child(".jules");
+        jules_path.create_dir_all().unwrap();
+
+        let mut diagnostics = Diagnostics::default();
+        let mut options = DoctorOptions::default();
+        options.fix = true;
+        let mut applied_fixes = Vec::new();
+        let workstreams = Vec::new();
+        let issue_labels = Vec::new();
+        let event_states = Vec::new();
+
+        structural_checks(
+            StructuralInputs {
+                jules_path: jules_path.path(),
+                root: temp.path(),
+                workstreams: &workstreams,
+                issue_labels: &issue_labels,
+                event_states: &event_states,
+                options: &options,
+                applied_fixes: &mut applied_fixes,
+            },
+            &mut diagnostics,
+        );
+
+        // Files should be created.
+        // Note: verifying content restore works requires valid scaffold assets.
+        // Assuming unit tests run in environment where assets are linked.
+        assert!(temp.child(".jules/JULES.md").exists());
+        assert!(temp.child(".jules/config.toml").exists());
+
+        // We expect warnings about restored files
+        assert!(diagnostics.warning_count() > 0);
+        assert!(!applied_fixes.is_empty());
+    }
 }

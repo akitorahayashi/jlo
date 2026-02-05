@@ -49,12 +49,20 @@ pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> 
     let content = scaffold_file_content(path)
         .ok_or_else(|| AppError::InternalError(format!("Missing scaffold file: {}", path)))?;
 
-    let value: Value = serde_yaml::from_str(&content)
-        .map_err(|err| AppError::InternalError(format!("Failed to parse {}: {}", path, err)))?;
+    parse_enum_values_from_content(&content, key)
+        .map_err(|e| AppError::InternalError(format!("Error in {}: {}", path, e)))
+}
+
+pub fn parse_enum_values_from_content(
+    content: &str,
+    key: &str,
+) -> Result<Vec<String>, AppError> {
+    let value: Value = serde_yaml::from_str(content)
+        .map_err(|err| AppError::InternalError(format!("Failed to parse YAML: {}", err)))?;
 
     let map = match value {
         Value::Mapping(map) => map,
-        _ => return Err(AppError::InternalError(format!("Expected root mapping in {}", path))),
+        _ => return Err(AppError::InternalError("Expected root mapping".into())),
     };
 
     let value_str =
@@ -67,10 +75,7 @@ pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> 
         .collect();
 
     if values.is_empty() {
-        return Err(AppError::InternalError(format!(
-            "No enum values found for {} in {}",
-            key, path
-        )));
+        return Err(AppError::InternalError(format!("No enum values found for {}", key)));
     }
 
     Ok(values)
@@ -106,6 +111,64 @@ mod tests {
                     check_entry(entry);
                 }
             }
+        }
+    }
+
+    #[test]
+    fn test_parse_enum_values() {
+        let content = "
+status: open|closed|pending
+other: value
+";
+        let values = parse_enum_values_from_content(content, "status").unwrap();
+        assert_eq!(values, vec!["open", "closed", "pending"]);
+    }
+
+    #[test]
+    fn test_parse_enum_values_with_spaces() {
+        let content = "
+status:  open | closed |  pending
+";
+        let values = parse_enum_values_from_content(content, "status").unwrap();
+        assert_eq!(values, vec!["open", "closed", "pending"]);
+    }
+
+    #[test]
+    fn test_parse_enum_values_missing_key() {
+        let content = "
+other: value
+";
+        let result = parse_enum_values_from_content(content, "status");
+        assert!(result.is_err());
+        match result {
+            Err(AppError::InternalError(msg)) => {
+                assert_eq!(msg, "No enum values found for status");
+            }
+            _ => panic!("Expected InternalError"),
+        }
+    }
+
+    #[test]
+    fn test_parse_enum_values_empty_value() {
+        let content = "
+status: \"\"
+";
+        let result = parse_enum_values_from_content(content, "status");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_enum_values_invalid_yaml() {
+        let content = "
+: invalid
+";
+        let result = parse_enum_values_from_content(content, "status");
+        assert!(result.is_err());
+        match result {
+            Err(AppError::InternalError(msg)) => {
+                assert!(msg.contains("Failed to parse YAML"));
+            }
+            _ => panic!("Expected InternalError"),
         }
     }
 }
