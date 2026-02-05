@@ -1,0 +1,23 @@
+schema_version: 2
+id: "w2n5b8"
+source_events:
+  - "580e1a"
+title: "CI Workflow Lacks Explicit Permission Restrictions"
+label: "refacts"
+priority: "high"
+summary: "The CI workflow runs with default permissions, violating the principle of least privilege."
+problem: |
+  The `.github/workflows/ci-workflows.yml` file does not define a `permissions` block. This means it inherits the repository's default GITHUB_TOKEN permissions (often read/write), which is unnecessary for linting, building, and testing.
+impact: |
+  Excessive permissions increase the attack surface if a workflow or a dependency is compromised. It allows the token to potentially modify the repository or perform actions it shouldn't be allowed to.
+desired_outcome: |
+  The workflow should explicitly define minimal permissions (e.g., `contents: read`) needed for its jobs.
+affected_areas:
+  - ".github/workflows/ci-workflows.yml"
+acceptance_criteria:
+  - "Permissions block is added to ci-workflows.yml"
+  - "Workflow continues to pass with restricted permissions"
+verification_commands:
+  - "grep 'permissions:' .github/workflows/ci-workflows.yml"
+requires_deep_analysis: false
+deep_analysis_reason: ""

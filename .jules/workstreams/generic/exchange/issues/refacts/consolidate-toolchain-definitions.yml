@@ -1,0 +1,25 @@
+schema_version: 2
+id: "k3l9p1"
+source_events:
+  - "28e324"
+title: "Duplicate Toolchain Definitions Risk Drift"
+label: "refacts"
+priority: "medium"
+summary: "Rust toolchain version is defined in multiple places, creating maintenance burden and drift risk."
+problem: |
+  The Rust toolchain version (currently `1.90.0`) is hardcoded in three separate locations: `rust-toolchain.toml`, `.github/actions/setup/action.yml`, and `.github/workflows/build.yml`. This violation of the DRY (Don't Repeat Yourself) principle makes updates error-prone.
+impact: |
+  Inconsistent toolchain versions between local development (controlled by `rust-toolchain.toml`) and CI/CD pipelines can lead to "works on my machine" issues where code passes locally but fails in CI, or binaries are built with an unexpected compiler version.
+desired_outcome: |
+  The toolchain version should be defined in a single source of truth (likely `rust-toolchain.toml`), and CI workflows/actions should read from it or rely on the setup action to pick it up automatically.
+affected_areas:
+  - "rust-toolchain.toml"
+  - ".github/actions/setup/action.yml"
+  - ".github/workflows/build.yml"
+acceptance_criteria:
+  - "Rust version is defined in only one place (or propagated automatically)"
+  - "CI builds use the version specified in the single source of truth"
+verification_commands:
+  - "grep '1.90.0' rust-toolchain.toml"
+requires_deep_analysis: false
+deep_analysis_reason: ""

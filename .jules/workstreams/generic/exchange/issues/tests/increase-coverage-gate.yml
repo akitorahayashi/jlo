@@ -1,0 +1,23 @@
+schema_version: 2
+id: "m5v3c7"
+source_events:
+  - "c7g8t9"
+title: "Increase Coverage Gate to 50%"
+label: "tests"
+priority: "medium"
+summary: "Raise the CI code coverage threshold from 40% to 50% to align with quality targets."
+problem: |
+  The current code coverage gate in `.github/workflows/run-tests.yml` is set to 40%. The target for regression control is 50%.
+impact: |
+  Low coverage allows code paths to remain untested, increasing the risk of regressions making it into production.
+desired_outcome: |
+  The `cargo tarpaulin` command in the CI workflow should enforce a `--fail-under 50` check.
+affected_areas:
+  - ".github/workflows/run-tests.yml"
+acceptance_criteria:
+  - "CI fails if coverage is below 50%"
+  - "Current codebase passes the 50% threshold (or is brought up to it)"
+verification_commands:
+  - "cargo tarpaulin --fail-under 50"
+requires_deep_analysis: false
+deep_analysis_reason: ""

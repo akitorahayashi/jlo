@@ -1,0 +1,23 @@
+schema_version: 2
+id: "f1g8h4"
+source_events:
+  - "q8w7e3"
+title: "Clarify 'Jules VM' vs 'Jules API' Terminology"
+label: "docs"
+priority: "low"
+summary: "Standardize documentation to use consistent terminology for the execution environment."
+problem: |
+  Internal documentation (`src/assets/scaffold/AGENTS.md`) refers to "Jules VM", while public docs (`README.md`) use "Jules API". This inconsistency creates confusion about whether the execution is local (VM) or remote (API).
+impact: |
+  Developer confusion regarding the architecture and execution model.
+desired_outcome: |
+  The documentation should be updated to use "Jules API" consistently, or "Jules Service", unless "VM" refers to a specific distinct component. Given the context, "Jules API" seems to be the intended public term.
+affected_areas:
+  - "src/assets/scaffold/AGENTS.md"
+  - "README.md"
+acceptance_criteria:
+  - "Terminology is consistent across documentation files"
+verification_commands:
+  - "grep -r '[J]ules VM' src/assets/scaffold/ || true"
+requires_deep_analysis: false
+deep_analysis_reason: ""

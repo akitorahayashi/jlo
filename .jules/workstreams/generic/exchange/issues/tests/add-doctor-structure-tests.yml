@@ -1,0 +1,23 @@
+schema_version: 2
+id: "b4g6f1"
+source_events:
+  - "d1s2t3"
+title: "Add Unit Tests for Doctor Structural Validation"
+label: "tests"
+priority: "high"
+summary: "Add unit tests to cover the complex `structural_checks` logic in the doctor command."
+problem: |
+  The `structural_checks` function in `src/app/commands/doctor/structure.rs` implements critical validation logic for the workspace structure but is currently uncovered by unit tests.
+impact: |
+  Changes to the structural validation logic could introduce regressions that go undetected, potentially allowing invalid workspaces to pass validation or flagging valid ones as invalid.
+desired_outcome: |
+  The `structural_checks` function should have comprehensive unit test coverage, mocking the filesystem to simulate valid and invalid workspace states.
+affected_areas:
+  - "src/app/commands/doctor/structure.rs"
+acceptance_criteria:
+  - "Unit tests covering success and failure paths for `structural_checks` are added"
+  - "Tests use mocked filesystem inputs"
+verification_commands:
+  - "cargo test src/app/commands/doctor/structure.rs"
+requires_deep_analysis: false
+deep_analysis_reason: ""

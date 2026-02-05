@@ -1,0 +1,25 @@
+schema_version: 2
+id: "p6m4j9"
+source_events:
+  - "g4h8m2"
+title: "Standardize Port Naming Convention"
+label: "refacts"
+priority: "low"
+summary: "Unify port trait naming conventions to use a consistent suffix (e.g., `Port`)."
+problem: |
+  The `src/ports` module uses inconsistent naming: `GitPort`, `WorkspaceStore`, and `JulesClient`. This lack of consistency obscures the architectural role of these traits.
+impact: |
+  Inconsistent naming makes the architecture harder to learn and navigate. It suggests semantic differences where there may be none.
+desired_outcome: |
+  Renaming strategies should be evaluated (e.g., renaming all to `*Port` or `*Service`). A consistent convention should be chosen and applied. For this task, we should decide on one and apply it, likely `*Port` as per `GitPort` or keep descriptive names if they represent specific patterns (Store vs Client). However, the issue explicitly calls out inconsistency. Given `GitPort` exists, moving towards `*Port` or at least standardizing is the goal.
+affected_areas:
+  - "src/ports/git.rs"
+  - "src/ports/workspace_store.rs"
+  - "src/ports/jules_client.rs"
+acceptance_criteria:
+  - "A consistent naming convention is applied (e.g., WorkspacePort, JulesPort)"
+  - "All references are updated"
+verification_commands:
+  - "cargo check"
+requires_deep_analysis: false
+deep_analysis_reason: ""

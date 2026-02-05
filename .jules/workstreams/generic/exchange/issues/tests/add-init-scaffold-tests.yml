@@ -1,0 +1,23 @@
+schema_version: 2
+id: "h2k7w3"
+source_events:
+  - "i4n5t6"
+title: "Add Unit Tests for Init Scaffold Command"
+label: "tests"
+priority: "high"
+summary: "Add unit tests for the `init_scaffold` command, covering branch enforcement and scaffold creation."
+problem: |
+  The `execute` function in `src/app/commands/init_scaffold.rs` is critical for setting up the workspace but currently lacks unit tests. It includes logic for enforcing execution on specific branches (`jules`, `jules-test-*`) that is not verified by automated tests.
+impact: |
+  Lack of tests puts critical setup logic at risk of regression. The branch enforcement logic could be accidentally weakened or broken.
+desired_outcome: |
+  The module should include a `#[cfg(test)]` block with tests that mock `GitPort` and `WorkspaceStore` to verify success and failure scenarios (e.g., wrong branch, workspace already exists).
+affected_areas:
+  - "src/app/commands/init_scaffold.rs"
+acceptance_criteria:
+  - "Unit tests verify branch enforcement logic"
+  - "Unit tests verify scaffold creation calls"
+verification_commands:
+  - "cargo test src/app/commands/init_scaffold.rs"
+requires_deep_analysis: false
+deep_analysis_reason: ""

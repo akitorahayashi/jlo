@@ -2,7 +2,7 @@ schema_version: 1
 
 # Metadata
 id: "z9x2k1"
-issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+issue_id: "z4x2c9" # ID of the issue that processed this event (empty if unprocessed)
 created_at: "2026-02-04"
 author_role: "consistency"
 confidence: "high"

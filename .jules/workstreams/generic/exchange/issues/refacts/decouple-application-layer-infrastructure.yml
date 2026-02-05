@@ -1,0 +1,23 @@
+schema_version: 2
+id: "t7r2q5"
+source_events:
+  - "ortbz1"
+title: "Decouple Application Layer from Concrete Infrastructure Services"
+label: "refacts"
+priority: "high"
+summary: "Remove direct dependencies from Application layer to `src/services` infrastructure."
+problem: |
+  The `src/app/commands/update.rs` module directly imports `scaffold_manifest` from `src/services/assets`. In a clean architecture, the Application layer should depend only on Domain entities and Ports, not on concrete infrastructure adapters in the Services layer.
+impact: |
+  Violates the Dependency Rule, making the application logic tightly coupled to specific implementations. This makes swapping implementations (e.g., for testing) difficult.
+desired_outcome: |
+  The functionality provided by `scaffold_manifest` should be exposed via a Port (trait) or domain service that the Application layer can depend on. The concrete implementation should be injected.
+affected_areas:
+  - "src/app/commands/update.rs"
+acceptance_criteria:
+  - "Direct import of `crate::services` in `src/app` is removed or minimized to composition root"
+  - "Update command uses an abstraction for manifest operations"
+verification_commands:
+  - "grep 'use crate::services' src/app/commands/update.rs || true"
+requires_deep_analysis: false
+deep_analysis_reason: ""

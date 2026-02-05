@@ -1,0 +1,23 @@
+schema_version: 2
+id: "x7r2m9"
+source_events:
+  - "0db4f1"
+title: "Release Workflow Vulnerable to CI Timing Race Condition"
+label: "bugs"
+priority: "medium"
+summary: "The release workflow fails if the CI run for the tagged commit hasn't completed yet."
+problem: |
+  The `release.yml` workflow queries GitHub API for a successful `ci-workflows.yml` run on the current commit. If the tag is pushed immediately after or with the commit, the CI workflow may still be in progress or queued. The release workflow currently fails immediately instead of waiting for the CI workflow to complete.
+impact: |
+  Release automation is flaky and prone to failure depending on CI timing. This requires manual intervention to retry the release workflow once CI has passed, delaying releases and increasing toil.
+desired_outcome: |
+  The release workflow should wait for the CI workflow to complete successfully before attempting to download artifacts, or retry the check for a reasonable period.
+affected_areas:
+  - ".github/workflows/release.yml"
+acceptance_criteria:
+  - "Release workflow waits for pending CI runs on the same commit"
+  - "Release workflow succeeds even if triggered immediately after commit push"
+verification_commands:
+  - "echo 'Verify via manual test or simulation of release workflow logic'"
+requires_deep_analysis: false
+deep_analysis_reason: ""
