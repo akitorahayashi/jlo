@@ -1,0 +1,22 @@
+schema_version: 1
+id: "ca062c"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "taxonomy"
+confidence: "high"
+title: "Inconsistent usage of Folder vs Directory"
+statement: |
+  The term "Folder" is used in documentation to refer to filesystem directories, while the code and standard Rust terminology use "Directory".
+evidence:
+  - path: "src/assets/scaffold/.jules/README.md"
+    loc:
+      - "185"
+    note: "Uses 'placing in label folder'"
+  - path: "src/assets/scaffold/.jules/roles/observers/roles/structural_arch/role.yml"
+    loc:
+      - "30"
+    note: "Uses 'Folders separated on paper'"
+tags:
+  - "naming"
+  - "consistency"
+  - "documentation"

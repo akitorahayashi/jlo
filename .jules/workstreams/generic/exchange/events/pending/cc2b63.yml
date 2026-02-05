@@ -1,0 +1,26 @@
+schema_version: 1
+id: "cc2b63"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "taxonomy"
+confidence: "high"
+title: "Inconsistent usage of Jules API vs Jules VM"
+statement: |
+  The terms "Jules API" and "Jules VM" are used interchangeably to refer to the execution backend, creating confusion about the system boundary. "Jules API" is predominant in code, while "Jules VM" appears in documentation assets.
+evidence:
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc:
+      - "18"
+    note: "Uses 'delegates to Jules VM'"
+  - path: "src/assets/catalog/README.md"
+    loc:
+      - "3"
+    note: "Uses 'Jules VM already includes'"
+  - path: "src/domain/run_config.rs"
+    loc:
+      - "14"
+    note: "Uses 'Jules API configuration'"
+tags:
+  - "naming"
+  - "consistency"
+  - "documentation"

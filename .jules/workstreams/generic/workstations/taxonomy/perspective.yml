@@ -1,0 +1,21 @@
+schema_version: 2
+
+observer: "taxonomy"
+workstream: "generic"
+
+updated_at: "2026-02-05T19:44:22Z"
+
+goals:
+  - "Standardize 'Jules API' usage across documentation."
+  - "Enforce 'Directory' over 'Folder' in new documentation."
+  - "Clarify 'Config' vs 'Settings' usage in domain layer."
+
+rules:
+  - "Prefer 'Directory' over 'Folder' in all contexts."
+  - "Use 'Jules API' for the client/server interface; reserve 'Jules VM' for the backend execution environment if distinct."
+
+ignore: []
+
+log:
+  - at: "2026-02-05T19:44:22Z"
+    summary: "Identified naming inconsistencies in API/VM, Directory/Folder, and Config/Settings."
