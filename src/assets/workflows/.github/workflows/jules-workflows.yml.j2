@@ -225,8 +225,10 @@ jobs:
       - name: Generate observer matrix
         id: matrix
         env:
-          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
-        run: jlo workflow matrix roles --layer observers --workstreams-json "$WORKSTREAMS_JSON"
+          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
+        run: |
+          WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
+          jlo workflow matrix roles --layer observers --workstreams-json "$WORKSTREAMS_JSON"
 
   # ============================================================
   # Phase 5: Run observers
@@ -337,8 +339,10 @@ jobs:
       - name: Generate decider matrix from pending events
         id: matrix
         env:
-          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
-        run: jlo workflow matrix pending-workstreams --workstreams-json "$WORKSTREAMS_JSON"
+          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
+        run: |
+          WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
+          jlo workflow matrix pending-workstreams --workstreams-json "$WORKSTREAMS_JSON"
 
   # ============================================================
   # Phase 8: Run deciders
@@ -450,8 +454,10 @@ jobs:
       - name: Generate planner and implementer matrices
         id: matrix
         env:
-          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
-        run: jlo workflow matrix routing --workstreams-json "$WORKSTREAMS_JSON" --routing-labels "$ROUTING_LABELS"
+          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
+        run: |
+          WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
+          jlo workflow matrix routing --workstreams-json "$WORKSTREAMS_JSON" --routing-labels "$ROUTING_LABELS"
 
   # ============================================================
   # Phase 11: Run planners
