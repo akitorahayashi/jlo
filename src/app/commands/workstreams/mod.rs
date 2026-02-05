@@ -97,7 +97,7 @@ pub fn inspect(
 ) -> Result<WorkstreamInspectOutput, AppError> {
     let ws_dir = jules_path.join("workstreams").join(&options.workstream);
     if !ws_dir.exists() {
-        return Err(AppError::Validation(format!("Workstream '{}' not found", options.workstream)));
+        return Err(AppError::WorkstreamNotFound(options.workstream));
     }
 
     let schedule = load_schedule(jules_path, &options.workstream)?;

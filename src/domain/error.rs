@@ -37,6 +37,10 @@ pub enum AppError {
     #[error("Workstreams directory not found")]
     WorkstreamsDirectoryNotFound,
 
+    /// Workstream not found.
+    #[error("Workstream '{0}' not found")]
+    WorkstreamNotFound(String),
+
     /// Workspace integrity issue (e.g. missing version file).
     #[error("Workspace integrity error: {0}")]
     WorkspaceIntegrity(String),
@@ -90,6 +94,10 @@ pub enum AppError {
     /// Role already exists at the specified location.
     #[error("Role '{role}' already exists in layer '{layer}'")]
     RoleExists { role: String, layer: String },
+
+    /// Duplicate role request.
+    #[error("Duplicate role '{0}' specified")]
+    DuplicateRoleRequest(String),
 
     /// Setup workspace not initialized (.jules/setup/ missing).
     #[error("Setup not initialized. Run 'jlo setup init' first.")]

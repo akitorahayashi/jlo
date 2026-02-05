@@ -52,7 +52,7 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
     let mut seen = HashSet::new();
     for role in &roles {
         if !seen.insert(role) {
-            return Err(AppError::Validation(format!("Duplicate role '{}' specified", role)));
+            return Err(AppError::DuplicateRoleRequest(role.to_string()));
         }
         validate_role_exists(input.jules_path, input.layer, role.as_str())?;
     }
@@ -63,7 +63,7 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
 fn ensure_workstream_exists(jules_path: &Path, workstream: &str) -> Result<(), AppError> {
     let path = jules_path.join("workstreams").join(workstream);
     if !path.exists() {
-        return Err(AppError::Validation(format!("Workstream '{}' not found", workstream)));
+        return Err(AppError::WorkstreamNotFound(workstream.to_string()));
     }
     Ok(())
 }

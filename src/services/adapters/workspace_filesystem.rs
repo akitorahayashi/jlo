@@ -102,7 +102,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
                 if let Ok(role_id) = RoleId::new(&role_id_str)
                     && self.role_exists_in_layer(layer, &role_id)
                 {
-                    roles.push(DiscoveredRole { layer, id: role_id_str });
+                    roles.push(DiscoveredRole { layer, id: role_id });
                 }
             }
         }
@@ -119,14 +119,16 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         let roles = self.discover_roles()?;
 
         // Check for exact match first
-        if let Some(role) = roles.iter().find(|r| r.id == query) {
+        if let Some(role) = roles.iter().find(|r| r.id.as_str() == query) {
             return Ok(Some(role.clone()));
         }
 
         // Check for layer/role format (e.g., "observers/taxonomy")
         if let Some((layer_part, role_part)) = query.split_once('/')
             && let Some(layer) = Layer::from_dir_name(layer_part)
-            && let Some(role) = roles.iter().find(|r| r.layer == layer && r.id == role_part)
+            && let Some(role) = roles
+                .iter()
+                .find(|r| r.layer == layer && r.id.as_str() == role_part)
         {
             return Ok(Some(role.clone()));
         }
@@ -142,7 +144,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
     }
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        let path = self.role_path_in_layer(role.layer, &role.id);
+        let path = self.role_path_in_layer(role.layer, role.id.as_str());
         if path.exists() { Some(path) } else { None }
     }
 
@@ -352,10 +354,10 @@ mod tests {
         assert_eq!(roles.len(), 2);
         // Sort order is by dir_name: deciders, observers
         assert_eq!(roles[0].layer, Layer::Deciders);
-        assert_eq!(roles[0].id, "screener");
+        assert_eq!(roles[0].id.as_str(), "screener");
 
         assert_eq!(roles[1].layer, Layer::Observers);
-        assert_eq!(roles[1].id, "taxonomy");
+        assert_eq!(roles[1].id.as_str(), "taxonomy");
     }
 
     #[test]
@@ -374,16 +376,16 @@ mod tests {
         // Exact match
         let found = ws.find_role_fuzzy("taxonomy").unwrap().unwrap();
         assert_eq!(found.layer, Layer::Observers);
-        assert_eq!(found.id, "taxonomy");
+        assert_eq!(found.id.as_str(), "taxonomy");
 
         // Layer/Role match
         let found = ws.find_role_fuzzy("deciders/taxman").unwrap().unwrap();
         assert_eq!(found.layer, Layer::Deciders);
-        assert_eq!(found.id, "taxman");
+        assert_eq!(found.id.as_str(), "taxman");
 
         // Prefix match (unique)
         let found = ws.find_role_fuzzy("taxo").unwrap().unwrap();
-        assert_eq!(found.id, "taxonomy");
+        assert_eq!(found.id.as_str(), "taxonomy");
 
         // Prefix match (ambiguous) - "tax" matches "taxonomy" and "taxman"
         let found = ws.find_role_fuzzy("tax").unwrap();

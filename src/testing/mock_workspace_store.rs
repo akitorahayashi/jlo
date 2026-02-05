@@ -70,7 +70,9 @@ impl WorkspaceStore for MockWorkspaceStore {
             .roles
             .borrow()
             .keys()
-            .map(|(layer, id)| DiscoveredRole { layer: *layer, id: id.clone() })
+            .filter_map(|(layer, id)| {
+                RoleId::new(id).ok().map(|role_id| DiscoveredRole { layer: *layer, id: role_id })
+            })
             .collect();
         Ok(roles)
     }
@@ -79,7 +81,7 @@ impl WorkspaceStore for MockWorkspaceStore {
         let roles = self.discover_roles()?;
 
         // Exact match
-        if let Some(role) = roles.iter().find(|r| r.id == query) {
+        if let Some(role) = roles.iter().find(|r| r.id.as_str() == query) {
             return Ok(Some(role.clone()));
         }
 
@@ -92,7 +94,7 @@ impl WorkspaceStore for MockWorkspaceStore {
     }
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        if self.roles.borrow().contains_key(&(role.layer, role.id.clone())) {
+        if self.roles.borrow().contains_key(&(role.layer, role.id.as_str().to_string())) {
             Some(PathBuf::from(format!(".jules/roles/{}/{}", role.layer.dir_name(), role.id)))
         } else {
             None

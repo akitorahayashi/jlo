@@ -30,7 +30,7 @@ pub fn collect_workstreams(
 
     if let Some(target) = filter {
         if !workstreams.contains(&target.to_string()) {
-            return Err(AppError::Validation(format!("Workstream '{}' not found", target)));
+            return Err(AppError::WorkstreamNotFound(target.to_string()));
         }
         return Ok(vec![target.to_string()]);
     }
