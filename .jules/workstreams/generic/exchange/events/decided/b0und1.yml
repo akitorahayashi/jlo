@@ -1,0 +1,25 @@
+schema_version: 1
+id: b0und1
+issue_id: rdyoyn
+created_at: '2026-02-05'
+author_role: data_arch
+confidence: high
+title: Services bypassing WorkspaceStore abstraction
+statement: 'The `scaffold_manifest` and `workstream_schedule_filesystem` modules directly
+  use `std::fs` for file operations instead of utilizing the `WorkspaceStore` port.
+  This coupling prevents effective testing with mock filesystems and violates the
+  architectural goal of abstracting storage.
+
+  '
+evidence:
+- path: src/services/assets/scaffold_manifest.rs
+  loc:
+  - 1-2
+  note: Imports and uses std::fs
+- path: src/services/adapters/workstream_schedule_filesystem.rs
+  loc:
+  - 1-2
+  note: Imports and uses std::fs
+tags:
+- boundary-sovereignty
+- testability

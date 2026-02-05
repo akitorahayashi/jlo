@@ -1,0 +1,27 @@
+schema_version: 2
+id: rdyoyn
+source_events:
+- b0und1
+- d4t4a1
+- layvio
+title: Fix architectural boundary and layering violations
+label: refacts
+priority: medium
+summary: Fix architectural boundary and layering violations
+problem: Services bypass ports, domain entities have I/O side effects, and app layer
+  imports services directly.
+impact: Coupling prevents testing and evolution.
+desired_outcome: Strict adherence to hexagonal architecture layers.
+constraints: []
+risks: []
+affected_areas:
+- src/services/assets/scaffold_manifest.rs
+- src/domain/mock_config.rs
+- src/app/commands/update.rs
+acceptance_criteria:
+- Fix Services bypass ports, domain entities have I/O side effects, and app layer
+  imports services directly.
+verification_commands:
+- cargo check
+requires_deep_analysis: false
+deep_analysis_reason: ''

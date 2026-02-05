@@ -1,0 +1,26 @@
+schema_version: 1
+id: c8d01k
+issue_id: z73ozj
+created_at: '2026-02-05'
+author_role: consistency
+confidence: high
+title: Missing jlo doctor in CLI reference
+statement: 'The `jlo doctor` command is the primary tool for workspace validation
+  (as referenced in README.md and implemented in CLI), but it is missing from the
+  "CLI Commands" reference table in `src/AGENTS.md`. Only `jlo workflow doctor` is
+  listed, which is a specialized command.
+
+  '
+evidence:
+- path: src/AGENTS.md
+  loc:
+  - CLI Commands
+  note: Table lists `jlo workflow doctor` but omits `jlo doctor`.
+- path: src/app/cli/mod.rs
+  loc:
+  - Doctor variant in Commands enum
+  note: Command is implemented and available.
+tags:
+- documentation
+- cli
+- drift

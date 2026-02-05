@@ -1,0 +1,25 @@
+schema_version: 2
+id: zdvzg8
+source_events:
+- typwea
+- errmod
+title: Improve type safety in error handling and domain models
+label: refacts
+priority: medium
+summary: Improve type safety in error handling and domain models
+problem: Stringly-typed errors and primitive obsession in WorkspaceStore weaken type
+  safety.
+impact: Harder to handle specific errors and ensure correctness.
+desired_outcome: Use specific error variants and strong types (RoleId).
+constraints: []
+risks: []
+affected_areas:
+- src/domain/error.rs
+- src/ports/workspace_store.rs
+acceptance_criteria:
+- Fix Stringly-typed errors and primitive obsession in WorkspaceStore weaken type
+  safety.
+verification_commands:
+- cargo check
+requires_deep_analysis: false
+deep_analysis_reason: ''

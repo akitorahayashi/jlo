@@ -1,0 +1,25 @@
+schema_version: 2
+id: s6qs2c
+source_events:
+- b3k1m4
+- 7f25d3
+- 45fd74
+title: Add missing unit tests for critical logic
+label: tests
+priority: medium
+summary: Add missing unit tests for critical logic
+problem: Critical validation logic in doctor checks and asset parsing lacks unit tests.
+impact: High risk of regressions in core framework functionality.
+desired_outcome: Unit tests added for structural_checks and read_enum_values.
+constraints: []
+risks: []
+affected_areas:
+- src/app/commands/doctor/structure.rs
+- src/services/assets/scaffold_assets.rs
+acceptance_criteria:
+- Fix Critical validation logic in doctor checks and asset parsing lacks unit tests.
+verification_commands:
+- cargo test src/app/commands/doctor/structure.rs
+- cargo test src/services/assets/scaffold_assets.rs
+requires_deep_analysis: false
+deep_analysis_reason: ''
