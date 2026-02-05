@@ -1,0 +1,21 @@
+schema_version: 1
+id: "d1s2t3"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "cov"
+confidence: "high"
+
+title: "Critical Gap: Missing Unit Tests for Doctor Structural Validation"
+statement: |
+  The `structural_checks` function in `src/app/commands/doctor/structure.rs` contains complex logic for validating workspace integrity but lacks direct unit tests. This increases the risk of regressions in workspace validation.
+
+evidence:
+  - path: "src/app/commands/doctor/structure.rs"
+    loc:
+      - "structural_checks"
+    note: "Function lines 80-264 contains critical logic but is not covered by unit tests in the module."
+
+tags:
+  - "coverage"
+  - "risk"
+  - "quality"
