@@ -125,7 +125,13 @@ jobs:
       - name: Wait {{ gha_expr("env.WAIT_MINUTES") }} minutes for Jules async processing
         run: |
           echo "Waiting $WAIT_MINUTES minutes for Jules to process narrator PR..."
-          sleep $((WAIT_MINUTES * 60))
+          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
+          ELAPSED=0
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            sleep 30
+            ELAPSED=$((ELAPSED + 30))
+            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+          done
           echo "Wait complete."
 
   # ============================================================
@@ -244,7 +250,13 @@ jobs:
       - name: Wait {{ gha_expr("env.WAIT_MINUTES") }} minutes for Jules async processing
         run: |
           echo "Waiting $WAIT_MINUTES minutes for Jules to process observer PRs..."
-          sleep $((WAIT_MINUTES * 60))
+          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
+          ELAPSED=0
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            sleep 30
+            ELAPSED=$((ELAPSED + 30))
+            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+          done
           echo "Wait complete."
 
   # ============================================================
@@ -326,7 +338,13 @@ jobs:
       - name: Wait {{ gha_expr("env.WAIT_MINUTES") }} minutes for Jules async processing
         run: |
           echo "Waiting $WAIT_MINUTES minutes for Jules to process decider PRs..."
-          sleep $((WAIT_MINUTES * 60))
+          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
+          ELAPSED=0
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            sleep 30
+            ELAPSED=$((ELAPSED + 30))
+            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+          done
           echo "Wait complete."
 
   # ============================================================
