@@ -1,7 +1,7 @@
-use std::collections::BTreeMap;
+use crate::ports::ScaffoldFile;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use crate::ports::ScaffoldFile;
+use std::collections::BTreeMap;
 
 pub const MANIFEST_SCHEMA_VERSION: u32 = 1;
 

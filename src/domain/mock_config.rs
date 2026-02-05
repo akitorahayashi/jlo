@@ -53,7 +53,6 @@ pub struct MockOutput {
     pub mock_tag: String,
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
