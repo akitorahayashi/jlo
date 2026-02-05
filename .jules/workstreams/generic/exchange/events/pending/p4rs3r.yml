@@ -1,0 +1,23 @@
+schema_version: 1
+
+# Metadata
+id: "p4rs3r"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "data_arch"
+confidence: "medium"
+
+# Content
+title: "Fragile manual YAML parsing in mock configuration loading"
+statement: |
+  The `load_mock_config` function uses a custom line-by-line string parsing method `extract_branch_prefix` to read `contracts.yml`, rather than a robust YAML parser. This implementation is fragile and susceptible to errors with valid YAML variations (e.g., comments, whitespace, block scalars).
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/run/mock/config.rs"
+    loc: "118-132"
+    note: "Manual parsing logic iterate lines and strips prefixes"
+
+tags:
+  - "data-quality"
+  - "robustness"
