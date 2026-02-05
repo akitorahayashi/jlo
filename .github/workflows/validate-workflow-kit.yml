@@ -44,12 +44,14 @@ jobs:
           path: target/release/jlo
           retention-days: 1
 
-  # Initialize scaffold in a temp directory and validate it
+  # Initialize scaffold on a temporary branch and validate it
   validate-scaffold:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download jlo binary
         uses: actions/download-artifact@v4
@@ -62,26 +64,18 @@ jobs:
           chmod +x ./bin/jlo
           echo "$PWD/bin" >> $GITHUB_PATH
 
-      - name: Create test repository
-        run: |
-          mkdir -p /tmp/test-repo
-          cd /tmp/test-repo
-          git init
-          git config user.email "test@example.com"
-          git config user.name "Test User"
-          echo "# Test Repo" > README.md
-          git add .
-          git commit -m "Initial commit"
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
 
-      - name: Initialize scaffold
+      - name: Create test branch and initialize scaffold
         run: |
-          cd /tmp/test-repo
+          # Create a temporary test branch
+          git checkout -b jules-test-${{ github.run_id }}
+          
+          # Initialize scaffold
           jlo init scaffold
-
-      - name: Validate scaffold structure
-        run: |
-          cd /tmp/test-repo
-          # Required directories
+          
+          # Validate scaffold structure
           test -d .jules/roles
           test -d .jules/roles/narrators/narrator
           test -d .jules/roles/observers
@@ -89,7 +83,6 @@ jobs:
           test -d .jules/roles/planners
           test -d .jules/roles/implementers
           
-          # Required files
           test -f .jules/config.toml
           test -f .jules/JULES.md
           test -f .jules/prompt.yml
@@ -98,13 +91,10 @@ jobs:
           echo "✓ Scaffold structure validated"
 
       - name: Initialize workflows
-        run: |
-          cd /tmp/test-repo
-          jlo init workflows
+        run: jlo init workflows
 
       - name: Validate workflow structure
         run: |
-          cd /tmp/test-repo
           # Required workflow files
           test -f .github/workflows/jules-workflows.yml
           test -f .github/actions/install-jlo/action.yml
@@ -119,12 +109,14 @@ jobs:
           
           echo "✓ Workflow structure validated"
 
-  # Run mock mode E2E validation using workflow_call
+  # Validate dry-run execution
   mock-e2e:
     needs: [build, validate-scaffold]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download jlo binary
         uses: actions/download-artifact@v4
@@ -137,16 +129,13 @@ jobs:
           chmod +x ./bin/jlo
           echo "$PWD/bin" >> $GITHUB_PATH
 
-      - name: Create test repository with scaffold
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Create test branch and initialize scaffold
         run: |
-          mkdir -p /tmp/mock-test-repo
-          cd /tmp/mock-test-repo
-          git init
-          git config user.email "test@example.com"
-          git config user.name "Test User"
-          echo "# Mock Test Repo" > README.md
-          git add .
-          git commit -m "Initial commit"
+          # Create a temporary test branch
+          git checkout -b jules-test-e2e-${{ github.run_id }}
           
           # Initialize scaffold
           jlo init scaffold
@@ -155,8 +144,6 @@ jobs:
 
       - name: Validate dry-run for each layer
         run: |
-          cd /tmp/mock-test-repo
-          
           # Test --dry-run for each layer (validates prompt assembly without execution)
           echo "Testing narrator dry-run..."
           jlo run narrator --dry-run
@@ -176,6 +163,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download jlo binary
         uses: actions/download-artifact@v4
@@ -188,20 +177,14 @@ jobs:
           chmod +x ./bin/jlo
           echo "$PWD/bin" >> $GITHUB_PATH
 
-      - name: Create test repository
-        run: |
-          mkdir -p /tmp/template-test-repo
-          cd /tmp/template-test-repo
-          git init
-          git config user.email "test@example.com"
-          git config user.name "Test User"
-          echo "# Template Test Repo" > README.md
-          git add .
-          git commit -m "Initial commit"
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
 
-      - name: Initialize and validate workflows
+      - name: Create test branch and validate workflows
         run: |
-          cd /tmp/template-test-repo
+          # Create a temporary test branch
+          git checkout -b jules-test-template-${{ github.run_id }}
+          
           jlo init scaffold
           jlo init workflows
           
@@ -211,8 +194,6 @@ jobs:
 
       - name: Check mock support in rendered workflow
         run: |
-          cd /tmp/template-test-repo
-          
           # Verify mock inputs are present in workflow
           grep -q "mock:" .github/workflows/jules-workflows.yml || { echo "Missing mock input"; exit 1; }
           grep -q "workflow_call:" .github/workflows/jules-workflows.yml || { echo "Missing workflow_call trigger"; exit 1; }
@@ -224,8 +205,6 @@ jobs:
 
       - name: Check JLO_RUN_FLAGS in scripts
         run: |
-          cd /tmp/template-test-repo
-          
           for script in .github/scripts/jules-run-*.sh; do
             if ! grep -q 'JLO_RUN_FLAGS' "$script"; then
               echo "Missing JLO_RUN_FLAGS in $script"
