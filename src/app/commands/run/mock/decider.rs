@@ -85,11 +85,19 @@ where
         }
     }
 
-    // Use first moved event as source, or generate a placeholder if none
-    let source_event_id = source_event_ids
+    // Sort to determine assignment order (stable assignment based on ID)
+    source_event_ids.sort();
+
+    // Select distinct events for distinct paths (or generate if missing)
+    let planner_event_id = source_event_ids
         .first()
         .cloned()
-        .unwrap_or_else(|| format!("mock-event-{}", generate_mock_id()));
+        .unwrap_or_else(|| format!("mock-event-planner-{}", generate_mock_id()));
+
+    let impl_event_id = source_event_ids
+        .get(1)
+        .cloned()
+        .unwrap_or_else(|| format!("mock-event-impl-{}", generate_mock_id()));
 
     // Issue 1: requires deep analysis (for planner)
     let planner_issue_id = generate_mock_id();
@@ -97,9 +105,15 @@ where
     let planner_issue_content = mock_issue_template
         .replace("mock01", &planner_issue_id)
         .replace("test-scope", &config.scope)
-        .replace("event1", &source_event_id)
-        .replace("requires_deep_analysis: false", "requires_deep_analysis: true\ndeep_analysis_reason: \"Mock issue requires architectural analysis for workflow validation\"")
-        .replace("Mock issue for workflow validation", "Mock issue requiring deep analysis")
+        .replace("event1", &planner_event_id)
+        .replace(
+            "requires_deep_analysis: false",
+            "requires_deep_analysis: true\ndeep_analysis_reason: \"Mock issue requires architectural analysis-for-workflow-validation\"",
+        )
+        .replace(
+            "Mock issue for workflow validation",
+            "Mock issue requiring deep analysis",
+        )
         .replace("medium", "high"); // Make it high priority for planner
 
     workspace.write_file(
@@ -115,7 +129,7 @@ where
     let impl_issue_content = mock_issue_template
         .replace("mock01", &impl_issue_id)
         .replace("test-scope", &config.scope)
-        .replace("event1", &source_event_id)
+        .replace("event1", &impl_event_id)
         .replace("Mock issue for workflow validation", "Mock issue ready for implementation");
 
     workspace.write_file(
@@ -125,11 +139,39 @@ where
 
     // Update moved event files to set issue_id (decided events must have issue_id)
     for dest_file in &moved_dest_files {
-        if let Ok(content) = std::fs::read_to_string(dest_file) {
-            // Update issue_id in the event file
-            let updated_content =
-                content.replace("issue_id: \"\"", &format!("issue_id: \"{}\"", impl_issue_id));
-            std::fs::write(dest_file, updated_content).ok();
+        if let Some(filename) = dest_file.file_name() {
+            let name = filename.to_string_lossy();
+            let event_id = if let Some(id_part) =
+                name.strip_prefix(&format!("mock-{}-", config.scope))
+                && let Some(event_id) = id_part.strip_suffix(".yml")
+            {
+                event_id.to_string()
+            } else {
+                continue;
+            };
+
+            // Determine which issue ID to use based on event ID matching
+            let assigned_issue_id = if event_id == planner_event_id {
+                &planner_issue_id
+            } else if event_id == impl_event_id {
+                &impl_issue_id
+            } else {
+                continue; // Unknown event, skip update
+            };
+
+            if let Ok(content) = std::fs::read_to_string(dest_file) {
+                // Update issue_id in the event file
+                if content.contains("issue_id: \"\"") {
+                    let updated_content = content
+                        .replace("issue_id: \"\"", &format!("issue_id: \"{}\"", assigned_issue_id));
+                    std::fs::write(dest_file, updated_content).ok();
+                } else {
+                    // Append if not present in template (fallback)
+                    let updated_content =
+                        format!("{}\nissue_id: \"{}\"", content, assigned_issue_id);
+                    std::fs::write(dest_file, updated_content).ok();
+                }
+            }
         }
     }
 

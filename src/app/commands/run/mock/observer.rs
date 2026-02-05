@@ -35,8 +35,7 @@ where
     git.checkout_branch(&format!("origin/{}", config.jules_branch), false)?;
     git.checkout_branch(&branch_name, true)?;
 
-    // Create mock event file
-    let event_id = generate_mock_id();
+    // Create mock events
     let events_dir = jules_path
         .join("workstreams")
         .join(workstream)
@@ -44,24 +43,40 @@ where
         .join("events")
         .join("pending");
 
-    let event_file = events_dir.join(format!("mock-{}-{}.yml", config.scope, event_id));
-
     let mock_event_template = include_str!("assets/observer_event.yml");
-    let event_content = mock_event_template
-        .replace("mock01", &event_id)
+
+    // Create mock event 1 (for planner routing)
+    let event_id_1 = generate_mock_id();
+    let event_file_1 = events_dir.join(format!("mock-{}-{}.yml", config.scope, event_id_1));
+    let event_content_1 = mock_event_template
+        .replace("mock01", &event_id_1)
         .replace("2026-02-05", &Utc::now().format("%Y-%m-%d").to_string())
         .replace("test-scope", &config.scope);
+
+    // Create mock event 2 (for implementer routing)
+    let event_id_2 = generate_mock_id();
+    let event_file_2 = events_dir.join(format!("mock-{}-{}.yml", config.scope, event_id_2));
+    let event_content_2 = mock_event_template
+        .replace("mock01", &event_id_2)
+        .replace("2026-02-05", &Utc::now().format("%Y-%m-%d").to_string())
+        .replace("test-scope", &config.scope)
+        .replace("workflow validation", "workflow implementation check");
 
     // Ensure directory exists
     std::fs::create_dir_all(&events_dir).map_err(AppError::Io)?;
 
     workspace.write_file(
-        event_file.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
-        &event_content,
+        event_file_1.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
+        &event_content_1,
+    )?;
+
+    workspace.write_file(
+        event_file_2.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
+        &event_content_2,
     )?;
 
     // Commit and push
-    let files: Vec<&Path> = vec![event_file.as_path()];
+    let files: Vec<&Path> = vec![event_file_1.as_path(), event_file_2.as_path()];
     git.commit_files(&format!("[mock-{}] observer: mock event", config.scope), &files)?;
     git.push_branch(&branch_name, false)?;
 
