@@ -1,0 +1,26 @@
+schema_version: 1
+id: "typwea"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "rustacean"
+confidence: "medium"
+
+title: "Primitive obsession in WorkspaceStore API"
+statement: |
+  The WorkspaceStore trait uses String for discovered role IDs instead of the strongly-typed RoleId, bypassing validation guarantees.
+  Strong types should be used at boundaries to ensure correctness.
+
+evidence:
+  - path: "src/ports/workspace_store.rs"
+    loc:
+      - "pub struct DiscoveredRole {"
+    note: "DiscoveredRole uses String id."
+  - path: "src/ports/workspace_store.rs"
+    loc:
+      - "pub id: String,"
+    note: "Should be RoleId."
+
+tags:
+  - "types"
+  - "api-design"
+  - "safety"
