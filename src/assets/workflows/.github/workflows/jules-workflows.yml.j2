@@ -136,15 +136,25 @@ jobs:
 
       - name: Wait for narrator PRs
         id: wait
+        env:
+          RUN_OUTPUT: {{ gha_expr("needs.run-narrator.outputs.json") }}
         run: |
-          jlo workflow wait prs \
+          expected_count=$(echo "$RUN_OUTPUT" | jq -r '.expected_count')
+          run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
+          mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
+          mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
+          mock_flags=""
+          if [ "$mock" = "true" ]; then
+            mock_flags="--mock --mock-pr-numbers-json '$mock_prs'"
+          fi
+          eval jlo workflow wait prs \
             --layer narrator \
             --base-branch jules \
-            --expected-count {{ gha_raw("fromJSON(needs.run-narrator.outputs.json).expected_count") }} \
-            --run-started-at '{{ gha_raw("fromJSON(needs.run-narrator.outputs.json).run_started_at") }}' \
-            --wait-minutes {{ gha_raw("env.WAIT_MINUTES") }} \
+            --expected-count "$expected_count" \
+            --run-started-at "$run_started_at" \
+            --wait-minutes "$WAIT_MINUTES" \
             --mode merge \
-            ${{ gha_raw("fromJSON(needs.run-narrator.outputs.json).mock && format('--mock --mock-pr-numbers-json ''{0}''', toJSON(fromJSON(needs.run-narrator.outputs.json).mock_pr_numbers)) || ''") }}
+            $mock_flags
 
   # ============================================================
   # Phase 3: Generate workstream matrix
@@ -213,7 +223,9 @@ jobs:
 
       - name: Generate observer matrix
         id: matrix
-        run: jlo workflow matrix roles --layer observers --workstreams-json '{{ gha_raw("needs.generate-workstream-matrix.outputs.json") }}'
+        env:
+          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
+        run: jlo workflow matrix roles --layer observers --workstreams-json "$WORKSTREAMS_JSON"
 
   # ============================================================
   # Phase 5: Run observers
@@ -246,7 +258,9 @@ jobs:
 
       - name: Run observers sequentially
         id: run
-        run: jlo workflow run observers --matrix-json '{{ gha_raw("needs.generate-observer-matrix.outputs.json") }}' ${{ gha_raw("env.JLO_RUN_FLAGS") }}
+        env:
+          MATRIX_JSON: {{ gha_expr("needs.generate-observer-matrix.outputs.json") }}
+        run: jlo workflow run observers --matrix-json "$MATRIX_JSON" ${{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 6: Wait for observer processing
@@ -275,15 +289,25 @@ jobs:
 
       - name: Wait for observer PRs
         id: wait
+        env:
+          RUN_OUTPUT: {{ gha_expr("needs.run-observers.outputs.json") }}
         run: |
-          jlo workflow wait prs \
+          expected_count=$(echo "$RUN_OUTPUT" | jq -r '.expected_count')
+          run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
+          mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
+          mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
+          mock_flags=""
+          if [ "$mock" = "true" ]; then
+            mock_flags="--mock --mock-pr-numbers-json '$mock_prs'"
+          fi
+          eval jlo workflow wait prs \
             --layer observers \
             --base-branch jules \
-            --expected-count {{ gha_raw("fromJSON(needs.run-observers.outputs.json).expected_count") }} \
-            --run-started-at '{{ gha_raw("fromJSON(needs.run-observers.outputs.json).run_started_at") }}' \
-            --wait-minutes {{ gha_raw("env.WAIT_MINUTES") }} \
+            --expected-count "$expected_count" \
+            --run-started-at "$run_started_at" \
+            --wait-minutes "$WAIT_MINUTES" \
             --mode merge \
-            ${{ gha_raw("fromJSON(needs.run-observers.outputs.json).mock && format('--mock --mock-pr-numbers-json ''{0}''', toJSON(fromJSON(needs.run-observers.outputs.json).mock_pr_numbers)) || ''") }}
+            $mock_flags
 
   # ============================================================
   # Phase 7: Generate decider matrix (pending events check)
@@ -310,7 +334,9 @@ jobs:
 
       - name: Generate decider matrix from pending events
         id: matrix
-        run: jlo workflow matrix pending-workstreams --workstreams-json '{{ gha_raw("needs.generate-workstream-matrix.outputs.json") }}'
+        env:
+          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
+        run: jlo workflow matrix pending-workstreams --workstreams-json "$WORKSTREAMS_JSON"
 
   # ============================================================
   # Phase 8: Run deciders
@@ -343,7 +369,9 @@ jobs:
 
       - name: Run deciders sequentially
         id: run
-        run: jlo workflow run deciders --matrix-json '{{ gha_raw("needs.generate-decider-matrix.outputs.json") }}' ${{ gha_raw("env.JLO_RUN_FLAGS") }}
+        env:
+          MATRIX_JSON: {{ gha_expr("needs.generate-decider-matrix.outputs.json") }}
+        run: jlo workflow run deciders --matrix-json "$MATRIX_JSON" ${{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 9: Wait for decider processing
@@ -372,15 +400,25 @@ jobs:
 
       - name: Wait for decider PRs
         id: wait
+        env:
+          RUN_OUTPUT: {{ gha_expr("needs.run-deciders.outputs.json") }}
         run: |
-          jlo workflow wait prs \
+          expected_count=$(echo "$RUN_OUTPUT" | jq -r '.expected_count')
+          run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
+          mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
+          mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
+          mock_flags=""
+          if [ "$mock" = "true" ]; then
+            mock_flags="--mock --mock-pr-numbers-json '$mock_prs'"
+          fi
+          eval jlo workflow wait prs \
             --layer deciders \
             --base-branch jules \
-            --expected-count {{ gha_raw("fromJSON(needs.run-deciders.outputs.json).expected_count") }} \
-            --run-started-at '{{ gha_raw("fromJSON(needs.run-deciders.outputs.json).run_started_at") }}' \
-            --wait-minutes {{ gha_raw("env.WAIT_MINUTES") }} \
+            --expected-count "$expected_count" \
+            --run-started-at "$run_started_at" \
+            --wait-minutes "$WAIT_MINUTES" \
             --mode merge \
-            ${{ gha_raw("fromJSON(needs.run-deciders.outputs.json).mock && format('--mock --mock-pr-numbers-json ''{0}''', toJSON(fromJSON(needs.run-deciders.outputs.json).mock_pr_numbers)) || ''") }}
+            $mock_flags
 
   # ============================================================
   # Phase 10: Generate routing matrices (new issues)
@@ -408,7 +446,9 @@ jobs:
 
       - name: Generate planner and implementer matrices
         id: matrix
-        run: jlo workflow matrix routing --workstreams-json '{{ gha_raw("needs.generate-workstream-matrix.outputs.json") }}' --routing-labels '{{ gha_raw("env.ROUTING_LABELS") }}'
+        env:
+          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
+        run: jlo workflow matrix routing --workstreams-json "$WORKSTREAMS_JSON" --routing-labels "$ROUTING_LABELS"
 
   # ============================================================
   # Phase 11: Run planners
@@ -441,7 +481,9 @@ jobs:
 
       - name: Run planners sequentially
         id: run
-        run: jlo workflow run planners --matrix-json '{{ gha_raw("fromJSON(needs.generate-planner-matrix.outputs.json).planner_matrix | toJSON") }}' ${{ gha_raw("env.JLO_RUN_FLAGS") }}
+        env:
+          MATRIX_JSON: {{ gha_expr("toJSON(fromJSON(needs.generate-planner-matrix.outputs.json).planner_matrix)") }}
+        run: jlo workflow run planners --matrix-json "$MATRIX_JSON" ${{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 12: Wait for planner PRs
@@ -470,15 +512,25 @@ jobs:
 
       - name: Wait for planner PRs
         id: wait
+        env:
+          RUN_OUTPUT: {{ gha_expr("needs.run-planners.outputs.json") }}
         run: |
-          jlo workflow wait prs \
+          expected_count=$(echo "$RUN_OUTPUT" | jq -r '.expected_count')
+          run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
+          mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
+          mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
+          mock_flags=""
+          if [ "$mock" = "true" ]; then
+            mock_flags="--mock --mock-pr-numbers-json '$mock_prs'"
+          fi
+          eval jlo workflow wait prs \
             --layer planners \
             --base-branch jules \
-            --expected-count {{ gha_raw("fromJSON(needs.run-planners.outputs.json).expected_count") }} \
-            --run-started-at '{{ gha_raw("fromJSON(needs.run-planners.outputs.json).run_started_at") }}' \
-            --wait-minutes {{ gha_raw("env.WAIT_MINUTES") }} \
+            --expected-count "$expected_count" \
+            --run-started-at "$run_started_at" \
+            --wait-minutes "$WAIT_MINUTES" \
             --mode merge \
-            ${{ gha_raw("fromJSON(needs.run-planners.outputs.json).mock && format('--mock --mock-pr-numbers-json ''{0}''', toJSON(fromJSON(needs.run-planners.outputs.json).mock_pr_numbers)) || ''") }}
+            $mock_flags
 
   # ============================================================
   # Phase 13: Run implementers
@@ -512,7 +564,9 @@ jobs:
 
       - name: Run implementers sequentially
         id: run
-        run: jlo workflow run implementers --matrix-json '{{ gha_raw("fromJSON(needs.generate-planner-matrix.outputs.json).implementer_matrix | toJSON") }}' --target-branch '{{ gha_raw("env.TARGET_BRANCH") }}' ${{ gha_raw("env.JLO_RUN_FLAGS") }}
+        env:
+          MATRIX_JSON: {{ gha_expr("toJSON(fromJSON(needs.generate-planner-matrix.outputs.json).implementer_matrix)") }}
+        run: jlo workflow run implementers --matrix-json "$MATRIX_JSON" --target-branch "$TARGET_BRANCH" ${{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 14: Wait for implementer labels
@@ -542,15 +596,25 @@ jobs:
 
       - name: Wait for implementer labels
         id: wait
+        env:
+          RUN_OUTPUT: {{ gha_expr("needs.run-implementers.outputs.json") }}
         run: |
-          jlo workflow wait prs \
+          expected_count=$(echo "$RUN_OUTPUT" | jq -r '.expected_count')
+          run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
+          mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
+          mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
+          mock_flags=""
+          if [ "$mock" = "true" ]; then
+            mock_flags="--mock --mock-pr-numbers-json '$mock_prs'"
+          fi
+          eval jlo workflow wait prs \
             --layer implementers \
             --base-branch '{{ gha_raw("env.TARGET_BRANCH") }}' \
-            --expected-count {{ gha_raw("fromJSON(needs.run-implementers.outputs.json).expected_count") }} \
-            --run-started-at '{{ gha_raw("fromJSON(needs.run-implementers.outputs.json).run_started_at") }}' \
+            --expected-count "$expected_count" \
+            --run-started-at "$run_started_at" \
             --wait-minutes {{ gha_raw("env.WAIT_MINUTES") }} \
             --mode label \
-            ${{ gha_raw("fromJSON(needs.run-implementers.outputs.json).mock && format('--mock --mock-pr-numbers-json ''{0}''', toJSON(fromJSON(needs.run-implementers.outputs.json).mock_pr_numbers)) || ''") }}
+            $mock_flags
 
   # ============================================================
   # Phase 15: Cleanup mock artifacts
