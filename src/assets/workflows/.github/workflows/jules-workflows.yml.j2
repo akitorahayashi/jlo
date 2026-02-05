@@ -90,6 +90,9 @@ jobs:
           ref: jules
           fetch-depth: 0
 
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
       - name: Validate .jules workspace exists
         run: |
           if [ ! -d ".jules" ]; then
@@ -213,6 +216,9 @@ jobs:
           ref: jules
           fetch-depth: 0
 
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
@@ -290,6 +296,9 @@ jobs:
         with:
           ref: jules
           fetch-depth: 0
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
@@ -372,6 +381,9 @@ jobs:
         with:
           ref: jules
           fetch-depth: 0
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo

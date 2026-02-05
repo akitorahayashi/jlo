@@ -67,6 +67,8 @@ jobs:
       with:
         ref: jules
         fetch-depth: 0
+    - name: Configure Git
+      uses: ./.github/actions/configure-git
     - name: Validate .jules workspace exists
       run: |
         if [ ! -d ".jules" ]; then
@@ -165,6 +167,8 @@ jobs:
       with:
         ref: jules
         fetch-depth: 0
+    - name: Configure Git
+      uses: ./.github/actions/configure-git
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Run observers sequentially
@@ -233,6 +237,8 @@ jobs:
       with:
         ref: jules
         fetch-depth: 0
+    - name: Configure Git
+      uses: ./.github/actions/configure-git
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Run deciders sequentially
@@ -306,6 +312,8 @@ jobs:
       with:
         ref: jules
         fetch-depth: 0
+    - name: Configure Git
+      uses: ./.github/actions/configure-git
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Run planners sequentially
