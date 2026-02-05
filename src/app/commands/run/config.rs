@@ -20,15 +20,6 @@ pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
 
 /// Parse configuration from string content.
 pub fn parse_config_content(content: &str) -> Result<RunConfig, AppError> {
-    // Check for legacy [agents] section
-    let value: toml::Value = toml::from_str(content)?;
-    if value.get("agents").is_some() {
-        return Err(AppError::Validation(
-            "Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml."
-                .to_string(),
-        ));
-    }
-
     let dto: RunConfigDto = toml::from_str(content)?;
     Ok(RunConfig::from(dto))
 }
@@ -126,13 +117,5 @@ retry_delay_ms = 250
         assert!(config.run.parallel);
     }
 
-    #[test]
-    fn run_config_rejects_agents_section() {
-        let toml = r#"
-[agents]
-observers = ["taxonomy"]
-"#;
-        let err = parse_config_content(toml).unwrap_err();
-        assert!(err.to_string().contains("Legacy [agents] section"));
-    }
+
 }
