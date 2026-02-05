@@ -3,7 +3,7 @@ name: Jules Implementer Label
 on:
   push:
     branches:
-      - 'jules-*'
+      - 'jules-implementer-*'
 
 permissions:
   contents: read
@@ -42,50 +42,6 @@ jobs:
             exit 1
           fi
 
-          git fetch origin jules --depth=1
-          mapfile -t contract_paths < <(git ls-tree -r --name-only origin/jules:.jules/roles | awk '/contracts.yml$/')
-          contract_count=$(printf '%s\n' "${contract_paths[@]}" | wc -l | tr -d ' ')
-          if [ "$contract_count" -eq 0 ]; then
-            echo "::error::No contracts.yml found under .jules/roles on jules branch."
-            exit 1
-          fi
-
-          prefixes=()
-          for path in "${contract_paths[@]}"; do
-            prefix=$(git show "origin/jules:.jules/roles/$path" | awk -F':' '/^branch_prefix:/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); gsub(/["'\'']/, "", $2); print $2; exit}')
-            if [ -n "$prefix" ]; then
-              prefixes+=("$prefix")
-            fi
-          done
-
-          prefix_count=$(printf '%s\n' "${prefixes[@]}" | wc -l | tr -d ' ')
-          if [ "$prefix_count" -eq 0 ]; then
-            echo "::error::No branch_prefix entries found in contracts.yml on jules branch."
-            exit 1
-          fi
-
-          matching_prefix=""
-          for prefix in "${prefixes[@]}"; do
-            if [[ "$BRANCH_NAME" == "$prefix"* ]]; then
-              matching_prefix="$prefix"
-              break
-            fi
-          done
-
-          if [ -z "$matching_prefix" ]; then
-            echo "::notice::Branch $BRANCH_NAME does not match known branch prefixes. Skipping label."
-            exit 0
-          fi
-
-          suffix="${BRANCH_NAME#"$matching_prefix"}"
-          if [[ ! "$suffix" =~ ^([a-z0-9]+)-([a-z0-9]{6})- ]]; then
-            echo "::notice::Branch $BRANCH_NAME does not include label/id pattern. Skipping label."
-            exit 0
-          fi
-
-          label="${BASH_REMATCH[1]}"
-          issue_id="${BASH_REMATCH[2]}"
-
           PR_NUMBER=""
           for i in {1..12}; do
             PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --repo "$REPO" --json number -q '.[0].number')
@@ -98,6 +54,15 @@ jobs:
             echo "::notice::No PR found yet for branch $BRANCH_NAME. Skipping label."
             exit 0
           fi
+
+          if [[ ! "$BRANCH_NAME" =~ ^jules-implementer-([a-z0-9]+)-([a-z0-9]{6})- ]]; then
+            echo "::error::Implementer branch name must follow: jules-implementer-<label>-<id>-<short_description>"
+            echo "::error::Got: $BRANCH_NAME"
+            exit 1
+          fi
+
+          label="${BASH_REMATCH[1]}"
+          issue_id="${BASH_REMATCH[2]}"
 
           echo "Detected issue label: $label"
           echo "Detected issue id: $issue_id"
@@ -127,3 +92,4 @@ jobs:
 
           # Apply label to the PR.
           gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "$label"
+
