@@ -301,14 +301,11 @@ fn run_template(
     let outcome =
         crate::app::api::template(layer.as_deref(), name.as_deref(), workstream.as_deref())?;
 
-    match &outcome {
-        crate::app::api::TemplateOutcome::Role { .. } => {
-            println!("✅ Created new role at {}/", outcome.display_path());
-        }
-        crate::app::api::TemplateOutcome::Workstream { .. } => {
-            println!("✅ Created new workstream at {}/", outcome.display_path());
-        }
-    }
+    let entity_type = match &outcome {
+        crate::app::api::TemplateOutcome::Role { .. } => "role",
+        crate::app::api::TemplateOutcome::Workstream { .. } => "workstream",
+    };
+    println!("✅ Created new {} at {}/", entity_type, outcome.display_path());
     Ok(())
 }
 
