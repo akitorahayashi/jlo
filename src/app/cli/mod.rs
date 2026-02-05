@@ -82,6 +82,8 @@ enum Commands {
         #[arg(long)]
         workstream: Option<String>,
     },
+    /// Remove jlo-managed assets (branch + workflows)
+    Deinit,
 }
 
 #[derive(Subcommand)]
@@ -269,6 +271,7 @@ pub fn run() {
         Commands::Schedule { command } => run_schedule(command).map(|_| 0),
         Commands::Workstreams { command } => run_workstreams(command).map(|_| 0),
         Commands::Doctor { fix, strict, workstream } => run_doctor(fix, strict, workstream),
+        Commands::Deinit => run_deinit().map(|_| 0),
     };
 
     match result {
@@ -446,6 +449,33 @@ fn run_setup_list(detail: Option<String>) -> Result<(), AppError> {
             println!("  {} - {}", comp.name, comp.summary);
         }
     }
+    Ok(())
+}
+
+fn run_deinit() -> Result<(), AppError> {
+    let outcome = crate::app::api::deinit()?;
+
+    if outcome.deleted_branch {
+        println!("✅ Deleted local 'jules' branch");
+    } else {
+        println!("ℹ️ Local 'jules' branch not found");
+    }
+
+    if outcome.deleted_files.is_empty() && outcome.deleted_action_dirs.is_empty() {
+        println!("ℹ️ No workflow kit files found to remove");
+    } else {
+        if !outcome.deleted_files.is_empty() {
+            println!("✅ Removed {} workflow kit file(s)", outcome.deleted_files.len());
+        }
+        if !outcome.deleted_action_dirs.is_empty() {
+            println!(
+                "✅ Removed {} workflow action directory(ies)",
+                outcome.deleted_action_dirs.len()
+            );
+        }
+    }
+
+    println!("⚠️ Remove JULES_API_KEY and JULES_API_SECRET from GitHub repository settings.");
     Ok(())
 }
 

@@ -25,6 +25,7 @@ jlo init
 | `jlo init [scaffold]` | `i` | Create `.jules/` workspace with setup directory |
 | `jlo init workflows (--remote | --self-hosted) [--overwrite]` | `i w` | Install workflow kit into `.github/` |
 | `jlo update [--dry-run] [--adopt-managed]` | `u` | Update workspace to current jlo version |
+| `jlo deinit` | | Remove jlo-managed branch and workflow kit files |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo schedule export --scope <scope> [...]` | | Export schedule data for automation (scope: `workstreams` or `roles`). Note: `roles` scope requires `--layer` and `--workstream`. |
@@ -110,6 +111,12 @@ Exit codes:
 - `0`: No errors (warnings allowed unless `--strict`)
 - `1`: Errors detected
 - `2`: Warnings detected with `--strict`
+
+### Deinit Command
+
+`jlo deinit` removes the local `jules` branch and deletes workflow kit files from `.github/` on the current branch.
+The command refuses to run while the current branch is `jules` or `jules-test-*`.
+GitHub secrets (such as `JULES_API_KEY` and `JULES_API_SECRET`) remain configured and require manual removal.
 
 ### Other Examples
 

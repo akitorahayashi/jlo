@@ -8,7 +8,8 @@ use std::path::Path;
 use crate::app::{
     AppContext,
     commands::{
-        doctor, init_scaffold, init_workflows, run, schedule, setup, template, update, workstreams,
+        deinit, doctor, init_scaffold, init_workflows, run, schedule, setup, template, update,
+        workstreams,
     },
 };
 use crate::ports::WorkspaceStore;
@@ -17,6 +18,7 @@ use crate::services::adapters::git_command::GitCommandAdapter;
 use crate::services::adapters::github_command::GitHubCommandAdapter;
 use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
+pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
 pub use crate::app::commands::run::{RunOptions, RunResult};
 pub use crate::app::commands::schedule::{
@@ -53,6 +55,17 @@ fn get_current_workspace() -> Result<FilesystemWorkspaceStore, AppError> {
 /// Initialize a new `.jules/` workspace in the current directory.
 pub fn init() -> Result<(), AppError> {
     init_at(std::env::current_dir()?)
+}
+
+/// Deinitialize jlo assets from the current directory.
+pub fn deinit() -> Result<DeinitOutcome, AppError> {
+    deinit_at(std::env::current_dir()?)
+}
+
+/// Deinitialize jlo assets from the specified path.
+pub fn deinit_at(path: std::path::PathBuf) -> Result<DeinitOutcome, AppError> {
+    let git = GitCommandAdapter::new(path.clone());
+    deinit::execute(&path, &git)
 }
 
 /// Initialize a new `.jules/` workspace at the specified path.
