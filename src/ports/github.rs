@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use crate::domain::AppError;
 
 /// Information about a created pull request.
@@ -35,9 +33,6 @@ pub trait GitHubPort {
         body: &str,
     ) -> Result<PullRequestInfo, AppError>;
 
-    /// Wait for a PR to be merged.
-    fn wait_for_merge(&self, pr_number: u64, timeout: Duration) -> Result<(), AppError>;
-
     /// Close a pull request without merging.
     #[allow(dead_code)]
     fn close_pull_request(&self, pr_number: u64) -> Result<(), AppError>;
@@ -45,7 +40,4 @@ pub trait GitHubPort {
     /// Delete a remote branch.
     #[allow(dead_code)]
     fn delete_branch(&self, branch: &str) -> Result<(), AppError>;
-
-    /// Enable auto-merge on a PR.
-    fn enable_auto_merge(&self, pr_number: u64) -> Result<(), AppError>;
 }

@@ -1,0 +1,157 @@
+use std::collections::HashMap;
+use std::path::Path;
+
+use chrono::Utc;
+
+use crate::app::commands::run::RunOptions;
+use crate::app::commands::run::config::load_config;
+use crate::domain::{AppError, Layer, MockConfig};
+use crate::ports::WorkspaceStore;
+
+/// Validate prerequisites for mock mode.
+pub fn validate_mock_prerequisites(_options: &RunOptions) -> Result<(), AppError> {
+    // Check for GH_TOKEN
+    if std::env::var("GH_TOKEN").is_err() {
+        return Err(AppError::MissingArgument(
+            "Mock mode requires GH_TOKEN environment variable to be set".to_string(),
+        ));
+    }
+
+    // Check for required tools
+    if std::process::Command::new("git").arg("--version").output().is_err() {
+        return Err(AppError::ExternalToolError {
+            tool: "git".to_string(),
+            error: "git is required for mock mode but not found in PATH".to_string(),
+        });
+    }
+
+    if std::process::Command::new("gh").arg("--version").output().is_err() {
+        return Err(AppError::ExternalToolError {
+            tool: "gh".to_string(),
+            error: "gh CLI is required for mock mode but not found in PATH".to_string(),
+        });
+    }
+
+    Ok(())
+}
+
+/// Load mock configuration from workspace files.
+pub fn load_mock_config<W: WorkspaceStore>(
+    jules_path: &Path,
+    _options: &RunOptions,
+    workspace: &W,
+) -> Result<MockConfig, AppError> {
+    // Load run config for branch settings
+    let run_config = load_config(jules_path)?;
+
+    // Load branch prefixes from contracts.yml files
+    let mut branch_prefixes = HashMap::new();
+    for layer in
+        [Layer::Narrators, Layer::Observers, Layer::Deciders, Layer::Planners, Layer::Implementers]
+    {
+        let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
+
+        if let Ok(content) = workspace.read_file(
+            contracts_path
+                .to_str()
+                .ok_or_else(|| AppError::Validation("Invalid contracts path".to_string()))?,
+        ) && let Some(prefix) = extract_branch_prefix(&content)
+        {
+            branch_prefixes.insert(layer, prefix);
+        }
+    }
+
+    // Load issue labels from github-labels.json
+    let labels_path = jules_path.join("github-labels.json");
+    let issue_labels = if let Ok(content) = workspace.read_file(
+        labels_path
+            .to_str()
+            .ok_or_else(|| AppError::Validation("Invalid labels path".to_string()))?,
+    ) {
+        extract_issue_labels(&content)?
+    } else {
+        vec!["bugs".to_string(), "feats".to_string(), "refacts".to_string()]
+    };
+
+    // Generate scope if not provided
+    // Generate scope: env var -> CI default -> local default
+    let scope = std::env::var("JULES_MOCK_SCOPE").ok().unwrap_or_else(|| {
+        let prefix = if std::env::var("GITHUB_ACTIONS").is_ok() { "ci" } else { "local" };
+        format!("{}-{}", prefix, Utc::now().format("%Y%m%d%H%M%S"))
+    });
+
+    Ok(MockConfig {
+        scope,
+        branch_prefixes,
+        default_branch: run_config.run.default_branch,
+        jules_branch: run_config.run.jules_branch,
+        issue_labels,
+    })
+}
+
+/// Extract branch_prefix from contracts.yml content.
+fn extract_branch_prefix(content: &str) -> Option<String> {
+    // Simple YAML parsing for branch_prefix
+    for line in content.lines() {
+        let line = line.trim();
+        if line.starts_with("branch_prefix:") {
+            let value = line.trim_start_matches("branch_prefix:").trim();
+            // Remove quotes if present
+            let value = value.trim_matches('"').trim_matches('\'');
+            if !value.is_empty() {
+                return Some(value.to_string());
+            }
+        }
+    }
+    None
+}
+
+/// Extract issue labels from github-labels.json content.
+fn extract_issue_labels(content: &str) -> Result<Vec<String>, AppError> {
+    let json: serde_json::Value = serde_json::from_str(content).map_err(|e| {
+        AppError::ParseError { what: "github-labels.json".to_string(), details: e.to_string() }
+    })?;
+
+    let labels = json
+        .get("issue_labels")
+        .and_then(|v| v.as_object())
+        .map(|obj| obj.keys().cloned().collect())
+        .unwrap_or_default();
+
+    Ok(labels)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extract_branch_prefix() {
+        let content = r#"
+layer: observers
+branch_prefix: jules-observer-
+constraints:
+  - Do NOT write to issues/
+"#;
+        assert_eq!(extract_branch_prefix(content), Some("jules-observer-".to_string()));
+    }
+
+    #[test]
+    fn test_extract_branch_prefix_with_quotes() {
+        let content = r#"branch_prefix: "jules-test-""#;
+        assert_eq!(extract_branch_prefix(content), Some("jules-test-".to_string()));
+    }
+
+    #[test]
+    fn test_extract_issue_labels() {
+        let content = r#"{
+            "issue_labels": {
+                "bugs": {"color": "d73a4a"},
+                "feats": {"color": "ff6600"}
+            }
+        }"#;
+        let labels = extract_issue_labels(content).unwrap();
+        assert!(labels.contains(&"bugs".to_string()));
+        assert!(labels.contains(&"feats".to_string()));
+    }
+}

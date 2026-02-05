@@ -5,6 +5,8 @@ constraints:
   - Do NOT write to issues/
   - Do NOT emit events for observations already covered by open issues
   - Do NOT create per-run workstation history files; keep continuity in perspective.yml only
+  - Do NOT edit files outside of .jules/
+  - Do not implement changes; the purpose is to create events.
 
 inputs:
   - Source code and repository files

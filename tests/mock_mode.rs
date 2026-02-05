@@ -20,9 +20,17 @@ fn mock_requires_gh_token() {
     let ctx = TestContext::new();
     setup_scaffold(&ctx);
 
+    // Add a dummy origin remote to avoid git fetch errors
+    std::process::Command::new("git")
+        .args(["remote", "add", "origin", "https://github.com/test/test.git"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("Failed to add origin remote");
+
     // --mock requires GH_TOKEN environment variable
     ctx.cli()
         .args(["run", "narrator", "--mock"])
+        .env_remove("GH_TOKEN")
         .assert()
         .failure()
         .stderr(predicate::str::contains("GH_TOKEN"));

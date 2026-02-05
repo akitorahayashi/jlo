@@ -80,15 +80,19 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:
+      mock_branch: {{ gha_expr("steps.run-narrator.outputs.mock_branch") }}
       mock_pr_number: {{ gha_expr("steps.run-narrator.outputs.mock_pr_number") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
           fetch-depth: 0
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
 
       - name: Validate .jules workspace exists
         run: |
@@ -203,15 +207,19 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:
+      mock_branch: {{ gha_expr("steps.run-observers.outputs.mock_branch") }}
       mock_pr_number: {{ gha_expr("steps.run-observers.outputs.mock_pr_number") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
           fetch-depth: 0
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
@@ -281,15 +289,19 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:
+      mock_branch: {{ gha_expr("steps.run-deciders.outputs.mock_branch") }}
       mock_pr_number: {{ gha_expr("steps.run-deciders.outputs.mock_pr_number") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
           fetch-depth: 0
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
@@ -363,15 +375,19 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:
+      mock_branch: {{ gha_expr("steps.run-planners.outputs.mock_branch") }}
       mock_pr_number: {{ gha_expr("steps.run-planners.outputs.mock_pr_number") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
           fetch-depth: 0
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
@@ -394,11 +410,12 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:
+      mock_branch: {{ gha_expr("steps.run-implementers.outputs.mock_branch") }}
       mock_pr_number: {{ gha_expr("steps.run-implementers.outputs.mock_pr_number") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
       TARGET_BRANCH: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
-      GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -416,4 +433,60 @@ jobs:
         env:
           IMPLEMENTER_MATRIX: {{ gha_expr("needs.generate-planner-matrix.outputs.implementer_matrix") }}
         run: bash .github/scripts/jules-run-implementers-sequential.sh
+
+  # ============================================================
+  # Phase 13: Cleanup failed mock branches
+  # ============================================================
+  cleanup-mock-branches:
+    needs: [run-narrator, run-observers, run-deciders, run-planners, run-implementers]
+    if: always()
+    runs-on: {{ runner }}
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Cleanup failed mock branches
+        run: |
+          # Collect all mock branches from job outputs
+          MOCK_BRANCHES=(
+            "${{ gha_raw("needs.run-narrator.outputs.mock_branch || ''") }}"
+            "${{ gha_raw("needs.run-observers.outputs.mock_branch || ''") }}"
+            "${{ gha_raw("needs.run-deciders.outputs.mock_branch || ''") }}"
+            "${{ gha_raw("needs.run-planners.outputs.mock_branch || ''") }}"
+            "${{ gha_raw("needs.run-implementers.outputs.mock_branch || ''") }}"
+          )
+
+          # Collect results from all run jobs
+          RESULTS=(
+            "${{ gha_raw("needs.run-narrator.result") }}"
+            "${{ gha_raw("needs.run-observers.result") }}"
+            "${{ gha_raw("needs.run-deciders.result") }}"
+            "${{ gha_raw("needs.run-planners.result") }}"
+            "${{ gha_raw("needs.run-implementers.result") }}"
+          )
+
+          echo "Cleaning up mock branches from failed/cancelled jobs..."
+          for i in "${!MOCK_BRANCHES[@]}"; do
+            BRANCH="${MOCK_BRANCHES[$i]}"
+            RESULT="${RESULTS[$i]}"
+
+            # Skip if branch is empty
+            [ -z "$BRANCH" ] && continue
+
+            # Delete branch if job failed or was cancelled
+            if [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
+              echo "Deleting failed/cancelled mock branch: $BRANCH (result: $RESULT)"
+              if git push origin --delete "$BRANCH" 2>/dev/null; then
+                echo "✓ Deleted $BRANCH"
+              else
+                echo "⚠ Branch $BRANCH may not exist or already deleted"
+              fi
+            else
+              echo "Skipping $BRANCH (result: $RESULT)"
+            fi
+          done
 
