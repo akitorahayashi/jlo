@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: "qa"
+workstream: "generic"
+
+updated_at: "2026-02-05T19:38:50Z"
+
+goals:
+  - "Refactor validation logic to be unit-testable"
+  - "Decouple API tests from global state"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-05T19:38:50Z"
+    summary: "Initial inspection of codebase for test quality"

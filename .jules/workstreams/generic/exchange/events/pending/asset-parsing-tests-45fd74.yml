@@ -1,0 +1,20 @@
+schema_version: 1
+id: "45fd74"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "qa"
+confidence: "medium"
+
+title: "Missing Unit Tests for Asset Parsing"
+statement: |
+  The `read_enum_values` function performs YAML parsing logic without unit tests to verify behavior on malformed input or edge cases.
+
+evidence:
+  - path: "src/services/assets/scaffold_assets.rs"
+    loc:
+      - "read_enum_values"
+    note: "YAML parsing logic is coupled to embedded assets and lacks isolated unit tests for error handling."
+
+tags:
+  - "testing"
+  - "robustness"
