@@ -53,13 +53,52 @@ where
 
     let mock_issue_template = include_str!("assets/decider_issue.yml");
 
+    // Move any mock pending events to decided first, collecting event IDs
+    let mut moved_dest_files: Vec<PathBuf> = Vec::new();
+    let mut moved_src_files: Vec<PathBuf> = Vec::new();
+    let mut source_event_ids: Vec<String> = Vec::new();
+    if pending_dir.exists() {
+        for entry in std::fs::read_dir(&pending_dir).into_iter().flatten().flatten() {
+            let path = entry.path();
+            if path
+                .file_name()
+                .map(|n| n.to_string_lossy().contains(&config.scope))
+                .unwrap_or(false)
+            {
+                // Extract event ID from filename (format: mock-{scope}-{event_id}.yml)
+                if let Some(filename) = path.file_name() {
+                    let name = filename.to_string_lossy();
+                    // Parse event ID from filename
+                    if let Some(id_part) = name.strip_prefix(&format!("mock-{}-", config.scope))
+                        && let Some(event_id) = id_part.strip_suffix(".yml")
+                    {
+                        source_event_ids.push(event_id.to_string());
+                    }
+                }
+
+                let dest = decided_dir.join(path.file_name().unwrap());
+                if std::fs::rename(&path, &dest).is_ok() {
+                    moved_src_files.push(path);
+                    moved_dest_files.push(dest);
+                }
+            }
+        }
+    }
+
+    // Use first moved event as source, or generate a placeholder if none
+    let source_event_id = source_event_ids
+        .first()
+        .cloned()
+        .unwrap_or_else(|| format!("mock-event-{}", generate_mock_id()));
+
     // Issue 1: requires deep analysis (for planner)
     let planner_issue_id = generate_mock_id();
     let planner_issue_file = label_dir.join(format!("mock-planner-{}.yml", config.scope));
     let planner_issue_content = mock_issue_template
         .replace("mock01", &planner_issue_id)
         .replace("test-scope", &config.scope)
-        .replace("requires_deep_analysis: false", "requires_deep_analysis: true")
+        .replace("event1", &source_event_id)
+        .replace("requires_deep_analysis: false", "requires_deep_analysis: true\ndeep_analysis_reason: \"Mock issue requires architectural analysis for workflow validation\"")
         .replace("Mock issue for workflow validation", "Mock issue requiring deep analysis")
         .replace("medium", "high"); // Make it high priority for planner
 
@@ -76,6 +115,7 @@ where
     let impl_issue_content = mock_issue_template
         .replace("mock01", &impl_issue_id)
         .replace("test-scope", &config.scope)
+        .replace("event1", &source_event_id)
         .replace("Mock issue for workflow validation", "Mock issue ready for implementation");
 
     workspace.write_file(
@@ -83,23 +123,13 @@ where
         &impl_issue_content,
     )?;
 
-    // Move any mock pending events to decided and collect paths for git
-    let mut moved_dest_files: Vec<PathBuf> = Vec::new();
-    let mut moved_src_files: Vec<PathBuf> = Vec::new();
-    if pending_dir.exists() {
-        for entry in std::fs::read_dir(&pending_dir).into_iter().flatten().flatten() {
-            let path = entry.path();
-            if path
-                .file_name()
-                .map(|n| n.to_string_lossy().contains(&config.scope))
-                .unwrap_or(false)
-            {
-                let dest = decided_dir.join(path.file_name().unwrap());
-                if std::fs::rename(&path, &dest).is_ok() {
-                    moved_src_files.push(path);
-                    moved_dest_files.push(dest);
-                }
-            }
+    // Update moved event files to set issue_id (decided events must have issue_id)
+    for dest_file in &moved_dest_files {
+        if let Ok(content) = std::fs::read_to_string(dest_file) {
+            // Update issue_id in the event file
+            let updated_content =
+                content.replace("issue_id: \"\"", &format!("issue_id: \"{}\"", impl_issue_id));
+            std::fs::write(dest_file, updated_content).ok();
         }
     }
 

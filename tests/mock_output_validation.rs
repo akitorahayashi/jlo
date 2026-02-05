@@ -89,7 +89,7 @@ fn mock_decider_issue_file_passes_doctor() {
     let ctx = TestContext::new();
     setup_scaffold_with_workstream(&ctx, "test-workstream");
 
-    // Create the referenced event first
+    // Create the referenced event in decided state (simulating what decider does)
     let mock_event = include_str!("../src/app/commands/run/mock/assets/observer_event.yml");
     let events_dir = ctx
         .jules_path()
@@ -99,14 +99,20 @@ fn mock_decider_issue_file_passes_doctor() {
         .join("events")
         .join("decided");
     fs::create_dir_all(&events_dir).expect("Failed to create events directory");
-    let event_file = events_dir.join("event1.yml");
+
+    // Event must have issue_id set when in decided state
+    let event_id = "evt001"; // 6 lowercase alphanumeric chars
+    let issue_id = "iss001"; // 6 lowercase alphanumeric chars
+    let event_file = events_dir.join(format!("{}.yml", event_id));
     fs::write(
         &event_file,
-        mock_event.replace("mock01", "event1").replace("issue_id: \"\"", "issue_id: \"mock01\""),
+        mock_event
+            .replace("mock01", event_id)
+            .replace("issue_id: \"\"", &format!("issue_id: \"{}\"", issue_id)),
     )
     .expect("Failed to write event file");
 
-    // Copy mock issue file to workspace
+    // Copy mock issue file to workspace - apply the same transformations as mock decider
     let mock_issue = include_str!("../src/app/commands/run/mock/assets/decider_issue.yml");
     let issues_dir = ctx
         .jules_path()
@@ -118,8 +124,27 @@ fn mock_decider_issue_file_passes_doctor() {
 
     fs::create_dir_all(&issues_dir).expect("Failed to create issues directory");
 
-    let issue_file = issues_dir.join("mock01.yml");
-    fs::write(&issue_file, mock_issue).expect("Failed to write issue file");
+    // Test 1: Issue without deep analysis (implementer-ready)
+    let impl_issue_file = issues_dir.join("impl-issue.yml");
+    fs::write(
+        &impl_issue_file,
+        mock_issue.replace("mock01", issue_id).replace("event1", event_id), // Replace source_events placeholder
+    )
+    .expect("Failed to write impl issue file");
+
+    // Test 2: Issue with deep analysis (planner-ready) - must include deep_analysis_reason
+    let planner_issue_file = issues_dir.join("planner-issue.yml");
+    fs::write(
+        &planner_issue_file,
+        mock_issue
+            .replace("mock01", "pln001")
+            .replace("event1", event_id)
+            .replace(
+                "requires_deep_analysis: false",
+                "requires_deep_analysis: true\ndeep_analysis_reason: \"Mock issue requires architectural analysis\"",
+            ),
+    )
+    .expect("Failed to write planner issue file");
 
     // Run doctor to validate
     ctx.cli().args(["doctor", "--workstream", "test-workstream"]).assert().success();
