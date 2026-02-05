@@ -21,7 +21,7 @@ where
 
     if branch != "jules" && !branch.starts_with("jules-test-") {
         return Err(AppError::Validation(format!(
-            "Init must be run on 'jules' or 'jules-test-*' branch (current: '{}').\nPlease run: git checkout -b jules",
+            "Init must be run on 'jules' or 'jules-test-*' branch (current: '{}').\nRun: git checkout -b jules (or git checkout -b jules-test-<name>)",
             branch
         )));
     }

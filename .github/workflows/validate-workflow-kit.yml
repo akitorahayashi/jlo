@@ -126,7 +126,7 @@ jobs:
       - name: Setup jlo
         run: |
           chmod +x ./bin/jlo
-          echo "$PWD/bin" >> $GITHUB_PATH
+          echo "$PWD/bin" >> "$GITHUB_PATH"
 
       - name: Configure Git
         uses: ./.github/actions/configure-git
@@ -174,7 +174,7 @@ jobs:
       - name: Setup jlo
         run: |
           chmod +x ./bin/jlo
-          echo "$PWD/bin" >> $GITHUB_PATH
+          echo "$PWD/bin" >> "$GITHUB_PATH"
 
       - name: Configure Git
         uses: ./.github/actions/configure-git
@@ -188,6 +188,7 @@ jobs:
           jlo init workflows --remote --overwrite
           
           # Validate workflow YAML is valid
+          pip3 install --quiet pyyaml
           python3 -c "import yaml; yaml.safe_load(open('.github/workflows/jules-workflows.yml'))"
           echo "✓ Workflow YAML is valid"
 
