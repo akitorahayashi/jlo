@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: consistency
+workstream: generic
+
+updated_at: "2026-02-05T19:48:00Z"
+
+goals:
+  - "Identify undocumented files and structures in the scaffold."
+  - "Verify consistency between CLI implementation and documentation."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-05T19:48:00Z"
+    summary: "Identified undocumented prompt_assembly.yml and missing jlo doctor documentation."
