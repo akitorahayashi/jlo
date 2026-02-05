@@ -127,7 +127,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         diagnostics,
     );
 
-    check_version_file(inputs.jules_path, diagnostics);
+    check_version_file(inputs.jules_path, env!("CARGO_PKG_VERSION"), diagnostics);
 
     for layer in Layer::ALL {
         let layer_dir = inputs.jules_path.join("roles").join(layer.dir_name());
@@ -259,7 +259,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
     }
 }
 
-fn check_version_file(jules_path: &Path, diagnostics: &mut Diagnostics) {
+fn check_version_file(jules_path: &Path, current_version: &str, diagnostics: &mut Diagnostics) {
     let version_path = jules_path.join(".jlo-version");
     if !version_path.exists() {
         return;
@@ -273,7 +273,6 @@ fn check_version_file(jules_path: &Path, diagnostics: &mut Diagnostics) {
         }
     };
 
-    let current_version = env!("CARGO_PKG_VERSION");
     let workspace_parts = parse_version_parts(&content);
     let current_parts = parse_version_parts(current_version);
 
@@ -471,4 +470,109 @@ pub fn list_subdirs(path: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> 
         }
     }
     dirs
+}
+
+#[cfg(test)]
+mod tests {
+    use assert_fs::prelude::*;
+
+    use crate::app::commands::doctor::diagnostics::Diagnostics;
+
+    use super::*;
+
+    #[test]
+    fn test_parse_version_parts() {
+        assert_eq!(parse_version_parts("1.2.3"), Some(vec![1, 2, 3]));
+        assert_eq!(parse_version_parts("1.0"), Some(vec![1, 0]));
+        assert_eq!(parse_version_parts("10.20.30"), Some(vec![10, 20, 30]));
+        assert_eq!(parse_version_parts("invalid"), None);
+        assert_eq!(parse_version_parts("1.a.2"), None);
+    }
+
+    #[test]
+    fn test_compare_versions() {
+        // Equal
+        assert_eq!(compare_versions(&[1, 2, 3], &[1, 2, 3]), 0);
+        // Left greater
+        assert_eq!(compare_versions(&[1, 2, 4], &[1, 2, 3]), 1);
+        assert_eq!(compare_versions(&[1, 3, 0], &[1, 2, 3]), 1);
+        assert_eq!(compare_versions(&[2, 0, 0], &[1, 2, 3]), 1);
+        assert_eq!(compare_versions(&[1, 2, 3, 1], &[1, 2, 3]), 1);
+        // Left smaller
+        assert_eq!(compare_versions(&[1, 2, 2], &[1, 2, 3]), -1);
+        assert_eq!(compare_versions(&[1, 1, 9], &[1, 2, 3]), -1);
+        assert_eq!(compare_versions(&[0, 9, 9], &[1, 2, 3]), -1);
+        assert_eq!(compare_versions(&[1, 2], &[1, 2, 3]), -1);
+    }
+
+    #[test]
+    fn test_check_version_file_missing_is_ok() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        let mut diagnostics = Diagnostics::default();
+        check_version_file(temp.path(), "1.0.0", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_check_version_file_match_is_ok() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        temp.child(".jlo-version").write_str("1.0.0").unwrap();
+        let mut diagnostics = Diagnostics::default();
+        check_version_file(temp.path(), "1.0.0", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_check_version_file_workspace_older_is_ok() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        temp.child(".jlo-version").write_str("0.9.0").unwrap();
+        let mut diagnostics = Diagnostics::default();
+        check_version_file(temp.path(), "1.0.0", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_check_version_file_workspace_newer_is_error() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        temp.child(".jlo-version").write_str("2.0.0").unwrap();
+        let mut diagnostics = Diagnostics::default();
+        check_version_file(temp.path(), "1.0.0", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 1);
+        assert!(
+            diagnostics.errors()[0].message.contains("Workspace version is newer than the binary")
+        );
+    }
+
+    #[test]
+    fn test_check_version_file_invalid_format_is_error() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        temp.child(".jlo-version").write_str("invalid").unwrap();
+        let mut diagnostics = Diagnostics::default();
+        check_version_file(temp.path(), "1.0.0", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 1);
+        assert!(diagnostics.errors()[0].message.contains("Invalid version format"));
+    }
+
+    #[test]
+    fn test_collect_workstreams() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        let ws_dir = temp.child("workstreams");
+        ws_dir.create_dir_all().unwrap();
+
+        ws_dir.child("ws1").create_dir_all().unwrap();
+        ws_dir.child("ws2").create_dir_all().unwrap();
+        ws_dir.child("file.txt").touch().unwrap(); // Should be ignored
+
+        // Test listing all
+        let result = collect_workstreams(temp.path(), None).unwrap();
+        assert_eq!(result, vec!["ws1", "ws2"]);
+
+        // Test filter exists
+        let result = collect_workstreams(temp.path(), Some("ws1")).unwrap();
+        assert_eq!(result, vec!["ws1"]);
+
+        // Test filter missing
+        let result = collect_workstreams(temp.path(), Some("ws3"));
+        assert!(result.is_err());
+    }
 }

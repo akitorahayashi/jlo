@@ -219,3 +219,159 @@ pub fn is_kebab_case(value: &str) -> bool {
     }
     true
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::app::commands::doctor::diagnostics::Diagnostics;
+
+    use super::*;
+
+    #[test]
+    fn test_is_valid_id() {
+        assert!(is_valid_id("abc123"));
+        assert!(!is_valid_id("abc")); // Too short
+        assert!(!is_valid_id("abc1234")); // Too long
+        assert!(!is_valid_id("ABC123")); // Uppercase
+        assert!(!is_valid_id("abc-12")); // Special char
+    }
+
+    #[test]
+    fn test_is_kebab_case() {
+        assert!(is_kebab_case("valid-name"));
+        assert!(is_kebab_case("valid"));
+        assert!(!is_kebab_case("Invalid")); // Uppercase
+        assert!(!is_kebab_case("invalid_name")); // Underscore
+        assert!(!is_kebab_case("-invalid")); // Starts with dash
+        assert!(!is_kebab_case("invalid-")); // Ends with dash
+        assert!(!is_kebab_case("invalid--name")); // Double dash
+        assert!(!is_kebab_case("")); // Empty
+    }
+
+    #[test]
+    fn test_ensure_non_empty_string() {
+        let path = PathBuf::from("test.yml");
+        let yaml_str = r#"
+            str_key: "value"
+            empty_str: ""
+        "#;
+        let map: Mapping = serde_yaml::from_str::<serde_yaml::Value>(yaml_str)
+            .unwrap()
+            .as_mapping()
+            .unwrap()
+            .clone();
+
+        // Valid case
+        let mut diagnostics = Diagnostics::default();
+        ensure_non_empty_string(&map, &path, "str_key", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
+
+        // Empty string
+        let mut diagnostics = Diagnostics::default();
+        ensure_non_empty_string(&map, &path, "empty_str", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 1);
+
+        // Missing key
+        let mut diagnostics = Diagnostics::default();
+        ensure_non_empty_string(&map, &path, "missing", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 1);
+    }
+
+    #[test]
+    fn test_ensure_non_empty_sequence() {
+        let path = PathBuf::from("test.yml");
+        let yaml_str = r#"
+            seq_key: ["a", "b"]
+            empty_seq: []
+        "#;
+        let map: Mapping = serde_yaml::from_str::<serde_yaml::Value>(yaml_str)
+            .unwrap()
+            .as_mapping()
+            .unwrap()
+            .clone();
+
+        // Valid case
+        let mut diagnostics = Diagnostics::default();
+        ensure_non_empty_sequence(&map, &path, "seq_key", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
+
+        // Empty sequence
+        let mut diagnostics = Diagnostics::default();
+        ensure_non_empty_sequence(&map, &path, "empty_seq", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 1);
+    }
+
+    #[test]
+    fn test_ensure_int() {
+        let path = PathBuf::from("test.yml");
+        let yaml_str = r#"
+            int_key: 42
+        "#;
+        let map: Mapping = serde_yaml::from_str::<serde_yaml::Value>(yaml_str)
+            .unwrap()
+            .as_mapping()
+            .unwrap()
+            .clone();
+
+        // Valid case, expected value matches
+        let mut diagnostics = Diagnostics::default();
+        ensure_int(&map, &path, "int_key", &mut diagnostics, Some(42));
+        assert_eq!(diagnostics.error_count(), 0);
+
+        // Expected value mismatch
+        let mut diagnostics = Diagnostics::default();
+        ensure_int(&map, &path, "int_key", &mut diagnostics, Some(10));
+        assert_eq!(diagnostics.error_count(), 1);
+
+        // Missing key
+        let mut diagnostics = Diagnostics::default();
+        ensure_int(&map, &path, "missing_int", &mut diagnostics, None);
+        assert_eq!(diagnostics.error_count(), 1);
+    }
+
+    #[test]
+    fn test_ensure_enum() {
+        let path = PathBuf::from("test.yml");
+        let yaml_str = r#"
+            str_key: "value"
+        "#;
+        let map: Mapping = serde_yaml::from_str::<serde_yaml::Value>(yaml_str)
+            .unwrap()
+            .as_mapping()
+            .unwrap()
+            .clone();
+
+        // Valid case
+        let mut diagnostics = Diagnostics::default();
+        ensure_enum(&map, &path, "str_key", &["value", "other"], &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
+
+        // Invalid value
+        let mut diagnostics = Diagnostics::default();
+        ensure_enum(&map, &path, "str_key", &["other"], &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 1);
+    }
+
+    #[test]
+    fn test_ensure_id() {
+        let path = PathBuf::from("test.yml");
+        let yaml_str = r#"
+            valid_id: "abc123"
+            invalid_id: "too_short"
+        "#;
+        let map: Mapping = serde_yaml::from_str::<serde_yaml::Value>(yaml_str)
+            .unwrap()
+            .as_mapping()
+            .unwrap()
+            .clone();
+
+        // Valid case
+        let mut diagnostics = Diagnostics::default();
+        ensure_id(&map, &path, "valid_id", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
+
+        // Invalid id
+        let mut diagnostics = Diagnostics::default();
+        ensure_id(&map, &path, "invalid_id", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 1);
+    }
+}

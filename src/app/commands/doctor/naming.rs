@@ -79,3 +79,58 @@ fn list_files(dir: &Path, diagnostics: &mut Diagnostics) -> Vec<std::path::PathB
     }
     files
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use crate::app::commands::doctor::diagnostics::Diagnostics;
+
+    use super::*;
+
+    #[test]
+    fn test_validate_filename_valid_case() {
+        let mut diagnostics = Diagnostics::default();
+        validate_filename(&PathBuf::from("valid-name.yml"), &mut diagnostics, "test");
+        assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_validate_filename_ignores_gitkeep() {
+        let mut diagnostics = Diagnostics::default();
+        validate_filename(&PathBuf::from(".gitkeep"), &mut diagnostics, "test");
+        assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_validate_filename_invalid_extension() {
+        let mut diagnostics = Diagnostics::default();
+        validate_filename(&PathBuf::from("valid-name.txt"), &mut diagnostics, "test");
+        assert_eq!(diagnostics.error_count(), 1);
+        assert!(diagnostics.errors()[0].message.contains("must be .yml"));
+    }
+
+    #[test]
+    fn test_validate_filename_invalid_camel_case() {
+        let mut diagnostics = Diagnostics::default();
+        validate_filename(&PathBuf::from("InvalidName.yml"), &mut diagnostics, "test");
+        assert_eq!(diagnostics.error_count(), 1);
+        assert!(diagnostics.errors()[0].message.contains("must be kebab-case"));
+    }
+
+    #[test]
+    fn test_validate_filename_invalid_snake_case() {
+        let mut diagnostics = Diagnostics::default();
+        validate_filename(&PathBuf::from("invalid_name.yml"), &mut diagnostics, "test");
+        assert_eq!(diagnostics.error_count(), 1);
+        assert!(diagnostics.errors()[0].message.contains("must be kebab-case"));
+    }
+
+    #[test]
+    fn test_validate_filename_invalid_characters() {
+        let mut diagnostics = Diagnostics::default();
+        validate_filename(&PathBuf::from("invalid@name.yml"), &mut diagnostics, "test");
+        assert_eq!(diagnostics.error_count(), 1);
+        assert!(diagnostics.errors()[0].message.contains("must be kebab-case"));
+    }
+}
