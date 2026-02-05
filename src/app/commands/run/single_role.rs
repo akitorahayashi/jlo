@@ -29,9 +29,9 @@ where
     W: WorkspaceStore,
 {
     // Validate issue file requirement
-    let path_str = issue_path.to_str().ok_or_else(|| {
-        AppError::Configuration("Issue path contains invalid unicode".to_string())
-    })?;
+    let path_str = issue_path
+        .to_str()
+        .ok_or_else(|| AppError::Validation("Issue path contains invalid unicode".to_string()))?;
 
     if !issue_path.exists() {
         return Err(AppError::IssueFileNotFound(path_str.to_string()));
@@ -47,17 +47,17 @@ where
     // Canonicalize workstreams dir to compare apples to apples (resolve potential symlinks)
     // We use workspace.canonicalize on the string representation
     let workstreams_dir_str = workstreams_dir.to_str().ok_or_else(|| {
-        AppError::Configuration("Workstreams path contains invalid unicode".to_string())
+        AppError::Validation("Workstreams path contains invalid unicode".to_string())
     })?;
 
     // Note: canonicalize might fail if dir doesn't exist, but it should exist if workspace is valid
     let canonical_workstreams_dir = workspace
         .canonicalize(workstreams_dir_str)
-        .map_err(|_| AppError::Configuration("Workstreams directory not found".into()))?;
+        .map_err(|_| AppError::WorkstreamsDirectoryNotFound)?;
 
     let has_issues_component = canonical_path.components().any(|c| c.as_os_str() == "issues");
     if !canonical_path.starts_with(&canonical_workstreams_dir) || !has_issues_component {
-        return Err(AppError::Configuration(format!(
+        return Err(AppError::Validation(format!(
             "Issue file must be within {}/*/issues/",
             canonical_workstreams_dir.display()
         )));

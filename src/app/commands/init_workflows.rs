@@ -42,7 +42,7 @@ pub fn execute_workflows(
             message.push_str(&format!("  - {}\n", path));
         }
         message.push_str("Re-run with --overwrite to replace kit-owned files.");
-        return Err(AppError::config_error(message));
+        return Err(AppError::Validation(message));
     }
 
     if overwrite {
@@ -134,7 +134,9 @@ fn merge_config_into_workflow(
     })?;
 
     let root = yaml.as_mapping_mut().ok_or_else(|| {
-        AppError::config_error("Could not preserve config: workflow kit root is not a mapping.")
+        AppError::Validation(
+            "Could not preserve config: workflow kit root is not a mapping.".into(),
+        )
     })?;
 
     if let Some(ref schedule) = config.schedule {
@@ -143,8 +145,9 @@ fn merge_config_into_workflow(
             .or_insert_with(|| Value::Mapping(Default::default()))
             .as_mapping_mut()
             .ok_or_else(|| {
-                AppError::config_error(
-                    "Could not preserve schedule: 'on' key in workflow kit is not a mapping.",
+                AppError::Validation(
+                    "Could not preserve schedule: 'on' key in workflow kit is not a mapping."
+                        .into(),
                 )
             })?;
 

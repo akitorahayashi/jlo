@@ -77,7 +77,7 @@ where
     // Issue-driven layers (Planners, Implementers) require an issue path
     if options.layer.is_issue_driven() {
         let issue_path = options.issue.as_deref().ok_or_else(|| {
-            AppError::Configuration(
+            AppError::MissingArgument(
                 "Issue path is required for issue-driven layers but was not provided.".to_string(),
             )
         })?;

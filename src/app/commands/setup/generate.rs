@@ -35,11 +35,11 @@ pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
     // Load configuration
     let content = std::fs::read_to_string(&tools_yml)?;
     let config: SetupConfig = serde_yaml::from_str(&content)
-        .map_err(|e| AppError::config_error(format!("Invalid tools.yml: {}", e)))?;
+        .map_err(|e| AppError::ParseError { what: "tools.yml".into(), details: e.to_string() })?;
 
     if config.tools.is_empty() {
-        return Err(AppError::config_error(
-            "No tools specified in tools.yml. Add tools to the 'tools' list.",
+        return Err(AppError::Validation(
+            "No tools specified in tools.yml. Add tools to the 'tools' list.".into(),
         ));
     }
 

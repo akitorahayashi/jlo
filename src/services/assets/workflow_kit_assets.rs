@@ -53,7 +53,7 @@ pub fn load_workflow_kit(mode: WorkflowRunnerMode) -> Result<WorkflowKitAssets, 
     files.sort_by(|a, b| a.path.cmp(&b.path));
 
     if files.is_empty() {
-        return Err(AppError::config_error(format!(
+        return Err(AppError::InternalError(format!(
             "Workflow kit assets are empty for mode '{}'",
             mode.label()
         )));
@@ -83,7 +83,7 @@ fn collect_and_render_files(
         match entry {
             DirEntry::File(file) => {
                 let content = file.contents_utf8().ok_or_else(|| {
-                    AppError::config_error(format!(
+                    AppError::InternalError(format!(
                         "Workflow kit file is not UTF-8: {}",
                         file.path().to_string_lossy()
                     ))
@@ -93,7 +93,7 @@ fn collect_and_render_files(
                 let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
                 let relative_path = file_path.strip_prefix(base_path).map_err(|_| {
-                    AppError::config_error(format!(
+                    AppError::InternalError(format!(
                         "Workflow kit file has unexpected path: {}",
                         file_path.to_string_lossy()
                     ))
@@ -103,14 +103,14 @@ fn collect_and_render_files(
                 let (output_path, rendered_content) = if file_name.ends_with(".j2") {
                     // Render template
                     let template = env.template_from_str(content).map_err(|e| {
-                        AppError::config_error(format!(
+                        AppError::InternalError(format!(
                             "Failed to parse template '{}': {}",
                             file_path.to_string_lossy(),
                             e
                         ))
                     })?;
                     let rendered = template.render(ctx).map_err(|e| {
-                        AppError::config_error(format!(
+                        AppError::InternalError(format!(
                             "Failed to render template '{}': {}",
                             file_path.to_string_lossy(),
                             e

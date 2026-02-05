@@ -108,7 +108,7 @@ where
     let workspace_version = match workspace.read_file(version_path_str) {
         Ok(content) => content.trim().to_string(),
         Err(_) => {
-            return Err(AppError::Configuration(
+            return Err(AppError::WorkspaceIntegrity(
                 "Missing .jlo-version file. Cannot update workspace without version marker.".into(),
             ));
         }
@@ -123,10 +123,10 @@ where
     let version_cmp = compare_versions(&binary_parts, &workspace_parts);
 
     if version_cmp < 0 {
-        return Err(AppError::Configuration(format!(
-            "Workspace version ({}) is newer than binary version ({}). Update the jlo binary.",
-            workspace_version, binary_version
-        )));
+        return Err(AppError::WorkspaceVersionMismatch {
+            workspace: workspace_version,
+            binary: binary_version.into(),
+        });
     }
 
     if version_cmp == 0 && !options.adopt_managed {

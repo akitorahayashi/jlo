@@ -10,7 +10,7 @@ pub fn load_schedule(jules_path: &Path, workstream: &str) -> Result<WorkstreamSc
         if err.kind() == std::io::ErrorKind::NotFound {
             AppError::ScheduleConfigMissing(path.display().to_string())
         } else {
-            AppError::config_error(format!("Failed to read {}: {}", path.display(), err))
+            AppError::Io(err)
         }
     })?;
     Ok(WorkstreamSchedule::parse_toml(&content)?)

@@ -18,7 +18,7 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
     let roles = if input.scheduled {
         let schedule = load_schedule(input.jules_path, input.workstream)?;
         if !schedule.enabled {
-            return Err(AppError::config_error(format!(
+            return Err(AppError::Validation(format!(
                 "Workstream '{}' is disabled in scheduled.toml",
                 input.workstream
             )));
@@ -27,8 +27,8 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
             Layer::Observers => schedule.observers.enabled_roles(),
             Layer::Deciders => schedule.deciders.enabled_roles(),
             _ => {
-                return Err(AppError::config_error(
-                    "Scheduled mode is only supported for observers and deciders",
+                return Err(AppError::Validation(
+                    "Scheduled mode is only supported for observers and deciders".into(),
                 ));
             }
         }
@@ -37,7 +37,7 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
             .requested_roles
             .filter(|roles| !roles.is_empty())
             .ok_or_else(|| {
-                AppError::config_error("Manual mode requires at least one --role value")
+                AppError::MissingArgument("Manual mode requires at least one --role value".into())
             })?
             .iter()
             .map(|s| RoleId::new(s))
@@ -52,7 +52,7 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
     let mut seen = HashSet::new();
     for role in &roles {
         if !seen.insert(role) {
-            return Err(AppError::config_error(format!("Duplicate role '{}' specified", role)));
+            return Err(AppError::Validation(format!("Duplicate role '{}' specified", role)));
         }
         validate_role_exists(input.jules_path, input.layer, role.as_str())?;
     }
@@ -63,7 +63,7 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
 fn ensure_workstream_exists(jules_path: &Path, workstream: &str) -> Result<(), AppError> {
     let path = jules_path.join("workstreams").join(workstream);
     if !path.exists() {
-        return Err(AppError::config_error(format!("Workstream '{}' not found", workstream)));
+        return Err(AppError::Validation(format!("Workstream '{}' not found", workstream)));
     }
     Ok(())
 }
