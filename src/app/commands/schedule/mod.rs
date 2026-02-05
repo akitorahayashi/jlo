@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::domain::{AppError, Layer, JULES_DIR};
+use crate::domain::{AppError, JULES_DIR, Layer};
 use crate::ports::WorkspaceStore;
 use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
@@ -111,10 +111,10 @@ fn export_roles(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
     use std::fs;
     use std::path::Path;
     use tempfile::tempdir;
-    use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
     fn write_schedule(root: &Path, ws: &str, content: &str) {
         let dir = root.join(".jules/workstreams").join(ws);

@@ -1,7 +1,7 @@
 //! Run configuration loading and repository detection.
 
 use super::config_dto::RunConfigDto;
-use crate::domain::{AppError, RunConfig, JULES_DIR};
+use crate::domain::{AppError, JULES_DIR, RunConfig};
 use crate::ports::WorkspaceStore;
 
 /// Load and parse the run configuration.

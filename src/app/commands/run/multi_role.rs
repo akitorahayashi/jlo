@@ -6,7 +6,7 @@ use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_prompt;
 use super::role_selection::{RoleSelectionInput, select_roles};
-use crate::domain::{AppError, Layer, RoleId, JULES_DIR};
+use crate::domain::{AppError, JULES_DIR, Layer, RoleId};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest, WorkspaceStore};
 use crate::services::adapters::jules_client_http::HttpJulesClient;
 
@@ -155,7 +155,8 @@ fn execute_dry_run<W: WorkspaceStore>(
     for role in roles {
         println!("--- Role: {} ---", role);
 
-        let role_path_str = format!("{}/roles/{}/roles/{}/role.yml", JULES_DIR, layer.dir_name(), role.as_str());
+        let role_path_str =
+            format!("{}/roles/{}/roles/{}/role.yml", JULES_DIR, layer.dir_name(), role.as_str());
 
         if !workspace.path_exists(&role_path_str) {
             println!("  ⚠️  role.yml not found at {}\n", role_path_str);

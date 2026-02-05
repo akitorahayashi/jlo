@@ -5,7 +5,7 @@
 use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
-use crate::domain::{AppError, Layer, JULES_DIR};
+use crate::domain::{AppError, JULES_DIR, Layer};
 use crate::ports::{
     AutomationMode, CommitInfo, GitPort, JulesClient, SessionRequest, WorkspaceStore,
 };
@@ -133,10 +133,7 @@ where
 }
 
 /// Collect git context for the Narrator, returning None if no changes.
-fn collect_git_context<G, W>(
-    git: &G,
-    workspace: &W,
-) -> Result<Option<GitContext>, AppError>
+fn collect_git_context<G, W>(git: &G, workspace: &W) -> Result<Option<GitContext>, AppError>
 where
     G: GitPort,
     W: WorkspaceStore,
@@ -197,19 +194,17 @@ where
     let head_sha = git.get_head_sha()?;
 
     if workspace.path_exists(latest_path) {
-         if let Ok(content) = workspace.read_file(latest_path) {
-             if let Some(prev_to_commit) = extract_to_commit(&content) {
-                 // Verify the commit exists
-                 if git.commit_exists(&prev_to_commit) {
-                     return Ok(RangeContext {
-                         from_commit: prev_to_commit,
-                         to_commit: head_sha,
-                         selection_mode: "incremental".to_string(),
-                         selection_detail: String::new(),
-                     });
-                 }
-             }
-         }
+        if let Ok(content) = workspace.read_file(latest_path)
+            && let Some(prev_to_commit) = extract_to_commit(&content)
+            && git.commit_exists(&prev_to_commit)
+        {
+            return Ok(RangeContext {
+                from_commit: prev_to_commit,
+                to_commit: head_sha,
+                selection_mode: "incremental".to_string(),
+                selection_detail: String::new(),
+            });
+        }
     }
 
     // Bootstrap: use recent commits
@@ -238,7 +233,10 @@ fn extract_to_commit(content: &str) -> Option<String> {
 }
 
 /// Build the full Narrator prompt with git context injected.
-fn build_narrator_prompt(workspace: &impl WorkspaceStore, ctx: &GitContext) -> Result<String, AppError> {
+fn build_narrator_prompt(
+    workspace: &impl WorkspaceStore,
+    ctx: &GitContext,
+) -> Result<String, AppError> {
     let base_prompt = assemble_single_role_prompt(workspace, Layer::Narrators)?;
 
     // Build the git context section

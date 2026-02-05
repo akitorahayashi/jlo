@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::domain::{AppError, Layer, RoleId, JULES_DIR};
+use crate::domain::{AppError, JULES_DIR, Layer, RoleId};
 use crate::ports::WorkspaceStore;
 use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
@@ -12,7 +12,9 @@ pub struct RoleSelectionInput<'a, W> {
     pub workspace: &'a W,
 }
 
-pub fn select_roles<W: WorkspaceStore>(input: RoleSelectionInput<'_, W>) -> Result<Vec<RoleId>, AppError> {
+pub fn select_roles<W: WorkspaceStore>(
+    input: RoleSelectionInput<'_, W>,
+) -> Result<Vec<RoleId>, AppError> {
     ensure_workstream_exists(input.workspace, input.workstream)?;
 
     let roles = if input.scheduled {
@@ -60,7 +62,10 @@ pub fn select_roles<W: WorkspaceStore>(input: RoleSelectionInput<'_, W>) -> Resu
     Ok(roles)
 }
 
-fn ensure_workstream_exists(workspace: &impl WorkspaceStore, workstream: &str) -> Result<(), AppError> {
+fn ensure_workstream_exists(
+    workspace: &impl WorkspaceStore,
+    workstream: &str,
+) -> Result<(), AppError> {
     if !workspace.workstream_exists(workstream) {
         return Err(AppError::Validation(format!("Workstream '{}' not found", workstream)));
     }
@@ -71,7 +76,11 @@ fn ensure_workstream_exists(workspace: &impl WorkspaceStore, workstream: &str) -
 ///
 /// For the new scaffold structure, roles are under:
 /// `.jules/roles/<layer>/roles/<role>/role.yml`
-fn validate_role_exists(workspace: &impl WorkspaceStore, layer: Layer, role: &str) -> Result<(), AppError> {
+fn validate_role_exists(
+    workspace: &impl WorkspaceStore,
+    layer: Layer,
+    role: &str,
+) -> Result<(), AppError> {
     let role_path = format!("{}/roles/{}/roles/{}/role.yml", JULES_DIR, layer.dir_name(), role);
 
     if !workspace.path_exists(&role_path) {
@@ -91,8 +100,8 @@ mod tests {
     use std::path::Path;
 
     use super::*;
-    use tempfile::tempdir;
     use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+    use tempfile::tempdir;
 
     fn write_schedule(root: &Path, ws: &str, content: &str) {
         let dir = root.join(".jules/workstreams").join(ws);

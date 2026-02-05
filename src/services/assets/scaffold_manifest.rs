@@ -33,19 +33,20 @@ impl ScaffoldManifest {
 }
 
 pub fn manifest_path_str() -> String {
-    format!(".jules/.jlo-managed.yml")
+    ".jules/.jlo-managed.yml".to_string()
 }
 
-pub fn load_manifest(workspace: &impl WorkspaceStore) -> Result<Option<ScaffoldManifest>, AppError> {
+pub fn load_manifest(
+    workspace: &impl WorkspaceStore,
+) -> Result<Option<ScaffoldManifest>, AppError> {
     let path = manifest_path_str();
     if !workspace.path_exists(&path) {
         return Ok(None);
     }
 
     let content = workspace.read_file(&path)?;
-    let manifest: ScaffoldManifest = serde_yaml::from_str(&content).map_err(|err| {
-        AppError::ParseError { what: path.clone(), details: err.to_string() }
-    })?;
+    let manifest: ScaffoldManifest = serde_yaml::from_str(&content)
+        .map_err(|err| AppError::ParseError { what: path.clone(), details: err.to_string() })?;
 
     if manifest.schema_version != MANIFEST_SCHEMA_VERSION {
         return Err(AppError::WorkspaceIntegrity(format!(

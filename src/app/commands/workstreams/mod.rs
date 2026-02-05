@@ -130,13 +130,13 @@ pub fn inspect(
     })
 }
 
-fn summarize_events(workspace: &impl WorkspaceStore, ws_dir: &str) -> Result<EventSummary, AppError> {
+fn summarize_events(
+    workspace: &impl WorkspaceStore,
+    ws_dir: &str,
+) -> Result<EventSummary, AppError> {
     let events_dir = format!("{}/exchange/events", ws_dir);
     if !workspace.path_exists(&events_dir) {
-        return Err(AppError::Validation(format!(
-            "Missing events directory: {}",
-            events_dir
-        )));
+        return Err(AppError::Validation(format!("Missing events directory: {}", events_dir)));
     }
 
     let mut states = Vec::new();
@@ -166,13 +166,13 @@ fn summarize_events(workspace: &impl WorkspaceStore, ws_dir: &str) -> Result<Eve
     Ok(EventSummary { states, pending_files, items })
 }
 
-fn summarize_issues(workspace: &impl WorkspaceStore, ws_dir: &str) -> Result<IssueSummary, AppError> {
+fn summarize_issues(
+    workspace: &impl WorkspaceStore,
+    ws_dir: &str,
+) -> Result<IssueSummary, AppError> {
     let issues_dir = format!("{}/exchange/issues", ws_dir);
     if !workspace.path_exists(&issues_dir) {
-        return Err(AppError::Validation(format!(
-            "Missing issues directory: {}",
-            issues_dir
-        )));
+        return Err(AppError::Validation(format!("Missing issues directory: {}", issues_dir)));
     }
 
     let mut labels = Vec::new();
@@ -213,14 +213,22 @@ fn list_yml_files(workspace: &impl WorkspaceStore, dir: &str) -> Result<Vec<Stri
     Ok(paths)
 }
 
-fn read_event_item(workspace: &impl WorkspaceStore, path: &str, state: &str) -> Result<EventItem, AppError> {
+fn read_event_item(
+    workspace: &impl WorkspaceStore,
+    path: &str,
+    state: &str,
+) -> Result<EventItem, AppError> {
     let map = read_yaml_mapping(workspace, path)?;
     let id = read_required_id(&map, path, "id")?;
 
     Ok(EventItem { path: path.to_string(), state: state.to_string(), id })
 }
 
-fn read_issue_item(workspace: &impl WorkspaceStore, path: &str, label: &str) -> Result<IssueItem, AppError> {
+fn read_issue_item(
+    workspace: &impl WorkspaceStore,
+    path: &str,
+    label: &str,
+) -> Result<IssueItem, AppError> {
     let map = read_yaml_mapping(workspace, path)?;
     let id = read_required_id(&map, path, "id")?;
     let requires_deep_analysis = read_required_bool(&map, path, "requires_deep_analysis")?;
@@ -237,37 +245,25 @@ fn read_issue_item(workspace: &impl WorkspaceStore, path: &str, label: &str) -> 
 
 fn read_yaml_mapping(workspace: &impl WorkspaceStore, path: &str) -> Result<Mapping, AppError> {
     let content = workspace.read_file(path)?;
-    let value: Value = serde_yaml::from_str(&content).map_err(|err| AppError::ParseError {
-        what: path.to_string(),
-        details: err.to_string(),
-    })?;
+    let value: Value = serde_yaml::from_str(&content)
+        .map_err(|err| AppError::ParseError { what: path.to_string(), details: err.to_string() })?;
 
     match value {
         Value::Mapping(map) => Ok(map),
-        _ => {
-            Err(AppError::Validation(format!("YAML root must be a mapping in {}", path)))
-        }
+        _ => Err(AppError::Validation(format!("YAML root must be a mapping in {}", path))),
     }
 }
 
 fn read_required_string(map: &Mapping, path: &str, key: &str) -> Result<String, AppError> {
     match map.get(Value::String(key.to_string())) {
         Some(Value::String(value)) if !value.trim().is_empty() => Ok(value.clone()),
-        Some(Value::String(_)) => Err(AppError::Validation(format!(
-            "Field '{}' must be non-empty in {}",
-            key,
-            path
-        ))),
-        Some(_) => Err(AppError::Validation(format!(
-            "Field '{}' must be a string in {}",
-            key,
-            path
-        ))),
-        None => Err(AppError::Validation(format!(
-            "Missing required field '{}' in {}",
-            key,
-            path
-        ))),
+        Some(Value::String(_)) => {
+            Err(AppError::Validation(format!("Field '{}' must be non-empty in {}", key, path)))
+        }
+        Some(_) => {
+            Err(AppError::Validation(format!("Field '{}' must be a string in {}", key, path)))
+        }
+        None => Err(AppError::Validation(format!("Missing required field '{}' in {}", key, path))),
     }
 }
 
@@ -276,8 +272,7 @@ fn read_required_id(map: &Mapping, path: &str, key: &str) -> Result<String, AppE
     if !is_valid_id(&value) {
         return Err(AppError::Validation(format!(
             "Field '{}' must be 6 lowercase alphanumeric chars in {}",
-            key,
-            path
+            key, path
         )));
     }
     Ok(value)
@@ -286,16 +281,10 @@ fn read_required_id(map: &Mapping, path: &str, key: &str) -> Result<String, AppE
 fn read_required_bool(map: &Mapping, path: &str, key: &str) -> Result<bool, AppError> {
     match map.get(Value::String(key.to_string())) {
         Some(Value::Bool(value)) => Ok(*value),
-        Some(_) => Err(AppError::Validation(format!(
-            "Field '{}' must be a boolean in {}",
-            key,
-            path
-        ))),
-        None => Err(AppError::Validation(format!(
-            "Missing required field '{}' in {}",
-            key,
-            path
-        ))),
+        Some(_) => {
+            Err(AppError::Validation(format!("Field '{}' must be a boolean in {}", key, path)))
+        }
+        None => Err(AppError::Validation(format!("Missing required field '{}' in {}", key, path))),
     }
 }
 
@@ -312,13 +301,11 @@ fn read_required_string_list(
                     Value::String(text) if !text.trim().is_empty() => Ok(text.clone()),
                     Value::String(_) => Err(AppError::Validation(format!(
                         "Field '{}' must not contain empty strings in {}",
-                        key,
-                        path
+                        key, path
                     ))),
                     _ => Err(AppError::Validation(format!(
                         "Field '{}' must contain strings in {}",
-                        key,
-                        path
+                        key, path
                     ))),
                 })
                 .collect();
@@ -328,23 +315,14 @@ fn read_required_string_list(
             if output.is_empty() {
                 return Err(AppError::Validation(format!(
                     "Field '{}' must have entries in {}",
-                    key,
-                    path
+                    key, path
                 )));
             }
 
             Ok(output)
         }
-        Some(_) => Err(AppError::Validation(format!(
-            "Field '{}' must be a list in {}",
-            key,
-            path
-        ))),
-        None => Err(AppError::Validation(format!(
-            "Missing required field '{}' in {}",
-            key,
-            path
-        ))),
+        Some(_) => Err(AppError::Validation(format!("Field '{}' must be a list in {}", key, path))),
+        None => Err(AppError::Validation(format!("Missing required field '{}' in {}", key, path))),
     }
 }
 
@@ -355,9 +333,9 @@ fn is_valid_id(value: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
-    use std::fs; // Used to setup test environment via fs
+    use std::fs;
+    use tempfile::tempdir; // Used to setup test environment via fs
 
     #[test]
     fn inspect_collects_counts_and_files() {

@@ -10,7 +10,8 @@ use std::sync::OnceLock;
 use minijinja::{Environment, UndefinedBehavior};
 
 use crate::domain::{
-    AssembledPrompt, AppError, Layer, PromptAssemblyError, PromptAssemblySpec, PromptContext, JULES_DIR,
+    AppError, AssembledPrompt, JULES_DIR, Layer, PromptAssemblyError, PromptAssemblySpec,
+    PromptContext,
 };
 use crate::ports::WorkspaceStore;
 
@@ -60,22 +61,22 @@ pub fn assemble_prompt(
 
         // Auto-initialize from schema if missing
         // Check if file exists in workspace
-        if !workspace.path_exists(&full_path_str) {
-             if let Some(file_name) = Path::new(&resolved_path).file_name() {
-                let schema_path = layer_dir.join("schemas").join(file_name);
-                let schema_path_str = schema_path.to_string_lossy().to_string();
+        if !workspace.path_exists(&full_path_str)
+            && let Some(file_name) = Path::new(&resolved_path).file_name()
+        {
+            let schema_path = layer_dir.join("schemas").join(file_name);
+            let schema_path_str = schema_path.to_string_lossy().to_string();
 
-                if workspace.path_exists(&schema_path_str) {
-                     // We need to ensure directory exists.
-                     // WorkspaceStore::write_file usually creates dirs, but copy_file might too?
-                     // WorkspaceStore::copy_file docs say generic op.
-                     // Let's assume copy_file creates dirs or we call create_dir_all if needed.
-                     // But we can't easily get parent of string without Path.
-                     // Let's trust copy_file or implement logic.
-                     // In FilesystemWorkspaceStore::copy_file, it creates parents.
-                     let _ = workspace.copy_file(&schema_path_str, &full_path_str);
-                }
-             }
+            if workspace.path_exists(&schema_path_str) {
+                // We need to ensure directory exists.
+                // WorkspaceStore::write_file usually creates dirs, but copy_file might too?
+                // WorkspaceStore::copy_file docs say generic op.
+                // Let's assume copy_file creates dirs or we call create_dir_all if needed.
+                // But we can't easily get parent of string without Path.
+                // Let's trust copy_file or implement logic.
+                // In FilesystemWorkspaceStore::copy_file, it creates parents.
+                let _ = workspace.copy_file(&schema_path_str, &full_path_str);
+            }
         }
 
         if workspace.path_exists(&full_path_str) {
@@ -95,11 +96,11 @@ pub fn assemble_prompt(
                     }
                 }
                 Err(err) => {
-                     // Any other error
-                     return Err(PromptAssemblyError::IncludeReadError {
-                            path: resolved_path,
-                            reason: err.to_string(),
-                        });
+                    // Any other error
+                    return Err(PromptAssemblyError::IncludeReadError {
+                        path: resolved_path,
+                        reason: err.to_string(),
+                    });
                 }
             }
         } else if include.optional {
@@ -160,11 +161,9 @@ fn load_assembly_spec(
         return Err(PromptAssemblyError::AssemblySpecNotFound(path.to_string()));
     }
 
-    let content =
-        workspace.read_file(path).map_err(|err| PromptAssemblyError::InvalidAssemblySpec {
-            path: path.to_string(),
-            reason: err.to_string(),
-        })?;
+    let content = workspace.read_file(path).map_err(|err| {
+        PromptAssemblyError::InvalidAssemblySpec { path: path.to_string(), reason: err.to_string() }
+    })?;
 
     serde_yaml::from_str(&content).map_err(|err| PromptAssemblyError::InvalidAssemblySpec {
         path: path.to_string(),
@@ -198,11 +197,9 @@ fn load_prompt(
         return Err(PromptAssemblyError::PromptNotFound(path.to_string()));
     }
 
-    let content =
-        workspace.read_file(path).map_err(|err| PromptAssemblyError::PromptReadError {
-            path: path.to_string(),
-            reason: err.to_string(),
-        })?;
+    let content = workspace.read_file(path).map_err(|err| {
+        PromptAssemblyError::PromptReadError { path: path.to_string(), reason: err.to_string() }
+    })?;
 
     render_template(&content, context, path)
 }
@@ -324,11 +321,15 @@ contracts:
         };
         mock_store.write_file(&format!("{}/prompt.yml", layer_path), &prompt).unwrap();
 
-        mock_store.write_file(&format!("{}/contracts.yml", layer_path), "layer: test\nconstraints: []").unwrap();
+        mock_store
+            .write_file(&format!("{}/contracts.yml", layer_path), "layer: test\nconstraints: []")
+            .unwrap();
 
         if !single_role {
-             let role_path = format!("{}/roles/test_role", layer_path);
-             mock_store.write_file(&format!("{}/role.yml", role_path), "role: test_role\nfocus: testing").unwrap();
+            let role_path = format!("{}/roles/test_role", layer_path);
+            mock_store
+                .write_file(&format!("{}/role.yml", role_path), "role: test_role\nfocus: testing")
+                .unwrap();
         }
 
         mock_store
@@ -388,9 +389,10 @@ contracts:
         let mock_store = MockWorkspaceStore::new();
 
         // Setup mock files for Planners layer
-        mock_store.write_file(
-            ".jules/roles/planners/prompt_assembly.yml",
-            r#"
+        mock_store
+            .write_file(
+                ".jules/roles/planners/prompt_assembly.yml",
+                r#"
 schema_version: 1
 layer: planners
 runtime_context: {}
@@ -398,9 +400,14 @@ includes:
   - title: "Contracts"
     path: ".jules/roles/planners/contracts.yml"
 "#,
-        ).unwrap();
-        mock_store.write_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners").unwrap();
-        mock_store.write_file(".jules/roles/planners/contracts.yml", "layer: planners\nconstraints: []").unwrap();
+            )
+            .unwrap();
+        mock_store
+            .write_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners")
+            .unwrap();
+        mock_store
+            .write_file(".jules/roles/planners/contracts.yml", "layer: planners\nconstraints: []")
+            .unwrap();
 
         let result = assemble_prompt(&mock_store, Layer::Planners, &PromptContext::new());
 
@@ -455,9 +462,10 @@ includes:
     fn test_assemble_prompt_path_traversal() {
         let mock_store = MockWorkspaceStore::new();
 
-        mock_store.write_file(
-            ".jules/roles/planners/prompt_assembly.yml",
-            r#"
+        mock_store
+            .write_file(
+                ".jules/roles/planners/prompt_assembly.yml",
+                r#"
 schema_version: 1
 layer: planners
 runtime_context: {}
@@ -465,8 +473,11 @@ includes:
   - title: "Malicious"
     path: "../secret.txt"
 "#,
-        ).unwrap();
-        mock_store.write_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners").unwrap();
+            )
+            .unwrap();
+        mock_store
+            .write_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners")
+            .unwrap();
 
         let result = assemble_prompt(&mock_store, Layer::Planners, &PromptContext::new());
 
@@ -483,9 +494,10 @@ includes:
     fn test_assemble_prompt_absolute_path_traversal() {
         let mock_store = MockWorkspaceStore::new();
 
-        mock_store.write_file(
-            ".jules/roles/planners/prompt_assembly.yml",
-            r#"
+        mock_store
+            .write_file(
+                ".jules/roles/planners/prompt_assembly.yml",
+                r#"
 schema_version: 1
 layer: planners
 runtime_context: {}
@@ -493,8 +505,11 @@ includes:
   - title: "Malicious Absolute"
     path: "/etc/passwd"
 "#,
-        ).unwrap();
-        mock_store.write_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners").unwrap();
+            )
+            .unwrap();
+        mock_store
+            .write_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners")
+            .unwrap();
 
         let result = assemble_prompt(&mock_store, Layer::Planners, &PromptContext::new());
 

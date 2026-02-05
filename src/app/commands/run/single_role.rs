@@ -5,7 +5,7 @@ use std::path::Path;
 use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
-use crate::domain::{AppError, Layer, JULES_DIR};
+use crate::domain::{AppError, JULES_DIR, Layer};
 use crate::ports::{AutomationMode, GitHubPort, JulesClient, SessionRequest, WorkspaceStore};
 use crate::services::adapters::jules_client_http::HttpJulesClient;
 

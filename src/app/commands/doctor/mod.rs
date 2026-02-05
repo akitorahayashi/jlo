@@ -83,7 +83,13 @@ pub fn execute(
         &mut diagnostics,
     );
 
-    naming::naming_checks(&jules_path, &workstreams, &issue_labels, &event_states, &mut diagnostics);
+    naming::naming_checks(
+        &jules_path,
+        &workstreams,
+        &issue_labels,
+        &event_states,
+        &mut diagnostics,
+    );
 
     let semantic_context =
         semantic::semantic_context(&jules_path, &workstreams, &issue_labels, &mut diagnostics);

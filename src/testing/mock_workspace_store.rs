@@ -132,10 +132,10 @@ impl WorkspaceStore for MockWorkspaceStore {
         let mut dirs = std::collections::HashSet::new();
 
         for key in self.files.borrow().keys() {
-            if let Some(rest) = key.strip_prefix(&prefix) {
-                if let Some((dir, _)) = rest.split_once('/') {
-                    dirs.insert(dir.to_string());
-                }
+            if let Some(rest) = key.strip_prefix(&prefix)
+                && let Some((dir, _)) = rest.split_once('/')
+            {
+                dirs.insert(dir.to_string());
             }
         }
         let mut result: Vec<_> = dirs.into_iter().collect();
@@ -149,10 +149,10 @@ impl WorkspaceStore for MockWorkspaceStore {
         let mut files = Vec::new();
 
         for key in self.files.borrow().keys() {
-            if let Some(rest) = key.strip_prefix(&prefix) {
-                if !rest.contains('/') {
-                    files.push(rest.to_string());
-                }
+            if let Some(rest) = key.strip_prefix(&prefix)
+                && !rest.contains('/')
+            {
+                files.push(rest.to_string());
             }
         }
         files.sort();
