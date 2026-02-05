@@ -90,7 +90,7 @@ jobs:
           echo "✓ Scaffold structure validated"
 
       - name: Initialize workflows
-        run: jlo init workflows --remote
+        run: jlo init workflows --remote --overwrite
 
       - name: Validate workflow structure
         run: |
@@ -185,7 +185,7 @@ jobs:
           git checkout -b jules-test-template-${{ github.run_id }}
           
           jlo init scaffold
-          jlo init workflows --remote
+          jlo init workflows --remote --overwrite
           
           # Validate workflow YAML is valid
           python3 -c "import yaml; yaml.safe_load(open('.github/workflows/jules-workflows.yml'))"
