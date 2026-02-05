@@ -17,6 +17,6 @@ affected_areas:
 acceptance_criteria:
   - "README.md includes `git checkout -b jules` in the Quick Start instructions"
 verification_commands:
-  - "grep 'git checkout -b jules' README.md"
+  - "grep 'git checkout -b [j]ules' README.md"
 requires_deep_analysis: false
 deep_analysis_reason: ""

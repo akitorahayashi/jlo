@@ -18,6 +18,6 @@ affected_areas:
 acceptance_criteria:
   - "Terminology is consistent across documentation files"
 verification_commands:
-  - "grep -r 'Jules VM' src/assets/scaffold/ || true"
+  - "grep -r '[J]ules VM' src/assets/scaffold/ || true"
 requires_deep_analysis: false
 deep_analysis_reason: ""
