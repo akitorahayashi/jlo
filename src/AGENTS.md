@@ -58,6 +58,7 @@ tests/
 | `jlo init [scaffold]` | `i` | Create `.jules/` structure with setup directory |
 | `jlo init workflows (--remote \| --self-hosted)` | `i w` | Install workflow kit into `.github/` |
 | `jlo update [--prompt-preview] [--adopt-managed]` | `u` | Update workspace to current jlo version |
+| `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate .jules/ structure and content |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run narrator [--prompt-preview] [--mock]` | `r n` | Run narrator (produces changes feed) |
 | `jlo run observers --workstream <name> [--role <name> \| --scheduled] [--mock]` | `r o` | Run observer agents |
@@ -67,13 +68,18 @@ tests/
 | `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
 | `jlo workflow matrix workstreams` | | Generate workstream matrix for GitHub Actions |
 | `jlo workflow matrix roles --layer <layer> [--workstreams-json <json>]` | | Generate role matrix for GitHub Actions |
+| `jlo workflow matrix pending-workstreams --workstreams-json <json> [--mock]` | | Export workstreams with pending events as matrix |
+| `jlo workflow matrix routing --workstreams-json <json> --routing-labels <csv>` | | Export issue routing matrices |
 | `jlo workflow run <layer> [--matrix-json <json>] [--mock]` | | Run layer and return wait-gating metadata |
 | `jlo workflow wait prs --layer <layer> [...]` | | Wait for PRs (merge or label mode) |
 | `jlo workflow cleanup mock --mock-tag <tag>` | | Cleanup mock artifacts |
+| `jlo workflow cleanup processed-issue --issue-file <path> [--commit] [--push]` | | Cleanup processed issue and source events |
+| `jlo workflow pr label-from-branch [--branch <name>]` | | Apply category label to implementer PR from branch |
 | `jlo workstreams inspect --workstream <name> [--format json\|yaml]` | | Inspect workstream state |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
 | `jlo setup list --detail <component>` | | Show component details |
+| `jlo deinit` | | Remove jlo-managed assets (branch + workflows) |
 
 ## Verification Commands
 

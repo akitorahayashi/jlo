@@ -23,6 +23,8 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 .jules/
 ├── JULES.md              # Agent contract (formal rules)
 ├── README.md             # Human guide (informal)
+├── config.toml           # Execution configuration (parallelism, API settings)
+├── github-labels.json    # Standard issue labels for workstream routing
 ├── changes/
 │   └── latest.yml        # Narrator output (bounded changes summary)
 ├── roles/
