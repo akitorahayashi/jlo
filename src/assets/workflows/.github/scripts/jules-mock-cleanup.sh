@@ -39,18 +39,12 @@ for pr_number in $(echo "$pr_numbers_json" | jq -r '.[]'); do
   fi
 done
 
-echo "Deleting mock branches from job outputs..."
-for branch in $(echo "$branches_json" | jq -r '.[]'); do
-  if [ -z "$branch" ]; then
-    continue
-  fi
-  gh api -X DELETE "repos/$REPO/git/refs/heads/$branch" >/dev/null 2>&1 || \
-    echo "::notice::Branch $branch not found or already deleted"
-done
-
-echo "Deleting mock branches matching tag '$MOCK_TAG'..."
+echo "Deleting mock branches..."
+branches_from_outputs=$(echo "$branches_json" | jq -r '.[]')
 branches_with_tag=$(gh api --paginate "/repos/$REPO/branches?per_page=100" | jq -r --arg tag "$MOCK_TAG" '.[] | select(.name | contains($tag)) | .name')
-for branch in $branches_with_tag; do
+all_branches=$(printf '%s\n' "$branches_from_outputs" "$branches_with_tag" | sed '/^$/d' | sort -u)
+
+for branch in $all_branches; do
   gh api -X DELETE "repos/$REPO/git/refs/heads/$branch" >/dev/null 2>&1 || \
     echo "::notice::Branch $branch not found or already deleted"
 done

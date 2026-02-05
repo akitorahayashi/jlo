@@ -114,12 +114,11 @@ while [ "$(date +%s)" -le "$deadline" ]; do
       fi
 
       suffix="${head_ref#"$branch_prefix"}"
-      label="${suffix%%-*}"
-      remainder="${suffix#"$label-"}"
-      issue_id="${remainder%%-*}"
-
-      if [ -z "$label" ] || [ -z "$issue_id" ]; then
-        echo "::error::Could not parse label/id from branch '$head_ref'"
+      if [[ "$suffix" =~ ^(.+)-([a-z0-9]{6})-.+ ]]; then
+        label="${BASH_REMATCH[1]}"
+        issue_id="${BASH_REMATCH[2]}"
+      else
+        echo "::error::Could not parse label/id from branch '$head_ref' with prefix '$branch_prefix'"
         exit 1
       fi
       if [ "${#issue_id}" -ne 6 ] || [[ ! "$issue_id" =~ ^[a-z0-9]{6}$ ]]; then

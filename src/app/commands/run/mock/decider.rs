@@ -166,16 +166,32 @@ where
                 continue; // Unknown event, skip update
             };
 
-            let content = std::fs::read_to_string(dest_file)?;
+            let content = match std::fs::read_to_string(dest_file) {
+                Ok(content) => content,
+                Err(err) => {
+                    println!(
+                        "::warning::Failed to read decided event file {}: {}",
+                        dest_file.display(),
+                        err
+                    );
+                    continue;
+                }
+            };
+
             // Update issue_id in the event file
-            if content.contains("issue_id: \"\"") {
-                let updated_content = content
-                    .replace("issue_id: \"\"", &format!("issue_id: \"{}\"", assigned_issue_id));
-                std::fs::write(dest_file, updated_content)?;
+            let updated_content = if content.contains("issue_id: \"\"") {
+                content.replace("issue_id: \"\"", &format!("issue_id: \"{}\"", assigned_issue_id))
             } else {
                 // Append if not present in template
-                let updated_content = format!("{}\nissue_id: \"{}\"", content, assigned_issue_id);
-                std::fs::write(dest_file, updated_content)?;
+                format!("{}\nissue_id: \"{}\"", content, assigned_issue_id)
+            };
+
+            if let Err(err) = std::fs::write(dest_file, updated_content) {
+                println!(
+                    "::warning::Failed to write decided event file {}: {}",
+                    dest_file.display(),
+                    err
+                );
             }
         }
     }
