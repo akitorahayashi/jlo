@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "d4t4a1"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Domain entity MockOutput contains I/O side effects"
+statement: |
+  The `MockOutput` struct in `src/domain/mock_config.rs` implements methods `write_github_output` and `print_local` that perform direct I/O (file writing and stdout printing), violating the separation of concerns between domain models and runtime environment.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/mock_config.rs"
+    loc:
+      - "62-80"
+    note: "Methods directly access std::fs and println!"
+
+tags:
+  - "boundary-sovereignty"
+  - "domain-leakage"
