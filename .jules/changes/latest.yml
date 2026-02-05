@@ -1,7 +1,7 @@
 # Mock changes file for narrator testing
 schema_version: 1
-id: "mock79"
-created_at: "2026-02-05T11:06:07.731299820+00:00"
+id: "mock82"
+created_at: "2026-02-05T11:42:52.166001371+00:00"
 mock: true
 
 range:
@@ -23,6 +23,6 @@ commits: []
 
 summary:
   overview: "Mock narrator run for workflow validation
-# Scope: run-21709074001"
+# Scope: run-21710133170"
   notable_changes: []
   truncation_note: ""
