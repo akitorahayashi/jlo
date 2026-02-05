@@ -2,6 +2,7 @@
 
 mod config;
 mod config_dto;
+pub mod mock;
 mod multi_role;
 
 pub use config::parse_config_content;
@@ -33,6 +34,10 @@ pub struct RunOptions {
     pub branch: Option<String>,
     /// Local issue file path (required for issue-driven layers: planners, implementers).
     pub issue: Option<PathBuf>,
+    /// Run in mock mode (no Jules API, real git/GitHub operations).
+    pub mock: bool,
+    /// Scope identifier for mock mode (required in CI).
+    pub mock_scope: Option<String>,
 }
 
 /// Result of a run execution.
@@ -42,7 +47,7 @@ pub struct RunResult {
     pub roles: Vec<String>,
     /// Whether this was a dry run.
     pub dry_run: bool,
-    /// Session IDs from Jules (empty if dry_run).
+    /// Session IDs from Jules (empty if dry_run or mock).
     pub sessions: Vec<String>,
 }
 
@@ -59,6 +64,11 @@ where
     H: GitHubPort,
     W: WorkspaceStore,
 {
+    // Handle mock mode
+    if options.mock {
+        return mock::execute(jules_path, &options, git, github, workspace);
+    }
+
     // Check if we are in CI environment
     let is_ci = std::env::var("GITHUB_ACTIONS").is_ok();
 

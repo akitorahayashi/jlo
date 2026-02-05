@@ -58,6 +58,21 @@ Repository variables and secrets referenced by `.github/workflows/jules-*.yml`:
 
 When reinstalling the workflow kit with `jlo init workflows --overwrite`, the existing `on.schedule` block in `jules-workflows.yml` is preserved. If the existing file contains invalid YAML, installation fails with an explicit error.
 
+## Mock Mode Validation
+
+The `validate-workflow-kit.yml` workflow tests the workflow kit without Jules API:
+
+1. **build** → Compile jlo
+2. **validate-scaffold** → Test `jlo init scaffold` and `jlo init workflows`
+3. **mock-e2e** → Run `jlo run <layer> --mock --mock-scope layer --dry-run` for all layers
+4. **validate-workflow-template** → Verify rendered workflow contains mock support
+
+Mock mode (`--mock --mock-scope <role|layer>`) creates real branches/PRs with synthetic content. The kit scripts pass `JLO_RUN_FLAGS` to jlo commands, enabling mock flags via environment variable.
+
+Triggers:
+- Pull requests modifying `src/assets/workflows/**`, `src/app/commands/run/**`, or `src/domain/mock_config.rs`
+- Manual dispatch with optional `mock_scope` input
+
 ## Repository Requirements
 
 - The `jules` branch exists and contains the `.jules/` scaffold

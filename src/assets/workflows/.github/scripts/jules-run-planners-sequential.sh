@@ -29,5 +29,6 @@ for issue in "${issues[@]}"; do
     exit 1
   fi
   echo "Running planner for $issue"
-  timeout 20m jlo run planners "$issue"
+  # shellcheck disable=SC2086
+  timeout 20m jlo run planners "$issue" ${JLO_RUN_FLAGS:-}
 done

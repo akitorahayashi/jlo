@@ -30,5 +30,6 @@ for entry in "${entries[@]}"; do
     exit 1
   fi
   echo "Running observer $workstream / $role"
-  timeout 20m jlo run observers --workstream "$workstream" --role "$role"
+  # shellcheck disable=SC2086
+  timeout 20m jlo run observers --workstream "$workstream" --role "$role" ${JLO_RUN_FLAGS:-}
 done

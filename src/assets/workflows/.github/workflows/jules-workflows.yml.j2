@@ -31,6 +31,31 @@ on:
         description: 'Issue labels eligible for planner/implementer routing (comma-separated)'
         type: string
         default: bugs,feats,refacts,tests,docs
+      mock:
+        description: 'Run in mock mode (creates branches/PRs without Jules API)'
+        type: boolean
+        default: false
+      mock_scope:
+        description: 'Mock scope identifier (required if mock=true)'
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      entry_point:
+        type: string
+        default: narrator
+      wait_minutes:
+        type: number
+        default: 30
+      routing_labels:
+        type: string
+        default: bugs,feats,refacts,tests,docs
+      mock:
+        type: boolean
+        default: false
+      mock_scope:
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -45,6 +70,9 @@ env:
   ENTRY_POINT: {{ gha_expr("github.event.inputs.entry_point || 'narrator'") }}
   WAIT_MINUTES: {{ gha_expr("github.event.inputs.wait_minutes || 30") }}
   ROUTING_LABELS: {{ gha_expr("github.event.inputs.routing_labels || 'bugs,feats,refacts,tests,docs'") }}
+  MOCK_MODE: {{ gha_expr("github.event.inputs.mock || false") }}
+  MOCK_SCOPE: {{ gha_expr("github.event.inputs.mock_scope || ''") }}
+  JLO_RUN_FLAGS: {{ gha_expr("github.event.inputs.mock == 'true' && format('--mock --mock-scope {0}', github.event.inputs.mock_scope) || ''") }}
 
 jobs:
   # ============================================================
@@ -53,12 +81,15 @@ jobs:
   run-narrator:
     if: >-
       vars.JULES_PAUSED != 'true' &&
-      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') &&
       (github.event.inputs.entry_point || 'narrator') == 'narrator'
     runs-on: {{ runner }}
     timeout-minutes: 30
+    outputs:
+      mock_pr_number: {{ gha_expr("steps.run-narrator.outputs.mock_pr_number") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
+      GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -76,8 +107,8 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Run narrator
-        run: |
-          jlo run narrator
+        id: run-narrator
+        run: bash .github/scripts/jules-run-narrator.sh
 
       - name: Validate workspace (fail-fast)
         run: jlo doctor
@@ -177,8 +208,11 @@ jobs:
       needs.generate-observer-matrix.outputs.has_observers == 'true'
     runs-on: {{ runner }}
     timeout-minutes: 30
+    outputs:
+      mock_pr_number: {{ gha_expr("steps.run-observers.outputs.mock_pr_number") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
+      GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -189,6 +223,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Run observers sequentially
+        id: run-observers
         env:
           OBSERVER_MATRIX: {{ gha_expr("needs.generate-observer-matrix.outputs.matrix") }}
         run: bash .github/scripts/jules-run-observers-sequential.sh
@@ -251,8 +286,11 @@ jobs:
       needs.generate-decider-matrix.outputs.has_pending == 'true'
     runs-on: {{ runner }}
     timeout-minutes: 30
+    outputs:
+      mock_pr_number: {{ gha_expr("steps.run-deciders.outputs.mock_pr_number") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
+      GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -263,6 +301,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Run deciders sequentially
+        id: run-deciders
         env:
           DECIDER_MATRIX: {{ gha_expr("needs.generate-decider-matrix.outputs.matrix") }}
         run: bash .github/scripts/jules-run-deciders-sequential.sh
@@ -329,8 +368,12 @@ jobs:
       needs.generate-planner-matrix.outputs.has_planners == 'true'
     runs-on: {{ runner }}
     timeout-minutes: 30
+    outputs:
+      mock_pr_number: {{ gha_expr("steps.run-planners.outputs.mock_pr_number") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
+      JLO_RUN_FLAGS: {{ gha_expr("env.MOCK_MODE == 'true' && format('--mock --mock-scope {0}', env.MOCK_SCOPE) || ''") }}
+      GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -341,6 +384,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Run planners sequentially
+        id: run-planners
         env:
           PLANNER_MATRIX: {{ gha_expr("needs.generate-planner-matrix.outputs.planner_matrix") }}
         run: bash .github/scripts/jules-run-planners-sequential.sh
@@ -356,9 +400,13 @@ jobs:
       needs.generate-planner-matrix.outputs.has_implementers == 'true'
     runs-on: {{ runner }}
     timeout-minutes: 30
+    outputs:
+      mock_pr_number: {{ gha_expr("steps.run-implementers.outputs.mock_pr_number") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
       TARGET_BRANCH: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
+      JLO_RUN_FLAGS: {{ gha_expr("env.MOCK_MODE == 'true' && format('--mock --mock-scope {0}', env.MOCK_SCOPE) || ''") }}
+      GH_TOKEN: {{ gha_expr("secrets.GITHUB_TOKEN") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -372,6 +420,7 @@ jobs:
         uses: ./.github/actions/configure-git
 
       - name: Run implementers sequentially
+        id: run-implementers
         env:
           IMPLEMENTER_MATRIX: {{ gha_expr("needs.generate-planner-matrix.outputs.implementer_matrix") }}
         run: bash .github/scripts/jules-run-implementers-sequential.sh

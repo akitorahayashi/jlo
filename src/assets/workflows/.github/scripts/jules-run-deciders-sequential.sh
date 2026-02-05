@@ -29,5 +29,6 @@ for workstream in "${workstreams[@]}"; do
     exit 1
   fi
   echo "Running decider for $workstream"
-  timeout 20m jlo run deciders --workstream "$workstream" --scheduled
+  # shellcheck disable=SC2086
+  timeout 20m jlo run deciders --workstream "$workstream" --scheduled ${JLO_RUN_FLAGS:-}
 done
