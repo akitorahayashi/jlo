@@ -128,9 +128,45 @@ narrator -> observers -> deciders -> [planners] -> implementers
 
 ## Setup Compiler
 
-See `jlo` source code for implementation details.
+The setup compiler generates dependency-aware installation scripts for development tools.
 
-The setup directory contains:
+### Component Catalog Structure
+
+```
+src/assets/catalog/<component>/
+  meta.toml      # name, summary, dependencies, env specs
+  install.sh     # Installation script
+```
+
+### meta.toml Schema
+
+```toml
+name = "component-name"       # Optional; defaults to directory name
+summary = "Short description"
+dependencies = ["other-comp"] # Optional
+
+[[env]]
+name = "ENV_VAR"
+description = "What this variable does"
+default = "optional-default"  # Optional
+```
+
+### Services
+
+| Service | Responsibility |
+|---------|----------------|
+| CatalogService | Loads components from embedded assets |
+| ResolverService | Topological sort with cycle detection |
+| GeneratorService | Produces install.sh and merges env.toml |
+
+### Environment Contract
+
+Catalog installers assume the Jules environment baseline (Python 3.12+, Node.js 22+, common dev tools). The CI verify-installers workflow provisions that baseline in minimal containers.
+
+### Setup Directory Contents
+
+The `.jules/setup/` directory contains:
+
 - `tools.yml`: User-selected components
 - `env.toml`: Generated environment variables (gitignored)
 - `install.sh`: Generated installation script (dependency-sorted)
