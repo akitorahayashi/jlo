@@ -1,0 +1,5 @@
+[tool.tarpaulin]
+out = ["Xml"]
+output-dir = "coverage"
+all-features = true
+fail-under = 50.0

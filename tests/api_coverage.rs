@@ -1,5 +1,6 @@
 use jlo::{
-    DoctorOptions, WorkflowRunnerMode, doctor, init, init_workflows, setup_list, template, update,
+    DoctorOptions, WorkflowRunnerMode, deinit, doctor, init, init_workflows, setup_gen, setup_list,
+    template, update, workstreams_inspect, WorkstreamInspectFormat, WorkstreamInspectOptions,
 };
 use serial_test::serial;
 use std::env;
@@ -87,4 +88,52 @@ fn test_api_coverage_full_flow() {
 fn test_api_coverage_setup() {
     let components = setup_list().expect("setup_list failed");
     assert!(!components.is_empty());
+}
+
+#[test]
+#[serial]
+fn test_api_coverage_extras() {
+    let temp = TempDir::new().unwrap();
+    let _guard = CwdGuard::new(temp.path());
+
+    let run_git = |args: &[&str]| {
+        let status = std::process::Command::new("git")
+            .args(args)
+            .status()
+            .expect("failed to execute git");
+        assert!(status.success(), "git {:?} failed", args);
+    };
+
+    run_git(&["init"]);
+    run_git(&["config", "user.email", "test@example.com"]);
+    run_git(&["config", "user.name", "Test User"]);
+    run_git(&["commit", "--allow-empty", "-m", "initial", "--no-gpg-sign"]);
+    run_git(&["checkout", "-b", "jules"]);
+
+    init().expect("init failed");
+
+    // Add a tool to tools.yml
+    let tools_yml_path = temp.path().join(".jules/setup/tools.yml");
+    std::fs::write(&tools_yml_path, "tools:\n  - uv\n").expect("failed to write tools.yml");
+
+    // Test setup_gen
+    let _ = setup_gen(None).expect("setup_gen failed");
+
+    // Test workstreams_inspect
+    let inspect_opts = WorkstreamInspectOptions {
+        workstream: "generic".to_string(),
+        format: WorkstreamInspectFormat::Json,
+    };
+    let _ = workstreams_inspect(inspect_opts).expect("inspect failed");
+
+    // Init workflows so deinit has something to remove
+    init_workflows(WorkflowRunnerMode::Remote).expect("init workflows failed");
+
+    // Switch back to master for deinit
+    run_git(&["checkout", "master"]);
+
+    // Test deinit
+    let outcome = deinit().expect("deinit failed");
+    assert!(!outcome.deleted_files.is_empty());
+    assert!(outcome.deleted_branch);
 }
