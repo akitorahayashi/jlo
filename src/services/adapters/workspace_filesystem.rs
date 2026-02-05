@@ -126,9 +126,8 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         // Check for layer/role format (e.g., "observers/taxonomy")
         if let Some((layer_part, role_part)) = query.split_once('/')
             && let Some(layer) = Layer::from_dir_name(layer_part)
-            && let Some(role) = roles
-                .iter()
-                .find(|r| r.layer == layer && r.id.as_str() == role_part)
+            && let Some(role) =
+                roles.iter().find(|r| r.layer == layer && r.id.as_str() == role_part)
         {
             return Ok(Some(role.clone()));
         }
