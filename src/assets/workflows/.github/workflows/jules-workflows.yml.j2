@@ -78,10 +78,7 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:
-      expected_count: {{ gha_expr("steps.run-narrator.outputs.expected_count") }}
-      run_started_at: {{ gha_expr("steps.run-narrator.outputs.run_started_at") }}
-      mock_pr_numbers_json: {{ gha_expr("steps.run-narrator.outputs.mock_pr_numbers_json") }}
-      mock_branches_json: {{ gha_expr("steps.run-narrator.outputs.mock_branches_json") }}
+      json: {{ gha_expr("steps.run.outputs.json") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
@@ -106,8 +103,8 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Run narrator
-        id: run-narrator
-        run: bash .github/scripts/jules-run-narrator.sh
+        id: run
+        run: jlo workflow run narrator ${{ gha_raw("env.JLO_RUN_FLAGS") }}
 
       - name: Validate workspace (fail-fast)
         run: jlo doctor
@@ -123,29 +120,31 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 60
     outputs:
-      pr_numbers_json: {{ gha_expr("steps.wait.outputs.pr_numbers_json") }}
-      pr_heads_json: {{ gha_expr("steps.wait.outputs.pr_heads_json") }}
+      json: {{ gha_expr("steps.wait.outputs.json") }}
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      REPO: {{ gha_expr("github.repository") }}
+      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
       - name: Wait for narrator PRs
         id: wait
-        env:
-          EXPECTED_COUNT: {{ gha_expr("needs.run-narrator.outputs.expected_count") }}
-          RUN_STARTED_AT: {{ gha_expr("needs.run-narrator.outputs.run_started_at") }}
-          BASE_BRANCH: jules
-          CONTRACTS_PATH: .jules/roles/narrator/contracts.yml
-          WAIT_MINUTES: {{ gha_expr("env.WAIT_MINUTES") }}
-          MOCK_MODE: {{ gha_expr("env.MOCK_MODE") }}
-          WAIT_MODE: merge
-          MOCK_PR_NUMBERS_JSON: {{ gha_expr("needs.run-narrator.outputs.mock_pr_numbers_json") }}
-        run: bash .github/scripts/jules-wait-for-prs.sh
+        run: |
+          jlo workflow wait prs \
+            --layer narrator \
+            --base-branch jules \
+            --expected-count {{ gha_raw("fromJSON(needs.run-narrator.outputs.json).expected_count") }} \
+            --run-started-at '{{ gha_raw("fromJSON(needs.run-narrator.outputs.json).run_started_at") }}' \
+            --wait-minutes {{ gha_raw("env.WAIT_MINUTES") }} \
+            --mode merge \
+            ${{ gha_raw("fromJSON(needs.run-narrator.outputs.json).mock && format('--mock --mock-pr-numbers-json ''{0}''', toJSON(fromJSON(needs.run-narrator.outputs.json).mock_pr_numbers)) || ''") }}
 
   # ============================================================
   # Phase 3: Generate workstream matrix
@@ -160,8 +159,7 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:
-      matrix: {{ gha_expr("steps.matrix.outputs.matrix") }}
-      has_workstreams: {{ gha_expr("steps.matrix.outputs.has_workstreams") }}
+      json: {{ gha_expr("steps.matrix.outputs.json") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -185,7 +183,7 @@ jobs:
 
       - name: Generate workstream matrix
         id: matrix
-        run: bash .github/scripts/jules-generate-workstream-matrix.sh
+        run: jlo workflow matrix workstreams
 
   # ============================================================
   # Phase 4: Generate observer matrix (role-level)
@@ -193,7 +191,7 @@ jobs:
   generate-observer-matrix:
     needs: generate-workstream-matrix
     if: >-
-      needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
+      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
       (
         github.event_name == 'schedule' ||
         (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') != 'deciders') ||
@@ -202,8 +200,7 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:
-      matrix: {{ gha_expr("steps.matrix.outputs.matrix") }}
-      has_observers: {{ gha_expr("steps.matrix.outputs.has_observers") }}
+      json: {{ gha_expr("steps.matrix.outputs.json") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -216,9 +213,7 @@ jobs:
 
       - name: Generate observer matrix
         id: matrix
-        env:
-          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.matrix") }}
-        run: bash .github/scripts/jules-generate-observer-matrix.sh
+        run: jlo workflow matrix roles --layer observers --workstreams-json '{{ gha_raw("needs.generate-workstream-matrix.outputs.json") }}'
 
   # ============================================================
   # Phase 5: Run observers
@@ -228,14 +223,11 @@ jobs:
     if: |
       always() &&
       needs.generate-observer-matrix.result == 'success' &&
-      needs.generate-observer-matrix.outputs.has_observers == 'true'
+      fromJSON(needs.generate-observer-matrix.outputs.json).has_roles == true
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:
-      expected_count: {{ gha_expr("steps.run-observers.outputs.expected_count") }}
-      run_started_at: {{ gha_expr("steps.run-observers.outputs.run_started_at") }}
-      mock_pr_numbers_json: {{ gha_expr("steps.run-observers.outputs.mock_pr_numbers_json") }}
-      mock_branches_json: {{ gha_expr("steps.run-observers.outputs.mock_branches_json") }}
+      json: {{ gha_expr("steps.run.outputs.json") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
@@ -253,10 +245,8 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Run observers sequentially
-        id: run-observers
-        env:
-          OBSERVER_MATRIX: {{ gha_expr("needs.generate-observer-matrix.outputs.matrix") }}
-        run: bash .github/scripts/jules-run-observers-sequential.sh
+        id: run
+        run: jlo workflow run observers --matrix-json '{{ gha_raw("needs.generate-observer-matrix.outputs.json") }}' ${{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 6: Wait for observer processing
@@ -269,29 +259,31 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 60
     outputs:
-      pr_numbers_json: {{ gha_expr("steps.wait.outputs.pr_numbers_json") }}
-      pr_heads_json: {{ gha_expr("steps.wait.outputs.pr_heads_json") }}
+      json: {{ gha_expr("steps.wait.outputs.json") }}
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      REPO: {{ gha_expr("github.repository") }}
+      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
       - name: Wait for observer PRs
         id: wait
-        env:
-          EXPECTED_COUNT: {{ gha_expr("needs.run-observers.outputs.expected_count") }}
-          RUN_STARTED_AT: {{ gha_expr("needs.run-observers.outputs.run_started_at") }}
-          BASE_BRANCH: jules
-          CONTRACTS_PATH: .jules/roles/observers/contracts.yml
-          WAIT_MINUTES: {{ gha_expr("env.WAIT_MINUTES") }}
-          MOCK_MODE: {{ gha_expr("env.MOCK_MODE") }}
-          WAIT_MODE: merge
-          MOCK_PR_NUMBERS_JSON: {{ gha_expr("needs.run-observers.outputs.mock_pr_numbers_json") }}
-        run: bash .github/scripts/jules-wait-for-prs.sh
+        run: |
+          jlo workflow wait prs \
+            --layer observers \
+            --base-branch jules \
+            --expected-count {{ gha_raw("fromJSON(needs.run-observers.outputs.json).expected_count") }} \
+            --run-started-at '{{ gha_raw("fromJSON(needs.run-observers.outputs.json).run_started_at") }}' \
+            --wait-minutes {{ gha_raw("env.WAIT_MINUTES") }} \
+            --mode merge \
+            ${{ gha_raw("fromJSON(needs.run-observers.outputs.json).mock && format('--mock --mock-pr-numbers-json ''{0}''', toJSON(fromJSON(needs.run-observers.outputs.json).mock_pr_numbers)) || ''") }}
 
   # ============================================================
   # Phase 7: Generate decider matrix (pending events check)
@@ -300,14 +292,13 @@ jobs:
     needs: [generate-workstream-matrix, generate-observer-matrix, wait-after-observers]
     if: |
       always() &&
-      needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
+      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
       (needs.generate-observer-matrix.result == 'success' || needs.generate-observer-matrix.result == 'skipped') &&
       (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
     runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:
-      matrix: {{ gha_expr("steps.matrix.outputs.matrix") }}
-      has_pending: {{ gha_expr("steps.matrix.outputs.has_pending") }}
+      json: {{ gha_expr("steps.matrix.outputs.json") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -319,9 +310,7 @@ jobs:
 
       - name: Generate decider matrix from pending events
         id: matrix
-        env:
-          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.matrix") }}
-        run: bash .github/scripts/jules-generate-decider-matrix.sh
+        run: jlo workflow matrix pending-workstreams --workstreams-json '{{ gha_raw("needs.generate-workstream-matrix.outputs.json") }}'
 
   # ============================================================
   # Phase 8: Run deciders
@@ -331,14 +320,11 @@ jobs:
     if: |
       always() &&
       needs.generate-decider-matrix.result == 'success' &&
-      needs.generate-decider-matrix.outputs.has_pending == 'true'
+      fromJSON(needs.generate-decider-matrix.outputs.json).has_pending == true
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:
-      expected_count: {{ gha_expr("steps.run-deciders.outputs.expected_count") }}
-      run_started_at: {{ gha_expr("steps.run-deciders.outputs.run_started_at") }}
-      mock_pr_numbers_json: {{ gha_expr("steps.run-deciders.outputs.mock_pr_numbers_json") }}
-      mock_branches_json: {{ gha_expr("steps.run-deciders.outputs.mock_branches_json") }}
+      json: {{ gha_expr("steps.run.outputs.json") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
@@ -356,10 +342,8 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Run deciders sequentially
-        id: run-deciders
-        env:
-          DECIDER_MATRIX: {{ gha_expr("needs.generate-decider-matrix.outputs.matrix") }}
-        run: bash .github/scripts/jules-run-deciders-sequential.sh
+        id: run
+        run: jlo workflow run deciders --matrix-json '{{ gha_raw("needs.generate-decider-matrix.outputs.json") }}' ${{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 9: Wait for decider processing
@@ -372,29 +356,31 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 60
     outputs:
-      pr_numbers_json: {{ gha_expr("steps.wait.outputs.pr_numbers_json") }}
-      pr_heads_json: {{ gha_expr("steps.wait.outputs.pr_heads_json") }}
+      json: {{ gha_expr("steps.wait.outputs.json") }}
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      REPO: {{ gha_expr("github.repository") }}
+      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
       - name: Wait for decider PRs
         id: wait
-        env:
-          EXPECTED_COUNT: {{ gha_expr("needs.run-deciders.outputs.expected_count") }}
-          RUN_STARTED_AT: {{ gha_expr("needs.run-deciders.outputs.run_started_at") }}
-          BASE_BRANCH: jules
-          CONTRACTS_PATH: .jules/roles/deciders/contracts.yml
-          WAIT_MINUTES: {{ gha_expr("env.WAIT_MINUTES") }}
-          MOCK_MODE: {{ gha_expr("env.MOCK_MODE") }}
-          WAIT_MODE: merge
-          MOCK_PR_NUMBERS_JSON: {{ gha_expr("needs.run-deciders.outputs.mock_pr_numbers_json") }}
-        run: bash .github/scripts/jules-wait-for-prs.sh
+        run: |
+          jlo workflow wait prs \
+            --layer deciders \
+            --base-branch jules \
+            --expected-count {{ gha_raw("fromJSON(needs.run-deciders.outputs.json).expected_count") }} \
+            --run-started-at '{{ gha_raw("fromJSON(needs.run-deciders.outputs.json).run_started_at") }}' \
+            --wait-minutes {{ gha_raw("env.WAIT_MINUTES") }} \
+            --mode merge \
+            ${{ gha_raw("fromJSON(needs.run-deciders.outputs.json).mock && format('--mock --mock-pr-numbers-json ''{0}''', toJSON(fromJSON(needs.run-deciders.outputs.json).mock_pr_numbers)) || ''") }}
 
   # ============================================================
   # Phase 10: Generate routing matrices (new issues)
@@ -403,17 +389,14 @@ jobs:
     needs: [generate-workstream-matrix, generate-decider-matrix, run-deciders, wait-after-deciders]
     if: |
       always() &&
-      needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
+      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
       (needs.generate-decider-matrix.result == 'success' || needs.generate-decider-matrix.result == 'skipped') &&
       (needs.run-deciders.result == 'success' || needs.run-deciders.result == 'skipped') &&
       (needs.wait-after-deciders.result == 'success' || needs.wait-after-deciders.result == 'skipped')
     runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:
-      planner_matrix: {{ gha_expr("steps.matrix.outputs.planner_matrix") }}
-      has_planners: {{ gha_expr("steps.matrix.outputs.has_planners") }}
-      implementer_matrix: {{ gha_expr("steps.matrix.outputs.implementer_matrix") }}
-      has_implementers: {{ gha_expr("steps.matrix.outputs.has_implementers") }}
+      json: {{ gha_expr("steps.matrix.outputs.json") }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -425,10 +408,7 @@ jobs:
 
       - name: Generate planner and implementer matrices
         id: matrix
-        env:
-          WORKSTREAMS_JSON: {{ gha_expr("needs.generate-workstream-matrix.outputs.matrix") }}
-          ROUTING_LABELS: {{ gha_expr("env.ROUTING_LABELS") }}
-        run: bash .github/scripts/jules-generate-routing-matrices.sh
+        run: jlo workflow matrix routing --workstreams-json '{{ gha_raw("needs.generate-workstream-matrix.outputs.json") }}' --routing-labels '{{ gha_raw("env.ROUTING_LABELS") }}'
 
   # ============================================================
   # Phase 11: Run planners
@@ -438,14 +418,11 @@ jobs:
     if: |
       always() &&
       needs.generate-planner-matrix.result == 'success' &&
-      needs.generate-planner-matrix.outputs.has_planners == 'true'
+      fromJSON(needs.generate-planner-matrix.outputs.json).has_planners == true
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:
-      expected_count: {{ gha_expr("steps.run-planners.outputs.expected_count") }}
-      run_started_at: {{ gha_expr("steps.run-planners.outputs.run_started_at") }}
-      mock_pr_numbers_json: {{ gha_expr("steps.run-planners.outputs.mock_pr_numbers_json") }}
-      mock_branches_json: {{ gha_expr("steps.run-planners.outputs.mock_branches_json") }}
+      json: {{ gha_expr("steps.run.outputs.json") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
@@ -463,10 +440,8 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Run planners sequentially
-        id: run-planners
-        env:
-          PLANNER_MATRIX: {{ gha_expr("needs.generate-planner-matrix.outputs.planner_matrix") }}
-        run: bash .github/scripts/jules-run-planners-sequential.sh
+        id: run
+        run: jlo workflow run planners --matrix-json '{{ gha_raw("fromJSON(needs.generate-planner-matrix.outputs.json).planner_matrix | toJSON") }}' ${{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 12: Wait for planner PRs
@@ -479,29 +454,31 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 60
     outputs:
-      pr_numbers_json: {{ gha_expr("steps.wait.outputs.pr_numbers_json") }}
-      pr_heads_json: {{ gha_expr("steps.wait.outputs.pr_heads_json") }}
+      json: {{ gha_expr("steps.wait.outputs.json") }}
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      REPO: {{ gha_expr("github.repository") }}
+      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
       - name: Wait for planner PRs
         id: wait
-        env:
-          EXPECTED_COUNT: {{ gha_expr("needs.run-planners.outputs.expected_count") }}
-          RUN_STARTED_AT: {{ gha_expr("needs.run-planners.outputs.run_started_at") }}
-          BASE_BRANCH: jules
-          CONTRACTS_PATH: .jules/roles/planners/contracts.yml
-          WAIT_MINUTES: {{ gha_expr("env.WAIT_MINUTES") }}
-          MOCK_MODE: {{ gha_expr("env.MOCK_MODE") }}
-          WAIT_MODE: merge
-          MOCK_PR_NUMBERS_JSON: {{ gha_expr("needs.run-planners.outputs.mock_pr_numbers_json") }}
-        run: bash .github/scripts/jules-wait-for-prs.sh
+        run: |
+          jlo workflow wait prs \
+            --layer planners \
+            --base-branch jules \
+            --expected-count {{ gha_raw("fromJSON(needs.run-planners.outputs.json).expected_count") }} \
+            --run-started-at '{{ gha_raw("fromJSON(needs.run-planners.outputs.json).run_started_at") }}' \
+            --wait-minutes {{ gha_raw("env.WAIT_MINUTES") }} \
+            --mode merge \
+            ${{ gha_raw("fromJSON(needs.run-planners.outputs.json).mock && format('--mock --mock-pr-numbers-json ''{0}''', toJSON(fromJSON(needs.run-planners.outputs.json).mock_pr_numbers)) || ''") }}
 
   # ============================================================
   # Phase 13: Run implementers
@@ -511,14 +488,11 @@ jobs:
     if: |
       always() &&
       needs.generate-planner-matrix.result == 'success' &&
-      needs.generate-planner-matrix.outputs.has_implementers == 'true'
+      fromJSON(needs.generate-planner-matrix.outputs.json).has_implementers == true
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:
-      expected_count: {{ gha_expr("steps.run-implementers.outputs.expected_count") }}
-      run_started_at: {{ gha_expr("steps.run-implementers.outputs.run_started_at") }}
-      mock_pr_numbers_json: {{ gha_expr("steps.run-implementers.outputs.mock_pr_numbers_json") }}
-      mock_branches_json: {{ gha_expr("steps.run-implementers.outputs.mock_branches_json") }}
+      json: {{ gha_expr("steps.run.outputs.json") }}
     env:
       JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
       TARGET_BRANCH: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
@@ -537,10 +511,8 @@ jobs:
         uses: ./.github/actions/configure-git
 
       - name: Run implementers sequentially
-        id: run-implementers
-        env:
-          IMPLEMENTER_MATRIX: {{ gha_expr("needs.generate-planner-matrix.outputs.implementer_matrix") }}
-        run: bash .github/scripts/jules-run-implementers-sequential.sh
+        id: run
+        run: jlo workflow run implementers --matrix-json '{{ gha_raw("fromJSON(needs.generate-planner-matrix.outputs.json).implementer_matrix | toJSON") }}' --target-branch '{{ gha_raw("env.TARGET_BRANCH") }}' ${{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 14: Wait for implementer labels
@@ -553,11 +525,10 @@ jobs:
     runs-on: {{ runner }}
     timeout-minutes: 60
     outputs:
-      pr_numbers_json: {{ gha_expr("steps.wait.outputs.pr_numbers_json") }}
-      pr_heads_json: {{ gha_expr("steps.wait.outputs.pr_heads_json") }}
+      json: {{ gha_expr("steps.wait.outputs.json") }}
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      REPO: {{ gha_expr("github.repository") }}
+      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
       TARGET_BRANCH: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
     steps:
       - uses: actions/checkout@v4
@@ -565,18 +536,21 @@ jobs:
           ref: jules
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
       - name: Wait for implementer labels
         id: wait
-        env:
-          EXPECTED_COUNT: {{ gha_expr("needs.run-implementers.outputs.expected_count") }}
-          RUN_STARTED_AT: {{ gha_expr("needs.run-implementers.outputs.run_started_at") }}
-          BASE_BRANCH: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
-          CONTRACTS_PATH: .jules/roles/implementers/contracts.yml
-          WAIT_MINUTES: {{ gha_expr("env.WAIT_MINUTES") }}
-          MOCK_MODE: {{ gha_expr("env.MOCK_MODE") }}
-          WAIT_MODE: label
-          MOCK_PR_NUMBERS_JSON: {{ gha_expr("needs.run-implementers.outputs.mock_pr_numbers_json") }}
-        run: bash .github/scripts/jules-wait-for-prs.sh
+        run: |
+          jlo workflow wait prs \
+            --layer implementers \
+            --base-branch '{{ gha_raw("env.TARGET_BRANCH") }}' \
+            --expected-count {{ gha_raw("fromJSON(needs.run-implementers.outputs.json).expected_count") }} \
+            --run-started-at '{{ gha_raw("fromJSON(needs.run-implementers.outputs.json).run_started_at") }}' \
+            --wait-minutes {{ gha_raw("env.WAIT_MINUTES") }} \
+            --mode label \
+            ${{ gha_raw("fromJSON(needs.run-implementers.outputs.json).mock && format('--mock --mock-pr-numbers-json ''{0}''', toJSON(fromJSON(needs.run-implementers.outputs.json).mock_pr_numbers)) || ''") }}
 
   # ============================================================
   # Phase 15: Cleanup mock artifacts
@@ -603,52 +577,21 @@ jobs:
     timeout-minutes: 10
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      REPO: {{ gha_expr("github.repository") }}
-      MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.run_id)") }}
+      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
+      JULES_MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.run_id)") }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: jules
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
       - name: Configure Git
         uses: ./.github/actions/configure-git
-      - name: Aggregate mock outputs
-        id: aggregate
-        run: |
-          normalize() {
-            local value="$1"
-            if [ -z "$value" ] || [ "$value" = "null" ]; then
-              echo "[]"
-            else
-              echo "$value"
-            fi
-          }
 
-          pr_payloads=(
-            "$(normalize "${{ gha_raw("needs.run-narrator.outputs.mock_pr_numbers_json") }}")"
-            "$(normalize "${{ gha_raw("needs.run-observers.outputs.mock_pr_numbers_json") }}")"
-            "$(normalize "${{ gha_raw("needs.run-deciders.outputs.mock_pr_numbers_json") }}")"
-            "$(normalize "${{ gha_raw("needs.run-planners.outputs.mock_pr_numbers_json") }}")"
-            "$(normalize "${{ gha_raw("needs.run-implementers.outputs.mock_pr_numbers_json") }}")"
-          )
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
 
-          branch_payloads=(
-            "$(normalize "${{ gha_raw("needs.run-narrator.outputs.mock_branches_json") }}")"
-            "$(normalize "${{ gha_raw("needs.run-observers.outputs.mock_branches_json") }}")"
-            "$(normalize "${{ gha_raw("needs.run-deciders.outputs.mock_branches_json") }}")"
-            "$(normalize "${{ gha_raw("needs.run-planners.outputs.mock_branches_json") }}")"
-            "$(normalize "${{ gha_raw("needs.run-implementers.outputs.mock_branches_json") }}")"
-          )
-
-          pr_numbers_json=$(printf '%s\n' "${pr_payloads[@]}" | jq -s 'map(select(type=="array")) | add | unique')
-          branches_json=$(printf '%s\n' "${branch_payloads[@]}" | jq -s 'map(select(type=="array")) | add | unique')
-
-          echo "pr_numbers_json=$pr_numbers_json" >> "$GITHUB_OUTPUT"
-          echo "branches_json=$branches_json" >> "$GITHUB_OUTPUT"
       - name: Cleanup mock artifacts
-        env:
-          MOCK_PR_NUMBERS_JSON: {{ gha_expr("steps.aggregate.outputs.pr_numbers_json") }}
-          MOCK_BRANCHES_JSON: {{ gha_expr("steps.aggregate.outputs.branches_json") }}
-        run: bash .github/scripts/jules-mock-cleanup.sh
-
+        run: |
+          jlo workflow cleanup mock --mock-tag "$JULES_MOCK_TAG"

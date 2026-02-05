@@ -3,7 +3,6 @@ pub mod doctor;
 pub mod init_scaffold;
 pub mod init_workflows;
 pub mod run;
-pub mod schedule;
 pub mod setup;
 pub mod template;
 pub mod update;

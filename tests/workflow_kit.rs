@@ -17,7 +17,11 @@ fn init_workflows_installs_remote_kit() {
     let root = ctx.work_dir();
     assert!(root.join(".github/workflows/jules-workflows.yml").exists());
     assert!(root.join(".github/actions/install-jlo/action.yml").exists());
-    assert!(root.join(".github/scripts/jules-generate-workstream-matrix.sh").exists());
+    // Scripts directory no longer ships with workflow kit
+    assert!(
+        !root.join(".github/scripts").exists(),
+        "Workflow kit should not include .github/scripts"
+    );
     assert!(!root.join(".jules").exists());
 
     let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
@@ -28,6 +32,11 @@ fn init_workflows_installs_remote_kit() {
     assert!(
         workflow.contains("Run implementers sequentially"),
         "Should run implementers sequentially"
+    );
+    // Verify no script references
+    assert!(
+        !workflow.contains(".github/scripts/"),
+        "Workflow should not reference .github/scripts/"
     );
 }
 
@@ -229,31 +238,43 @@ fn init_workflows_includes_mock_support() {
 }
 
 #[test]
-fn init_workflows_scripts_support_jlo_run_flags() {
+fn init_workflows_no_scripts_references() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
 
     let root = ctx.work_dir();
-    let scripts_dir = root.join(".github/scripts");
 
-    let expected_scripts = [
-        "jules-run-narrator.sh",
-        "jules-run-observers-sequential.sh",
-        "jules-run-deciders-sequential.sh",
-        "jules-run-planners-sequential.sh",
-        "jules-run-implementers-sequential.sh",
-    ];
+    // Verify workflow templates do not reference .github/scripts
+    let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
+    assert!(
+        !workflow.contains(".github/scripts/"),
+        "jules-workflows.yml should not reference .github/scripts/"
+    );
 
-    for script_name in expected_scripts {
-        let script_path = scripts_dir.join(script_name);
-        assert!(script_path.exists(), "Script {} should exist", script_name);
+    // Verify all workflow files in the kit
+    for entry in fs::read_dir(root.join(".github/workflows")).unwrap() {
+        let entry = entry.unwrap();
+        if entry.path().extension().is_some_and(|ext| ext == "yml") {
+            let content = fs::read_to_string(entry.path()).unwrap();
+            assert!(
+                !content.contains(".github/scripts/"),
+                "Workflow {} should not reference .github/scripts/",
+                entry.path().display()
+            );
+        }
+    }
 
-        let script_content = fs::read_to_string(&script_path).unwrap();
-        assert!(
-            script_content.contains("JLO_RUN_FLAGS"),
-            "Script {} should reference JLO_RUN_FLAGS",
-            script_name
-        );
+    // Verify composite actions do not reference .github/scripts
+    for action_dir in ["install-jlo", "configure-git", "run-implementer"] {
+        let action_path = root.join(format!(".github/actions/{}/action.yml", action_dir));
+        if action_path.exists() {
+            let content = fs::read_to_string(&action_path).unwrap();
+            assert!(
+                !content.contains(".github/scripts/"),
+                "Action {} should not reference .github/scripts/",
+                action_dir
+            );
+        }
     }
 }

@@ -18,7 +18,6 @@ Jules workflows are installed via `jlo init workflows` and follow these patterns
 
 - `.github/workflows/jules-*.yml`
 - `.github/actions/` (Jules composite actions)
-- `.github/scripts/jules-*.sh`
 
 Non-Jules CI workflows remain in `.github/workflows/` alongside the kit.
 
@@ -28,9 +27,16 @@ The workflow kit is generated from `src/assets/workflows/.github/`. Edit that so
 
 Jules composite actions live under `.github/actions/` and are installed with the workflow kit.
 
-## Scripts
+## Orchestration Commands
 
-Jules automation scripts live under `.github/scripts/` and are installed with the workflow kit.
+Workflow orchestration uses `jlo workflow` commands:
+
+- `jlo workflow matrix workstreams` → Generate workstream matrix
+- `jlo workflow matrix roles --layer <layer>` → Generate role matrix
+- `jlo workflow matrix pending-workstreams` → Generate decider matrix
+- `jlo workflow matrix routing` → Generate planner/implementer routing
+- `jlo workflow run <layer>` → Execute layer with JSON output
+- `jlo workflow wait prs` → Wait for PRs with configurable mode
 
 ## Workflow Execution Flow
 

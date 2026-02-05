@@ -7,9 +7,16 @@ mod roles;
 mod routing;
 mod workstreams;
 
-pub use pending_workstreams::{MatrixPendingWorkstreamsOptions, MatrixPendingWorkstreamsOutput};
-pub use roles::{MatrixRolesOptions, MatrixRolesOutput};
-pub use routing::{MatrixRoutingOptions, MatrixRoutingOutput};
+pub use pending_workstreams::{
+    MatrixPendingWorkstreamsOptions, MatrixPendingWorkstreamsOutput,
+    WorkstreamsMatrix as PendingWorkstreamsInput,
+};
+pub use roles::{
+    MatrixRolesOptions, MatrixRolesOutput, WorkstreamsMatrix as RolesWorkstreamsInput,
+};
+pub use routing::{
+    MatrixRoutingOptions, MatrixRoutingOutput, WorkstreamsMatrix as RoutingWorkstreamsInput,
+};
 pub use workstreams::{MatrixWorkstreamsOptions, MatrixWorkstreamsOutput};
 
 use crate::domain::AppError;

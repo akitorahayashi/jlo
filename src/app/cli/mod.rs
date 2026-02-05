@@ -60,11 +60,6 @@ enum Commands {
         #[command(subcommand)]
         layer: RunLayer,
     },
-    /// Export scheduling matrices
-    Schedule {
-        #[command(subcommand)]
-        command: ScheduleCommands,
-    },
     /// Workflow orchestration primitives for GitHub Actions
     #[clap(visible_alias = "wf")]
     Workflow {
@@ -223,31 +218,146 @@ enum RunLayer {
 }
 
 #[derive(Subcommand)]
-enum ScheduleCommands {
-    /// Export schedule data for automation
-    Export {
-        /// Scope: workstreams or roles
-        #[arg(long)]
-        scope: String,
-        /// Layer (required for roles scope)
-        #[arg(long)]
-        layer: Option<String>,
-        /// Workstream (required for roles scope)
-        #[arg(long)]
-        workstream: Option<String>,
-        /// Output format (default: github-matrix)
-        #[arg(long, default_value = "github-matrix")]
-        format: String,
-    },
-}
-
-#[derive(Subcommand)]
 enum WorkflowCommands {
     /// Validation gate for .jules/ workspace
     Doctor {
         /// Limit checks to a specific workstream
         #[arg(long)]
         workstream: Option<String>,
+    },
+    /// Export matrices for GitHub Actions
+    Matrix {
+        #[command(subcommand)]
+        command: WorkflowMatrixCommands,
+    },
+    /// Run a layer sequentially and return wait-gating metadata
+    Run {
+        /// Target layer
+        #[arg(long)]
+        layer: String,
+        /// Matrix JSON input (from matrix commands)
+        #[arg(long)]
+        matrix_json: Option<String>,
+        /// Target branch for implementers
+        #[arg(long)]
+        target_branch: Option<String>,
+        /// Run in mock mode (requires JULES_MOCK_TAG)
+        #[arg(long)]
+        mock: bool,
+    },
+    /// Wait for PR readiness conditions
+    Wait {
+        #[command(subcommand)]
+        command: WorkflowWaitCommands,
+    },
+    /// Cleanup operations
+    Cleanup {
+        #[command(subcommand)]
+        command: WorkflowCleanupCommands,
+    },
+    /// PR operations
+    Pr {
+        #[command(subcommand)]
+        command: WorkflowPrCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum WorkflowWaitCommands {
+    /// Wait for PRs to be ready
+    Prs {
+        /// Target layer (used to resolve branch_prefix)
+        #[arg(long)]
+        layer: String,
+        /// Base branch for PR discovery
+        #[arg(long)]
+        base_branch: String,
+        /// Expected number of PRs
+        #[arg(long)]
+        expected_count: usize,
+        /// Run started timestamp (RFC3339 UTC)
+        #[arg(long)]
+        run_started_at: String,
+        /// Maximum wait time in minutes
+        #[arg(long)]
+        wait_minutes: u32,
+        /// Wait mode: merge or label
+        #[arg(long)]
+        mode: String,
+        /// Mock mode (overrides timeout to 30 seconds)
+        #[arg(long)]
+        mock: bool,
+        /// Mock PR numbers JSON array (bypasses PR discovery)
+        #[arg(long)]
+        mock_pr_numbers_json: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
+enum WorkflowCleanupCommands {
+    /// Clean up mock artifacts
+    Mock {
+        /// Mock tag to identify artifacts
+        #[arg(long)]
+        mock_tag: String,
+        /// PR numbers JSON array to close
+        #[arg(long)]
+        pr_numbers_json: Option<String>,
+        /// Branches JSON array to delete
+        #[arg(long)]
+        branches_json: Option<String>,
+    },
+    /// Clean up a processed issue and its source events
+    ProcessedIssue {
+        /// Path to the issue file
+        #[arg(long)]
+        issue_file: String,
+        /// Commit changes (default: true)
+        #[arg(long, default_value = "true")]
+        commit: bool,
+        /// Push changes (default: true)
+        #[arg(long, default_value = "true")]
+        push: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum WorkflowPrCommands {
+    /// Apply category label to implementer PR from branch name
+    LabelFromBranch {
+        /// Branch name (defaults to GITHUB_REF_NAME)
+        #[arg(long)]
+        branch: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
+enum WorkflowMatrixCommands {
+    /// Export enabled workstreams as a GitHub Actions matrix
+    Workstreams,
+    /// Export enabled roles for a multi-role layer as a GitHub Actions matrix
+    Roles {
+        /// Target layer (observers or deciders)
+        #[arg(long)]
+        layer: String,
+        /// Workstreams JSON from `matrix workstreams` output (the `matrix` field)
+        #[arg(long)]
+        workstreams_json: String,
+    },
+    /// Export workstreams with pending events as a GitHub Actions matrix
+    PendingWorkstreams {
+        /// Workstreams JSON from `matrix workstreams` output (the `matrix` field)
+        #[arg(long)]
+        workstreams_json: String,
+    },
+    /// Export planner/implementer issue matrices from workstream inspection
+    Routing {
+        /// Workstreams JSON from `matrix workstreams` output (the `matrix` field)
+        #[arg(long)]
+        workstreams_json: String,
+        /// Routing labels as CSV (e.g., "bugs,feats,refacts,tests,docs")
+        #[arg(long)]
+        routing_labels: String,
     },
 }
 
@@ -281,7 +391,6 @@ pub fn run() {
             SetupCommands::List { detail } => run_setup_list(detail).map(|_| 0),
         },
         Commands::Run { layer } => run_agents(layer).map(|_| 0),
-        Commands::Schedule { command } => run_schedule(command).map(|_| 0),
         Commands::Workflow { command } => run_workflow(command).map(|_| 0),
         Commands::Workstreams { command } => run_workstreams(command).map(|_| 0),
         Commands::Doctor { fix, strict, workstream } => run_doctor(fix, strict, workstream),
@@ -494,28 +603,6 @@ fn run_deinit() -> Result<(), AppError> {
     Ok(())
 }
 
-fn run_schedule(command: ScheduleCommands) -> Result<(), AppError> {
-    match command {
-        ScheduleCommands::Export { scope, layer, workstream, format } => {
-            let scope = parse_schedule_scope(&scope)?;
-            let format = parse_schedule_format(&format)?;
-            let layer = match layer {
-                Some(value) => Some(parse_layer(&value)?),
-                None => None,
-            };
-
-            let output = crate::app::api::schedule_export(crate::ScheduleExportOptions {
-                scope,
-                layer,
-                workstream,
-                format,
-            })?;
-
-            print_json(&output)
-        }
-    }
-}
-
 fn run_workstreams(command: WorkstreamCommands) -> Result<(), AppError> {
     match command {
         WorkstreamCommands::Inspect { workstream, format } => {
@@ -535,21 +622,6 @@ fn run_workstreams(command: WorkstreamCommands) -> Result<(), AppError> {
             }
             Ok(())
         }
-    }
-}
-
-fn parse_schedule_scope(scope: &str) -> Result<crate::ScheduleExportScope, AppError> {
-    match scope {
-        "workstreams" => Ok(crate::ScheduleExportScope::Workstreams),
-        "roles" => Ok(crate::ScheduleExportScope::Roles),
-        _ => Err(AppError::Validation("Invalid schedule scope".into())),
-    }
-}
-
-fn parse_schedule_format(format: &str) -> Result<crate::ScheduleExportFormat, AppError> {
-    match format {
-        "github-matrix" => Ok(crate::ScheduleExportFormat::GithubMatrix),
-        _ => Err(AppError::Validation("Invalid schedule format".into())),
     }
 }
 
@@ -594,6 +666,154 @@ fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
         WorkflowCommands::Doctor { workstream } => {
             let options = workflow::WorkflowDoctorOptions { workstream };
             let output = workflow::doctor(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowCommands::Matrix { command } => run_workflow_matrix(command),
+        WorkflowCommands::Run { layer, matrix_json, target_branch, mock } => {
+            let layer = parse_layer(&layer)?;
+            let matrix_json = match matrix_json {
+                Some(json_str) => {
+                    let parsed: workflow::MatrixInput = serde_json::from_str(&json_str)
+                        .map_err(|e| AppError::Validation(format!("Invalid matrix-json: {}", e)))?;
+                    Some(parsed)
+                }
+                None => None,
+            };
+            let options = workflow::WorkflowRunOptions { layer, matrix_json, target_branch, mock };
+            let output = workflow::run(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowCommands::Wait { command } => run_workflow_wait(command),
+        WorkflowCommands::Cleanup { command } => run_workflow_cleanup(command),
+        WorkflowCommands::Pr { command } => run_workflow_pr(command),
+    }
+}
+
+fn run_workflow_wait(command: WorkflowWaitCommands) -> Result<(), AppError> {
+    use crate::app::commands::workflow;
+
+    match command {
+        WorkflowWaitCommands::Prs {
+            layer,
+            base_branch,
+            expected_count,
+            run_started_at,
+            wait_minutes,
+            mode,
+            mock,
+            mock_pr_numbers_json,
+        } => {
+            let layer = parse_layer(&layer)?;
+            let mode = workflow::WaitMode::from_str(&mode)?;
+            let mock_pr_numbers_json = match mock_pr_numbers_json {
+                Some(json_str) => {
+                    let parsed: Vec<u64> = serde_json::from_str(&json_str).map_err(|e| {
+                        AppError::Validation(format!("Invalid mock-pr-numbers-json: {}", e))
+                    })?;
+                    Some(parsed)
+                }
+                None => None,
+            };
+            let options = workflow::WorkflowWaitPrsOptions {
+                layer,
+                base_branch,
+                expected_count,
+                run_started_at,
+                wait_minutes,
+                mode,
+                mock,
+                mock_pr_numbers_json,
+            };
+            let output = workflow::wait_prs(options)?;
+            workflow::write_workflow_output(&output)
+        }
+    }
+}
+
+fn run_workflow_cleanup(command: WorkflowCleanupCommands) -> Result<(), AppError> {
+    use crate::app::commands::workflow;
+
+    match command {
+        WorkflowCleanupCommands::Mock { mock_tag, pr_numbers_json, branches_json } => {
+            let pr_numbers_json = match pr_numbers_json {
+                Some(json_str) => {
+                    let parsed: Vec<u64> = serde_json::from_str(&json_str).map_err(|e| {
+                        AppError::Validation(format!("Invalid pr-numbers-json: {}", e))
+                    })?;
+                    Some(parsed)
+                }
+                None => None,
+            };
+            let branches_json = match branches_json {
+                Some(json_str) => {
+                    let parsed: Vec<String> = serde_json::from_str(&json_str).map_err(|e| {
+                        AppError::Validation(format!("Invalid branches-json: {}", e))
+                    })?;
+                    Some(parsed)
+                }
+                None => None,
+            };
+            let options =
+                workflow::WorkflowCleanupMockOptions { mock_tag, pr_numbers_json, branches_json };
+            let output = workflow::cleanup_mock(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowCleanupCommands::ProcessedIssue { issue_file, commit, push } => {
+            let options =
+                workflow::WorkflowCleanupProcessedIssueOptions { issue_file, commit, push };
+            let output = workflow::cleanup_processed_issue(options)?;
+            workflow::write_workflow_output(&output)
+        }
+    }
+}
+
+fn run_workflow_pr(command: WorkflowPrCommands) -> Result<(), AppError> {
+    use crate::app::commands::workflow;
+
+    match command {
+        WorkflowPrCommands::LabelFromBranch { branch } => {
+            let options = workflow::WorkflowPrLabelOptions { branch };
+            let output = workflow::pr_label_from_branch(options)?;
+            workflow::write_workflow_output(&output)
+        }
+    }
+}
+
+fn run_workflow_matrix(command: WorkflowMatrixCommands) -> Result<(), AppError> {
+    use crate::app::commands::workflow::{self, matrix};
+
+    match command {
+        WorkflowMatrixCommands::Workstreams => {
+            let options = matrix::MatrixWorkstreamsOptions {};
+            let output = matrix::workstreams(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowMatrixCommands::Roles { layer, workstreams_json } => {
+            let layer = parse_layer(&layer)?;
+            let workstreams_json: matrix::RolesWorkstreamsInput =
+                serde_json::from_str(&workstreams_json).map_err(|e| {
+                    AppError::Validation(format!("Invalid workstreams-json: {}", e))
+                })?;
+            let options = matrix::MatrixRolesOptions { layer, workstreams_json };
+            let output = matrix::roles(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowMatrixCommands::PendingWorkstreams { workstreams_json } => {
+            let workstreams_json: matrix::PendingWorkstreamsInput =
+                serde_json::from_str(&workstreams_json).map_err(|e| {
+                    AppError::Validation(format!("Invalid workstreams-json: {}", e))
+                })?;
+            let options = matrix::MatrixPendingWorkstreamsOptions { workstreams_json };
+            let output = matrix::pending_workstreams(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowMatrixCommands::Routing { workstreams_json, routing_labels } => {
+            let workstreams_json: matrix::RoutingWorkstreamsInput =
+                serde_json::from_str(&workstreams_json).map_err(|e| {
+                    AppError::Validation(format!("Invalid workstreams-json: {}", e))
+                })?;
+            let options = matrix::MatrixRoutingOptions { workstreams_json, routing_labels };
+            let output = matrix::routing(options)?;
             workflow::write_workflow_output(&output)
         }
     }
