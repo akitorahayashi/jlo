@@ -1,0 +1,7 @@
+# jlo setup configuration
+# List the tools you want to install
+
+tools:
+  # - just
+  # - swift
+  # - uv
