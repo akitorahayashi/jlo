@@ -1,12 +1,17 @@
 //! Workflow run command implementation.
 //!
-//! Runs a layer and returns wait-gating metadata. Waiting is time-based, not PR-count based.
+//! Executes a layer via the existing run infrastructure and returns wait-gating metadata.
+//! This command provides orchestration metadata for GitHub Actions workflows.
 
 use chrono::Utc;
 use serde::Serialize;
+use std::path::PathBuf;
 
+use crate::app::commands::run::{self, RunOptions};
 use crate::domain::{AppError, Layer};
 use crate::ports::WorkspaceStore;
+use crate::services::adapters::git_command::GitCommandAdapter;
+use crate::services::adapters::github_command::GitHubCommandAdapter;
 use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 /// Options for workflow run command.
@@ -54,40 +59,246 @@ pub fn execute(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppErro
 
     let run_started_at = Utc::now().to_rfc3339();
 
-    if options.mock {
-        // Mock mode requires JULES_MOCK_TAG
-        let mock_tag = std::env::var("JULES_MOCK_TAG").map_err(|_| {
+    // Mock mode configuration
+    let mock_tag = if options.mock {
+        let tag = std::env::var("JULES_MOCK_TAG").map_err(|_| {
             AppError::Validation(
                 "Mock mode requires JULES_MOCK_TAG environment variable".to_string(),
             )
         })?;
 
-        if !mock_tag.contains("mock") {
+        if !tag.contains("mock") {
             return Err(AppError::Validation(
                 "JULES_MOCK_TAG must contain 'mock' substring".to_string(),
             ));
         }
+        Some(tag)
+    } else {
+        None
+    };
 
-        // In mock mode, we don't actually run anything - that's done by `jlo run --mock`
-        // This command just returns the metadata needed for wait commands
-        return Ok(WorkflowRunOutput {
-            schema_version: 1,
-            run_started_at,
-            mock_tag: Some(mock_tag),
-            mock_pr_numbers: Some(vec![]),
-            mock_branches: Some(vec![]),
-        });
-    }
+    // Execute layer runs using existing run infrastructure
+    let run_results = execute_layer(&options, &workspace)?;
 
-    // Non-mock mode: real execution would happen via jlo run
-    // This command returns metadata for orchestration
     Ok(WorkflowRunOutput {
         schema_version: 1,
         run_started_at,
-        mock_tag: None,
-        mock_pr_numbers: None,
-        mock_branches: None,
+        mock_tag,
+        mock_pr_numbers: run_results.mock_pr_numbers,
+        mock_branches: run_results.mock_branches,
     })
+}
+
+/// Results from running a layer.
+struct RunResults {
+    mock_pr_numbers: Option<Vec<u64>>,
+    mock_branches: Option<Vec<String>>,
+}
+
+/// Execute runs for a layer using existing run infrastructure.
+fn execute_layer(
+    options: &WorkflowRunOptions,
+    workspace: &FilesystemWorkspaceStore,
+) -> Result<RunResults, AppError> {
+    let jules_path = workspace.jules_path();
+    // Git root is parent of .jules directory
+    let git_root = jules_path.parent().unwrap_or(&jules_path).to_path_buf();
+    let git = GitCommandAdapter::new(git_root);
+    let github = GitHubCommandAdapter::new();
+
+    match options.layer {
+        Layer::Narrators => execute_narrator(options, &jules_path, &git, &github, workspace),
+        Layer::Observers => execute_observers(options, &jules_path, &git, &github, workspace),
+        Layer::Deciders => execute_deciders(options, &jules_path, &git, &github, workspace),
+        Layer::Planners | Layer::Implementers => {
+            execute_issue_layer(options, &jules_path, &git, &github, workspace)
+        }
+    }
+}
+
+/// Execute narrator.
+fn execute_narrator<G, H, W>(
+    options: &WorkflowRunOptions,
+    jules_path: &std::path::Path,
+    git: &G,
+    github: &H,
+    workspace: &W,
+) -> Result<RunResults, AppError>
+where
+    G: crate::ports::GitPort,
+    H: crate::ports::GitHubPort,
+    W: WorkspaceStore,
+{
+    let run_options = RunOptions {
+        layer: Layer::Narrators,
+        roles: None,
+        workstream: None,
+        scheduled: false,
+        prompt_preview: false,
+        branch: None,
+        issue: None,
+        mock: options.mock,
+    };
+
+    eprintln!("Executing: narrator{}", if options.mock { " (mock)" } else { "" });
+    let _ = run::execute(jules_path, run_options, git, github, workspace)?;
+
+    // TODO: Extract mock PR numbers and branches from result when available
+    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+}
+
+/// Extract matrix include array from JSON.
+fn extract_matrix_include(matrix: &serde_json::Value) -> Result<&Vec<serde_json::Value>, AppError> {
+    matrix
+        .get("include")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| AppError::Validation("Matrix JSON must have 'include' array".to_string()))
+}
+
+/// Execute observers (one run per workstream+role from matrix).
+fn execute_observers<G, H, W>(
+    options: &WorkflowRunOptions,
+    jules_path: &std::path::Path,
+    git: &G,
+    github: &H,
+    workspace: &W,
+) -> Result<RunResults, AppError>
+where
+    G: crate::ports::GitPort,
+    H: crate::ports::GitHubPort,
+    W: WorkspaceStore,
+{
+    let matrix = options.matrix_json.as_ref().ok_or_else(|| {
+        AppError::MissingArgument("Matrix JSON is required for observers".to_string())
+    })?;
+    let include = extract_matrix_include(matrix)?;
+    let mock_suffix = if options.mock { " (mock)" } else { "" };
+
+    for entry in include {
+        let workstream = entry.get("workstream").and_then(|v| v.as_str()).ok_or_else(|| {
+            AppError::Validation("Observer matrix entry missing 'workstream'".to_string())
+        })?;
+
+        let role = entry.get("role").and_then(|v| v.as_str()).ok_or_else(|| {
+            AppError::Validation("Observer matrix entry missing 'role'".to_string())
+        })?;
+
+        let run_options = RunOptions {
+            layer: Layer::Observers,
+            roles: Some(vec![role.to_string()]),
+            workstream: Some(workstream.to_string()),
+            scheduled: false,
+            prompt_preview: false,
+            branch: None,
+            issue: None,
+            mock: options.mock,
+        };
+
+        eprintln!(
+            "Executing: observers --workstream {} --role {}{}",
+            workstream, role, mock_suffix
+        );
+        run::execute(jules_path, run_options, git, github, workspace)?;
+    }
+
+    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+}
+
+/// Execute deciders (one run per unique workstream from matrix).
+fn execute_deciders<G, H, W>(
+    options: &WorkflowRunOptions,
+    jules_path: &std::path::Path,
+    git: &G,
+    github: &H,
+    workspace: &W,
+) -> Result<RunResults, AppError>
+where
+    G: crate::ports::GitPort,
+    H: crate::ports::GitHubPort,
+    W: WorkspaceStore,
+{
+    let matrix = options.matrix_json.as_ref().ok_or_else(|| {
+        AppError::MissingArgument("Matrix JSON is required for deciders".to_string())
+    })?;
+    let include = extract_matrix_include(matrix)?;
+
+    // Deduplicate by workstream
+    let mut seen_workstreams = std::collections::HashSet::new();
+    let mock_suffix = if options.mock { " (mock)" } else { "" };
+
+    for entry in include {
+        let workstream = entry.get("workstream").and_then(|v| v.as_str()).ok_or_else(|| {
+            AppError::Validation("Decider matrix entry missing 'workstream'".to_string())
+        })?;
+
+        if !seen_workstreams.insert(workstream.to_string()) {
+            continue; // Skip duplicate workstreams
+        }
+
+        let run_options = RunOptions {
+            layer: Layer::Deciders,
+            roles: None, // All decider roles for this workstream
+            workstream: Some(workstream.to_string()),
+            scheduled: false,
+            prompt_preview: false,
+            branch: None,
+            issue: None,
+            mock: options.mock,
+        };
+
+        eprintln!("Executing: deciders --workstream {}{}", workstream, mock_suffix);
+        run::execute(jules_path, run_options, git, github, workspace)?;
+    }
+
+    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+}
+
+/// Execute issue-based layers (planners, implementers).
+fn execute_issue_layer<G, H, W>(
+    options: &WorkflowRunOptions,
+    jules_path: &std::path::Path,
+    git: &G,
+    github: &H,
+    workspace: &W,
+) -> Result<RunResults, AppError>
+where
+    G: crate::ports::GitPort,
+    H: crate::ports::GitHubPort,
+    W: WorkspaceStore,
+{
+    let matrix = options.matrix_json.as_ref().ok_or_else(|| {
+        AppError::MissingArgument(format!(
+            "Matrix JSON is required for {}",
+            options.layer.dir_name()
+        ))
+    })?;
+    let include = extract_matrix_include(matrix)?;
+    let mock_suffix = if options.mock { " (mock)" } else { "" };
+
+    for entry in include {
+        let issue = entry.get("issue").and_then(|v| v.as_str()).ok_or_else(|| {
+            AppError::Validation(format!(
+                "{} matrix entry missing 'issue'",
+                options.layer.dir_name()
+            ))
+        })?;
+
+        let run_options = RunOptions {
+            layer: options.layer,
+            roles: None,
+            workstream: None,
+            scheduled: false,
+            prompt_preview: false,
+            branch: None,
+            issue: Some(PathBuf::from(issue)),
+            mock: options.mock,
+        };
+
+        eprintln!("Executing: {} {}{}", options.layer.dir_name(), issue, mock_suffix);
+        run::execute(jules_path, run_options, git, github, workspace)?;
+    }
+
+    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
 }
 
 /// Validate matrix is provided for layers that need it.
