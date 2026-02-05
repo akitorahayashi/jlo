@@ -85,13 +85,12 @@ jobs:
           
           test -f .jules/config.toml
           test -f .jules/JULES.md
-          test -f .jules/prompt.yml
           test -f .jules/github-labels.json
           
           echo "✓ Scaffold structure validated"
 
       - name: Initialize workflows
-        run: jlo init workflows --remote origin --self-hosted
+        run: jlo init workflows --remote
 
       - name: Validate workflow structure
         run: |
@@ -186,7 +185,7 @@ jobs:
           git checkout -b jules-test-template-${{ github.run_id }}
           
           jlo init scaffold
-          jlo init workflows --remote origin --self-hosted
+          jlo init workflows --remote
           
           # Validate workflow YAML is valid
           python3 -c "import yaml; yaml.safe_load(open('.github/workflows/jules-workflows.yml'))"
