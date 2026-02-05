@@ -3,19 +3,21 @@ schema_version: 2
 observer: "struc1"
 workstream: "generic"
 
-updated_at: "2026-02-04T09:00:00Z"
+updated_at: "2026-02-05T06:44:23Z"
 
 goals:
   - "Decouple Application Commands from System Shell (Git/Gh)"
-  - "Refactor src/app/api.rs to be a pure Library Facade (no println!)"
-  - "Rename src/services/domain to src/application"
+  - "Refactor Command Implementations to return Reports (remove println!)"
   - "Enforce unidirectional dependency flow from CLI to Application"
+  - "Enforce Dependency Rule: App must not import Services/Assets directly"
 
 rules: []
 
 ignore: []
 
 log:
+  - at: "2026-02-05T06:44:23Z"
+    summary: "Reported application commands printing to stdout and direct dependency on infrastructure assets."
   - at: "2026-02-04T09:00:00Z"
     summary: "Identified coupling to shell commands in application layer and presentation logic in API facade."
   - at: "2026-02-04T08:07:30Z"
