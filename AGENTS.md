@@ -31,7 +31,7 @@ contracts:
 **Rule**: Never duplicate content across levels. Each level refines the constraints of the previous one.
 
 ### 3. Workflow-Driven Execution
-Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules VM; workflows control scheduling, branching, and merge policies.
+Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules API; workflows control scheduling, branching, and merge policies.
 
 ## Context-Specific Documentation
 
