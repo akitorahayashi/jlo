@@ -1,6 +1,21 @@
 # .jules/ Scaffold Design
 
-See [root AGENTS.md](../../../../AGENTS.md) for design principles.
+## Critical Design Principles
+
+### 1. Prompt Hierarchy (No Duplication)
+Prompts are constructed as a flat list of contracts in `prompt.yml`.
+
+```yaml
+contracts:
+  - .jules/JULES.md (global)
+  - .jules/roles/<layer>/contracts.yml (layer)
+  - .jules/roles/<layer>/<role>/role.yml (role-specific)
+```
+
+**Rule**: Never duplicate content across levels. Each level refines the constraints of the previous one.
+
+### 2. Workflow-Driven Execution
+Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules VM; workflows control scheduling, branching, and merge policies.
 
 ## Directory Structure
 
@@ -60,7 +75,7 @@ See [root AGENTS.md](../../../../AGENTS.md) for design principles.
 
 ## Prompt Hierarchy
 
-See [root AGENTS.md](../../../../AGENTS.md#2-prompt-hierarchy-no-duplication) for the contract structure.
+See "Critical Design Principles" above for the contract structure.
 
 | File | Scope | Content |
 |------|-------|---------|
@@ -113,9 +128,45 @@ narrator -> observers -> deciders -> [planners] -> implementers
 
 ## Setup Compiler
 
-See [src/AGENTS.md](../../../src/AGENTS.md#setup-compiler) for implementation details.
+The setup compiler generates dependency-aware installation scripts for development tools.
 
-The setup directory contains:
+### Component Catalog Structure
+
+```
+src/assets/catalog/<component>/
+  meta.toml      # name, summary, dependencies, env specs
+  install.sh     # Installation script
+```
+
+### meta.toml Schema
+
+```toml
+name = "component-name"       # Optional; defaults to directory name
+summary = "Short description"
+dependencies = ["other-comp"] # Optional
+
+[[env]]
+name = "ENV_VAR"
+description = "What this variable does"
+default = "optional-default"  # Optional
+```
+
+### Services
+
+| Service | Responsibility |
+|---------|----------------|
+| CatalogService | Loads components from embedded assets |
+| ResolverService | Topological sort with cycle detection |
+| GeneratorService | Produces install.sh and merges env.toml |
+
+### Environment Contract
+
+Catalog installers assume the Jules environment baseline (Python 3.12+, Node.js 22+, common dev tools). The CI verify-installers workflow provisions that baseline in minimal containers.
+
+### Setup Directory Contents
+
+The `.jules/setup/` directory contains:
+
 - `tools.yml`: User-selected components
 - `env.toml`: Generated environment variables (gitignored)
 - `install.sh`: Generated installation script (dependency-sorted)
