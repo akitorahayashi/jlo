@@ -238,9 +238,6 @@ changes: []
         &format!("Mock narrator run for workflow validation.\n\nScope: `{}`", config.scope),
     )?;
 
-    // Enable auto-merge for .jules/-only PRs
-    github.enable_auto_merge(pr.number)?;
-
     println!("Mock narrator: created PR #{} ({})", pr.number, pr.url);
 
     Ok(MockOutput {
@@ -329,9 +326,6 @@ mock: true
             config.scope, workstream
         ),
     )?;
-
-    // Enable auto-merge
-    github.enable_auto_merge(pr.number)?;
 
     println!("Mock observers: created PR #{} ({})", pr.number, pr.url);
 
@@ -484,9 +478,6 @@ mock: true
             config.scope, workstream, planner_issue_id, impl_issue_id),
     )?;
 
-    // Enable auto-merge
-    github.enable_auto_merge(pr.number)?;
-
     println!("Mock deciders: created PR #{} ({})", pr.number, pr.url);
 
     Ok(MockOutput {
@@ -574,8 +565,7 @@ analysis_details: |
         ),
     )?;
 
-    // Enable auto-merge
-    github.enable_auto_merge(pr.number)?;
+    println!("Mock planners: created PR #{} ({})", pr.number, pr.url);
 
     println!("Mock planners: created PR #{} ({})", pr.number, pr.url);
 

@@ -145,10 +145,4 @@ impl GitHubPort for GitHubCommandAdapter {
         self.run_gh(&["api", "-X", "DELETE", &endpoint])?;
         Ok(())
     }
-
-    fn enable_auto_merge(&self, pr_number: u64) -> Result<(), AppError> {
-        let pr_num_str = pr_number.to_string();
-        self.run_gh(&["pr", "merge", &pr_num_str, "--auto", "--squash"])?;
-        Ok(())
-    }
 }

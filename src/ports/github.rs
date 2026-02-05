@@ -45,7 +45,4 @@ pub trait GitHubPort {
     /// Delete a remote branch.
     #[allow(dead_code)]
     fn delete_branch(&self, branch: &str) -> Result<(), AppError>;
-
-    /// Enable auto-merge on a PR.
-    fn enable_auto_merge(&self, pr_number: u64) -> Result<(), AppError>;
 }
