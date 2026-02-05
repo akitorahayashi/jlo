@@ -1,0 +1,18 @@
+schema_version: 2
+id: "171e83"
+source_events:
+  - "event1"
+title: "Mock issue requiring deep analysis"
+label: "bugs"
+priority: "high"
+summary: "This is a mock issue created by jlo --mock for workflow-kit validation. Mock scope: run-21709074001"
+problem: "Mock problem description for validation"
+impact: "Mock impact description for validation"
+desired_outcome: "Mock desired outcome for validation"
+affected_areas:
+  - "workflow"
+acceptance_criteria:
+  - "Mock acceptance criterion"
+verification_commands:
+  - "echo 'mock verification'"
+requires_deep_analysis: true
