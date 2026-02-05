@@ -9,6 +9,7 @@ roles = [
   { name = "qa", enabled = true },
   { name = "cov", enabled = true },
   { name = "consistency", enabled = true },
+  { name = "devops", enabled = true },
   { name = "rustacean", enabled = true },
 ]
 
