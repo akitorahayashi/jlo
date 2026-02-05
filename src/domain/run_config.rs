@@ -1,9 +1,11 @@
 //! Run configuration domain models.
 
+use serde::Deserialize;
 use url::Url;
 
 /// Configuration for agent execution loaded from `.jules/config.toml`.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct RunConfig {
     /// Execution settings.
     pub run: RunSettings,
@@ -12,7 +14,8 @@ pub struct RunConfig {
 }
 
 /// Jules API configuration.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct JulesApiConfig {
     /// Jules API endpoint URL.
     pub api_url: Url,
@@ -53,7 +56,8 @@ fn default_retry_delay_ms() -> u64 {
 }
 
 /// Execution settings for agent runs.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct RunSettings {
     /// Default branch for agent operations (implementers work from here).
     pub default_branch: String,

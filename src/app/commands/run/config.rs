@@ -3,7 +3,6 @@
 use std::fs;
 use std::path::Path;
 
-use super::config_dto::RunConfigDto;
 use crate::domain::{AppError, RunConfig};
 
 /// Load and parse the run configuration.
@@ -29,8 +28,7 @@ pub fn parse_config_content(content: &str) -> Result<RunConfig, AppError> {
         ));
     }
 
-    let dto: RunConfigDto = toml::from_str(content)?;
-    Ok(RunConfig::from(dto))
+    Ok(toml::from_str(content)?)
 }
 
 /// Detect the repository source from git remote.

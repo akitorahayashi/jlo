@@ -1,7 +1,6 @@
 //! Run command implementation for executing Jules agents.
 
 mod config;
-mod config_dto;
 pub mod mock;
 mod multi_role;
 
