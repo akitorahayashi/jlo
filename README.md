@@ -23,7 +23,7 @@ jlo init
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jlo init [scaffold]` | `i` | Create `.jules/` workspace with setup directory |
-| `jlo init workflows (--remote | --self-hosted) [--overwrite]` | `i w` | Install workflow kit into `.github/` |
+| `jlo init workflows (--remote | --self-hosted)` | `i w` | Install workflow kit into `.github/` |
 | `jlo update [--dry-run] [--adopt-managed]` | `u` | Update workspace to current jlo version |
 | `jlo deinit` | | Remove jlo-managed branch and workflow kit files |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
@@ -153,7 +153,7 @@ Workflow kit layout:
 | `JULES_PAUSED` | Skip scheduled runs when set to `true` | (unset) |
 | `JULES_TARGET_BRANCH` | Target branch for implementer output | `main` |
 
-**Schedule Preservation**: When reinstalling with `jlo init workflows --overwrite`, the existing `on.schedule` block in `jules-workflows.yml` is preserved.
+**Schedule Preservation**: When reinstalling with `jlo init workflows`, the existing `on.schedule` block in `jules-workflows.yml` is preserved.
 
 **Branch Strategy**:
 

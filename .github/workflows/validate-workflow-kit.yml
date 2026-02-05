@@ -90,7 +90,7 @@ jobs:
           echo "✓ Scaffold structure validated"
 
       - name: Initialize workflows
-        run: jlo init workflows --remote --overwrite
+        run: jlo init workflows --remote
 
       - name: Validate workflow structure
         run: |
@@ -185,7 +185,7 @@ jobs:
           git checkout -b jules-test-template-${{ github.run_id }}
 
           jlo init scaffold
-          jlo init workflows --remote --overwrite
+          jlo init workflows --remote
 
           # Validate workflow YAML is valid
           pip3 install --quiet pyyaml

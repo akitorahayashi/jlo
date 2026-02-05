@@ -61,24 +61,7 @@ fn init_workflows_requires_runner_mode() {
 }
 
 #[test]
-fn init_workflows_fails_on_collision_without_overwrite() {
-    let ctx = TestContext::new();
-    let root = ctx.work_dir();
-
-    let workflow_path = root.join(".github/workflows/jules-workflows.yml");
-    fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
-    fs::write(&workflow_path, "collision").unwrap();
-
-    ctx.cli()
-        .args(["init", "workflows", "--remote"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("Workflow kit install aborted"))
-        .stderr(predicate::str::contains("--overwrite"));
-}
-
-#[test]
-fn init_workflows_overwrite_respects_unrelated_files() {
+fn init_workflows_respects_unrelated_files() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
 
@@ -97,7 +80,7 @@ fn init_workflows_overwrite_respects_unrelated_files() {
     fs::create_dir_all(unrelated_action.parent().unwrap()).unwrap();
     fs::write(&unrelated_action, "custom action").unwrap();
 
-    ctx.cli().args(["init", "workflows", "--remote", "--overwrite"]).assert().success();
+    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
 
     let updated_workflow = fs::read_to_string(&kit_workflow).unwrap();
     assert!(updated_workflow.contains("Jules Workflows"));
@@ -113,7 +96,7 @@ fn init_workflows_overwrite_respects_unrelated_files() {
 }
 
 #[test]
-fn init_workflows_overwrite_preserves_schedule() {
+fn init_workflows_preserves_schedule() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
 
@@ -133,7 +116,7 @@ jobs:
 "#;
     fs::write(&workflow_path, existing_workflow).unwrap();
 
-    ctx.cli().args(["init", "workflows", "--remote", "--overwrite"]).assert().success();
+    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
 
     let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
     // The preserved schedule should contain the custom cron entries
@@ -147,7 +130,7 @@ jobs:
 }
 
 #[test]
-fn init_workflows_overwrite_fails_on_invalid_schedule() {
+fn init_workflows_fails_on_invalid_schedule() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
 
@@ -158,14 +141,14 @@ fn init_workflows_overwrite_fails_on_invalid_schedule() {
     fs::write(&workflow_path, invalid_yaml).unwrap();
 
     ctx.cli()
-        .args(["init", "workflows", "--remote", "--overwrite"])
+        .args(["init", "workflows", "--remote"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Failed to parse"));
 }
 
 #[test]
-fn init_workflows_overwrite_uses_kit_schedule_when_none_exists() {
+fn init_workflows_uses_kit_schedule_when_none_exists() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
 
@@ -182,7 +165,7 @@ jobs:
 "#;
     fs::write(&workflow_path, existing_workflow).unwrap();
 
-    ctx.cli().args(["init", "workflows", "--remote", "--overwrite"]).assert().success();
+    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
 
     let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
     // The kit's default schedule should be present
@@ -193,7 +176,7 @@ jobs:
 }
 
 #[test]
-fn init_workflows_overwrite_preserves_wait_minutes() {
+fn init_workflows_preserves_wait_minutes() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
 
@@ -214,7 +197,7 @@ jobs:
 "#;
     fs::write(&workflow_path, existing_workflow).unwrap();
 
-    ctx.cli().args(["init", "workflows", "--remote", "--overwrite"]).assert().success();
+    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
 
     let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
     // The preserved default should be present

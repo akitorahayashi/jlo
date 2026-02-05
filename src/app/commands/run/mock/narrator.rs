@@ -19,7 +19,7 @@ where
     W: WorkspaceStore,
 {
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-    let branch_name = config.branch_name(Layer::Narrators, &timestamp);
+    let branch_name = config.branch_name(Layer::Narrators, &timestamp)?;
 
     println!("Mock narrator: creating branch {}", branch_name);
 

@@ -22,6 +22,8 @@ Jules workflows are installed via `jlo init workflows` and follow these patterns
 
 Non-Jules CI workflows remain in `.github/workflows/` alongside the kit.
 
+The workflow kit is generated from `src/assets/workflows/.github/`. Edit that source directory, not `.github/`, and re-run `jlo init workflows` to apply changes.
+
 ## Composite Actions
 
 Jules composite actions live under `.github/actions/` and are installed with the workflow kit.

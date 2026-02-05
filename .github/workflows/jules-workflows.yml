@@ -6,20 +6,16 @@ on:
     inputs:
       entry_point:
         description: Start from layer
-        type: choice
-        options:
-        - narrator
-        - observers
-        - deciders
+        type: string
         default: narrator
       wait_minutes:
         description: Minutes to wait between layers (Jules async processing time)
         type: number
         default: 30
       routing_labels:
-        description: Issue labels eligible for planner/implementer routing (comma-separated)
+        description: Issue labels eligible for planner/implementer routing (comma-separated or auto)
         type: string
-        default: bugs,feats,refacts,tests,docs
+        default: auto
       mock:
         description: Run in mock mode (creates branches/PRs without Jules API)
         type: boolean
@@ -34,7 +30,7 @@ on:
         default: 30
       routing_labels:
         type: string
-        default: bugs,feats,refacts,tests,docs
+        default: auto
       mock:
         type: boolean
         default: false
@@ -43,23 +39,25 @@ permissions:
   issues: write
   pull-requests: write
 concurrency:
-  group: jules-1
+  group: jules
   cancel-in-progress: false
 env:
-  ENTRY_POINT: ${{ github.event.inputs.entry_point || 'narrator' }}
-  WAIT_MINUTES: ${{ github.event.inputs.wait_minutes || 30 }}
-  ROUTING_LABELS: ${{ github.event.inputs.routing_labels || 'bugs,feats,refacts,tests,docs' }}
-  MOCK_MODE: ${{ github.event.inputs.mock || false }}
-  JULES_MOCK_SCOPE: ${{ format('run-{0}', github.run_id) }}
-  JLO_RUN_FLAGS: ${{ github.event.inputs.mock == 'true' && '--mock' || '' }}
+  ENTRY_POINT: ${{ inputs.entry_point || 'narrator' }}
+  WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
+  ROUTING_LABELS: ${{ inputs.routing_labels || 'auto' }}
+  MOCK_MODE: ${{ inputs.mock || false }}
+  JULES_MOCK_SCOPE: ${{ format('mock-run-{0}', github.run_id) }}
+  JLO_RUN_FLAGS: ${{ (inputs.mock || false) && '--mock' || '' }}
 jobs:
   run-narrator:
-    if: vars.JULES_PAUSED != 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && (github.event.inputs.entry_point || 'narrator') == 'narrator'
+    if: vars.JULES_PAUSED != 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && env.ENTRY_POINT == 'narrator'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      mock_branch: ${{ steps.run-narrator.outputs.mock_branch }}
-      mock_pr_number: ${{ steps.run-narrator.outputs.mock_pr_number }}
+      expected_count: ${{ steps.run-narrator.outputs.expected_count }}
+      run_started_at: ${{ steps.run-narrator.outputs.run_started_at }}
+      mock_pr_numbers_json: ${{ steps.run-narrator.outputs.mock_pr_numbers_json }}
+      mock_branches_json: ${{ steps.run-narrator.outputs.mock_branches_json }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
@@ -68,6 +66,7 @@ jobs:
       with:
         ref: jules
         fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
       uses: ./.github/actions/configure-git
     - name: Validate .jules workspace exists
@@ -90,24 +89,36 @@ jobs:
       needs.run-narrator.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    outputs:
+      pr_numbers_json: ${{ steps.wait.outputs.pr_numbers_json }}
+      pr_heads_json: ${{ steps.wait.outputs.pr_heads_json }}
+    env:
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+      REPO: ${{ github.repository }}
     steps:
-    - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-      run: |
-        echo "Waiting $WAIT_MINUTES minutes for Jules to process narrator PR..."
-        TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-        ELAPSED=0
-        while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-          sleep 30
-          ELAPSED=$((ELAPSED + 30))
-          echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-        done
-        echo "Wait complete."
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
+    - name: Wait for narrator PRs
+      id: wait
+      env:
+        EXPECTED_COUNT: ${{ needs.run-narrator.outputs.expected_count }}
+        RUN_STARTED_AT: ${{ needs.run-narrator.outputs.run_started_at }}
+        BASE_BRANCH: jules
+        CONTRACTS_PATH: .jules/roles/narrator/contracts.yml
+        WAIT_MINUTES: ${{ env.WAIT_MINUTES }}
+        MOCK_MODE: ${{ env.MOCK_MODE }}
+        WAIT_MODE: merge
+        MOCK_PR_NUMBERS_JSON: ${{ needs.run-narrator.outputs.mock_pr_numbers_json }}
+      run: bash .github/scripts/jules-wait-for-prs.sh
   generate-workstream-matrix:
     needs: wait-after-narrator
     if: |
       always() &&
       vars.JULES_PAUSED != 'true' &&
-      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') &&
       (needs.wait-after-narrator.result == 'success' || needs.wait-after-narrator.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -119,6 +130,7 @@ jobs:
       with:
         ref: jules
         fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Validate .jules workspace
       run: |
         if [ ! -d ".jules" ]; then
@@ -136,7 +148,7 @@ jobs:
       run: bash .github/scripts/jules-generate-workstream-matrix.sh
   generate-observer-matrix:
     needs: generate-workstream-matrix
-    if: needs.generate-workstream-matrix.outputs.has_workstreams == 'true' && (github.event.inputs.entry_point || 'narrator') != 'deciders'
+    if: needs.generate-workstream-matrix.outputs.has_workstreams == 'true' && env.ENTRY_POINT != 'deciders'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -147,6 +159,7 @@ jobs:
       with:
         ref: jules
         fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Generate observer matrix
@@ -165,8 +178,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      mock_branch: ${{ steps.run-observers.outputs.mock_branch }}
-      mock_pr_number: ${{ steps.run-observers.outputs.mock_pr_number }}
+      expected_count: ${{ steps.run-observers.outputs.expected_count }}
+      run_started_at: ${{ steps.run-observers.outputs.run_started_at }}
+      mock_pr_numbers_json: ${{ steps.run-observers.outputs.mock_pr_numbers_json }}
+      mock_branches_json: ${{ steps.run-observers.outputs.mock_branches_json }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
@@ -175,6 +190,7 @@ jobs:
       with:
         ref: jules
         fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
       uses: ./.github/actions/configure-git
     - name: Install jlo
@@ -193,18 +209,30 @@ jobs:
       needs.run-observers.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    outputs:
+      pr_numbers_json: ${{ steps.wait.outputs.pr_numbers_json }}
+      pr_heads_json: ${{ steps.wait.outputs.pr_heads_json }}
+    env:
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+      REPO: ${{ github.repository }}
     steps:
-    - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-      run: |
-        echo "Waiting $WAIT_MINUTES minutes for Jules to process observer PRs..."
-        TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-        ELAPSED=0
-        while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-          sleep 30
-          ELAPSED=$((ELAPSED + 30))
-          echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-        done
-        echo "Wait complete."
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
+    - name: Wait for observer PRs
+      id: wait
+      env:
+        EXPECTED_COUNT: ${{ needs.run-observers.outputs.expected_count }}
+        RUN_STARTED_AT: ${{ needs.run-observers.outputs.run_started_at }}
+        BASE_BRANCH: jules
+        CONTRACTS_PATH: .jules/roles/observers/contracts.yml
+        WAIT_MINUTES: ${{ env.WAIT_MINUTES }}
+        MOCK_MODE: ${{ env.MOCK_MODE }}
+        WAIT_MODE: merge
+        MOCK_PR_NUMBERS_JSON: ${{ needs.run-observers.outputs.mock_pr_numbers_json }}
+      run: bash .github/scripts/jules-wait-for-prs.sh
   generate-decider-matrix:
     needs:
     - generate-workstream-matrix
@@ -242,8 +270,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      mock_branch: ${{ steps.run-deciders.outputs.mock_branch }}
-      mock_pr_number: ${{ steps.run-deciders.outputs.mock_pr_number }}
+      expected_count: ${{ steps.run-deciders.outputs.expected_count }}
+      run_started_at: ${{ steps.run-deciders.outputs.run_started_at }}
+      mock_pr_numbers_json: ${{ steps.run-deciders.outputs.mock_pr_numbers_json }}
+      mock_branches_json: ${{ steps.run-deciders.outputs.mock_branches_json }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
@@ -252,6 +282,7 @@ jobs:
       with:
         ref: jules
         fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
       uses: ./.github/actions/configure-git
     - name: Install jlo
@@ -270,18 +301,30 @@ jobs:
       needs.run-deciders.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    outputs:
+      pr_numbers_json: ${{ steps.wait.outputs.pr_numbers_json }}
+      pr_heads_json: ${{ steps.wait.outputs.pr_heads_json }}
+    env:
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+      REPO: ${{ github.repository }}
     steps:
-    - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-      run: |
-        echo "Waiting $WAIT_MINUTES minutes for Jules to process decider PRs..."
-        TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-        ELAPSED=0
-        while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-          sleep 30
-          ELAPSED=$((ELAPSED + 30))
-          echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-        done
-        echo "Wait complete."
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
+    - name: Wait for decider PRs
+      id: wait
+      env:
+        EXPECTED_COUNT: ${{ needs.run-deciders.outputs.expected_count }}
+        RUN_STARTED_AT: ${{ needs.run-deciders.outputs.run_started_at }}
+        BASE_BRANCH: jules
+        CONTRACTS_PATH: .jules/roles/deciders/contracts.yml
+        WAIT_MINUTES: ${{ env.WAIT_MINUTES }}
+        MOCK_MODE: ${{ env.MOCK_MODE }}
+        WAIT_MODE: merge
+        MOCK_PR_NUMBERS_JSON: ${{ needs.run-deciders.outputs.mock_pr_numbers_json }}
+      run: bash .github/scripts/jules-wait-for-prs.sh
   generate-planner-matrix:
     needs:
     - generate-workstream-matrix
@@ -324,8 +367,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      mock_branch: ${{ steps.run-planners.outputs.mock_branch }}
-      mock_pr_number: ${{ steps.run-planners.outputs.mock_pr_number }}
+      expected_count: ${{ steps.run-planners.outputs.expected_count }}
+      run_started_at: ${{ steps.run-planners.outputs.run_started_at }}
+      mock_pr_numbers_json: ${{ steps.run-planners.outputs.mock_pr_numbers_json }}
+      mock_branches_json: ${{ steps.run-planners.outputs.mock_branches_json }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
@@ -334,6 +379,7 @@ jobs:
       with:
         ref: jules
         fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
       uses: ./.github/actions/configure-git
     - name: Install jlo
@@ -343,6 +389,38 @@ jobs:
       env:
         PLANNER_MATRIX: ${{ needs.generate-planner-matrix.outputs.planner_matrix }}
       run: bash .github/scripts/jules-run-planners-sequential.sh
+  wait-after-planners:
+    needs:
+    - run-planners
+    if: |
+      always() &&
+      needs.run-planners.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      pr_numbers_json: ${{ steps.wait.outputs.pr_numbers_json }}
+      pr_heads_json: ${{ steps.wait.outputs.pr_heads_json }}
+    env:
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+      REPO: ${{ github.repository }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
+    - name: Wait for planner PRs
+      id: wait
+      env:
+        EXPECTED_COUNT: ${{ needs.run-planners.outputs.expected_count }}
+        RUN_STARTED_AT: ${{ needs.run-planners.outputs.run_started_at }}
+        BASE_BRANCH: jules
+        CONTRACTS_PATH: .jules/roles/planners/contracts.yml
+        WAIT_MINUTES: ${{ env.WAIT_MINUTES }}
+        MOCK_MODE: ${{ env.MOCK_MODE }}
+        WAIT_MODE: merge
+        MOCK_PR_NUMBERS_JSON: ${{ needs.run-planners.outputs.mock_pr_numbers_json }}
+      run: bash .github/scripts/jules-wait-for-prs.sh
   run-implementers:
     needs:
     - generate-planner-matrix
@@ -353,8 +431,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      mock_branch: ${{ steps.run-implementers.outputs.mock_branch }}
-      mock_pr_number: ${{ steps.run-implementers.outputs.mock_pr_number }}
+      expected_count: ${{ steps.run-implementers.outputs.expected_count }}
+      run_started_at: ${{ steps.run-implementers.outputs.run_started_at }}
+      mock_pr_numbers_json: ${{ steps.run-implementers.outputs.mock_pr_numbers_json }}
+      mock_branches_json: ${{ steps.run-implementers.outputs.mock_branches_json }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       TARGET_BRANCH: ${{ vars.JULES_TARGET_BRANCH || 'main' }}
@@ -364,6 +444,7 @@ jobs:
       with:
         ref: jules
         fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Configure Git
@@ -373,59 +454,101 @@ jobs:
       env:
         IMPLEMENTER_MATRIX: ${{ needs.generate-planner-matrix.outputs.implementer_matrix }}
       run: bash .github/scripts/jules-run-implementers-sequential.sh
-  cleanup-mock-branches:
+  wait-after-implementers:
+    needs:
+    - run-implementers
+    if: |
+      always() &&
+      needs.run-implementers.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      pr_numbers_json: ${{ steps.wait.outputs.pr_numbers_json }}
+      pr_heads_json: ${{ steps.wait.outputs.pr_heads_json }}
+    env:
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+      REPO: ${{ github.repository }}
+      TARGET_BRANCH: ${{ vars.JULES_TARGET_BRANCH || 'main' }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
+    - name: Wait for implementer labels
+      id: wait
+      env:
+        EXPECTED_COUNT: ${{ needs.run-implementers.outputs.expected_count }}
+        RUN_STARTED_AT: ${{ needs.run-implementers.outputs.run_started_at }}
+        BASE_BRANCH: ${{ vars.JULES_TARGET_BRANCH || 'main' }}
+        CONTRACTS_PATH: .jules/roles/implementers/contracts.yml
+        WAIT_MINUTES: ${{ env.WAIT_MINUTES }}
+        MOCK_MODE: ${{ env.MOCK_MODE }}
+        WAIT_MODE: label
+        MOCK_PR_NUMBERS_JSON: ${{ needs.run-implementers.outputs.mock_pr_numbers_json }}
+      run: bash .github/scripts/jules-wait-for-prs.sh
+  cleanup-mock:
     needs:
     - run-narrator
     - run-observers
     - run-deciders
     - run-planners
     - run-implementers
-    if: always()
+    - wait-after-narrator
+    - wait-after-observers
+    - wait-after-deciders
+    - wait-after-planners
+    - wait-after-implementers
+    if: always() && env.MOCK_MODE == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     env:
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+      REPO: ${{ github.repository }}
+      MOCK_SCOPE: ${{ env.JULES_MOCK_SCOPE }}
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 1
-    - name: Cleanup failed mock branches
+        ref: jules
+        fetch-depth: 0
+        token: ${{ secrets.JLO_BOT_TOKEN }}
+    - name: Configure Git
+      uses: ./.github/actions/configure-git
+    - name: Aggregate mock outputs
+      id: aggregate
       run: |
-        # Collect all mock branches from job outputs
-        MOCK_BRANCHES=(
-          "$${{ needs.run-narrator.outputs.mock_branch || '' }}"
-          "$${{ needs.run-observers.outputs.mock_branch || '' }}"
-          "$${{ needs.run-deciders.outputs.mock_branch || '' }}"
-          "$${{ needs.run-planners.outputs.mock_branch || '' }}"
-          "$${{ needs.run-implementers.outputs.mock_branch || '' }}"
-        )
-
-        # Collect results from all run jobs
-        RESULTS=(
-          "$${{ needs.run-narrator.result }}"
-          "$${{ needs.run-observers.result }}"
-          "$${{ needs.run-deciders.result }}"
-          "$${{ needs.run-planners.result }}"
-          "$${{ needs.run-implementers.result }}"
-        )
-
-        echo "Cleaning up mock branches from failed/cancelled jobs..."
-        for i in "${!MOCK_BRANCHES[@]}"; do
-          BRANCH="${MOCK_BRANCHES[$i]}"
-          RESULT="${RESULTS[$i]}"
-
-          # Skip if branch is empty
-          [ -z "$BRANCH" ] && continue
-
-          # Delete branch if job failed or was cancelled
-          if [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
-            echo "Deleting failed/cancelled mock branch: $BRANCH (result: $RESULT)"
-            if git push origin --delete "$BRANCH" 2>/dev/null; then
-              echo "✓ Deleted $BRANCH"
-            else
-              echo "⚠ Branch $BRANCH may not exist or already deleted"
-            fi
+        normalize() {
+          local value="$1"
+          if [ -z "$value" ] || [ "$value" = "null" ]; then
+            echo "[]"
           else
-            echo "Skipping $BRANCH (result: $RESULT)"
+            echo "$value"
           fi
-        done
+        }
+
+        pr_payloads=(
+          "$(normalize "$${{ needs.run-narrator.outputs.mock_pr_numbers_json }}")"
+          "$(normalize "$${{ needs.run-observers.outputs.mock_pr_numbers_json }}")"
+          "$(normalize "$${{ needs.run-deciders.outputs.mock_pr_numbers_json }}")"
+          "$(normalize "$${{ needs.run-planners.outputs.mock_pr_numbers_json }}")"
+          "$(normalize "$${{ needs.run-implementers.outputs.mock_pr_numbers_json }}")"
+        )
+
+        branch_payloads=(
+          "$(normalize "$${{ needs.run-narrator.outputs.mock_branches_json }}")"
+          "$(normalize "$${{ needs.run-observers.outputs.mock_branches_json }}")"
+          "$(normalize "$${{ needs.run-deciders.outputs.mock_branches_json }}")"
+          "$(normalize "$${{ needs.run-planners.outputs.mock_branches_json }}")"
+          "$(normalize "$${{ needs.run-implementers.outputs.mock_branches_json }}")"
+        )
+
+        pr_numbers_json=$(printf '%s\n' "${pr_payloads[@]}" | jq -s 'map(select(type=="array")) | add | unique')
+        branches_json=$(printf '%s\n' "${branch_payloads[@]}" | jq -s 'map(select(type=="array")) | add | unique')
+
+        echo "pr_numbers_json=$pr_numbers_json" >> "$GITHUB_OUTPUT"
+        echo "branches_json=$branches_json" >> "$GITHUB_OUTPUT"
+    - name: Cleanup mock artifacts
+      env:
+        MOCK_PR_NUMBERS_JSON: ${{ steps.aggregate.outputs.pr_numbers_json }}
+        MOCK_BRANCHES_JSON: ${{ steps.aggregate.outputs.branches_json }}
+      run: bash .github/scripts/jules-mock-cleanup.sh

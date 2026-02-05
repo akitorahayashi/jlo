@@ -26,7 +26,7 @@ where
     })?;
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-    let branch_name = config.branch_name(Layer::Observers, &timestamp);
+    let branch_name = config.branch_name(Layer::Observers, &timestamp)?;
 
     println!("Mock observers: creating branch {}", branch_name);
 

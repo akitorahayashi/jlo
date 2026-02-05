@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use crate::domain::Layer;
+use crate::domain::{AppError, Layer};
 
 /// Configuration for mock execution, loaded from workspace files.
 #[derive(Debug, Clone)]
@@ -21,16 +21,16 @@ pub struct MockConfig {
 
 impl MockConfig {
     /// Generate branch name for a layer with scope embedded.
-    pub fn branch_name(&self, layer: Layer, suffix: &str) -> String {
-        let prefix =
-            self.branch_prefixes.get(&layer).map(|s| s.as_str()).unwrap_or_else(|| match layer {
-                Layer::Narrators => "jules-narrator-",
-                Layer::Observers => "jules-observer-",
-                Layer::Deciders => "jules-decider-",
-                Layer::Planners => "jules-planner-",
-                Layer::Implementers => "jules-implementer-",
-            });
-        format!("{}{}-{}", prefix, self.scope, suffix)
+    pub fn branch_prefix(&self, layer: Layer) -> Result<&str, AppError> {
+        self.branch_prefixes.get(&layer).map(|s| s.as_str()).ok_or_else(|| {
+            AppError::Validation(format!("Missing branch_prefix for layer '{}'", layer.dir_name()))
+        })
+    }
+
+    /// Generate branch name for a layer with scope embedded.
+    pub fn branch_name(&self, layer: Layer, suffix: &str) -> Result<String, AppError> {
+        let prefix = self.branch_prefix(layer)?;
+        Ok(format!("{}{}-{}", prefix, self.scope, suffix))
     }
 
     /// Get base branch for a layer.
@@ -94,8 +94,14 @@ mod tests {
             issue_labels: vec!["bugs".to_string()],
         };
 
-        assert_eq!(config.branch_name(Layer::Observers, "test"), "jules-observer-run123-test");
-        assert_eq!(config.branch_name(Layer::Implementers, "fix"), "jules-implementer-run123-fix");
+        assert_eq!(
+            config.branch_name(Layer::Observers, "test").unwrap(),
+            "jules-observer-run123-test"
+        );
+        assert_eq!(
+            config.branch_name(Layer::Implementers, "fix").unwrap(),
+            "jules-implementer-run123-fix"
+        );
     }
 
     #[test]

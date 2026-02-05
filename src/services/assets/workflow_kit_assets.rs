@@ -29,6 +29,7 @@ fn gha_raw(expr: &str) -> String {
 
 pub fn load_workflow_kit(mode: WorkflowRunnerMode) -> Result<WorkflowKitAssets, AppError> {
     let mut env = Environment::new();
+    env.set_keep_trailing_newline(true);
 
     // Add the gha_expr function to the template environment
     env.add_function("gha_expr", |expr: &str| -> String { gha_expr(expr) });

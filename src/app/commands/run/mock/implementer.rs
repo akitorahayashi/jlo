@@ -3,8 +3,7 @@ use std::path::Path;
 use chrono::Utc;
 
 use crate::app::commands::run::RunOptions;
-use crate::app::commands::run::mock::identity::generate_mock_id;
-use crate::domain::{AppError, MockConfig, MockOutput};
+use crate::domain::{AppError, Layer, MockConfig, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 /// Execute mock implementers.
@@ -32,20 +31,24 @@ where
 
     let issue_content = workspace.read_file(issue_path_str)?;
     let (label, issue_id) = parse_issue_for_branch(&issue_content, issue_path)?;
+    if !config.issue_labels.contains(&label) {
+        return Err(AppError::Validation(format!(
+            "Issue label '{}' is not defined in github-labels.json",
+            label
+        )));
+    }
 
     // Implementer branch format: jules-implementer-<label>-<id>-<short_description>
-    let branch_name = format!(
-        "jules-implementer-{}-{}-mock-{}",
-        label,
-        &issue_id[..6.min(issue_id.len())],
-        config.scope
-    );
+    let prefix = config.branch_prefix(Layer::Implementers)?;
+    let issue_id_short = issue_id.chars().take(6).collect::<String>();
+    let branch_name = format!("{}{}-{}-{}", prefix, label, issue_id_short, config.scope);
 
     println!("Mock implementers: creating branch {}", branch_name);
 
     // Fetch and checkout from default branch (not jules)
     git.fetch("origin")?;
-    git.checkout_branch(&format!("origin/{}", config.default_branch), false)?;
+    let base_branch = options.branch.as_deref().unwrap_or(&config.default_branch);
+    git.checkout_branch(&format!("origin/{}", base_branch), false)?;
     git.checkout_branch(&branch_name, true)?;
 
     // Create minimal mock file to have a commit
@@ -68,14 +71,14 @@ where
     // Create PR targeting default branch (NOT jules)
     let pr = github.create_pull_request(
         &branch_name,
-        &config.default_branch,
+        base_branch,
         &format!("[mock-{}] Implementation: {}", config.scope, label),
         &format!(
             "Mock implementer run for workflow validation.\n\nScope: `{}`\nIssue: `{}`\nLabel: `{}`\n\n⚠️ This PR targets `{}` (not `jules`) - requires human review.",
             config.scope,
             issue_id,
             label,
-            config.default_branch
+            base_branch
         ),
     )?;
 
@@ -92,45 +95,40 @@ where
 
 /// Parse issue content to extract label and ID for branch naming.
 fn parse_issue_for_branch(content: &str, path: &Path) -> Result<(String, String), AppError> {
-    // Try to extract from YAML
     let mut label = None;
     let mut id = None;
 
     for line in content.lines() {
         let line = line.trim();
         if line.starts_with("label:") {
-            label = Some(
-                line.trim_start_matches("label:")
-                    .trim()
-                    .trim_matches('"')
-                    .trim_matches('\'')
-                    .to_string(),
-            );
+            let value =
+                line.trim_start_matches("label:").trim().trim_matches('"').trim_matches('\'');
+            if !value.is_empty() {
+                label = Some(value.to_string());
+            }
         } else if line.starts_with("id:") {
-            id = Some(
-                line.trim_start_matches("id:")
-                    .trim()
-                    .trim_matches('"')
-                    .trim_matches('\'')
-                    .to_string(),
-            );
+            let value = line.trim_start_matches("id:").trim().trim_matches('"').trim_matches('\'');
+            if !value.is_empty() {
+                id = Some(value.to_string());
+            }
         }
     }
 
-    // Fallback: try to extract label from path (issues/<label>/...)
-    if label.is_none()
-        && let Some(parent) = path.parent()
-        && let Some(name) = parent.file_name()
-    {
-        label = Some(name.to_string_lossy().to_string());
+    let label = label.ok_or_else(|| {
+        AppError::Validation(format!("Issue file missing label field: {}", path.display()))
+    })?;
+    let id = id.ok_or_else(|| {
+        AppError::Validation(format!("Issue file missing id field: {}", path.display()))
+    })?;
+
+    if id.len() != 6 || !id.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit()) {
+        return Err(AppError::Validation(format!(
+            "Issue id must be 6 lowercase alphanumeric chars: {}",
+            path.display()
+        )));
     }
 
-    // Fallback: generate ID if not found
-    if id.is_none() {
-        id = Some(generate_mock_id());
-    }
-
-    Ok((label.unwrap_or_else(|| "bugs".to_string()), id.unwrap_or_else(generate_mock_id)))
+    Ok((label, id))
 }
 
 #[cfg(test)]

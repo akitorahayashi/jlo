@@ -26,7 +26,7 @@ where
     })?;
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-    let branch_name = config.branch_name(Layer::Deciders, &timestamp);
+    let branch_name = config.branch_name(Layer::Deciders, &timestamp)?;
 
     println!("Mock deciders: creating branch {}", branch_name);
 
@@ -43,13 +43,15 @@ where
     let issues_dir = exchange_dir.join("issues");
 
     // Ensure directories exist
-    std::fs::create_dir_all(&decided_dir).ok();
-    std::fs::create_dir_all(&issues_dir).ok();
+    std::fs::create_dir_all(&decided_dir)?;
+    std::fs::create_dir_all(&issues_dir)?;
 
     // Create two mock issues: one for planner, one for implementer
-    let label = config.issue_labels.first().cloned().unwrap_or_else(|| "bugs".to_string());
+    let label = config.issue_labels.first().cloned().ok_or_else(|| {
+        AppError::Validation("No issue labels available for mock decider".to_string())
+    })?;
     let label_dir = issues_dir.join(&label);
-    std::fs::create_dir_all(&label_dir).ok();
+    std::fs::create_dir_all(&label_dir)?;
 
     let mock_issue_template = include_str!("assets/decider_issue.yml");
 
@@ -58,7 +60,8 @@ where
     let mut moved_src_files: Vec<PathBuf> = Vec::new();
     let mut source_event_ids: Vec<String> = Vec::new();
     if pending_dir.exists() {
-        for entry in std::fs::read_dir(&pending_dir).into_iter().flatten().flatten() {
+        for entry in std::fs::read_dir(&pending_dir)? {
+            let entry = entry?;
             let path = entry.path();
             if path
                 .file_name()
@@ -76,11 +79,15 @@ where
                     }
                 }
 
-                let dest = decided_dir.join(path.file_name().unwrap());
-                if std::fs::rename(&path, &dest).is_ok() {
-                    moved_src_files.push(path);
-                    moved_dest_files.push(dest);
-                }
+                let dest = decided_dir.join(path.file_name().ok_or_else(|| {
+                    AppError::Validation(format!(
+                        "Pending event missing filename: {}",
+                        path.display()
+                    ))
+                })?);
+                std::fs::rename(&path, &dest)?;
+                moved_src_files.push(path);
+                moved_dest_files.push(dest);
             }
         }
     }
@@ -159,18 +166,16 @@ where
                 continue; // Unknown event, skip update
             };
 
-            if let Ok(content) = std::fs::read_to_string(dest_file) {
-                // Update issue_id in the event file
-                if content.contains("issue_id: \"\"") {
-                    let updated_content = content
-                        .replace("issue_id: \"\"", &format!("issue_id: \"{}\"", assigned_issue_id));
-                    std::fs::write(dest_file, updated_content).ok();
-                } else {
-                    // Append if not present in template (fallback)
-                    let updated_content =
-                        format!("{}\nissue_id: \"{}\"", content, assigned_issue_id);
-                    std::fs::write(dest_file, updated_content).ok();
-                }
+            let content = std::fs::read_to_string(dest_file)?;
+            // Update issue_id in the event file
+            if content.contains("issue_id: \"\"") {
+                let updated_content = content
+                    .replace("issue_id: \"\"", &format!("issue_id: \"{}\"", assigned_issue_id));
+                std::fs::write(dest_file, updated_content)?;
+            } else {
+                // Append if not present in template
+                let updated_content = format!("{}\nissue_id: \"{}\"", content, assigned_issue_id);
+                std::fs::write(dest_file, updated_content)?;
             }
         }
     }

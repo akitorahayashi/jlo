@@ -122,9 +122,6 @@ enum InitCommands {
         /// Install the self-hosted runner workflow kit
         #[arg(short = 's', long, conflicts_with = "remote", required_unless_present = "remote")]
         self_hosted: bool,
-        /// Overwrite existing kit-owned files
-        #[arg(short = 'o', long)]
-        overwrite: bool,
     },
 }
 
@@ -294,7 +291,7 @@ fn run_init(command: Option<InitCommands>) -> Result<(), AppError> {
             println!("✅ Initialized .jules/ workspace");
             Ok(())
         }
-        InitCommands::Workflows { remote, self_hosted, overwrite } => {
+        InitCommands::Workflows { remote, self_hosted } => {
             let mode = if remote {
                 crate::domain::WorkflowRunnerMode::Remote
             } else if self_hosted {
@@ -304,7 +301,7 @@ fn run_init(command: Option<InitCommands>) -> Result<(), AppError> {
                     "Runner mode is required. Use --remote or --self-hosted.".into(),
                 ));
             };
-            crate::app::api::init_workflows(mode, overwrite)?;
+            crate::app::api::init_workflows(mode)?;
             println!("✅ Installed workflow kit ({})", mode.label());
             Ok(())
         }

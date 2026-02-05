@@ -56,7 +56,7 @@ tests/
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jlo init [scaffold]` | `i` | Create `.jules/` structure with setup directory |
-| `jlo init workflows (--remote \| --self-hosted) [--overwrite]` | `i w` | Install workflow kit into `.github/` |
+| `jlo init workflows (--remote \| --self-hosted)` | `i w` | Install workflow kit into `.github/` |
 | `jlo update [--dry-run] [--adopt-managed]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run narrator [--dry-run] [--mock]` | `r n` | Run narrator (produces changes feed) |

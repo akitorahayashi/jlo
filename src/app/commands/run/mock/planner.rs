@@ -25,7 +25,7 @@ where
     })?;
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-    let branch_name = config.branch_name(Layer::Planners, &timestamp);
+    let branch_name = config.branch_name(Layer::Planners, &timestamp)?;
 
     println!("Mock planners: creating branch {}", branch_name);
 
@@ -82,8 +82,6 @@ analysis_details: |
             issue_path.display()
         ),
     )?;
-
-    println!("Mock planners: created PR #{} ({})", pr.number, pr.url);
 
     println!("Mock planners: created PR #{} ({})", pr.number, pr.url);
 

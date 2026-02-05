@@ -78,17 +78,16 @@ pub fn init_at(path: std::path::PathBuf) -> Result<(), AppError> {
 }
 
 /// Initialize a new workflow kit in the current directory.
-pub fn init_workflows(mode: WorkflowRunnerMode, overwrite: bool) -> Result<(), AppError> {
-    init_workflows_at(std::env::current_dir()?, mode, overwrite)
+pub fn init_workflows(mode: WorkflowRunnerMode) -> Result<(), AppError> {
+    init_workflows_at(std::env::current_dir()?, mode)
 }
 
 /// Initialize a new workflow kit at the specified path.
 pub fn init_workflows_at(
     path: std::path::PathBuf,
     mode: WorkflowRunnerMode,
-    overwrite: bool,
 ) -> Result<(), AppError> {
-    init_workflows::execute_workflows(&path, mode, overwrite)
+    init_workflows::execute_workflows(&path, mode)
 }
 
 /// Apply a template for a role or workstream.
