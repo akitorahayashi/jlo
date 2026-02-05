@@ -13,6 +13,8 @@ use crate::app::{
 };
 use crate::ports::WorkspaceStore;
 use crate::services::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
+use crate::services::adapters::git_command::GitCommandAdapter;
+use crate::services::adapters::github_command::GitHubCommandAdapter;
 use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
@@ -55,9 +57,11 @@ pub fn init() -> Result<(), AppError> {
 
 /// Initialize a new `.jules/` workspace at the specified path.
 pub fn init_at(path: std::path::PathBuf) -> Result<(), AppError> {
-    let ctx = create_context(path);
+    let ctx = create_context(path.clone());
 
-    init_scaffold::execute(&ctx)
+    let git = GitCommandAdapter::new(path);
+    init_scaffold::execute(&ctx, &git)?;
+    Ok(())
 }
 
 /// Initialize a new workflow kit in the current directory.
@@ -124,8 +128,13 @@ pub fn run(
 ) -> Result<RunResult, AppError> {
     let workspace = get_current_workspace()?;
 
+    // Assume current directory is workspace root since we require running from root
+    let root = std::env::current_dir()?;
+    let git = GitCommandAdapter::new(root);
+    let github = GitHubCommandAdapter::new();
+
     let options = RunOptions { layer, roles, workstream, scheduled, dry_run, branch, issue };
-    run::execute(&workspace.jules_path(), options)
+    run::execute(&workspace.jules_path(), options, &git, &github, &workspace)
 }
 
 // =============================================================================
@@ -190,7 +199,7 @@ pub fn update(dry_run: bool, adopt_managed: bool) -> Result<UpdateResult, AppErr
 
     let templates = EmbeddedRoleTemplateStore::new();
     let options = UpdateOptions { dry_run, adopt_managed };
-    update::execute(&workspace.jules_path(), options, &templates)
+    update::execute(&workspace, options, &templates)
 }
 
 // =============================================================================

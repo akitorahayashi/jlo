@@ -5,15 +5,16 @@ mod config_dto;
 mod multi_role;
 
 pub use config::parse_config_content;
-mod narrator;
+pub mod narrator;
 mod prompt;
 mod role_selection;
-mod single_role;
+pub mod single_role;
 
 use std::path::Path;
 use std::path::PathBuf;
 
 use crate::domain::{AppError, Layer};
+use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 /// Options for the run command.
 #[derive(Debug, Clone)]
@@ -46,13 +47,31 @@ pub struct RunResult {
 }
 
 /// Execute the run command.
-pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppError> {
+pub fn execute<G, H, W>(
+    jules_path: &Path,
+    options: RunOptions,
+    git: &G,
+    github: &H,
+    workspace: &W,
+) -> Result<RunResult, AppError>
+where
+    G: GitPort,
+    H: GitHubPort,
+    W: WorkspaceStore,
+{
     // Check if we are in CI environment
     let is_ci = std::env::var("GITHUB_ACTIONS").is_ok();
 
     // Narrator is single-role but not issue-driven
     if options.layer == Layer::Narrators {
-        return narrator::execute(jules_path, options.dry_run, options.branch.as_deref(), is_ci);
+        return narrator::execute(
+            jules_path,
+            options.dry_run,
+            options.branch.as_deref(),
+            is_ci,
+            git,
+            workspace,
+        );
     }
 
     // Issue-driven layers (Planners, Implementers) require an issue path
@@ -69,6 +88,8 @@ pub fn execute(jules_path: &Path, options: RunOptions) -> Result<RunResult, AppE
             options.dry_run,
             options.branch.as_deref(),
             is_ci,
+            github,
+            workspace,
         );
     }
 

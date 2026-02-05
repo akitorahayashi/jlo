@@ -13,6 +13,7 @@ pub struct MockWorkspaceStore {
     pub roles: RefCell<HashMap<(Layer, String), bool>>,
     pub version: RefCell<Option<String>>,
     pub created_structure: RefCell<bool>,
+    pub files: RefCell<HashMap<String, String>>,
 }
 
 #[allow(dead_code)]
@@ -28,6 +29,11 @@ impl MockWorkspaceStore {
 
     pub fn add_role(&self, layer: Layer, role_id: &str) {
         self.roles.borrow_mut().insert((layer, role_id.to_string()), true);
+    }
+
+    pub fn with_file(self, path: &str, content: &str) -> Self {
+        self.files.borrow_mut().insert(path.to_string(), content.to_string());
+        self
     }
 }
 
@@ -113,5 +119,40 @@ impl WorkspaceStore for MockWorkspaceStore {
 
     fn workstream_exists(&self, name: &str) -> bool {
         name == "generic"
+    }
+
+    fn read_file(&self, path: &str) -> Result<String, AppError> {
+        self.files.borrow().get(path).cloned().ok_or_else(|| {
+            AppError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "Mock file not found"))
+        })
+    }
+
+    fn write_file(&self, path: &str, content: &str) -> Result<(), AppError> {
+        self.files.borrow_mut().insert(path.to_string(), content.to_string());
+        Ok(())
+    }
+
+    fn remove_file(&self, path: &str) -> Result<(), AppError> {
+        self.files.borrow_mut().remove(path);
+        Ok(())
+    }
+
+    fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {
+        Ok(())
+    }
+
+    fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError> {
+        let content = self.read_file(src)?;
+        self.write_file(dst, &content)?;
+        Ok(content.len() as u64)
+    }
+
+    fn resolve_path(&self, path: &str) -> PathBuf {
+        PathBuf::from(path)
+    }
+
+    fn canonicalize(&self, path: &str) -> Result<PathBuf, AppError> {
+        // Mock canonicalization: just return path if it looks valid
+        Ok(PathBuf::from(path))
     }
 }

@@ -58,4 +58,27 @@ pub trait WorkspaceStore {
 
     /// Check if a workstream exists.
     fn workstream_exists(&self, name: &str) -> bool;
+
+    // --- Generic File Operations ---
+
+    /// Read a file as a string.
+    fn read_file(&self, path: &str) -> Result<String, AppError>;
+
+    /// Write content to a file.
+    fn write_file(&self, path: &str, content: &str) -> Result<(), AppError>;
+
+    /// Remove a file.
+    fn remove_file(&self, path: &str) -> Result<(), AppError>;
+
+    /// Create directory recursively.
+    fn create_dir_all(&self, path: &str) -> Result<(), AppError>;
+
+    /// Copy a file.
+    fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError>;
+
+    /// Get the absolute path to a file within the workspace/root.
+    fn resolve_path(&self, path: &str) -> PathBuf;
+
+    /// Canonicalize a path (resolve symlinks and absolute path).
+    fn canonicalize(&self, path: &str) -> Result<PathBuf, AppError>;
 }
