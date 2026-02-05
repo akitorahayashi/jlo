@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use chrono::Utc;
+use serde::Deserialize;
 
 use crate::app::commands::run::RunOptions;
 use crate::app::commands::run::config::load_config;
@@ -35,6 +36,11 @@ pub fn validate_mock_prerequisites(_options: &RunOptions) -> Result<(), AppError
     Ok(())
 }
 
+#[derive(Deserialize)]
+struct ContractConfig {
+    branch_prefix: String,
+}
+
 /// Load mock configuration from workspace files.
 pub fn load_mock_config<W: WorkspaceStore>(
     jules_path: &Path,
@@ -62,11 +68,12 @@ pub fn load_mock_config<W: WorkspaceStore>(
             ))
         })?;
 
-        let prefix = extract_branch_prefix(&content).ok_or_else(|| {
+        let prefix = extract_branch_prefix(&content).map_err(|e| {
             AppError::Validation(format!(
-                "Missing branch_prefix in contracts.yml for layer '{}': {}",
+                "Invalid contracts.yml for layer '{}' at {}: {}",
                 layer.dir_name(),
-                contracts_path.display()
+                contracts_path.display(),
+                e
             ))
         })?;
 
@@ -117,20 +124,16 @@ pub fn load_mock_config<W: WorkspaceStore>(
 }
 
 /// Extract branch_prefix from contracts.yml content.
-fn extract_branch_prefix(content: &str) -> Option<String> {
-    // Simple YAML parsing for branch_prefix
-    for line in content.lines() {
-        let line = line.trim();
-        if line.starts_with("branch_prefix:") {
-            let value = line.trim_start_matches("branch_prefix:").trim();
-            // Remove quotes if present
-            let value = value.trim_matches('"').trim_matches('\'');
-            if !value.is_empty() {
-                return Some(value.to_string());
-            }
-        }
+fn extract_branch_prefix(content: &str) -> Result<String, AppError> {
+    let config: ContractConfig = serde_yaml::from_str(content).map_err(|e| {
+        AppError::ParseError { what: "contracts.yml".to_string(), details: e.to_string() }
+    })?;
+
+    if config.branch_prefix.trim().is_empty() {
+        return Err(AppError::Validation("branch_prefix cannot be empty".to_string()));
     }
-    None
+
+    Ok(config.branch_prefix)
 }
 
 /// Extract issue labels from github-labels.json content.
@@ -160,13 +163,25 @@ branch_prefix: jules-observer-
 constraints:
   - Do NOT write to issues/
 "#;
-        assert_eq!(extract_branch_prefix(content), Some("jules-observer-".to_string()));
+        assert_eq!(extract_branch_prefix(content).unwrap(), "jules-observer-".to_string());
     }
 
     #[test]
     fn test_extract_branch_prefix_with_quotes() {
         let content = r#"branch_prefix: "jules-test-""#;
-        assert_eq!(extract_branch_prefix(content), Some("jules-test-".to_string()));
+        assert_eq!(extract_branch_prefix(content).unwrap(), "jules-test-".to_string());
+    }
+
+    #[test]
+    fn test_extract_branch_prefix_missing() {
+        let content = r#"layer: observers"#;
+        assert!(extract_branch_prefix(content).is_err());
+    }
+
+    #[test]
+    fn test_extract_branch_prefix_empty() {
+        let content = r#"branch_prefix: """#;
+        assert!(extract_branch_prefix(content).is_err());
     }
 
     #[test]
