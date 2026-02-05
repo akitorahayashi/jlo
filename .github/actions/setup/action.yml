@@ -12,10 +12,17 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install Rust toolchain
+    - name: Install Rust toolchain (explicit version)
+      if: inputs.rust-version != ''
       uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
       with:
         toolchain: ${{ inputs.rust-version }}
+        components: ${{ inputs.components }}
+
+    - name: Install Rust toolchain (from file)
+      if: inputs.rust-version == ''
+      uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+      with:
         components: ${{ inputs.components }}
 
     - name: Cache Cargo dependencies
