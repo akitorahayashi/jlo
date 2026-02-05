@@ -1,0 +1,13 @@
+[tool.tarpaulin]
+out = ["Xml"]
+output-dir = "coverage"
+all-features = true
+fail-under = 50
+exclude-files = [
+    "src/main.rs",
+    "src/app/cli/mod.rs",
+    "src/services/adapters/github_command.rs",
+    "src/services/adapters/git_command.rs",
+    "src/testing/*",
+    "src/app/commands/run/mock/*"
+]

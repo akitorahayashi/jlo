@@ -29,7 +29,7 @@ jobs:
 
       - name: Generate coverage
         if: runner.os == 'Linux'
-        run: cargo tarpaulin --out Xml --output-dir coverage --all-features --fail-under 40
+        run: cargo tarpaulin
         env:
           RUST_TEST_THREADS: 1
 

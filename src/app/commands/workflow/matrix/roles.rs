@@ -116,6 +116,7 @@ pub fn execute(options: MatrixRolesOptions) -> Result<MatrixRolesOutput, AppErro
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::fs;
     use tempfile::tempdir;
 
@@ -131,6 +132,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn returns_enabled_observer_roles() {
         let dir = tempdir().unwrap();
         let root = dir.path();
@@ -175,6 +177,7 @@ roles = []
     }
 
     #[test]
+    #[serial]
     fn rejects_invalid_layer() {
         let dir = tempdir().unwrap();
         let root = dir.path();

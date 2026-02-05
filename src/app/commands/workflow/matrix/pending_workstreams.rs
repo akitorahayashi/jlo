@@ -121,6 +121,7 @@ fn has_yml_files(dir: &std::path::Path) -> Result<bool, AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::fs;
     use tempfile::tempdir;
 
@@ -141,6 +142,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn returns_workstreams_with_pending_events() {
         let dir = tempdir().unwrap();
         let root = dir.path();
@@ -178,6 +180,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn returns_empty_when_no_pending_events() {
         let dir = tempdir().unwrap();
         let root = dir.path();

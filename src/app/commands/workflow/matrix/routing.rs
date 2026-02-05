@@ -178,6 +178,7 @@ fn read_requires_deep_analysis(path: &Path) -> Result<bool, AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::fs;
     use tempfile::tempdir;
 
@@ -195,6 +196,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn routes_issues_by_deep_analysis() {
         let dir = tempdir().unwrap();
         let root = dir.path();
@@ -244,6 +246,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn rejects_empty_routing_labels() {
         let dir = tempdir().unwrap();
         let root = dir.path();

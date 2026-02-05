@@ -816,3 +816,14 @@ fn run_workflow_matrix(command: WorkflowMatrixCommands) -> Result<(), AppError> 
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn verify_cli() {
+        use clap::CommandFactory;
+        Cli::command().debug_assert();
+    }
+}
