@@ -675,10 +675,7 @@ mod tests {
         jules_path.create_dir_all().unwrap();
 
         let mut diagnostics = Diagnostics::default();
-        let options = DoctorOptions {
-            fix: true,
-            ..Default::default()
-        };
+        let options = DoctorOptions { fix: true, ..Default::default() };
         let mut applied_fixes = Vec::new();
         let workstreams = Vec::new();
         let issue_labels = Vec::new();
