@@ -349,6 +349,9 @@ enum WorkflowMatrixCommands {
         /// Workstreams JSON from `matrix workstreams` output (the `matrix` field)
         #[arg(long)]
         workstreams_json: String,
+        /// Mock mode: treat all workstreams as having pending events
+        #[arg(long)]
+        mock: bool,
     },
     /// Export planner/implementer issue matrices from workstream inspection
     Routing {
@@ -798,12 +801,12 @@ fn run_workflow_matrix(command: WorkflowMatrixCommands) -> Result<(), AppError> 
             let output = matrix::roles(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowMatrixCommands::PendingWorkstreams { workstreams_json } => {
+        WorkflowMatrixCommands::PendingWorkstreams { workstreams_json, mock } => {
             let workstreams_json: matrix::PendingWorkstreamsInput =
                 serde_json::from_str(&workstreams_json).map_err(|e| {
                     AppError::Validation(format!("Invalid workstreams-json: {}", e))
                 })?;
-            let options = matrix::MatrixPendingWorkstreamsOptions { workstreams_json };
+            let options = matrix::MatrixPendingWorkstreamsOptions { workstreams_json, mock };
             let output = matrix::pending_workstreams(options)?;
             workflow::write_workflow_output(&output)
         }
