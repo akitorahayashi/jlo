@@ -143,18 +143,19 @@ jobs:
           run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
           mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
           mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
-          mock_flags=""
+          args=(
+            workflow wait prs
+            --layer narrator
+            --base-branch jules
+            --expected-count "$expected_count"
+            --run-started-at "$run_started_at"
+            --wait-minutes "$WAIT_MINUTES"
+            --mode merge
+          )
           if [ "$mock" = "true" ]; then
-            mock_flags="--mock --mock-pr-numbers-json '$mock_prs'"
+            args+=(--mock --mock-pr-numbers-json "$mock_prs")
           fi
-          eval jlo workflow wait prs \
-            --layer narrator \
-            --base-branch jules \
-            --expected-count "$expected_count" \
-            --run-started-at "$run_started_at" \
-            --wait-minutes "$WAIT_MINUTES" \
-            --mode merge \
-            $mock_flags
+          jlo "${args[@]}"
 
   # ============================================================
   # Phase 3: Generate workstream matrix
@@ -296,18 +297,19 @@ jobs:
           run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
           mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
           mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
-          mock_flags=""
+          args=(
+            workflow wait prs
+            --layer observers
+            --base-branch jules
+            --expected-count "$expected_count"
+            --run-started-at "$run_started_at"
+            --wait-minutes "$WAIT_MINUTES"
+            --mode merge
+          )
           if [ "$mock" = "true" ]; then
-            mock_flags="--mock --mock-pr-numbers-json '$mock_prs'"
+            args+=(--mock --mock-pr-numbers-json "$mock_prs")
           fi
-          eval jlo workflow wait prs \
-            --layer observers \
-            --base-branch jules \
-            --expected-count "$expected_count" \
-            --run-started-at "$run_started_at" \
-            --wait-minutes "$WAIT_MINUTES" \
-            --mode merge \
-            $mock_flags
+          jlo "${args[@]}"
 
   # ============================================================
   # Phase 7: Generate decider matrix (pending events check)
@@ -407,18 +409,19 @@ jobs:
           run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
           mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
           mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
-          mock_flags=""
+          args=(
+            workflow wait prs
+            --layer deciders
+            --base-branch jules
+            --expected-count "$expected_count"
+            --run-started-at "$run_started_at"
+            --wait-minutes "$WAIT_MINUTES"
+            --mode merge
+          )
           if [ "$mock" = "true" ]; then
-            mock_flags="--mock --mock-pr-numbers-json '$mock_prs'"
+            args+=(--mock --mock-pr-numbers-json "$mock_prs")
           fi
-          eval jlo workflow wait prs \
-            --layer deciders \
-            --base-branch jules \
-            --expected-count "$expected_count" \
-            --run-started-at "$run_started_at" \
-            --wait-minutes "$WAIT_MINUTES" \
-            --mode merge \
-            $mock_flags
+          jlo "${args[@]}"
 
   # ============================================================
   # Phase 10: Generate routing matrices (new issues)
@@ -519,18 +522,19 @@ jobs:
           run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
           mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
           mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
-          mock_flags=""
+          args=(
+            workflow wait prs
+            --layer planners
+            --base-branch jules
+            --expected-count "$expected_count"
+            --run-started-at "$run_started_at"
+            --wait-minutes "$WAIT_MINUTES"
+            --mode merge
+          )
           if [ "$mock" = "true" ]; then
-            mock_flags="--mock --mock-pr-numbers-json '$mock_prs'"
+            args+=(--mock --mock-pr-numbers-json "$mock_prs")
           fi
-          eval jlo workflow wait prs \
-            --layer planners \
-            --base-branch jules \
-            --expected-count "$expected_count" \
-            --run-started-at "$run_started_at" \
-            --wait-minutes "$WAIT_MINUTES" \
-            --mode merge \
-            $mock_flags
+          jlo "${args[@]}"
 
   # ============================================================
   # Phase 13: Run implementers
@@ -603,18 +607,19 @@ jobs:
           run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
           mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
           mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
-          mock_flags=""
+          args=(
+            workflow wait prs
+            --layer implementers
+            --base-branch '{{ gha_raw("env.TARGET_BRANCH") }}'
+            --expected-count "$expected_count"
+            --run-started-at "$run_started_at"
+            --wait-minutes "$WAIT_MINUTES"
+            --mode label
+          )
           if [ "$mock" = "true" ]; then
-            mock_flags="--mock --mock-pr-numbers-json '$mock_prs'"
+            args+=(--mock --mock-pr-numbers-json "$mock_prs")
           fi
-          eval jlo workflow wait prs \
-            --layer implementers \
-            --base-branch '{{ gha_raw("env.TARGET_BRANCH") }}' \
-            --expected-count "$expected_count" \
-            --run-started-at "$run_started_at" \
-            --wait-minutes {{ gha_raw("env.WAIT_MINUTES") }} \
-            --mode label \
-            $mock_flags
+          jlo "${args[@]}"
 
   # ============================================================
   # Phase 15: Cleanup mock artifacts

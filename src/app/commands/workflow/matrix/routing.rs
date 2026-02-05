@@ -85,6 +85,16 @@ pub fn execute(options: MatrixRoutingOptions) -> Result<MatrixRoutingOutput, App
         return Err(AppError::Validation("routing_labels must not be empty".into()));
     }
 
+    // Validate labels don't contain path traversal sequences
+    for label in &labels {
+        if label.contains("..") || label.contains('/') || label.contains('\\') {
+            return Err(AppError::Validation(format!(
+                "Invalid routing label '{}': must not contain path separators or '..'",
+                label
+            )));
+        }
+    }
+
     let mut planner_issues = Vec::new();
     let mut implementer_issues = Vec::new();
 

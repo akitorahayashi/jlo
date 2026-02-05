@@ -48,6 +48,7 @@ pub fn write_workflow_output<T: Serialize>(output: &T) -> Result<(), AppError> {
 mod tests {
     use super::*;
     use serde::Serialize;
+    use serial_test::serial;
     use std::fs;
     use tempfile::NamedTempFile;
 
@@ -67,6 +68,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn github_output_contains_single_line_value() {
         let temp_file = NamedTempFile::new().unwrap();
         let path = temp_file.path().to_string_lossy().to_string();
@@ -103,6 +105,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn no_github_output_when_env_not_set() {
         // Ensure env var is not set
         // SAFETY: Tests run in serial, env var manipulation is isolated

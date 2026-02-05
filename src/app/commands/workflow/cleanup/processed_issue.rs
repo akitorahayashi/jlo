@@ -47,33 +47,44 @@ pub fn execute(
         return Err(AppError::WorkspaceNotFound);
     }
 
+    let jules_path = workspace.jules_path();
     let issue_path = Path::new(&options.issue_file);
 
-    // Validate issue file exists
-    if !issue_path.exists() {
+    // Canonicalize and validate issue file is within .jules/
+    let canonical_issue = issue_path.canonicalize().map_err(|_| {
+        AppError::Validation(format!("Issue file does not exist: {}", options.issue_file))
+    })?;
+
+    if !canonical_issue.starts_with(&jules_path) {
         return Err(AppError::Validation(format!(
-            "Issue file does not exist: {}",
+            "Issue file must be within .jules/ directory: {}",
             options.issue_file
         )));
     }
 
     // Read issue file to find source_events
-    let content = fs::read_to_string(issue_path)?;
+    let content = fs::read_to_string(&canonical_issue)?;
     let source_events = extract_source_events(&content)?;
 
     let mut deleted_paths = Vec::new();
 
-    // Delete source event files
+    // Delete source event files (with path validation)
     for event_path in &source_events {
         let full_path = Path::new(event_path);
-        if full_path.exists() {
-            fs::remove_file(full_path)?;
+        if let Ok(canonical_event) = full_path.canonicalize() {
+            if !canonical_event.starts_with(&jules_path) {
+                return Err(AppError::Validation(format!(
+                    "Source event must be within .jules/ directory: {}",
+                    event_path
+                )));
+            }
+            fs::remove_file(&canonical_event)?;
             deleted_paths.push(event_path.clone());
         }
     }
 
     // Delete the issue file itself
-    fs::remove_file(issue_path)?;
+    fs::remove_file(&canonical_issue)?;
     deleted_paths.push(options.issue_file.clone());
 
     let mut committed = false;

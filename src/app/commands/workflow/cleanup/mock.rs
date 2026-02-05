@@ -80,8 +80,10 @@ pub fn execute(options: WorkflowCleanupMockOptions) -> Result<WorkflowCleanupMoc
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     #[test]
+    #[serial]
     fn rejects_invalid_mock_tag() {
         // Set required env vars for test
         unsafe {
