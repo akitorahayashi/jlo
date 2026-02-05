@@ -3,6 +3,8 @@ use std::path::Path;
 
 use chrono::Utc;
 
+use serde::Deserialize;
+
 use crate::app::commands::run::RunOptions;
 use crate::app::commands::run::config::load_config;
 use crate::domain::{AppError, Layer, MockConfig};
@@ -116,21 +118,16 @@ pub fn load_mock_config<W: WorkspaceStore>(
     })
 }
 
+#[derive(Deserialize)]
+struct LayerContract {
+    branch_prefix: Option<String>,
+}
+
 /// Extract branch_prefix from contracts.yml content.
 fn extract_branch_prefix(content: &str) -> Option<String> {
-    // Simple YAML parsing for branch_prefix
-    for line in content.lines() {
-        let line = line.trim();
-        if line.starts_with("branch_prefix:") {
-            let value = line.trim_start_matches("branch_prefix:").trim();
-            // Remove quotes if present
-            let value = value.trim_matches('"').trim_matches('\'');
-            if !value.is_empty() {
-                return Some(value.to_string());
-            }
-        }
-    }
-    None
+    serde_yaml::from_str::<LayerContract>(content)
+        .ok()
+        .and_then(|c| c.branch_prefix)
 }
 
 /// Extract issue labels from github-labels.json content.
