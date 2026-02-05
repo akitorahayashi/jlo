@@ -37,9 +37,11 @@ fn test_api_coverage_full_flow() {
     assert!(root.join(".jules").exists());
 
     // 2. Doctor (fresh init should pass)
-    let doctor_outcome =
-        doctor_at(root.to_path_buf(), DoctorOptions { fix: false, strict: false, workstream: None })
-            .expect("doctor failed");
+    let doctor_outcome = doctor_at(
+        root.to_path_buf(),
+        DoctorOptions { fix: false, strict: false, workstream: None },
+    )
+    .expect("doctor failed");
     assert_eq!(doctor_outcome.exit_code, 0);
 
     // 3. Update (prompt preview)
@@ -49,13 +51,9 @@ fn test_api_coverage_full_flow() {
     // 4. Template (create role in generic workstream)
     // "generic" workstream is created by init
     // Note: Roles are created in global layer directory, not workstream directory.
-    let _ = template_at(
-        Some("observers"),
-        Some("test-observer"),
-        Some("generic"),
-        root.to_path_buf(),
-    )
-    .expect("template role failed");
+    let _ =
+        template_at(Some("observers"), Some("test-observer"), Some("generic"), root.to_path_buf())
+            .expect("template role failed");
 
     // Check global role location: .jules/roles/<layer>/roles/<role>
     let role_path = root.join(".jules/roles/observers/roles/test-observer");
