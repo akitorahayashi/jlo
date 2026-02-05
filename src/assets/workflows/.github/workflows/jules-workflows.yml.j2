@@ -104,7 +104,7 @@ jobs:
 
       - name: Run narrator
         id: run
-        run: jlo workflow run --layer narrator ${{ gha_raw("env.JLO_RUN_FLAGS") }}
+        run: jlo workflow run --layer narrator {{ gha_raw("env.JLO_RUN_FLAGS") }}
 
       - name: Validate workspace (fail-fast)
         run: jlo doctor
@@ -261,7 +261,7 @@ jobs:
         id: run
         env:
           MATRIX_JSON: {{ gha_expr("needs.generate-observer-matrix.outputs.json") }}
-        run: jlo workflow run --layer observers --matrix-json "$MATRIX_JSON" ${{ gha_raw("env.JLO_RUN_FLAGS") }}
+        run: jlo workflow run --layer observers --matrix-json "$MATRIX_JSON" {{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 6: Wait for observer processing
@@ -373,7 +373,7 @@ jobs:
         id: run
         env:
           MATRIX_JSON: {{ gha_expr("needs.generate-decider-matrix.outputs.json") }}
-        run: jlo workflow run --layer deciders --matrix-json "$MATRIX_JSON" ${{ gha_raw("env.JLO_RUN_FLAGS") }}
+        run: jlo workflow run --layer deciders --matrix-json "$MATRIX_JSON" {{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 9: Wait for decider processing
@@ -486,7 +486,7 @@ jobs:
         id: run
         env:
           MATRIX_JSON: {{ gha_expr("toJSON(fromJSON(needs.generate-planner-matrix.outputs.json).planner_matrix)") }}
-        run: jlo workflow run --layer planners --matrix-json "$MATRIX_JSON" ${{ gha_raw("env.JLO_RUN_FLAGS") }}
+        run: jlo workflow run --layer planners --matrix-json "$MATRIX_JSON" {{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 12: Wait for planner PRs
@@ -570,7 +570,7 @@ jobs:
         id: run
         env:
           MATRIX_JSON: {{ gha_expr("toJSON(fromJSON(needs.generate-planner-matrix.outputs.json).implementer_matrix)") }}
-        run: jlo workflow run --layer implementers --matrix-json "$MATRIX_JSON" --target-branch "$TARGET_BRANCH" ${{ gha_raw("env.JLO_RUN_FLAGS") }}
+        run: jlo workflow run --layer implementers --matrix-json "$MATRIX_JSON" --target-branch "$TARGET_BRANCH" {{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 14: Wait for implementer labels
