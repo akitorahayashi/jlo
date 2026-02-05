@@ -1,0 +1,21 @@
+schema_version: 1
+id: "d7k3x9"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "taxonomy"
+confidence: "high"
+title: "Redundant Filesystem Abstractions"
+statement: |
+  `PromptFs` and `WorkspaceStore` both abstract filesystem operations for testing, creating duplication and inconsistent testing boundaries.
+evidence:
+  - path: "src/services/application/prompt_assembly.rs"
+    loc:
+      - "trait PromptFs"
+    note: "Defines a local filesystem abstraction trait."
+  - path: "src/ports/workspace_store.rs"
+    loc:
+      - "trait WorkspaceStore"
+    note: "Defines the application-wide workspace I/O port."
+tags:
+  - "redundancy"
+  - "abstraction"

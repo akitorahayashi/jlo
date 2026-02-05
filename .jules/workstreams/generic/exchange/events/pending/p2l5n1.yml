@@ -1,0 +1,17 @@
+schema_version: 1
+id: "p2l5n1"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "taxonomy"
+confidence: "medium"
+title: "Inconsistent Error Modeling"
+statement: |
+  `AppError` mixes generic error categories (`ParseError`) with implementation-specific wrappers (`TomlParseError`), leaking abstraction details.
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "enum AppError"
+    note: "Contains `ParseError` (generic) and `TomlParseError` (specific)."
+tags:
+  - "error-handling"
+  - "abstraction"
