@@ -1,0 +1,19 @@
+schema_version: 2
+
+observer: "cov"
+workstream: "generic"
+
+updated_at: "2026-02-05T19:00:00Z"
+
+goals:
+  - "Establish a baseline for critical path coverage."
+  - "Identify and report implicit test configurations."
+  - "Highlight areas with 'false safety' (mock tests without validation)."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-05T19:00:00Z"
+    summary: "Initial run. Identified low coverage threshold and untested critical paths."

@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "a8f9d2"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "cov"
+confidence: "high"
+
+# Content
+title: "Coverage threshold set to 40%"
+statement: |
+  The project enforces a global coverage threshold of 40%, which is insufficient to guarantee reliability for critical infrastructure logic.
+
+# Evidence supporting the observation
+evidence:
+  - path: ".github/workflows/run-tests.yml"
+    loc:
+      - "fail-under 40"
+    note: "The 'fail-under' argument in the cargo tarpaulin command is set to 40."
+
+tags:
+  - "coverage"
+  - "risk"
+  - "ci"
