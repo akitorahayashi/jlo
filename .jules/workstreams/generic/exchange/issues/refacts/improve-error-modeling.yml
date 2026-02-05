@@ -25,5 +25,19 @@ acceptance_criteria:
 verification_commands:
   - "cargo check"
   - "cargo test"
-requires_deep_analysis: true
+requires_deep_analysis: false
 deep_analysis_reason: "Requires designing a comprehensive error hierarchy that balances granularity with usability across the application."
+
+# Mock planner expansion
+expanded_at: "2026-02-05T07:48:06.250045643+00:00"
+expanded_by: mock-planner
+analysis_details: |
+  Mock deep analysis performed by jlo --mock for workflow validation.
+  Scope: run-21703198282
+  
+  ## Impact Analysis
+  - Mock impact area 1
+  - Mock impact area 2
+  
+  ## Implementation Notes
+  - No actual analysis performed (mock mode)
