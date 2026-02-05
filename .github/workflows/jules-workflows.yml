@@ -1,41 +1,29 @@
-# Jules Agent Orchestration
-#
-#
-# Orchestrates sequential execution.
-# Each phase reads state, generates a matrix, then executes sequentially.
-# Observers/planners/implementers run inside a single job to avoid multiple runners.
-#
-# Narrator runs first to produce changes context, followed by doctor validation.
-# Doctor validation is also handled by jules-automerge.yml as a pre-merge gate.
-
 name: Jules Workflows
-
 on:
   schedule:
-    - cron: '0 20 * * *'  # Daily at 20:00 UTC (05:00 JST)
+  - cron: 0 20 * * *
   workflow_dispatch:
     inputs:
       entry_point:
-        description: 'Start from layer'
+        description: Start from layer
         type: choice
         options:
-          - narrator
-          - observers
-          - deciders
+        - narrator
+        - observers
+        - deciders
         default: narrator
       wait_minutes:
-        description: 'Minutes to wait between layers (Jules async processing time)'
+        description: Minutes to wait between layers (Jules async processing time)
         type: number
         default: 30
       routing_labels:
-        description: 'Issue labels eligible for planner/implementer routing (comma-separated)'
+        description: Issue labels eligible for planner/implementer routing (comma-separated)
         type: string
         default: bugs,feats,refacts,tests,docs
       mock:
-        description: 'Run in mock mode (creates branches/PRs without Jules API)'
+        description: Run in mock mode (creates branches/PRs without Jules API)
         type: boolean
         default: false
-
   workflow_call:
     inputs:
       entry_point:
@@ -50,16 +38,13 @@ on:
       mock:
         type: boolean
         default: false
-
 permissions:
   contents: write
   issues: write
   pull-requests: write
-
 concurrency:
   group: jules
   cancel-in-progress: false
-
 env:
   ENTRY_POINT: ${{ github.event.inputs.entry_point || 'narrator' }}
   WAIT_MINUTES: ${{ github.event.inputs.wait_minutes || 30 }}
@@ -67,16 +52,9 @@ env:
   MOCK_MODE: ${{ github.event.inputs.mock || false }}
   JULES_MOCK_SCOPE: ${{ format('run-{0}', github.run_id) }}
   JLO_RUN_FLAGS: ${{ github.event.inputs.mock == 'true' && '--mock' || '' }}
-
 jobs:
-  # ============================================================
-  # Phase 1: Run narrator (changes feed generation)
-  # ============================================================
   run-narrator:
-    if: >-
-      vars.JULES_PAUSED != 'true' &&
-      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') &&
-      (github.event.inputs.entry_point || 'narrator') == 'narrator'
+    if: vars.JULES_PAUSED != 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && (github.event.inputs.entry_point || 'narrator') == 'narrator'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -86,34 +64,25 @@ jobs:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Validate .jules workspace exists
-        run: |
-          if [ ! -d ".jules" ]; then
-            echo "::error::.jules directory is missing on the 'jules' branch."
-            exit 1
-          fi
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Run narrator
-        id: run-narrator
-        run: bash .github/scripts/jules-run-narrator.sh
-
-      - name: Validate workspace (fail-fast)
-        run: jlo doctor
-
-  # ============================================================
-  # Phase 2: Wait for narrator processing
-  # ============================================================
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+    - name: Configure Git
+      uses: ./.github/actions/configure-git
+    - name: Validate .jules workspace exists
+      run: |
+        if [ ! -d ".jules" ]; then
+          echo "::error::.jules directory is missing on the 'jules' branch."
+          exit 1
+        fi
+    - name: Install jlo
+      uses: ./.github/actions/install-jlo
+    - name: Run narrator
+      id: run-narrator
+      run: bash .github/scripts/jules-run-narrator.sh
+    - name: Validate workspace (fail-fast)
+      run: jlo doctor
   wait-after-narrator:
     needs: run-narrator
     if: |
@@ -122,15 +91,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-        run: |
-          echo "Waiting $WAIT_MINUTES minutes for Jules to process narrator PR..."
-          sleep $((WAIT_MINUTES * 60))
-          echo "Wait complete."
-
-  # ============================================================
-  # Phase 3: Generate workstream matrix
-  # ============================================================
+    - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+      run: |
+        echo "Waiting $WAIT_MINUTES minutes for Jules to process narrator PR..."
+        sleep $((WAIT_MINUTES * 60))
+        echo "Wait complete."
   generate-workstream-matrix:
     needs: wait-after-narrator
     if: |
@@ -144,62 +109,49 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_workstreams: ${{ steps.matrix.outputs.has_workstreams }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Validate .jules workspace
-        run: |
-          if [ ! -d ".jules" ]; then
-            echo "::error::.jules directory is missing on the 'jules' branch."
-            exit 1
-          fi
-          if ! ls .jules/workstreams/*/scheduled.toml >/dev/null 2>&1; then
-            echo "::error::No workstream scheduled.toml found under .jules/workstreams/."
-            exit 1
-          fi
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Generate workstream matrix
-        id: matrix
-        run: bash .github/scripts/jules-generate-workstream-matrix.sh
-
-  # ============================================================
-  # Phase 4: Generate observer matrix (role-level)
-  # ============================================================
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+    - name: Validate .jules workspace
+      run: |
+        if [ ! -d ".jules" ]; then
+          echo "::error::.jules directory is missing on the 'jules' branch."
+          exit 1
+        fi
+        if ! ls .jules/workstreams/*/scheduled.toml >/dev/null 2>&1; then
+          echo "::error::No workstream scheduled.toml found under .jules/workstreams/."
+          exit 1
+        fi
+    - name: Install jlo
+      uses: ./.github/actions/install-jlo
+    - name: Generate workstream matrix
+      id: matrix
+      run: bash .github/scripts/jules-generate-workstream-matrix.sh
   generate-observer-matrix:
     needs: generate-workstream-matrix
-    if: >-
-      needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
-      (github.event.inputs.entry_point || 'narrator') != 'deciders'
+    if: needs.generate-workstream-matrix.outputs.has_workstreams == 'true' && (github.event.inputs.entry_point || 'narrator') != 'deciders'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_observers: ${{ steps.matrix.outputs.has_observers }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Generate observer matrix
-        id: matrix
-        env:
-          WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.matrix }}
-        run: bash .github/scripts/jules-generate-observer-matrix.sh
-
-  # ============================================================
-  # Phase 5: Run observers
-  # ============================================================
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+    - name: Install jlo
+      uses: ./.github/actions/install-jlo
+    - name: Generate observer matrix
+      id: matrix
+      env:
+        WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.matrix }}
+      run: bash .github/scripts/jules-generate-observer-matrix.sh
   run-observers:
-    needs: [generate-workstream-matrix, generate-observer-matrix]
+    needs:
+    - generate-workstream-matrix
+    - generate-observer-matrix
     if: |
       always() &&
       needs.generate-observer-matrix.result == 'success' &&
@@ -213,45 +165,39 @@ jobs:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Run observers sequentially
-        id: run-observers
-        env:
-          OBSERVER_MATRIX: ${{ needs.generate-observer-matrix.outputs.matrix }}
-        run: bash .github/scripts/jules-run-observers-sequential.sh
-
-  # ============================================================
-  # Phase 6: Wait for observer processing
-  # ============================================================
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+    - name: Configure Git
+      uses: ./.github/actions/configure-git
+    - name: Install jlo
+      uses: ./.github/actions/install-jlo
+    - name: Run observers sequentially
+      id: run-observers
+      env:
+        OBSERVER_MATRIX: ${{ needs.generate-observer-matrix.outputs.matrix }}
+      run: bash .github/scripts/jules-run-observers-sequential.sh
   wait-after-observers:
-    needs: [generate-observer-matrix, run-observers]
+    needs:
+    - generate-observer-matrix
+    - run-observers
     if: |
       always() &&
       needs.run-observers.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-        run: |
-          echo "Waiting $WAIT_MINUTES minutes for Jules to process observer PRs..."
-          sleep $((WAIT_MINUTES * 60))
-          echo "Wait complete."
-
-  # ============================================================
-  # Phase 7: Generate decider matrix (pending events check)
-  # ============================================================
+    - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+      run: |
+        echo "Waiting $WAIT_MINUTES minutes for Jules to process observer PRs..."
+        sleep $((WAIT_MINUTES * 60))
+        echo "Wait complete."
   generate-decider-matrix:
-    needs: [generate-workstream-matrix, generate-observer-matrix, wait-after-observers]
+    needs:
+    - generate-workstream-matrix
+    - generate-observer-matrix
+    - wait-after-observers
     if: |
       always() &&
       needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
@@ -263,25 +209,20 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_pending: ${{ steps.matrix.outputs.has_pending }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Generate decider matrix from pending events
-        id: matrix
-        env:
-          WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.matrix }}
-        run: bash .github/scripts/jules-generate-decider-matrix.sh
-
-  # ============================================================
-  # Phase 8: Run deciders
-  # ============================================================
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+    - name: Install jlo
+      uses: ./.github/actions/install-jlo
+    - name: Generate decider matrix from pending events
+      id: matrix
+      env:
+        WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.matrix }}
+      run: bash .github/scripts/jules-generate-decider-matrix.sh
   run-deciders:
-    needs: [generate-decider-matrix]
+    needs:
+    - generate-decider-matrix
     if: |
       always() &&
       needs.generate-decider-matrix.result == 'success' &&
@@ -295,45 +236,40 @@ jobs:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Run deciders sequentially
-        id: run-deciders
-        env:
-          DECIDER_MATRIX: ${{ needs.generate-decider-matrix.outputs.matrix }}
-        run: bash .github/scripts/jules-run-deciders-sequential.sh
-
-  # ============================================================
-  # Phase 9: Wait for decider processing
-  # ============================================================
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+    - name: Configure Git
+      uses: ./.github/actions/configure-git
+    - name: Install jlo
+      uses: ./.github/actions/install-jlo
+    - name: Run deciders sequentially
+      id: run-deciders
+      env:
+        DECIDER_MATRIX: ${{ needs.generate-decider-matrix.outputs.matrix }}
+      run: bash .github/scripts/jules-run-deciders-sequential.sh
   wait-after-deciders:
-    needs: [generate-decider-matrix, run-deciders]
+    needs:
+    - generate-decider-matrix
+    - run-deciders
     if: |
       always() &&
       needs.run-deciders.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-        run: |
-          echo "Waiting $WAIT_MINUTES minutes for Jules to process decider PRs..."
-          sleep $((WAIT_MINUTES * 60))
-          echo "Wait complete."
-
-  # ============================================================
-  # Phase 10: Generate planner/implementer matrix (new issues)
-  # ============================================================
+    - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+      run: |
+        echo "Waiting $WAIT_MINUTES minutes for Jules to process decider PRs..."
+        sleep $((WAIT_MINUTES * 60))
+        echo "Wait complete."
   generate-planner-matrix:
-    needs: [generate-workstream-matrix, generate-decider-matrix, run-deciders, wait-after-deciders]
+    needs:
+    - generate-workstream-matrix
+    - generate-decider-matrix
+    - run-deciders
+    - wait-after-deciders
     if: |
       always() &&
       needs.generate-workstream-matrix.outputs.has_workstreams == 'true' &&
@@ -348,26 +284,21 @@ jobs:
       implementer_matrix: ${{ steps.matrix.outputs.implementer_matrix }}
       has_implementers: ${{ steps.matrix.outputs.has_implementers }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Generate planner and implementer matrices
-        id: matrix
-        env:
-          WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.matrix }}
-          ROUTING_LABELS: ${{ env.ROUTING_LABELS }}
-        run: bash .github/scripts/jules-generate-routing-matrices.sh
-
-  # ============================================================
-  # Phase 11: Run planners
-  # ============================================================
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+    - name: Install jlo
+      uses: ./.github/actions/install-jlo
+    - name: Generate planner and implementer matrices
+      id: matrix
+      env:
+        WORKSTREAMS_JSON: ${{ needs.generate-workstream-matrix.outputs.matrix }}
+        ROUTING_LABELS: ${{ env.ROUTING_LABELS }}
+      run: bash .github/scripts/jules-generate-routing-matrices.sh
   run-planners:
-    needs: [generate-planner-matrix]
+    needs:
+    - generate-planner-matrix
     if: |
       always() &&
       needs.generate-planner-matrix.result == 'success' &&
@@ -381,28 +312,22 @@ jobs:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Run planners sequentially
-        id: run-planners
-        env:
-          PLANNER_MATRIX: ${{ needs.generate-planner-matrix.outputs.planner_matrix }}
-        run: bash .github/scripts/jules-run-planners-sequential.sh
-
-  # ============================================================
-  # Phase 12: Run implementers
-  # ============================================================
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+    - name: Configure Git
+      uses: ./.github/actions/configure-git
+    - name: Install jlo
+      uses: ./.github/actions/install-jlo
+    - name: Run planners sequentially
+      id: run-planners
+      env:
+        PLANNER_MATRIX: ${{ needs.generate-planner-matrix.outputs.planner_matrix }}
+      run: bash .github/scripts/jules-run-planners-sequential.sh
   run-implementers:
-    needs: [generate-planner-matrix]
+    needs:
+    - generate-planner-matrix
     if: |
       always() &&
       needs.generate-planner-matrix.result == 'success' &&
@@ -417,75 +342,72 @@ jobs:
       TARGET_BRANCH: ${{ vars.JULES_TARGET_BRANCH || 'main' }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Run implementers sequentially
-        id: run-implementers
-        env:
-          IMPLEMENTER_MATRIX: ${{ needs.generate-planner-matrix.outputs.implementer_matrix }}
-        run: bash .github/scripts/jules-run-implementers-sequential.sh
-
-  # ============================================================
-  # Phase 13: Cleanup failed mock branches
-  # ============================================================
+    - uses: actions/checkout@v4
+      with:
+        ref: jules
+        fetch-depth: 0
+    - name: Install jlo
+      uses: ./.github/actions/install-jlo
+    - name: Configure Git
+      uses: ./.github/actions/configure-git
+    - name: Run implementers sequentially
+      id: run-implementers
+      env:
+        IMPLEMENTER_MATRIX: ${{ needs.generate-planner-matrix.outputs.implementer_matrix }}
+      run: bash .github/scripts/jules-run-implementers-sequential.sh
   cleanup-mock-branches:
-    needs: [run-narrator, run-observers, run-deciders, run-planners, run-implementers]
+    needs:
+    - run-narrator
+    - run-observers
+    - run-deciders
+    - run-planners
+    - run-implementers
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+    - name: Cleanup failed mock branches
+      run: |
+        # Collect all mock branches from job outputs
+        MOCK_BRANCHES=(
+          "$${{ needs.run-narrator.outputs.mock_branch || '' }}"
+          "$${{ needs.run-observers.outputs.mock_branch || '' }}"
+          "$${{ needs.run-deciders.outputs.mock_branch || '' }}"
+          "$${{ needs.run-planners.outputs.mock_branch || '' }}"
+          "$${{ needs.run-implementers.outputs.mock_branch || '' }}"
+        )
 
-      - name: Cleanup failed mock branches
-        run: |
-          # Collect all mock branches from job outputs
-          MOCK_BRANCHES=(
-            "$${{ needs.run-narrator.outputs.mock_branch || '' }}"
-            "$${{ needs.run-observers.outputs.mock_branch || '' }}"
-            "$${{ needs.run-deciders.outputs.mock_branch || '' }}"
-            "$${{ needs.run-planners.outputs.mock_branch || '' }}"
-            "$${{ needs.run-implementers.outputs.mock_branch || '' }}"
-          )
+        # Collect results from all run jobs
+        RESULTS=(
+          "$${{ needs.run-narrator.result }}"
+          "$${{ needs.run-observers.result }}"
+          "$${{ needs.run-deciders.result }}"
+          "$${{ needs.run-planners.result }}"
+          "$${{ needs.run-implementers.result }}"
+        )
 
-          # Collect results from all run jobs
-          RESULTS=(
-            "$${{ needs.run-narrator.result }}"
-            "$${{ needs.run-observers.result }}"
-            "$${{ needs.run-deciders.result }}"
-            "$${{ needs.run-planners.result }}"
-            "$${{ needs.run-implementers.result }}"
-          )
+        echo "Cleaning up mock branches from failed/cancelled jobs..."
+        for i in "${!MOCK_BRANCHES[@]}"; do
+          BRANCH="${MOCK_BRANCHES[$i]}"
+          RESULT="${RESULTS[$i]}"
 
-          echo "Cleaning up mock branches from failed/cancelled jobs..."
-          for i in "${!MOCK_BRANCHES[@]}"; do
-            BRANCH="${MOCK_BRANCHES[$i]}"
-            RESULT="${RESULTS[$i]}"
+          # Skip if branch is empty
+          [ -z "$BRANCH" ] && continue
 
-            # Skip if branch is empty
-            [ -z "$BRANCH" ] && continue
-
-            # Delete branch if job failed or was cancelled
-            if [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
-              echo "Deleting failed/cancelled mock branch: $BRANCH (result: $RESULT)"
-              if git push origin --delete "$BRANCH" 2>/dev/null; then
-                echo "✓ Deleted $BRANCH"
-              else
-                echo "⚠ Branch $BRANCH may not exist or already deleted"
-              fi
+          # Delete branch if job failed or was cancelled
+          if [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
+            echo "Deleting failed/cancelled mock branch: $BRANCH (result: $RESULT)"
+            if git push origin --delete "$BRANCH" 2>/dev/null; then
+              echo "✓ Deleted $BRANCH"
             else
-              echo "Skipping $BRANCH (result: $RESULT)"
+              echo "⚠ Branch $BRANCH may not exist or already deleted"
             fi
-          done
+          else
+            echo "Skipping $BRANCH (result: $RESULT)"
+          fi
+        done
