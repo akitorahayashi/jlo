@@ -39,4 +39,3 @@ jobs:
           issue_file: ${{ inputs.issue_file }}
           dry_run: ${{ inputs.dry_run }}
           target_branch: ${{ vars.JULES_TARGET_BRANCH || 'main' }}
-
