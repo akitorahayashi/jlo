@@ -58,6 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
+      mock_branch: ${{ steps.run-narrator.outputs.mock_branch }}
       mock_pr_number: ${{ steps.run-narrator.outputs.mock_pr_number }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
@@ -158,6 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
+      mock_branch: ${{ steps.run-observers.outputs.mock_branch }}
       mock_pr_number: ${{ steps.run-observers.outputs.mock_pr_number }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
@@ -228,6 +230,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
+      mock_branch: ${{ steps.run-deciders.outputs.mock_branch }}
       mock_pr_number: ${{ steps.run-deciders.outputs.mock_pr_number }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
@@ -303,6 +306,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
+      mock_branch: ${{ steps.run-planners.outputs.mock_branch }}
       mock_pr_number: ${{ steps.run-planners.outputs.mock_pr_number }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
@@ -331,6 +335,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
+      mock_branch: ${{ steps.run-implementers.outputs.mock_branch }}
       mock_pr_number: ${{ steps.run-implementers.outputs.mock_pr_number }}
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
@@ -350,3 +355,59 @@ jobs:
       env:
         IMPLEMENTER_MATRIX: ${{ needs.generate-planner-matrix.outputs.implementer_matrix }}
       run: bash .github/scripts/jules-run-implementers-sequential.sh
+  cleanup-mock-branches:
+    needs:
+    - run-narrator
+    - run-observers
+    - run-deciders
+    - run-planners
+    - run-implementers
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+    - name: Cleanup failed mock branches
+      run: |
+        # Collect all mock branches from job outputs
+        MOCK_BRANCHES=(
+          "$${{ needs.run-narrator.outputs.mock_branch || '' }}"
+          "$${{ needs.run-observers.outputs.mock_branch || '' }}"
+          "$${{ needs.run-deciders.outputs.mock_branch || '' }}"
+          "$${{ needs.run-planners.outputs.mock_branch || '' }}"
+          "$${{ needs.run-implementers.outputs.mock_branch || '' }}"
+        )
+
+        # Collect results from all run jobs
+        RESULTS=(
+          "$${{ needs.run-narrator.result }}"
+          "$${{ needs.run-observers.result }}"
+          "$${{ needs.run-deciders.result }}"
+          "$${{ needs.run-planners.result }}"
+          "$${{ needs.run-implementers.result }}"
+        )
+
+        echo "Cleaning up mock branches from failed/cancelled jobs..."
+        for i in "${!MOCK_BRANCHES[@]}"; do
+          BRANCH="${MOCK_BRANCHES[$i]}"
+          RESULT="${RESULTS[$i]}"
+
+          # Skip if branch is empty
+          [ -z "$BRANCH" ] && continue
+
+          # Delete branch if job failed or was cancelled
+          if [ "$RESULT" = "failure" ] || [ "$RESULT" = "cancelled" ]; then
+            echo "Deleting failed/cancelled mock branch: $BRANCH (result: $RESULT)"
+            if git push origin --delete "$BRANCH" 2>/dev/null; then
+              echo "✓ Deleted $BRANCH"
+            else
+              echo "⚠ Branch $BRANCH may not exist or already deleted"
+            fi
+          else
+            echo "Skipping $BRANCH (result: $RESULT)"
+          fi
+        done

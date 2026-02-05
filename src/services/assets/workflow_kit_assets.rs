@@ -20,11 +20,19 @@ fn gha_expr(expr: &str) -> String {
     format!("${{{{ {} }}}}", expr)
 }
 
+/// Helper function for templates to output raw GitHub Actions expressions.
+/// Usage in template: {{ gha_raw("needs.job.outputs.value") }} → ${{ needs.job.outputs.value }}
+/// This is identical to gha_expr but the name makes it clearer when used in string contexts.
+fn gha_raw(expr: &str) -> String {
+    format!("${{{{ {} }}}}", expr)
+}
+
 pub fn load_workflow_kit(mode: WorkflowRunnerMode) -> Result<WorkflowKitAssets, AppError> {
     let mut env = Environment::new();
 
     // Add the gha_expr function to the template environment
     env.add_function("gha_expr", |expr: &str| -> String { gha_expr(expr) });
+    env.add_function("gha_raw", |expr: &str| -> String { gha_raw(expr) });
 
     // Template context based on runner mode
     let runner = match mode {
