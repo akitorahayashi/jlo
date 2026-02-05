@@ -6,7 +6,7 @@
 use std::path::Path;
 
 use crate::domain::{AppError, Layer, PromptContext};
-use crate::services::domain::prompt_assembly::{self, RealPromptFs};
+use crate::services::application::prompt_assembly::{self, RealPromptFs};
 
 /// Assemble the full prompt for a role in a multi-role layer.
 ///

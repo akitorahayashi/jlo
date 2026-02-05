@@ -4,9 +4,9 @@ use std::path::Path;
 
 use crate::app::config::SetupConfig;
 use crate::domain::AppError;
+use crate::services::application::artifact_generator::ArtifactGenerator;
+use crate::services::application::dependency_resolver::DependencyResolver;
 use crate::services::assets::component_catalog_embedded::EmbeddedComponentCatalog;
-use crate::services::domain::artifact_generator::ArtifactGenerator;
-use crate::services::domain::dependency_resolver::DependencyResolver;
 
 /// Execute the setup gen command.
 ///
