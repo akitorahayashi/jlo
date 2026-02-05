@@ -2,6 +2,8 @@ mod common;
 
 use common::TestContext;
 use predicates::prelude::*;
+use std::fs;
+use std::process::Command;
 
 #[test]
 fn init_creates_jules_directory() {
@@ -30,6 +32,72 @@ fn init_fails_if_jules_exists() {
     ctx.cli().arg("init").assert().success();
 
     ctx.cli().arg("init").assert().failure().stderr(predicate::str::contains("already exists"));
+}
+
+#[test]
+fn deinit_fails_on_jules_branch() {
+    let ctx = TestContext::new();
+
+    ctx.cli()
+        .args(["deinit"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Cannot deinit while on branch"));
+}
+
+#[test]
+fn deinit_removes_workflows_and_branch() {
+    let ctx = TestContext::new();
+    let seed_file = ctx.work_dir().join("seed.txt");
+    fs::write(&seed_file, "seed").unwrap();
+    Command::new("git")
+        .args(["config", "user.email", "test@example.com"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git config email failed");
+    Command::new("git")
+        .args(["config", "user.name", "Test User"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git config name failed");
+    Command::new("git")
+        .args(["add", "seed.txt"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git add failed");
+    Command::new("git")
+        .args(["commit", "-m", "seed"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git commit failed");
+
+    ctx.git_checkout_branch("main", true);
+
+    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
+
+    let workflow_path = ctx.work_dir().join(".github/workflows/jules-workflows.yml");
+    let action_path = ctx.work_dir().join(".github/actions/install-jlo/action.yml");
+    assert!(workflow_path.exists(), "workflow kit file should exist before deinit");
+    assert!(action_path.exists(), "workflow action should exist before deinit");
+
+    ctx.cli()
+        .args(["deinit"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Deleted local 'jules' branch"));
+
+    assert!(!workflow_path.exists(), "workflow kit file should be removed");
+    assert!(!action_path.exists(), "workflow action should be removed");
+
+    let output = Command::new("git")
+        .args(["branch", "--list", "jules"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git branch list failed");
+    assert!(
+        String::from_utf8_lossy(&output.stdout).trim().is_empty(),
+        "jules branch should be deleted"
+    );
 }
 
 #[test]

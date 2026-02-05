@@ -169,4 +169,15 @@ impl GitPort for GitCommandAdapter {
         self.run(&["fetch", remote], None)?;
         Ok(())
     }
+
+    fn delete_branch(&self, branch: &str, force: bool) -> Result<bool, AppError> {
+        let output = self.run(&["branch", "--list", branch], None)?;
+        if output.trim().is_empty() {
+            return Ok(false);
+        }
+
+        let args = if force { vec!["branch", "-D", branch] } else { vec!["branch", "-d", branch] };
+        self.run(&args, None)?;
+        Ok(true)
+    }
 }

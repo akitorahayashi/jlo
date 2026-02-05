@@ -1,3 +1,4 @@
+pub mod deinit;
 pub mod doctor;
 pub mod init_scaffold;
 pub mod init_workflows;

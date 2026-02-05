@@ -62,4 +62,7 @@ pub trait GitPort {
 
     /// Fetch from remote.
     fn fetch(&self, remote: &str) -> Result<(), AppError>;
+
+    /// Delete a local branch. Returns true if the branch was deleted.
+    fn delete_branch(&self, branch: &str, force: bool) -> Result<bool, AppError>;
 }
