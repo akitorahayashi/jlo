@@ -1,0 +1,22 @@
+schema_version: 2
+id: "z4x2c9"
+source_events:
+  - "z9x2k1"
+title: "Fix README Quick Start Branch Requirement"
+label: "docs"
+priority: "medium"
+summary: "Update Quick Start guide to include the required git branch creation step."
+problem: |
+  The `README.md` Quick Start guide instructs users to run `jlo init`. However, `jlo init` strictly enforces that it must be run on a `jules` or `jules-test-*` branch. Following the guide literally leads to an immediate error.
+impact: |
+  Poor first-time user experience. Users hit an error in the very first step of using the tool.
+desired_outcome: |
+  The Quick Start section in `README.md` should include the command to checkout the `jules` branch (`git checkout -b jules`) before running `jlo init`.
+affected_areas:
+  - "README.md"
+acceptance_criteria:
+  - "README.md includes `git checkout -b jules` in the Quick Start instructions"
+verification_commands:
+  - "grep 'git checkout -b jules' README.md"
+requires_deep_analysis: false
+deep_analysis_reason: ""

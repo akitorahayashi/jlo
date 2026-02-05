@@ -1,0 +1,26 @@
+schema_version: 2
+id: "d3s8n2"
+source_events:
+  - "f4g5h6"
+title: "Decouple Services and Commands from Direct Filesystem Usage"
+label: "refacts"
+priority: "high"
+summary: "Refactor services and commands to use `WorkspaceStore` instead of `std::fs`."
+problem: |
+  Several modules (`scaffold_manifest`, `workstream_schedule_filesystem`) and the `update` command use `std::fs` directly. This bypasses the `WorkspaceStore` port, coupling the business logic to the physical filesystem and hindering testability.
+impact: |
+  Direct filesystem usage makes code hard to test without side effects (creating real files) and violates the Ports & Adapters architecture. It prevents running the application in constrained environments or with virtual filesystems.
+desired_outcome: |
+  All direct `std::fs` calls in the application and service layers should be replaced with calls to the `WorkspaceStore` abstraction.
+affected_areas:
+  - "src/services/assets/scaffold_manifest.rs"
+  - "src/app/commands/update.rs"
+  - "src/services/adapters/workstream_schedule_filesystem.rs"
+acceptance_criteria:
+  - "std::fs usages are replaced with WorkspaceStore in identified files"
+  - "Tests are updated to mock WorkspaceStore where appropriate"
+verification_commands:
+  - "grep -r 'std::fs' src/services/assets/scaffold_manifest.rs || true"
+  - "grep -r 'std::fs' src/app/commands/update.rs || true"
+requires_deep_analysis: false
+deep_analysis_reason: ""

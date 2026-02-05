@@ -1,0 +1,25 @@
+schema_version: 2
+id: "v5c1x8"
+source_events:
+  - "jhpuge"
+title: "Decouple Application Commands from CLI Presentation"
+label: "refacts"
+priority: "medium"
+summary: "Refactor commands to return structured results instead of printing directly to stdout/stderr."
+problem: |
+  Application commands (e.g., `update`, `doctor`) currently call `println!` and `eprintln!` directly. This couples the core application logic to the CLI interface, making it impossible to reuse these commands in other contexts (e.g., a GUI, a library, or an API server) without capturing stdout.
+impact: |
+  Reduced reusability and testability. It forces all consumers of the application layer to parse text output if they want to understand the result of an operation.
+desired_outcome: |
+  Commands should return Result objects containing structured data (DTOs). The CLI layer (in `src/app/cli/`) should be responsible for formatting and printing this data to the console.
+affected_areas:
+  - "src/app/commands/update.rs"
+  - "src/app/commands/doctor/diagnostics.rs"
+acceptance_criteria:
+  - "Update command returns a structured plan/result"
+  - "Doctor command returns a structured diagnostics report"
+  - "CLI layer handles the printing"
+verification_commands:
+  - "grep 'println!' src/app/commands/update.rs || true"
+requires_deep_analysis: false
+deep_analysis_reason: ""

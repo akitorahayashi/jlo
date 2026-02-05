@@ -1,0 +1,29 @@
+schema_version: 2
+id: "q1z8x4"
+source_events:
+  - "a304fb"
+  - "e1r2t3"
+  - "p2l5n1"
+title: "Improve Error Modeling in Domain Layer"
+label: "refacts"
+priority: "high"
+summary: "Refactor AppError to use structured types instead of generic strings for better error handling."
+problem: |
+  The `AppError` enum relies heavily on generic variants like `Validation(String)` and `InternalError(String)`, and mixes generic categories with implementation specifics (`TomlParseError`). Services often stringify errors prematurely. This prevents callers from programmatically handling specific error cases and leads to loss of semantic information.
+impact: |
+  Error handling is brittle and relies on string matching. It makes it difficult to provide specific remediation advice to users or to implement retry logic for specific failure modes.
+desired_outcome: |
+  `AppError` should use structured variants for distinct failure domains (e.g., `ValidationError { field: String, reason: String }`). Implementation details should be hidden behind appropriate abstractions or mapped to domain errors without losing context. Premature stringification should be removed.
+affected_areas:
+  - "src/domain/error.rs"
+  - "src/app/commands/run/role_selection.rs"
+  - "src/services/application/artifact_generator.rs"
+acceptance_criteria:
+  - "Generic String-wrapping variants are replaced or reduced"
+  - "Structured error variants are introduced for validation and internal errors"
+  - "Services return typed errors where appropriate"
+verification_commands:
+  - "cargo check"
+  - "cargo test"
+requires_deep_analysis: true
+deep_analysis_reason: "Requires designing a comprehensive error hierarchy that balances granularity with usability across the application."

@@ -1,0 +1,26 @@
+schema_version: 2
+id: "y9t2r5"
+source_events:
+  - "d7k3x9"
+title: "Consolidate Redundant Filesystem Abstractions"
+label: "refacts"
+priority: "medium"
+summary: "Merge `PromptFs` into the `WorkspaceStore` abstraction to reduce duplication."
+problem: |
+  The application currently uses two different traits to abstract filesystem operations: `PromptFs` (in `src/services/application/prompt_assembly.rs`) and `WorkspaceStore` (in `src/ports/workspace_store.rs`). This is redundant and creates inconsistent testing boundaries.
+impact: |
+  Duplicated abstractions increase maintenance effort and make it harder to understand the architectural boundaries. It also leads to fragmented mock implementations in tests.
+desired_outcome: |
+  `PromptFs` should be removed, and `prompt_assembly` should be refactored to use `WorkspaceStore` (or a subset trait derived from it) for its filesystem needs.
+affected_areas:
+  - "src/services/application/prompt_assembly.rs"
+  - "src/ports/workspace_store.rs"
+acceptance_criteria:
+  - "PromptFs trait is removed"
+  - "prompt_assembly uses WorkspaceStore"
+  - "Tests for prompt assembly are updated to use WorkspaceStore mocks"
+verification_commands:
+  - "cargo check"
+  - "cargo test src/services/application/prompt_assembly.rs"
+requires_deep_analysis: false
+deep_analysis_reason: ""

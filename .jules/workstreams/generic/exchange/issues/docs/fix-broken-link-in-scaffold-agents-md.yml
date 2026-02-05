@@ -1,0 +1,22 @@
+schema_version: 2
+id: "n9b3m6"
+source_events:
+  - "m4n5b6"
+title: "Fix Broken Relative Link in Scaffold AGENTS.md"
+label: "docs"
+priority: "low"
+summary: "Correct the relative link traversal in the internal `src/assets/scaffold/AGENTS.md` file."
+problem: |
+  The `src/assets/scaffold/AGENTS.md` file contains a link `[root AGENTS.md](../../../../AGENTS.md)` which attempts to traverse 4 directories up. However, the file is located at `src/assets/scaffold/`, which is only 3 levels deep. This results in a broken link.
+impact: |
+  Confusion for developers reading the internal documentation within the repo.
+desired_outcome: |
+  The link should be corrected to `../../../AGENTS.md`.
+affected_areas:
+  - "src/assets/scaffold/AGENTS.md"
+acceptance_criteria:
+  - "Link correctly points to the root AGENTS.md"
+verification_commands:
+  - "grep '(../../../AGENTS.md)' src/assets/scaffold/AGENTS.md"
+requires_deep_analysis: false
+deep_analysis_reason: ""
