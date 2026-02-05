@@ -8,7 +8,7 @@ use serde::{Deserialize, Deserializer};
 /// - Non-empty
 /// - Contains only alphanumeric characters, `-`, or `_`
 /// - No path traversal components (/, \, ., ..)
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RoleId(String);
 
 impl_validated_id!(RoleId, false, AppError::InvalidRoleId);
