@@ -1,0 +1,35 @@
+schema_version: 1
+
+# Metadata
+id: "28e324"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "devops"
+confidence: "high"
+
+# Content
+title: "Duplicate Toolchain Definitions Risk Drift"
+statement: |
+  The Rust toolchain version is defined in `rust-toolchain.toml`, `.github/actions/setup/action.yml`, and `.github/workflows/build.yml`. This duplication creates a risk of version drift, where the development environment (using `.toml`) differs from CI (using `action.yml` default) or release builds (using `build.yml` explicit version).
+
+# Evidence supporting the observation
+evidence:
+  - path: "rust-toolchain.toml"
+    loc:
+      - "line 2"
+    note: "Defines channel = '1.90.0'."
+
+  - path: ".github/actions/setup/action.yml"
+    loc:
+      - "line 7"
+    note: "Defines default: '1.90.0'."
+
+  - path: ".github/workflows/build.yml"
+    loc:
+      - "line 49"
+    note: "Explicitly passes rust-version: 1.90.0."
+
+tags:
+  - "reproducibility"
+  - "maintenance"
+  - "ssot"
