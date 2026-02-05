@@ -58,7 +58,10 @@ jobs:
           echo "Detected issue id: $issue_id"
 
           label_config="$(mktemp)"
-          git fetch origin jules --depth=1
+          if ! git fetch origin jules --depth=1; then
+            echo "::warning::Could not fetch 'jules' branch. Skipping label application."
+            exit 0
+          fi
           if ! git show "origin/jules:.jules/github-labels.json" > "$label_config"; then
             echo "::error::Missing label definition file on jules branch: .jules/github-labels.json"
             exit 1
