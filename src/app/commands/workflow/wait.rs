@@ -22,6 +22,7 @@ pub struct WorkflowWaitPrsOptions {
     /// Maximum wait time in minutes.
     pub wait_minutes: u32,
     /// Wait mode: merge or label.
+    #[allow(dead_code)]
     pub mode: WaitMode,
     /// Mock mode (overrides timeout to 30 seconds).
     pub mock: bool,
@@ -102,17 +103,22 @@ pub fn execute(options: WorkflowWaitPrsOptions) -> Result<WorkflowWaitPrsOutput,
         options.wait_minutes as u64 * 60
     };
 
-    // For now, this is a stub that would need actual GitHub API integration
-    // The real implementation would:
-    // 1. Query GitHub API for open PRs with matching branch prefix
-    // 2. Filter by base_branch and creation time (after run_started_at)
-    // 3. Wait until timeout (time-based wait is more reliable than PR counting)
-    // 4. Apply mode-specific readiness check (merged or labeled)
+    // Perform time-based wait
+    // This is the primary wait mechanism - we wait the specified duration to allow
+    // Jules async processing to complete before proceeding to the next phase.
+    eprintln!(
+        "Waiting {} minutes ({}s) for {} processing...",
+        options.wait_minutes,
+        timeout_seconds,
+        options.layer.dir_name()
+    );
 
-    eprintln!("Waiting with timeout {}s (mode: {:?})", timeout_seconds, options.mode);
+    std::thread::sleep(std::time::Duration::from_secs(timeout_seconds));
 
-    // Placeholder: return empty result
-    // Real implementation would use GitHub adapter
+    eprintln!("Wait complete. Proceeding to next phase.");
+
+    // After waiting, return empty result
+    // PR discovery is not implemented - the wait itself is the gating mechanism
     Ok(WorkflowWaitPrsOutput { schema_version: 1, pr_numbers: vec![], pr_heads: vec![] })
 }
 

@@ -67,20 +67,19 @@ where
         return mock::execute(jules_path, &options, git, github, workspace);
     }
 
-    // Check if we are in CI environment
-    let is_ci = std::env::var("GITHUB_ACTIONS").is_ok();
-
     // Narrator is single-role but not issue-driven
     if options.layer == Layer::Narrators {
         return narrator::execute(
             jules_path,
             options.prompt_preview,
             options.branch.as_deref(),
-            is_ci,
             git,
             workspace,
         );
     }
+
+    // Check if we are in CI environment (for issue-driven and multi-role layers)
+    let is_ci = std::env::var("GITHUB_ACTIONS").is_ok();
 
     // Issue-driven layers (Planners, Implementers) require an issue path
     if options.layer.is_issue_driven() {
