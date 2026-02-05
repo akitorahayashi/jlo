@@ -43,7 +43,7 @@ permissions:
   issues: write
   pull-requests: write
 concurrency:
-  group: jules
+  group: jules-1
   cancel-in-progress: false
 env:
   ENTRY_POINT: ${{ github.event.inputs.entry_point || 'narrator' }}
@@ -94,7 +94,13 @@ jobs:
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
       run: |
         echo "Waiting $WAIT_MINUTES minutes for Jules to process narrator PR..."
-        sleep $((WAIT_MINUTES * 60))
+        TOTAL_SECONDS=$((WAIT_MINUTES * 60))
+        ELAPSED=0
+        while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+          sleep 30
+          ELAPSED=$((ELAPSED + 30))
+          echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+        done
         echo "Wait complete."
   generate-workstream-matrix:
     needs: wait-after-narrator
@@ -191,7 +197,13 @@ jobs:
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
       run: |
         echo "Waiting $WAIT_MINUTES minutes for Jules to process observer PRs..."
-        sleep $((WAIT_MINUTES * 60))
+        TOTAL_SECONDS=$((WAIT_MINUTES * 60))
+        ELAPSED=0
+        while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+          sleep 30
+          ELAPSED=$((ELAPSED + 30))
+          echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+        done
         echo "Wait complete."
   generate-decider-matrix:
     needs:
@@ -262,7 +274,13 @@ jobs:
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
       run: |
         echo "Waiting $WAIT_MINUTES minutes for Jules to process decider PRs..."
-        sleep $((WAIT_MINUTES * 60))
+        TOTAL_SECONDS=$((WAIT_MINUTES * 60))
+        ELAPSED=0
+        while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+          sleep 30
+          ELAPSED=$((ELAPSED + 30))
+          echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+        done
         echo "Wait complete."
   generate-planner-matrix:
     needs:
