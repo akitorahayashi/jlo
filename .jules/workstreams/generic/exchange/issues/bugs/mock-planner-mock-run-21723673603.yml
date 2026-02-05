@@ -15,5 +15,19 @@ acceptance_criteria:
   - "Mock acceptance criterion"
 verification_commands:
   - "echo 'mock verification'"
-requires_deep_analysis: true
+requires_deep_analysis: false
 deep_analysis_reason: "Mock issue requires architectural analysis-for-workflow-validation"
+
+# Mock planner expansion
+expanded_at: "2026-02-05T18:33:35.036649485+00:00"
+expanded_by: mock-planner
+analysis_details: |
+  Mock deep analysis performed by jlo --mock for workflow validation.
+  Mock tag: mock-run-21723673603
+  
+  ## Impact Analysis
+  - Mock impact area 1
+  - Mock impact area 2
+  
+  ## Implementation Notes
+  - No actual analysis performed (mock mode)
