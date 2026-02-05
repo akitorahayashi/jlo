@@ -46,6 +46,26 @@ impl TestContext {
         Self { root, work_dir }
     }
 
+    /// Checkout a git branch in the test repo.
+    pub fn git_checkout_branch(&self, branch: &str, create: bool) {
+        let mut args = vec!["checkout"];
+        if create {
+            args.push("-b");
+        }
+        args.push(branch);
+
+        let output = std::process::Command::new("git")
+            .args(&args)
+            .current_dir(&self.work_dir)
+            .output()
+            .expect("Failed to run git checkout");
+        assert!(
+            output.status.success(),
+            "git checkout failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
     /// Absolute path to the emulated `$HOME` directory.
     pub fn home(&self) -> &Path {
         self.root.path()
