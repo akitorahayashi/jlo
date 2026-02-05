@@ -1,5 +1,5 @@
 use super::AppError;
-use super::validation::validate_identifier;
+use crate::impl_validated_id;
 
 /// A validated component identifier.
 ///
@@ -10,33 +10,7 @@ use super::validation::validate_identifier;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ComponentId(String);
 
-impl ComponentId {
-    /// Validate and create a new `ComponentId`.
-    pub fn new(id: &str) -> Result<Self, AppError> {
-        if validate_identifier(id, true) {
-            Ok(Self(id.to_string()))
-        } else {
-            Err(AppError::InvalidComponentId(id.to_string()))
-        }
-    }
-
-    /// Return the inner string value.
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl AsRef<str> for ComponentId {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
-
-impl std::fmt::Display for ComponentId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
+impl_validated_id!(ComponentId, true, AppError::InvalidComponentId);
 
 #[cfg(test)]
 mod tests {
@@ -65,5 +39,11 @@ mod tests {
     #[test]
     fn dot_dot_is_invalid() {
         assert!(ComponentId::new("..").is_err());
+    }
+
+    #[test]
+    fn display_impl() {
+        let comp = ComponentId::new("my.comp").unwrap();
+        assert_eq!(format!("{}", comp), "my.comp");
     }
 }

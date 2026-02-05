@@ -35,8 +35,8 @@ pub struct ScheduledRole {
 }
 
 impl ScheduleLayer {
-    pub fn enabled_roles(&self) -> Vec<String> {
-        self.roles.iter().filter(|r| r.enabled).map(|r| r.name.as_str().to_string()).collect()
+    pub fn enabled_roles(&self) -> Vec<RoleId> {
+        self.roles.iter().filter(|r| r.enabled).map(|r| r.name.clone()).collect()
     }
 }
 
@@ -113,8 +113,14 @@ roles = [
         assert!(schedule.observers.roles[0].enabled);
         assert_eq!(schedule.observers.roles[1].name.as_str(), "qa");
         assert!(!schedule.observers.roles[1].enabled);
-        assert_eq!(schedule.observers.enabled_roles(), vec!["taxonomy"]);
-        assert_eq!(schedule.deciders.enabled_roles(), vec!["triage_generic"]);
+
+        let obs_roles: Vec<String> =
+            schedule.observers.enabled_roles().into_iter().map(|r| r.into()).collect();
+        assert_eq!(obs_roles, vec!["taxonomy"]);
+
+        let dec_roles: Vec<String> =
+            schedule.deciders.enabled_roles().into_iter().map(|r| r.into()).collect();
+        assert_eq!(dec_roles, vec!["triage_generic"]);
     }
 
     #[test]
