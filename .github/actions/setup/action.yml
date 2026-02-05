@@ -12,17 +12,31 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install Rust toolchain (explicit version)
-      if: inputs.rust-version != ''
-      uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
-      with:
-        toolchain: ${{ inputs.rust-version }}
-        components: ${{ inputs.components }}
+    - name: Resolve Rust Version
+      id: version
+      shell: bash
+      env:
+        INPUT_RUST_VERSION: ${{ inputs.rust-version }}
+      run: |
+        if [ -n "$INPUT_RUST_VERSION" ]; then
+          echo "toolchain=$INPUT_RUST_VERSION" >> $GITHUB_OUTPUT
+        elif [ -f rust-toolchain.toml ]; then
+          # Extract channel securely, handling optional indentation and quotes
+          VERSION=$(grep -E '^\s*channel\s*=' rust-toolchain.toml | sed -E 's/^\s*channel\s*=\s*["'\'']?([^"'\'']+)["'\'']?/\1/')
+          if [ -z "$VERSION" ]; then
+             echo "Error: Could not extract channel from rust-toolchain.toml" >&2
+             exit 1
+          fi
+          echo "toolchain=$VERSION" >> $GITHUB_OUTPUT
+        else
+          echo "Error: rust-version input is empty and rust-toolchain.toml not found." >&2
+          exit 1
+        fi
 
-    - name: Install Rust toolchain (from file)
-      if: inputs.rust-version == ''
+    - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
       with:
+        toolchain: ${{ steps.version.outputs.toolchain }}
         components: ${{ inputs.components }}
 
     - name: Cache Cargo dependencies
