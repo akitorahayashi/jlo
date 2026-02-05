@@ -65,6 +65,12 @@ enum Commands {
         #[command(subcommand)]
         command: ScheduleCommands,
     },
+    /// Workflow orchestration primitives for GitHub Actions
+    #[clap(visible_alias = "wf")]
+    Workflow {
+        #[command(subcommand)]
+        command: WorkflowCommands,
+    },
     /// Inspect workstreams for automation
     Workstreams {
         #[command(subcommand)]
@@ -236,6 +242,16 @@ enum ScheduleCommands {
 }
 
 #[derive(Subcommand)]
+enum WorkflowCommands {
+    /// Validation gate for .jules/ workspace
+    Doctor {
+        /// Limit checks to a specific workstream
+        #[arg(long)]
+        workstream: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
 enum WorkstreamCommands {
     /// Inspect a workstream and output JSON/YAML
     Inspect {
@@ -266,6 +282,7 @@ pub fn run() {
         },
         Commands::Run { layer } => run_agents(layer).map(|_| 0),
         Commands::Schedule { command } => run_schedule(command).map(|_| 0),
+        Commands::Workflow { command } => run_workflow(command).map(|_| 0),
         Commands::Workstreams { command } => run_workstreams(command).map(|_| 0),
         Commands::Doctor { fix, strict, workstream } => run_doctor(fix, strict, workstream),
         Commands::Deinit => run_deinit().map(|_| 0),
@@ -568,4 +585,16 @@ fn run_doctor(fix: bool, strict: bool, workstream: Option<String>) -> Result<i32
     let outcome = crate::app::api::doctor(options)?;
 
     Ok(outcome.exit_code)
+}
+
+fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
+    use crate::app::commands::workflow;
+
+    match command {
+        WorkflowCommands::Doctor { workstream } => {
+            let options = workflow::WorkflowDoctorOptions { workstream };
+            let output = workflow::doctor(options)?;
+            workflow::write_workflow_output(&output)
+        }
+    }
 }
