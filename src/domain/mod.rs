@@ -24,3 +24,4 @@ pub use run_config::{JulesApiConfig, RunConfig, RunSettings};
 pub use schedule::WorkstreamSchedule;
 pub use workflow_runner_mode::WorkflowRunnerMode;
 pub use workspace_layout::{JULES_DIR, VERSION_FILE};
+pub mod manifest;

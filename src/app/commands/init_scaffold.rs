@@ -1,7 +1,8 @@
 use crate::app::AppContext;
 use crate::domain::AppError;
+use crate::domain::manifest::manifest_from_scaffold;
 use crate::ports::{GitPort, RoleTemplateStore, WorkspaceStore};
-use crate::services::assets::scaffold_manifest::{manifest_from_scaffold, write_manifest};
+use crate::services::assets::scaffold_manifest::write_manifest;
 
 /// Execute the init command.
 ///
@@ -31,7 +32,7 @@ where
 
     ctx.workspace().write_version(env!("CARGO_PKG_VERSION"))?;
     let managed_manifest = manifest_from_scaffold(&scaffold_files);
-    write_manifest(&ctx.workspace().jules_path(), &managed_manifest)?;
+    write_manifest(ctx.workspace(), &managed_manifest)?;
 
     Ok(())
 }
