@@ -264,7 +264,7 @@ enum WorkflowCommands {
 
 #[derive(Subcommand)]
 enum WorkflowWaitCommands {
-    /// Wait for PRs to be ready
+    /// Wait for PRs to be ready (time-based wait)
     Prs {
         /// Target layer (used to resolve branch_prefix)
         #[arg(long)]
@@ -272,9 +272,6 @@ enum WorkflowWaitCommands {
         /// Base branch for PR discovery
         #[arg(long)]
         base_branch: String,
-        /// Expected number of PRs
-        #[arg(long)]
-        expected_count: usize,
         /// Run started timestamp (RFC3339 UTC)
         #[arg(long)]
         run_started_at: String,
@@ -676,7 +673,7 @@ fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let layer = parse_layer(&layer)?;
             let matrix_json = match matrix_json {
                 Some(json_str) => {
-                    let parsed: workflow::MatrixInput = serde_json::from_str(&json_str)
+                    let parsed: serde_json::Value = serde_json::from_str(&json_str)
                         .map_err(|e| AppError::Validation(format!("Invalid matrix-json: {}", e)))?;
                     Some(parsed)
                 }
@@ -699,7 +696,6 @@ fn run_workflow_wait(command: WorkflowWaitCommands) -> Result<(), AppError> {
         WorkflowWaitCommands::Prs {
             layer,
             base_branch,
-            expected_count,
             run_started_at,
             wait_minutes,
             mode,
@@ -720,7 +716,6 @@ fn run_workflow_wait(command: WorkflowWaitCommands) -> Result<(), AppError> {
             let options = workflow::WorkflowWaitPrsOptions {
                 layer,
                 base_branch,
-                expected_count,
                 run_started_at,
                 wait_minutes,
                 mode,
