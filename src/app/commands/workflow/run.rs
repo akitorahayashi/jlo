@@ -7,11 +7,11 @@ use chrono::Utc;
 use serde::Serialize;
 use std::path::PathBuf;
 
-use crate::app::commands::run::{self, RunOptions, RunResult};
+use crate::app::commands::run::{self, RunOptions};
 use crate::domain::{AppError, Layer};
 use crate::ports::WorkspaceStore;
-use crate::services::adapters::git_cli::CliGit;
-use crate::services::adapters::github_cli::CliGitHub;
+use crate::services::adapters::git_command::GitCommandAdapter;
+use crate::services::adapters::github_command::GitHubCommandAdapter;
 use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 /// Options for workflow run command.
@@ -100,12 +100,14 @@ fn execute_layer(
     options: &WorkflowRunOptions,
     workspace: &FilesystemWorkspaceStore,
 ) -> Result<RunResults, AppError> {
-    let git = CliGit;
-    let github = CliGitHub;
     let jules_path = workspace.jules_path();
+    // Git root is parent of .jules directory
+    let git_root = jules_path.parent().unwrap_or(&jules_path).to_path_buf();
+    let git = GitCommandAdapter::new(git_root);
+    let github = GitHubCommandAdapter::new();
 
     match options.layer {
-        Layer::Narrators => execute_narrator(options.mock, &jules_path, &git, &github, workspace),
+        Layer::Narrators => execute_narrator(options, &jules_path, &git, &github, workspace),
         Layer::Observers => execute_observers(options, &jules_path, &git, &github, workspace),
         Layer::Deciders => execute_deciders(options, &jules_path, &git, &github, workspace),
         Layer::Planners | Layer::Implementers => {
@@ -116,7 +118,7 @@ fn execute_layer(
 
 /// Execute narrator.
 fn execute_narrator<G, H, W>(
-    mock: bool,
+    options: &WorkflowRunOptions,
     jules_path: &std::path::Path,
     git: &G,
     github: &H,
@@ -135,14 +137,22 @@ where
         prompt_preview: false,
         branch: None,
         issue: None,
-        mock,
+        mock: options.mock,
     };
 
-    eprintln!("Executing: narrator{}", if mock { " (mock)" } else { "" });
-    let _result = run::execute(jules_path, run_options, git, github, workspace)?;
+    eprintln!("Executing: narrator{}", if options.mock { " (mock)" } else { "" });
+    let _ = run::execute(jules_path, run_options, git, github, workspace)?;
 
     // TODO: Extract mock PR numbers and branches from result when available
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+}
+
+/// Extract matrix include array from JSON.
+fn extract_matrix_include(matrix: &serde_json::Value) -> Result<&Vec<serde_json::Value>, AppError> {
+    matrix
+        .get("include")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| AppError::Validation("Matrix JSON must have 'include' array".to_string()))
 }
 
 /// Execute observers (one run per workstream+role from matrix).
@@ -161,21 +171,13 @@ where
     let matrix = options.matrix_json.as_ref().ok_or_else(|| {
         AppError::MissingArgument("Matrix JSON is required for observers".to_string())
     })?;
-
-    let include = matrix
-        .get("include")
-        .and_then(|v| v.as_array())
-        .ok_or_else(|| AppError::Validation("Matrix JSON must have 'include' array".to_string()))?;
-
+    let include = extract_matrix_include(matrix)?;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
     for entry in include {
-        let workstream = entry
-            .get("workstream")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                AppError::Validation("Observer matrix entry missing 'workstream'".to_string())
-            })?;
+        let workstream = entry.get("workstream").and_then(|v| v.as_str()).ok_or_else(|| {
+            AppError::Validation("Observer matrix entry missing 'workstream'".to_string())
+        })?;
 
         let role = entry.get("role").and_then(|v| v.as_str()).ok_or_else(|| {
             AppError::Validation("Observer matrix entry missing 'role'".to_string())
@@ -218,23 +220,16 @@ where
     let matrix = options.matrix_json.as_ref().ok_or_else(|| {
         AppError::MissingArgument("Matrix JSON is required for deciders".to_string())
     })?;
-
-    let include = matrix
-        .get("include")
-        .and_then(|v| v.as_array())
-        .ok_or_else(|| AppError::Validation("Matrix JSON must have 'include' array".to_string()))?;
+    let include = extract_matrix_include(matrix)?;
 
     // Deduplicate by workstream
     let mut seen_workstreams = std::collections::HashSet::new();
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
     for entry in include {
-        let workstream = entry
-            .get("workstream")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                AppError::Validation("Decider matrix entry missing 'workstream'".to_string())
-            })?;
+        let workstream = entry.get("workstream").and_then(|v| v.as_str()).ok_or_else(|| {
+            AppError::Validation("Decider matrix entry missing 'workstream'".to_string())
+        })?;
 
         if !seen_workstreams.insert(workstream.to_string()) {
             continue; // Skip duplicate workstreams
@@ -277,12 +272,7 @@ where
             options.layer.dir_name()
         ))
     })?;
-
-    let include = matrix
-        .get("include")
-        .and_then(|v| v.as_array())
-        .ok_or_else(|| AppError::Validation("Matrix JSON must have 'include' array".to_string()))?;
-
+    let include = extract_matrix_include(matrix)?;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
     for entry in include {

@@ -155,5 +155,3 @@ pub enum AppError {
     #[error("TOML parse error: {0}")]
     TomlParseError(#[from] toml::de::Error),
 }
-
-

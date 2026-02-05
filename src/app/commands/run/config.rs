@@ -116,6 +116,4 @@ retry_delay_ms = 250
         assert_eq!(config.run.default_branch, "main");
         assert!(config.run.parallel);
     }
-
-
 }
