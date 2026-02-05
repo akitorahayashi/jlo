@@ -23,10 +23,10 @@ pub fn parse_config_content(content: &str) -> Result<RunConfig, AppError> {
     // Check for legacy [agents] section
     let value: toml::Value = toml::from_str(content)?;
     if value.get("agents").is_some() {
-        return Err(AppError::Validation(
+        return Err(AppError::Validation { reason:
             "Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml."
                 .to_string(),
-        ));
+         });
     }
 
     let dto: RunConfigDto = toml::from_str(content)?;

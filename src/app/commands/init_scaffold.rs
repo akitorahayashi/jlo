@@ -20,10 +20,10 @@ where
     let branch = git.get_current_branch()?;
 
     if branch != "jules" && !branch.starts_with("jules-test-") {
-        return Err(AppError::Validation(format!(
+        return Err(AppError::Validation { reason: format!(
             "Init must be run on 'jules' or 'jules-test-*' branch (current: '{}').\nRun: git checkout -b jules (or git checkout -b jules-test-<name>)",
             branch
-        )));
+        ) });
     }
 
     let scaffold_files = ctx.templates().scaffold_files();

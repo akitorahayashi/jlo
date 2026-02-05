@@ -85,19 +85,19 @@ fn export_roles(
 
     let schedule = load_schedule(jules_path, &workstream)?;
     if !schedule.enabled {
-        return Err(AppError::Validation(format!(
+        return Err(AppError::Validation { reason: format!(
             "Workstream '{}' is disabled in scheduled.toml",
             workstream
-        )));
+        ) });
     }
 
     let roles = match layer {
         Layer::Observers => schedule.observers.enabled_roles(),
         Layer::Deciders => schedule.deciders.enabled_roles(),
         _ => {
-            return Err(AppError::Validation(
+            return Err(AppError::Validation { reason:
                 "Schedule export roles scope only supports observers or deciders".into(),
-            ));
+             });
         }
     };
 

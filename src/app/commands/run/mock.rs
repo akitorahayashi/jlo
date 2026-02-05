@@ -55,7 +55,7 @@ where
     // Write outputs
     if std::env::var("GITHUB_OUTPUT").is_ok() {
         output.write_github_output().map_err(|e| {
-            AppError::InternalError(format!("Failed to write GITHUB_OUTPUT: {}", e))
+            AppError::Internal { message: format!("Failed to write GITHUB_OUTPUT: {}", e) }
         })?;
     } else {
         output.print_local();
@@ -114,7 +114,7 @@ fn load_mock_config<W: WorkspaceStore>(
         if let Ok(content) = workspace.read_file(
             contracts_path
                 .to_str()
-                .ok_or_else(|| AppError::Validation("Invalid contracts path".to_string()))?,
+                .ok_or_else(|| AppError::Validation { reason: "Invalid contracts path".to_string() })?,
         ) && let Some(prefix) = extract_branch_prefix(&content)
         {
             branch_prefixes.insert(layer, prefix);
@@ -126,7 +126,7 @@ fn load_mock_config<W: WorkspaceStore>(
     let issue_labels = if let Ok(content) = workspace.read_file(
         labels_path
             .to_str()
-            .ok_or_else(|| AppError::Validation("Invalid labels path".to_string()))?,
+            .ok_or_else(|| AppError::Validation { reason: "Invalid labels path".to_string() })?,
     ) {
         extract_issue_labels(&content)?
     } else {
@@ -223,7 +223,7 @@ where
         );
 
     workspace.write_file(
-        changes_file.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
+        changes_file.to_str().ok_or_else(|| AppError::Validation { reason: "Invalid path".to_string() })?,
         &changes_content,
     )?;
 
@@ -309,7 +309,7 @@ mock: true
     std::fs::create_dir_all(&events_dir).map_err(AppError::Io)?;
 
     workspace.write_file(
-        event_file.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
+        event_file.to_str().ok_or_else(|| AppError::Validation { reason: "Invalid path".to_string() })?,
         &event_content,
     )?;
 
@@ -408,7 +408,7 @@ mock: true
     workspace.write_file(
         planner_issue_file
             .to_str()
-            .ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
+            .ok_or_else(|| AppError::Validation { reason: "Invalid path".to_string() })?,
         &planner_issue_content,
     )?;
 
@@ -436,7 +436,7 @@ mock: true
     );
 
     workspace.write_file(
-        impl_issue_file.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
+        impl_issue_file.to_str().ok_or_else(|| AppError::Validation { reason: "Invalid path".to_string() })?,
         &impl_issue_content,
     )?;
 
@@ -521,7 +521,7 @@ where
     // Read and modify issue file
     let issue_path_str = issue_path
         .to_str()
-        .ok_or_else(|| AppError::Validation("Invalid issue path".to_string()))?;
+        .ok_or_else(|| AppError::Validation { reason: "Invalid issue path".to_string() })?;
 
     let issue_content = workspace.read_file(issue_path_str)?;
 
@@ -600,7 +600,7 @@ where
     // Parse issue to get label and id
     let issue_path_str = issue_path
         .to_str()
-        .ok_or_else(|| AppError::Validation("Invalid issue path".to_string()))?;
+        .ok_or_else(|| AppError::Validation { reason: "Invalid issue path".to_string() })?;
 
     let issue_content = workspace.read_file(issue_path_str)?;
     let (label, issue_id) = parse_issue_for_branch(&issue_content, issue_path)?;

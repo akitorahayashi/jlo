@@ -22,8 +22,8 @@ pub enum AppError {
     JulesApiError { message: String, status: Option<u16> },
 
     /// General validation error.
-    #[error("Validation failed: {0}")]
-    Validation(String),
+    #[error("Validation failed: {reason}")]
+    Validation { reason: String },
 
     /// Missing required argument.
     #[error("Missing argument: {0}")]
@@ -52,12 +52,12 @@ pub enum AppError {
     RepositoryDetectionFailed,
 
     /// Internal error (bug or unexpected state).
-    #[error("Internal error: {0}")]
-    InternalError(String),
+    #[error("Internal error: {message}")]
+    Internal { message: String },
 
     /// Asset loading/parsing error.
-    #[error("Asset error: {0}")]
-    AssetError(String),
+    #[error("Asset error: {message}")]
+    Asset { message: String },
 
     /// Workspace already exists at the target location.
     #[error(".jules/ workspace already exists")]
@@ -112,8 +112,8 @@ pub enum AppError {
     InvalidComponentMetadata { component: String, reason: String },
 
     /// Malformed env.toml file.
-    #[error("Malformed env.toml: {0}")]
-    MalformedEnvToml(String),
+    #[error("Env TOML error: {message}")]
+    EnvTomlError { message: String },
 
     /// Run config file missing (.jules/config.toml).
     #[error("Run config not found. Create .jules/config.toml first.")]
@@ -154,6 +154,22 @@ pub enum AppError {
     /// TOML parsing error.
     #[error("TOML parse error: {0}")]
     TomlParseError(#[from] toml::de::Error),
+
+    /// Workstream not found.
+    #[error("Workstream '{0}' not found")]
+    WorkstreamNotFound(String),
+
+    /// Workstream disabled.
+    #[error("Workstream '{0}' is disabled in scheduled.toml")]
+    WorkstreamDisabled(String),
+
+    /// Scheduled mode not supported for layer.
+    #[error("Scheduled mode is only supported for observers and deciders (requested: {layer})")]
+    UnsupportedScheduledLayer { layer: String },
+
+    /// Duplicate role selection.
+    #[error("Duplicate role '{0}' specified")]
+    DuplicateRoleSelection(String),
 }
 
 impl AppError {
@@ -167,20 +183,22 @@ impl AppError {
             | AppError::RoleNotFound(_)
             | AppError::CircularDependency(_)
             | AppError::InvalidComponentMetadata { .. }
-            | AppError::MalformedEnvToml(_)
+            | AppError::EnvTomlError { message: _ }
             | AppError::RoleNotInConfig { .. }
             | AppError::Schedule(_)
             | AppError::SingleRoleLayerTemplate(_)
             | AppError::PromptAssembly(_)
             | AppError::ParseError { .. }
             | AppError::TomlParseError(_)
-            | AppError::Validation(_)
+            | AppError::Validation { reason: _ }
             | AppError::MissingArgument(_)
             | AppError::WorkspaceIntegrity(_)
             | AppError::WorkspaceVersionMismatch { .. }
             | AppError::JulesApiError { .. }
-            | AppError::InternalError(_)
-            | AppError::AssetError(_) => io::ErrorKind::InvalidInput,
+            | AppError::Internal { message: _ }
+            | AppError::Asset { message: _ }
+            | AppError::DuplicateRoleSelection(_)
+            | AppError::UnsupportedScheduledLayer { .. } => io::ErrorKind::InvalidInput,
             AppError::WorkspaceNotFound
             | AppError::SetupNotInitialized
             | AppError::SetupConfigMissing
@@ -190,10 +208,12 @@ impl AppError {
             | AppError::IssueFileNotFound(_)
             | AppError::WorkstreamsDirectoryNotFound
             | AppError::EnvironmentVariableMissing(_)
-            | AppError::RepositoryDetectionFailed => io::ErrorKind::NotFound,
+            | AppError::RepositoryDetectionFailed
+            | AppError::WorkstreamNotFound(_) => io::ErrorKind::NotFound,
             AppError::WorkspaceExists
             | AppError::RoleExists { .. }
             | AppError::WorkstreamExists(_) => io::ErrorKind::AlreadyExists,
+            AppError::WorkstreamDisabled(_) => io::ErrorKind::PermissionDenied, // Or other appropriate error
             AppError::GitError { .. } | AppError::ExternalToolError { .. } => io::ErrorKind::Other,
         }
     }

@@ -118,19 +118,19 @@ impl GitHubPort for GitHubCommandAdapter {
             }
 
             if state == "CLOSED" {
-                return Err(AppError::Validation(format!(
+                return Err(AppError::Validation { reason: format!(
                     "PR #{} was closed without merging",
                     pr_number
-                )));
+                ) });
             }
 
             std::thread::sleep(Duration::from_secs(5));
         }
 
-        Err(AppError::Validation(format!(
+        Err(AppError::Validation { reason: format!(
             "Timeout waiting for PR #{} to merge after {:?}",
             pr_number, timeout
-        )))
+        ) })
     }
 
     fn close_pull_request(&self, pr_number: u64) -> Result<(), AppError> {

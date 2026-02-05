@@ -53,10 +53,10 @@ pub fn load_workflow_kit(mode: WorkflowRunnerMode) -> Result<WorkflowKitAssets, 
     files.sort_by(|a, b| a.path.cmp(&b.path));
 
     if files.is_empty() {
-        return Err(AppError::InternalError(format!(
+        return Err(AppError::Internal { message: format!(
             "Workflow kit assets are empty for mode '{}'",
             mode.label()
-        )));
+        ) });
     }
 
     let mut action_dirs = BTreeSet::new();
@@ -83,38 +83,38 @@ fn collect_and_render_files(
         match entry {
             DirEntry::File(file) => {
                 let content = file.contents_utf8().ok_or_else(|| {
-                    AppError::InternalError(format!(
+                    AppError::Internal { message: format!(
                         "Workflow kit file is not UTF-8: {}",
                         file.path().to_string_lossy()
-                    ))
+                    ) }
                 })?;
 
                 let file_path = file.path();
                 let file_name = file_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
                 let relative_path = file_path.strip_prefix(base_path).map_err(|_| {
-                    AppError::InternalError(format!(
+                    AppError::Internal { message: format!(
                         "Workflow kit file has unexpected path: {}",
                         file_path.to_string_lossy()
-                    ))
+                    ) }
                 })?;
 
                 // Determine if this is a template file
                 let (output_path, rendered_content) = if file_name.ends_with(".j2") {
                     // Render template
                     let template = env.template_from_str(content).map_err(|e| {
-                        AppError::InternalError(format!(
+                        AppError::Internal { message: format!(
                             "Failed to parse template '{}': {}",
                             file_path.to_string_lossy(),
                             e
-                        ))
+                        ) }
                     })?;
                     let rendered = template.render(ctx).map_err(|e| {
-                        AppError::InternalError(format!(
+                        AppError::Internal { message: format!(
                             "Failed to render template '{}': {}",
                             file_path.to_string_lossy(),
                             e
-                        ))
+                        ) }
                     })?;
                     // Remove .j2 extension
                     let path_str = relative_path.to_string_lossy();

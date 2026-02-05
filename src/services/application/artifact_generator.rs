@@ -86,7 +86,7 @@ set -euo pipefail
                 default.clone().unwrap_or_default()
             };
             let value_str = serde_json::to_string(&value)
-                .map_err(|e| AppError::MalformedEnvToml(e.to_string()))?;
+                .map_err(|e| AppError::EnvTomlError { message: e.to_string() })?;
             lines.push(format!("value = {}", value_str));
 
             // Preserve existing note if present, otherwise use component description
@@ -96,7 +96,7 @@ set -euo pipefail
                 .unwrap_or_else(|| description.clone());
             if !note.is_empty() {
                 let note_str = serde_json::to_string(&note)
-                    .map_err(|e| AppError::MalformedEnvToml(e.to_string()))?;
+                    .map_err(|e| AppError::EnvTomlError { message: e.to_string() })?;
                 lines.push(format!("note = {}", note_str));
             }
 
@@ -111,7 +111,7 @@ set -euo pipefail
         content: &str,
     ) -> Result<BTreeMap<String, BTreeMap<String, String>>, AppError> {
         let data: toml::Value =
-            toml::from_str(content).map_err(|e| AppError::MalformedEnvToml(e.to_string()))?;
+            toml::from_str(content).map_err(|e| AppError::EnvTomlError { message: e.to_string() })?;
 
         let mut result: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
 

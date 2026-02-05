@@ -153,7 +153,7 @@ impl GitPort for GitCommandAdapter {
         // Stage files
         for file in files {
             let path_str = file.to_str().ok_or_else(|| {
-                AppError::Validation("File path contains invalid unicode".to_string())
+                AppError::Validation { reason: "File path contains invalid unicode".to_string() }
             })?;
             self.run(&["add", path_str], None)?;
         }

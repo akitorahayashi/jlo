@@ -62,7 +62,7 @@ pub fn load_manifest(jules_path: &Path) -> Result<Option<ScaffoldManifest>, AppE
 pub fn write_manifest(jules_path: &Path, manifest: &ScaffoldManifest) -> Result<(), AppError> {
     let path = manifest_path(jules_path);
     let content = serde_yaml::to_string(manifest).map_err(|err| {
-        AppError::InternalError(format!("Failed to serialize {}: {}", path.display(), err))
+        AppError::Internal { message: format!("Failed to serialize {}: {}", path.display(), err) }
     })?;
     fs::write(&path, content)?;
     Ok(())

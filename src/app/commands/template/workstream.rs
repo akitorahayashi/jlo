@@ -22,10 +22,10 @@ where
     match workstream_arg {
         Some(ws) => {
             if !ctx.workspace().workstream_exists(ws) {
-                return Err(AppError::Validation(format!(
+                return Err(AppError::Validation { reason: format!(
                     "Workstream '{}' does not exist. Run 'jlo template' and select Workstream to create it.",
                     ws
-                )));
+                ) });
             }
             Ok(Some(ws.to_string()))
         }
@@ -60,7 +60,7 @@ where
         .items(&items)
         .default(0)
         .interact()
-        .map_err(|e| AppError::InternalError(format!("Workstream selection failed: {e}")))?;
+        .map_err(|e| AppError::Internal { message: format!("Workstream selection failed: {e}") })?;
 
     if selection == items.len() - 1 {
         create_workstream(ctx)
@@ -83,20 +83,20 @@ fn prompt_workstream_name() -> Result<String, AppError> {
     let name: String = Input::new()
         .with_prompt("Enter new workstream name")
         .interact_text()
-        .map_err(|e| AppError::InternalError(format!("Failed to read workstream name: {e}")))?;
+        .map_err(|e| AppError::Internal { message: format!("Failed to read workstream name: {e}") })?;
 
     validate_workstream_name(&name).map(|_| name)
 }
 
 fn validate_workstream_name(name: &str) -> Result<(), AppError> {
     if name.trim().is_empty() {
-        return Err(AppError::Validation("Workstream name cannot be empty.".into()));
+        return Err(AppError::Validation { reason: "Workstream name cannot be empty.".into() });
     }
 
     if name.contains('/') || name.contains('\\') {
-        return Err(AppError::Validation(
+        return Err(AppError::Validation { reason:
             "Workstream name must be a single directory name.".into(),
-        ));
+         });
     }
 
     Ok(())

@@ -18,18 +18,15 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
     let roles = if input.scheduled {
         let schedule = load_schedule(input.jules_path, input.workstream)?;
         if !schedule.enabled {
-            return Err(AppError::Validation(format!(
-                "Workstream '{}' is disabled in scheduled.toml",
-                input.workstream
-            )));
+            return Err(AppError::WorkstreamDisabled(input.workstream.to_string()));
         }
         match input.layer {
             Layer::Observers => schedule.observers.enabled_roles(),
             Layer::Deciders => schedule.deciders.enabled_roles(),
             _ => {
-                return Err(AppError::Validation(
-                    "Scheduled mode is only supported for observers and deciders".into(),
-                ));
+                return Err(AppError::UnsupportedScheduledLayer {
+                    layer: input.layer.to_string(),
+                });
             }
         }
     } else {
@@ -52,7 +49,7 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
     let mut seen = HashSet::new();
     for role in &roles {
         if !seen.insert(role) {
-            return Err(AppError::Validation(format!("Duplicate role '{}' specified", role)));
+            return Err(AppError::DuplicateRoleSelection(role.to_string()));
         }
         validate_role_exists(input.jules_path, input.layer, role.as_str())?;
     }
@@ -63,7 +60,7 @@ pub fn select_roles(input: RoleSelectionInput<'_>) -> Result<Vec<RoleId>, AppErr
 fn ensure_workstream_exists(jules_path: &Path, workstream: &str) -> Result<(), AppError> {
     let path = jules_path.join("workstreams").join(workstream);
     if !path.exists() {
-        return Err(AppError::Validation(format!("Workstream '{}' not found", workstream)));
+        return Err(AppError::WorkstreamNotFound(workstream.to_string()));
     }
     Ok(())
 }

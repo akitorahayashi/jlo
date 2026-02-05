@@ -149,7 +149,7 @@ where
     let latest_path = jules_path.join("changes/latest.yml");
     let latest_path_str = latest_path
         .to_str()
-        .ok_or_else(|| AppError::Validation("Jules path contains invalid unicode".to_string()))?;
+        .ok_or_else(|| AppError::Validation { reason: "Jules path contains invalid unicode".to_string() })?;
 
     let range = determine_range(latest_path_str, git, workspace)?;
 

@@ -38,9 +38,9 @@ pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
         .map_err(|e| AppError::ParseError { what: "tools.yml".into(), details: e.to_string() })?;
 
     if config.tools.is_empty() {
-        return Err(AppError::Validation(
+        return Err(AppError::Validation { reason:
             "No tools specified in tools.yml. Add tools to the 'tools' list.".into(),
-        ));
+         });
     }
 
     // Initialize services

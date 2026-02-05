@@ -123,7 +123,7 @@ fn select_layer() -> Result<Layer, AppError> {
         .items(&items)
         .default(0)
         .interact()
-        .map_err(|e| AppError::InternalError(format!("Layer selection failed: {e}")))?;
+        .map_err(|e| AppError::Internal { message: format!("Layer selection failed: {e}") })?;
 
     Ok(multi_role_layers[selection])
 }
@@ -137,11 +137,11 @@ fn prompt_role_name() -> Result<String, AppError> {
     let mut input = String::new();
     std::io::stdin()
         .read_line(&mut input)
-        .map_err(|e| AppError::InternalError(format!("Failed to read role name: {e}")))?;
+        .map_err(|e| AppError::Internal { message: format!("Failed to read role name: {e}") })?;
 
     let name = input.trim().to_string();
     if name.is_empty() {
-        return Err(AppError::Validation("Role name cannot be empty".into()));
+        return Err(AppError::Validation { reason: "Role name cannot be empty".into() });
     }
 
     Ok(name)

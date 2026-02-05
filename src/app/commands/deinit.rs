@@ -16,10 +16,10 @@ pub struct DeinitOutcome {
 pub fn execute(root: &Path, git: &impl GitPort) -> Result<DeinitOutcome, AppError> {
     let current_branch = git.get_current_branch()?;
     if current_branch == "jules" || current_branch.starts_with("jules-test-") {
-        return Err(AppError::Validation(format!(
+        return Err(AppError::Validation { reason: format!(
             "Cannot deinit while on branch '{}'. Switch to your main branch and re-run.",
             current_branch
-        )));
+        ) });
     }
 
     let mut file_paths = BTreeSet::new();

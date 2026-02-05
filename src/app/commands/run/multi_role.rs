@@ -28,12 +28,12 @@ pub fn execute(
     })?;
 
     if scheduled && roles.is_some() {
-        return Err(AppError::Validation("Cannot combine --scheduled with --role".into()));
+        return Err(AppError::Validation { reason: "Cannot combine --scheduled with --role".into() });
     }
     if !scheduled && roles.is_none() {
-        return Err(AppError::Validation(
+        return Err(AppError::Validation { reason:
             "Manual mode requires --role (or use --scheduled)".into(),
-        ));
+         });
     }
 
     let resolved_roles = select_roles(RoleSelectionInput {

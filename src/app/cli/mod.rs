@@ -527,14 +527,14 @@ fn parse_schedule_scope(scope: &str) -> Result<crate::ScheduleExportScope, AppEr
     match scope {
         "workstreams" => Ok(crate::ScheduleExportScope::Workstreams),
         "roles" => Ok(crate::ScheduleExportScope::Roles),
-        _ => Err(AppError::Validation("Invalid schedule scope".into())),
+        _ => Err(AppError::Validation { reason: "Invalid schedule scope".into() }),
     }
 }
 
 fn parse_schedule_format(format: &str) -> Result<crate::ScheduleExportFormat, AppError> {
     match format {
         "github-matrix" => Ok(crate::ScheduleExportFormat::GithubMatrix),
-        _ => Err(AppError::Validation("Invalid schedule format".into())),
+        _ => Err(AppError::Validation { reason: "Invalid schedule format".into() }),
     }
 }
 
@@ -542,20 +542,20 @@ fn parse_workstream_format(format: &str) -> Result<crate::WorkstreamInspectForma
     match format {
         "json" => Ok(crate::WorkstreamInspectFormat::Json),
         "yaml" => Ok(crate::WorkstreamInspectFormat::Yaml),
-        _ => Err(AppError::Validation("Invalid workstream inspect format".into())),
+        _ => Err(AppError::Validation { reason: "Invalid workstream inspect format".into() }),
     }
 }
 
 fn print_json<T: serde::Serialize>(value: &T) -> Result<(), AppError> {
     let json = serde_json::to_string_pretty(value)
-        .map_err(|err| AppError::InternalError(format!("Failed to serialize output: {}", err)))?;
+        .map_err(|err| AppError::Internal { message: format!("Failed to serialize output: {}", err) })?;
     println!("{}", json);
     Ok(())
 }
 
 fn print_yaml<T: serde::Serialize>(value: &T) -> Result<(), AppError> {
     let yaml = serde_yaml::to_string(value)
-        .map_err(|err| AppError::InternalError(format!("Failed to serialize output: {}", err)))?;
+        .map_err(|err| AppError::Internal { message: format!("Failed to serialize output: {}", err) })?;
     println!("{}", yaml.trim_end());
     Ok(())
 }

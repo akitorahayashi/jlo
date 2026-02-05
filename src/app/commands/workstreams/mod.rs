@@ -97,7 +97,7 @@ pub fn inspect(
 ) -> Result<WorkstreamInspectOutput, AppError> {
     let ws_dir = jules_path.join("workstreams").join(&options.workstream);
     if !ws_dir.exists() {
-        return Err(AppError::Validation(format!("Workstream '{}' not found", options.workstream)));
+        return Err(AppError::Validation { reason: format!("Workstream '{}' not found", options.workstream) });
     }
 
     let schedule = load_schedule(jules_path, &options.workstream)?;
@@ -138,10 +138,10 @@ pub fn inspect(
 fn summarize_events(root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError> {
     let events_dir = ws_dir.join("exchange").join("events");
     if !events_dir.exists() {
-        return Err(AppError::Validation(format!(
+        return Err(AppError::Validation { reason: format!(
             "Missing events directory: {}",
             events_dir.display()
-        )));
+        ) });
     }
 
     let mut states = Vec::new();
@@ -177,10 +177,10 @@ fn summarize_events(root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError
 fn summarize_issues(root: &Path, ws_dir: &Path) -> Result<IssueSummary, AppError> {
     let issues_dir = ws_dir.join("exchange").join("issues");
     if !issues_dir.exists() {
-        return Err(AppError::Validation(format!(
+        return Err(AppError::Validation { reason: format!(
             "Missing issues directory: {}",
             issues_dir.display()
-        )));
+        ) });
     }
 
     let mut labels = Vec::new();
@@ -258,7 +258,7 @@ fn read_yaml_mapping(path: &Path) -> Result<Mapping, AppError> {
     match value {
         Value::Mapping(map) => Ok(map),
         _ => {
-            Err(AppError::Validation(format!("YAML root must be a mapping in {}", path.display())))
+            Err(AppError::Validation { reason: format!("YAML root must be a mapping in {}", path.display()) })
         }
     }
 }
@@ -266,32 +266,32 @@ fn read_yaml_mapping(path: &Path) -> Result<Mapping, AppError> {
 fn read_required_string(map: &Mapping, path: &Path, key: &str) -> Result<String, AppError> {
     match map.get(Value::String(key.to_string())) {
         Some(Value::String(value)) if !value.trim().is_empty() => Ok(value.clone()),
-        Some(Value::String(_)) => Err(AppError::Validation(format!(
+        Some(Value::String(_)) => Err(AppError::Validation { reason: format!(
             "Field '{}' must be non-empty in {}",
             key,
             path.display()
-        ))),
-        Some(_) => Err(AppError::Validation(format!(
+        ) }),
+        Some(_) => Err(AppError::Validation { reason: format!(
             "Field '{}' must be a string in {}",
             key,
             path.display()
-        ))),
-        None => Err(AppError::Validation(format!(
+        ) }),
+        None => Err(AppError::Validation { reason: format!(
             "Missing required field '{}' in {}",
             key,
             path.display()
-        ))),
+        ) }),
     }
 }
 
 fn read_required_id(map: &Mapping, path: &Path, key: &str) -> Result<String, AppError> {
     let value = read_required_string(map, path, key)?;
     if !is_valid_id(&value) {
-        return Err(AppError::Validation(format!(
+        return Err(AppError::Validation { reason: format!(
             "Field '{}' must be 6 lowercase alphanumeric chars in {}",
             key,
             path.display()
-        )));
+        ) });
     }
     Ok(value)
 }
@@ -299,16 +299,16 @@ fn read_required_id(map: &Mapping, path: &Path, key: &str) -> Result<String, App
 fn read_required_bool(map: &Mapping, path: &Path, key: &str) -> Result<bool, AppError> {
     match map.get(Value::String(key.to_string())) {
         Some(Value::Bool(value)) => Ok(*value),
-        Some(_) => Err(AppError::Validation(format!(
+        Some(_) => Err(AppError::Validation { reason: format!(
             "Field '{}' must be a boolean in {}",
             key,
             path.display()
-        ))),
-        None => Err(AppError::Validation(format!(
+        ) }),
+        None => Err(AppError::Validation { reason: format!(
             "Missing required field '{}' in {}",
             key,
             path.display()
-        ))),
+        ) }),
     }
 }
 
@@ -323,41 +323,41 @@ fn read_required_string_list(
                 .iter()
                 .map(|value| match value {
                     Value::String(text) if !text.trim().is_empty() => Ok(text.clone()),
-                    Value::String(_) => Err(AppError::Validation(format!(
+                    Value::String(_) => Err(AppError::Validation { reason: format!(
                         "Field '{}' must not contain empty strings in {}",
                         key,
                         path.display()
-                    ))),
-                    _ => Err(AppError::Validation(format!(
+                    ) }),
+                    _ => Err(AppError::Validation { reason: format!(
                         "Field '{}' must contain strings in {}",
                         key,
                         path.display()
-                    ))),
+                    ) }),
                 })
                 .collect();
 
             let output = output?;
 
             if output.is_empty() {
-                return Err(AppError::Validation(format!(
+                return Err(AppError::Validation { reason: format!(
                     "Field '{}' must have entries in {}",
                     key,
                     path.display()
-                )));
+                ) });
             }
 
             Ok(output)
         }
-        Some(_) => Err(AppError::Validation(format!(
+        Some(_) => Err(AppError::Validation { reason: format!(
             "Field '{}' must be a list in {}",
             key,
             path.display()
-        ))),
-        None => Err(AppError::Validation(format!(
+        ) }),
+        None => Err(AppError::Validation { reason: format!(
             "Missing required field '{}' in {}",
             key,
             path.display()
-        ))),
+        ) }),
     }
 }
 
