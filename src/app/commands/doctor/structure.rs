@@ -581,9 +581,7 @@ mod tests {
         temp.child(".jules/JULES.md").touch().unwrap();
         temp.child(".jules/README.md").touch().unwrap();
         temp.child(".jules/config.toml").touch().unwrap();
-        temp.child(".jules/.jlo-version")
-            .write_str(env!("CARGO_PKG_VERSION"))
-            .unwrap();
+        temp.child(".jules/.jlo-version").write_str(env!("CARGO_PKG_VERSION")).unwrap();
         temp.child(".jules/changes").create_dir_all().unwrap();
 
         // Layers
@@ -617,10 +615,7 @@ mod tests {
         exchange.child("issues").create_dir_all().unwrap();
 
         // We need to match inputs for event states and issue labels
-        exchange
-            .child("events/pending")
-            .create_dir_all()
-            .unwrap();
+        exchange.child("events/pending").create_dir_all().unwrap();
         exchange.child("issues/tests").create_dir_all().unwrap();
 
         ws_dir.child("workstations").create_dir_all().unwrap();
@@ -636,11 +631,7 @@ mod tests {
         let workstreams = vec!["generic".to_string()];
         let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
-        let options = DoctorOptions {
-            fix: false,
-            strict: false,
-            workstream: None,
-        };
+        let options = DoctorOptions { fix: false, strict: false, workstream: None };
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
@@ -676,11 +667,7 @@ mod tests {
         let workstreams = vec!["generic".to_string()];
         let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
-        let options = DoctorOptions {
-            fix: false,
-            strict: false,
-            workstream: None,
-        };
+        let options = DoctorOptions { fix: false, strict: false, workstream: None };
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
@@ -696,11 +683,7 @@ mod tests {
 
         // Expect at least 2 errors
         assert!(diagnostics.error_count() >= 2);
-        let errors: Vec<String> = diagnostics
-            .errors()
-            .iter()
-            .map(|e| e.message.clone())
-            .collect();
+        let errors: Vec<String> = diagnostics.errors().iter().map(|e| e.message.clone()).collect();
         // The error message is "Missing required file" based on ensure_path_exists
         assert!(errors.contains(&"Missing required file".to_string()));
     }
@@ -711,19 +694,14 @@ mod tests {
         create_valid_workspace(&temp);
 
         // Remove implementers contracts
-        std::fs::remove_file(temp.path().join(".jules/roles/implementers/contracts.yml"))
-            .unwrap();
+        std::fs::remove_file(temp.path().join(".jules/roles/implementers/contracts.yml")).unwrap();
 
         let mut applied_fixes = Vec::new();
         let mut diagnostics = Diagnostics::default();
         let workstreams = vec!["generic".to_string()];
         let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
-        let options = DoctorOptions {
-            fix: false,
-            strict: false,
-            workstream: None,
-        };
+        let options = DoctorOptions { fix: false, strict: false, workstream: None };
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
@@ -738,11 +716,7 @@ mod tests {
         structural_checks(inputs, &mut diagnostics);
 
         assert!(diagnostics.error_count() >= 1);
-        let errors: Vec<String> = diagnostics
-            .errors()
-            .iter()
-            .map(|e| e.message.clone())
-            .collect();
+        let errors: Vec<String> = diagnostics.errors().iter().map(|e| e.message.clone()).collect();
         assert!(errors.contains(&"Missing contracts.yml".to_string()));
     }
 }
