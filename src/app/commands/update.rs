@@ -6,10 +6,8 @@ use std::path::PathBuf;
 use chrono::Utc;
 
 use crate::domain::AppError;
+use crate::domain::manifest::{ScaffoldManifest, hash_content, is_default_role_file, MANIFEST_FILENAME};
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
-use crate::services::assets::scaffold_manifest::{
-    ScaffoldManifest, hash_content, is_default_role_file, load_manifest, write_manifest,
-};
 
 /// Files that are managed by jlo and will be overwritten on update.
 ///
@@ -100,8 +98,8 @@ where
         return Err(AppError::WorkspaceNotFound);
     }
 
-    let jules_path = workspace.jules_path();
     let version_path_str = ".jules/.jlo-version";
+    let manifest_path_str = format!(".jules/{}", MANIFEST_FILENAME);
 
     // Version comparison
     let binary_version = env!("CARGO_PKG_VERSION");
@@ -181,7 +179,12 @@ where
     }
 
     let mut managed_manifest: Option<ScaffoldManifest> = None;
-    let existing_manifest = load_manifest(&jules_path)?;
+    let existing_manifest_content = workspace.read_file(&manifest_path_str).ok();
+    let existing_manifest = if let Some(content) = existing_manifest_content {
+        Some(ScaffoldManifest::from_yaml(&content)?)
+    } else {
+        None
+    };
 
     if options.adopt_managed {
         let mut manifest_entries = BTreeMap::new();
@@ -357,7 +360,8 @@ where
     }
 
     if let Some(manifest) = managed_manifest {
-        write_manifest(&jules_path, &manifest)?;
+        let content = manifest.to_yaml()?;
+        workspace.write_file(&manifest_path_str, &content)?;
     }
 
     // Update version file

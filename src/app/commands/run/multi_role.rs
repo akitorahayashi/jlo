@@ -7,11 +7,11 @@ use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_prompt;
 use super::role_selection::{RoleSelectionInput, select_roles};
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{AutomationMode, JulesClient, SessionRequest};
+use crate::ports::{AutomationMode, JulesClient, SessionRequest, WorkspaceStore};
 use crate::services::adapters::jules_client_http::HttpJulesClient;
 
 /// Execute a multi-role layer (Observers or Deciders).
-pub fn execute(
+pub fn execute<W: WorkspaceStore>(
     jules_path: &Path,
     layer: Layer,
     roles: Option<&Vec<String>>,
@@ -19,6 +19,7 @@ pub fn execute(
     scheduled: bool,
     prompt_preview: bool,
     branch: Option<&str>,
+    workspace: &W,
 ) -> Result<RunResult, AppError> {
     // Load config
     let config = load_config(jules_path)?;
@@ -58,7 +59,14 @@ pub fn execute(
         branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
 
     if prompt_preview {
-        execute_prompt_preview(jules_path, layer, &resolved_roles, workstream, &starting_branch)?;
+        execute_prompt_preview(
+            jules_path,
+            layer,
+            &resolved_roles,
+            workstream,
+            &starting_branch,
+            workspace,
+        )?;
         return Ok(RunResult {
             roles: resolved_roles.into_iter().map(|r| r.into()).collect(),
             prompt_preview: true,
@@ -79,6 +87,7 @@ pub fn execute(
         &starting_branch,
         &source,
         &client,
+        workspace,
     )?;
 
     Ok(RunResult {
@@ -89,7 +98,7 @@ pub fn execute(
 }
 
 /// Execute roles with the given Jules client.
-fn execute_roles<C: JulesClient>(
+fn execute_roles<C: JulesClient, W: WorkspaceStore>(
     jules_path: &Path,
     layer: Layer,
     roles: &[RoleId],
@@ -97,6 +106,7 @@ fn execute_roles<C: JulesClient>(
     starting_branch: &str,
     source: &str,
     client: &C,
+    workspace: &W,
 ) -> Result<Vec<String>, AppError> {
     let mut sessions = Vec::new();
     let mut failures = 0;
@@ -104,7 +114,7 @@ fn execute_roles<C: JulesClient>(
     for role in roles {
         println!("Executing {} / {}...", layer.dir_name(), role);
 
-        let prompt = assemble_prompt(jules_path, layer, role.as_str(), workstream)?;
+        let prompt = assemble_prompt(jules_path, layer, role.as_str(), workstream, workspace)?;
 
         let request = SessionRequest {
             prompt,
@@ -139,12 +149,13 @@ fn execute_roles<C: JulesClient>(
 }
 
 /// Execute a prompt preview, showing assembled prompts.
-fn execute_prompt_preview(
+fn execute_prompt_preview<W: WorkspaceStore>(
     jules_path: &Path,
     layer: Layer,
     roles: &[RoleId],
     workstream: &str,
     starting_branch: &str,
+    workspace: &W,
 ) -> Result<(), AppError> {
     println!("=== Prompt Preview: {} ===", layer.display_name());
     println!("Starting branch: {}", starting_branch);
@@ -173,7 +184,8 @@ fn execute_prompt_preview(
         println!("  Role config: {}", role_yml_path.display());
 
         // Show assembled prompt length
-        if let Ok(prompt) = assemble_prompt(jules_path, layer, role.as_str(), workstream) {
+        if let Ok(prompt) = assemble_prompt(jules_path, layer, role.as_str(), workstream, workspace)
+        {
             println!("  Assembled prompt: {} chars", prompt.len());
         }
 

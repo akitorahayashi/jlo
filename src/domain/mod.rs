@@ -2,6 +2,7 @@ mod component;
 mod component_id;
 mod error;
 mod layer;
+pub mod manifest;
 mod mock_config;
 mod prompt_assembly;
 mod role_id;
@@ -17,7 +18,8 @@ pub use error::AppError;
 pub use layer::Layer;
 pub use mock_config::{MockConfig, MockOutput};
 pub use prompt_assembly::{
-    AssembledPrompt, PromptAssemblyError, PromptAssemblySpec, PromptContext,
+    assemble_prompt, assemble_with_issue, AssembledPrompt, PromptAssemblyError, PromptAssemblySpec,
+    PromptAssetLoader, PromptContext,
 };
 pub use role_id::RoleId;
 pub use run_config::{JulesApiConfig, RunConfig, RunSettings};

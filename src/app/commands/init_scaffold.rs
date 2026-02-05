@@ -1,7 +1,11 @@
+use std::collections::BTreeMap;
+
 use crate::app::AppContext;
 use crate::domain::AppError;
+use crate::domain::manifest::{
+    ScaffoldManifest, hash_content, is_default_role_file, MANIFEST_FILENAME,
+};
 use crate::ports::{GitPort, RoleTemplateStore, WorkspaceStore};
-use crate::services::assets::scaffold_manifest::{manifest_from_scaffold, write_manifest};
 
 /// Execute the init command.
 ///
@@ -30,8 +34,18 @@ where
     ctx.workspace().create_structure(&scaffold_files)?;
 
     ctx.workspace().write_version(env!("CARGO_PKG_VERSION"))?;
-    let managed_manifest = manifest_from_scaffold(&scaffold_files);
-    write_manifest(&ctx.workspace().jules_path(), &managed_manifest)?;
+
+    // Create managed manifest
+    let mut map = BTreeMap::new();
+    for file in &scaffold_files {
+        if is_default_role_file(&file.path) {
+            map.insert(file.path.clone(), hash_content(&file.content));
+        }
+    }
+    let managed_manifest = ScaffoldManifest::from_map(map);
+    let manifest_content = managed_manifest.to_yaml()?;
+    let manifest_path = format!(".jules/{}", MANIFEST_FILENAME);
+    ctx.workspace().write_file(&manifest_path, &manifest_content)?;
 
     Ok(())
 }

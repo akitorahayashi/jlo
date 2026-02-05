@@ -1,7 +1,7 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use crate::domain::{AppError, JULES_DIR, Layer, RoleId, VERSION_FILE};
+use crate::domain::{AppError, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 use crate::services::assets::workstream_template_assets::workstream_template_files;
 
@@ -30,6 +30,24 @@ impl FilesystemWorkspaceStore {
     fn role_path_in_layer(&self, layer: Layer, role_id: &str) -> PathBuf {
         // Multi-role layers use a roles/ container for role directories
         self.jules_path().join("roles").join(layer.dir_name()).join("roles").join(role_id)
+    }
+}
+
+impl PromptAssetLoader for FilesystemWorkspaceStore {
+    fn read_asset(&self, path: &Path) -> std::io::Result<String> {
+        fs::read_to_string(path)
+    }
+
+    fn asset_exists(&self, path: &Path) -> bool {
+        path.exists()
+    }
+
+    fn ensure_asset_dir(&self, path: &Path) -> std::io::Result<()> {
+        fs::create_dir_all(path)
+    }
+
+    fn copy_asset(&self, from: &Path, to: &Path) -> std::io::Result<u64> {
+        fs::copy(from, to)
     }
 }
 

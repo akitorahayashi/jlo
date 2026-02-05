@@ -109,5 +109,6 @@ where
         options.scheduled,
         options.prompt_preview,
         options.branch.as_deref(),
+        workspace,
     )
 }

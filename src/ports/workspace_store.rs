@@ -1,4 +1,4 @@
-use crate::domain::{AppError, Layer, RoleId};
+use crate::domain::{AppError, Layer, PromptAssetLoader, RoleId};
 use std::path::PathBuf;
 
 /// A discovered role with its layer and ID.
@@ -10,7 +10,7 @@ pub struct DiscoveredRole {
 }
 
 /// Port for workspace operations (.jules/ directory management).
-pub trait WorkspaceStore {
+pub trait WorkspaceStore: PromptAssetLoader {
     /// Check if the workspace exists.
     fn exists(&self) -> bool;
 
