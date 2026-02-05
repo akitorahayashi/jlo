@@ -18,7 +18,7 @@ pub use cleanup::{
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
 pub use output::write_workflow_output;
 pub use pr_label::{WorkflowPrLabelOptions, WorkflowPrLabelOutput};
-pub use run::{MatrixInput, WorkflowRunOptions, WorkflowRunOutput};
+pub use run::{WorkflowRunOptions, WorkflowRunOutput};
 pub use wait::{WaitMode, WorkflowWaitPrsOptions, WorkflowWaitPrsOutput};
 
 use crate::domain::AppError;

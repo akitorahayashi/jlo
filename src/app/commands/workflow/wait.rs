@@ -1,6 +1,6 @@
 //! Workflow wait prs command implementation.
 //!
-//! Waits for PR readiness conditions and returns discovered PRs.
+//! Waits for PR readiness conditions using time-based wait, and returns discovered PRs.
 
 use serde::Serialize;
 
@@ -16,8 +16,6 @@ pub struct WorkflowWaitPrsOptions {
     /// Base branch for PR discovery.
     #[allow(dead_code)]
     pub base_branch: String,
-    /// Expected number of PRs.
-    pub expected_count: usize,
     /// Run started timestamp (RFC3339 UTC).
     #[allow(dead_code)]
     pub run_started_at: String,
@@ -108,13 +106,10 @@ pub fn execute(options: WorkflowWaitPrsOptions) -> Result<WorkflowWaitPrsOutput,
     // The real implementation would:
     // 1. Query GitHub API for open PRs with matching branch prefix
     // 2. Filter by base_branch and creation time (after run_started_at)
-    // 3. Wait until expected_count PRs are found or timeout
+    // 3. Wait until timeout (time-based wait is more reliable than PR counting)
     // 4. Apply mode-specific readiness check (merged or labeled)
 
-    eprintln!(
-        "Waiting for {} PRs with timeout {}s (mode: {:?})",
-        options.expected_count, timeout_seconds, options.mode
-    );
+    eprintln!("Waiting with timeout {}s (mode: {:?})", timeout_seconds, options.mode);
 
     // Placeholder: return empty result
     // Real implementation would use GitHub adapter

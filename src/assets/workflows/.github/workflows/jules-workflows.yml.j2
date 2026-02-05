@@ -139,7 +139,6 @@ jobs:
         env:
           RUN_OUTPUT: {{ gha_expr("needs.run-narrator.outputs.json") }}
         run: |
-          expected_count=$(echo "$RUN_OUTPUT" | jq -r '.expected_count')
           run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
           mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
           mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
@@ -147,7 +146,6 @@ jobs:
             workflow wait prs
             --layer narrator
             --base-branch jules
-            --expected-count "$expected_count"
             --run-started-at "$run_started_at"
             --wait-minutes "$WAIT_MINUTES"
             --mode merge
@@ -297,7 +295,6 @@ jobs:
         env:
           RUN_OUTPUT: {{ gha_expr("needs.run-observers.outputs.json") }}
         run: |
-          expected_count=$(echo "$RUN_OUTPUT" | jq -r '.expected_count')
           run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
           mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
           mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
@@ -305,7 +302,6 @@ jobs:
             workflow wait prs
             --layer observers
             --base-branch jules
-            --expected-count "$expected_count"
             --run-started-at "$run_started_at"
             --wait-minutes "$WAIT_MINUTES"
             --mode merge
@@ -413,7 +409,6 @@ jobs:
         env:
           RUN_OUTPUT: {{ gha_expr("needs.run-deciders.outputs.json") }}
         run: |
-          expected_count=$(echo "$RUN_OUTPUT" | jq -r '.expected_count')
           run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
           mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
           mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
@@ -421,7 +416,6 @@ jobs:
             workflow wait prs
             --layer deciders
             --base-branch jules
-            --expected-count "$expected_count"
             --run-started-at "$run_started_at"
             --wait-minutes "$WAIT_MINUTES"
             --mode merge
@@ -528,7 +522,6 @@ jobs:
         env:
           RUN_OUTPUT: {{ gha_expr("needs.run-planners.outputs.json") }}
         run: |
-          expected_count=$(echo "$RUN_OUTPUT" | jq -r '.expected_count')
           run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
           mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
           mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
@@ -536,7 +529,6 @@ jobs:
             workflow wait prs
             --layer planners
             --base-branch jules
-            --expected-count "$expected_count"
             --run-started-at "$run_started_at"
             --wait-minutes "$WAIT_MINUTES"
             --mode merge
@@ -613,7 +605,6 @@ jobs:
         env:
           RUN_OUTPUT: {{ gha_expr("needs.run-implementers.outputs.json") }}
         run: |
-          expected_count=$(echo "$RUN_OUTPUT" | jq -r '.expected_count')
           run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
           mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
           mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
@@ -621,7 +612,6 @@ jobs:
             workflow wait prs
             --layer implementers
             --base-branch '{{ gha_raw("env.TARGET_BRANCH") }}'
-            --expected-count "$expected_count"
             --run-started-at "$run_started_at"
             --wait-minutes "$WAIT_MINUTES"
             --mode label
