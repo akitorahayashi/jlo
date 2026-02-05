@@ -17,7 +17,13 @@ on:
     inputs:
       entry_point:
         description: 'Start from layer'
-        type: string
+        type: choice
+        options:
+          - narrator
+          - observers
+          - deciders
+          - planners
+          - implementers
         default: narrator
       wait_minutes:
         description: 'Minutes to wait between layers (Jules async processing time)'

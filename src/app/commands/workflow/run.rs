@@ -187,7 +187,7 @@ where
             layer: Layer::Observers,
             roles: Some(vec![role.to_string()]),
             workstream: Some(workstream.to_string()),
-            scheduled: false,
+            scheduled: true,
             prompt_preview: false,
             branch: None,
             issue: None,
@@ -239,7 +239,7 @@ where
             layer: Layer::Deciders,
             roles: None, // All decider roles for this workstream
             workstream: Some(workstream.to_string()),
-            scheduled: false,
+            scheduled: true, // Use scheduled mode to run all enabled decider roles
             prompt_preview: false,
             branch: None,
             issue: None,
