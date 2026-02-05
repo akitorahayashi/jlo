@@ -1,7 +1,10 @@
 //! Run command implementation for executing Jules agents.
 
 mod config;
+mod config_dto;
 mod multi_role;
+
+pub use config::parse_config_content;
 mod narrator;
 mod prompt;
 mod role_selection;

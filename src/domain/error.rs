@@ -73,10 +73,6 @@ pub enum AppError {
     #[error("Run config not found. Create .jules/config.toml first.")]
     RunConfigMissing,
 
-    /// Run config error.
-    #[error(transparent)]
-    RunConfig(#[from] crate::domain::run_config::RunConfigError),
-
     /// Role not found in config for layer.
     #[error("Role '{role}' not found in config for layer '{layer}'")]
     RoleNotInConfig { role: String, layer: String },
@@ -131,7 +127,6 @@ impl AppError {
             | AppError::CircularDependency(_)
             | AppError::InvalidComponentMetadata { .. }
             | AppError::MalformedEnvToml(_)
-            | AppError::RunConfig(_)
             | AppError::RoleNotInConfig { .. }
             | AppError::Schedule(_)
             | AppError::SingleRoleLayerTemplate(_)

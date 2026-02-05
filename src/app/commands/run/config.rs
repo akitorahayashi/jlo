@@ -3,6 +3,7 @@
 use std::fs;
 use std::path::Path;
 
+use super::config_dto::RunConfigDto;
 use crate::domain::{AppError, RunConfig};
 
 /// Load and parse the run configuration.
@@ -14,7 +15,21 @@ pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
     }
 
     let content = fs::read_to_string(&config_path)?;
-    Ok(RunConfig::parse_toml(&content)?)
+    parse_config_content(&content)
+}
+
+/// Parse configuration from string content.
+pub fn parse_config_content(content: &str) -> Result<RunConfig, AppError> {
+    // Check for legacy [agents] section
+    let value: toml::Value = toml::from_str(content)?;
+    if value.get("agents").is_some() {
+        return Err(AppError::config_error(
+            "Legacy [agents] section is not supported. Use workstreams/<name>/scheduled.toml.",
+        ));
+    }
+
+    let dto: RunConfigDto = toml::from_str(content)?;
+    Ok(RunConfig::from(dto))
 }
 
 /// Detect the repository source from git remote.
@@ -81,5 +96,44 @@ mod tests {
         assert_eq!(result, None);
     }
 
-    // resolve_roles removed (roles are selected via scheduled.toml or explicit CLI roles)
+    #[test]
+    fn run_config_parses_from_toml() {
+        let toml = r#"
+[run]
+default_branch = "develop"
+parallel = false
+max_parallel = 5
+
+[jules]
+api_url = "https://example.com/v1/sessions"
+timeout_secs = 10
+max_retries = 1
+retry_delay_ms = 250
+"#;
+        let config = parse_config_content(toml).unwrap();
+
+        assert_eq!(config.run.default_branch, "develop");
+        assert!(!config.run.parallel);
+        assert_eq!(config.run.max_parallel, 5);
+        assert_eq!(config.jules.api_url.as_str(), "https://example.com/v1/sessions");
+    }
+
+    #[test]
+    fn run_config_uses_defaults_for_missing_sections() {
+        let toml = r#""#;
+        let config = parse_config_content(toml).unwrap();
+
+        assert_eq!(config.run.default_branch, "main");
+        assert!(config.run.parallel);
+    }
+
+    #[test]
+    fn run_config_rejects_agents_section() {
+        let toml = r#"
+[agents]
+observers = ["taxonomy"]
+"#;
+        let err = parse_config_content(toml).unwrap_err();
+        assert!(err.to_string().contains("Legacy [agents] section"));
+    }
 }
