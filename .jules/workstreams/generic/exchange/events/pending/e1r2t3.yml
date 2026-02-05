@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "e1r2t3"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "rustacean"
+confidence: "high"
+
+# Content
+title: "Domain errors rely on String wrapping instead of structured types"
+statement: |
+  The `AppError` enum uses multiple variants that wrap `String` (e.g., `Validation`, `InternalError`), leading to loss of semantic meaning and context. Services like `ArtifactGenerator` convert underlying errors to strings immediately.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "enum AppError"
+    note: "Defines generic String-wrapping variants like Validation(String) and MalformedEnvToml(String)."
+  - path: "src/services/application/artifact_generator.rs"
+    loc:
+      - "fn merge_env_toml"
+      - "fn parse_env_toml"
+    note: "Converts toml::de::Error to String immediately using map_err(|e| e.to_string())."
+
+tags:
+  - "error-handling"
+  - "types"

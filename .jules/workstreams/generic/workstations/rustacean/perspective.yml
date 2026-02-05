@@ -2,7 +2,7 @@ schema_version: 2
 observer: rustacean
 workstream: generic
 
-updated_at: "2026-02-04T05:15:00Z"
+updated_at: "2026-02-04T05:30:00Z"
 
 # Keep this list short (1-3). These goals are the continuity mechanism across runs.
 goals:
@@ -17,6 +17,8 @@ ignore: []
 
 # Newest first; keep max 5 entries.
 log:
+  - at: "2026-02-04T05:30:00Z"
+    summary: "Confirmed and reported untyped domain errors in `AppError` (e1r2t3) and direct filesystem coupling in `scaffold_manifest` and `workstream_schedule_filesystem` (f4g5h6)."
   - at: "2026-02-04T05:15:00Z"
     summary: "Identified `AppError` wrapping `PromptAssemblyError` as String (z9x8c7) and direct FS usage in `update` command (q1w2e3)."
   - at: "2026-02-04T05:00:00Z"
