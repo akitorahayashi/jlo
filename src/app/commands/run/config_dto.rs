@@ -1,18 +1,18 @@
 use serde::Deserialize;
 use url::Url;
 
-use crate::domain::{JulesApiConfig, RunConfig, RunSettings};
+use crate::domain::{ExecutionConfig, JulesApiConfig, RunConfig};
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RunConfigDto {
-    pub run: Option<RunSettingsDto>,
+    pub run: Option<ExecutionConfigDto>,
     pub jules: Option<JulesApiConfigDto>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct RunSettingsDto {
+pub struct ExecutionConfigDto {
     pub default_branch: Option<String>,
     pub jules_branch: Option<String>,
     pub parallel: Option<bool>,
@@ -30,9 +30,9 @@ pub struct JulesApiConfigDto {
 
 impl From<RunConfigDto> for RunConfig {
     fn from(dto: RunConfigDto) -> Self {
-        let default_run = RunSettings::default();
+        let default_run = ExecutionConfig::default();
         let run = if let Some(d) = dto.run {
-            RunSettings {
+            ExecutionConfig {
                 default_branch: d.default_branch.unwrap_or(default_run.default_branch),
                 jules_branch: d.jules_branch.unwrap_or(default_run.jules_branch),
                 parallel: d.parallel.unwrap_or(default_run.parallel),

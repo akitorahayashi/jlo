@@ -5,8 +5,8 @@ use url::Url;
 /// Configuration for agent execution loaded from `.jules/config.toml`.
 #[derive(Debug, Clone, Default)]
 pub struct RunConfig {
-    /// Execution settings.
-    pub run: RunSettings,
+    /// Execution configuration.
+    pub run: ExecutionConfig,
     /// Jules API settings.
     pub jules: JulesApiConfig,
 }
@@ -52,9 +52,9 @@ fn default_retry_delay_ms() -> u64 {
     1000
 }
 
-/// Execution settings for agent runs.
+/// Execution configuration for agent runs.
 #[derive(Debug, Clone)]
-pub struct RunSettings {
+pub struct ExecutionConfig {
     /// Default branch for agent operations (implementers work from here).
     pub default_branch: String,
     /// Branch where .jules/ workspace resides.
@@ -65,7 +65,7 @@ pub struct RunSettings {
     pub max_parallel: usize,
 }
 
-impl Default for RunSettings {
+impl Default for ExecutionConfig {
     fn default() -> Self {
         Self {
             default_branch: default_branch(),

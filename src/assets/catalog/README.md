@@ -1,6 +1,6 @@
 ## Jules Environment Prerequisites
 
-Jules VM already includes:
+Jules Environment already includes:
 
 **Python**: python/python3 3.12.11, pip 25.1.1, pipx 1.4.3, poetry 2.1.3, uv 0.7.13, black 25.1.0, mypy 1.16.1, pytest 8.4.0, ruff 0.12.0, pyenv (system 3.10.18 / 3.12.11)
 
