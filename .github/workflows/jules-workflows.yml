@@ -212,8 +212,10 @@ jobs:
     - name: Run observers sequentially
       id: run
       env:
-        MATRIX_JSON: ${{ needs.generate-observer-matrix.outputs.json }}
-      run: jlo workflow run --layer observers --matrix-json "$MATRIX_JSON" ${{ env.JLO_RUN_FLAGS }}
+        MATRIX_OUTPUT: ${{ needs.generate-observer-matrix.outputs.json }}
+      run: |
+        MATRIX_JSON=$(echo "$MATRIX_OUTPUT" | jq -c '.matrix')
+        jlo workflow run --layer observers --matrix-json "$MATRIX_JSON" ${{ env.JLO_RUN_FLAGS }}
   wait-after-observers:
     needs:
     - generate-observer-matrix
@@ -313,8 +315,10 @@ jobs:
     - name: Run deciders sequentially
       id: run
       env:
-        MATRIX_JSON: ${{ needs.generate-decider-matrix.outputs.json }}
-      run: jlo workflow run --layer deciders --matrix-json "$MATRIX_JSON" ${{ env.JLO_RUN_FLAGS }}
+        MATRIX_OUTPUT: ${{ needs.generate-decider-matrix.outputs.json }}
+      run: |
+        MATRIX_JSON=$(echo "$MATRIX_OUTPUT" | jq -c '.matrix')
+        jlo workflow run --layer deciders --matrix-json "$MATRIX_JSON" ${{ env.JLO_RUN_FLAGS }}
   wait-after-deciders:
     needs:
     - generate-decider-matrix

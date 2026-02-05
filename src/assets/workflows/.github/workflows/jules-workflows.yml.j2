@@ -262,8 +262,10 @@ jobs:
       - name: Run observers sequentially
         id: run
         env:
-          MATRIX_JSON: {{ gha_expr("needs.generate-observer-matrix.outputs.json") }}
-        run: jlo workflow run --layer observers --matrix-json "$MATRIX_JSON" {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          MATRIX_OUTPUT: {{ gha_expr("needs.generate-observer-matrix.outputs.json") }}
+        run: |
+          MATRIX_JSON=$(echo "$MATRIX_OUTPUT" | jq -c '.matrix')
+          jlo workflow run --layer observers --matrix-json "$MATRIX_JSON" {{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 6: Wait for observer processing
@@ -376,8 +378,10 @@ jobs:
       - name: Run deciders sequentially
         id: run
         env:
-          MATRIX_JSON: {{ gha_expr("needs.generate-decider-matrix.outputs.json") }}
-        run: jlo workflow run --layer deciders --matrix-json "$MATRIX_JSON" {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          MATRIX_OUTPUT: {{ gha_expr("needs.generate-decider-matrix.outputs.json") }}
+        run: |
+          MATRIX_JSON=$(echo "$MATRIX_OUTPUT" | jq -c '.matrix')
+          jlo workflow run --layer deciders --matrix-json "$MATRIX_JSON" {{ gha_raw("env.JLO_RUN_FLAGS") }}
 
   # ============================================================
   # Phase 9: Wait for decider processing
