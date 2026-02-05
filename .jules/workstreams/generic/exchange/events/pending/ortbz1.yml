@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "ortbz1"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "structural_arch"
+confidence: "high"
+
+# Content
+title: "Application Layer Coupled to Concrete Infrastructure Services"
+statement: |
+  The `update` command in the Application Layer directly imports `scaffold_manifest` from `src/services/assets`, violating the dependency rule that Application should only depend on Domain and Ports.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/update.rs"
+    loc:
+      - "use crate::services::assets::scaffold_manifest::{"
+    note: "Direct import of infrastructure service from application logic."
+
+tags:
+  - "coupling"
+  - "architecture"
+  - "dependency-rule"

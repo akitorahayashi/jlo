@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "jhpuge"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "structural_arch"
+confidence: "high"
+
+# Content
+title: "Application Commands Coupled to CLI Presentation"
+statement: |
+  Application commands in `src/app/commands` directly use `println!` and `eprintln!`, coupling core logic to the console output and preventing reuse as a pure library.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/update.rs"
+    loc:
+      - "if options.dry_run {"
+    note: "The dry_run block directly prints to stdout instead of returning a plan."
+  - path: "src/app/commands/doctor/diagnostics.rs"
+    loc:
+      - "pub fn emit(&self) {"
+    note: "The emit method directly prints errors/warnings to stderr."
+
+tags:
+  - "coupling"
+  - "cli"
+  - "architecture"
