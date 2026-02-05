@@ -42,7 +42,6 @@ concurrency:
   group: jules
   cancel-in-progress: false
 env:
-  ENTRY_POINT: ${{ inputs.entry_point || 'narrator' }}
   WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
   ROUTING_LABELS: ${{ inputs.routing_labels || 'bugs,feats,refacts,tests,docs' }}
   MOCK_MODE: ${{ inputs.mock || false }}
@@ -50,7 +49,12 @@ env:
   JLO_RUN_FLAGS: ${{ (inputs.mock || false) && '--mock' || '' }}
 jobs:
   run-narrator:
-    if: vars.JULES_PAUSED != 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && env.ENTRY_POINT == 'narrator'
+    if: |-
+      vars.JULES_PAUSED != 'true' && (
+        github.event_name == 'schedule' ||
+        (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') == 'narrator') ||
+        (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') == 'narrator')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -148,7 +152,12 @@ jobs:
       run: bash .github/scripts/jules-generate-workstream-matrix.sh
   generate-observer-matrix:
     needs: generate-workstream-matrix
-    if: needs.generate-workstream-matrix.outputs.has_workstreams == 'true' && env.ENTRY_POINT != 'deciders'
+    if: |-
+      needs.generate-workstream-matrix.outputs.has_workstreams == 'true' && (
+        github.event_name == 'schedule' ||
+        (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') != 'deciders') ||
+        (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') != 'deciders')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -499,7 +508,11 @@ jobs:
     - wait-after-deciders
     - wait-after-planners
     - wait-after-implementers
-    if: always() && env.MOCK_MODE == 'true'
+    if: |-
+      always() && (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true') ||
+        (github.event_name == 'workflow_call' && inputs.mock == true)
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
