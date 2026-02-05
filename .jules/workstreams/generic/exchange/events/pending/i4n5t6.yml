@@ -1,0 +1,21 @@
+schema_version: 1
+id: "i4n5t6"
+issue_id: ""
+created_at: "2026-02-04"
+author_role: "cov"
+confidence: "high"
+
+title: "Critical Gap: Missing Unit Tests for Init Scaffold Command"
+statement: |
+  The `init_scaffold` command implementation in `src/app/commands/init_scaffold.rs` lacks unit tests, specifically for critical safety checks like branch enforcement.
+
+evidence:
+  - path: "src/app/commands/init_scaffold.rs"
+    loc:
+      - "execute"
+    note: "File lacks #[cfg(test)] module and unit tests for the execute function."
+
+tags:
+  - "coverage"
+  - "risk"
+  - "quality"
