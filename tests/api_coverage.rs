@@ -45,11 +45,9 @@ fn test_api_coverage_full_flow() {
     assert!(root.join(".jules").exists());
 
     // 2. Doctor (fresh init should pass)
-    let doctor_outcome = doctor_at(
-        root.clone(),
-        DoctorOptions { fix: false, strict: false, workstream: None },
-    )
-    .expect("doctor failed");
+    let doctor_outcome =
+        doctor_at(root.clone(), DoctorOptions { fix: false, strict: false, workstream: None })
+            .expect("doctor failed");
     assert_eq!(doctor_outcome.exit_code, 0);
 
     // 3. Update (prompt preview)
