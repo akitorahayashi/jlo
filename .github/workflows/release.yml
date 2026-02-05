@@ -19,19 +19,61 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - name: Download artifacts from CI workflow
+      - name: Wait for CI workflow success
+        id: wait-for-ci
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Look for a successful run of the CI workflow for the current commit
-          RUN_ID=$(gh run list --workflow ci-workflows.yml --commit ${{ github.sha }} --status success --json databaseId --jq '.[0].databaseId')
+          MAX_WAIT=900  # 15 minutes
+          POLL_INTERVAL=30
+          ELAPSED=0
+
+          echo "Looking for CI workflow run for commit ${{ github.sha }}..."
+
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            # Check for successful run
+            RUN_ID=$(gh run list --workflow ci-workflows.yml --commit ${{ github.sha }} --status success --json databaseId --jq '.[0].databaseId')
+
+            if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
+              echo "Found successful CI run: $RUN_ID"
+              # Export RUN_ID to next step
+              echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+              break
+            fi
+
+            # Check if CI is still running
+            PENDING_ID=$(gh run list --workflow ci-workflows.yml --commit ${{ github.sha }} --json databaseId,status --jq '.[] | select(.status == "in_progress" or .status == "queued" or .status == "pending") | .databaseId' | head -1)
+
+            if [ -n "$PENDING_ID" ] && [ "$PENDING_ID" != "null" ]; then
+              echo "CI workflow $PENDING_ID is still running. Waiting ${POLL_INTERVAL}s... (${ELAPSED}s/${MAX_WAIT}s)"
+              sleep $POLL_INTERVAL
+              ELAPSED=$((ELAPSED + POLL_INTERVAL))
+              continue
+            fi
+
+            # No successful and no pending - check for failure
+            FAILED_ID=$(gh run list --workflow ci-workflows.yml --commit ${{ github.sha }} --status failure --json databaseId --jq '.[0].databaseId')
+            if [ -n "$FAILED_ID" ] && [ "$FAILED_ID" != "null" ]; then
+              echo "CI workflow failed. Cannot proceed with release."
+              exit 1
+            fi
+
+            # No run found at all yet
+            echo "No CI workflow run found yet. Waiting ${POLL_INTERVAL}s... (${ELAPSED}s/${MAX_WAIT}s)"
+            sleep $POLL_INTERVAL
+            ELAPSED=$((ELAPSED + POLL_INTERVAL))
+          done
 
           if [ -z "$RUN_ID" ] || [ "$RUN_ID" == "null" ]; then
-            echo "No successful CI workflow run found for commit ${{ github.sha }}."
-            echo "Please ensure the commit has passed CI before tagging."
+            echo "Timeout: No successful CI workflow run found for commit ${{ github.sha }} after ${MAX_WAIT}s."
             exit 1
           fi
 
+      - name: Download artifacts from CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.wait-for-ci.outputs.run_id }}
+        run: |
           echo "Downloading artifacts from run $RUN_ID"
 
           artifacts=("jlo-linux-x86_64" "jlo-linux-aarch64" "jlo-darwin-x86_64" "jlo-darwin-aarch64")
