@@ -1,84 +1,84 @@
 use std::collections::BTreeMap;
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
-
+use crate::domain::manifest::{self, ScaffoldManifest};
 use crate::domain::AppError;
-use crate::ports::ScaffoldFile;
+use crate::ports::{ManifestStore, ScaffoldFile, WorkspaceStore};
 
-const MANIFEST_SCHEMA_VERSION: u32 = 1;
+pub struct ScaffoldManifestAdapter;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ScaffoldManifest {
-    pub schema_version: u32,
-    pub files: Vec<ScaffoldManifestEntry>,
-}
+impl ManifestStore for ScaffoldManifestAdapter {
+    fn load_manifest(
+        &self,
+        workspace: &impl WorkspaceStore,
+        jules_path: &Path,
+    ) -> Result<Option<ScaffoldManifest>, AppError> {
+        let manifest_path_rel = jules_path.join(".jlo-managed.yml");
+        let manifest_path_str = manifest_path_rel.to_string_lossy();
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ScaffoldManifestEntry {
-    pub path: String,
-    pub sha256: String,
-}
+        if !workspace.resolve_path(&manifest_path_str).exists() {
+            return Ok(None);
+        }
 
-impl ScaffoldManifest {
-    pub fn from_map(map: BTreeMap<String, String>) -> Self {
-        let files =
-            map.into_iter().map(|(path, sha256)| ScaffoldManifestEntry { path, sha256 }).collect();
-        Self { schema_version: MANIFEST_SCHEMA_VERSION, files }
+        let content = workspace.read_file(&manifest_path_str)?;
+        let manifest: ScaffoldManifest = serde_yaml::from_str(&content).map_err(|err| {
+            AppError::ParseError {
+                what: manifest_path_str.to_string(),
+                details: err.to_string(),
+            }
+        })?;
+
+        // Manifest version 1
+        if manifest.schema_version != 1 {
+            return Err(AppError::WorkspaceIntegrity(format!(
+                "Unsupported scaffold manifest schema version: {} (expected {})",
+                manifest.schema_version, 1
+            )));
+        }
+
+        Ok(Some(manifest))
     }
 
-    pub fn to_map(&self) -> BTreeMap<String, String> {
-        self.files.iter().map(|entry| (entry.path.clone(), entry.sha256.clone())).collect()
-    }
-}
+    fn write_manifest(
+        &self,
+        workspace: &impl WorkspaceStore,
+        jules_path: &Path,
+        manifest: &ScaffoldManifest,
+    ) -> Result<(), AppError> {
+        let manifest_path_rel = jules_path.join(".jlo-managed.yml");
+        let manifest_path_str = manifest_path_rel.to_string_lossy();
 
-pub fn manifest_path(jules_path: &Path) -> PathBuf {
-    jules_path.join(".jlo-managed.yml")
-}
-
-pub fn load_manifest(jules_path: &Path) -> Result<Option<ScaffoldManifest>, AppError> {
-    let path = manifest_path(jules_path);
-    if !path.exists() {
-        return Ok(None);
-    }
-
-    let content = fs::read_to_string(&path)?;
-    let manifest: ScaffoldManifest = serde_yaml::from_str(&content).map_err(|err| {
-        AppError::ParseError { what: path.display().to_string(), details: err.to_string() }
-    })?;
-
-    if manifest.schema_version != MANIFEST_SCHEMA_VERSION {
-        return Err(AppError::WorkspaceIntegrity(format!(
-            "Unsupported scaffold manifest schema version: {} (expected {})",
-            manifest.schema_version, MANIFEST_SCHEMA_VERSION
-        )));
+        let content = serde_yaml::to_string(manifest).map_err(|err| {
+            AppError::InternalError(format!("Failed to serialize {}: {}", manifest_path_str, err))
+        })?;
+        workspace.write_file(&manifest_path_str, &content)?;
+        Ok(())
     }
 
-    Ok(Some(manifest))
-}
+    fn is_default_role_file(&self, path: &str) -> bool {
+        is_default_role_file(path)
+    }
 
-pub fn write_manifest(jules_path: &Path, manifest: &ScaffoldManifest) -> Result<(), AppError> {
-    let path = manifest_path(jules_path);
-    let content = serde_yaml::to_string(manifest).map_err(|err| {
-        AppError::InternalError(format!("Failed to serialize {}: {}", path.display(), err))
-    })?;
-    fs::write(&path, content)?;
-    Ok(())
+    fn hash_content(&self, content: &str) -> String {
+        manifest::hash_content(content)
+    }
+
+    fn manifest_from_scaffold(&self, scaffold_files: &[ScaffoldFile]) -> ScaffoldManifest {
+        manifest_from_scaffold(scaffold_files)
+    }
 }
 
 pub fn manifest_from_scaffold(scaffold_files: &[ScaffoldFile]) -> ScaffoldManifest {
     let mut map = BTreeMap::new();
     for file in scaffold_files {
         if is_default_role_file(&file.path) {
-            map.insert(file.path.clone(), hash_content(&file.content));
+            map.insert(file.path.clone(), manifest::hash_content(&file.content));
         }
     }
     ScaffoldManifest::from_map(map)
 }
 
-pub fn is_default_role_file(path: &str) -> bool {
+fn is_default_role_file(path: &str) -> bool {
     let parts: Vec<&str> = path.split('/').collect();
 
     // .jules/roles/<layer>/roles/<role>/role.yml (multi-role layers: observers, deciders)
@@ -95,54 +95,16 @@ pub fn is_default_role_file(path: &str) -> bool {
     false
 }
 
-#[allow(dead_code)]
-pub fn hash_file(path: &Path) -> Result<String, AppError> {
-    let content = fs::read_to_string(path)?;
-    Ok(hash_content(&content))
-}
-
-pub fn hash_content(content: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(content.as_bytes());
-    let digest = hasher.finalize();
-    digest.iter().map(|byte| format!("{:02x}", byte)).collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_scaffold_manifest_conversion() {
-        let mut map = BTreeMap::new();
-        map.insert("file1.txt".to_string(), "hash1".to_string());
-        map.insert("file2.txt".to_string(), "hash2".to_string());
-
-        let manifest = ScaffoldManifest::from_map(map.clone());
-        assert_eq!(manifest.schema_version, 1);
-        assert_eq!(manifest.files.len(), 2);
-
-        let round_trip_map = manifest.to_map();
-        assert_eq!(map, round_trip_map);
-    }
-
-    #[test]
-    fn test_hash_content() {
-        let content = "hello world";
-        let hash = hash_content(content);
-        // echo -n "hello world" | shasum -a 256
-        // b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9
-        assert_eq!(hash, "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9");
-    }
-
-    #[test]
     fn test_is_default_role_file() {
-        // New structure: roles are under roles/ container
         assert!(is_default_role_file(".jules/roles/observers/roles/taxonomy/role.yml"));
         assert!(is_default_role_file(".jules/roles/deciders/roles/triage_generic/role.yml"));
 
-        // Not default role files
-        assert!(!is_default_role_file(".jules/roles/planners/prompt.yml")); // prompt.yml is managed
+        assert!(!is_default_role_file(".jules/roles/planners/prompt.yml"));
         assert!(!is_default_role_file("src/main.rs"));
         assert!(!is_default_role_file(".jules/roles/observers/roles/qa/other.yml"));
     }

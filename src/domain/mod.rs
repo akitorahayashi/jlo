@@ -2,6 +2,7 @@ mod component;
 mod component_id;
 mod error;
 mod layer;
+pub mod manifest;
 mod mock_config;
 mod prompt_assembly;
 mod role_id;

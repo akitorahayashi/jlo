@@ -1,16 +1,20 @@
 use crate::app::AppContext;
 use crate::domain::AppError;
-use crate::ports::{GitPort, RoleTemplateStore, WorkspaceStore};
-use crate::services::assets::scaffold_manifest::{manifest_from_scaffold, write_manifest};
+use crate::ports::{GitPort, ManifestStore, RoleTemplateStore, WorkspaceStore};
 
 /// Execute the init command.
 ///
 /// Creates both the `.jules/` workspace and `.jules/setup/` directory.
-pub fn execute<W, R, G>(ctx: &AppContext<W, R>, git: &G) -> Result<(), AppError>
+pub fn execute<W, R, G, M>(
+    ctx: &AppContext<W, R>,
+    git: &G,
+    manifest_store: &M,
+) -> Result<(), AppError>
 where
     W: WorkspaceStore,
     R: RoleTemplateStore,
     G: GitPort,
+    M: ManifestStore,
 {
     if ctx.workspace().exists() {
         return Err(AppError::WorkspaceExists);
@@ -30,8 +34,8 @@ where
     ctx.workspace().create_structure(&scaffold_files)?;
 
     ctx.workspace().write_version(env!("CARGO_PKG_VERSION"))?;
-    let managed_manifest = manifest_from_scaffold(&scaffold_files);
-    write_manifest(&ctx.workspace().jules_path(), &managed_manifest)?;
+    let managed_manifest = manifest_store.manifest_from_scaffold(&scaffold_files);
+    manifest_store.write_manifest(ctx.workspace(), &ctx.workspace().jules_path(), &managed_manifest)?;
 
     Ok(())
 }

@@ -17,6 +17,7 @@ use crate::services::adapters::embedded_role_template_store::EmbeddedRoleTemplat
 use crate::services::adapters::git_command::GitCommandAdapter;
 use crate::services::adapters::github_command::GitHubCommandAdapter;
 use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::services::assets::scaffold_manifest::ScaffoldManifestAdapter;
 
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
@@ -73,7 +74,8 @@ pub fn init_at(path: std::path::PathBuf) -> Result<(), AppError> {
     let ctx = create_context(path.clone());
 
     let git = GitCommandAdapter::new(path);
-    init_scaffold::execute(&ctx, &git)?;
+    let manifest_store = ScaffoldManifestAdapter;
+    init_scaffold::execute(&ctx, &git, &manifest_store)?;
     Ok(())
 }
 
@@ -214,8 +216,9 @@ pub fn update(dry_run: bool, adopt_managed: bool) -> Result<UpdateResult, AppErr
     let workspace = get_current_workspace()?;
 
     let templates = EmbeddedRoleTemplateStore::new();
+    let manifest_store = ScaffoldManifestAdapter;
     let options = UpdateOptions { dry_run, adopt_managed };
-    update::execute(&workspace, options, &templates)
+    update::execute(&workspace, &manifest_store, options, &templates)
 }
 
 // =============================================================================

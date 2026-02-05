@@ -5,11 +5,9 @@ use std::path::PathBuf;
 
 use chrono::Utc;
 
+use crate::domain::manifest::ScaffoldManifest;
 use crate::domain::AppError;
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
-use crate::services::assets::scaffold_manifest::{
-    ScaffoldManifest, hash_content, is_default_role_file, load_manifest, write_manifest,
-};
+use crate::ports::{ManifestStore, RoleTemplateStore, WorkspaceStore};
 
 /// Files that are managed by jlo and will be overwritten on update.
 ///
@@ -87,13 +85,15 @@ pub struct SkippedUpdate {
 }
 
 /// Execute the update command.
-pub fn execute<W>(
+pub fn execute<W, M>(
     workspace: &W,
+    manifest_store: &M,
     options: UpdateOptions,
     templates: &impl RoleTemplateStore,
 ) -> Result<UpdateResult, AppError>
 where
     W: WorkspaceStore,
+    M: ManifestStore,
 {
     // Check if workspace exists
     if !workspace.exists() {
@@ -157,7 +157,7 @@ where
 
         // Check if this is a jlo-managed file
         if !is_jlo_managed(rel_path) {
-            if is_default_role_file(rel_path) {
+            if manifest_store.is_default_role_file(rel_path) {
                 default_role_files.insert(rel_path.clone(), file.content.clone());
                 continue;
             }
@@ -181,17 +181,17 @@ where
     }
 
     let mut managed_manifest: Option<ScaffoldManifest> = None;
-    let existing_manifest = load_manifest(&jules_path)?;
+    let existing_manifest = manifest_store.load_manifest(workspace, &jules_path)?;
 
     if options.adopt_managed {
         let mut manifest_entries = BTreeMap::new();
         for (path, content) in &default_role_files {
             if workspace.resolve_path(path).exists() {
                 let current = workspace.read_file(path)?;
-                manifest_entries.insert(path.clone(), hash_content(&current));
+                manifest_entries.insert(path.clone(), manifest_store.hash_content(&current));
             } else {
                 to_create.push((path.clone(), content.clone()));
-                manifest_entries.insert(path.clone(), hash_content(content));
+                manifest_entries.insert(path.clone(), manifest_store.hash_content(content));
             }
         }
         managed_manifest = Some(ScaffoldManifest::from_map(manifest_entries));
@@ -203,12 +203,12 @@ where
             if let Some(recorded_hash) = manifest_map.remove(path) {
                 if workspace.resolve_path(path).exists() {
                     let current = workspace.read_file(path)?;
-                    let current_hash = hash_content(&current);
+                    let current_hash = manifest_store.hash_content(&current);
                     if current_hash == recorded_hash {
                         if current != *content {
                             to_update.push((path.clone(), content.clone()));
                         }
-                        next_manifest.insert(path.clone(), hash_content(content));
+                        next_manifest.insert(path.clone(), manifest_store.hash_content(content));
                     } else {
                         skipped.push(SkippedUpdate {
                             path: path.clone(),
@@ -226,7 +226,7 @@ where
             } else if workspace.resolve_path(path).exists() {
                 let current = workspace.read_file(path)?;
                 if current == *content {
-                    next_manifest.insert(path.clone(), hash_content(content));
+                    next_manifest.insert(path.clone(), manifest_store.hash_content(content));
                 } else {
                     skipped.push(SkippedUpdate {
                         path: path.clone(),
@@ -235,14 +235,14 @@ where
                 }
             } else {
                 to_create.push((path.clone(), content.clone()));
-                next_manifest.insert(path.clone(), hash_content(content));
+                next_manifest.insert(path.clone(), manifest_store.hash_content(content));
             }
         }
 
         for (path, recorded_hash) in manifest_map {
             if workspace.resolve_path(&path).exists() {
                 let current = workspace.read_file(&path)?;
-                let current_hash = hash_content(&current);
+                let current_hash = manifest_store.hash_content(&current);
                 if current_hash == recorded_hash {
                     to_remove.push(path.clone());
                 } else {
@@ -357,7 +357,7 @@ where
     }
 
     if let Some(manifest) = managed_manifest {
-        write_manifest(&jules_path, &manifest)?;
+        manifest_store.write_manifest(workspace, &jules_path, &manifest)?;
     }
 
     // Update version file
@@ -402,6 +402,34 @@ mod tests {
     use super::*;
     use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
     use std::fs;
+    use std::path::Path;
+
+    struct MockManifestStore;
+
+    impl ManifestStore for MockManifestStore {
+        fn load_manifest(&self, _workspace: &impl WorkspaceStore, _jules_path: &Path) -> Result<Option<ScaffoldManifest>, AppError> {
+            Ok(None)
+        }
+        fn write_manifest(&self, _workspace: &impl WorkspaceStore, _jules_path: &Path, _manifest: &ScaffoldManifest) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn is_default_role_file(&self, _path: &str) -> bool {
+            false
+        }
+        fn hash_content(&self, content: &str) -> String {
+            use sha2::{Digest, Sha256};
+            let mut hasher = Sha256::new();
+            hasher.update(content.as_bytes());
+            let digest = hasher.finalize();
+            digest.iter().map(|byte| format!("{:02x}", byte)).collect()
+        }
+        fn manifest_from_scaffold(&self, _scaffold_files: &[ScaffoldFile]) -> ScaffoldManifest {
+            ScaffoldManifest {
+                schema_version: 1,
+                files: vec![],
+            }
+        }
+    }
 
     #[test]
     fn test_compare_versions() {
@@ -468,7 +496,8 @@ mod tests {
         let options = UpdateOptions { dry_run: false, adopt_managed: false };
 
         let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
-        let result = execute(&workspace, options, &mock_store).unwrap();
+        let manifest_store = MockManifestStore;
+        let result = execute(&workspace, &manifest_store, options, &mock_store).unwrap();
 
         assert!(result.created.contains(&".jules/README.md".to_string()));
         assert!(result.created.contains(&".jules/custom.txt".to_string()));
@@ -499,7 +528,8 @@ mod tests {
 
         let options = UpdateOptions { dry_run: false, adopt_managed: false };
         let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
-        let result = execute(&workspace, options, &mock_store).unwrap();
+        let manifest_store = MockManifestStore;
+        let result = execute(&workspace, &manifest_store, options, &mock_store).unwrap();
 
         assert!(result.updated.contains(&".jules/README.md".to_string()));
 
@@ -530,7 +560,8 @@ mod tests {
 
         let options = UpdateOptions { dry_run: false, adopt_managed: false };
         let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
-        let result = execute(&workspace, options, &mock_store).unwrap();
+        let manifest_store = MockManifestStore;
+        let result = execute(&workspace, &manifest_store, options, &mock_store).unwrap();
 
         // Should NOT update unmanaged file
         assert!(!result.updated.contains(&".jules/custom.txt".to_string()));
