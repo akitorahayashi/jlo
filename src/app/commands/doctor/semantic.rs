@@ -173,19 +173,6 @@ pub fn semantic_checks(
         }
     }
 
-    // Check for roles that exist but aren't scheduled in any workstream (dangling roles)
-    for (layer, roles) in &existing_roles {
-        let scheduled = scheduled_roles.get(layer).cloned().unwrap_or_default();
-        for role in roles {
-            if !scheduled.contains(role) {
-                diagnostics.push_warning(
-                    role.clone(),
-                    "Role not listed in any scheduled.toml (dangling role)",
-                );
-            }
-        }
-    }
-
     for path in context.issues.values() {
         if let Some(requires) = read_yaml_bool(path, "requires_deep_analysis", diagnostics)
             && requires

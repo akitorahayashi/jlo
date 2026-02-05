@@ -49,7 +49,7 @@ where
     let mock_event_template = include_str!("assets/observer_event.yml");
     let event_content = mock_event_template
         .replace("mock01", &event_id)
-        .replace("2026-02-05", &Utc::now().to_rfc3339())
+        .replace("2026-02-05", &Utc::now().format("%Y-%m-%d").to_string())
         .replace("test-scope", &config.scope);
 
     // Ensure directory exists
