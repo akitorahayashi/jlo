@@ -16,12 +16,12 @@ where
         return Err(AppError::WorkspaceExists);
     }
 
-    // Enforce execution on 'jules' branch to protect main history
+    // Enforce execution on 'jules' or 'jules-test-*' branch to protect main history
     let branch = git.get_current_branch()?;
 
-    if branch != "jules" {
+    if branch != "jules" && !branch.starts_with("jules-test-") {
         return Err(AppError::Validation(format!(
-            "Init must be run on 'jules' branch (current: '{}').\nPlease run: git checkout -b jules",
+            "Init must be run on 'jules' or 'jules-test-*' branch (current: '{}').\nRun: git checkout -b jules (or git checkout -b jules-test-<name>)",
             branch
         )));
     }

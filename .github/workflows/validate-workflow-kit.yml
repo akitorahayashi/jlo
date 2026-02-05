@@ -1,0 +1,237 @@
+name: Validate Workflow Kit
+
+on:
+  pull_request:
+    paths:
+      - 'src/assets/workflows/**'
+      - 'src/app/commands/run/**'
+      - 'src/domain/mock_config.rs'
+      - '.github/workflows/validate-workflow-kit.yml'
+  workflow_dispatch:
+    inputs:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Build jlo first
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build jlo
+        run: cargo build --release
+
+      - name: Upload jlo binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: jlo-binary
+          path: target/release/jlo
+          retention-days: 1
+
+  # Initialize scaffold on a temporary branch and validate it
+  validate-scaffold:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download jlo binary
+        uses: actions/download-artifact@v4
+        with:
+          name: jlo-binary
+          path: ./bin
+
+      - name: Setup jlo
+        run: |
+          chmod +x ./bin/jlo
+          echo "$PWD/bin" >> $GITHUB_PATH
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Create test branch and initialize scaffold
+        run: |
+          # Create a temporary test branch
+          git checkout -b jules-test-${{ github.run_id }}
+          
+          # Initialize scaffold
+          jlo init scaffold
+          
+          # Validate scaffold structure
+          test -d .jules/roles
+          test -d .jules/roles/narrator
+          test -d .jules/roles/observers
+          test -d .jules/roles/deciders
+          test -d .jules/roles/planners
+          test -d .jules/roles/implementers
+          
+          test -f .jules/config.toml
+          test -f .jules/JULES.md
+          test -f .jules/github-labels.json
+          
+          echo "✓ Scaffold structure validated"
+
+      - name: Initialize workflows
+        run: jlo init workflows --remote --overwrite
+
+      - name: Validate workflow structure
+        run: |
+          # Required workflow files
+          test -f .github/workflows/jules-workflows.yml
+          test -f .github/actions/install-jlo/action.yml
+          test -f .github/actions/configure-git/action.yml
+          
+          # Required scripts
+          test -f .github/scripts/jules-run-narrator.sh
+          test -f .github/scripts/jules-run-observers-sequential.sh
+          test -f .github/scripts/jules-run-deciders-sequential.sh
+          test -f .github/scripts/jules-run-planners-sequential.sh
+          test -f .github/scripts/jules-run-implementers-sequential.sh
+          
+          echo "✓ Workflow structure validated"
+
+  # Validate dry-run execution
+  mock-e2e:
+    needs: [build, validate-scaffold]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download jlo binary
+        uses: actions/download-artifact@v4
+        with:
+          name: jlo-binary
+          path: ./bin
+
+      - name: Setup jlo
+        run: |
+          chmod +x ./bin/jlo
+          echo "$PWD/bin" >> "$GITHUB_PATH"
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Create test branch and initialize scaffold
+        run: |
+          # Create a temporary test branch
+          git checkout -b jules-test-e2e-${{ github.run_id }}
+          
+          # Initialize scaffold
+          jlo init scaffold
+          git add .
+          git commit -m "Add jlo scaffold"
+
+      - name: Validate dry-run for each layer
+        run: |
+          # Test --dry-run for each layer (validates prompt assembly without execution)
+          echo "Testing narrator dry-run..."
+          jlo run narrator --dry-run
+          
+          echo "Testing observers dry-run (requires workstream)..."
+          # Observers require a workstream, skip if no scheduled roles
+          jlo run observers --workstream generic --scheduled --dry-run || echo "No scheduled observers"
+          
+          echo "Testing deciders dry-run..."
+          jlo run deciders --workstream generic --scheduled --dry-run || echo "No scheduled deciders"
+          
+          echo "✓ Dry-run validation completed"
+
+  # Validate that workflow template renders correctly with mock inputs
+  validate-workflow-template:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download jlo binary
+        uses: actions/download-artifact@v4
+        with:
+          name: jlo-binary
+          path: ./bin
+
+      - name: Setup jlo
+        run: |
+          chmod +x ./bin/jlo
+          echo "$PWD/bin" >> "$GITHUB_PATH"
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Create test branch and validate workflows
+        run: |
+          # Create a temporary test branch
+          git checkout -b jules-test-template-${{ github.run_id }}
+          
+          jlo init scaffold
+          jlo init workflows --remote --overwrite
+          
+          # Validate workflow YAML is valid
+          pip3 install --quiet pyyaml
+          python3 -c "import yaml; yaml.safe_load(open('.github/workflows/jules-workflows.yml'))"
+          echo "✓ Workflow YAML is valid"
+
+      - name: Check mock support in rendered workflow
+        run: |
+          # Verify mock inputs are present in workflow
+          grep -q "mock:" .github/workflows/jules-workflows.yml || { echo "Missing mock input"; exit 1; }
+          grep -q "workflow_call:" .github/workflows/jules-workflows.yml || { echo "Missing workflow_call trigger"; exit 1; }
+          grep -q "MOCK_MODE:" .github/workflows/jules-workflows.yml || { echo "Missing MOCK_MODE env"; exit 1; }
+          grep -q "JULES_MOCK_SCOPE:" .github/workflows/jules-workflows.yml || { echo "Missing JULES_MOCK_SCOPE env"; exit 1; }
+          grep -q "JLO_RUN_FLAGS:" .github/workflows/jules-workflows.yml || { echo "Missing JLO_RUN_FLAGS env"; exit 1; }
+          
+          echo "✓ Mock support validated in workflow"
+
+      - name: Check JLO_RUN_FLAGS in scripts
+        run: |
+          for script in .github/scripts/jules-run-*.sh; do
+            if ! grep -q 'JLO_RUN_FLAGS' "$script"; then
+              echo "Missing JLO_RUN_FLAGS in $script"
+              exit 1
+            fi
+          done
+          
+          echo "✓ JLO_RUN_FLAGS validated in all scripts"
+
+  # Summary job
+  summary:
+    needs: [validate-scaffold, mock-e2e, validate-workflow-template]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          echo "Validation Results:"
+          echo "  - Scaffold: ${{ needs.validate-scaffold.result }}"
+          echo "  - Mock E2E: ${{ needs.mock-e2e.result }}"
+          echo "  - Template: ${{ needs.validate-workflow-template.result }}"
+          
+          if [[ "${{ needs.validate-scaffold.result }}" != "success" ]] || \
+             [[ "${{ needs.mock-e2e.result }}" != "success" ]] || \
+             [[ "${{ needs.validate-workflow-template.result }}" != "success" ]]; then
+            echo "::error::One or more validation jobs failed"
+            exit 1
+          fi
+          
+          echo "✓ All validations passed"

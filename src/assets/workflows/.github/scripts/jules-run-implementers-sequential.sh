@@ -32,6 +32,10 @@ for issue in "${issues[@]}"; do
     exit 1
   fi
   echo "Running implementer for $issue"
-  jlo run implementers "$issue" --branch "${TARGET_BRANCH:-main}"
-  ISSUE_FILE="$issue" bash .github/scripts/jules-delete-processed-issue-and-events.sh
+  # shellcheck disable=SC2086
+  jlo run implementers "$issue" --branch "${TARGET_BRANCH:-main}" ${JLO_RUN_FLAGS:-}
+  # Skip cleanup in mock mode
+  if [ -z "${JLO_RUN_FLAGS:-}" ] || [[ ! "${JLO_RUN_FLAGS:-}" =~ --mock ]]; then
+    ISSUE_FILE="$issue" bash .github/scripts/jules-delete-processed-issue-and-events.sh
+  fi
 done

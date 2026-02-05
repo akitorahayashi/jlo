@@ -117,6 +117,8 @@ pub fn template_at(
 /// * `dry_run` - Show prompts without executing
 /// * `branch` - Override the starting branch
 /// * `issue` - Local issue file path (required for implementers)
+/// * `mock` - Run in mock mode (no Jules API, scope from JULES_MOCK_SCOPE env)
+#[allow(clippy::too_many_arguments)]
 pub fn run(
     layer: Layer,
     roles: Option<Vec<String>>,
@@ -125,6 +127,7 @@ pub fn run(
     dry_run: bool,
     branch: Option<String>,
     issue: Option<std::path::PathBuf>,
+    mock: bool,
 ) -> Result<RunResult, AppError> {
     let workspace = get_current_workspace()?;
 
@@ -133,7 +136,7 @@ pub fn run(
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
 
-    let options = RunOptions { layer, roles, workstream, scheduled, dry_run, branch, issue };
+    let options = RunOptions { layer, roles, workstream, scheduled, dry_run, branch, issue, mock };
     run::execute(&workspace.jules_path(), options, &git, &github, &workspace)
 }
 

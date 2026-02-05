@@ -62,11 +62,22 @@ jlo run implementers .jules/workstreams/generic/issues/<label>/auth-inconsistenc
 
 Single-role layers are issue-driven and do not support the `--role` flag.
 
+**Mock Mode**: Validate workflow orchestration without calling Jules API:
+
+```bash
+jlo run narrator --mock             # Mock narrator execution
+jlo run observers --mock            # Mock observer execution
+jlo run deciders --mock             # Mock decider execution
+```
+
+Mock mode creates real branches and PRs with synthetic commit content, enabling E2E workflow validation in CI. The scope identifier is auto-generated from `JULES_MOCK_SCOPE` env var or a timestamp.
+
 **Flags**:
 - `-w, --workstream <name>`: Target workstream (required for observers/deciders)
 - `--scheduled`: Use roles from `scheduled.toml`
 - `-r, --role <name>`: Run specific role(s) (manual mode only)
 - `--dry-run`: Show assembled prompts without API calls
+- `--mock`: Use mock execution (creates branches/PRs without Jules API)
 - `--branch <name>`: Override the default starting branch
 - `<path>`: Local issue file (required for planners and implementers)
 

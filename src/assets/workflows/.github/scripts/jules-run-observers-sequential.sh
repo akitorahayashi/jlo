@@ -13,7 +13,6 @@ require_command() {
 
 require_command jq
 require_command jlo
-require_command timeout
 
 # Extract workstream/role pairs using a single jq call (tab-separated)
 mapfile -t entries < <(echo "$OBSERVER_MATRIX" | jq -r '.include[]? | "\(.workstream)\t\(.role)"')
@@ -30,5 +29,6 @@ for entry in "${entries[@]}"; do
     exit 1
   fi
   echo "Running observer $workstream / $role"
-  timeout 20m jlo run observers --workstream "$workstream" --role "$role"
+  # shellcheck disable=SC2086
+  jlo run observers --workstream "$workstream" --role "$role" ${JLO_RUN_FLAGS:-}
 done
