@@ -207,6 +207,22 @@ pub fn update(prompt_preview: bool, adopt_managed: bool) -> Result<UpdateResult,
     update::execute(&workspace, options, &templates)
 }
 
+/// Update workspace to current jlo version at the specified path.
+pub fn update_at(
+    path: std::path::PathBuf,
+    prompt_preview: bool,
+    adopt_managed: bool,
+) -> Result<UpdateResult, AppError> {
+    let workspace = FilesystemWorkspaceStore::new(path);
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    let templates = EmbeddedRoleTemplateStore::new();
+    let options = UpdateOptions { prompt_preview, adopt_managed };
+    update::execute(&workspace, options, &templates)
+}
+
 // =============================================================================
 // Doctor Command API
 // =============================================================================
@@ -214,6 +230,19 @@ pub fn update(prompt_preview: bool, adopt_managed: bool) -> Result<UpdateResult,
 /// Validate the `.jules/` workspace structure and content.
 pub fn doctor(options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
     let workspace = get_current_workspace()?;
+
+    doctor::execute(&workspace.jules_path(), options)
+}
+
+/// Validate the `.jules/` workspace structure and content at the specified path.
+pub fn doctor_at(
+    path: std::path::PathBuf,
+    options: DoctorOptions,
+) -> Result<DoctorOutcome, AppError> {
+    let workspace = FilesystemWorkspaceStore::new(path);
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
 
     doctor::execute(&workspace.jules_path(), options)
 }
