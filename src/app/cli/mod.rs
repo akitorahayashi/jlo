@@ -30,7 +30,7 @@ enum Commands {
     Update {
         /// Show planned changes without applying
         #[arg(long)]
-        dry_run: bool,
+        prompt_preview: bool,
         /// Adopt current default role files as managed baseline (skips conditional updates)
         #[arg(long)]
         adopt_managed: bool,
@@ -132,12 +132,12 @@ enum RunLayer {
     Narrator {
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
-        dry_run: bool,
+        prompt_preview: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
         /// Run in mock mode (no Jules API, real git/GitHub operations)
-        #[arg(long, conflicts_with = "dry_run")]
+        #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
     /// Run observer agents
@@ -154,12 +154,12 @@ enum RunLayer {
         scheduled: bool,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
-        dry_run: bool,
+        prompt_preview: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
         /// Run in mock mode (no Jules API, real git/GitHub operations)
-        #[arg(long, conflicts_with = "dry_run")]
+        #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
     /// Run decider agents
@@ -176,12 +176,12 @@ enum RunLayer {
         scheduled: bool,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
-        dry_run: bool,
+        prompt_preview: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
         /// Run in mock mode (no Jules API, real git/GitHub operations)
-        #[arg(long, conflicts_with = "dry_run")]
+        #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
     /// Run planner agent (single-role, issue-driven)
@@ -191,12 +191,12 @@ enum RunLayer {
         issue: PathBuf,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
-        dry_run: bool,
+        prompt_preview: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
         /// Run in mock mode (no Jules API, real git/GitHub operations)
-        #[arg(long, conflicts_with = "dry_run")]
+        #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
     /// Run implementer agent (single-role, issue-driven)
@@ -206,12 +206,12 @@ enum RunLayer {
         issue: PathBuf,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
-        dry_run: bool,
+        prompt_preview: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
         /// Run in mock mode (no Jules API, real git/GitHub operations)
-        #[arg(long, conflicts_with = "dry_run")]
+        #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
 }
@@ -254,8 +254,8 @@ pub fn run() {
 
     let result: Result<i32, AppError> = match cli.command {
         Commands::Init { command } => run_init(command).map(|_| 0),
-        Commands::Update { dry_run, adopt_managed } => {
-            run_update(dry_run, adopt_managed).map(|_| 0)
+        Commands::Update { prompt_preview, adopt_managed } => {
+            run_update(prompt_preview, adopt_managed).map(|_| 0)
         }
         Commands::Template { layer, name, workstream } => {
             run_template(layer, name, workstream).map(|_| 0)
@@ -324,10 +324,10 @@ fn run_template(
     Ok(())
 }
 
-fn run_update(dry_run: bool, adopt_managed: bool) -> Result<(), AppError> {
-    let result = crate::app::api::update(dry_run, adopt_managed)?;
+fn run_update(prompt_preview: bool, adopt_managed: bool) -> Result<(), AppError> {
+    let result = crate::app::api::update(prompt_preview, adopt_managed)?;
 
-    if !result.dry_run {
+    if !result.prompt_preview {
         if result.updated.is_empty() && result.created.is_empty() && result.removed.is_empty() {
             println!("✅ Workspace already up to date");
             if result.adopted_managed {
@@ -371,36 +371,37 @@ fn run_update(dry_run: bool, adopt_managed: bool) -> Result<(), AppError> {
 fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     use crate::domain::Layer;
 
-    let (target_layer, roles, workstream, scheduled, dry_run, branch, issue, mock) = match layer {
-        RunLayer::Narrator { dry_run, branch, mock } => {
-            (Layer::Narrators, None, None, false, dry_run, branch, None, mock)
-        }
-        RunLayer::Observers { role, dry_run, branch, workstream, scheduled, mock } => {
-            (Layer::Observers, role, workstream, scheduled, dry_run, branch, None, mock)
-        }
-        RunLayer::Deciders { role, dry_run, branch, workstream, scheduled, mock } => {
-            (Layer::Deciders, role, workstream, scheduled, dry_run, branch, None, mock)
-        }
-        RunLayer::Planners { dry_run, branch, issue, mock } => {
-            (Layer::Planners, None, None, false, dry_run, branch, Some(issue), mock)
-        }
-        RunLayer::Implementers { dry_run, branch, issue, mock } => {
-            (Layer::Implementers, None, None, false, dry_run, branch, Some(issue), mock)
-        }
-    };
+    let (target_layer, roles, workstream, scheduled, prompt_preview, branch, issue, mock) =
+        match layer {
+            RunLayer::Narrator { prompt_preview, branch, mock } => {
+                (Layer::Narrators, None, None, false, prompt_preview, branch, None, mock)
+            }
+            RunLayer::Observers { role, prompt_preview, branch, workstream, scheduled, mock } => {
+                (Layer::Observers, role, workstream, scheduled, prompt_preview, branch, None, mock)
+            }
+            RunLayer::Deciders { role, prompt_preview, branch, workstream, scheduled, mock } => {
+                (Layer::Deciders, role, workstream, scheduled, prompt_preview, branch, None, mock)
+            }
+            RunLayer::Planners { prompt_preview, branch, issue, mock } => {
+                (Layer::Planners, None, None, false, prompt_preview, branch, Some(issue), mock)
+            }
+            RunLayer::Implementers { prompt_preview, branch, issue, mock } => {
+                (Layer::Implementers, None, None, false, prompt_preview, branch, Some(issue), mock)
+            }
+        };
 
     let result = crate::app::api::run(
         target_layer,
         roles,
         workstream,
         scheduled,
-        dry_run,
+        prompt_preview,
         branch,
         issue,
         mock,
     )?;
 
-    if !result.dry_run && !result.roles.is_empty() && !result.sessions.is_empty() {
+    if !result.prompt_preview && !result.roles.is_empty() && !result.sessions.is_empty() {
         println!("✅ Created {} Jules session(s)", result.sessions.len());
     }
 

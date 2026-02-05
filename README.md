@@ -24,7 +24,7 @@ jlo init
 |---------|-------|-------------|
 | `jlo init [scaffold]` | `i` | Create `.jules/` workspace with setup directory |
 | `jlo init workflows (--remote | --self-hosted)` | `i w` | Install workflow kit into `.github/` |
-| `jlo update [--dry-run] [--adopt-managed]` | `u` | Update workspace to current jlo version |
+| `jlo update [--prompt-preview] [--adopt-managed]` | `u` | Update workspace to current jlo version |
 | `jlo deinit` | | Remove jlo-managed branch and workflow kit files |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
@@ -47,7 +47,7 @@ jlo run observers --workstream generic --scheduled            # Run scheduled ob
 jlo run deciders --workstream generic --scheduled             # Run scheduled decider roles
 jlo run observers --workstream generic --role <role>          # Run specific role (manual)
 jlo run observers --workstream generic --role <role1> --role <role2> # Run specific roles (manual)
-jlo run observers --workstream generic --scheduled --dry-run   # Show prompts without executing
+jlo run observers --workstream generic --scheduled --prompt-preview   # Show prompts without executing
 jlo run observers --workstream generic --scheduled --branch custom # Override starting branch
 ```
 
@@ -77,7 +77,7 @@ Mock mode creates real branches and PRs with synthetic commit content, enabling 
 - `-w, --workstream <name>`: Target workstream (required for observers/deciders)
 - `--scheduled`: Use roles from `scheduled.toml`
 - `-r, --role <name>`: Run specific role(s) (manual mode only)
-- `--dry-run`: Show assembled prompts without API calls
+- `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)
 - `--branch <name>`: Override the default starting branch
 - `<path>`: Local issue file (required for planners and implementers)

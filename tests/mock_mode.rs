@@ -3,7 +3,7 @@
 //! Note: Mock mode creates real branches and PRs, so these tests focus on:
 //! 1. CLI argument validation
 //! 2. Error handling for missing prerequisites
-//! 3. Verifying mock conflicts with dry-run (they're mutually exclusive)
+//! 3. Verifying mock conflicts with prompt-preview (they're mutually exclusive)
 
 mod common;
 
@@ -37,13 +37,13 @@ fn mock_requires_gh_token() {
 }
 
 #[test]
-fn mock_conflicts_with_dry_run() {
+fn mock_conflicts_with_prompt_preview() {
     let ctx = TestContext::new();
     setup_scaffold(&ctx);
 
-    // --mock and --dry-run are mutually exclusive
+    // --mock and --prompt-preview are mutually exclusive
     ctx.cli()
-        .args(["run", "narrator", "--mock", "--dry-run"])
+        .args(["run", "narrator", "--mock", "--prompt-preview"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("cannot be used with"));

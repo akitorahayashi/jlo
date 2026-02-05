@@ -126,7 +126,7 @@ pub fn template_at(
 /// * `roles` - Specific roles to run (manual mode)
 /// * `workstream` - Target workstream (required for observers/deciders)
 /// * `scheduled` - Use scheduled.toml roles (observers/deciders only)
-/// * `dry_run` - Show prompts without executing
+/// * `prompt_preview` - Show prompts without executing
 /// * `branch` - Override the starting branch
 /// * `issue` - Local issue file path (required for implementers)
 /// * `mock` - Run in mock mode (no Jules API, scope from JULES_MOCK_SCOPE env)
@@ -136,7 +136,7 @@ pub fn run(
     roles: Option<Vec<String>>,
     workstream: Option<String>,
     scheduled: bool,
-    dry_run: bool,
+    prompt_preview: bool,
     branch: Option<String>,
     issue: Option<std::path::PathBuf>,
     mock: bool,
@@ -148,7 +148,8 @@ pub fn run(
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
 
-    let options = RunOptions { layer, roles, workstream, scheduled, dry_run, branch, issue, mock };
+    let options =
+        RunOptions { layer, roles, workstream, scheduled, prompt_preview, branch, issue, mock };
     run::execute(&workspace.jules_path(), options, &git, &github, &workspace)
 }
 
@@ -207,13 +208,13 @@ pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
 /// Only jlo-managed files are overwritten; repository-owned files are preserved.
 ///
 /// # Arguments
-/// * `dry_run` - Show planned changes without applying
+/// * `prompt_preview` - Show planned changes without applying
 /// * `adopt_managed` - Record current default role files as managed baseline
-pub fn update(dry_run: bool, adopt_managed: bool) -> Result<UpdateResult, AppError> {
+pub fn update(prompt_preview: bool, adopt_managed: bool) -> Result<UpdateResult, AppError> {
     let workspace = get_current_workspace()?;
 
     let templates = EmbeddedRoleTemplateStore::new();
-    let options = UpdateOptions { dry_run, adopt_managed };
+    let options = UpdateOptions { prompt_preview, adopt_managed };
     update::execute(&workspace, options, &templates)
 }
 

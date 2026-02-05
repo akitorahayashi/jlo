@@ -57,9 +57,9 @@ tests/
 |---------|-------|-------------|
 | `jlo init [scaffold]` | `i` | Create `.jules/` structure with setup directory |
 | `jlo init workflows (--remote \| --self-hosted)` | `i w` | Install workflow kit into `.github/` |
-| `jlo update [--dry-run] [--adopt-managed]` | `u` | Update workspace to current jlo version |
+| `jlo update [--prompt-preview] [--adopt-managed]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
-| `jlo run narrator [--dry-run] [--mock]` | `r n` | Run narrator (produces changes feed) |
+| `jlo run narrator [--prompt-preview] [--mock]` | `r n` | Run narrator (produces changes feed) |
 | `jlo run observers --workstream <name> [--role <name> \| --scheduled] [--mock]` | `r o` | Run observer agents |
 | `jlo run deciders --workstream <name> [--role <name> \| --scheduled] [--mock]` | `r d` | Run decider agents |
 | `jlo run planners <path> [--mock]` | `r p` | Run planner (issue-driven) |
@@ -112,12 +112,11 @@ cargo test --test mock_mode       # Mock execution flow
 
 Mock mode (`--mock`) enables E2E workflow validation without Jules API calls. Scope is auto-generated from `JULES_MOCK_SCOPE` env var or a timestamp.
 
-Mock execution creates real git branches and GitHub PRs with synthetic commit content. Used by the `validate-workflow-kit.yml` CI workflow to verify workflow orchestration.
+Mock execution creates real git branches and GitHub PRs with synthetic commit content.
 
 Key files:
 - `src/domain/mock_config.rs`: `MockConfig` and `MockOutput` types
-- `src/app/commands/run/mock.rs`: Mock execution implementation per layer
-- `.github/workflows/validate-workflow-kit.yml`: CI validation workflow
+- `src/app/commands/run/mock/`: Mock execution implementation per layer
 
 ## Setup Compiler
 

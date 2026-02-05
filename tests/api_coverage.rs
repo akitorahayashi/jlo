@@ -60,9 +60,9 @@ fn test_api_coverage_full_flow() {
         .expect("doctor failed");
     assert_eq!(doctor_outcome.exit_code, 0);
 
-    // 3. Update (dry run)
+    // 3. Update (prompt preview)
     let update_result = update(true, false).expect("update failed");
-    assert!(update_result.dry_run);
+    assert!(update_result.prompt_preview);
 
     // 4. Template (create role in generic workstream)
     // "generic" workstream is created by init
