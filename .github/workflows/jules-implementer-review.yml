@@ -26,7 +26,7 @@ jobs:
         run: |
           echo "Waiting for PR to be created for branch $BRANCH_NAME..."
           PR_NUMBER=""
-          
+
           # Retry for up to 60 seconds to allow time for PR creation after push
           for i in {1..12}; do
             PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --repo "$REPO" --json number -q '.[0].number')

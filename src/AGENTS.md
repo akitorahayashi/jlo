@@ -72,10 +72,26 @@ tests/
 
 ## Verification Commands
 
+### Full Suite
+
 ```bash
 cargo fmt
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets --all-features
+```
+
+### Partial Testing
+
+Run only relevant tests to save time:
+
+```bash
+# By name (substring match)
+cargo test <test_name>
+
+# By integration test file
+cargo test --test cli_commands    # CLI parsing & commands
+cargo test --test workflow_kit    # Workflow kit & YAML linting
+cargo test --test mock_mode       # Mock execution flow
 ```
 
 ## Layer Architecture

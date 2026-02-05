@@ -5,7 +5,7 @@
 //! end-to-end validation of the workflow kit.
 
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use chrono::Utc;
@@ -444,7 +444,9 @@ mock: true
         &impl_issue_content,
     )?;
 
-    // Move any mock pending events to decided
+    // Move any mock pending events to decided and collect paths for git
+    let mut moved_dest_files: Vec<PathBuf> = Vec::new();
+    let mut moved_src_files: Vec<PathBuf> = Vec::new();
     if pending_dir.exists() {
         for entry in std::fs::read_dir(&pending_dir).into_iter().flatten().flatten() {
             let path = entry.path();
@@ -454,13 +456,22 @@ mock: true
                 .unwrap_or(false)
             {
                 let dest = decided_dir.join(path.file_name().unwrap());
-                std::fs::rename(&path, &dest).ok();
+                if std::fs::rename(&path, &dest).is_ok() {
+                    moved_src_files.push(path);
+                    moved_dest_files.push(dest);
+                }
             }
         }
     }
 
-    // Commit and push
-    let files: Vec<&Path> = vec![planner_issue_file.as_path(), impl_issue_file.as_path()];
+    // Commit and push (include moved event files)
+    let mut files: Vec<&Path> = vec![planner_issue_file.as_path(), impl_issue_file.as_path()];
+    for f in &moved_dest_files {
+        files.push(f.as_path());
+    }
+    for f in &moved_src_files {
+        files.push(f.as_path());
+    }
     git.commit_files(&format!("[mock-{}] decider: mock issues", config.scope), &files)?;
     git.push_branch(&branch_name, false)?;
 
