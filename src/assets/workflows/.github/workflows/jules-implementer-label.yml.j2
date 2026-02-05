@@ -50,7 +50,7 @@ jobs:
 
           prefixes=()
           for path in "${contract_paths[@]}"; do
-            prefix=$(git show "origin/jules:$path" | awk -F':' '/^branch_prefix:/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); gsub(/["'\'']/, "", $2); print $2; exit}')
+            prefix=$(git show "origin/jules:.jules/roles/$path" | awk -F':' '/^branch_prefix:/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); gsub(/["'\'']/, "", $2); print $2; exit}')
             if [ -n "$prefix" ]; then
               prefixes+=("$prefix")
             fi
