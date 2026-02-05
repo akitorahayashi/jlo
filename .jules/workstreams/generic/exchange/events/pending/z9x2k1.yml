@@ -1,0 +1,31 @@
+schema_version: 1
+
+# Metadata
+id: "z9x2k1"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-04"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "README Quick Start instruction fails on branch requirement"
+statement: |
+  The Quick Start guide instructs users to run `jlo init` directly after installation,
+  but the command enforces execution on a `jules` or `jules-test-*` branch, causing immediate failure.
+
+# Evidence supporting the observation
+evidence:
+  - path: "README.md"
+    loc:
+      - "Quick Start"
+    note: "Example shows `jlo init` without branch creation."
+
+  - path: "src/app/commands/init_scaffold.rs"
+    loc:
+      - "branch != \"jules\""
+    note: "Code explicitly forbids execution on other branches."
+
+tags:
+  - "documentation"
+  - "quick-start"
+  - "broken-example"
