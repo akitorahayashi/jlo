@@ -1,0 +1,26 @@
+schema_version: 1
+id: "errmod"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "rustacean"
+confidence: "high"
+
+title: "Stringly-typed variants in AppError"
+statement: |
+  The AppError enum relies heavily on string-wrapping variants (Validation, InternalError), which erases semantic meaning and makes programmatic error handling difficult.
+  Errors should be typed to allow deciders to react differently to different failure modes.
+
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "Validation(String)"
+    note: "Validation error is just a string."
+  - path: "src/domain/error.rs"
+    loc:
+      - "InternalError(String)"
+    note: "Internal error is just a string."
+
+tags:
+  - "error-handling"
+  - "types"
+  - "refactoring"

@@ -1,0 +1,19 @@
+schema_version: 2
+
+observer: "rustacean"
+workstream: "generic"
+
+updated_at: "2026-02-05T19:05:00Z"
+
+goals:
+  - "Refine AppError to reduce stringly-typed variants."
+  - "Enforce RoleId usage in WorkspaceStore."
+  - "Eliminate direct service dependencies in update.rs."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-05T19:05:00Z"
+    summary: "Identified 3 architectural issues: layering violation, weak error model, and weak typing."
