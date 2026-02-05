@@ -18,24 +18,12 @@ require_command jlo
 
 workstreams=$(echo "$WORKSTREAMS_JSON" | jq -r '.include[].workstream')
 
-if [ -z "${ROUTING_LABELS:-}" ] || [ "$ROUTING_LABELS" = "auto" ]; then
-  if [ ! -f ".jules/github-labels.json" ]; then
-    echo "::error::Missing .jules/github-labels.json for routing label auto mode"
-    exit 1
-  fi
-  labels_json=$(jq -c '.issue_labels | keys' .jules/github-labels.json)
-  if [ -z "$labels_json" ] || [ "$labels_json" = "null" ] || [ "$(echo "$labels_json" | jq 'length')" -eq 0 ]; then
-    echo "::error::No issue labels defined in .jules/github-labels.json"
-    exit 1
-  fi
-  echo "Routing labels: auto (loaded from .jules/github-labels.json)"
-else
-  labels_json=$(printf '%s' "$ROUTING_LABELS" | jq -R 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))')
-  if [ "$(echo "$labels_json" | jq 'length')" -eq 0 ]; then
-    echo "::error::ROUTING_LABELS resolved to an empty list"
-    exit 1
-  fi
+labels_json=$(printf '%s' "$ROUTING_LABELS" | jq -R 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))')
+if [ "$(echo "$labels_json" | jq 'length')" -eq 0 ]; then
+  echo "::error::ROUTING_LABELS resolved to an empty list"
+  exit 1
 fi
+echo "Routing labels: $ROUTING_LABELS"
 
 planner_list=""
 implementer_list=""

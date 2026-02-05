@@ -1,7 +1,9 @@
 name: Jules Implementer Label
 
 on:
-  push: {}
+  push:
+    branches:
+      - 'jules-*'
 
 permissions:
   contents: read

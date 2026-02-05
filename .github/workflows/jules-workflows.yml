@@ -13,9 +13,9 @@ on:
         type: number
         default: 30
       routing_labels:
-        description: Issue labels eligible for planner/implementer routing (comma-separated or auto)
+        description: Issue labels eligible for planner/implementer routing (comma-separated)
         type: string
-        default: auto
+        default: bugs,feats,refacts,tests,docs
       mock:
         description: Run in mock mode (creates branches/PRs without Jules API)
         type: boolean
@@ -30,7 +30,7 @@ on:
         default: 30
       routing_labels:
         type: string
-        default: auto
+        default: bugs,feats,refacts,tests,docs
       mock:
         type: boolean
         default: false
@@ -44,7 +44,7 @@ concurrency:
 env:
   ENTRY_POINT: ${{ inputs.entry_point || 'narrator' }}
   WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
-  ROUTING_LABELS: ${{ inputs.routing_labels || 'auto' }}
+  ROUTING_LABELS: ${{ inputs.routing_labels || 'bugs,feats,refacts,tests,docs' }}
   MOCK_MODE: ${{ inputs.mock || false }}
   JULES_MOCK_SCOPE: ${{ format('mock-run-{0}', github.run_id) }}
   JLO_RUN_FLAGS: ${{ (inputs.mock || false) && '--mock' || '' }}
@@ -505,7 +505,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
       REPO: ${{ github.repository }}
-      MOCK_SCOPE: ${{ env.JULES_MOCK_SCOPE }}
+      MOCK_SCOPE: ${{ format('mock-run-{0}', github.run_id) }}
     steps:
     - uses: actions/checkout@v4
       with:
