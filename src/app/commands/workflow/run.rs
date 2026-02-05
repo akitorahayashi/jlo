@@ -122,16 +122,13 @@ fn execute_layer_runs(
 /// Execute narrator run (single entry, no matrix).
 fn execute_narrator_run(mock_tag: Option<&str>) -> Result<RunResults, AppError> {
     let mut cmd = Command::new("jlo");
-    cmd.arg("run").arg("narrator").arg("--scheduled");
+    cmd.arg("run").arg("narrator");
 
     if let Some(tag) = mock_tag {
         cmd.arg("--mock").env("JULES_MOCK_TAG", tag);
     }
 
-    eprintln!(
-        "Executing: jlo run narrator --scheduled{}",
-        if mock_tag.is_some() { " --mock" } else { "" }
-    );
+    eprintln!("Executing: jlo run narrator{}", if mock_tag.is_some() { " --mock" } else { "" });
 
     let output = cmd.output().map_err(|e| AppError::ExternalToolError {
         tool: "jlo".to_string(),
@@ -167,25 +164,31 @@ fn execute_multi_role_runs(
 
     let mut all_pr_numbers = Vec::new();
     let mut all_branches = Vec::new();
+    let mock_flag_str = if mock_tag.is_some() { " --mock" } else { "" };
 
-    // For deciders, group by workstream (one run per workstream)
+    // For deciders, deduplicate by workstream (one run per workstream)
     // For observers, run each entry
-    let entries = if options.layer == Layer::Deciders {
-        // Get unique workstreams
+    let deduped_entries: Vec<&serde_json::Value>;
+    let entries: &[&serde_json::Value] = if options.layer == Layer::Deciders {
         let mut seen = std::collections::HashSet::new();
-        matrix
+        deduped_entries = matrix
             .include
             .iter()
-            .filter_map(|entry| {
-                let ws = entry.get("workstream")?.as_str()?;
-                if seen.insert(ws.to_string()) { Some(entry.clone()) } else { None }
+            .filter(|entry| {
+                entry
+                    .get("workstream")
+                    .and_then(|v| v.as_str())
+                    .map(|ws| seen.insert(ws.to_string()))
+                    .unwrap_or(false)
             })
-            .collect::<Vec<_>>()
+            .collect();
+        &deduped_entries
     } else {
-        matrix.include.clone()
+        deduped_entries = matrix.include.iter().collect();
+        &deduped_entries
     };
 
-    for entry in &entries {
+    for entry in entries {
         let workstream = entry.get("workstream").and_then(|v| v.as_str()).ok_or_else(|| {
             AppError::Validation("Matrix entry missing 'workstream' field".to_string())
         })?;
@@ -218,14 +221,14 @@ fn execute_multi_role_runs(
                 options.layer.dir_name(),
                 workstream,
                 role,
-                if mock_tag.is_some() { " --mock" } else { "" }
+                mock_flag_str
             )
         } else {
             format!(
                 "jlo run {} --workstream {} --scheduled{}",
                 options.layer.dir_name(),
                 workstream,
-                if mock_tag.is_some() { " --mock" } else { "" }
+                mock_flag_str
             )
         };
         eprintln!("Executing: {}", cmd_str);
@@ -283,19 +286,14 @@ fn execute_issue_runs(
 
         let mut cmd = Command::new("jlo");
         cmd.arg("run").arg(options.layer.dir_name());
-        cmd.arg("--issue-file").arg(issue);
-        cmd.arg("--scheduled");
-
-        if let Some(target) = &options.target_branch {
-            cmd.arg("--target-branch").arg(target);
-        }
+        cmd.arg(issue); // Positional argument
 
         if let Some(tag) = mock_tag {
             cmd.arg("--mock").env("JULES_MOCK_TAG", tag);
         }
 
         eprintln!(
-            "Executing: jlo run {} --issue-file {} --scheduled{}",
+            "Executing: jlo run {} {}{}",
             options.layer.dir_name(),
             issue,
             if mock_tag.is_some() { " --mock" } else { "" }
