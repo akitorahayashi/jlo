@@ -9,6 +9,7 @@ on:
       - 'jules-decider-*'
       - 'jules-planner-*'
       - 'jules-narrator-*'
+      - 'jules-implementer-*-mock-*'
 
 permissions:
   pull-requests: write
