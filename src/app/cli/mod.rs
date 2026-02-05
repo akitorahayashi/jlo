@@ -132,11 +132,14 @@ enum RunLayer {
     #[clap(visible_alias = "n")]
     Narrator {
         /// Show assembled prompts without executing
-        #[arg(long)]
+        #[arg(long, conflicts_with = "mock")]
         dry_run: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
+        /// Run in mock mode (no Jules API, real git/GitHub operations)
+        #[arg(long, conflicts_with = "dry_run")]
+        mock: bool,
     },
     /// Run observer agents
     #[clap(visible_alias = "o")]
@@ -151,11 +154,14 @@ enum RunLayer {
         #[arg(long)]
         scheduled: bool,
         /// Show assembled prompts without executing
-        #[arg(long)]
+        #[arg(long, conflicts_with = "mock")]
         dry_run: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
+        /// Run in mock mode (no Jules API, real git/GitHub operations)
+        #[arg(long, conflicts_with = "dry_run")]
+        mock: bool,
     },
     /// Run decider agents
     #[clap(visible_alias = "d")]
@@ -170,11 +176,14 @@ enum RunLayer {
         #[arg(long)]
         scheduled: bool,
         /// Show assembled prompts without executing
-        #[arg(long)]
+        #[arg(long, conflicts_with = "mock")]
         dry_run: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
+        /// Run in mock mode (no Jules API, real git/GitHub operations)
+        #[arg(long, conflicts_with = "dry_run")]
+        mock: bool,
     },
     /// Run planner agent (single-role, issue-driven)
     #[clap(visible_alias = "p")]
@@ -182,11 +191,14 @@ enum RunLayer {
         /// Local issue file path (required)
         issue: PathBuf,
         /// Show assembled prompts without executing
-        #[arg(long)]
+        #[arg(long, conflicts_with = "mock")]
         dry_run: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
+        /// Run in mock mode (no Jules API, real git/GitHub operations)
+        #[arg(long, conflicts_with = "dry_run")]
+        mock: bool,
     },
     /// Run implementer agent (single-role, issue-driven)
     #[clap(visible_alias = "i")]
@@ -194,11 +206,14 @@ enum RunLayer {
         /// Local issue file path (required)
         issue: PathBuf,
         /// Show assembled prompts without executing
-        #[arg(long)]
+        #[arg(long, conflicts_with = "mock")]
         dry_run: bool,
         /// Override the starting branch
         #[arg(long)]
         branch: Option<String>,
+        /// Run in mock mode (no Jules API, real git/GitHub operations)
+        #[arg(long, conflicts_with = "dry_run")]
+        mock: bool,
     },
 }
 
@@ -356,26 +371,34 @@ fn run_update(dry_run: bool, adopt_managed: bool) -> Result<(), AppError> {
 fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     use crate::domain::Layer;
 
-    let (target_layer, roles, workstream, scheduled, dry_run, branch, issue) = match layer {
-        RunLayer::Narrator { dry_run, branch } => {
-            (Layer::Narrators, None, None, false, dry_run, branch, None)
+    let (target_layer, roles, workstream, scheduled, dry_run, branch, issue, mock) = match layer {
+        RunLayer::Narrator { dry_run, branch, mock } => {
+            (Layer::Narrators, None, None, false, dry_run, branch, None, mock)
         }
-        RunLayer::Observers { role, dry_run, branch, workstream, scheduled } => {
-            (Layer::Observers, role, workstream, scheduled, dry_run, branch, None)
+        RunLayer::Observers { role, dry_run, branch, workstream, scheduled, mock } => {
+            (Layer::Observers, role, workstream, scheduled, dry_run, branch, None, mock)
         }
-        RunLayer::Deciders { role, dry_run, branch, workstream, scheduled } => {
-            (Layer::Deciders, role, workstream, scheduled, dry_run, branch, None)
+        RunLayer::Deciders { role, dry_run, branch, workstream, scheduled, mock } => {
+            (Layer::Deciders, role, workstream, scheduled, dry_run, branch, None, mock)
         }
-        RunLayer::Planners { dry_run, branch, issue } => {
-            (Layer::Planners, None, None, false, dry_run, branch, Some(issue))
+        RunLayer::Planners { dry_run, branch, issue, mock } => {
+            (Layer::Planners, None, None, false, dry_run, branch, Some(issue), mock)
         }
-        RunLayer::Implementers { dry_run, branch, issue } => {
-            (Layer::Implementers, None, None, false, dry_run, branch, Some(issue))
+        RunLayer::Implementers { dry_run, branch, issue, mock } => {
+            (Layer::Implementers, None, None, false, dry_run, branch, Some(issue), mock)
         }
     };
 
-    let result =
-        crate::app::api::run(target_layer, roles, workstream, scheduled, dry_run, branch, issue)?;
+    let result = crate::app::api::run(
+        target_layer,
+        roles,
+        workstream,
+        scheduled,
+        dry_run,
+        branch,
+        issue,
+        mock,
+    )?;
 
     if !result.dry_run && !result.roles.is_empty() && !result.sessions.is_empty() {
         println!("✅ Created {} Jules session(s)", result.sessions.len());

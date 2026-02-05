@@ -7,7 +7,7 @@ mod workspace_store;
 
 pub use component_catalog::ComponentCatalog;
 pub use git::{CommitInfo, DiffStat, GitPort};
-pub use github::GitHubPort;
+pub use github::{GitHubPort, PullRequestInfo};
 pub use jules_client::{AutomationMode, JulesClient, SessionRequest, SessionResponse};
 pub use role_template_store::{RoleTemplateStore, ScaffoldFile};
 pub use workspace_store::{DiscoveredRole, WorkspaceStore};

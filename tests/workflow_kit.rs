@@ -225,3 +225,52 @@ jobs:
     // The kit content should still be present
     assert!(updated_workflow.contains("Jules"), "Workflow name should be present");
 }
+
+#[test]
+fn init_workflows_includes_mock_support() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
+
+    let root = ctx.work_dir();
+    let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
+
+    // Mock inputs should be present
+    assert!(workflow.contains("mock:"), "Should have mock input");
+    assert!(workflow.contains("workflow_call:"), "Should support workflow_call trigger");
+
+    // Mock environment variables should be set (JULES_MOCK_SCOPE auto-generated from run_id)
+    assert!(workflow.contains("MOCK_MODE:"), "Should set MOCK_MODE env var");
+    assert!(workflow.contains("JULES_MOCK_SCOPE:"), "Should set JULES_MOCK_SCOPE env var");
+    assert!(workflow.contains("JLO_RUN_FLAGS:"), "Should set JLO_RUN_FLAGS env var");
+}
+
+#[test]
+fn init_workflows_scripts_support_jlo_run_flags() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
+
+    let root = ctx.work_dir();
+    let scripts_dir = root.join(".github/scripts");
+
+    let expected_scripts = [
+        "jules-run-narrator.sh",
+        "jules-run-observers-sequential.sh",
+        "jules-run-deciders-sequential.sh",
+        "jules-run-planners-sequential.sh",
+        "jules-run-implementers-sequential.sh",
+    ];
+
+    for script_name in expected_scripts {
+        let script_path = scripts_dir.join(script_name);
+        assert!(script_path.exists(), "Script {} should exist", script_name);
+
+        let script_content = fs::read_to_string(&script_path).unwrap();
+        assert!(
+            script_content.contains("JLO_RUN_FLAGS"),
+            "Script {} should reference JLO_RUN_FLAGS",
+            script_name
+        );
+    }
+}

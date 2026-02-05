@@ -2,6 +2,7 @@ mod component;
 mod component_id;
 mod error;
 mod layer;
+mod mock_config;
 mod prompt_assembly;
 mod role_id;
 mod run_config;
@@ -14,6 +15,7 @@ pub use component::{Component, EnvSpec};
 pub use component_id::ComponentId;
 pub use error::AppError;
 pub use layer::Layer;
+pub use mock_config::{MockConfig, MockOutput};
 pub use prompt_assembly::{
     AssembledPrompt, PromptAssemblyError, PromptAssemblySpec, PromptContext,
 };

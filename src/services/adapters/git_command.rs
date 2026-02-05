@@ -132,4 +132,41 @@ impl GitPort for GitCommandAdapter {
 
         Ok(stat)
     }
+
+    fn checkout_branch(&self, branch: &str, create: bool) -> Result<(), AppError> {
+        let args = if create { vec!["checkout", "-b", branch] } else { vec!["checkout", branch] };
+        self.run(&args, None)?;
+        Ok(())
+    }
+
+    fn push_branch(&self, branch: &str, force: bool) -> Result<(), AppError> {
+        let args = if force {
+            vec!["push", "-f", "-u", "origin", branch]
+        } else {
+            vec!["push", "-u", "origin", branch]
+        };
+        self.run(&args, None)?;
+        Ok(())
+    }
+
+    fn commit_files(&self, message: &str, files: &[&Path]) -> Result<String, AppError> {
+        // Stage files
+        for file in files {
+            let path_str = file.to_str().ok_or_else(|| {
+                AppError::Validation("File path contains invalid unicode".to_string())
+            })?;
+            self.run(&["add", path_str], None)?;
+        }
+
+        // Commit
+        self.run(&["commit", "-m", message], None)?;
+
+        // Return new HEAD SHA
+        self.get_head_sha()
+    }
+
+    fn fetch(&self, remote: &str) -> Result<(), AppError> {
+        self.run(&["fetch", remote], None)?;
+        Ok(())
+    }
 }
