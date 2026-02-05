@@ -77,15 +77,15 @@ fn export_roles(
     workstream: Option<String>,
 ) -> Result<ScheduleMatrix, AppError> {
     let layer = layer.ok_or_else(|| {
-        AppError::config_error("Missing --layer for schedule export (roles scope)")
+        AppError::MissingArgument("Missing --layer for schedule export (roles scope)".into())
     })?;
     let workstream = workstream.ok_or_else(|| {
-        AppError::config_error("Missing --workstream for schedule export (roles scope)")
+        AppError::MissingArgument("Missing --workstream for schedule export (roles scope)".into())
     })?;
 
     let schedule = load_schedule(jules_path, &workstream)?;
     if !schedule.enabled {
-        return Err(AppError::config_error(format!(
+        return Err(AppError::Validation(format!(
             "Workstream '{}' is disabled in scheduled.toml",
             workstream
         )));
@@ -95,8 +95,8 @@ fn export_roles(
         Layer::Observers => schedule.observers.enabled_roles(),
         Layer::Deciders => schedule.deciders.enabled_roles(),
         _ => {
-            return Err(AppError::config_error(
-                "Schedule export roles scope only supports observers or deciders",
+            return Err(AppError::Validation(
+                "Schedule export roles scope only supports observers or deciders".into(),
             ));
         }
     };

@@ -22,7 +22,7 @@ where
     match workstream_arg {
         Some(ws) => {
             if !ctx.workspace().workstream_exists(ws) {
-                return Err(AppError::config_error(format!(
+                return Err(AppError::Validation(format!(
                     "Workstream '{}' does not exist. Run 'jlo template' and select Workstream to create it.",
                     ws
                 )));
@@ -34,8 +34,8 @@ where
                 let selected = select_workstream(ctx)?;
                 Ok(Some(selected))
             } else {
-                Err(AppError::config_error(
-                    "Workstream is required for observers and deciders when running non-interactively. Use --workstream or run without args to use the wizard.",
+                Err(AppError::MissingArgument(
+                    "Workstream is required for observers and deciders when running non-interactively. Use --workstream or run without args to use the wizard.".into(),
                 ))
             }
         }
@@ -60,7 +60,7 @@ where
         .items(&items)
         .default(0)
         .interact()
-        .map_err(|e| AppError::config_error(format!("Workstream selection failed: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("Workstream selection failed: {e}")))?;
 
     if selection == items.len() - 1 {
         create_workstream(ctx)
@@ -83,18 +83,20 @@ fn prompt_workstream_name() -> Result<String, AppError> {
     let name: String = Input::new()
         .with_prompt("Enter new workstream name")
         .interact_text()
-        .map_err(|e| AppError::config_error(format!("Failed to read workstream name: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("Failed to read workstream name: {e}")))?;
 
     validate_workstream_name(&name).map(|_| name)
 }
 
 fn validate_workstream_name(name: &str) -> Result<(), AppError> {
     if name.trim().is_empty() {
-        return Err(AppError::config_error("Workstream name cannot be empty."));
+        return Err(AppError::Validation("Workstream name cannot be empty.".into()));
     }
 
     if name.contains('/') || name.contains('\\') {
-        return Err(AppError::config_error("Workstream name must be a single directory name."));
+        return Err(AppError::Validation(
+            "Workstream name must be a single directory name.".into(),
+        ));
     }
 
     Ok(())

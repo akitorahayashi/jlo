@@ -40,7 +40,7 @@ where
         .items(&items)
         .default(0)
         .interact()
-        .map_err(|e| AppError::config_error(format!("Template selection failed: {e}")))?;
+        .map_err(|e| AppError::InternalError(format!("Template selection failed: {e}")))?;
 
     match TemplateChoice::ALL[selection] {
         TemplateChoice::Workstream => {

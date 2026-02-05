@@ -282,8 +282,8 @@ fn run_init(command: Option<InitCommands>) -> Result<(), AppError> {
             } else if self_hosted {
                 crate::domain::WorkflowRunnerMode::SelfHosted
             } else {
-                return Err(AppError::config_error(
-                    "Runner mode is required. Use --remote or --self-hosted.",
+                return Err(AppError::MissingArgument(
+                    "Runner mode is required. Use --remote or --self-hosted.".into(),
                 ));
             };
             crate::app::api::init_workflows(mode, overwrite)?;
@@ -474,14 +474,14 @@ fn parse_schedule_scope(scope: &str) -> Result<crate::ScheduleExportScope, AppEr
     match scope {
         "workstreams" => Ok(crate::ScheduleExportScope::Workstreams),
         "roles" => Ok(crate::ScheduleExportScope::Roles),
-        _ => Err(AppError::config_error("Invalid schedule scope")),
+        _ => Err(AppError::Validation("Invalid schedule scope".into())),
     }
 }
 
 fn parse_schedule_format(format: &str) -> Result<crate::ScheduleExportFormat, AppError> {
     match format {
         "github-matrix" => Ok(crate::ScheduleExportFormat::GithubMatrix),
-        _ => Err(AppError::config_error("Invalid schedule format")),
+        _ => Err(AppError::Validation("Invalid schedule format".into())),
     }
 }
 
@@ -489,20 +489,20 @@ fn parse_workstream_format(format: &str) -> Result<crate::WorkstreamInspectForma
     match format {
         "json" => Ok(crate::WorkstreamInspectFormat::Json),
         "yaml" => Ok(crate::WorkstreamInspectFormat::Yaml),
-        _ => Err(AppError::config_error("Invalid workstream inspect format")),
+        _ => Err(AppError::Validation("Invalid workstream inspect format".into())),
     }
 }
 
 fn print_json<T: serde::Serialize>(value: &T) -> Result<(), AppError> {
     let json = serde_json::to_string_pretty(value)
-        .map_err(|err| AppError::config_error(format!("Failed to serialize output: {}", err)))?;
+        .map_err(|err| AppError::InternalError(format!("Failed to serialize output: {}", err)))?;
     println!("{}", json);
     Ok(())
 }
 
 fn print_yaml<T: serde::Serialize>(value: &T) -> Result<(), AppError> {
     let yaml = serde_yaml::to_string(value)
-        .map_err(|err| AppError::config_error(format!("Failed to serialize output: {}", err)))?;
+        .map_err(|err| AppError::InternalError(format!("Failed to serialize output: {}", err)))?;
     println!("{}", yaml.trim_end());
     Ok(())
 }

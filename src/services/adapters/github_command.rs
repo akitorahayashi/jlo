@@ -25,16 +25,17 @@ impl GitHubPort for GitHubCommandAdapter {
             cmd.arg("-f").arg(format!("{}={}", key, val));
         }
 
-        let output = cmd
-            .output()
-            .map_err(|e| AppError::Configuration(format!("Failed to execute gh CLI: {}", e)))?;
+        let output = cmd.output().map_err(|e| AppError::ExternalToolError {
+            tool: "gh".into(),
+            error: format!("Failed to execute gh CLI: {}", e),
+        })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(AppError::Configuration(format!(
-                "Failed to dispatch workflow via gh CLI. Stderr:\n{}",
-                stderr
-            )));
+            return Err(AppError::ExternalToolError {
+                tool: "gh".into(),
+                error: format!("Failed to dispatch workflow via gh CLI. Stderr:\n{}", stderr),
+            });
         }
 
         Ok(())
