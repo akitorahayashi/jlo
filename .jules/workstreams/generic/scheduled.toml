@@ -1,0 +1,12 @@
+version = 1
+enabled = true
+
+[observers]
+roles = [
+  { name = "rustacean", enabled = true },
+]
+
+[deciders]
+roles = [
+  { name = "triage_generic", enabled = true },
+]
