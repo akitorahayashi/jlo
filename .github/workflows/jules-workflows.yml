@@ -457,39 +457,3 @@ jobs:
         wait_minutes: ${{ env.WAIT_MINUTES }}
         mock_mode: ${{ env.MOCK_MODE }}
         process_name: implementers
-  cleanup-mock:
-    needs:
-    - run-narrator
-    - run-observers
-    - run-deciders
-    - run-planners
-    - run-implementers
-    - wait-after-narrator
-    - wait-after-observers
-    - wait-after-deciders
-    - wait-after-planners
-    - wait-after-implementers
-    if: |-
-      always() && (
-        (github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true') ||
-        (github.event_name == 'workflow_call' && inputs.mock == true)
-      )
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-      GITHUB_REPOSITORY: ${{ github.repository }}
-      JULES_MOCK_TAG: ${{ format('mock-run-{0}', github.run_id) }}
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        ref: jules
-        fetch-depth: 0
-        token: ${{ secrets.JLO_BOT_TOKEN }}
-    - name: Configure Git
-      uses: ./.github/actions/configure-git
-    - name: Install jlo
-      uses: ./.github/actions/install-jlo
-    - name: Cleanup mock artifacts
-      run: |
-        jlo workflow cleanup mock --mock-tag "$JULES_MOCK_TAG"

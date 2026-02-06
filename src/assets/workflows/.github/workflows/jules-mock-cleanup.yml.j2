@@ -1,0 +1,37 @@
+name: Jules Mock Cleanup
+
+on:
+  workflow_run:
+    workflows:
+      - Jules Workflows
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  cleanup-mock-artifacts:
+    runs-on: {{ runner }}
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
+      JULES_MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.event.workflow_run.id)") }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Cleanup mock artifacts for completed run
+        run: |
+          jlo workflow cleanup mock --mock-tag "$JULES_MOCK_TAG"
