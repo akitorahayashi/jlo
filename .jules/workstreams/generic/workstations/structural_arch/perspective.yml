@@ -1,0 +1,21 @@
+schema_version: 2
+
+observer: "structural_arch"
+workstream: "generic"
+
+updated_at: "2026-02-06T05:25:46Z"
+
+goals:
+  - "Clarify the distinction between Application, Domain, and Infrastructure layers."
+  - "Eliminate shared buckets like 'services' in favor of specific layer directories."
+
+rules:
+  - "Application logic must reside in `src/app`."
+  - "Domain logic must reside in `src/domain`."
+  - "Infrastructure adapters must reside in `src/infrastructure` or `src/adapters`."
+
+ignore: []
+
+log:
+  - at: "2026-02-06T05:25:46Z"
+    summary: "Identified `src/services` as a low-cohesion bucket mixing application, domain, and infrastructure."
