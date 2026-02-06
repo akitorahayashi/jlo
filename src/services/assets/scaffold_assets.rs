@@ -49,12 +49,26 @@ pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> 
     let content = scaffold_file_content(path)
         .ok_or_else(|| AppError::InternalError(format!("Missing scaffold file: {}", path)))?;
 
-    let value: Value = serde_yaml::from_str(&content)
-        .map_err(|err| AppError::InternalError(format!("Failed to parse {}: {}", path, err)))?;
+    parse_enum_values_from_content(&content, key, path)
+}
+
+pub fn parse_enum_values_from_content(
+    content: &str,
+    key: &str,
+    path_context: &str,
+) -> Result<Vec<String>, AppError> {
+    let value: Value = serde_yaml::from_str(content).map_err(|err| {
+        AppError::InternalError(format!("Failed to parse {}: {}", path_context, err))
+    })?;
 
     let map = match value {
         Value::Mapping(map) => map,
-        _ => return Err(AppError::InternalError(format!("Expected root mapping in {}", path))),
+        _ => {
+            return Err(AppError::InternalError(format!(
+                "Expected root mapping in {}",
+                path_context
+            )));
+        }
     };
 
     let value_str =
@@ -69,7 +83,7 @@ pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> 
     if values.is_empty() {
         return Err(AppError::InternalError(format!(
             "No enum values found for {} in {}",
-            key, path
+            key, path_context
         )));
     }
 
@@ -79,6 +93,68 @@ pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_enum_values_valid() {
+        let content = "my_key: val1 | val2 | val3";
+        let values = parse_enum_values_from_content(content, "my_key", "test.yml").unwrap();
+        assert_eq!(values, vec!["val1", "val2", "val3"]);
+    }
+
+    #[test]
+    fn test_parse_enum_values_whitespace() {
+        let content = "my_key:  val1  |  val2  ";
+        let values = parse_enum_values_from_content(content, "my_key", "test.yml").unwrap();
+        assert_eq!(values, vec!["val1", "val2"]);
+    }
+
+    #[test]
+    fn test_parse_enum_values_missing_key() {
+        let content = "other_key: val1";
+        let err = parse_enum_values_from_content(content, "my_key", "test.yml").unwrap_err();
+        match err {
+            AppError::InternalError(msg) => {
+                assert!(msg.contains("No enum values found for my_key in test.yml"));
+            }
+            _ => panic!("Unexpected error type"),
+        }
+    }
+
+    #[test]
+    fn test_parse_enum_values_empty_value() {
+        let content = "my_key: ";
+        let err = parse_enum_values_from_content(content, "my_key", "test.yml").unwrap_err();
+        match err {
+            AppError::InternalError(msg) => {
+                assert!(msg.contains("No enum values found for my_key in test.yml"));
+            }
+            _ => panic!("Unexpected error type"),
+        }
+    }
+
+    #[test]
+    fn test_parse_enum_values_invalid_yaml() {
+        let content = ": invalid yaml";
+        let err = parse_enum_values_from_content(content, "my_key", "test.yml").unwrap_err();
+        match err {
+            AppError::InternalError(msg) => {
+                assert!(msg.contains("Failed to parse test.yml"));
+            }
+            _ => panic!("Unexpected error type"),
+        }
+    }
+
+    #[test]
+    fn test_parse_enum_values_not_a_mapping() {
+        let content = "- list item";
+        let err = parse_enum_values_from_content(content, "my_key", "test.yml").unwrap_err();
+        match err {
+            AppError::InternalError(msg) => {
+                assert!(msg.contains("Expected root mapping in test.yml"));
+            }
+            _ => panic!("Unexpected error type"),
+        }
+    }
 
     #[test]
     fn test_scaffold_assets_integrity() {
