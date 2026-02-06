@@ -26,12 +26,21 @@ fn init_workflows_installs_remote_kit() {
 
     let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
     assert!(!workflow.contains("strategy: matrix"), "Should not use matrix strategy");
-    assert!(workflow.contains("Run observers sequentially"), "Should run observers sequentially");
-    assert!(workflow.contains("Run deciders sequentially"), "Should run deciders sequentially");
-    assert!(workflow.contains("Run planners sequentially"), "Should run planners sequentially");
     assert!(
-        workflow.contains("Run implementers sequentially"),
-        "Should run implementers sequentially"
+        workflow.contains("Run observers for each workstream"),
+        "Should run observers for each workstream"
+    );
+    assert!(
+        workflow.contains("Run deciders for each pending workstream"),
+        "Should run deciders for each pending workstream"
+    );
+    assert!(
+        workflow.contains("Run planners for each workstream"),
+        "Should run planners for each workstream"
+    );
+    assert!(
+        workflow.contains("Run implementers for each workstream"),
+        "Should run implementers for each workstream"
     );
     // Verify no script references
     assert!(
@@ -55,7 +64,10 @@ fn init_workflows_installs_self_hosted_kit() {
 
     assert!(workflow.contains("runs-on: self-hosted"), "Should use self-hosted runner");
     assert!(!workflow.contains("strategy: matrix"), "Should not use matrix strategy");
-    assert!(workflow.contains("Run observers sequentially"), "Should run observers sequentially");
+    assert!(
+        workflow.contains("Run observers for each workstream"),
+        "Should run observers for each workstream"
+    );
 }
 
 #[test]
