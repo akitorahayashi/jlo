@@ -3,7 +3,14 @@ enabled = true
 
 [observers]
 roles = [
-  { name = "rustacean", enabled = true },
+  { name = "taxonomy", enabled = false },
+  { name = "data_arch", enabled = true },
+  { name = "qa", enabled = false },
+  { name = "cov", enabled = false },
+  { name = "devops", enabled = false },
+  { name = "consistency", enabled = false },
+  { name = "structural_arch", enabled = true },
+  { name = "rustacean", enabled = false },
 ]
 
 [deciders]
