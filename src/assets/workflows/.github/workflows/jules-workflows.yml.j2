@@ -141,6 +141,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
+        id: wait
         uses: ./.github/actions/wait
         with:
           wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
@@ -252,6 +253,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
+        id: wait
         uses: ./.github/actions/wait
         with:
           wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
@@ -354,6 +356,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
+        id: wait
         uses: ./.github/actions/wait
         with:
           wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
@@ -459,6 +462,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
+        id: wait
         uses: ./.github/actions/wait
         with:
           wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
@@ -534,6 +538,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
+        id: wait
         uses: ./.github/actions/wait
         with:
           wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}

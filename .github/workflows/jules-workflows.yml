@@ -110,6 +110,7 @@ jobs:
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+      id: wait
       uses: ./.github/actions/wait
       with:
         wait_minutes: ${{ env.WAIT_MINUTES }}
@@ -203,6 +204,7 @@ jobs:
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+      id: wait
       uses: ./.github/actions/wait
       with:
         wait_minutes: ${{ env.WAIT_MINUTES }}
@@ -291,6 +293,7 @@ jobs:
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+      id: wait
       uses: ./.github/actions/wait
       with:
         wait_minutes: ${{ env.WAIT_MINUTES }}
@@ -383,6 +386,7 @@ jobs:
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+      id: wait
       uses: ./.github/actions/wait
       with:
         wait_minutes: ${{ env.WAIT_MINUTES }}
@@ -447,6 +451,7 @@ jobs:
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+      id: wait
       uses: ./.github/actions/wait
       with:
         wait_minutes: ${{ env.WAIT_MINUTES }}
