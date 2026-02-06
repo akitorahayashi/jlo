@@ -152,13 +152,9 @@ range:
     #[test]
     fn test_determine_range_strategy_bootstrap_no_file() {
         let head = "head_sha";
-        let result = determine_range_strategy(
-            head,
-            None,
-            |_| false,
-            |_, _| Ok("bootstrap_sha".to_string()),
-        )
-        .unwrap();
+        let result =
+            determine_range_strategy(head, None, |_| false, |_, _| Ok("bootstrap_sha".to_string()))
+                .unwrap();
 
         assert_eq!(result.selection_mode, "bootstrap");
         assert_eq!(result.from_commit, "bootstrap_sha");

@@ -12,9 +12,7 @@ use super::narrator_logic::{
 };
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
-use crate::ports::{
-    AutomationMode, GitPort, JulesClient, SessionRequest, WorkspaceStore,
-};
+use crate::ports::{AutomationMode, GitPort, JulesClient, SessionRequest, WorkspaceStore};
 use crate::services::adapters::jules_client_http::HttpJulesClient;
 
 /// Execute the Narrator layer.

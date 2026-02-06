@@ -382,12 +382,7 @@ fn validate_role(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
     validate_role_data(&data, path, role_dir, diagnostics);
 }
 
-fn validate_role_data(
-    data: &Mapping,
-    path: &Path,
-    role_dir: &Path,
-    diagnostics: &mut Diagnostics,
-) {
+fn validate_role_data(data: &Mapping, path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
     ensure_non_empty_string(data, path, "role", diagnostics);
 
     // Check layer field
