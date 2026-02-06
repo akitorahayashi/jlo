@@ -50,9 +50,9 @@ concurrency:
 env:
   WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
   ROUTING_LABELS: ${{ inputs.routing_labels || 'bugs,feats,refacts,tests,docs' }}
-  MOCK_MODE: ${{ inputs.mock || false }}
+  MOCK_MODE: ${{ (github.event.inputs.mock == 'true') || (inputs.mock == true) }}
   JULES_MOCK_TAG: ${{ format('mock-run-{0}', github.run_id) }}
-  JLO_RUN_FLAGS: ${{ (inputs.mock || false) && '--mock' || '' }}
+  JLO_RUN_FLAGS: ${{ ((github.event.inputs.mock == 'true') || (inputs.mock == true)) && '--mock' || '' }}
 jobs:
   run-narrator:
     if: |-
