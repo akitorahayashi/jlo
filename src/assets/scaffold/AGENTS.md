@@ -26,7 +26,8 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 ├── config.toml           # Workspace configuration
 ├── github-labels.json    # GitHub labels definition
 ├── changes/
-│   └── latest.yml        # Narrator output (bounded changes summary)
+│   ├── latest.yml        # Narrator output (bounded changes summary)
+│   └── .gitkeep          # Ensures directory exists in git
 ├── roles/
 │   ├── narrator/
 │   │   ├── prompt.yml    # Entry point
@@ -35,35 +36,46 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   │   └── schemas/
 │   │       └── change.yml
 │   ├── observers/
-│   │   ├── contracts.yml
+│   │   ├── prompt.yml    # Entry point
 │   │   ├── prompt_assembly.yml # Prompt construction rules
+│   │   ├── contracts.yml # Layer contract
+│   │   ├── index.md      # Role documentation
 │   │   ├── schemas/
-│   │   │   └── event.yml
-│   │   └── <role>/
-│   │       └── role.yml
+│   │   │   ├── event.yml
+│   │   │   └── perspective.yml
+│   │   └── roles/
+│   │       ├── <role>/
+│   │       │   └── role.yml
+│   │       └── .gitkeep
 │   ├── deciders/
-│   │   ├── contracts.yml
+│   │   ├── prompt.yml    # Entry point
 │   │   ├── prompt_assembly.yml # Prompt construction rules
+│   │   ├── contracts.yml # Layer contract
 │   │   ├── schemas/
-│   │   │   ├── issue.yml
-│   │   └── <role>/
-│   │       └── role.yml
+│   │   │   └── issue.yml
+│   │   └── roles/
+│   │       ├── <role>/
+│   │       │   └── role.yml
+│   │       └── .gitkeep
 │   ├── planners/
-│   │   ├── prompt.yml
+│   │   ├── prompt.yml    # Entry point
 │   │   ├── prompt_assembly.yml # Prompt construction rules
 │   │   └── contracts.yml
 │   └── implementers/
-│       ├── prompt.yml
+│       ├── prompt.yml    # Entry point
 │       ├── prompt_assembly.yml # Prompt construction rules
 │       └── contracts.yml
 ├── workstreams/
 │   └── <workstream>/
 │       ├── events/
-│       │   └── <state>/
-│       │       └── *.yml
+│       │   ├── pending/
+│       │   │   └── .gitkeep
+│       │   └── decided/
+│       │       └── .gitkeep
 │       └── issues/
-│           └── <label>/
-│               └── *.yml
+│           ├── <label>/
+│           │   └── .gitkeep
+│           └── .gitkeep
 └── setup/
     ├── tools.yml         # Tool selection
     ├── env.toml          # Environment variables (generated/merged)
@@ -87,6 +99,7 @@ See "Critical Design Principles" above for the contract structure.
 | File | Scope | Content |
 |------|-------|---------|
 | `prompt.yml` | Role | Entry point. Lists all contracts to follow. |
+| `prompt_assembly.yml` | Layer | Rules for constructing prompts from contracts. |
 | `role.yml` | Role | Specialized focus (observers/deciders only). |
 | `contracts.yml` | Layer | Workflow, inputs, outputs, constraints shared within layer. |
 | `JULES.md` | Global | Rules applying to ALL layers (branch naming, system boundaries). |
@@ -99,6 +112,7 @@ Schemas define the structure for artifacts produced by agents.
 |--------|----------|---------|
 | `change.yml` | `.jules/roles/narrator/schemas/` | Changes summary structure |
 | `event.yml` | `.jules/roles/observers/schemas/` | Observer event structure |
+| `perspective.yml` | `.jules/roles/observers/schemas/` | Observer perspective structure |
 | `issue.yml` | `.jules/roles/deciders/schemas/` | Issue structure |
 
 **Rule**: Agents copy the schema and fill its fields. Never invent structure.
