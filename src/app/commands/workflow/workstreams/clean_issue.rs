@@ -134,7 +134,7 @@ fn resolve_workstream_and_issue_path(
     let parts: Vec<String> =
         rel_to_jules.components().map(|c| c.as_os_str().to_string_lossy().to_string()).collect();
 
-    if parts.len() < 5
+    if parts.len() < 6
         || parts[0] != "workstreams"
         || parts[2] != "exchange"
         || parts[3] != "issues"
