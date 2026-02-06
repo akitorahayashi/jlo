@@ -1,0 +1,18 @@
+schema_version: 1
+id: "8k2m9p"
+issue_id: ""
+created_at: "2026-02-06"
+author_role: "data_arch"
+confidence: "high"
+title: "Domain Logic Coupled to Minijinja Template Engine"
+statement: |
+  The `PromptAssemblySpec` domain entity and its associated logic directly depend on the `minijinja` crate, violating boundary sovereignty by coupling core domain logic to a specific third-party templating implementation.
+evidence:
+  - path: "src/domain/prompt/prompt_assembly.rs"
+    loc:
+      - "use minijinja::{Environment, UndefinedBehavior};"
+      - "fn render_template"
+    note: "Domain entity module imports specific template engine library and implements rendering logic."
+tags:
+  - "boundary-sovereignty"
+  - "domain-leakage"

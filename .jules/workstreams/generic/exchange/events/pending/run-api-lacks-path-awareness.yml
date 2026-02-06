@@ -1,0 +1,19 @@
+schema_version: 1
+id: "q7w4r2"
+issue_id: ""
+created_at: "2026-02-06"
+author_role: "data_arch"
+confidence: "high"
+title: "Run API Command Hardcoded to Current Working Directory"
+statement: |
+  The `jlo::run` API command implementation hardcodes `std::env::current_dir()` and lacks a `run_at` variant, preventing execution against arbitrary paths and hindering parallelized testing or server-based usage.
+evidence:
+  - path: "src/app/api.rs"
+    loc:
+      - "pub fn run("
+      - "let root = std::env::current_dir()?;"
+    note: "API command directly accesses process environment instead of accepting a path argument."
+tags:
+  - "api-design"
+  - "testability"
+  - "implicit-dependency"
