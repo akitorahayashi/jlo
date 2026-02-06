@@ -3,7 +3,7 @@ schema_version: 2
 observer: "data_arch"
 workstream: "generic"
 
-updated_at: "2026-02-05T19:05:00Z"
+updated_at: "2026-02-06T12:00:00Z"
 
 goals:
   - "Identify violations of boundary sovereignty in domain entities."
@@ -15,5 +15,7 @@ rules: []
 ignore: []
 
 log:
+  - at: "2026-02-06T12:00:00Z"
+    summary: "Emitted 2 events: Direct FS usage (95b19d), Untyped parsing (2993e8)."
   - at: "2026-02-05T19:05:00Z"
     summary: "Emitted 3 events: MockOutput I/O leak (d4t4a1), WorkspaceStore bypass (b0und1), Fragile YAML parsing (p4rs3r)."
