@@ -11,8 +11,8 @@ use crate::app::commands::run::{self, RunOptions};
 use crate::domain::{AppError, Layer};
 use crate::ports::WorkspaceStore;
 use crate::services::adapters::git_command::GitCommandAdapter;
-use crate::services::adapters::issue_filesystem::read_issue_header;
 use crate::services::adapters::github_command::GitHubCommandAdapter;
+use crate::services::adapters::issue_filesystem::read_issue_header;
 use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
