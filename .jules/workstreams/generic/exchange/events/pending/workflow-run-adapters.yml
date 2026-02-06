@@ -1,0 +1,24 @@
+schema_version: 1
+id: "runadc"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "qa"
+confidence: "high"
+
+title: "Workflow Run Hardcoded Adapter Instantiation"
+statement: |
+  The `workflow::run` command directly instantiates concrete `GitCommandAdapter` and `GitHubCommandAdapter` implementations instead of accepting `GitPort` and `GitHubPort` abstractions, preventing isolation for testing.
+
+evidence:
+  - path: "src/app/commands/workflow/run.rs"
+    loc:
+      - "15-16"
+    note: "Import of concrete adapters `GitCommandAdapter` and `GitHubCommandAdapter`."
+  - path: "src/app/commands/workflow/run.rs"
+    loc:
+      - "96-97"
+    note: "Direct instantiation via `GitCommandAdapter::new` and `GitHubCommandAdapter::new` inside `execute_layer`."
+
+tags:
+  - "dependency-injection"
+  - "testability"

@@ -3,9 +3,10 @@ schema_version: 2
 observer: "qa"
 workstream: "generic"
 
-updated_at: "2026-02-05T20:15:00Z"
+updated_at: "2026-02-05T20:30:00Z"
 
 goals:
+  - "Promote dependency injection in command layer"
   - "Refactor validation logic to be unit-testable"
   - "Decouple API tests from global state"
   - "Isolate Narrator logic from IO"
@@ -15,6 +16,8 @@ rules: []
 ignore: []
 
 log:
+  - at: "2026-02-05T20:30:00Z"
+    summary: "Identified structural IO coupling in Doctor and DI/Global State issues in Workflow Run."
   - at: "2026-02-05T20:15:00Z"
     summary: "Emitted events for Doctor schema IO coupling, Narrator logic IO coupling, and Matrix Routing global state modification."
   - at: "2026-02-05T20:00:00Z"
