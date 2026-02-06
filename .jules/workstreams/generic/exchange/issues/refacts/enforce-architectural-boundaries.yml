@@ -1,27 +1,36 @@
 schema_version: 2
 id: rdyoyn
 source_events:
-- b0und1
-- d4t4a1
-- layvio
+  - b0und1
+  - d4t4a1
+  - layvio
+  - 95b19d
+  - svcmix
 title: Fix architectural boundary and layering violations
 label: refacts
 priority: medium
-summary: Fix architectural boundary and layering violations
-problem: Services bypass ports, domain entities have I/O side effects, and app layer
-  imports services directly.
-impact: Coupling prevents testing and evolution.
-desired_outcome: Strict adherence to hexagonal architecture layers.
+summary: Fix architectural boundary, layering violations, and service cohesion
+problem: |
+  Services bypass ports (WorkspaceStore) using direct fs calls.
+  Domain entities have I/O side effects.
+  App layer imports services directly.
+  src/services lacks cohesion, mixing adapters, assets, and application logic.
+impact: Coupling prevents testing, evolution, and finding code.
+desired_outcome: Strict adherence to hexagonal architecture layers; services organized by cohesion.
 constraints: []
 risks: []
 affected_areas:
-- src/services/assets/scaffold_manifest.rs
-- src/domain/mock_config.rs
-- src/app/commands/update.rs
+  - src/services/assets/scaffold_manifest.rs
+  - src/domain/mock_config.rs
+  - src/app/commands/update.rs
+  - src/app/commands/workflow/matrix/routing.rs
+  - src/app/commands/setup/generate.rs
+  - src/services
 acceptance_criteria:
-- Fix Services bypass ports, domain entities have I/O side effects, and app layer
-  imports services directly.
+  - Ensure all file I/O goes through WorkspaceStore (no std::fs in app/commands).
+  - Move domain logic out of services to src/domain.
+  - Organize src/services to separate adapters, assets, and application logic clearly.
 verification_commands:
-- cargo check
+  - cargo check
 requires_deep_analysis: false
 deep_analysis_reason: ''

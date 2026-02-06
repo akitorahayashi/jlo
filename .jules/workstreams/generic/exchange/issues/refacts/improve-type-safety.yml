@@ -1,25 +1,29 @@
 schema_version: 2
 id: zdvzg8
 source_events:
-- typwea
-- errmod
+  - typwea
+  - errmod
+  - 2993e8
 title: Improve type safety in error handling and domain models
 label: refacts
 priority: medium
-summary: Improve type safety in error handling and domain models
-problem: Stringly-typed errors and primitive obsession in WorkspaceStore weaken type
-  safety.
-impact: Harder to handle specific errors and ensure correctness.
-desired_outcome: Use specific error variants and strong types (RoleId).
+summary: Improve type safety in error handling, domain models, and data parsing
+problem: |
+  Stringly-typed errors and primitive obsession in WorkspaceStore weaken type safety.
+  Fragile untyped YAML parsing (serde_yaml::Value) in matrix routing relies on string keys.
+impact: Harder to handle specific errors and ensure correctness; prone to runtime errors.
+desired_outcome: Use specific error variants, strong types (RoleId), and strongly typed structs for parsing.
 constraints: []
 risks: []
 affected_areas:
-- src/domain/error.rs
-- src/ports/workspace_store.rs
+  - src/domain/error.rs
+  - src/ports/workspace_store.rs
+  - src/app/commands/workflow/matrix/routing.rs
 acceptance_criteria:
-- Fix Stringly-typed errors and primitive obsession in WorkspaceStore weaken type
-  safety.
+  - Replace generic AppError::Validation with specific variants where appropriate.
+  - Use RoleId instead of String in WorkspaceStore.
+  - Replace serde_yaml::Value with strongly typed structs in matrix routing.
 verification_commands:
-- cargo check
+  - cargo check
 requires_deep_analysis: false
 deep_analysis_reason: ''
