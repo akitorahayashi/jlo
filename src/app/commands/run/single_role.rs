@@ -83,7 +83,14 @@ where
     });
 
     if prompt_preview {
-        execute_prompt_preview(jules_path, layer, &starting_branch, &issue_content, issue_path)?;
+        execute_prompt_preview(
+            jules_path,
+            layer,
+            &starting_branch,
+            &issue_content,
+            issue_path,
+            workspace,
+        )?;
         return Ok(RunResult {
             roles: vec![layer.dir_name().to_string()],
             prompt_preview: true,
@@ -92,12 +99,6 @@ where
     }
 
     // Determine repository source from git
-    // Note: detect_repository_source currently uses direct git command/config check.
-    // It should also be refactored eventually, but it's in `config.rs`.
-    // For now we leave it as is, or we should use GitPort?
-    // The task didn't explicitly mention config.rs but "Application commands".
-    // I will leave detect_repository_source as is for now as it wasn't listed in affected areas,
-    // though ideally it should be refactored too.
     let source = detect_repository_source()?;
 
     // Execute with appropriate client
@@ -110,6 +111,7 @@ where
         &client,
         &issue_content,
         issue_path,
+        workspace,
     )?;
 
     Ok(RunResult {
@@ -173,7 +175,8 @@ where
 }
 
 /// Execute a single role with the given Jules client.
-fn execute_session<C: JulesClient>(
+#[allow(clippy::too_many_arguments)]
+fn execute_session<C: JulesClient, W: WorkspaceStore>(
     jules_path: &Path,
     layer: Layer,
     starting_branch: &str,
@@ -181,10 +184,11 @@ fn execute_session<C: JulesClient>(
     client: &C,
     issue_content: &str,
     issue_path: &Path,
+    workspace: &W,
 ) -> Result<String, AppError> {
     println!("Executing {}...", layer.display_name());
 
-    let mut prompt = assemble_single_role_prompt(jules_path, layer)?;
+    let mut prompt = assemble_single_role_prompt(jules_path, layer, workspace)?;
 
     // Append issue content
     prompt.push_str("\n---\n# Issue Content\n");
@@ -208,12 +212,13 @@ fn execute_session<C: JulesClient>(
 }
 
 /// Execute a prompt preview for a single-role layer.
-fn execute_prompt_preview(
+fn execute_prompt_preview<W: WorkspaceStore>(
     jules_path: &Path,
     layer: Layer,
     starting_branch: &str,
     issue_content: &str,
     issue_path: &Path,
+    workspace: &W,
 ) -> Result<(), AppError> {
     println!("=== Prompt Preview: {} ===", layer.display_name());
     println!("Starting branch: {}\n", starting_branch);
@@ -228,7 +233,7 @@ fn execute_prompt_preview(
         println!("Contracts: {}", contracts_path.display());
     }
 
-    if let Ok(mut prompt) = assemble_single_role_prompt(jules_path, layer) {
+    if let Ok(mut prompt) = assemble_single_role_prompt(jules_path, layer, workspace) {
         prompt.push_str("\n---\n# Issue Content\n");
         if layer == Layer::Planners {
             prompt.push_str(&format!("File: {}\n\n", issue_path.display()));

@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use crate::domain::{AppError, Layer, RoleId};
+use crate::domain::{AppError, Layer, PromptAssetLoader, RoleId};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
 /// Mock workspace store for testing.
@@ -35,6 +35,36 @@ impl MockWorkspaceStore {
     pub fn with_file(self, path: &str, content: &str) -> Self {
         self.files.borrow_mut().insert(path.to_string(), content.to_string());
         self
+    }
+}
+
+impl PromptAssetLoader for MockWorkspaceStore {
+    fn read_asset(&self, path: &Path) -> std::io::Result<String> {
+        let path_str = path.to_string_lossy().to_string();
+        self.files
+            .borrow()
+            .get(&path_str)
+            .cloned()
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Mock file not found"))
+    }
+
+    fn asset_exists(&self, path: &Path) -> bool {
+        let path_str = path.to_string_lossy().to_string();
+        self.files.borrow().contains_key(&path_str)
+    }
+
+    fn ensure_asset_dir(&self, _path: &Path) -> std::io::Result<()> {
+        Ok(())
+    }
+
+    fn copy_asset(&self, from: &Path, to: &Path) -> std::io::Result<u64> {
+        let from_str = from.to_string_lossy().to_string();
+        let to_str = to.to_string_lossy().to_string();
+        let content = self.files.borrow().get(&from_str).cloned().ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::NotFound, "Source file not found")
+        })?;
+        self.files.borrow_mut().insert(to_str, content.clone());
+        Ok(content.len() as u64)
     }
 }
 
