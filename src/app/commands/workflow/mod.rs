@@ -9,15 +9,18 @@ pub mod matrix;
 mod output;
 mod pr_label;
 mod run;
+#[path = "workstreams/mod.rs"]
+pub mod workstreams;
 
-pub use cleanup::{
-    WorkflowCleanupMockOptions, WorkflowCleanupMockOutput, WorkflowCleanupProcessedIssueOptions,
-    WorkflowCleanupProcessedIssueOutput,
-};
+pub use cleanup::{WorkflowCleanupMockOptions, WorkflowCleanupMockOutput};
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
 pub use output::write_workflow_output;
 pub use pr_label::{WorkflowPrLabelOptions, WorkflowPrLabelOutput};
 pub use run::{WorkflowRunOptions, WorkflowRunOutput};
+pub use workstreams::{
+    WorkflowWorkstreamsCleanIssueOptions, WorkflowWorkstreamsCleanIssueOutput,
+    WorkflowWorkstreamsInspectOptions, WorkflowWorkstreamsInspectOutput,
+};
 
 use crate::domain::AppError;
 
@@ -38,11 +41,18 @@ pub fn cleanup_mock(
     cleanup::cleanup_mock(options)
 }
 
-/// Execute workflow cleanup processed-issue command.
-pub fn cleanup_processed_issue(
-    options: WorkflowCleanupProcessedIssueOptions,
-) -> Result<WorkflowCleanupProcessedIssueOutput, AppError> {
-    cleanup::cleanup_processed_issue(options)
+/// Execute workflow workstreams inspect command.
+pub fn workstreams_inspect(
+    options: WorkflowWorkstreamsInspectOptions,
+) -> Result<WorkflowWorkstreamsInspectOutput, AppError> {
+    workstreams::inspect(options)
+}
+
+/// Execute workflow workstreams clean issue command.
+pub fn workstreams_clean_issue(
+    options: WorkflowWorkstreamsCleanIssueOptions,
+) -> Result<WorkflowWorkstreamsCleanIssueOutput, AppError> {
+    workstreams::clean_issue(options)
 }
 
 /// Execute workflow pr label-from-branch command.

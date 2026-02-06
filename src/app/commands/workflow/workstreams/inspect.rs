@@ -1,100 +1,42 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use serde::Serialize;
 use serde_yaml::{Mapping, Value};
 
 use crate::domain::AppError;
+use crate::ports::WorkspaceStore;
+use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::services::adapters::workstream_schedule_filesystem::{
     list_subdirectories, load_schedule,
 };
 
-#[derive(Debug, Clone)]
-pub enum WorkstreamInspectFormat {
-    Json,
-    Yaml,
-}
+use super::model::{
+    EventItem, EventStateSummary, EventSummary, IssueItem, IssueLabelSummary, IssueSummary,
+    RoleSummary, ScheduleLayerSummary, ScheduleSummary, WorkflowWorkstreamsInspectOutput,
+};
 
 #[derive(Debug, Clone)]
-pub struct WorkstreamInspectOptions {
+pub struct WorkflowWorkstreamsInspectOptions {
     pub workstream: String,
-    pub format: WorkstreamInspectFormat,
 }
 
-#[derive(Debug, Serialize)]
-pub struct WorkstreamInspectOutput {
-    pub schema_version: u32,
-    pub workstream: String,
-    pub schedule: ScheduleSummary,
-    pub events: EventSummary,
-    pub issues: IssueSummary,
+pub fn execute(
+    options: WorkflowWorkstreamsInspectOptions,
+) -> Result<WorkflowWorkstreamsInspectOutput, AppError> {
+    let workspace = FilesystemWorkspaceStore::current()?;
+
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    let jules_path = workspace.jules_path();
+    inspect_at(&jules_path, options)
 }
 
-#[derive(Debug, Serialize)]
-pub struct ScheduleSummary {
-    pub version: u32,
-    pub enabled: bool,
-    pub observers: ScheduleLayerSummary,
-    pub deciders: ScheduleLayerSummary,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ScheduleLayerSummary {
-    pub roles: Vec<RoleSummary>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct RoleSummary {
-    pub name: String,
-    pub enabled: bool,
-}
-
-#[derive(Debug, Serialize)]
-pub struct EventSummary {
-    pub states: Vec<EventStateSummary>,
-    pub pending_files: Vec<String>,
-    pub items: Vec<EventItem>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct EventStateSummary {
-    pub name: String,
-    pub count: usize,
-}
-
-#[derive(Debug, Serialize)]
-pub struct EventItem {
-    pub path: String,
-    pub state: String,
-    pub id: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct IssueSummary {
-    pub labels: Vec<IssueLabelSummary>,
-    pub items: Vec<IssueItem>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct IssueLabelSummary {
-    pub name: String,
-    pub count: usize,
-    pub files: Vec<String>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct IssueItem {
-    pub path: String,
-    pub label: String,
-    pub requires_deep_analysis: bool,
-    pub id: String,
-    pub source_events: Vec<String>,
-}
-
-pub fn inspect(
+pub(super) fn inspect_at(
     jules_path: &Path,
-    options: WorkstreamInspectOptions,
-) -> Result<WorkstreamInspectOutput, AppError> {
+    options: WorkflowWorkstreamsInspectOptions,
+) -> Result<WorkflowWorkstreamsInspectOutput, AppError> {
     let ws_dir = jules_path.join("workstreams").join(&options.workstream);
     if !ws_dir.exists() {
         return Err(AppError::WorkstreamNotFound(options.workstream.clone()));
@@ -126,7 +68,7 @@ pub fn inspect(
     let events = summarize_events(root, &ws_dir)?;
     let issues = summarize_issues(root, &ws_dir)?;
 
-    Ok(WorkstreamInspectOutput {
+    Ok(WorkflowWorkstreamsInspectOutput {
         schema_version: 1,
         workstream: options.workstream,
         schedule: schedule_summary,
@@ -346,6 +288,16 @@ fn read_required_string_list(
                 )));
             }
 
+            for event_id in &output {
+                if !is_valid_id(event_id) {
+                    return Err(AppError::Validation(format!(
+                        "Field '{}' must contain 6 lowercase alphanumeric ids in {}",
+                        key,
+                        path.display()
+                    )));
+                }
+            }
+
             Ok(output)
         }
         Some(_) => Err(AppError::Validation(format!(
@@ -410,12 +362,9 @@ roles = []
         )
         .unwrap();
 
-        let output = inspect(
+        let output = inspect_at(
             &jules_path,
-            WorkstreamInspectOptions {
-                workstream: "alpha".to_string(),
-                format: WorkstreamInspectFormat::Json,
-            },
+            WorkflowWorkstreamsInspectOptions { workstream: "alpha".to_string() },
         )
         .unwrap();
 

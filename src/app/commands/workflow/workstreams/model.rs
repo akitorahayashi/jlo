@@ -1,0 +1,71 @@
+use serde::Serialize;
+
+#[derive(Debug, Serialize)]
+pub struct WorkflowWorkstreamsInspectOutput {
+    pub schema_version: u32,
+    pub workstream: String,
+    pub schedule: ScheduleSummary,
+    pub events: EventSummary,
+    pub issues: IssueSummary,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ScheduleSummary {
+    pub version: u32,
+    pub enabled: bool,
+    pub observers: ScheduleLayerSummary,
+    pub deciders: ScheduleLayerSummary,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ScheduleLayerSummary {
+    pub roles: Vec<RoleSummary>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RoleSummary {
+    pub name: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct EventSummary {
+    pub states: Vec<EventStateSummary>,
+    pub pending_files: Vec<String>,
+    pub items: Vec<EventItem>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct EventStateSummary {
+    pub name: String,
+    pub count: usize,
+}
+
+#[derive(Debug, Serialize)]
+pub struct EventItem {
+    pub path: String,
+    pub state: String,
+    pub id: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct IssueSummary {
+    pub labels: Vec<IssueLabelSummary>,
+    pub items: Vec<IssueItem>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct IssueLabelSummary {
+    pub name: String,
+    pub count: usize,
+    pub files: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct IssueItem {
+    pub path: String,
+    pub label: String,
+    pub requires_deep_analysis: bool,
+    pub id: String,
+    pub source_events: Vec<String>,
+}
