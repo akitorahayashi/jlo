@@ -7,8 +7,7 @@ use std::path::Path;
 use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::narrator_logic::{
-    GitContext, GitStatsInput, MAX_COMMITS, RangeContext, build_git_context,
-    determine_range_strategy,
+    GitContext, MAX_COMMITS, RangeContext, Stats, build_git_context, determine_range_strategy,
 };
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
@@ -123,7 +122,7 @@ where
     let diffstat = git.get_diffstat(&range.from_commit, &range.to_commit, pathspec)?;
 
     // Build stats input
-    let stats_input = GitStatsInput {
+    let stats = Stats {
         commits_total,
         commits_included,
         files_changed: diffstat.files_changed,
@@ -131,7 +130,7 @@ where
         deletions: diffstat.deletions,
     };
 
-    Ok(Some(build_git_context(range, stats_input, commits)))
+    Ok(Some(build_git_context(range, stats, commits)))
 }
 
 /// Determine the commit range for the summary.

@@ -82,34 +82,15 @@ fn extract_to_commit(content: &str) -> Option<String> {
         .map(|s| s.to_string())
 }
 
-pub struct GitStatsInput {
-    pub commits_total: u32,
-    pub commits_included: u32,
-    pub files_changed: u32,
-    pub insertions: u32,
-    pub deletions: u32,
-}
-
 pub fn build_git_context(
     range: RangeContext,
-    stats_input: GitStatsInput,
+    stats: Stats,
     commits: Vec<CommitInfo>,
 ) -> GitContext {
-    let truncation_note = if stats_input.commits_total > stats_input.commits_included {
-        format!(
-            "Commits truncated to {} of {} total",
-            stats_input.commits_included, stats_input.commits_total
-        )
+    let truncation_note = if stats.commits_total > stats.commits_included {
+        format!("Commits truncated to {} of {} total", stats.commits_included, stats.commits_total)
     } else {
         String::new()
-    };
-
-    let stats = Stats {
-        commits_total: stats_input.commits_total,
-        commits_included: stats_input.commits_included,
-        files_changed: stats_input.files_changed,
-        insertions: stats_input.insertions,
-        deletions: stats_input.deletions,
     };
 
     GitContext { range, stats, commits, truncation_note }
@@ -188,7 +169,7 @@ range:
             selection_mode: "mode".into(),
             selection_detail: "".into(),
         };
-        let stats = GitStatsInput {
+        let stats = Stats {
             commits_total: 100,
             commits_included: 50,
             files_changed: 1,
