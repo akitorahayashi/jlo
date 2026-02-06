@@ -1,0 +1,22 @@
+schema_version: 1
+id: "95b19d"
+issue_id: ""
+created_at: "2026-02-06"
+author_role: "data_arch"
+confidence: "high"
+title: "Direct filesystem usage in workflow and setup commands"
+statement: |
+  The `setup/generate` and `workflow/matrix/routing` commands directly use `std::fs` for file I/O, bypassing the `WorkspaceStore` abstraction. This couples the logic to the physical filesystem and hinders testing.
+evidence:
+  - path: "src/app/commands/workflow/matrix/routing.rs"
+    loc:
+      - "use std::fs;"
+    note: "Imports and uses std::fs directly despite having access to FilesystemWorkspaceStore."
+  - path: "src/app/commands/setup/generate.rs"
+    loc:
+      - "std::fs::read_to_string"
+      - "std::fs::write"
+    note: "Performs direct file I/O for configuration and generation."
+tags:
+  - "boundary-violation"
+  - "abstraction-bypass"
