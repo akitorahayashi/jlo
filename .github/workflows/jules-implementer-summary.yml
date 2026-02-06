@@ -1,0 +1,65 @@
+name: Jules Implementer Summary
+
+on:
+  push:
+    branches:
+      - 'jules-implementer-*'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  implementer-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post implementer summary instructions
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::Missing GH_TOKEN (secrets.JLO_BOT_TOKEN)."
+            exit 1
+          fi
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "::error::Missing gh CLI."
+            exit 1
+          fi
+          if [[ ! "$BRANCH_NAME" =~ ^jules-implementer-([a-z0-9]+)-([a-z0-9]{6})- ]]; then
+            echo "::notice::Skipping: branch is not a strict jules implementer branch ($BRANCH_NAME)"
+            exit 0
+          fi
+
+          PR_NUMBER=""
+          for i in {1..12}; do
+            PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --state open --repo "$REPO" --json number -q '.[0].number')
+            if [ -n "$PR_NUMBER" ]; then
+              break
+            fi
+            sleep 5
+          done
+          if [ -z "$PR_NUMBER" ]; then
+            echo "::notice::No open PR found for branch $BRANCH_NAME. Skipping summary instruction."
+            exit 0
+          fi
+
+          COMMENTS=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json comments -q '.comments[].body')
+          if echo "$COMMENTS" | grep -q "jlo:implementer-summary"; then
+            echo "Summary instruction already posted. Skipping."
+            exit 0
+          fi
+
+          cat > /tmp/implementer-summary.md <<'EOF'
+          <!-- jlo:implementer-summary -->
+          @jules Please use the "Summary of Changes" below as a starting point to create your summary section.
+          Requirement: Your output should consist of the following three sections (in fixed order):
+          1) # Summary of Changes (2-4 sentences)
+          2) ## Highlights (bullet points, up to 5 items)
+          3) ## Solved Problems (list up to 3 specific issues that this change solves. For each item, write 1-2 sentences about the issue and how it solves it.)
+          EOF
+
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file /tmp/implementer-summary.md

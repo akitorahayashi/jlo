@@ -141,16 +141,11 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        run: |
-          echo "Waiting $WAIT_MINUTES minutes for Jules to process narrator..."
-          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-          ELAPSED=0
-          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-            sleep 30
-            ELAPSED=$((ELAPSED + 30))
-            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-          done
-          echo "Wait complete."
+        uses: ./.github/actions/wait
+        with:
+          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
+          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
+          process_name: narrator
 
   # ============================================================
   # Phase 3: Generate workstream matrix
@@ -257,16 +252,11 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        run: |
-          echo "Waiting $WAIT_MINUTES minutes for Jules to process observers..."
-          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-          ELAPSED=0
-          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-            sleep 30
-            ELAPSED=$((ELAPSED + 30))
-            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-          done
-          echo "Wait complete."
+        uses: ./.github/actions/wait
+        with:
+          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
+          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
+          process_name: observers
 
   # ============================================================
   # Phase 6: Generate decider matrix (pending events check)
@@ -364,16 +354,11 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        run: |
-          echo "Waiting $WAIT_MINUTES minutes for Jules to process deciders..."
-          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-          ELAPSED=0
-          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-            sleep 30
-            ELAPSED=$((ELAPSED + 30))
-            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-          done
-          echo "Wait complete."
+        uses: ./.github/actions/wait
+        with:
+          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
+          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
+          process_name: deciders
 
   # ============================================================
   # Phase 10: Generate routing matrices (new issues)
@@ -474,16 +459,11 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        run: |
-          echo "Waiting $WAIT_MINUTES minutes for Jules to process planners..."
-          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-          ELAPSED=0
-          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-            sleep 30
-            ELAPSED=$((ELAPSED + 30))
-            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-          done
-          echo "Wait complete."
+        uses: ./.github/actions/wait
+        with:
+          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
+          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
+          process_name: planners
 
   # ============================================================
   # Phase 13: Run implementers
@@ -554,16 +534,11 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        run: |
-          echo "Waiting $WAIT_MINUTES minutes for Jules to process implementers..."
-          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-          ELAPSED=0
-          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-            sleep 30
-            ELAPSED=$((ELAPSED + 30))
-            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-          done
-          echo "Wait complete."
+        uses: ./.github/actions/wait
+        with:
+          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
+          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
+          process_name: implementers
 
   # ============================================================
   # Phase 15: Cleanup mock artifacts
