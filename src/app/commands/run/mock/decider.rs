@@ -207,14 +207,14 @@ where
     for f in &moved_src_files {
         files.push(f.as_path());
     }
-    git.commit_files(&format!("[mock-{}] decider: mock issues", config.mock_tag), &files)?;
+    git.commit_files(&format!("[{}] decider: mock issues", config.mock_tag), &files)?;
     git.push_branch(&branch_name, false)?;
 
     // Create PR
     let pr = github.create_pull_request(
         &branch_name,
         &config.jules_branch,
-        &format!("[mock-{}] Decider triage", config.mock_tag),
+        &format!("[{}] Decider triage", config.mock_tag),
         &format!("Mock decider run for workflow validation.\n\nMock tag: `{}`\nWorkstream: `{}`\n\nCreated issues:\n- `{}` (requires analysis)\n- `{}` (ready for impl)",
             config.mock_tag, workstream, planner_issue_id, impl_issue_id),
     )?;
