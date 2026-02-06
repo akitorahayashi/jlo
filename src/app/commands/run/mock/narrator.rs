@@ -1,79 +1,282 @@
 use std::path::Path;
 
-use chrono::Utc;
-
 use crate::domain::{AppError, Layer, MockConfig, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 /// Execute mock narrator.
 pub fn execute_mock_narrator<G, H, W>(
-    jules_path: &Path,
+    _jules_path: &Path,
     config: &MockConfig,
-    git: &G,
-    github: &H,
-    workspace: &W,
+    _git: &G,
+    _github: &H,
+    _workspace: &W,
 ) -> Result<MockOutput, AppError>
 where
     G: GitPort,
     H: GitHubPort,
     W: WorkspaceStore,
 {
-    let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-    let branch_name = config.branch_name(Layer::Narrators, &timestamp)?;
-
-    println!("Mock narrator: creating branch {}", branch_name);
-
-    // Fetch and checkout from jules branch
-    git.fetch("origin")?;
-    git.checkout_branch(&format!("origin/{}", config.jules_branch), false)?;
-    git.checkout_branch(&branch_name, true)?;
-
-    // Create mock changes file
-    let changes_dir = jules_path.join("changes");
-    let changes_file = changes_dir.join("latest.yml");
-
-    // Use pre-defined mock template
-    let mock_change_template = super::MOCK_ASSETS
-        .get_file("narrator_change.yml")
-        .expect("Mock asset missing: narrator_change.yml")
-        .contents_utf8()
-        .expect("Invalid UTF-8 in narrator_change.yml");
-    let mock_id = format!("mock{:04x}", (Utc::now().timestamp() % 0x10000) as u16);
-    let now = Utc::now();
-
-    // Replace placeholders in template
-    let changes_content = mock_change_template
-        .replace("mock01", &mock_id[..6])
-        .replace("2026-02-05T00:00:00Z", &now.to_rfc3339())
-        .replace(
-            "Mock narrator run for workflow validation",
-            &format!("Mock narrator run for workflow validation\n# Mock tag: {}", config.mock_tag),
-        );
-
-    workspace.write_file(
-        changes_file.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
-        &changes_content,
-    )?;
-
-    // Commit and push
-    let files: Vec<&Path> = vec![changes_file.as_path()];
-    git.commit_files(&format!("[{}] narrator: mock changes", config.mock_tag), &files)?;
-    git.push_branch(&branch_name, false)?;
-
-    // Create PR
-    let pr = github.create_pull_request(
-        &branch_name,
-        &config.jules_branch,
-        &format!("[{}] Narrator changes", config.mock_tag),
-        &format!("Mock narrator run for workflow validation.\n\nMock tag: `{}`", config.mock_tag),
-    )?;
-
-    println!("Mock narrator: created PR #{} ({})", pr.number, pr.url);
+    let _ = config.branch_prefix(Layer::Narrators)?;
+    println!("Mock narrator: no-op (preserving existing .jules/changes/latest.yml)");
 
     Ok(MockOutput {
-        mock_branch: branch_name,
-        mock_pr_number: pr.number,
-        mock_pr_url: pr.url,
+        mock_branch: String::new(),
+        mock_pr_number: 0,
+        mock_pr_url: String::new(),
         mock_tag: config.mock_tag.clone(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::RoleId;
+    use crate::ports::{CommitInfo, DiffStat, DiscoveredRole, PullRequestInfo, ScaffoldFile};
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+
+    struct MustNotTouchGit;
+
+    impl GitPort for MustNotTouchGit {
+        fn get_head_sha(&self) -> Result<String, AppError> {
+            panic!("mock narrator no-op must not call get_head_sha");
+        }
+
+        fn get_current_branch(&self) -> Result<String, AppError> {
+            panic!("mock narrator no-op must not call get_current_branch");
+        }
+
+        fn commit_exists(&self, _sha: &str) -> bool {
+            panic!("mock narrator no-op must not call commit_exists");
+        }
+
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
+            panic!("mock narrator no-op must not call get_nth_ancestor");
+        }
+
+        fn has_changes(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<bool, AppError> {
+            panic!("mock narrator no-op must not call has_changes");
+        }
+
+        fn count_commits(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<u32, AppError> {
+            panic!("mock narrator no-op must not call count_commits");
+        }
+
+        fn collect_commits(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+            _limit: usize,
+        ) -> Result<Vec<CommitInfo>, AppError> {
+            panic!("mock narrator no-op must not call collect_commits");
+        }
+
+        fn get_diffstat(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<DiffStat, AppError> {
+            panic!("mock narrator no-op must not call get_diffstat");
+        }
+
+        fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
+            panic!("mock narrator no-op must not call run_command");
+        }
+
+        fn checkout_branch(&self, _branch: &str, _create: bool) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call checkout_branch");
+        }
+
+        fn push_branch(&self, _branch: &str, _force: bool) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call push_branch");
+        }
+
+        fn commit_files(&self, _message: &str, _files: &[&Path]) -> Result<String, AppError> {
+            panic!("mock narrator no-op must not call commit_files");
+        }
+
+        fn fetch(&self, _remote: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call fetch");
+        }
+
+        fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> {
+            panic!("mock narrator no-op must not call delete_branch");
+        }
+    }
+
+    struct MustNotTouchGitHub;
+
+    impl GitHubPort for MustNotTouchGitHub {
+        fn dispatch_workflow(
+            &self,
+            _workflow_name: &str,
+            _inputs: &[(&str, &str)],
+        ) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call dispatch_workflow");
+        }
+
+        fn create_pull_request(
+            &self,
+            _head: &str,
+            _base: &str,
+            _title: &str,
+            _body: &str,
+        ) -> Result<PullRequestInfo, AppError> {
+            panic!("mock narrator no-op must not call create_pull_request");
+        }
+
+        fn close_pull_request(&self, _pr_number: u64) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call close_pull_request");
+        }
+
+        fn delete_branch(&self, _branch: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call delete_branch");
+        }
+    }
+
+    struct DummyWorkspace;
+
+    impl crate::domain::PromptAssetLoader for DummyWorkspace {
+        fn read_asset(&self, _path: &Path) -> std::io::Result<String> {
+            panic!("mock narrator no-op must not call read_asset");
+        }
+
+        fn asset_exists(&self, _path: &Path) -> bool {
+            panic!("mock narrator no-op must not call asset_exists");
+        }
+
+        fn ensure_asset_dir(&self, _path: &Path) -> std::io::Result<()> {
+            panic!("mock narrator no-op must not call ensure_asset_dir");
+        }
+
+        fn copy_asset(&self, _from: &Path, _to: &Path) -> std::io::Result<u64> {
+            panic!("mock narrator no-op must not call copy_asset");
+        }
+    }
+
+    impl WorkspaceStore for DummyWorkspace {
+        fn exists(&self) -> bool {
+            panic!("mock narrator no-op must not call exists");
+        }
+
+        fn jules_path(&self) -> PathBuf {
+            panic!("mock narrator no-op must not call jules_path");
+        }
+
+        fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call create_structure");
+        }
+
+        fn write_version(&self, _version: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call write_version");
+        }
+
+        fn read_version(&self) -> Result<Option<String>, AppError> {
+            panic!("mock narrator no-op must not call read_version");
+        }
+
+        fn role_exists_in_layer(&self, _layer: Layer, _role_id: &RoleId) -> bool {
+            panic!("mock narrator no-op must not call role_exists_in_layer");
+        }
+
+        fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
+            panic!("mock narrator no-op must not call discover_roles");
+        }
+
+        fn find_role_fuzzy(&self, _query: &str) -> Result<Option<DiscoveredRole>, AppError> {
+            panic!("mock narrator no-op must not call find_role_fuzzy");
+        }
+
+        fn role_path(&self, _role: &DiscoveredRole) -> Option<PathBuf> {
+            panic!("mock narrator no-op must not call role_path");
+        }
+
+        fn scaffold_role_in_layer(
+            &self,
+            _layer: Layer,
+            _role_id: &RoleId,
+            _role_yaml: &str,
+        ) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call scaffold_role_in_layer");
+        }
+
+        fn create_workstream(&self, _name: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call create_workstream");
+        }
+
+        fn list_workstreams(&self) -> Result<Vec<String>, AppError> {
+            panic!("mock narrator no-op must not call list_workstreams");
+        }
+
+        fn workstream_exists(&self, _name: &str) -> bool {
+            panic!("mock narrator no-op must not call workstream_exists");
+        }
+
+        fn read_file(&self, _path: &str) -> Result<String, AppError> {
+            panic!("mock narrator no-op must not call read_file");
+        }
+
+        fn write_file(&self, _path: &str, _content: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call write_file");
+        }
+
+        fn remove_file(&self, _path: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call remove_file");
+        }
+
+        fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call create_dir_all");
+        }
+
+        fn copy_file(&self, _src: &str, _dst: &str) -> Result<u64, AppError> {
+            panic!("mock narrator no-op must not call copy_file");
+        }
+
+        fn resolve_path(&self, _path: &str) -> PathBuf {
+            panic!("mock narrator no-op must not call resolve_path");
+        }
+
+        fn canonicalize(&self, _path: &str) -> Result<PathBuf, AppError> {
+            panic!("mock narrator no-op must not call canonicalize");
+        }
+    }
+
+    #[test]
+    fn narrator_mock_is_noop() {
+        let mut prefixes = HashMap::new();
+        prefixes.insert(Layer::Narrators, "jules-narrator-".to_string());
+        let config = MockConfig {
+            mock_tag: "mock-run-123".to_string(),
+            branch_prefixes: prefixes,
+            default_branch: "main".to_string(),
+            jules_branch: "jules".to_string(),
+            issue_labels: vec!["bugs".to_string()],
+        };
+
+        let output = execute_mock_narrator(
+            Path::new(".jules"),
+            &config,
+            &MustNotTouchGit,
+            &MustNotTouchGitHub,
+            &DummyWorkspace,
+        )
+        .expect("mock narrator should succeed as no-op");
+
+        assert_eq!(output.mock_branch, "");
+        assert_eq!(output.mock_pr_number, 0);
+        assert_eq!(output.mock_pr_url, "");
+        assert_eq!(output.mock_tag, "mock-run-123");
+    }
 }
