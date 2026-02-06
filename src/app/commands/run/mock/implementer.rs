@@ -65,10 +65,7 @@ where
     // Commit and push
     let mock_path = Path::new(&mock_file_path);
     let files: Vec<&Path> = vec![mock_path];
-    git.commit_files(
-        &format!("[{}] implementer: mock implementation", config.mock_tag),
-        &files,
-    )?;
+    git.commit_files(&format!("[{}] implementer: mock implementation", config.mock_tag), &files)?;
     git.push_branch(&branch_name, false)?;
 
     // Create PR targeting default branch (NOT jules)
