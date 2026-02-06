@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
+use serde_yaml::Mapping;
 
 use crate::domain::{AppError, Layer};
 
@@ -149,13 +150,21 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
 
 fn parse_prompt(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) -> Option<PromptEntry> {
     let data = load_yaml_mapping(path, diagnostics)?;
+    parse_prompt_data(&data, path, layer, diagnostics)
+}
 
-    let role = get_string(&data, "role");
+fn parse_prompt_data(
+    data: &Mapping,
+    path: &Path,
+    layer: Layer,
+    diagnostics: &mut Diagnostics,
+) -> Option<PromptEntry> {
+    let role = get_string(data, "role");
     if role.as_deref().unwrap_or("").is_empty() {
         diagnostics.push_error(path.display().to_string(), "Missing role field");
     }
 
-    let layer_field = get_string(&data, "layer").unwrap_or_default();
+    let layer_field = get_string(data, "layer").unwrap_or_default();
     if layer_field != layer.dir_name() {
         diagnostics.push_error(
             path.display().to_string(),
@@ -163,19 +172,19 @@ fn parse_prompt(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) -> Opt
         );
     }
 
-    let contracts = get_sequence_strings(&data, "contracts");
+    let contracts = get_sequence_strings(data, "contracts");
     if contracts.is_empty() {
         diagnostics.push_error(path.display().to_string(), "Missing contracts list");
     }
 
-    let instructions = get_sequence_strings(&data, "instructions");
+    let instructions = get_sequence_strings(data, "instructions");
     if instructions.is_empty() {
         diagnostics.push_error(path.display().to_string(), "Missing instructions list");
     }
 
     // Single-role layers should not have workstream field
     if layer.is_single_role() {
-        let workstream = get_string(&data, "workstream");
+        let workstream = get_string(data, "workstream");
         if workstream.is_some() {
             diagnostics.push_error(
                 path.display().to_string(),
@@ -197,11 +206,20 @@ fn validate_event(
         Some(data) => data,
         None => return,
     };
+    validate_event_data(&data, path, state, event_confidence, diagnostics);
+}
 
-    ensure_int(&data, path, "schema_version", diagnostics, Some(1));
-    ensure_id(&data, path, "id", diagnostics);
+fn validate_event_data(
+    data: &Mapping,
+    path: &Path,
+    state: &str,
+    event_confidence: &[String],
+    diagnostics: &mut Diagnostics,
+) {
+    ensure_int(data, path, "schema_version", diagnostics, Some(1));
+    ensure_id(data, path, "id", diagnostics);
 
-    let issue_id = match get_string(&data, "issue_id") {
+    let issue_id = match get_string(data, "issue_id") {
         Some(value) => value,
         None => {
             diagnostics.push_error(path.display().to_string(), "issue_id is required");
@@ -215,14 +233,14 @@ fn validate_event(
         diagnostics.push_error(path.display().to_string(), "issue_id must be set in decided");
     }
 
-    ensure_date(&data, path, "created_at", diagnostics);
-    ensure_non_empty_string(&data, path, "author_role", diagnostics);
+    ensure_date(data, path, "created_at", diagnostics);
+    ensure_non_empty_string(data, path, "author_role", diagnostics);
     let allowed: Vec<&str> = event_confidence.iter().map(|value| value.as_str()).collect();
-    ensure_enum(&data, path, "confidence", &allowed, diagnostics);
-    ensure_non_empty_string(&data, path, "title", diagnostics);
-    ensure_non_empty_string(&data, path, "statement", diagnostics);
+    ensure_enum(data, path, "confidence", &allowed, diagnostics);
+    ensure_non_empty_string(data, path, "title", diagnostics);
+    ensure_non_empty_string(data, path, "statement", diagnostics);
 
-    if let Some(evidence) = get_sequence(&data, "evidence") {
+    if let Some(evidence) = get_sequence(data, "evidence") {
         if evidence.is_empty() {
             diagnostics.push_error(path.display().to_string(), "evidence must have entries");
         } else {
@@ -270,12 +288,22 @@ fn validate_issue(
         Some(data) => data,
         None => return,
     };
+    validate_issue_data(&data, path, label, issue_labels, issue_priorities, diagnostics);
+}
 
-    ensure_int(&data, path, "schema_version", diagnostics, Some(2));
-    ensure_id(&data, path, "id", diagnostics);
-    if get_sequence(&data, "source_events").map(|seq| seq.is_empty()).unwrap_or(true) {
+fn validate_issue_data(
+    data: &Mapping,
+    path: &Path,
+    label: &str,
+    issue_labels: &[String],
+    issue_priorities: &[String],
+    diagnostics: &mut Diagnostics,
+) {
+    ensure_int(data, path, "schema_version", diagnostics, Some(2));
+    ensure_id(data, path, "id", diagnostics);
+    if get_sequence(data, "source_events").map(|seq| seq.is_empty()).unwrap_or(true) {
         diagnostics.push_error(path.display().to_string(), "source_events must have entries");
-    } else if let Some(seq) = get_sequence(&data, "source_events") {
+    } else if let Some(seq) = get_sequence(data, "source_events") {
         for event_id in seq {
             if let serde_yaml::Value::String(value) = event_id
                 && !super::yaml::is_valid_id(&value)
@@ -288,10 +316,10 @@ fn validate_issue(
         }
     }
 
-    ensure_non_empty_string(&data, path, "title", diagnostics);
-    ensure_non_empty_string(&data, path, "label", diagnostics);
+    ensure_non_empty_string(data, path, "title", diagnostics);
+    ensure_non_empty_string(data, path, "label", diagnostics);
 
-    let label_value = get_string(&data, "label").unwrap_or_default();
+    let label_value = get_string(data, "label").unwrap_or_default();
     if label_value != label {
         diagnostics.push_error(
             path.display().to_string(),
@@ -303,25 +331,25 @@ fn validate_issue(
     }
 
     let allowed: Vec<&str> = issue_priorities.iter().map(|value| value.as_str()).collect();
-    ensure_enum(&data, path, "priority", &allowed, diagnostics);
+    ensure_enum(data, path, "priority", &allowed, diagnostics);
 
-    ensure_non_empty_string(&data, path, "summary", diagnostics);
-    ensure_non_empty_string(&data, path, "problem", diagnostics);
-    ensure_non_empty_string(&data, path, "impact", diagnostics);
-    ensure_non_empty_string(&data, path, "desired_outcome", diagnostics);
+    ensure_non_empty_string(data, path, "summary", diagnostics);
+    ensure_non_empty_string(data, path, "problem", diagnostics);
+    ensure_non_empty_string(data, path, "impact", diagnostics);
+    ensure_non_empty_string(data, path, "desired_outcome", diagnostics);
 
-    if get_sequence(&data, "affected_areas").map(|seq| seq.is_empty()).unwrap_or(true) {
+    if get_sequence(data, "affected_areas").map(|seq| seq.is_empty()).unwrap_or(true) {
         diagnostics.push_error(path.display().to_string(), "affected_areas must have entries");
     }
 
-    if get_sequence(&data, "acceptance_criteria").map(|seq| seq.is_empty()).unwrap_or(true) {
+    if get_sequence(data, "acceptance_criteria").map(|seq| seq.is_empty()).unwrap_or(true) {
         diagnostics.push_error(path.display().to_string(), "acceptance_criteria must have entries");
     }
 
-    if get_sequence(&data, "verification_commands").map(|seq| seq.is_empty()).unwrap_or(true) {
+    if get_sequence(data, "verification_commands").map(|seq| seq.is_empty()).unwrap_or(true) {
         diagnostics
             .push_error(path.display().to_string(), "verification_commands must have entries");
-    } else if let Some(seq) = get_sequence(&data, "verification_commands") {
+    } else if let Some(seq) = get_sequence(data, "verification_commands") {
         for command in seq {
             if let serde_yaml::Value::String(value) = command {
                 let value_lower = value.to_lowercase();
@@ -336,8 +364,8 @@ fn validate_issue(
         }
     }
 
-    let requires_deep = get_bool(&data, "requires_deep_analysis").unwrap_or(false);
-    let deep_reason = get_string(&data, "deep_analysis_reason").unwrap_or_default();
+    let requires_deep = get_bool(data, "requires_deep_analysis").unwrap_or(false);
+    let deep_reason = get_string(data, "deep_analysis_reason").unwrap_or_default();
     if requires_deep && deep_reason.trim().is_empty() {
         diagnostics.push_error(
             path.display().to_string(),
@@ -351,11 +379,14 @@ fn validate_role(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
         Some(data) => data,
         None => return,
     };
+    validate_role_data(&data, path, role_dir, diagnostics);
+}
 
-    ensure_non_empty_string(&data, path, "role", diagnostics);
+fn validate_role_data(data: &Mapping, path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
+    ensure_non_empty_string(data, path, "role", diagnostics);
 
     // Check layer field
-    let layer_value = get_string(&data, "layer").unwrap_or_default();
+    let layer_value = get_string(data, "layer").unwrap_or_default();
     if layer_value != "observers" {
         diagnostics.push_error(path.display().to_string(), "layer must be 'observers'");
     }
@@ -385,7 +416,7 @@ fn validate_role(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
     }
 
     let role_name = role_dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
-    let role_value = get_string(&data, "role").unwrap_or_default();
+    let role_value = get_string(data, "role").unwrap_or_default();
     if !role_value.is_empty() && role_value != role_name {
         diagnostics.push_error(
             path.display().to_string(),
@@ -401,13 +432,21 @@ fn parse_role_file(
     diagnostics: &mut Diagnostics,
 ) -> Option<PromptEntry> {
     let data = load_yaml_mapping(path, diagnostics)?;
+    parse_role_file_data(&data, path, layer, diagnostics)
+}
 
-    let role = get_string(&data, "role").unwrap_or_default();
+fn parse_role_file_data(
+    data: &Mapping,
+    path: &Path,
+    layer: Layer,
+    diagnostics: &mut Diagnostics,
+) -> Option<PromptEntry> {
+    let role = get_string(data, "role").unwrap_or_default();
     if role.is_empty() {
         diagnostics.push_error(path.display().to_string(), "Missing role field");
     }
 
-    let layer_field = get_string(&data, "layer").unwrap_or_default();
+    let layer_field = get_string(data, "layer").unwrap_or_default();
     if layer_field != layer.dir_name() {
         diagnostics.push_error(
             path.display().to_string(),
@@ -425,10 +464,13 @@ fn validate_decider_role(path: &Path, diagnostics: &mut Diagnostics) {
         Some(data) => data,
         None => return,
     };
+    validate_decider_role_data(&data, path, diagnostics);
+}
 
-    ensure_non_empty_string(&data, path, "role", diagnostics);
+fn validate_decider_role_data(data: &Mapping, path: &Path, diagnostics: &mut Diagnostics) {
+    ensure_non_empty_string(data, path, "role", diagnostics);
 
-    let layer_value = get_string(&data, "layer").unwrap_or_default();
+    let layer_value = get_string(data, "layer").unwrap_or_default();
     if layer_value != "deciders" {
         diagnostics.push_error(path.display().to_string(), "layer must be 'deciders'");
     }
@@ -450,8 +492,16 @@ fn validate_contracts(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) 
         Some(data) => data,
         None => return,
     };
+    validate_contracts_data(&data, path, layer, diagnostics);
+}
 
-    let layer_value = get_string(&data, "layer").unwrap_or_default();
+fn validate_contracts_data(
+    data: &Mapping,
+    path: &Path,
+    layer: Layer,
+    diagnostics: &mut Diagnostics,
+) {
+    let layer_value = get_string(data, "layer").unwrap_or_default();
     if layer_value != layer.dir_name() {
         diagnostics.push_error(
             path.display().to_string(),
@@ -459,16 +509,16 @@ fn validate_contracts(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) 
         );
     }
 
-    let prefix = get_string(&data, "branch_prefix").unwrap_or_default();
+    let prefix = get_string(data, "branch_prefix").unwrap_or_default();
     let layer_slug = layer.dir_name().trim_end_matches('s');
     if !prefix.starts_with(&format!("jules-{}-", layer_slug)) {
         diagnostics.push_error(path.display().to_string(), "branch_prefix is invalid");
     }
 
-    ensure_non_empty_sequence(&data, path, "constraints", diagnostics);
-    ensure_non_empty_sequence(&data, path, "inputs", diagnostics);
-    ensure_non_empty_sequence(&data, path, "outputs", diagnostics);
-    ensure_non_empty_sequence(&data, path, "workflow", diagnostics);
+    ensure_non_empty_sequence(data, path, "constraints", diagnostics);
+    ensure_non_empty_sequence(data, path, "inputs", diagnostics);
+    ensure_non_empty_sequence(data, path, "outputs", diagnostics);
+    ensure_non_empty_sequence(data, path, "workflow", diagnostics);
 }
 
 /// Validate .jules/changes/latest.yml schema.
@@ -478,10 +528,20 @@ fn validate_changes_latest(path: &Path, template_path: &Path, diagnostics: &mut 
         None => return,
     };
 
+    let allowed_modes = extract_enum_from_template(template_path, "selection_mode");
+    validate_changes_latest_data(&data, path, &allowed_modes, diagnostics);
+}
+
+fn validate_changes_latest_data(
+    data: &Mapping,
+    path: &Path,
+    allowed_modes: &[String],
+    diagnostics: &mut Diagnostics,
+) {
     // Required fields
-    ensure_int(&data, path, "schema_version", diagnostics, Some(1));
-    ensure_id(&data, path, "id", diagnostics);
-    ensure_non_empty_string(&data, path, "created_at", diagnostics);
+    ensure_int(data, path, "schema_version", diagnostics, Some(1));
+    ensure_id(data, path, "id", diagnostics);
+    ensure_non_empty_string(data, path, "created_at", diagnostics);
 
     // Validate range mapping
     if let Some(range) = data.get(serde_yaml::Value::String("range".to_string())) {
@@ -490,7 +550,6 @@ fn validate_changes_latest(path: &Path, template_path: &Path, diagnostics: &mut 
             ensure_non_empty_string(range_map, path, "to_commit", diagnostics);
 
             // Validate selection_mode enum from template
-            let allowed_modes = extract_enum_from_template(template_path, "selection_mode");
             if !allowed_modes.is_empty() {
                 let allowed_refs: Vec<&str> = allowed_modes.iter().map(|s| s.as_str()).collect();
                 ensure_enum(range_map, path, "selection_mode", &allowed_refs, diagnostics);
@@ -537,7 +596,7 @@ fn validate_changes_latest(path: &Path, template_path: &Path, diagnostics: &mut 
     }
 
     // Validate commits list exists
-    if get_sequence(&data, "commits").is_none() {
+    if get_sequence(data, "commits").is_none() {
         diagnostics.push_error(path.display().to_string(), "Missing commits list");
     }
 
@@ -585,7 +644,10 @@ fn check_placeholders(path: &Path, diagnostics: &mut Diagnostics) {
             return;
         }
     };
+    check_placeholders_content(&content, path, diagnostics);
+}
 
+fn check_placeholders_content(content: &str, path: &Path, diagnostics: &mut Diagnostics) {
     let placeholders = [
         "<6_random_lowercase_alphanumeric_chars>",
         "<role>",
@@ -611,5 +673,96 @@ fn ensure_date(map: &serde_yaml::Mapping, path: &Path, key: &str, diagnostics: &
     let value = get_string(map, key).unwrap_or_default();
     if NaiveDate::parse_from_str(&value, "%Y-%m-%d").is_err() {
         diagnostics.push_error(path.display().to_string(), format!("{} must be YYYY-MM-DD", key));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_event_data_valid() {
+        let yaml = r#"
+schema_version: 1
+id: "abc123"
+issue_id: ""
+created_at: "2023-10-27"
+author_role: "observer"
+confidence: "high"
+title: "Something happened"
+statement: "Evidence suggests..."
+evidence:
+  - path: "src/main.rs"
+    loc: ["10-20"]
+    note: "See this"
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("test.yml");
+        let mut diagnostics = Diagnostics::default();
+        let confidence = vec!["high".to_string(), "low".to_string()];
+
+        validate_event_data(&data, &path, "pending", &confidence, &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_validate_event_data_invalid_state() {
+        let yaml = r#"
+schema_version: 1
+id: "abc123"
+issue_id: "xyz789"  # Should be empty for pending
+created_at: "2023-10-27"
+author_role: "observer"
+confidence: "high"
+title: "Something happened"
+statement: "Evidence suggests..."
+evidence: []
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("test.yml");
+        let mut diagnostics = Diagnostics::default();
+        let confidence = vec!["high".to_string()];
+
+        validate_event_data(&data, &path, "pending", &confidence, &mut diagnostics);
+        assert!(diagnostics.error_count() > 0);
+        // Should have errors: issue_id must be empty in pending, evidence must have entries
+    }
+
+    #[test]
+    fn test_check_placeholders_content() {
+        let content = "This is a <role> description.";
+        let path = PathBuf::from("test.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        check_placeholders_content(content, &path, &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 1);
+        assert!(diagnostics.errors()[0].message.contains("placeholder '<role>' must be replaced"));
+    }
+
+    #[test]
+    fn test_validate_issue_data_valid() {
+        let yaml = r#"
+schema_version: 2
+id: "abc123"
+source_events: ["ev1234"]
+title: "Bug fix"
+label: "bugs"
+priority: "high"
+summary: "Summary"
+problem: "Problem"
+impact: "Impact"
+desired_outcome: "Outcome"
+affected_areas: ["src/"]
+acceptance_criteria: ["Done"]
+verification_commands: ["cargo test"]
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("test.yml");
+        let mut diagnostics = Diagnostics::default();
+        let labels = vec!["bugs".to_string()];
+        let priorities = vec!["high".to_string()];
+
+        validate_issue_data(&data, &path, "bugs", &labels, &priorities, &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
     }
 }

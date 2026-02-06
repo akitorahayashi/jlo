@@ -6,6 +6,7 @@ pub mod mock;
 
 pub use config::parse_config_content;
 pub mod narrator;
+pub(crate) mod narrator_logic;
 mod prompt;
 pub mod single_role;
 
