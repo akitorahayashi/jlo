@@ -65,9 +65,9 @@ concurrency:
 env:
   WAIT_MINUTES: {{ gha_expr("inputs.wait_minutes || 30") }}
   ROUTING_LABELS: {{ gha_expr("inputs.routing_labels || 'bugs,feats,refacts,tests,docs'") }}
-  MOCK_MODE: {{ gha_expr("inputs.mock || false") }}
+  MOCK_MODE: {{ gha_expr("(github.event.inputs.mock == 'true') || (inputs.mock == true)") }}
   JULES_MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.run_id)") }}
-  JLO_RUN_FLAGS: {{ gha_expr("(inputs.mock || false) && '--mock' || ''") }}
+  JLO_RUN_FLAGS: {{ gha_expr("((github.event.inputs.mock == 'true') || (inputs.mock == true)) && '--mock' || ''") }}
 
 jobs:
   # ============================================================
