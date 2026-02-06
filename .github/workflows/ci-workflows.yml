@@ -5,10 +5,12 @@ on:
     branches: [ "main" ]
     paths-ignore:
       - '**.md'
+      - '.mock-*'
   pull_request:
     branches: [ "main" ]
     paths-ignore:
       - '**.md'
+      - '.mock-*'
   workflow_dispatch:
 
 permissions:
