@@ -6,10 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-<<<<<<< HEAD
 use crate::adapters::issue_filesystem::read_issue_header;
-=======
->>>>>>> 27748b9 (Refactor codebase structure to separate layers and enforce DI)
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
