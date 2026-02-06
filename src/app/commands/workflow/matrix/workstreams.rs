@@ -6,7 +6,6 @@ use serde::Serialize;
 
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::services::adapters::workstream_schedule_filesystem::{
     list_subdirectories, load_schedule,
 };
@@ -43,9 +42,10 @@ pub struct WorkstreamMatrixEntry {
 }
 
 /// Execute matrix workstreams command.
-pub fn execute(_options: MatrixWorkstreamsOptions) -> Result<MatrixWorkstreamsOutput, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-
+pub fn execute(
+    workspace: &impl WorkspaceStore,
+    _options: MatrixWorkstreamsOptions,
+) -> Result<MatrixWorkstreamsOutput, AppError> {
     if !workspace.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
@@ -55,14 +55,14 @@ pub fn execute(_options: MatrixWorkstreamsOptions) -> Result<MatrixWorkstreamsOu
 
     let mut include = Vec::new();
 
-    for entry in list_subdirectories(&workspace, &workstreams_dir)? {
+    for entry in list_subdirectories(workspace, &workstreams_dir)? {
         let name =
             entry.file_name().map(|value| value.to_string_lossy().to_string()).unwrap_or_default();
         if name.is_empty() {
             continue;
         }
 
-        let schedule = load_schedule(&workspace, &name)?;
+        let schedule = load_schedule(workspace, &name)?;
         if schedule.enabled {
             include.push(WorkstreamMatrixEntry { workstream: name });
         }
@@ -85,6 +85,7 @@ pub fn execute(_options: MatrixWorkstreamsOptions) -> Result<MatrixWorkstreamsOu
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
     use std::fs;
     use tempfile::tempdir;
 
@@ -105,6 +106,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let root = dir.path();
         setup_workspace(root);
+        let store = FilesystemWorkspaceStore::new(root.to_path_buf());
 
         write_schedule(
             root,
@@ -149,9 +151,7 @@ roles = []
 "#,
         );
 
-        std::env::set_current_dir(root).unwrap();
-
-        let output = execute(MatrixWorkstreamsOptions {}).unwrap();
+        let output = execute(&store, MatrixWorkstreamsOptions {}).unwrap();
 
         assert_eq!(output.schema_version, 1);
         assert_eq!(output.count, 2);
@@ -168,6 +168,7 @@ roles = []
         let dir = tempdir().unwrap();
         let root = dir.path();
         setup_workspace(root);
+        let store = FilesystemWorkspaceStore::new(root.to_path_buf());
 
         write_schedule(
             root,
@@ -182,9 +183,7 @@ roles = []
 "#,
         );
 
-        std::env::set_current_dir(root).unwrap();
-
-        let output = execute(MatrixWorkstreamsOptions {}).unwrap();
+        let output = execute(&store, MatrixWorkstreamsOptions {}).unwrap();
 
         assert_eq!(output.schema_version, 1);
         assert_eq!(output.count, 0);
