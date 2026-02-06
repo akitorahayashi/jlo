@@ -162,12 +162,24 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         let files = self.files.lock().unwrap();
         let path = PathBuf::from(path);
         let mut results = Vec::new();
+        let mut subdirs = std::collections::HashSet::new();
 
         for key in files.keys() {
-            if let Some(parent) = key.parent()
-                && parent == path
-            {
-                results.push(key.clone());
+            if let Some(parent) = key.parent() {
+                if parent == path {
+                    results.push(key.clone());
+                } else if parent.starts_with(&path) {
+                    // Collect immediate subdirectories
+                    if let Ok(rel) = parent.strip_prefix(&path) {
+                        if let Some(first_comp) = rel.components().next() {
+                            let subdir = path.join(first_comp);
+                            if !subdirs.contains(&subdir) {
+                                subdirs.insert(subdir.clone());
+                                results.push(subdir);
+                            }
+                        }
+                    }
+                }
             }
         }
         results.sort();
