@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
+use crate::services::adapters::issue_filesystem::read_issue_header;
 use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 /// Options for matrix routing command.
@@ -106,6 +107,16 @@ pub fn execute(options: MatrixRoutingOptions) -> Result<MatrixRoutingOutput, App
     let mut implementer_issues = Vec::new();
 
     for ws_entry in &options.workstreams_json.include {
+        if ws_entry.workstream.contains("..")
+            || ws_entry.workstream.contains('/')
+            || ws_entry.workstream.contains('\\')
+        {
+            return Err(AppError::Validation(format!(
+                "Invalid workstream name '{}': must not contain path separators or '..'",
+                ws_entry.workstream
+            )));
+        }
+
         let issues_dir =
             jules_path.join("workstreams").join(&ws_entry.workstream).join("exchange/issues");
 
@@ -122,7 +133,8 @@ pub fn execute(options: MatrixRoutingOptions) -> Result<MatrixRoutingOutput, App
 
             let files = list_yml_files(&label_dir)?;
             for file_path in files {
-                let requires_deep = read_requires_deep_analysis(&file_path)?;
+                let header = read_issue_header(&file_path)?;
+                let requires_deep = header.requires_deep_analysis;
                 let rel_path = to_repo_relative(root, &file_path);
 
                 if requires_deep {
@@ -171,21 +183,6 @@ fn list_yml_files(dir: &Path) -> Result<Vec<std::path::PathBuf>, AppError> {
 
 fn to_repo_relative(root: &Path, path: &Path) -> String {
     path.strip_prefix(root).unwrap_or(path).to_string_lossy().to_string()
-}
-
-fn read_requires_deep_analysis(path: &Path) -> Result<bool, AppError> {
-    let content = fs::read_to_string(path)?;
-    let value: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|e| {
-        AppError::ParseError { what: path.display().to_string(), details: e.to_string() }
-    })?;
-
-    match &value["requires_deep_analysis"] {
-        serde_yaml::Value::Bool(b) => Ok(*b),
-        _ => Err(AppError::Validation(format!(
-            "Missing or invalid requires_deep_analysis in {}",
-            path.display()
-        ))),
-    }
 }
 
 #[cfg(test)]
