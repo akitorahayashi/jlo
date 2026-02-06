@@ -15,7 +15,8 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "src/services/mod.rs"
-    loc: "1-3"
+    loc:
+      - "1-3"
     note: "Imports adapters, application, and assets modules, demonstrating the mix of concerns."
 
 tags:

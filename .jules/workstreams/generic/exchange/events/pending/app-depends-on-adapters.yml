@@ -15,10 +15,12 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "src/app/api.rs"
-    loc: "11-14"
+    loc:
+      - "11-14"
     note: "Imports FilesystemWorkspaceStore, GitCommandAdapter, GitHubCommandAdapter from src/services/adapters."
   - path: "src/app/api.rs"
-    loc: "30-33"
+    loc:
+      - "30-33"
     note: "create_context function instantiates FilesystemWorkspaceStore directly."
 
 tags:

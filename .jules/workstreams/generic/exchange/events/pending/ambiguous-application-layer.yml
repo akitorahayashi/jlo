@@ -15,10 +15,12 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "src/services/application/role_factory.rs"
-    loc: "1"
+    loc:
+      - "1"
     note: "Located in src/services/application."
   - path: "src/app/commands/template/command.rs"
-    loc: "1"
+    loc:
+      - "1"
     note: "Depends on RoleFactory from src/services/application, showing the split."
 
 tags:
