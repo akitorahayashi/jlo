@@ -182,7 +182,7 @@ Triage agent:
 3. Validates observations (do they exist in codebase?)
 4. Merges related events sharing root cause
 5. **Merges events into existing issues when related (updates content)**
-6. Creates new issues for genuinely new problems (using id as filename, placing in label folder)
+6. Creates new issues for genuinely new problems (using id as filename, placing in label directory)
 7. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
 8. Moves processed events to the processed state directory defined by the scaffold
 
