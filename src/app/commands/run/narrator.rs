@@ -6,48 +6,13 @@ use std::path::Path;
 
 use super::RunResult;
 use super::config::{detect_repository_source, load_config};
+use super::narrator_logic::{
+    GitContext, MAX_COMMITS, RangeContext, Stats, build_git_context, determine_range_strategy,
+};
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
-use crate::ports::{
-    AutomationMode, CommitInfo, GitPort, JulesClient, SessionRequest, WorkspaceStore,
-};
+use crate::ports::{AutomationMode, GitPort, JulesClient, SessionRequest, WorkspaceStore};
 use crate::services::adapters::jules_client_http::HttpJulesClient;
-
-/// Maximum number of commits to include in the bounded sample.
-const MAX_COMMITS: usize = 50;
-/// Number of commits to use for bootstrap when no prior summary exists.
-const BOOTSTRAP_COMMIT_COUNT: usize = 20;
-
-/// Range selection context for Narrator.
-#[derive(Debug)]
-pub struct RangeContext {
-    /// The from_commit (exclusive).
-    pub from_commit: String,
-    /// The to_commit (inclusive, HEAD).
-    pub to_commit: String,
-    /// Selection mode: "incremental" or "bootstrap".
-    pub selection_mode: String,
-    /// Selection detail (non-empty when bootstrapping).
-    pub selection_detail: String,
-}
-
-/// Git context collected for the Narrator prompt.
-#[derive(Debug)]
-pub struct GitContext {
-    pub range: RangeContext,
-    pub stats: Stats,
-    pub commits: Vec<CommitInfo>,
-    pub truncation_note: String,
-}
-
-#[derive(Debug, Default)]
-pub struct Stats {
-    pub commits_total: u32,
-    pub commits_included: u32,
-    pub files_changed: u32,
-    pub insertions: u32,
-    pub deletions: u32,
-}
 
 /// Execute the Narrator layer.
 pub fn execute<G, W>(
@@ -156,7 +121,7 @@ where
     // Collect diffstat
     let diffstat = git.get_diffstat(&range.from_commit, &range.to_commit, pathspec)?;
 
-    // Build stats
+    // Build stats input
     let stats = Stats {
         commits_total,
         commits_included,
@@ -165,14 +130,7 @@ where
         deletions: diffstat.deletions,
     };
 
-    // Build truncation note
-    let truncation_note = if commits_total > commits_included {
-        format!("Commits truncated to {} of {} total", commits_included, commits_total)
-    } else {
-        String::new()
-    };
-
-    Ok(Some(GitContext { range, stats, commits, truncation_note }))
+    Ok(Some(build_git_context(range, stats, commits)))
 }
 
 /// Determine the commit range for the summary.
@@ -186,44 +144,14 @@ where
     W: WorkspaceStore,
 {
     let head_sha = git.get_head_sha()?;
+    let latest_content = workspace.read_file(latest_path).ok();
 
-    if let Ok(content) = workspace.read_file(latest_path)
-        && let Some(prev_to_commit) = extract_to_commit(&content)
-    {
-        // Verify the commit exists
-        if git.commit_exists(&prev_to_commit) {
-            return Ok(RangeContext {
-                from_commit: prev_to_commit,
-                to_commit: head_sha,
-                selection_mode: "incremental".to_string(),
-                selection_detail: String::new(),
-            });
-        }
-    }
-
-    // Bootstrap: use recent commits
-    let bootstrap_from = git.get_nth_ancestor(&head_sha, BOOTSTRAP_COMMIT_COUNT)?;
-    Ok(RangeContext {
-        from_commit: bootstrap_from,
-        to_commit: head_sha,
-        selection_mode: "bootstrap".to_string(),
-        selection_detail: format!(
-            "Last {} commits with non-.jules/ changes",
-            BOOTSTRAP_COMMIT_COUNT
-        ),
-    })
-}
-
-/// Extract to_commit from latest.yml content using proper YAML parsing.
-fn extract_to_commit(content: &str) -> Option<String> {
-    serde_yaml::from_str::<serde_yaml::Value>(content)
-        .ok()
-        .as_ref()
-        .and_then(|data| data.get("range"))
-        .and_then(|range| range.get("to_commit"))
-        .and_then(|val| val.as_str())
-        .filter(|s| !s.is_empty() && s.len() >= 7)
-        .map(|s| s.to_string())
+    determine_range_strategy(
+        &head_sha,
+        latest_content.as_deref(),
+        |sha| git.commit_exists(sha),
+        |sha, n| git.get_nth_ancestor(sha, n),
+    )
 }
 
 /// Build the full Narrator prompt with git context injected.
@@ -304,44 +232,4 @@ fn execute_prompt_preview<W: WorkspaceStore>(
     println!("{}", prompt);
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_extract_to_commit_valid() {
-        let content = r#"
-range:
-  to_commit: "abcdef123456"
-"#;
-        let commit = extract_to_commit(content);
-        assert_eq!(commit, Some("abcdef123456".to_string()));
-    }
-
-    #[test]
-    fn test_extract_to_commit_missing() {
-        let content = r#"
-range:
-  other: "value"
-"#;
-        assert_eq!(extract_to_commit(content), None);
-    }
-
-    #[test]
-    fn test_extract_to_commit_invalid_yaml() {
-        let content = "::invalid yaml";
-        assert_eq!(extract_to_commit(content), None);
-    }
-
-    #[test]
-    fn test_extract_to_commit_short() {
-        let content = r#"
-range:
-  to_commit: "abc"
-"#;
-        // Filter expects >= 7 chars
-        assert_eq!(extract_to_commit(content), None);
-    }
 }
