@@ -110,16 +110,12 @@ jobs:
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-      run: |
-        echo "Waiting $WAIT_MINUTES minutes for Jules to process narrator..."
-        TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-        ELAPSED=0
-        while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-          sleep 30
-          ELAPSED=$((ELAPSED + 30))
-          echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-        done
-        echo "Wait complete."
+      id: wait
+      uses: ./.github/actions/wait
+      with:
+        wait_minutes: ${{ env.WAIT_MINUTES }}
+        mock_mode: ${{ env.MOCK_MODE }}
+        process_name: narrator
   generate-workstream-matrix:
     needs: wait-after-narrator
     if: |
@@ -208,16 +204,12 @@ jobs:
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-      run: |
-        echo "Waiting $WAIT_MINUTES minutes for Jules to process observers..."
-        TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-        ELAPSED=0
-        while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-          sleep 30
-          ELAPSED=$((ELAPSED + 30))
-          echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-        done
-        echo "Wait complete."
+      id: wait
+      uses: ./.github/actions/wait
+      with:
+        wait_minutes: ${{ env.WAIT_MINUTES }}
+        mock_mode: ${{ env.MOCK_MODE }}
+        process_name: observers
   generate-decider-matrix:
     needs:
     - generate-workstream-matrix
@@ -301,16 +293,12 @@ jobs:
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-      run: |
-        echo "Waiting $WAIT_MINUTES minutes for Jules to process deciders..."
-        TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-        ELAPSED=0
-        while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-          sleep 30
-          ELAPSED=$((ELAPSED + 30))
-          echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-        done
-        echo "Wait complete."
+      id: wait
+      uses: ./.github/actions/wait
+      with:
+        wait_minutes: ${{ env.WAIT_MINUTES }}
+        mock_mode: ${{ env.MOCK_MODE }}
+        process_name: deciders
   generate-planner-matrix:
     needs:
     - generate-workstream-matrix
@@ -398,16 +386,12 @@ jobs:
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-      run: |
-        echo "Waiting $WAIT_MINUTES minutes for Jules to process planners..."
-        TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-        ELAPSED=0
-        while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-          sleep 30
-          ELAPSED=$((ELAPSED + 30))
-          echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-        done
-        echo "Wait complete."
+      id: wait
+      uses: ./.github/actions/wait
+      with:
+        wait_minutes: ${{ env.WAIT_MINUTES }}
+        mock_mode: ${{ env.MOCK_MODE }}
+        process_name: planners
   run-implementers:
     needs:
     - generate-planner-matrix
@@ -467,16 +451,12 @@ jobs:
     - name: Install jlo
       uses: ./.github/actions/install-jlo
     - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-      run: |
-        echo "Waiting $WAIT_MINUTES minutes for Jules to process implementers..."
-        TOTAL_SECONDS=$((WAIT_MINUTES * 60))
-        ELAPSED=0
-        while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-          sleep 30
-          ELAPSED=$((ELAPSED + 30))
-          echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-        done
-        echo "Wait complete."
+      id: wait
+      uses: ./.github/actions/wait
+      with:
+        wait_minutes: ${{ env.WAIT_MINUTES }}
+        mock_mode: ${{ env.MOCK_MODE }}
+        process_name: implementers
   cleanup-mock:
     needs:
     - run-narrator
