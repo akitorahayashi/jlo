@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-use crate::domain::AppError;
+use crate::domain::{AppError, IssueHeader};
 use crate::ports::WorkspaceStore;
 
 /// Options for matrix routing command.
@@ -215,17 +215,11 @@ fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Resu
         .to_str()
         .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", path.display())))?;
     let content = store.read_file(path_str)?;
-    let value: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|e| {
+    let header: IssueHeader = serde_yaml::from_str(&content).map_err(|e| {
         AppError::ParseError { what: path.display().to_string(), details: e.to_string() }
     })?;
 
-    match &value["requires_deep_analysis"] {
-        serde_yaml::Value::Bool(b) => Ok(*b),
-        _ => Err(AppError::Validation(format!(
-            "Missing or invalid requires_deep_analysis in {}",
-            path.display()
-        ))),
-    }
+    Ok(header.requires_deep_analysis)
 }
 #[cfg(test)]
 mod tests {

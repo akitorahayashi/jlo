@@ -8,7 +8,7 @@ use serde::Serialize;
 use std::path::Path;
 
 use crate::app::commands::run::{self, RunOptions};
-use crate::domain::{AppError, Layer};
+use crate::domain::{AppError, IssueHeader, Layer};
 use crate::ports::WorkspaceStore;
 use crate::services::adapters::git_command::GitCommandAdapter;
 use crate::services::adapters::github_command::GitHubCommandAdapter;
@@ -352,17 +352,11 @@ fn resolve_routing_labels(
 
 fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Result<bool, AppError> {
     let content = store.read_file(path.to_str().unwrap())?;
-    let parsed: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|error| {
+    let header: IssueHeader = serde_yaml::from_str(&content).map_err(|error| {
         AppError::ParseError { what: path.display().to_string(), details: error.to_string() }
     })?;
 
-    match &parsed["requires_deep_analysis"] {
-        serde_yaml::Value::Bool(value) => Ok(*value),
-        _ => Err(AppError::Validation(format!(
-            "Missing or invalid requires_deep_analysis in {}",
-            path.display()
-        ))),
-    }
+    Ok(header.requires_deep_analysis)
 }
 #[cfg(test)]
 mod tests {
