@@ -215,8 +215,9 @@ fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Resu
         .to_str()
         .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", path.display())))?;
     let content = store.read_file(path_str)?;
-    let header: IssueHeader = serde_yaml::from_str(&content).map_err(|e| {
-        AppError::ParseError { what: path.display().to_string(), details: e.to_string() }
+    let header: IssueHeader = serde_yaml::from_str(&content).map_err(|e| AppError::ParseError {
+        what: path.display().to_string(),
+        details: e.to_string(),
     })?;
 
     Ok(header.requires_deep_analysis)
