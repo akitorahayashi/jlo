@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "depinv"
+issue_id: ""
+created_at: "2026-02-06"
+author_role: "structural_arch"
+confidence: "high"
+
+# Content
+title: "src/app violates dependency inversion by importing concrete adapters"
+statement: |
+  The Application layer (`src/app`) directly imports and instantiates concrete infrastructure adapters from `src/services/adapters`, coupling the core logic to specific implementations (filesystem, git) instead of interfaces.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/api.rs"
+    loc:
+      - "11-14"
+    note: "Imports FilesystemWorkspaceStore, GitCommandAdapter, GitHubCommandAdapter from src/services/adapters."
+  - path: "src/app/api.rs"
+    loc:
+      - "30-33"
+    note: "create_context function instantiates FilesystemWorkspaceStore directly."
+
+tags:
+  - "dependency-inversion"
+  - "coupling"
+  - "architecture"
