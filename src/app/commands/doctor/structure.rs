@@ -576,4 +576,147 @@ mod tests {
         let result = collect_workstreams(temp.path(), Some("ws3"));
         assert!(result.is_err());
     }
+
+    fn create_valid_workspace(temp: &assert_fs::TempDir) {
+        temp.child(".jules/JULES.md").touch().unwrap();
+        temp.child(".jules/README.md").touch().unwrap();
+        temp.child(".jules/config.toml").touch().unwrap();
+        temp.child(".jules/.jlo-version").write_str(env!("CARGO_PKG_VERSION")).unwrap();
+        temp.child(".jules/changes").create_dir_all().unwrap();
+
+        // Layers
+        for layer in Layer::ALL {
+            let layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
+            layer_dir.create_dir_all().unwrap();
+            layer_dir.child("contracts.yml").touch().unwrap();
+            layer_dir.child("schemas").create_dir_all().unwrap();
+            layer_dir.child("prompt_assembly.yml").touch().unwrap();
+
+            if layer.is_single_role() {
+                layer_dir.child("prompt.yml").touch().unwrap();
+                if layer == Layer::Narrators {
+                    layer_dir.child("schemas/change.yml").touch().unwrap();
+                }
+            } else {
+                layer_dir.child("prompt.yml").touch().unwrap(); // Required for multi-role too according to code
+                let role_dir = layer_dir.child("roles/my-role");
+                role_dir.create_dir_all().unwrap();
+                role_dir.child("role.yml").touch().unwrap();
+            }
+        }
+
+        // Workstream
+        let ws_dir = temp.child(".jules/workstreams/generic");
+        ws_dir.create_dir_all().unwrap();
+        ws_dir.child("scheduled.toml").touch().unwrap();
+
+        let exchange = ws_dir.child("exchange");
+        exchange.child("events").create_dir_all().unwrap();
+        exchange.child("issues").create_dir_all().unwrap();
+
+        // We need to match inputs for event states and issue labels
+        exchange.child("events/pending").create_dir_all().unwrap();
+        exchange.child("issues/tests").create_dir_all().unwrap();
+
+        ws_dir.child("workstations").create_dir_all().unwrap();
+    }
+
+    #[test]
+    fn test_structural_checks_success() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        create_valid_workspace(&temp);
+
+        let mut applied_fixes = Vec::new();
+        let mut diagnostics = Diagnostics::default();
+        let workstreams = vec!["generic".to_string()];
+        let issue_labels = vec!["tests".to_string()];
+        let event_states = vec!["pending".to_string()];
+        let options = DoctorOptions { fix: false, strict: false, workstream: None };
+
+        let inputs = StructuralInputs {
+            jules_path: &temp.path().join(".jules"),
+            root: temp.path(),
+            workstreams: &workstreams,
+            issue_labels: &issue_labels,
+            event_states: &event_states,
+            options: &options,
+            applied_fixes: &mut applied_fixes,
+        };
+
+        structural_checks(inputs, &mut diagnostics);
+        assert_eq!(
+            diagnostics.error_count(),
+            0,
+            "Expected 0 errors, got: {:?}",
+            diagnostics.errors()
+        );
+    }
+
+    #[test]
+    fn test_structural_checks_missing_critical_files() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        create_valid_workspace(&temp);
+
+        // Remove config.toml
+        std::fs::remove_file(temp.path().join(".jules/config.toml")).unwrap();
+        // Remove JULES.md
+        std::fs::remove_file(temp.path().join(".jules/JULES.md")).unwrap();
+
+        let mut applied_fixes = Vec::new();
+        let mut diagnostics = Diagnostics::default();
+        let workstreams = vec!["generic".to_string()];
+        let issue_labels = vec!["tests".to_string()];
+        let event_states = vec!["pending".to_string()];
+        let options = DoctorOptions { fix: false, strict: false, workstream: None };
+
+        let inputs = StructuralInputs {
+            jules_path: &temp.path().join(".jules"),
+            root: temp.path(),
+            workstreams: &workstreams,
+            issue_labels: &issue_labels,
+            event_states: &event_states,
+            options: &options,
+            applied_fixes: &mut applied_fixes,
+        };
+
+        structural_checks(inputs, &mut diagnostics);
+
+        // Expect at least 2 errors
+        assert!(diagnostics.error_count() >= 2);
+        let errors: Vec<String> = diagnostics.errors().iter().map(|e| e.message.clone()).collect();
+        // The error message is "Missing required file" based on ensure_path_exists
+        assert!(errors.contains(&"Missing required file".to_string()));
+    }
+
+    #[test]
+    fn test_structural_checks_missing_layer_files() {
+        let temp = assert_fs::TempDir::new().unwrap();
+        create_valid_workspace(&temp);
+
+        // Remove implementers contracts
+        std::fs::remove_file(temp.path().join(".jules/roles/implementers/contracts.yml")).unwrap();
+
+        let mut applied_fixes = Vec::new();
+        let mut diagnostics = Diagnostics::default();
+        let workstreams = vec!["generic".to_string()];
+        let issue_labels = vec!["tests".to_string()];
+        let event_states = vec!["pending".to_string()];
+        let options = DoctorOptions { fix: false, strict: false, workstream: None };
+
+        let inputs = StructuralInputs {
+            jules_path: &temp.path().join(".jules"),
+            root: temp.path(),
+            workstreams: &workstreams,
+            issue_labels: &issue_labels,
+            event_states: &event_states,
+            options: &options,
+            applied_fixes: &mut applied_fixes,
+        };
+
+        structural_checks(inputs, &mut diagnostics);
+
+        assert!(diagnostics.error_count() >= 1);
+        let errors: Vec<String> = diagnostics.errors().iter().map(|e| e.message.clone()).collect();
+        assert!(errors.contains(&"Missing contracts.yml".to_string()));
+    }
 }
