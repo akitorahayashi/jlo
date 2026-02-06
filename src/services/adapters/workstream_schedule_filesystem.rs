@@ -1,27 +1,35 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::domain::{AppError, WorkstreamSchedule};
+use crate::ports::WorkspaceStore;
 
-pub fn load_schedule(jules_path: &Path, workstream: &str) -> Result<WorkstreamSchedule, AppError> {
-    let path = jules_path.join("workstreams").join(workstream).join("scheduled.toml");
+pub fn load_schedule(
+    store: &impl WorkspaceStore,
+    workstream: &str,
+) -> Result<WorkstreamSchedule, AppError> {
+    let path = store.jules_path().join("workstreams").join(workstream).join("scheduled.toml");
 
-    let content = fs::read_to_string(&path).map_err(|err| {
-        if err.kind() == std::io::ErrorKind::NotFound {
+    let content = store.read_file(path.to_str().unwrap()).map_err(|err| {
+        if matches!(err, AppError::Io(ref e) if e.kind() == std::io::ErrorKind::NotFound) {
             AppError::ScheduleConfigMissing(path.display().to_string())
         } else {
-            AppError::Io(err)
+            err
         }
     })?;
     Ok(WorkstreamSchedule::parse_toml(&content)?)
 }
 
-pub fn list_subdirectories(dir: &Path) -> Result<Vec<PathBuf>, AppError> {
-    let mut entries: Vec<PathBuf> = fs::read_dir(dir)?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().is_dir())
-        .map(|entry| entry.path())
-        .collect();
-    entries.sort();
-    Ok(entries)
+pub fn list_subdirectories(
+    store: &impl WorkspaceStore,
+    dir: &Path,
+) -> Result<Vec<PathBuf>, AppError> {
+    let entries = store.list_dir(dir.to_str().unwrap())?;
+    let mut subdirs = Vec::new();
+    for entry in entries {
+        if store.is_dir(entry.to_str().unwrap()) {
+            subdirs.push(entry);
+        }
+    }
+    subdirs.sort();
+    Ok(subdirs)
 }

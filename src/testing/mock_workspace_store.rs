@@ -168,6 +168,45 @@ impl WorkspaceStore for MockWorkspaceStore {
         Ok(())
     }
 
+    fn list_dir(&self, path: &str) -> Result<Vec<PathBuf>, AppError> {
+        // Find direct children (files and directories)
+        let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
+        let path_obj = Path::new(path);
+        let mut results = std::collections::HashSet::new();
+
+        for key in self.files.borrow().keys() {
+            if key.starts_with(&prefix) {
+                let suffix = &key[prefix.len()..];
+                if let Some(slash_idx) = suffix.find('/') {
+                    // It's a subdirectory
+                    let dir_name = &suffix[..slash_idx];
+                    results.insert(path_obj.join(dir_name));
+                } else {
+                    // It's a file directly in this directory
+                    results.insert(PathBuf::from(key));
+                }
+            }
+        }
+
+        let mut results_vec: Vec<PathBuf> = results.into_iter().collect();
+        results_vec.sort();
+        Ok(results_vec)
+    }
+
+    fn set_executable(&self, _path: &str) -> Result<(), AppError> {
+        Ok(())
+    }
+
+    fn file_exists(&self, path: &str) -> bool {
+        self.files.borrow().contains_key(path)
+    }
+
+    fn is_dir(&self, path: &str) -> bool {
+        // Check if it is a prefix of any file
+        let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
+        self.files.borrow().keys().any(|k| k.starts_with(&prefix))
+    }
+
     fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {
         Ok(())
     }

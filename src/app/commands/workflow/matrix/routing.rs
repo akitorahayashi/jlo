@@ -3,13 +3,10 @@
 //! Exports planner/implementer issue matrices from workstream inspection and routing labels.
 
 use serde::{Deserialize, Serialize};
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
-use crate::services::adapters::issue_filesystem::read_issue_header;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 /// Options for matrix routing command.
 #[derive(Debug, Clone)]
@@ -18,8 +15,6 @@ pub struct MatrixRoutingOptions {
     pub workstreams_json: WorkstreamsMatrix,
     /// Routing labels as CSV (e.g., "bugs,feats,refacts,tests,docs").
     pub routing_labels: String,
-    /// Optional workspace root path.
-    pub workspace_root: Option<PathBuf>,
 }
 
 /// Input workstreams matrix (from matrix workstreams output).
@@ -72,17 +67,15 @@ pub struct IssueMatrixEntry {
 }
 
 /// Execute matrix routing command.
-pub fn execute(options: MatrixRoutingOptions) -> Result<MatrixRoutingOutput, AppError> {
-    let workspace = match options.workspace_root {
-        Some(root) => FilesystemWorkspaceStore::new(root),
-        None => FilesystemWorkspaceStore::current()?,
-    };
-
-    if !workspace.exists() {
+pub fn execute(
+    store: &impl WorkspaceStore,
+    options: MatrixRoutingOptions,
+) -> Result<MatrixRoutingOutput, AppError> {
+    if !store.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 
-    let jules_path = workspace.jules_path();
+    let jules_path = store.jules_path();
     let root = jules_path.parent().unwrap_or(Path::new("."));
 
     // Parse routing labels
@@ -120,21 +113,40 @@ pub fn execute(options: MatrixRoutingOptions) -> Result<MatrixRoutingOutput, App
         let issues_dir =
             jules_path.join("workstreams").join(&ws_entry.workstream).join("exchange/issues");
 
-        if !issues_dir.exists() {
+        let issues_dir_str = match issues_dir.to_str() {
+            Some(s) => s,
+            None => {
+                return Err(AppError::Validation(format!(
+                    "Invalid path: {}",
+                    issues_dir.display()
+                )));
+            }
+        };
+
+        if !store.file_exists(issues_dir_str) {
             continue;
         }
 
         // Only scan directories matching routing labels
         for label in &labels {
             let label_dir = issues_dir.join(label);
-            if !label_dir.exists() {
+            let label_dir_str = match label_dir.to_str() {
+                Some(s) => s,
+                None => {
+                    return Err(AppError::Validation(format!(
+                        "Invalid path: {}",
+                        label_dir.display()
+                    )));
+                }
+            };
+
+            if !store.file_exists(label_dir_str) {
                 continue;
             }
 
-            let files = list_yml_files(&label_dir)?;
+            let files = list_yml_files(store, &label_dir)?;
             for file_path in files {
-                let header = read_issue_header(&file_path)?;
-                let requires_deep = header.requires_deep_analysis;
+                let requires_deep = read_requires_deep_analysis(store, &file_path)?;
                 let rel_path = to_repo_relative(root, &file_path);
 
                 if requires_deep {
@@ -170,12 +182,25 @@ pub fn execute(options: MatrixRoutingOptions) -> Result<MatrixRoutingOutput, App
     })
 }
 
-fn list_yml_files(dir: &Path) -> Result<Vec<std::path::PathBuf>, AppError> {
-    let mut files: Vec<std::path::PathBuf> = fs::read_dir(dir)?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().is_file())
-        .map(|entry| entry.path())
-        .filter(|path| path.extension().map(|ext| ext == "yml").unwrap_or(false))
+fn list_yml_files(store: &impl WorkspaceStore, dir: &Path) -> Result<Vec<PathBuf>, AppError> {
+    let dir_str = dir
+        .to_str()
+        .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", dir.display())))?;
+
+    let entries = store.list_dir(dir_str)?;
+    let mut files: Vec<PathBuf> = entries
+        .into_iter()
+        .filter(|path| {
+            let is_yml = path.extension().map(|ext| ext == "yml").unwrap_or(false);
+            if !is_yml {
+                return false;
+            }
+            // Ensure it's not a directory
+            match path.to_str() {
+                Some(p) => !store.is_dir(p),
+                None => false,
+            }
+        })
         .collect();
     files.sort();
     Ok(files)
@@ -185,45 +210,59 @@ fn to_repo_relative(root: &Path, path: &Path) -> String {
     path.strip_prefix(root).unwrap_or(path).to_string_lossy().to_string()
 }
 
+fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Result<bool, AppError> {
+    let path_str = path
+        .to_str()
+        .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", path.display())))?;
+    let content = store.read_file(path_str)?;
+    let value: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|e| {
+        AppError::ParseError { what: path.display().to_string(), details: e.to_string() }
+    })?;
+
+    match &value["requires_deep_analysis"] {
+        serde_yaml::Value::Bool(b) => Ok(*b),
+        _ => Err(AppError::Validation(format!(
+            "Missing or invalid requires_deep_analysis in {}",
+            path.display()
+        ))),
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
-    use tempfile::tempdir;
+    use crate::ports::WorkspaceStore;
+    use crate::services::adapters::memory_workspace_store::MemoryWorkspaceStore;
 
-    fn setup_workspace(root: &std::path::Path) {
-        fs::create_dir_all(root.join(".jules")).unwrap();
-        fs::write(root.join(".jules/version"), env!("CARGO_PKG_VERSION")).unwrap();
+    fn setup_workspace(store: &MemoryWorkspaceStore) {
+        store.write_version(env!("CARGO_PKG_VERSION")).unwrap();
     }
 
-    fn create_issue(root: &std::path::Path, ws: &str, label: &str, name: &str, deep: bool) {
-        let issues_dir = root.join(format!(".jules/workstreams/{}/exchange/issues/{}", ws, label));
-        fs::create_dir_all(&issues_dir).unwrap();
+    fn create_issue(store: &MemoryWorkspaceStore, ws: &str, label: &str, name: &str, deep: bool) {
+        let issues_dir = format!(".jules/workstreams/{}/exchange/issues/{}", ws, label);
         let content =
             format!("id: {}\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n", name, deep);
-        fs::write(issues_dir.join(format!("{}.yml", name)), content).unwrap();
+        let path = format!("{}/{}.yml", issues_dir, name);
+        store.write_file(&path, &content).unwrap();
     }
 
     #[test]
     fn routes_issues_by_deep_analysis() {
-        let dir = tempdir().unwrap();
-        let root = dir.path();
-        setup_workspace(root);
+        let store = MemoryWorkspaceStore::new();
+        setup_workspace(&store);
 
         // Create issues with different requires_deep_analysis values
-        create_issue(root, "alpha", "bugs", "abc123", true); // planner
-        create_issue(root, "alpha", "bugs", "def456", false); // implementer
-        create_issue(root, "alpha", "feats", "ghi789", true); // planner
-        create_issue(root, "alpha", "docs", "jkl012", false); // implementer (but not in routing)
+        create_issue(&store, "alpha", "bugs", "abc123", true); // planner
+        create_issue(&store, "alpha", "bugs", "def456", false); // implementer
+        create_issue(&store, "alpha", "feats", "ghi789", true); // planner
+        create_issue(&store, "alpha", "docs", "jkl012", false); // implementer (but not in routing)
 
         let workstreams_json =
             WorkstreamsMatrix { include: vec![WorkstreamEntry { workstream: "alpha".into() }] };
 
-        let output = execute(MatrixRoutingOptions {
-            workstreams_json,
-            routing_labels: "bugs,feats".into(),
-            workspace_root: Some(root.to_path_buf()),
-        })
+        let output = execute(
+            &store,
+            MatrixRoutingOptions { workstreams_json, routing_labels: "bugs,feats".into() },
+        )
         .unwrap();
 
         assert_eq!(output.schema_version, 1);
@@ -262,15 +301,16 @@ mod tests {
 
     #[test]
     fn rejects_empty_routing_labels() {
-        let dir = tempdir().unwrap();
-        let root = dir.path();
-        setup_workspace(root);
+        let store = MemoryWorkspaceStore::new();
+        setup_workspace(&store);
 
-        let result = execute(MatrixRoutingOptions {
-            workstreams_json: WorkstreamsMatrix { include: vec![] },
-            routing_labels: "".into(),
-            workspace_root: Some(root.to_path_buf()),
-        });
+        let result = execute(
+            &store,
+            MatrixRoutingOptions {
+                workstreams_json: WorkstreamsMatrix { include: vec![] },
+                routing_labels: "".into(),
+            },
+        );
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("routing_labels must not be empty"));

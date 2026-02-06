@@ -236,6 +236,22 @@ mod tests {
             panic!("mock narrator no-op must not call remove_file");
         }
 
+        fn list_dir(&self, _path: &str) -> Result<Vec<PathBuf>, AppError> {
+            panic!("mock narrator no-op must not call list_dir");
+        }
+
+        fn set_executable(&self, _path: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call set_executable");
+        }
+
+        fn file_exists(&self, _path: &str) -> bool {
+            panic!("mock narrator no-op must not call file_exists");
+        }
+
+        fn is_dir(&self, _path: &str) -> bool {
+            panic!("mock narrator no-op must not call is_dir");
+        }
+
         fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {
             panic!("mock narrator no-op must not call create_dir_all");
         }

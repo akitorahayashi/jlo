@@ -31,7 +31,9 @@ pub fn doctor(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, Ap
 
 /// Execute workflow run command.
 pub fn run(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
-    run::execute(options)
+    let store =
+        crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
+    run::execute(&store, options)
 }
 
 /// Execute workflow cleanup mock command.
