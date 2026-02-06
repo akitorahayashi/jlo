@@ -32,7 +32,8 @@ jlo init
 | `jlo workflow matrix <cmd>` | | Generate GitHub Actions matrices |
 | `jlo workflow run <layer> [--matrix-json <json>] [--mock]` | | Run layer with JSON output |
 | `jlo workflow wait prs --layer <layer> [...]` | | Wait for PRs and return status |
-| `jlo workstreams inspect --workstream <name> [--format json (yaml)]` | | Inspect workstream state for automation |
+| `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state for automation |
+| `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
 | `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate `.jules/` structure and content |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` script and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |

@@ -71,7 +71,8 @@ tests/
 | `jlo workflow run <layer> [--matrix-json <json>] [--mock]` | | Run layer and return wait-gating metadata |
 | `jlo workflow wait prs --layer <layer> [...]` | | Wait for PRs (merge or label mode) |
 | `jlo workflow cleanup mock --mock-tag <tag>` | | Cleanup mock artifacts |
-| `jlo workstreams inspect --workstream <name> [--format json\|yaml]` | | Inspect workstream state |
+| `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state |
+| `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
 | `jlo setup list --detail <component>` | | Show component details |

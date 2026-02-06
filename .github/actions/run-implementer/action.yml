@@ -52,4 +52,4 @@ runs:
       shell: bash
       env:
         ISSUE_FILE: ${{ inputs.issue_file }}
-      run: jlo workflow cleanup processed-issue --issue-file "$ISSUE_FILE" --commit --push
+      run: jlo workflow workstreams clean issue "$ISSUE_FILE"
