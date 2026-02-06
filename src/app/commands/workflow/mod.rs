@@ -23,6 +23,7 @@ pub use workstreams::{
 };
 
 use crate::domain::AppError;
+use crate::ports::WorkspaceStore;
 
 /// Execute workflow doctor validation.
 pub fn doctor(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, AppError> {
@@ -32,8 +33,14 @@ pub fn doctor(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, Ap
 /// Execute workflow run command.
 pub fn run(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
     let store =
-        crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
-    run::execute(&store, options)
+        crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
+
+    let jules_path = store.jules_path();
+    let git_root = jules_path.parent().unwrap_or(&jules_path).to_path_buf();
+    let git = crate::adapters::git_command::GitCommandAdapter::new(git_root);
+    let github = crate::adapters::github_command::GitHubCommandAdapter::new();
+
+    run::execute(&store, options, &git, &github)
 }
 
 /// Execute workflow cleanup mock command.

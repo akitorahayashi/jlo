@@ -19,7 +19,7 @@ use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 use self::config::{detect_repository_source, load_config};
 use self::prompt::assemble_prompt;
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
-use crate::services::adapters::jules_client_http::HttpJulesClient;
+use crate::adapters::jules_client_http::HttpJulesClient;
 
 /// Options for the run command.
 #[derive(Debug, Clone)]

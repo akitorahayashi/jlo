@@ -8,7 +8,7 @@ use std::path::Path;
 
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 /// Options for workflow pr label-from-branch command.
 #[derive(Debug, Clone)]

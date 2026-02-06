@@ -404,7 +404,7 @@ fn compare_versions(a: &[u32], b: &[u32]) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+    use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
     use std::fs;
 
     #[test]

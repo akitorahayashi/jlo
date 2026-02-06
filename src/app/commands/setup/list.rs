@@ -2,7 +2,7 @@
 
 use crate::domain::AppError;
 use crate::ports::ComponentCatalog;
-use crate::services::assets::component_catalog_embedded::EmbeddedComponentCatalog;
+use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 
 /// Summary information for a component.
 #[derive(Debug, Clone)]

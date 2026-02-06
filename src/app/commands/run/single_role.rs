@@ -7,7 +7,7 @@ use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, GitHubPort, JulesClient, SessionRequest, WorkspaceStore};
-use crate::services::adapters::jules_client_http::HttpJulesClient;
+use crate::adapters::jules_client_http::HttpJulesClient;
 
 const PLANNER_WORKFLOW_NAME: &str = "jules-run-planner.yml";
 const IMPLEMENTER_WORKFLOW_NAME: &str = "jules-run-implementer.yml";

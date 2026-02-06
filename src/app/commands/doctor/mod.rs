@@ -9,7 +9,7 @@ mod yaml;
 use std::path::Path;
 
 use crate::domain::AppError;
-use crate::services::assets::scaffold_assets::{
+use crate::adapters::assets::scaffold_assets::{
     list_event_states, list_issue_labels, read_enum_values,
 };
 

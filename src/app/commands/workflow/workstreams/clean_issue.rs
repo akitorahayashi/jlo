@@ -5,8 +5,8 @@ use serde::Serialize;
 
 use crate::domain::AppError;
 use crate::ports::{GitPort, WorkspaceStore};
-use crate::services::adapters::git_command::GitCommandAdapter;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::adapters::git_command::GitCommandAdapter;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 use super::inspect::{WorkflowWorkstreamsInspectOptions, inspect_at};
 

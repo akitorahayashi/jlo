@@ -9,11 +9,9 @@ use std::path::Path;
 
 use crate::app::commands::run::{self, RunOptions};
 use crate::domain::{AppError, Layer};
-use crate::ports::WorkspaceStore;
-use crate::services::adapters::git_command::GitCommandAdapter;
-use crate::services::adapters::github_command::GitHubCommandAdapter;
+use crate::ports::{GitPort, GitHubPort, WorkspaceStore};
 
-use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
+use crate::adapters::workstream_schedule_filesystem::load_schedule;
 
 /// Options for workflow run command.
 #[derive(Debug, Clone)]
@@ -45,10 +43,16 @@ pub struct WorkflowRunOutput {
 }
 
 /// Execute workflow run command.
-pub fn execute(
+pub fn execute<G, H>(
     store: &impl WorkspaceStore,
     options: WorkflowRunOptions,
-) -> Result<WorkflowRunOutput, AppError> {
+    git: &G,
+    github: &H,
+) -> Result<WorkflowRunOutput, AppError>
+where
+    G: GitPort,
+    H: GitHubPort,
+{
     if !store.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
@@ -74,7 +78,7 @@ pub fn execute(
     };
 
     // Execute layer runs for the specified workstream
-    let run_results = execute_layer(store, &options)?;
+    let run_results = execute_layer(store, &options, git, github)?;
 
     Ok(WorkflowRunOutput {
         schema_version: 1,
@@ -92,21 +96,24 @@ struct RunResults {
 }
 
 /// Execute runs for a layer on a specific workstream.
-fn execute_layer(
+fn execute_layer<G, H>(
     store: &impl WorkspaceStore,
     options: &WorkflowRunOptions,
-) -> Result<RunResults, AppError> {
+    git: &G,
+    github: &H,
+) -> Result<RunResults, AppError>
+where
+    G: GitPort,
+    H: GitHubPort,
+{
     let jules_path = store.jules_path();
-    let git_root = jules_path.parent().unwrap_or(&jules_path).to_path_buf();
-    let git = GitCommandAdapter::new(git_root);
-    let github = GitHubCommandAdapter::new();
 
     match options.layer {
-        Layer::Narrators => execute_narrator(store, options, &jules_path, &git, &github),
-        Layer::Observers => execute_multi_role(store, options, &jules_path, &git, &github),
-        Layer::Deciders => execute_multi_role(store, options, &jules_path, &git, &github),
-        Layer::Planners => execute_issue_layer(store, options, &jules_path, &git, &github),
-        Layer::Implementers => execute_issue_layer(store, options, &jules_path, &git, &github),
+        Layer::Narrators => execute_narrator(store, options, &jules_path, git, github),
+        Layer::Observers => execute_multi_role(store, options, &jules_path, git, github),
+        Layer::Deciders => execute_multi_role(store, options, &jules_path, git, github),
+        Layer::Planners => execute_issue_layer(store, options, &jules_path, git, github),
+        Layer::Implementers => execute_issue_layer(store, options, &jules_path, git, github),
     }
 }
 
@@ -119,8 +126,8 @@ fn execute_narrator<G, H>(
     github: &H,
 ) -> Result<RunResults, AppError>
 where
-    G: crate::ports::GitPort,
-    H: crate::ports::GitHubPort,
+    G: GitPort,
+    H: GitHubPort,
 {
     let run_options = RunOptions {
         layer: Layer::Narrators,
@@ -147,8 +154,8 @@ fn execute_multi_role<G, H>(
     github: &H,
 ) -> Result<RunResults, AppError>
 where
-    G: crate::ports::GitPort,
-    H: crate::ports::GitHubPort,
+    G: GitPort,
+    H: GitHubPort,
 {
     let workstream = &options.workstream;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
@@ -209,8 +216,8 @@ fn execute_issue_layer<G, H>(
     github: &H,
 ) -> Result<RunResults, AppError>
 where
-    G: crate::ports::GitPort,
-    H: crate::ports::GitHubPort,
+    G: GitPort,
+    H: GitHubPort,
 {
     let workstream = &options.workstream;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
@@ -368,7 +375,7 @@ fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Resu
 mod tests {
     use super::*;
     use crate::ports::WorkspaceStore;
-    use crate::services::adapters::memory_workspace_store::MemoryWorkspaceStore;
+    use crate::adapters::memory_workspace_store::MemoryWorkspaceStore;
     use serial_test::serial;
 
     #[test]

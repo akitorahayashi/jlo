@@ -10,9 +10,9 @@ use serde::Serialize;
 
 use crate::domain::AppError;
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
-use crate::services::adapters::git_command::GitCommandAdapter;
-use crate::services::adapters::github_command::GitHubCommandAdapter;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::adapters::git_command::GitCommandAdapter;
+use crate::adapters::github_command::GitHubCommandAdapter;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 /// Options for workflow cleanup mock command.
 #[derive(Debug, Clone)]

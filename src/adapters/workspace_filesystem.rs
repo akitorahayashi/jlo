@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use crate::domain::{AppError, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
-use crate::services::assets::workstream_template_assets::workstream_template_files;
+use crate::adapters::assets::workstream_template_assets::workstream_template_files;
 
 /// Filesystem-based workspace store implementation.
 #[derive(Debug, Clone)]
