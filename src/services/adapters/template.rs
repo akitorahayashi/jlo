@@ -1,7 +1,7 @@
-use std::sync::OnceLock;
 use minijinja::{Environment, UndefinedBehavior};
+use std::sync::OnceLock;
 
-use crate::domain::prompt::{PromptContext, PromptAssemblyError, TemplateRenderer};
+use crate::domain::prompt::{PromptAssemblyError, PromptContext, TemplateRenderer};
 
 /// Template renderer using Minijinja.
 pub struct MinijinjaTemplateRenderer;

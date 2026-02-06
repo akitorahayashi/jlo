@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::domain::{AppError, WorkstreamSchedule, IoErrorKind};
+use crate::domain::{AppError, IoErrorKind, WorkstreamSchedule};
 use crate::ports::WorkspaceStore;
 
 pub fn load_schedule(

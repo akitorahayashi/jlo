@@ -409,7 +409,12 @@ mod tests {
 
     struct MockRenderer;
     impl TemplateRenderer for MockRenderer {
-        fn render(&self, template: &str, _context: &PromptContext, _template_name: &str) -> Result<String, PromptAssemblyError> {
+        fn render(
+            &self,
+            template: &str,
+            _context: &PromptContext,
+            _template_name: &str,
+        ) -> Result<String, PromptAssemblyError> {
             Ok(template.to_string()) // Simplistic mock pass-through
         }
     }
@@ -476,8 +481,13 @@ includes:
         mock_loader
             .add_file(".jules/roles/planners/contracts.yml", "layer: planners\nconstraints: []");
 
-        let result =
-            assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_loader, &mock_renderer);
+        let result = assemble_prompt(
+            jules_path,
+            Layer::Planners,
+            &PromptContext::new(),
+            &mock_loader,
+            &mock_renderer,
+        );
 
         assert!(result.is_ok());
         let assembled = result.unwrap();

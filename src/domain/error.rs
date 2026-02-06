@@ -184,10 +184,7 @@ pub enum AppError {
 
 impl From<io::Error> for AppError {
     fn from(err: io::Error) -> Self {
-        AppError::Io {
-            message: err.to_string(),
-            kind: err.kind().into(),
-        }
+        AppError::Io { message: err.to_string(), kind: err.kind().into() }
     }
 }
 
