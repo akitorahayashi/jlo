@@ -3,7 +3,7 @@
 //! This module exposes high-level functions that glue together context creation
 //! and command execution.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::app::{
     AppContext,
@@ -54,7 +54,8 @@ pub fn init() -> Result<(), AppError> {
 }
 
 /// Initialize a new `.jules/` workspace at the specified path.
-pub fn init_at(path: std::path::PathBuf) -> Result<(), AppError> {
+pub fn init_at(path: impl Into<PathBuf>) -> Result<(), AppError> {
+    let path = path.into();
     let ctx = create_context(path.clone());
 
     let git = GitCommandAdapter::new(path);
@@ -226,9 +227,9 @@ pub fn doctor(options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
 
 /// Validate the `.jules/` workspace at the specified path.
 pub fn doctor_at(
-    path: std::path::PathBuf,
+    path: impl Into<PathBuf>,
     options: DoctorOptions,
 ) -> Result<DoctorOutcome, AppError> {
-    let workspace = FilesystemWorkspaceStore::new(path);
+    let workspace = FilesystemWorkspaceStore::new(path.into());
     doctor::execute(&workspace.jules_path(), options)
 }
