@@ -67,7 +67,7 @@ where
         .replace("workflow validation", "workflow implementation check");
 
     // Ensure directory exists
-    std::fs::create_dir_all(&events_dir).map_err(AppError::Io)?;
+    std::fs::create_dir_all(&events_dir).map_err(AppError::from)?;
 
     workspace.write_file(
         event_file_1.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,

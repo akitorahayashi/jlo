@@ -9,7 +9,7 @@ pub use configuration::{
     ExecutionConfig, JulesApiConfig, MockConfig, MockOutput, RunConfig, WorkflowRunnerMode,
     WorkstreamSchedule,
 };
-pub use error::AppError;
+pub use error::{AppError, IoErrorKind};
 pub use identities::{ComponentId, RoleId};
 
 pub use prompt::{

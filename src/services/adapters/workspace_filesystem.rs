@@ -230,31 +230,31 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
 
     fn read_file(&self, path: &str) -> Result<String, AppError> {
         let full_path = self.resolve_path(path);
-        fs::read_to_string(full_path).map_err(AppError::Io)
+        fs::read_to_string(full_path).map_err(AppError::from)
     }
 
     fn write_file(&self, path: &str, content: &str) -> Result<(), AppError> {
         let full_path = self.resolve_path(path);
         if let Some(parent) = full_path.parent() {
-            fs::create_dir_all(parent).map_err(AppError::Io)?;
+            fs::create_dir_all(parent).map_err(AppError::from)?;
         }
-        fs::write(full_path, content).map_err(AppError::Io)
+        fs::write(full_path, content).map_err(AppError::from)
     }
 
     fn remove_file(&self, path: &str) -> Result<(), AppError> {
         let full_path = self.resolve_path(path);
         if full_path.exists() {
-            fs::remove_file(full_path).map_err(AppError::Io)?;
+            fs::remove_file(full_path).map_err(AppError::from)?;
         }
         Ok(())
     }
 
     fn list_dir(&self, path: &str) -> Result<Vec<PathBuf>, AppError> {
         let full_path = self.resolve_path(path);
-        let entries = fs::read_dir(full_path).map_err(AppError::Io)?;
+        let entries = fs::read_dir(full_path).map_err(AppError::from)?;
         let mut paths = Vec::new();
         for entry in entries {
-            let entry = entry.map_err(AppError::Io)?;
+            let entry = entry.map_err(AppError::from)?;
             paths.push(entry.path());
         }
         // sort for determinism
@@ -267,9 +267,9 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let mut perms = fs::metadata(&full_path).map_err(AppError::Io)?.permissions();
+            let mut perms = fs::metadata(&full_path).map_err(AppError::from)?.permissions();
             perms.set_mode(0o755);
-            fs::set_permissions(&full_path, perms).map_err(AppError::Io)?;
+            fs::set_permissions(&full_path, perms).map_err(AppError::from)?;
         }
         Ok(())
     }
@@ -284,16 +284,16 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
 
     fn create_dir_all(&self, path: &str) -> Result<(), AppError> {
         let full_path = self.resolve_path(path);
-        fs::create_dir_all(full_path).map_err(AppError::Io)
+        fs::create_dir_all(full_path).map_err(AppError::from)
     }
 
     fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError> {
         let src_path = self.resolve_path(src);
         let dst_path = self.resolve_path(dst);
         if let Some(parent) = dst_path.parent() {
-            fs::create_dir_all(parent).map_err(AppError::Io)?;
+            fs::create_dir_all(parent).map_err(AppError::from)?;
         }
-        fs::copy(src_path, dst_path).map_err(AppError::Io)
+        fs::copy(src_path, dst_path).map_err(AppError::from)
     }
 
     fn resolve_path(&self, path: &str) -> PathBuf {
@@ -310,7 +310,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         } else {
             self.root.join(path)
         };
-        fs::canonicalize(p).map_err(AppError::Io)
+        fs::canonicalize(p).map_err(AppError::from)
     }
 }
 

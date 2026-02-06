@@ -1,0 +1,448 @@
+    Checking jlo v8.1.5 (/app)
+error[E0631]: type mismatch in function arguments
+  --> src/app/commands/run/mock/observer.rs:70:50
+   |
+70 |     std::fs::create_dir_all(&events_dir).map_err(AppError::Io)?;
+   |                                          ------- ^^^^^^^^^^^^ expected due to this
+   |                                          |
+   |                                          required by a bound introduced by this call
+   |
+  ::: src/domain/error.rs:10:5
+   |
+10 |     Io(String),
+   |     -- found signature defined here
+   |
+   = note: expected function signature `fn(std::io::Error) -> _`
+              found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+  --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+   |
+70 |     std::fs::create_dir_all(&events_dir).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?;
+   |                                                  ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/app/commands/workflow/cleanup/mock.rs:163:48
+    |
+163 |             std::fs::remove_file(file).map_err(AppError::Io)?;
+    |                                        ------- ^^^^^^^^^^^^ expected due to this
+    |                                        |
+    |                                        required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+163 |             std::fs::remove_file(file).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?;
+    |                                                ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/app/commands/workflow/cleanup/mock.rs:185:57
+    |
+185 |         let metadata = std::fs::metadata(&path).map_err(AppError::Io)?;
+    |                                                 ------- ^^^^^^^^^^^^ expected due to this
+    |                                                 |
+    |                                                 required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+185 |         let metadata = std::fs::metadata(&path).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?;
+    |                                                         ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/app/commands/workflow/cleanup/mock.rs:187:60
+    |
+187 |             let entries = std::fs::read_dir(&path).map_err(AppError::Io)?;
+    |                                                    ------- ^^^^^^^^^^^^ expected due to this
+    |                                                    |
+    |                                                    required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+187 |             let entries = std::fs::read_dir(&path).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?;
+    |                                                            ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/app/commands/workflow/cleanup/mock.rs:189:42
+    |
+189 |                 stack.push(entry.map_err(AppError::Io)?.path());
+    |                                  ------- ^^^^^^^^^^^^ expected due to this
+    |                                  |
+    |                                  required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+189 |                 stack.push(entry.map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?.path());
+    |                                          ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0308]: mismatched types
+   --> src/app/commands/workflow/cleanup/mock.rs:213:40
+    |
+213 |         Err(error) => Err(AppError::Io(error)),
+    |                           ------------ ^^^^^ expected `String`, found `Error`
+    |                           |
+    |                           arguments to this enum variant are incorrect
+    |
+note: tuple variant defined here
+   --> src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     ^^
+help: try using a conversion method
+    |
+213 |         Err(error) => Err(AppError::Io(error.to_string())),
+    |                                             ++++++++++++
+
+error[E0308]: mismatched types
+   --> src/services/adapters/memory_workspace_store.rs:142:38
+    |
+142 |               None => Err(AppError::Io(std::io::Error::new(
+    |  _________________________------------_^
+    | |                         |
+    | |                         arguments to this enum variant are incorrect
+143 | |                 std::io::ErrorKind::NotFound,
+144 | |                 format!("File not found: {}", path.display()),
+145 | |             ))),
+    | |_____________^ expected `String`, found `Error`
+    |
+note: tuple variant defined here
+   --> src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     ^^
+help: try using a conversion method
+    |
+145 |             ).to_string())),
+    |              ++++++++++++
+
+error[E0308]: mismatched types
+   --> src/services/adapters/memory_workspace_store.rs:213:30
+    |
+213 |             Err(AppError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "src not found")))
+    |                 ------------ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `String`, found `Error`
+    |                 |
+    |                 arguments to this enum variant are incorrect
+    |
+note: tuple variant defined here
+   --> src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     ^^
+help: try using a conversion method
+    |
+213 |             Err(AppError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "src not found").to_string()))
+    |                                                                                                ++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:233:47
+    |
+233 |         fs::read_to_string(full_path).map_err(AppError::Io)
+    |                                       ------- ^^^^^^^^^^^^ expected due to this
+    |                                       |
+    |                                       required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+233 |         fs::read_to_string(full_path).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))
+    |                                               ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:239:48
+    |
+239 |             fs::create_dir_all(parent).map_err(AppError::Io)?;
+    |                                        ------- ^^^^^^^^^^^^ expected due to this
+    |                                        |
+    |                                        required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+239 |             fs::create_dir_all(parent).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?;
+    |                                                ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:241:47
+    |
+241 |         fs::write(full_path, content).map_err(AppError::Io)
+    |                                       ------- ^^^^^^^^^^^^ expected due to this
+    |                                       |
+    |                                       required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+241 |         fs::write(full_path, content).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))
+    |                                               ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:247:48
+    |
+247 |             fs::remove_file(full_path).map_err(AppError::Io)?;
+    |                                        ------- ^^^^^^^^^^^^ expected due to this
+    |                                        |
+    |                                        required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+247 |             fs::remove_file(full_path).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?;
+    |                                                ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:254:55
+    |
+254 |         let entries = fs::read_dir(full_path).map_err(AppError::Io)?;
+    |                                               ------- ^^^^^^^^^^^^ expected due to this
+    |                                               |
+    |                                               required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+254 |         let entries = fs::read_dir(full_path).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?;
+    |                                                       ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:257:39
+    |
+257 |             let entry = entry.map_err(AppError::Io)?;
+    |                               ------- ^^^^^^^^^^^^ expected due to this
+    |                               |
+    |                               required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+257 |             let entry = entry.map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?;
+    |                                       ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:270:62
+    |
+270 |             let mut perms = fs::metadata(&full_path).map_err(AppError::Io)?.permissions();
+    |                                                      ------- ^^^^^^^^^^^^ expected due to this
+    |                                                      |
+    |                                                      required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+270 |             let mut perms = fs::metadata(&full_path).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?.permissions();
+    |                                                              ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:272:60
+    |
+272 |             fs::set_permissions(&full_path, perms).map_err(AppError::Io)?;
+    |                                                    ------- ^^^^^^^^^^^^ expected due to this
+    |                                                    |
+    |                                                    required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+272 |             fs::set_permissions(&full_path, perms).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?;
+    |                                                            ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:287:47
+    |
+287 |         fs::create_dir_all(full_path).map_err(AppError::Io)
+    |                                       ------- ^^^^^^^^^^^^ expected due to this
+    |                                       |
+    |                                       required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+287 |         fs::create_dir_all(full_path).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))
+    |                                               ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:294:48
+    |
+294 |             fs::create_dir_all(parent).map_err(AppError::Io)?;
+    |                                        ------- ^^^^^^^^^^^^ expected due to this
+    |                                        |
+    |                                        required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+294 |             fs::create_dir_all(parent).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))?;
+    |                                                ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:296:46
+    |
+296 |         fs::copy(src_path, dst_path).map_err(AppError::Io)
+    |                                      ------- ^^^^^^^^^^^^ expected due to this
+    |                                      |
+    |                                      required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+296 |         fs::copy(src_path, dst_path).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))
+    |                                              ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0631]: type mismatch in function arguments
+   --> src/services/adapters/workspace_filesystem.rs:313:37
+    |
+313 |         fs::canonicalize(p).map_err(AppError::Io)
+    |                             ------- ^^^^^^^^^^^^ expected due to this
+    |                             |
+    |                             required by a bound introduced by this call
+    |
+   ::: src/domain/error.rs:10:5
+    |
+ 10 |     Io(String),
+    |     -- found signature defined here
+    |
+    = note: expected function signature `fn(std::io::Error) -> _`
+               found function signature `fn(std::string::String) -> _`
+note: required by a bound in `Result::<T, E>::map_err`
+   --> /rustc/1159e78c4747b02ef996e55082b704c09b970588/library/core/src/result.rs:911:5
+help: consider wrapping the function in a closure
+    |
+313 |         fs::canonicalize(p).map_err(|arg0: std::io::Error| AppError::Io(/* std::string::String */))
+    |                                     ++++++++++++++++++++++             +++++++++++++++++++++++++++
+
+error[E0599]: no method named `kind` found for reference `&std::string::String` in the current scope
+    --> src/services/adapters/workstream_schedule_filesystem.rs:13:51
+     |
+  13 |         if matches!(err, AppError::Io(ref e) if e.kind() == std::io::ErrorKind::NotFound) {
+     |                                                   ^^^^
+     |
+help: there is a method `find` with a similar name, but with different arguments
+    --> /home/jules/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/http-1.4.0/src/header/map.rs:3845:9
+     |
+3845 |         fn find<T>(&self, map: &HeaderMap<T>) -> Option<(usize, usize)>;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Some errors have detailed explanations: E0308, E0599, E0631.
+For more information about an error, try `rustc --explain E0308`.
+error: could not compile `jlo` (lib) due to 21 previous errors

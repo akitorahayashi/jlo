@@ -1,0 +1,2 @@
+    Checking jlo v8.1.5 (/app)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.08s

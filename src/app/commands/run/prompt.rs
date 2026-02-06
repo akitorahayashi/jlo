@@ -9,6 +9,7 @@ use crate::domain::{
     AppError, Layer, PromptAssetLoader, PromptContext, assemble_prompt as assemble_prompt_domain,
     assemble_with_issue,
 };
+use crate::services::adapters::template::MinijinjaTemplateRenderer;
 
 /// Assemble the full prompt for a role in a multi-role layer.
 ///
@@ -21,8 +22,9 @@ pub fn assemble_prompt(
     loader: &impl PromptAssetLoader,
 ) -> Result<String, AppError> {
     let context = PromptContext::new().with_var("workstream", workstream).with_var("role", role);
+    let renderer = MinijinjaTemplateRenderer::new();
 
-    Ok(assemble_prompt_domain(jules_path, layer, &context, loader)
+    Ok(assemble_prompt_domain(jules_path, layer, &context, loader, &renderer)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
 }
@@ -36,7 +38,8 @@ pub fn assemble_single_role_prompt(
     layer: Layer,
     loader: &impl PromptAssetLoader,
 ) -> Result<String, AppError> {
-    Ok(assemble_prompt_domain(jules_path, layer, &PromptContext::new(), loader)
+    let renderer = MinijinjaTemplateRenderer::new();
+    Ok(assemble_prompt_domain(jules_path, layer, &PromptContext::new(), loader, &renderer)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
 }
@@ -52,7 +55,8 @@ pub fn assemble_issue_prompt(
     issue_content: &str,
     loader: &impl PromptAssetLoader,
 ) -> Result<String, AppError> {
-    Ok(assemble_with_issue(jules_path, layer, issue_content, loader)
+    let renderer = MinijinjaTemplateRenderer::new();
+    Ok(assemble_with_issue(jules_path, layer, issue_content, loader, &renderer)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
 }

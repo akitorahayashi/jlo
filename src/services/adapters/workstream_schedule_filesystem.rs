@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::domain::{AppError, WorkstreamSchedule};
+use crate::domain::{AppError, WorkstreamSchedule, IoErrorKind};
 use crate::ports::WorkspaceStore;
 
 pub fn load_schedule(
@@ -10,7 +10,7 @@ pub fn load_schedule(
     let path = store.jules_path().join("workstreams").join(workstream).join("scheduled.toml");
 
     let content = store.read_file(path.to_str().unwrap()).map_err(|err| {
-        if matches!(err, AppError::Io(ref e) if e.kind() == std::io::ErrorKind::NotFound) {
+        if matches!(err, AppError::Io { kind: IoErrorKind::NotFound, .. }) {
             AppError::ScheduleConfigMissing(path.display().to_string())
         } else {
             err

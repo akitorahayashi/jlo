@@ -2,12 +2,30 @@ use std::io;
 
 use thiserror::Error;
 
+/// Domain-specific I/O error kind.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IoErrorKind {
+    NotFound,
+    PermissionDenied,
+    Other,
+}
+
+impl From<io::ErrorKind> for IoErrorKind {
+    fn from(k: io::ErrorKind) -> Self {
+        match k {
+            io::ErrorKind::NotFound => IoErrorKind::NotFound,
+            io::ErrorKind::PermissionDenied => IoErrorKind::PermissionDenied,
+            _ => IoErrorKind::Other,
+        }
+    }
+}
+
 /// Library-wide error type for jlo operations.
 #[derive(Debug, Error)]
 pub enum AppError {
     /// Underlying I/O failure.
-    #[error(transparent)]
-    Io(#[from] io::Error),
+    #[error("I/O error: {message}")]
+    Io { message: String, kind: IoErrorKind },
 
     /// Environment variable not set.
     #[error("Environment variable '{0}' not set")]
@@ -161,5 +179,20 @@ pub enum AppError {
 
     /// TOML parsing error.
     #[error("TOML parse error: {0}")]
-    TomlParseError(#[from] toml::de::Error),
+    TomlParseError(String),
+}
+
+impl From<io::Error> for AppError {
+    fn from(err: io::Error) -> Self {
+        AppError::Io {
+            message: err.to_string(),
+            kind: err.kind().into(),
+        }
+    }
+}
+
+impl From<toml::de::Error> for AppError {
+    fn from(err: toml::de::Error) -> Self {
+        AppError::TomlParseError(err.to_string())
+    }
 }

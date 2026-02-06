@@ -154,7 +154,7 @@ impl WorkspaceStore for MockWorkspaceStore {
 
     fn read_file(&self, path: &str) -> Result<String, AppError> {
         self.files.borrow().get(path).cloned().ok_or_else(|| {
-            AppError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "Mock file not found"))
+            AppError::from(std::io::Error::new(std::io::ErrorKind::NotFound, "Mock file not found"))
         })
     }
 

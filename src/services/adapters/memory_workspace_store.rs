@@ -139,7 +139,7 @@ impl WorkspaceStore for MemoryWorkspaceStore {
             Some(bytes) => {
                 String::from_utf8(bytes.clone()).map_err(|e| AppError::AssetError(e.to_string()))
             }
-            None => Err(AppError::Io(std::io::Error::new(
+            None => Err(AppError::from(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 format!("File not found: {}", path.display()),
             ))),
@@ -210,7 +210,7 @@ impl WorkspaceStore for MemoryWorkspaceStore {
             files.insert(PathBuf::from(dst), content);
             Ok(0)
         } else {
-            Err(AppError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "src not found")))
+            Err(AppError::from(std::io::Error::new(std::io::ErrorKind::NotFound, "src not found")))
         }
     }
 
