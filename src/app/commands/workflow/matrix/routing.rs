@@ -62,6 +62,8 @@ pub struct IssueMatrix {
 /// Single issue matrix entry.
 #[derive(Debug, Clone, Serialize)]
 pub struct IssueMatrixEntry {
+    /// Workstream name.
+    pub workstream: String,
     /// Issue file path (relative to repo root).
     pub issue: String,
 }
@@ -119,9 +121,15 @@ pub fn execute(options: MatrixRoutingOptions) -> Result<MatrixRoutingOutput, App
                 let rel_path = to_repo_relative(root, &file_path);
 
                 if requires_deep {
-                    planner_issues.push(IssueMatrixEntry { issue: rel_path });
+                    planner_issues.push(IssueMatrixEntry {
+                        workstream: ws_entry.workstream.clone(),
+                        issue: rel_path,
+                    });
                 } else {
-                    implementer_issues.push(IssueMatrixEntry { issue: rel_path });
+                    implementer_issues.push(IssueMatrixEntry {
+                        workstream: ws_entry.workstream.clone(),
+                        issue: rel_path,
+                    });
                 }
             }
         }
@@ -224,13 +232,19 @@ mod tests {
         // Check planner issues (should be sorted)
         let planner_paths: Vec<&str> =
             output.planner_matrix.include.iter().map(|e| e.issue.as_str()).collect();
+        let planner_workstreams: Vec<&str> =
+            output.planner_matrix.include.iter().map(|e| e.workstream.as_str()).collect();
         assert!(planner_paths[0].contains("bugs/abc123.yml"));
         assert!(planner_paths[1].contains("feats/ghi789.yml"));
+        assert_eq!(planner_workstreams, vec!["alpha", "alpha"]);
 
         // Check implementer issues
         let impl_paths: Vec<&str> =
             output.implementer_matrix.include.iter().map(|e| e.issue.as_str()).collect();
+        let impl_workstreams: Vec<&str> =
+            output.implementer_matrix.include.iter().map(|e| e.workstream.as_str()).collect();
         assert!(impl_paths[0].contains("bugs/def456.yml"));
+        assert_eq!(impl_workstreams, vec!["alpha"]);
 
         // docs label not in routing_labels, so jkl012 should not appear
         assert!(
