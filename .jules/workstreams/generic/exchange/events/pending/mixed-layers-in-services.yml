@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "srvmix"
+issue_id: ""
+created_at: "2026-02-06"
+author_role: "structural_arch"
+confidence: "high"
+
+# Content
+title: "src/services mixes unrelated architectural layers"
+statement: |
+  The `src/services` directory acts as a low-cohesion bucket, containing infrastructure adapters (`adapters`), application logic (`application`), and static assets (`assets`). This violates separation of concerns and makes the "services" concept ambiguous.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/services/mod.rs"
+    loc: "1-3"
+    note: "Imports adapters, application, and assets modules, demonstrating the mix of concerns."
+
+tags:
+  - "cohesion"
+  - "architecture"
+  - "structure"

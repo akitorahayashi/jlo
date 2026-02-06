@@ -3,11 +3,13 @@ schema_version: 2
 observer: "structural_arch"
 workstream: "generic"
 
-updated_at: "2026-02-06T05:25:46Z"
+updated_at: "2026-02-06T05:35:00Z"
 
 goals:
-  - "Clarify the distinction between Application, Domain, and Infrastructure layers."
-  - "Eliminate shared buckets like 'services' in favor of specific layer directories."
+  - "Refactor `src/services` to eliminate the shared bucket."
+  - "Move `src/services/application` contents to `src/app` or `src/core`."
+  - "Move `src/services/adapters` to `src/adapters` or `src/infrastructure`."
+  - "Decouple `src/app` from concrete adapters by introducing ports/interfaces."
 
 rules:
   - "Application logic must reside in `src/app`."
@@ -17,5 +19,7 @@ rules:
 ignore: []
 
 log:
+  - at: "2026-02-06T05:35:00Z"
+    summary: "Confirmed `src/services` structure and identified dependency inversion violations in `src/app`."
   - at: "2026-02-06T05:25:46Z"
     summary: "Identified `src/services` as a low-cohesion bucket mixing application, domain, and infrastructure."
