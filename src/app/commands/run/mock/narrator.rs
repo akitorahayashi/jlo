@@ -33,7 +33,11 @@ where
     let changes_file = changes_dir.join("latest.yml");
 
     // Use pre-defined mock template
-    let mock_change_template = include_str!("assets/narrator_change.yml");
+    let mock_change_template = super::MOCK_ASSETS
+        .get_file("narrator_change.yml")
+        .expect("Mock asset missing: narrator_change.yml")
+        .contents_utf8()
+        .expect("Invalid UTF-8 in narrator_change.yml");
     let mock_id = format!("mock{:04x}", (Utc::now().timestamp() % 0x10000) as u16);
     let now = Utc::now();
 

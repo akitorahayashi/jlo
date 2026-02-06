@@ -53,7 +53,11 @@ where
     let label_dir = issues_dir.join(&label);
     std::fs::create_dir_all(&label_dir)?;
 
-    let mock_issue_template = include_str!("assets/decider_issue.yml");
+    let mock_issue_template = super::MOCK_ASSETS
+        .get_file("decider_issue.yml")
+        .expect("Mock asset missing: decider_issue.yml")
+        .contents_utf8()
+        .expect("Invalid UTF-8 in decider_issue.yml");
 
     // Move any mock pending events to decided first
     let mut moved_src_files: Vec<PathBuf> = Vec::new();
