@@ -5,7 +5,7 @@ enabled = true
 roles = [
   { name = "taxonomy", enabled = false },
   { name = "data_arch", enabled = true },
-  { name = "qa", enabled = false },
+  { name = "qa", enabled = true },
   { name = "cov", enabled = false },
   { name = "devops", enabled = false },
   { name = "consistency", enabled = false },
