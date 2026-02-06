@@ -141,18 +141,15 @@ enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
-    /// Run observer agents
+    /// Run observer agent (single role)
     #[clap(visible_alias = "o")]
     Observers {
-        /// Specific roles to run (manual mode)
+        /// Role to run
         #[arg(short = 'r', long)]
-        role: Option<Vec<String>>,
+        role: String,
         /// Target workstream
         #[arg(short = 'w', long)]
-        workstream: Option<String>,
-        /// Run using scheduled.toml roles
-        #[arg(long)]
-        scheduled: bool,
+        workstream: String,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
         prompt_preview: bool,
@@ -163,18 +160,15 @@ enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
-    /// Run decider agents
+    /// Run decider agent (single role)
     #[clap(visible_alias = "d")]
     Deciders {
-        /// Specific roles to run (manual mode)
+        /// Role to run
         #[arg(short = 'r', long)]
-        role: Option<Vec<String>>,
+        role: String,
         /// Target workstream
         #[arg(short = 'w', long)]
-        workstream: Option<String>,
-        /// Run using scheduled.toml roles
-        #[arg(long)]
-        scheduled: bool,
+        workstream: String,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
         prompt_preview: bool,
@@ -230,26 +224,17 @@ enum WorkflowCommands {
         #[command(subcommand)]
         command: WorkflowMatrixCommands,
     },
-    /// Run a layer sequentially and return wait-gating metadata
+    /// Run a workstream layer and return wait-gating metadata
     Run {
-        /// Target layer
-        #[arg(long)]
+        /// Target workstream (e.g., generic, alpha)
+        workstream: String,
+        /// Target layer (narrator, observers, deciders, planners, implementers)
         layer: String,
-        /// Matrix JSON input (from matrix commands)
-        #[arg(long)]
-        matrix_json: Option<String>,
-        /// Target branch for implementers
-        #[arg(long)]
-        target_branch: Option<String>,
         /// Run in mock mode (requires JULES_MOCK_TAG)
         #[arg(long)]
         mock: bool,
     },
-    /// Wait for PR readiness conditions
-    Wait {
-        #[command(subcommand)]
-        command: WorkflowWaitCommands,
-    },
+
     /// Cleanup operations
     Cleanup {
         #[command(subcommand)]
@@ -259,34 +244,6 @@ enum WorkflowCommands {
     Pr {
         #[command(subcommand)]
         command: WorkflowPrCommands,
-    },
-}
-
-#[derive(Subcommand)]
-enum WorkflowWaitCommands {
-    /// Wait for PRs to be ready (time-based wait)
-    Prs {
-        /// Target layer (used to resolve branch_prefix)
-        #[arg(long)]
-        layer: String,
-        /// Base branch for PR discovery
-        #[arg(long)]
-        base_branch: String,
-        /// Run started timestamp (RFC3339 UTC)
-        #[arg(long)]
-        run_started_at: String,
-        /// Maximum wait time in minutes
-        #[arg(long)]
-        wait_minutes: u32,
-        /// Wait mode: merge or label
-        #[arg(long)]
-        mode: String,
-        /// Mock mode (overrides timeout to 30 seconds)
-        #[arg(long)]
-        mock: bool,
-        /// Mock PR numbers JSON array (bypasses PR discovery)
-        #[arg(long)]
-        mock_pr_numbers_json: Option<String>,
     },
 }
 
@@ -332,15 +289,7 @@ enum WorkflowPrCommands {
 enum WorkflowMatrixCommands {
     /// Export enabled workstreams as a GitHub Actions matrix
     Workstreams,
-    /// Export enabled roles for a multi-role layer as a GitHub Actions matrix
-    Roles {
-        /// Target layer (observers or deciders)
-        #[arg(long)]
-        layer: String,
-        /// Workstreams JSON from `matrix workstreams` output (the `matrix` field)
-        #[arg(long)]
-        workstreams_json: String,
-    },
+
     /// Export workstreams with pending events as a GitHub Actions matrix
     PendingWorkstreams {
         /// Workstreams JSON from `matrix workstreams` output (the `matrix` field)
@@ -497,35 +446,26 @@ fn run_update(prompt_preview: bool, adopt_managed: bool) -> Result<(), AppError>
 fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     use crate::domain::Layer;
 
-    let (target_layer, roles, workstream, scheduled, prompt_preview, branch, issue, mock) =
-        match layer {
-            RunLayer::Narrator { prompt_preview, branch, mock } => {
-                (Layer::Narrators, None, None, false, prompt_preview, branch, None, mock)
-            }
-            RunLayer::Observers { role, prompt_preview, branch, workstream, scheduled, mock } => {
-                (Layer::Observers, role, workstream, scheduled, prompt_preview, branch, None, mock)
-            }
-            RunLayer::Deciders { role, prompt_preview, branch, workstream, scheduled, mock } => {
-                (Layer::Deciders, role, workstream, scheduled, prompt_preview, branch, None, mock)
-            }
-            RunLayer::Planners { prompt_preview, branch, issue, mock } => {
-                (Layer::Planners, None, None, false, prompt_preview, branch, Some(issue), mock)
-            }
-            RunLayer::Implementers { prompt_preview, branch, issue, mock } => {
-                (Layer::Implementers, None, None, false, prompt_preview, branch, Some(issue), mock)
-            }
-        };
+    let (target_layer, role, workstream, prompt_preview, branch, issue, mock) = match layer {
+        RunLayer::Narrator { prompt_preview, branch, mock } => {
+            (Layer::Narrators, None, None, prompt_preview, branch, None, mock)
+        }
+        RunLayer::Observers { role, prompt_preview, branch, workstream, mock } => {
+            (Layer::Observers, Some(role), Some(workstream), prompt_preview, branch, None, mock)
+        }
+        RunLayer::Deciders { role, prompt_preview, branch, workstream, mock } => {
+            (Layer::Deciders, Some(role), Some(workstream), prompt_preview, branch, None, mock)
+        }
+        RunLayer::Planners { prompt_preview, branch, issue, mock } => {
+            (Layer::Planners, None, None, prompt_preview, branch, Some(issue), mock)
+        }
+        RunLayer::Implementers { prompt_preview, branch, issue, mock } => {
+            (Layer::Implementers, None, None, prompt_preview, branch, Some(issue), mock)
+        }
+    };
 
-    let result = crate::app::api::run(
-        target_layer,
-        roles,
-        workstream,
-        scheduled,
-        prompt_preview,
-        branch,
-        issue,
-        mock,
-    )?;
+    let result =
+        crate::app::api::run(target_layer, role, workstream, prompt_preview, branch, issue, mock)?;
 
     if !result.prompt_preview && !result.roles.is_empty() && !result.sessions.is_empty() {
         println!("✅ Created {} Jules session(s)", result.sessions.len());
@@ -669,62 +609,14 @@ fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             workflow::write_workflow_output(&output)
         }
         WorkflowCommands::Matrix { command } => run_workflow_matrix(command),
-        WorkflowCommands::Run { layer, matrix_json, target_branch, mock } => {
+        WorkflowCommands::Run { workstream, layer, mock } => {
             let layer = parse_layer(&layer)?;
-            let matrix_json = match matrix_json {
-                Some(json_str) => {
-                    let parsed: serde_json::Value = serde_json::from_str(&json_str)
-                        .map_err(|e| AppError::Validation(format!("Invalid matrix-json: {}", e)))?;
-                    Some(parsed)
-                }
-                None => None,
-            };
-            let options = workflow::WorkflowRunOptions { layer, matrix_json, target_branch, mock };
+            let options = workflow::WorkflowRunOptions { workstream, layer, mock };
             let output = workflow::run(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowCommands::Wait { command } => run_workflow_wait(command),
         WorkflowCommands::Cleanup { command } => run_workflow_cleanup(command),
         WorkflowCommands::Pr { command } => run_workflow_pr(command),
-    }
-}
-
-fn run_workflow_wait(command: WorkflowWaitCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    match command {
-        WorkflowWaitCommands::Prs {
-            layer,
-            base_branch,
-            run_started_at,
-            wait_minutes,
-            mode,
-            mock,
-            mock_pr_numbers_json,
-        } => {
-            let layer = parse_layer(&layer)?;
-            let mode = workflow::WaitMode::from_str(&mode)?;
-            let mock_pr_numbers_json = match mock_pr_numbers_json {
-                Some(json_str) => {
-                    let parsed: Vec<u64> = serde_json::from_str(&json_str).map_err(|e| {
-                        AppError::Validation(format!("Invalid mock-pr-numbers-json: {}", e))
-                    })?;
-                    Some(parsed)
-                }
-                None => None,
-            };
-            let options = workflow::WorkflowWaitPrsOptions {
-                layer,
-                base_branch,
-                run_started_at,
-                wait_minutes,
-                mode,
-                mock,
-                mock_pr_numbers_json,
-            };
-            let output = workflow::wait_prs(options)?;
-            workflow::write_workflow_output(&output)
-        }
     }
 }
 
@@ -786,16 +678,7 @@ fn run_workflow_matrix(command: WorkflowMatrixCommands) -> Result<(), AppError> 
             let output = matrix::workstreams(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowMatrixCommands::Roles { layer, workstreams_json } => {
-            let layer = parse_layer(&layer)?;
-            let workstreams_json: matrix::RolesWorkstreamsInput =
-                serde_json::from_str(&workstreams_json).map_err(|e| {
-                    AppError::Validation(format!("Invalid workstreams-json: {}", e))
-                })?;
-            let options = matrix::MatrixRolesOptions { layer, workstreams_json };
-            let output = matrix::roles(options)?;
-            workflow::write_workflow_output(&output)
-        }
+
         WorkflowMatrixCommands::PendingWorkstreams { workstreams_json, mock } => {
             let workstreams_json: matrix::PendingWorkstreamsInput =
                 serde_json::from_str(&workstreams_json).map_err(|e| {

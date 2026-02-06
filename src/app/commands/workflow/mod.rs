@@ -9,7 +9,6 @@ pub mod matrix;
 mod output;
 mod pr_label;
 mod run;
-mod wait;
 
 pub use cleanup::{
     WorkflowCleanupMockOptions, WorkflowCleanupMockOutput, WorkflowCleanupProcessedIssueOptions,
@@ -19,7 +18,6 @@ pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
 pub use output::write_workflow_output;
 pub use pr_label::{WorkflowPrLabelOptions, WorkflowPrLabelOutput};
 pub use run::{WorkflowRunOptions, WorkflowRunOutput};
-pub use wait::{WaitMode, WorkflowWaitPrsOptions, WorkflowWaitPrsOutput};
 
 use crate::domain::AppError;
 
@@ -31,11 +29,6 @@ pub fn doctor(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, Ap
 /// Execute workflow run command.
 pub fn run(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
     run::execute(options)
-}
-
-/// Execute workflow wait prs command.
-pub fn wait_prs(options: WorkflowWaitPrsOptions) -> Result<WorkflowWaitPrsOutput, AppError> {
-    wait::execute(options)
 }
 
 /// Execute workflow cleanup mock command.

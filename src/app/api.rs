@@ -120,19 +120,17 @@ pub fn template_at(
 ///
 /// # Arguments
 /// * `layer` - Target layer (observers, deciders, planners, implementers)
-/// * `roles` - Specific roles to run (manual mode)
+/// * `role` - Specific role to run (required for observers/deciders)
 /// * `workstream` - Target workstream (required for observers/deciders)
-/// * `scheduled` - Use scheduled.toml roles (observers/deciders only)
 /// * `prompt_preview` - Show prompts without executing
 /// * `branch` - Override the starting branch
-/// * `issue` - Local issue file path (required for implementers)
+/// * `issue` - Local issue file path (required for planners/implementers)
 /// * `mock` - Run in mock mode (no Jules API, tag from JULES_MOCK_TAG env)
 #[allow(clippy::too_many_arguments)]
 pub fn run(
     layer: Layer,
-    roles: Option<Vec<String>>,
+    role: Option<String>,
     workstream: Option<String>,
-    scheduled: bool,
     prompt_preview: bool,
     branch: Option<String>,
     issue: Option<std::path::PathBuf>,
@@ -145,8 +143,7 @@ pub fn run(
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
 
-    let options =
-        RunOptions { layer, roles, workstream, scheduled, prompt_preview, branch, issue, mock };
+    let options = RunOptions { layer, role, workstream, prompt_preview, branch, issue, mock };
     run::execute(&workspace.jules_path(), options, &git, &github, &workspace)
 }
 

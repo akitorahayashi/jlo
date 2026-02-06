@@ -110,7 +110,7 @@ jobs:
 
       - name: Run narrator
         id: run
-        run: jlo workflow run --layer narrator {{ gha_raw("env.JLO_RUN_FLAGS") }}
+        run: jlo workflow run narrator {{ gha_raw("env.JLO_RUN_FLAGS") }}
 
       - name: Validate workspace (fail-fast)
         run: jlo doctor
@@ -140,26 +140,17 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Wait for narrator PRs
-        id: wait
-        env:
-          RUN_OUTPUT: {{ gha_expr("needs.run-narrator.outputs.json") }}
+      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
         run: |
-          run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
-          mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
-          mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
-          args=(
-            workflow wait prs
-            --layer narrator
-            --base-branch jules
-            --run-started-at "$run_started_at"
-            --wait-minutes "$WAIT_MINUTES"
-            --mode merge
-          )
-          if [ "$mock" = "true" ]; then
-            args+=(--mock --mock-pr-numbers-json "$mock_prs")
-          fi
-          jlo "${args[@]}"
+          echo "Waiting $WAIT_MINUTES minutes for Jules to process narrator..."
+          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
+          ELAPSED=0
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            sleep 30
+            ELAPSED=$((ELAPSED + 30))
+            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+          done
+          echo "Wait complete."
 
   # ============================================================
   # Phase 3: Generate workstream matrix
@@ -201,48 +192,14 @@ jobs:
         run: jlo workflow matrix workstreams
 
   # ============================================================
-  # Phase 4: Generate observer matrix (role-level)
-  # ============================================================
-  generate-observer-matrix:
-    needs: generate-workstream-matrix
-    if: >-
-      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
-      (
-        github.event_name == 'schedule' ||
-        (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') != 'deciders') ||
-        (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') != 'deciders')
-      )
-    runs-on: {{ runner }}
-    timeout-minutes: 10
-    outputs:
-      json: {{ gha_expr("steps.matrix.outputs.json") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Generate observer matrix
-        id: matrix
-        env:
-          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
-        run: |
-          WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
-          jlo workflow matrix roles --layer observers --workstreams-json "$WORKSTREAMS_JSON"
-
-  # ============================================================
-  # Phase 5: Run observers
+  # Phase 4: Run observers
   # ============================================================
   run-observers:
-    needs: [generate-workstream-matrix, generate-observer-matrix]
+    needs: generate-workstream-matrix
     if: |
       always() &&
-      needs.generate-observer-matrix.result == 'success' &&
-      fromJSON(needs.generate-observer-matrix.outputs.json).has_roles == true
+      needs.generate-workstream-matrix.result == 'success' &&
+      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:
@@ -263,19 +220,21 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run observers sequentially
+      - name: Run observers for each workstream
         id: run
         env:
-          MATRIX_OUTPUT: {{ gha_expr("needs.generate-observer-matrix.outputs.json") }}
+          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
         run: |
-          MATRIX_JSON=$(echo "$MATRIX_OUTPUT" | jq -c '.matrix')
-          jlo workflow run --layer observers --matrix-json "$MATRIX_JSON" {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
+            echo "Running observers for workstream: $ws"
+            jlo workflow run "$ws" observers {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          done
 
   # ============================================================
-  # Phase 6: Wait for observer processing
+  # Phase 5: Wait for observer processing
   # ============================================================
   wait-after-observers:
-    needs: [generate-observer-matrix, run-observers]
+    needs: [generate-workstream-matrix, run-observers]
     if: |
       always() &&
       needs.run-observers.result == 'success'
@@ -296,36 +255,26 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Wait for observer PRs
-        id: wait
-        env:
-          RUN_OUTPUT: {{ gha_expr("needs.run-observers.outputs.json") }}
+      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
         run: |
-          run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
-          mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
-          mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
-          args=(
-            workflow wait prs
-            --layer observers
-            --base-branch jules
-            --run-started-at "$run_started_at"
-            --wait-minutes "$WAIT_MINUTES"
-            --mode merge
-          )
-          if [ "$mock" = "true" ]; then
-            args+=(--mock --mock-pr-numbers-json "$mock_prs")
-          fi
-          jlo "${args[@]}"
+          echo "Waiting $WAIT_MINUTES minutes for Jules to process observers..."
+          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
+          ELAPSED=0
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            sleep 30
+            ELAPSED=$((ELAPSED + 30))
+            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+          done
+          echo "Wait complete."
 
   # ============================================================
-  # Phase 7: Generate decider matrix (pending events check)
+  # Phase 6: Generate decider matrix (pending events check)
   # ============================================================
   generate-decider-matrix:
-    needs: [generate-workstream-matrix, generate-observer-matrix, wait-after-observers]
+    needs: [generate-workstream-matrix, wait-after-observers]
     if: |
       always() &&
       fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
-      (needs.generate-observer-matrix.result == 'success' || needs.generate-observer-matrix.result == 'skipped') &&
       (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
     runs-on: {{ runner }}
     timeout-minutes: 10
@@ -377,13 +326,15 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run deciders sequentially
+      - name: Run deciders for each pending workstream
         id: run
         env:
           MATRIX_OUTPUT: {{ gha_expr("needs.generate-decider-matrix.outputs.json") }}
         run: |
-          MATRIX_JSON=$(echo "$MATRIX_OUTPUT" | jq -c '.matrix')
-          jlo workflow run --layer deciders --matrix-json "$MATRIX_JSON" {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          echo "$MATRIX_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
+            echo "Running deciders for workstream: $ws"
+            jlo workflow run "$ws" deciders {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          done
 
   # ============================================================
   # Phase 9: Wait for decider processing
@@ -410,26 +361,17 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Wait for decider PRs
-        id: wait
-        env:
-          RUN_OUTPUT: {{ gha_expr("needs.run-deciders.outputs.json") }}
+      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
         run: |
-          run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
-          mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
-          mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
-          args=(
-            workflow wait prs
-            --layer deciders
-            --base-branch jules
-            --run-started-at "$run_started_at"
-            --wait-minutes "$WAIT_MINUTES"
-            --mode merge
-          )
-          if [ "$mock" = "true" ]; then
-            args+=(--mock --mock-pr-numbers-json "$mock_prs")
-          fi
-          jlo "${args[@]}"
+          echo "Waiting $WAIT_MINUTES minutes for Jules to process deciders..."
+          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
+          ELAPSED=0
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            sleep 30
+            ELAPSED=$((ELAPSED + 30))
+            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+          done
+          echo "Wait complete."
 
   # ============================================================
   # Phase 10: Generate routing matrices (new issues)
@@ -492,11 +434,16 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run planners sequentially
+      - name: Run planners for each workstream
         id: run
         env:
-          MATRIX_JSON: {{ gha_expr("toJSON(fromJSON(needs.generate-planner-matrix.outputs.json).planner_matrix)") }}
-        run: jlo workflow run --layer planners --matrix-json "$MATRIX_JSON" {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          MATRIX_OUTPUT: {{ gha_expr("needs.generate-planner-matrix.outputs.json") }}
+        run: |
+          echo "$MATRIX_OUTPUT" | jq -r '.planner_matrix.include[].workstream // empty' | sort -u | while read ws; do
+            [ -z "$ws" ] && continue
+            echo "Running planners for workstream: $ws"
+            jlo workflow run "$ws" planners {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          done
 
   # ============================================================
   # Phase 12: Wait for planner PRs
@@ -523,26 +470,17 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Wait for planner PRs
-        id: wait
-        env:
-          RUN_OUTPUT: {{ gha_expr("needs.run-planners.outputs.json") }}
+      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
         run: |
-          run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
-          mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
-          mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
-          args=(
-            workflow wait prs
-            --layer planners
-            --base-branch jules
-            --run-started-at "$run_started_at"
-            --wait-minutes "$WAIT_MINUTES"
-            --mode merge
-          )
-          if [ "$mock" = "true" ]; then
-            args+=(--mock --mock-pr-numbers-json "$mock_prs")
-          fi
-          jlo "${args[@]}"
+          echo "Waiting $WAIT_MINUTES minutes for Jules to process planners..."
+          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
+          ELAPSED=0
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            sleep 30
+            ELAPSED=$((ELAPSED + 30))
+            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+          done
+          echo "Wait complete."
 
   # ============================================================
   # Phase 13: Run implementers
@@ -574,11 +512,16 @@ jobs:
       - name: Configure Git
         uses: ./.github/actions/configure-git
 
-      - name: Run implementers sequentially
+      - name: Run implementers for each workstream
         id: run
         env:
-          MATRIX_JSON: {{ gha_expr("toJSON(fromJSON(needs.generate-planner-matrix.outputs.json).implementer_matrix)") }}
-        run: jlo workflow run --layer implementers --matrix-json "$MATRIX_JSON" --target-branch "$TARGET_BRANCH" {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          MATRIX_OUTPUT: {{ gha_expr("needs.generate-planner-matrix.outputs.json") }}
+        run: |
+          echo "$MATRIX_OUTPUT" | jq -r '.implementer_matrix.include[].workstream // empty' | sort -u | while read ws; do
+            [ -z "$ws" ] && continue
+            echo "Running implementers for workstream: $ws"
+            jlo workflow run "$ws" implementers {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          done
 
   # ============================================================
   # Phase 14: Wait for implementer labels
@@ -606,26 +549,17 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Wait for implementer labels
-        id: wait
-        env:
-          RUN_OUTPUT: {{ gha_expr("needs.run-implementers.outputs.json") }}
+      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
         run: |
-          run_started_at=$(echo "$RUN_OUTPUT" | jq -r '.run_started_at')
-          mock=$(echo "$RUN_OUTPUT" | jq -r '.mock // false')
-          mock_prs=$(echo "$RUN_OUTPUT" | jq -c '.mock_pr_numbers // []')
-          args=(
-            workflow wait prs
-            --layer implementers
-            --base-branch '{{ gha_raw("env.TARGET_BRANCH") }}'
-            --run-started-at "$run_started_at"
-            --wait-minutes "$WAIT_MINUTES"
-            --mode label
-          )
-          if [ "$mock" = "true" ]; then
-            args+=(--mock --mock-pr-numbers-json "$mock_prs")
-          fi
-          jlo "${args[@]}"
+          echo "Waiting $WAIT_MINUTES minutes for Jules to process implementers..."
+          TOTAL_SECONDS=$((WAIT_MINUTES * 60))
+          ELAPSED=0
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            sleep 30
+            ELAPSED=$((ELAPSED + 30))
+            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+          done
+          echo "Wait complete."
 
   # ============================================================
   # Phase 15: Cleanup mock artifacts
