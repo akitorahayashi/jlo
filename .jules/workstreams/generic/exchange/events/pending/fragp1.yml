@@ -1,0 +1,27 @@
+schema_version: 1
+
+# Metadata
+id: "fragp1"
+issue_id: ""
+created_at: "2026-02-06"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Fragile Untyped Data Parsing"
+statement: |
+  Critical workflow commands rely on untyped `serde_yaml::Value` parsing to extract fields from YAML files, instead of using strongly-typed structs that enforce invariants. This leads to fragile property access and potential runtime errors.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/workflow/matrix/routing.rs"
+    loc: "read_requires_deep_analysis"
+    note: "Parses entire file as Value to check one boolean field."
+  - path: "src/app/commands/workflow/run.rs"
+    loc: "execute"
+    note: "Parses file as Value to check boolean field, duplicating logic from routing.rs."
+
+tags:
+  - "data-quality"
+  - "fragility"
+  - "type-safety"
