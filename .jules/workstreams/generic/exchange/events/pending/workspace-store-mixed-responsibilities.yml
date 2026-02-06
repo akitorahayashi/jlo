@@ -1,0 +1,31 @@
+schema_version: 1
+
+# Metadata
+id: "wsstor"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-06"
+author_role: "structural_arch"
+confidence: "high"
+
+# Content
+title: "WorkspaceStore Trait Mixes Domain and I/O Responsibilities"
+statement: |
+  The `WorkspaceStore` trait violates the Single Responsibility Principle by mixing low-level filesystem operations (read/write file) with high-level domain logic (directory structure knowledge, role discovery, fuzzy search). This forces all implementations, including mocks, to duplicate domain logic, increasing coupling and fragility.
+
+# Evidence supporting the observation
+# For multi-file events, add multiple list items.
+evidence:
+  - path: "src/ports/workspace_store.rs"
+    loc:
+      - "trait WorkspaceStore"
+    note: "Trait defines both `read_file` (I/O) and `discover_roles`, `find_role_fuzzy` (Domain Logic)."
+
+  - path: "src/services/adapters/memory_workspace_store.rs"
+    loc:
+      - "fn role_exists_in_layer"
+    note: "Mock implementation is forced to replicate domain directory structure logic (roles/{layer}/roles/{role}/role.yml) to satisfy the trait."
+
+tags:
+  - "coupling"
+  - "arch-violation"
+  - "srp"
