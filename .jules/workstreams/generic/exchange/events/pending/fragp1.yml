@@ -15,10 +15,12 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "src/app/commands/workflow/matrix/routing.rs"
-    loc: "read_requires_deep_analysis"
+    loc:
+      - "read_requires_deep_analysis"
     note: "Parses entire file as Value to check one boolean field."
   - path: "src/app/commands/workflow/run.rs"
-    loc: "execute"
+    loc:
+      - "execute"
     note: "Parses file as Value to check boolean field, duplicating logic from routing.rs."
 
 tags:

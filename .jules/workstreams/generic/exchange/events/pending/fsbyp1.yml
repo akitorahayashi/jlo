@@ -15,10 +15,12 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "src/app/commands/setup/generate.rs"
-    loc: "multiple"
+    loc:
+      - "multiple"
     note: "Uses std::fs for reading/writing setup files instead of using an abstraction."
   - path: "src/app/commands/workflow/matrix/routing.rs"
-    loc: "multiple"
+    loc:
+      - "multiple"
     note: "Uses std::fs for reading directory entries directly."
 
 tags:

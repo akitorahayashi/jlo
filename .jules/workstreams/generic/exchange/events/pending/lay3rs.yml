@@ -15,7 +15,8 @@ statement: |
 # Evidence supporting the observation
 evidence:
   - path: "src/services/mod.rs"
-    loc: "1-4"
+    loc:
+      - "1-4"
     note: "Exports adapters, application, and assets as siblings."
 
 tags:
