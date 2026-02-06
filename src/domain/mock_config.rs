@@ -53,29 +53,6 @@ pub struct MockOutput {
     pub mock_tag: String,
 }
 
-impl MockOutput {
-    /// Write outputs to GITHUB_OUTPUT file if set.
-    pub fn write_github_output(&self) -> std::io::Result<()> {
-        if let Ok(output_file) = std::env::var("GITHUB_OUTPUT") {
-            use std::io::Write;
-            let mut file = std::fs::OpenOptions::new().append(true).open(&output_file)?;
-            writeln!(file, "mock_branch={}", self.mock_branch)?;
-            writeln!(file, "mock_pr_number={}", self.mock_pr_number)?;
-            writeln!(file, "mock_pr_url={}", self.mock_pr_url)?;
-            writeln!(file, "mock_tag={}", self.mock_tag)?;
-        }
-        Ok(())
-    }
-
-    /// Print outputs in grep-friendly format for local use.
-    pub fn print_local(&self) {
-        println!("MOCK_BRANCH={}", self.mock_branch);
-        println!("MOCK_PR_NUMBER={}", self.mock_pr_number);
-        println!("MOCK_PR_URL={}", self.mock_pr_url);
-        println!("MOCK_TAG={}", self.mock_tag);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

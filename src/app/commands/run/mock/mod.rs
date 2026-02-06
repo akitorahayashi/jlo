@@ -16,7 +16,7 @@ use std::path::Path;
 
 use crate::app::commands::run::RunOptions;
 use crate::app::commands::run::RunResult;
-use crate::domain::{AppError, Layer};
+use crate::domain::{AppError, Layer, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 use self::config::{load_mock_config, validate_mock_prerequisites};
@@ -64,11 +64,11 @@ where
 
     // Write outputs
     if std::env::var("GITHUB_OUTPUT").is_ok() {
-        output.write_github_output().map_err(|e| {
+        write_github_output(&output).map_err(|e| {
             AppError::InternalError(format!("Failed to write GITHUB_OUTPUT: {}", e))
         })?;
     } else {
-        output.print_local();
+        print_local(&output);
     }
 
     Ok(RunResult {
@@ -76,4 +76,25 @@ where
         prompt_preview: false,
         sessions: vec![], // No Jules sessions in mock mode
     })
+}
+
+/// Write outputs to GITHUB_OUTPUT file if set.
+fn write_github_output(output: &MockOutput) -> std::io::Result<()> {
+    if let Ok(output_file) = std::env::var("GITHUB_OUTPUT") {
+        use std::io::Write;
+        let mut file = std::fs::OpenOptions::new().append(true).open(&output_file)?;
+        writeln!(file, "mock_branch={}", output.mock_branch)?;
+        writeln!(file, "mock_pr_number={}", output.mock_pr_number)?;
+        writeln!(file, "mock_pr_url={}", output.mock_pr_url)?;
+        writeln!(file, "mock_tag={}", output.mock_tag)?;
+    }
+    Ok(())
+}
+
+/// Print outputs in grep-friendly format for local use.
+fn print_local(output: &MockOutput) {
+    println!("MOCK_BRANCH={}", output.mock_branch);
+    println!("MOCK_PR_NUMBER={}", output.mock_pr_number);
+    println!("MOCK_PR_URL={}", output.mock_pr_url);
+    println!("MOCK_TAG={}", output.mock_tag);
 }

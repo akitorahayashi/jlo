@@ -82,7 +82,7 @@ where
     };
 
     if prompt_preview {
-        execute_prompt_preview(jules_path, &starting_branch, &git_context)?;
+        execute_prompt_preview(jules_path, &starting_branch, &git_context, workspace)?;
         return Ok(RunResult {
             roles: vec!["narrator".to_string()],
             prompt_preview: true,
@@ -92,7 +92,7 @@ where
 
     // Create session with git context injected into prompt
     let source = detect_repository_source()?;
-    let prompt = build_narrator_prompt(jules_path, &git_context)?;
+    let prompt = build_narrator_prompt(jules_path, &git_context, workspace)?;
 
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
     let request = SessionRequest {
@@ -227,8 +227,12 @@ fn extract_to_commit(content: &str) -> Option<String> {
 }
 
 /// Build the full Narrator prompt with git context injected.
-fn build_narrator_prompt(jules_path: &Path, ctx: &GitContext) -> Result<String, AppError> {
-    let base_prompt = assemble_single_role_prompt(jules_path, Layer::Narrators)?;
+fn build_narrator_prompt<W: WorkspaceStore>(
+    jules_path: &Path,
+    ctx: &GitContext,
+    workspace: &W,
+) -> Result<String, AppError> {
+    let base_prompt = assemble_single_role_prompt(jules_path, Layer::Narrators, workspace)?;
 
     // Build the git context section
     let mut context_section = String::new();
@@ -269,10 +273,11 @@ fn build_narrator_prompt(jules_path: &Path, ctx: &GitContext) -> Result<String, 
 }
 
 /// Execute a prompt preview, showing the assembled prompt and context.
-fn execute_prompt_preview(
+fn execute_prompt_preview<W: WorkspaceStore>(
     jules_path: &Path,
     starting_branch: &str,
     ctx: &GitContext,
+    workspace: &W,
 ) -> Result<(), AppError> {
     println!("=== Prompt Preview: Narrator ===");
     println!("Starting branch: {}\n", starting_branch);
@@ -295,7 +300,7 @@ fn execute_prompt_preview(
     }
 
     println!("\n--- Prompt (base) ---");
-    let prompt = assemble_single_role_prompt(jules_path, Layer::Narrators)?;
+    let prompt = assemble_single_role_prompt(jules_path, Layer::Narrators, workspace)?;
     println!("{}", prompt);
 
     Ok(())
