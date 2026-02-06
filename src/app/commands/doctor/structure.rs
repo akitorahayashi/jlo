@@ -410,10 +410,10 @@ fn attempt_fix_file(
     };
 
     let path_buf = PathBuf::from(path);
-    if let Some(parent) = path_buf.parent() {
-        if !store.is_dir(parent.to_str().unwrap()) {
-            let _ = store.create_dir_all(parent.to_str().unwrap());
-        }
+    if let Some(parent) = path_buf.parent()
+        && !store.is_dir(parent.to_str().unwrap())
+    {
+        let _ = store.create_dir_all(parent.to_str().unwrap());
     }
 
     if let Err(err) = store.write_file(path, &content) {
