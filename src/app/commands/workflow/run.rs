@@ -12,6 +12,7 @@ use crate::domain::{AppError, Layer};
 use crate::ports::WorkspaceStore;
 use crate::services::adapters::git_command::GitCommandAdapter;
 use crate::services::adapters::github_command::GitHubCommandAdapter;
+use crate::services::adapters::issue_filesystem::read_issue_header;
 use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
@@ -46,6 +47,16 @@ pub struct WorkflowRunOutput {
 
 /// Execute workflow run command.
 pub fn execute(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
+    if options.workstream.contains("..")
+        || options.workstream.contains('/')
+        || options.workstream.contains('\\')
+    {
+        return Err(AppError::Validation(format!(
+            "Invalid workstream name '{}': must not contain path separators or '..'",
+            options.workstream
+        )));
+    }
+
     let workspace = FilesystemWorkspaceStore::current()?;
 
     if !workspace.exists() {
@@ -289,7 +300,8 @@ fn find_issues_for_workstream(
                         continue;
                     }
 
-                    let requires_deep_analysis = read_requires_deep_analysis(&path)?;
+                    let header = read_issue_header(&path)?;
+                    let requires_deep_analysis = header.requires_deep_analysis;
                     let belongs_to_layer = match layer {
                         Layer::Planners => requires_deep_analysis,
                         Layer::Implementers => !requires_deep_analysis,
@@ -328,6 +340,16 @@ fn resolve_routing_labels(issues_root: &Path) -> Result<Vec<String>, AppError> {
                 "ROUTING_LABELS is set but does not contain any labels".to_string(),
             ));
         }
+
+        for label in &labels {
+            if label.contains("..") || label.contains('/') || label.contains('\\') {
+                return Err(AppError::Validation(format!(
+                    "Invalid routing label '{}': must not contain path separators or '..'",
+                    label
+                )));
+            }
+        }
+
         return Ok(labels);
     }
 
@@ -350,21 +372,6 @@ fn resolve_routing_labels(issues_root: &Path) -> Result<Vec<String>, AppError> {
     }
 
     Ok(discovered)
-}
-
-fn read_requires_deep_analysis(path: &Path) -> Result<bool, AppError> {
-    let content = std::fs::read_to_string(path).map_err(AppError::Io)?;
-    let parsed: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|error| {
-        AppError::ParseError { what: path.display().to_string(), details: error.to_string() }
-    })?;
-
-    match &parsed["requires_deep_analysis"] {
-        serde_yaml::Value::Bool(value) => Ok(*value),
-        _ => Err(AppError::Validation(format!(
-            "Missing or invalid requires_deep_analysis in {}",
-            path.display()
-        ))),
-    }
 }
 
 #[cfg(test)]
