@@ -274,10 +274,22 @@ fn find_issues_for_workstream(
     let mut issues = Vec::new();
     let entries = std::fs::read_dir(&issues_dir).map_err(AppError::Io)?;
 
-    for entry in entries.filter_map(|e| e.ok()) {
-        let path = entry.path();
-        if path.extension().is_some_and(|ext| ext == "md" || ext == "yml" || ext == "yaml") {
-            issues.push(path);
+    for entry in entries {
+        match entry {
+            Ok(entry) => {
+                let path = entry.path();
+                if path.extension().is_some_and(|ext| ext == "md" || ext == "yml" || ext == "yaml")
+                {
+                    issues.push(path);
+                }
+            }
+            Err(e) => {
+                eprintln!(
+                    "Warning: Failed to read directory entry in {}: {}",
+                    issues_dir.display(),
+                    e
+                );
+            }
         }
     }
 
