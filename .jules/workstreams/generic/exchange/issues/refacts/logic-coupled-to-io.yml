@@ -1,0 +1,30 @@
+schema_version: 2
+id: "k9l3m6"
+source_events:
+  - "d4e5f6"
+  - "a1b2c3"
+title: "Logic Coupled to IO Preventing Testing"
+label: "refacts"
+priority: "medium"
+summary: "Core logic in Doctor and Narrator is tightly coupled to IO, making unit testing impossible."
+problem: |
+  Important business logic, such as schema validation in `Doctor` and commit range determination in `Narrator`, is mixed directly with filesystem and git operations. This prevents pure unit testing of the logic and forces reliance on slower, more complex integration tests.
+impact: |
+  1. **Low Test Coverage**: Critical logic paths are uncovered because they are hard to reach in integration tests.
+  2. **Regression Risk**: Changes to validation rules or git logic can easily break functionality without detection.
+  3. **Slow Feedback Loop**: Developers must run full commands to verify changes instead of fast unit tests.
+desired_outcome: |
+  1. Validation logic in `doctor/schema.rs` is decoupled from file reading (accepts data structures, not paths).
+  2. Narrator logic (`collect_git_context`, `determine_range`) is separated into pure functions that accept data, not ports.
+affected_areas:
+  - "src/app/commands/doctor/schema.rs"
+  - "src/app/commands/run/narrator.rs"
+acceptance_criteria:
+  - "`validate_*` functions in `schema.rs` accept `serde_yaml::Value` or structs instead of `Path`."
+  - "Narrator logic is extracted to a testable module/struct that does not depend on `GitPort` directly."
+  - "New unit tests cover the extracted pure logic."
+verification_commands:
+  - "cargo check"
+  - "cargo test"
+requires_deep_analysis: false
+deep_analysis_reason: ""

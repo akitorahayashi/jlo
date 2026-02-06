@@ -1,0 +1,28 @@
+schema_version: 2
+id: "r6t9v4"
+source_events:
+  - "fragp1"
+title: "Fragile Untyped Data Parsing"
+label: "refacts"
+priority: "medium"
+summary: "Critical commands rely on `serde_yaml::Value` instead of typed structs."
+problem: |
+  Commands like `workflow::matrix::routing` and `workflow::run` parse entire YAML files into untyped `serde_yaml::Value` maps just to extract single fields (e.g., `requires_deep_analysis`). This is fragile, duplicates parsing logic, and misses the opportunity for strict schema validation via strong types.
+impact: |
+  1. **Runtime Errors**: Structure mismatches or missing fields are caught at runtime with generic error messages instead of during deserialization.
+  2. **Maintenance Overhead**: Duplicated logic for extracting fields exists in multiple places.
+  3. **Lack of Validation**: No guarantee that the rest of the file is valid if we only peek at one field.
+desired_outcome: |
+  1. Define strongly-typed structs for the data being read (e.g., `IssueHeader`).
+  2. Use `serde` to deserialize directly into these structs.
+affected_areas:
+  - "src/app/commands/workflow/matrix/routing.rs"
+  - "src/app/commands/workflow/run.rs"
+acceptance_criteria:
+  - "`read_requires_deep_analysis` uses a typed struct (e.g., `#[derive(Deserialize)] struct Issue { requires_deep_analysis: bool }`)."
+  - "Duplicated parsing logic is removed or consolidated."
+verification_commands:
+  - "cargo check"
+  - "cargo test"
+requires_deep_analysis: false
+deep_analysis_reason: ""

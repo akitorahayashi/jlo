@@ -1,0 +1,26 @@
+schema_version: 2
+id: "n2p5q8"
+source_events:
+  - "g7h8i9"
+title: "Matrix Routing Tests Modify Global State"
+label: "tests"
+priority: "medium"
+summary: "Matrix routing tests modify the process-wide current working directory."
+problem: |
+  The tests in `src/app/commands/workflow/matrix/routing.rs` use `std::env::set_current_dir` to change the process's working directory. Since tests run in parallel by default, this can cause race conditions and flaky failures in other tests that rely on the CWD.
+impact: |
+  1. **Flaky Tests**: Intermittent CI failures due to race conditions.
+  2. **Developer Frustration**: Hard to debug failures that only happen when running the full suite.
+desired_outcome: |
+  Tests are refactored to either:
+  1. Use the `serial_test` crate to ensure serial execution.
+  2. Or better, avoid changing the CWD by passing paths explicitly to the functions under test.
+affected_areas:
+  - "src/app/commands/workflow/matrix/routing.rs"
+acceptance_criteria:
+  - "Tests in `src/app/commands/workflow/matrix/routing.rs` do not use `std::env::set_current_dir` OR are marked as serial."
+  - "Parallel execution of `cargo test` is safe."
+verification_commands:
+  - "cargo test -- --test-threads=4"
+requires_deep_analysis: false
+deep_analysis_reason: ""
