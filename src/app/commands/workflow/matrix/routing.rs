@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
@@ -17,6 +17,8 @@ pub struct MatrixRoutingOptions {
     pub workstreams_json: WorkstreamsMatrix,
     /// Routing labels as CSV (e.g., "bugs,feats,refacts,tests,docs").
     pub routing_labels: String,
+    /// Optional workspace root path.
+    pub workspace_root: Option<PathBuf>,
 }
 
 /// Input workstreams matrix (from matrix workstreams output).
@@ -70,7 +72,10 @@ pub struct IssueMatrixEntry {
 
 /// Execute matrix routing command.
 pub fn execute(options: MatrixRoutingOptions) -> Result<MatrixRoutingOutput, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
+    let workspace = match options.workspace_root {
+        Some(root) => FilesystemWorkspaceStore::new(root),
+        None => FilesystemWorkspaceStore::current()?,
+    };
 
     if !workspace.exists() {
         return Err(AppError::WorkspaceNotFound);
@@ -214,14 +219,15 @@ mod tests {
         create_issue(root, "alpha", "feats", "ghi789", true); // planner
         create_issue(root, "alpha", "docs", "jkl012", false); // implementer (but not in routing)
 
-        std::env::set_current_dir(root).unwrap();
-
         let workstreams_json =
             WorkstreamsMatrix { include: vec![WorkstreamEntry { workstream: "alpha".into() }] };
 
-        let output =
-            execute(MatrixRoutingOptions { workstreams_json, routing_labels: "bugs,feats".into() })
-                .unwrap();
+        let output = execute(MatrixRoutingOptions {
+            workstreams_json,
+            routing_labels: "bugs,feats".into(),
+            workspace_root: Some(root.to_path_buf()),
+        })
+        .unwrap();
 
         assert_eq!(output.schema_version, 1);
         assert_eq!(output.planner_count, 2);
@@ -263,11 +269,10 @@ mod tests {
         let root = dir.path();
         setup_workspace(root);
 
-        std::env::set_current_dir(root).unwrap();
-
         let result = execute(MatrixRoutingOptions {
             workstreams_json: WorkstreamsMatrix { include: vec![] },
             routing_labels: "".into(),
+            workspace_root: Some(root.to_path_buf()),
         });
 
         assert!(result.is_err());
