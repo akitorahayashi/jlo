@@ -7,7 +7,8 @@ use std::path::Path;
 use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::narrator_logic::{
-    GitContext, MAX_COMMITS, RangeContext, Stats, build_git_context, determine_range_strategy,
+    GitContext, MAX_COMMITS, NarratorGitData, RangeContext, analyze_git_context,
+    determine_range_strategy,
 };
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
@@ -106,31 +107,19 @@ where
     let pathspec = &[".", ":(exclude).jules"];
     let has_changes = git.has_changes(&range.from_commit, &range.to_commit, pathspec)?;
 
-    if !has_changes {
-        return Ok(None);
-    }
-
-    // Count total commits in range (for truncation tracking)
-    let commits_total = git.count_commits(&range.from_commit, &range.to_commit, pathspec)?;
-
-    // Collect bounded commit samples
-    let commits =
-        git.collect_commits(&range.from_commit, &range.to_commit, pathspec, MAX_COMMITS)?;
-    let commits_included = commits.len() as u32;
-
-    // Collect diffstat
-    let diffstat = git.get_diffstat(&range.from_commit, &range.to_commit, pathspec)?;
-
-    // Build stats input
-    let stats = Stats {
-        commits_total,
-        commits_included,
-        files_changed: diffstat.files_changed,
-        insertions: diffstat.insertions,
-        deletions: diffstat.deletions,
+    let (commits_total, commits, diffstat) = if has_changes {
+        (
+            git.count_commits(&range.from_commit, &range.to_commit, pathspec)?,
+            git.collect_commits(&range.from_commit, &range.to_commit, pathspec, MAX_COMMITS)?,
+            git.get_diffstat(&range.from_commit, &range.to_commit, pathspec)?,
+        )
+    } else {
+        (0, Vec::new(), crate::ports::DiffStat::default())
     };
 
-    Ok(Some(build_git_context(range, stats, commits)))
+    let data = NarratorGitData { range, has_changes, commits_total, commits, diffstat };
+
+    Ok(analyze_git_context(data))
 }
 
 /// Determine the commit range for the summary.

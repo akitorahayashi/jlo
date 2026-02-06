@@ -98,7 +98,7 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
 
         let contracts_path = layer_dir.join("contracts.yml");
         if contracts_path.exists() {
-            validate_contracts(&contracts_path, layer, diagnostics);
+            validate_contracts_file(&contracts_path, layer, diagnostics);
         }
 
         if layer == Layer::Observers || layer == Layer::Deciders {
@@ -108,9 +108,9 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
                     let role_path = role_dir.join("role.yml");
                     if role_path.exists() {
                         if layer == Layer::Observers {
-                            validate_role(&role_path, &role_dir, diagnostics);
+                            validate_role_file(&role_path, &role_dir, diagnostics);
                         } else {
-                            validate_decider_role(&role_path, diagnostics);
+                            validate_decider_role_file(&role_path, diagnostics);
                         }
                     }
                 }
@@ -126,8 +126,8 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         for state in inputs.event_states {
             let state_dir = events_dir.join(state);
             for entry in read_yaml_files(&state_dir, diagnostics) {
-                validate_event(&entry, state, inputs.event_confidence, diagnostics);
-                check_placeholders(&entry, diagnostics);
+                validate_event_file(&entry, state, inputs.event_confidence, diagnostics);
+                check_placeholders_file(&entry, diagnostics);
             }
         }
 
@@ -135,14 +135,14 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         for label in inputs.issue_labels {
             let label_dir = issues_dir.join(label);
             for entry in read_yaml_files(&label_dir, diagnostics) {
-                validate_issue(
+                validate_issue_file(
                     &entry,
                     label,
                     inputs.issue_labels,
                     inputs.issue_priorities,
                     diagnostics,
                 );
-                check_placeholders(&entry, diagnostics);
+                check_placeholders_file(&entry, diagnostics);
             }
         }
     }
@@ -196,7 +196,7 @@ fn parse_prompt_data(
     Some(PromptEntry { path: path.to_path_buf(), contracts })
 }
 
-fn validate_event(
+fn validate_event_file(
     path: &Path,
     state: &str,
     event_confidence: &[String],
@@ -206,10 +206,10 @@ fn validate_event(
         Some(data) => data,
         None => return,
     };
-    validate_event_data(&data, path, state, event_confidence, diagnostics);
+    validate_event(&data, path, state, event_confidence, diagnostics);
 }
 
-fn validate_event_data(
+pub fn validate_event(
     data: &Mapping,
     path: &Path,
     state: &str,
@@ -277,7 +277,7 @@ fn validate_event_data(
     }
 }
 
-fn validate_issue(
+fn validate_issue_file(
     path: &Path,
     label: &str,
     issue_labels: &[String],
@@ -288,10 +288,10 @@ fn validate_issue(
         Some(data) => data,
         None => return,
     };
-    validate_issue_data(&data, path, label, issue_labels, issue_priorities, diagnostics);
+    validate_issue(&data, path, label, issue_labels, issue_priorities, diagnostics);
 }
 
-fn validate_issue_data(
+pub fn validate_issue(
     data: &Mapping,
     path: &Path,
     label: &str,
@@ -374,15 +374,20 @@ fn validate_issue_data(
     }
 }
 
-fn validate_role(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
+fn validate_role_file(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
     let data = match load_yaml_mapping(path, diagnostics) {
         Some(data) => data,
         None => return,
     };
-    validate_role_data(&data, path, role_dir, diagnostics);
+    validate_role(&data, path, role_dir, diagnostics);
 }
 
-fn validate_role_data(data: &Mapping, path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
+pub fn validate_role(
+    data: &Mapping,
+    path: &Path,
+    role_dir: &Path,
+    diagnostics: &mut Diagnostics,
+) {
     ensure_non_empty_string(data, path, "role", diagnostics);
 
     // Check layer field
@@ -459,15 +464,15 @@ fn parse_role_file_data(
 }
 
 /// Validate decider role.yml schema
-fn validate_decider_role(path: &Path, diagnostics: &mut Diagnostics) {
+fn validate_decider_role_file(path: &Path, diagnostics: &mut Diagnostics) {
     let data = match load_yaml_mapping(path, diagnostics) {
         Some(data) => data,
         None => return,
     };
-    validate_decider_role_data(&data, path, diagnostics);
+    validate_decider_role(&data, path, diagnostics);
 }
 
-fn validate_decider_role_data(data: &Mapping, path: &Path, diagnostics: &mut Diagnostics) {
+pub fn validate_decider_role(data: &Mapping, path: &Path, diagnostics: &mut Diagnostics) {
     ensure_non_empty_string(data, path, "role", diagnostics);
 
     let layer_value = get_string(data, "layer").unwrap_or_default();
@@ -487,15 +492,15 @@ fn validate_decider_role_data(data: &Mapping, path: &Path, diagnostics: &mut Dia
     }
 }
 
-fn validate_contracts(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) {
+fn validate_contracts_file(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) {
     let data = match load_yaml_mapping(path, diagnostics) {
         Some(data) => data,
         None => return,
     };
-    validate_contracts_data(&data, path, layer, diagnostics);
+    validate_contracts(&data, path, layer, diagnostics);
 }
 
-fn validate_contracts_data(
+pub fn validate_contracts(
     data: &Mapping,
     path: &Path,
     layer: Layer,
@@ -635,7 +640,7 @@ fn extract_enum_from_template(template_path: &Path, field: &str) -> Vec<String> 
     vec![]
 }
 
-fn check_placeholders(path: &Path, diagnostics: &mut Diagnostics) {
+fn check_placeholders_file(path: &Path, diagnostics: &mut Diagnostics) {
     let content = match fs::read_to_string(path) {
         Ok(content) => content,
         Err(err) => {
@@ -644,10 +649,10 @@ fn check_placeholders(path: &Path, diagnostics: &mut Diagnostics) {
             return;
         }
     };
-    check_placeholders_content(&content, path, diagnostics);
+    check_placeholders(&content, path, diagnostics);
 }
 
-fn check_placeholders_content(content: &str, path: &Path, diagnostics: &mut Diagnostics) {
+pub fn check_placeholders(content: &str, path: &Path, diagnostics: &mut Diagnostics) {
     let placeholders = [
         "<6_random_lowercase_alphanumeric_chars>",
         "<role>",
@@ -701,7 +706,7 @@ evidence:
         let mut diagnostics = Diagnostics::default();
         let confidence = vec!["high".to_string(), "low".to_string()];
 
-        validate_event_data(&data, &path, "pending", &confidence, &mut diagnostics);
+        validate_event(&data, &path, "pending", &confidence, &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
     }
 
@@ -723,7 +728,7 @@ evidence: []
         let mut diagnostics = Diagnostics::default();
         let confidence = vec!["high".to_string()];
 
-        validate_event_data(&data, &path, "pending", &confidence, &mut diagnostics);
+        validate_event(&data, &path, "pending", &confidence, &mut diagnostics);
         assert!(diagnostics.error_count() > 0);
         // Should have errors: issue_id must be empty in pending, evidence must have entries
     }
@@ -734,7 +739,7 @@ evidence: []
         let path = PathBuf::from("test.yml");
         let mut diagnostics = Diagnostics::default();
 
-        check_placeholders_content(content, &path, &mut diagnostics);
+        check_placeholders(content, &path, &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 1);
         assert!(diagnostics.errors()[0].message.contains("placeholder '<role>' must be replaced"));
     }
@@ -762,7 +767,7 @@ verification_commands: ["cargo test"]
         let labels = vec!["bugs".to_string()];
         let priorities = vec!["high".to_string()];
 
-        validate_issue_data(&data, &path, "bugs", &labels, &priorities, &mut diagnostics);
+        validate_issue(&data, &path, "bugs", &labels, &priorities, &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
     }
 }

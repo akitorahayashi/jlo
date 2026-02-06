@@ -34,15 +34,6 @@ fn create_context(
     AppContext::new(workspace, templates)
 }
 
-/// get and validate the current workspace.
-fn get_current_workspace() -> Result<FilesystemWorkspaceStore, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-    if !workspace.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
-    Ok(workspace)
-}
-
 /// Initialize a new `.jules/` workspace in the current directory.
 pub fn init() -> Result<(), AppError> {
     init_at(std::env::current_dir()?)
@@ -131,10 +122,26 @@ pub fn run(
     issue: Option<std::path::PathBuf>,
     mock: bool,
 ) -> Result<RunResult, AppError> {
-    let workspace = get_current_workspace()?;
+    run_at(layer, role, workstream, prompt_preview, branch, issue, mock, std::env::current_dir()?)
+}
 
-    // Assume current directory is workspace root since we require running from root
-    let root = std::env::current_dir()?;
+#[allow(clippy::too_many_arguments)]
+pub fn run_at(
+    layer: Layer,
+    role: Option<String>,
+    workstream: Option<String>,
+    prompt_preview: bool,
+    branch: Option<String>,
+    issue: Option<std::path::PathBuf>,
+    mock: bool,
+    root: impl Into<PathBuf>,
+) -> Result<RunResult, AppError> {
+    let root = root.into();
+    let workspace = FilesystemWorkspaceStore::new(root.clone());
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
 

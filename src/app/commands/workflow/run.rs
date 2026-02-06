@@ -24,6 +24,10 @@ pub struct WorkflowRunOptions {
     pub layer: Layer,
     /// Run in mock mode.
     pub mock: bool,
+    /// Mock tag (required if mock is true).
+    pub mock_tag: Option<String>,
+    /// Routing labels (optional override).
+    pub routing_labels: Option<Vec<String>>,
 }
 
 /// Output of workflow run command.
@@ -57,15 +61,13 @@ pub fn execute(
 
     // Mock mode configuration
     let mock_tag = if options.mock {
-        let tag = std::env::var("JULES_MOCK_TAG").map_err(|_| {
-            AppError::Validation(
-                "Mock mode requires JULES_MOCK_TAG environment variable".to_string(),
-            )
+        let tag = options.mock_tag.clone().ok_or_else(|| {
+            AppError::Validation("Mock mode requires mock_tag in options".to_string())
         })?;
 
         if !tag.contains("mock") {
             return Err(AppError::Validation(
-                "JULES_MOCK_TAG must contain 'mock' substring".to_string(),
+                "mock_tag must contain 'mock' substring".to_string(),
             ));
         }
         Some(tag)
@@ -216,7 +218,7 @@ where
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
     // Find issues for the layer in this workstream
-    let issues = find_issues_for_workstream(store, workstream, options.layer)?;
+    let issues = find_issues_for_workstream(store, workstream, options.layer, options.routing_labels.as_deref())?;
 
     if issues.is_empty() {
         eprintln!(
@@ -255,6 +257,7 @@ fn find_issues_for_workstream(
     store: &impl WorkspaceStore,
     workstream: &str,
     layer: Layer,
+    routing_labels: Option<&[String]>,
 ) -> Result<Vec<std::path::PathBuf>, AppError> {
     if layer != Layer::Planners && layer != Layer::Implementers {
         return Err(AppError::Validation("Invalid layer for issue discovery".to_string()));
@@ -269,7 +272,7 @@ fn find_issues_for_workstream(
     }
 
     let mut issues = Vec::new();
-    let routing_labels = resolve_routing_labels(store, &issues_root)?;
+    let routing_labels = resolve_routing_labels(store, &issues_root, routing_labels)?;
 
     for label in routing_labels {
         let label_dir = issues_root.join(&label);
@@ -303,18 +306,14 @@ fn find_issues_for_workstream(
 fn resolve_routing_labels(
     store: &impl WorkspaceStore,
     issues_root: &Path,
+    routing_labels: Option<&[String]>,
 ) -> Result<Vec<String>, AppError> {
-    if let Ok(labels_csv) = std::env::var("ROUTING_LABELS") {
-        let labels: Vec<String> = labels_csv
-            .split(',')
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
-            .map(str::to_string)
-            .collect();
+    if let Some(labels) = routing_labels {
+        let labels: Vec<String> = labels.to_vec();
 
         if labels.is_empty() {
             return Err(AppError::Validation(
-                "ROUTING_LABELS is set but does not contain any labels".to_string(),
+                "Provided routing_labels is empty".to_string(),
             ));
         }
 
@@ -377,6 +376,8 @@ mod tests {
             workstream: "generic".to_string(),
             layer: Layer::Observers,
             mock: false,
+            mock_tag: None,
+            routing_labels: None,
         };
         assert_eq!(options.workstream, "generic");
         assert_eq!(options.layer, Layer::Observers);
@@ -412,13 +413,8 @@ mod tests {
         write_issue(&store, "bugs", "ready-to-implement", false);
         write_issue(&store, "docs", "ignored-by-routing", true);
 
-        unsafe {
-            std::env::set_var("ROUTING_LABELS", "bugs");
-        }
-        let issues = find_issues_for_workstream(&store, "alpha", Layer::Planners).unwrap();
-        unsafe {
-            std::env::remove_var("ROUTING_LABELS");
-        }
+        let routing_labels = vec!["bugs".to_string()];
+        let issues = find_issues_for_workstream(&store, "alpha", Layer::Planners, Some(&routing_labels)).unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("requires-planning.yml"));
@@ -433,13 +429,8 @@ mod tests {
         write_issue(&store, "bugs", "requires-planning", true);
         write_issue(&store, "bugs", "ready-to-implement", false);
 
-        unsafe {
-            std::env::set_var("ROUTING_LABELS", "bugs");
-        }
-        let issues = find_issues_for_workstream(&store, "alpha", Layer::Implementers).unwrap();
-        unsafe {
-            std::env::remove_var("ROUTING_LABELS");
-        }
+        let routing_labels = vec!["bugs".to_string()];
+        let issues = find_issues_for_workstream(&store, "alpha", Layer::Implementers, Some(&routing_labels)).unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("ready-to-implement.yml"));
