@@ -31,7 +31,10 @@ pub struct DoctorOutcome {
     pub exit_code: i32,
 }
 
-pub fn execute(store: &impl WorkspaceStore, options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
+pub fn execute(
+    store: &impl WorkspaceStore,
+    options: DoctorOptions,
+) -> Result<DoctorOutcome, AppError> {
     if !store.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
@@ -56,7 +59,6 @@ pub fn execute(store: &impl WorkspaceStore, options: DoctorOptions) -> Result<Do
         structure::StructuralInputs {
             store,
             jules_path: jules_path.clone(),
-            root: &root,
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
@@ -83,11 +85,29 @@ pub fn execute(store: &impl WorkspaceStore, options: DoctorOptions) -> Result<Do
         &mut diagnostics,
     );
 
-    naming::naming_checks(store, &jules_path, &workstreams, &issue_labels, &event_states, &mut diagnostics);
+    naming::naming_checks(
+        store,
+        &jules_path,
+        &workstreams,
+        &issue_labels,
+        &event_states,
+        &mut diagnostics,
+    );
 
-    let semantic_context =
-        semantic::semantic_context(store, &jules_path, &workstreams, &issue_labels, &mut diagnostics);
-    semantic::semantic_checks(store, &jules_path, &workstreams, &semantic_context, &mut diagnostics);
+    let semantic_context = semantic::semantic_context(
+        store,
+        &jules_path,
+        &workstreams,
+        &issue_labels,
+        &mut diagnostics,
+    );
+    semantic::semantic_checks(
+        store,
+        &jules_path,
+        &workstreams,
+        &semantic_context,
+        &mut diagnostics,
+    );
 
     quality::quality_checks(
         store,

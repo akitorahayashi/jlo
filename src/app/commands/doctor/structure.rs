@@ -69,7 +69,6 @@ pub fn read_run_config(
 pub struct StructuralInputs<'a, S: WorkspaceStore> {
     pub store: &'a S,
     pub jules_path: PathBuf,
-    pub root: &'a Path,
     pub workstreams: &'a [String],
     pub issue_labels: &'a [String],
     pub event_states: &'a [String],
@@ -404,10 +403,8 @@ fn attempt_fix_file(
     let content = match scaffold_file_content(scaffold_path) {
         Some(content) => content,
         None => {
-            diagnostics.push_error(
-                path.to_string(),
-                "Missing required file (no scaffold fix available)",
-            );
+            diagnostics
+                .push_error(path.to_string(), "Missing required file (no scaffold fix available)");
             return;
         }
     };
@@ -425,8 +422,7 @@ fn attempt_fix_file(
     }
 
     applied_fixes.push(format!("Restored {}", path));
-    diagnostics
-        .push_warning(path.to_string(), "Restored missing file from scaffold");
+    diagnostics.push_warning(path.to_string(), "Restored missing file from scaffold");
 }
 
 fn ensure_workstream_template_exists(
@@ -497,8 +493,8 @@ pub fn list_subdirs(
 #[cfg(test)]
 mod tests {
     use crate::app::commands::doctor::diagnostics::Diagnostics;
-    use crate::services::adapters::memory_workspace_store::MemoryWorkspaceStore;
     use crate::ports::WorkspaceStore;
+    use crate::services::adapters::memory_workspace_store::MemoryWorkspaceStore;
 
     use super::*;
 
@@ -579,7 +575,9 @@ mod tests {
     fn test_collect_workstreams() {
         let store = MemoryWorkspaceStore::new();
         store.create_dir_all(".jules/workstreams/ws1").unwrap();
+        store.write_file(".jules/workstreams/ws1/.gitkeep", "").unwrap();
         store.create_dir_all(".jules/workstreams/ws2").unwrap();
+        store.write_file(".jules/workstreams/ws2/.gitkeep", "").unwrap();
         store.write_file(".jules/workstreams/file.txt", "").unwrap(); // Should be ignored
 
         // Test listing all
@@ -601,6 +599,7 @@ mod tests {
         store.write_file(".jules/config.toml", "").unwrap();
         store.write_file(".jules/.jlo-version", env!("CARGO_PKG_VERSION")).unwrap();
         store.create_dir_all(".jules/changes").unwrap();
+        store.write_file(".jules/changes/.gitkeep", "").unwrap();
 
         // Layers
         for layer in Layer::ALL {
@@ -608,6 +607,7 @@ mod tests {
             store.create_dir_all(&layer_dir).unwrap();
             store.write_file(&format!("{}/contracts.yml", layer_dir), "").unwrap();
             store.create_dir_all(&format!("{}/schemas", layer_dir)).unwrap();
+            store.write_file(&format!("{}/schemas/.gitkeep", layer_dir), "").unwrap();
             store.write_file(&format!("{}/prompt_assembly.yml", layer_dir), "").unwrap();
 
             if layer.is_single_role() {
@@ -626,13 +626,29 @@ mod tests {
         // Workstream
         let ws_dir = ".jules/workstreams/generic";
         store.create_dir_all(ws_dir).unwrap();
+        store.write_file(&format!("{}/.gitkeep", ws_dir), "").unwrap();
         store.write_file(&format!("{}/scheduled.toml", ws_dir), "").unwrap();
 
         let exchange = format!("{}/exchange", ws_dir);
-        store.create_dir_all(&format!("{}/events/pending", exchange)).unwrap();
-        store.create_dir_all(&format!("{}/issues/tests", exchange)).unwrap();
+        store.create_dir_all(&exchange).unwrap();
+        store.write_file(&format!("{}/.gitkeep", exchange), "").unwrap();
+
+        let events_dir = format!("{}/events", exchange);
+        store.create_dir_all(&events_dir).unwrap();
+        store.write_file(&format!("{}/.gitkeep", events_dir), "").unwrap();
+
+        store.create_dir_all(&format!("{}/pending", events_dir)).unwrap();
+        store.write_file(&format!("{}/pending/.gitkeep", events_dir), "").unwrap();
+
+        let issues_dir = format!("{}/issues", exchange);
+        store.create_dir_all(&issues_dir).unwrap();
+        store.write_file(&format!("{}/.gitkeep", issues_dir), "").unwrap();
+
+        store.create_dir_all(&format!("{}/tests", issues_dir)).unwrap();
+        store.write_file(&format!("{}/tests/.gitkeep", issues_dir), "").unwrap();
 
         store.create_dir_all(&format!("{}/workstations", ws_dir)).unwrap();
+        store.write_file(&format!("{}/workstations/.gitkeep", ws_dir), "").unwrap();
     }
 
     #[test]
@@ -650,7 +666,6 @@ mod tests {
         let inputs = StructuralInputs {
             store: &store,
             jules_path: PathBuf::from(".jules"),
-            root: Path::new("."),
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
@@ -687,7 +702,6 @@ mod tests {
         let inputs = StructuralInputs {
             store: &store,
             jules_path: PathBuf::from(".jules"),
-            root: Path::new("."),
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
@@ -721,7 +735,6 @@ mod tests {
         let inputs = StructuralInputs {
             store: &store,
             jules_path: PathBuf::from(".jules"),
-            root: Path::new("."),
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,

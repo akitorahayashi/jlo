@@ -49,7 +49,8 @@ pub fn quality_checks(
                     diagnostics
                         .push_warning(entry.display().to_string(), "impact appears too short");
                 }
-                if let Some(desired) = read_yaml_string(store, &entry, "desired_outcome", diagnostics)
+                if let Some(desired) =
+                    read_yaml_string(store, &entry, "desired_outcome", diagnostics)
                     && desired.trim().len() < MIN_DESIRED_OUTCOME_LEN
                 {
                     diagnostics.push_warning(
