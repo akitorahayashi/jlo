@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "fsbyp1"
+issue_id: ""
+created_at: "2026-02-06"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Direct Filesystem Usage Bypassing Abstractions"
+statement: |
+  Several commands bypass the `WorkspaceStore` abstraction and interact directly with the filesystem using `std::fs`, reducing testability and coupling code to the physical environment.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/setup/generate.rs"
+    loc:
+      - "multiple"
+    note: "Uses std::fs for reading/writing setup files instead of using an abstraction."
+  - path: "src/app/commands/workflow/matrix/routing.rs"
+    loc:
+      - "multiple"
+    note: "Uses std::fs for reading directory entries directly."
+
+tags:
+  - "architecture"
+  - "testability"
+  - "io"
