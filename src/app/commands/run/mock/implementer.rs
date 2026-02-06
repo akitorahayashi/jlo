@@ -66,7 +66,7 @@ where
     let mock_path = Path::new(&mock_file_path);
     let files: Vec<&Path> = vec![mock_path];
     git.commit_files(
-        &format!("[mock-{}] implementer: mock implementation", config.mock_tag),
+        &format!("[{}] implementer: mock implementation", config.mock_tag),
         &files,
     )?;
     git.push_branch(&branch_name, false)?;
@@ -75,7 +75,7 @@ where
     let pr = github.create_pull_request(
         &branch_name,
         base_branch,
-        &format!("[mock-{}] Implementation: {}", config.mock_tag, label),
+        &format!("[{}] Implementation: {}", config.mock_tag, label),
         &format!(
             "Mock implementer run for workflow validation.\n\nMock tag: `{}`\nIssue: `{}`\nLabel: `{}`\n\n⚠️ This PR targets `{}` (not `jules`) - requires human review.",
             config.mock_tag,

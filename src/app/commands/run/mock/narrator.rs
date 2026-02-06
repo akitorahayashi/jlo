@@ -57,14 +57,14 @@ where
 
     // Commit and push
     let files: Vec<&Path> = vec![changes_file.as_path()];
-    git.commit_files(&format!("[mock-{}] narrator: mock changes", config.mock_tag), &files)?;
+    git.commit_files(&format!("[{}] narrator: mock changes", config.mock_tag), &files)?;
     git.push_branch(&branch_name, false)?;
 
     // Create PR
     let pr = github.create_pull_request(
         &branch_name,
         &config.jules_branch,
-        &format!("[mock-{}] Narrator changes", config.mock_tag),
+        &format!("[{}] Narrator changes", config.mock_tag),
         &format!("Mock narrator run for workflow validation.\n\nMock tag: `{}`", config.mock_tag),
     )?;
 

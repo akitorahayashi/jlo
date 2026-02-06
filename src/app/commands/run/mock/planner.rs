@@ -68,14 +68,14 @@ analysis_details: |
 
     // Commit and push
     let files: Vec<&Path> = vec![issue_path.as_path()];
-    git.commit_files(&format!("[mock-{}] planner: analysis complete", config.mock_tag), &files)?;
+    git.commit_files(&format!("[{}] planner: analysis complete", config.mock_tag), &files)?;
     git.push_branch(&branch_name, false)?;
 
     // Create PR
     let pr = github.create_pull_request(
         &branch_name,
         &config.jules_branch,
-        &format!("[mock-{}] Planner analysis", config.mock_tag),
+        &format!("[{}] Planner analysis", config.mock_tag),
         &format!(
             "Mock planner run for workflow validation.\n\nMock tag: `{}`\nIssue: `{}`",
             config.mock_tag,

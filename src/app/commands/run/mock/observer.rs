@@ -81,14 +81,14 @@ where
 
     // Commit and push
     let files: Vec<&Path> = vec![event_file_1.as_path(), event_file_2.as_path()];
-    git.commit_files(&format!("[mock-{}] observer: mock event", config.mock_tag), &files)?;
+    git.commit_files(&format!("[{}] observer: mock event", config.mock_tag), &files)?;
     git.push_branch(&branch_name, false)?;
 
     // Create PR
     let pr = github.create_pull_request(
         &branch_name,
         &config.jules_branch,
-        &format!("[mock-{}] Observer findings", config.mock_tag),
+        &format!("[{}] Observer findings", config.mock_tag),
         &format!(
             "Mock observer run for workflow validation.\n\nMock tag: `{}`\nWorkstream: `{}`",
             config.mock_tag, workstream
