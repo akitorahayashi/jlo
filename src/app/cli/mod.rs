@@ -1,6 +1,11 @@
 //! CLI Adapter.
 
-use std::path::PathBuf;
+mod deinit;
+mod doctor;
+mod init;
+mod run;
+mod setup;
+mod workflow;
 
 use crate::domain::AppError;
 use clap::{Parser, Subcommand};
@@ -23,7 +28,7 @@ enum Commands {
     #[clap(visible_alias = "i")]
     Init {
         #[command(subcommand)]
-        command: Option<InitCommands>,
+        command: Option<init::InitCommands>,
     },
     /// Update .jules/ workspace to current jlo version
     #[clap(visible_alias = "u")]
@@ -52,19 +57,19 @@ enum Commands {
     #[clap(visible_alias = "s")]
     Setup {
         #[command(subcommand)]
-        command: SetupCommands,
+        command: setup::SetupCommands,
     },
     /// Execute Jules agents
     #[clap(visible_alias = "r")]
     Run {
         #[command(subcommand)]
-        layer: RunLayer,
+        layer: run::RunLayer,
     },
     /// Workflow orchestration primitives for GitHub Actions
     #[clap(visible_alias = "wf")]
     Workflow {
         #[command(subcommand)]
-        command: WorkflowCommands,
+        command: workflow::WorkflowCommands,
     },
     /// Validate .jules/ structure and content
     Doctor {
@@ -82,251 +87,12 @@ enum Commands {
     Deinit,
 }
 
-#[derive(Subcommand)]
-enum SetupCommands {
-    /// Generate install.sh and env.toml from tools.yml
-    #[clap(visible_alias = "g")]
-    Gen {
-        /// Project directory containing .jules/setup/ (defaults to current directory)
-        path: Option<PathBuf>,
-    },
-    /// List available components
-    #[clap(visible_alias = "ls")]
-    List {
-        /// Show detailed info for a specific component
-        #[arg(long)]
-        detail: Option<String>,
-    },
-}
-
-#[derive(Subcommand)]
-enum InitCommands {
-    /// Create .jules/ workspace structure
-    #[clap(visible_alias = "s")]
-    Scaffold,
-    /// Install GitHub Actions workflow kit
-    #[clap(visible_alias = "w")]
-    Workflows {
-        /// Install the GitHub-hosted runner workflow kit
-        #[arg(
-            short = 'r',
-            long,
-            conflicts_with = "self_hosted",
-            required_unless_present = "self_hosted"
-        )]
-        remote: bool,
-        /// Install the self-hosted runner workflow kit
-        #[arg(short = 's', long, conflicts_with = "remote", required_unless_present = "remote")]
-        self_hosted: bool,
-    },
-}
-
-#[derive(Subcommand)]
-enum RunLayer {
-    /// Run narrator agent (summarizes codebase changes)
-    #[clap(visible_alias = "n")]
-    Narrator {
-        /// Show assembled prompts without executing
-        #[arg(long, conflicts_with = "mock")]
-        prompt_preview: bool,
-        /// Override the starting branch
-        #[arg(long)]
-        branch: Option<String>,
-        /// Run in mock mode (no Jules API, real git/GitHub operations)
-        #[arg(long, conflicts_with = "prompt_preview")]
-        mock: bool,
-    },
-    /// Run observer agent (single role)
-    #[clap(visible_alias = "o")]
-    Observers {
-        /// Role to run
-        #[arg(short = 'r', long)]
-        role: String,
-        /// Target workstream
-        #[arg(short = 'w', long)]
-        workstream: String,
-        /// Show assembled prompts without executing
-        #[arg(long, conflicts_with = "mock")]
-        prompt_preview: bool,
-        /// Override the starting branch
-        #[arg(long)]
-        branch: Option<String>,
-        /// Run in mock mode (no Jules API, real git/GitHub operations)
-        #[arg(long, conflicts_with = "prompt_preview")]
-        mock: bool,
-    },
-    /// Run decider agent (single role)
-    #[clap(visible_alias = "d")]
-    Deciders {
-        /// Role to run
-        #[arg(short = 'r', long)]
-        role: String,
-        /// Target workstream
-        #[arg(short = 'w', long)]
-        workstream: String,
-        /// Show assembled prompts without executing
-        #[arg(long, conflicts_with = "mock")]
-        prompt_preview: bool,
-        /// Override the starting branch
-        #[arg(long)]
-        branch: Option<String>,
-        /// Run in mock mode (no Jules API, real git/GitHub operations)
-        #[arg(long, conflicts_with = "prompt_preview")]
-        mock: bool,
-    },
-    /// Run planner agent (single-role, issue-driven)
-    #[clap(visible_alias = "p")]
-    Planners {
-        /// Local issue file path (required)
-        issue: PathBuf,
-        /// Show assembled prompts without executing
-        #[arg(long, conflicts_with = "mock")]
-        prompt_preview: bool,
-        /// Override the starting branch
-        #[arg(long)]
-        branch: Option<String>,
-        /// Run in mock mode (no Jules API, real git/GitHub operations)
-        #[arg(long, conflicts_with = "prompt_preview")]
-        mock: bool,
-    },
-    /// Run implementer agent (single-role, issue-driven)
-    #[clap(visible_alias = "i")]
-    Implementers {
-        /// Local issue file path (required)
-        issue: PathBuf,
-        /// Show assembled prompts without executing
-        #[arg(long, conflicts_with = "mock")]
-        prompt_preview: bool,
-        /// Override the starting branch
-        #[arg(long)]
-        branch: Option<String>,
-        /// Run in mock mode (no Jules API, real git/GitHub operations)
-        #[arg(long, conflicts_with = "prompt_preview")]
-        mock: bool,
-    },
-}
-
-#[derive(Subcommand)]
-enum WorkflowCommands {
-    /// Validation gate for .jules/ workspace
-    Doctor {
-        /// Limit checks to a specific workstream
-        #[arg(long)]
-        workstream: Option<String>,
-    },
-    /// Export matrices for GitHub Actions
-    Matrix {
-        #[command(subcommand)]
-        command: WorkflowMatrixCommands,
-    },
-    /// Run a workstream layer and return wait-gating metadata
-    Run {
-        /// Target workstream (e.g., generic, alpha)
-        workstream: String,
-        /// Target layer (narrator, observers, deciders, planners, implementers)
-        layer: String,
-        /// Run in mock mode (requires JULES_MOCK_TAG)
-        #[arg(long)]
-        mock: bool,
-    },
-
-    /// Cleanup operations
-    Cleanup {
-        #[command(subcommand)]
-        command: WorkflowCleanupCommands,
-    },
-    /// PR operations
-    Pr {
-        #[command(subcommand)]
-        command: WorkflowPrCommands,
-    },
-    /// Workstream inspection and cleanup
-    Workstreams {
-        #[command(subcommand)]
-        command: WorkflowWorkstreamsCommands,
-    },
-}
-
-#[derive(Subcommand)]
-enum WorkflowCleanupCommands {
-    /// Clean up mock artifacts
-    Mock {
-        /// Mock tag to identify artifacts
-        #[arg(long)]
-        mock_tag: String,
-        /// PR numbers JSON array to close
-        #[arg(long)]
-        pr_numbers_json: Option<String>,
-        /// Branches JSON array to delete
-        #[arg(long)]
-        branches_json: Option<String>,
-    },
-}
-
-#[derive(Subcommand)]
-enum WorkflowPrCommands {
-    /// Apply category label to implementer PR from branch name
-    LabelFromBranch {
-        /// Branch name (defaults to GITHUB_REF_NAME)
-        #[arg(long)]
-        branch: Option<String>,
-    },
-}
-
-#[derive(Subcommand)]
-enum WorkflowMatrixCommands {
-    /// Export enabled workstreams as a GitHub Actions matrix
-    Workstreams,
-
-    /// Export workstreams with pending events as a GitHub Actions matrix
-    PendingWorkstreams {
-        /// Workstreams JSON from `matrix workstreams` output (the `matrix` field)
-        #[arg(long)]
-        workstreams_json: String,
-        /// Mock mode: treat all workstreams as having pending events
-        #[arg(long)]
-        mock: bool,
-    },
-    /// Export planner/implementer issue matrices from workstream inspection
-    Routing {
-        /// Workstreams JSON from `matrix workstreams` output (the `matrix` field)
-        #[arg(long)]
-        workstreams_json: String,
-        /// Routing labels as CSV (e.g., "bugs,feats,refacts,tests,docs")
-        #[arg(long)]
-        routing_labels: String,
-    },
-}
-
-#[derive(Subcommand)]
-enum WorkflowWorkstreamsCommands {
-    /// Inspect a workstream and output JSON
-    Inspect {
-        /// Workstream name
-        workstream: String,
-    },
-    /// Cleanup operations for workstreams
-    Clean {
-        #[command(subcommand)]
-        command: WorkflowWorkstreamsCleanCommands,
-    },
-}
-
-#[derive(Subcommand)]
-enum WorkflowWorkstreamsCleanCommands {
-    /// Remove a processed issue and its source events
-    Issue {
-        /// Path to the issue file
-        issue_file: String,
-    },
-}
-
 /// Entry point for the CLI.
 pub fn run() {
     let cli = Cli::parse();
 
     let result: Result<i32, AppError> = match cli.command {
-        Commands::Init { command } => run_init(command).map(|_| 0),
+        Commands::Init { command } => init::run_init(command).map(|_| 0),
         Commands::Update { prompt_preview, adopt_managed } => {
             run_update(prompt_preview, adopt_managed).map(|_| 0)
         }
@@ -334,13 +100,13 @@ pub fn run() {
             run_template(layer, name, workstream).map(|_| 0)
         }
         Commands::Setup { command } => match command {
-            SetupCommands::Gen { path } => run_setup_gen(path).map(|_| 0),
-            SetupCommands::List { detail } => run_setup_list(detail).map(|_| 0),
+            setup::SetupCommands::Gen { path } => setup::run_setup_gen(path).map(|_| 0),
+            setup::SetupCommands::List { detail } => setup::run_setup_list(detail).map(|_| 0),
         },
-        Commands::Run { layer } => run_agents(layer).map(|_| 0),
-        Commands::Workflow { command } => run_workflow(command).map(|_| 0),
-        Commands::Doctor { fix, strict, workstream } => run_doctor(fix, strict, workstream),
-        Commands::Deinit => run_deinit().map(|_| 0),
+        Commands::Run { layer } => run::run_agents(layer).map(|_| 0),
+        Commands::Workflow { command } => workflow::run_workflow(command).map(|_| 0),
+        Commands::Doctor { fix, strict, workstream } => doctor::run_doctor(fix, strict, workstream),
+        Commands::Deinit => deinit::run_deinit().map(|_| 0),
     };
 
     match result {
@@ -352,30 +118,6 @@ pub fn run() {
         Err(e) => {
             eprintln!("Error: {}", e);
             std::process::exit(1);
-        }
-    }
-}
-
-fn run_init(command: Option<InitCommands>) -> Result<(), AppError> {
-    match command.unwrap_or(InitCommands::Scaffold) {
-        InitCommands::Scaffold => {
-            crate::app::api::init()?;
-            println!("✅ Initialized .jules/ workspace");
-            Ok(())
-        }
-        InitCommands::Workflows { remote, self_hosted } => {
-            let mode = if remote {
-                crate::domain::WorkflowRunnerMode::Remote
-            } else if self_hosted {
-                crate::domain::WorkflowRunnerMode::SelfHosted
-            } else {
-                return Err(AppError::MissingArgument(
-                    "Runner mode is required. Use --remote or --self-hosted.".into(),
-                ));
-            };
-            crate::app::api::init_workflows(mode)?;
-            println!("✅ Installed workflow kit ({})", mode.label());
-            Ok(())
         }
     }
 }
@@ -438,231 +180,4 @@ fn run_update(prompt_preview: bool, adopt_managed: bool) -> Result<(), AppError>
     }
 
     Ok(())
-}
-
-fn run_agents(layer: RunLayer) -> Result<(), AppError> {
-    use crate::domain::Layer;
-
-    let (target_layer, role, workstream, prompt_preview, branch, issue, mock) = match layer {
-        RunLayer::Narrator { prompt_preview, branch, mock } => {
-            (Layer::Narrators, None, None, prompt_preview, branch, None, mock)
-        }
-        RunLayer::Observers { role, prompt_preview, branch, workstream, mock } => {
-            (Layer::Observers, Some(role), Some(workstream), prompt_preview, branch, None, mock)
-        }
-        RunLayer::Deciders { role, prompt_preview, branch, workstream, mock } => {
-            (Layer::Deciders, Some(role), Some(workstream), prompt_preview, branch, None, mock)
-        }
-        RunLayer::Planners { prompt_preview, branch, issue, mock } => {
-            (Layer::Planners, None, None, prompt_preview, branch, Some(issue), mock)
-        }
-        RunLayer::Implementers { prompt_preview, branch, issue, mock } => {
-            (Layer::Implementers, None, None, prompt_preview, branch, Some(issue), mock)
-        }
-    };
-
-    let result =
-        crate::app::api::run(target_layer, role, workstream, prompt_preview, branch, issue, mock)?;
-
-    if !result.prompt_preview && !result.roles.is_empty() && !result.sessions.is_empty() {
-        println!("✅ Created {} Jules session(s)", result.sessions.len());
-    }
-
-    Ok(())
-}
-
-fn run_setup_gen(path: Option<PathBuf>) -> Result<(), AppError> {
-    let components = crate::app::api::setup_gen(path.as_deref())?;
-    println!("✅ Generated install.sh with {} component(s)", components.len());
-    for (i, name) in components.iter().enumerate() {
-        println!("  {}. {}", i + 1, name);
-    }
-    Ok(())
-}
-
-fn run_setup_list(detail: Option<String>) -> Result<(), AppError> {
-    if let Some(component) = detail {
-        let info = crate::app::api::setup_detail(&component)?;
-        println!("{}: {}", info.name, info.summary);
-        if !info.dependencies.is_empty() {
-            println!("\nDependencies:");
-            for dep in &info.dependencies {
-                println!("  • {}", dep);
-            }
-        }
-        if !info.env_vars.is_empty() {
-            println!("\nEnvironment Variables:");
-            for env in &info.env_vars {
-                let default_str =
-                    env.default.as_ref().map(|d| format!(" (default: {})", d)).unwrap_or_default();
-                println!("  • {}{}", env.name, default_str);
-                if !env.description.is_empty() {
-                    println!("    {}", env.description);
-                }
-            }
-        }
-        println!("\nInstall Script:");
-        println!("{}", info.script_content);
-    } else {
-        let components = crate::app::api::setup_list()?;
-        println!("Available components:");
-        for comp in components {
-            println!("  {} - {}", comp.name, comp.summary);
-        }
-    }
-    Ok(())
-}
-
-fn run_deinit() -> Result<(), AppError> {
-    let outcome = crate::app::api::deinit()?;
-
-    if outcome.deleted_branch {
-        println!("✅ Deleted local 'jules' branch");
-    } else {
-        println!("ℹ️ Local 'jules' branch not found");
-    }
-
-    if outcome.deleted_files.is_empty() && outcome.deleted_action_dirs.is_empty() {
-        println!("ℹ️ No workflow kit files found to remove");
-    } else {
-        if !outcome.deleted_files.is_empty() {
-            println!("✅ Removed {} workflow kit file(s)", outcome.deleted_files.len());
-        }
-        if !outcome.deleted_action_dirs.is_empty() {
-            println!(
-                "✅ Removed {} workflow action directory(ies)",
-                outcome.deleted_action_dirs.len()
-            );
-        }
-    }
-
-    println!("⚠️ Remove JULES_API_KEY and JULES_API_SECRET from GitHub repository settings.");
-    Ok(())
-}
-
-fn parse_layer(value: &str) -> Result<crate::domain::Layer, AppError> {
-    crate::domain::Layer::from_dir_name(value)
-        .ok_or_else(|| AppError::InvalidLayer { name: value.to_string() })
-}
-
-fn run_doctor(fix: bool, strict: bool, workstream: Option<String>) -> Result<i32, AppError> {
-    let options = crate::DoctorOptions { fix, strict, workstream };
-    let outcome = crate::app::api::doctor(options)?;
-
-    Ok(outcome.exit_code)
-}
-
-fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    match command {
-        WorkflowCommands::Doctor { workstream } => {
-            let options = workflow::WorkflowDoctorOptions { workstream };
-            let output = workflow::doctor(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowCommands::Matrix { command } => run_workflow_matrix(command),
-        WorkflowCommands::Run { workstream, layer, mock } => {
-            let layer = parse_layer(&layer)?;
-            let options = workflow::WorkflowRunOptions { workstream, layer, mock };
-            let output = workflow::run(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowCommands::Cleanup { command } => run_workflow_cleanup(command),
-        WorkflowCommands::Pr { command } => run_workflow_pr(command),
-        WorkflowCommands::Workstreams { command } => run_workflow_workstreams(command),
-    }
-}
-
-fn run_workflow_cleanup(command: WorkflowCleanupCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    match command {
-        WorkflowCleanupCommands::Mock { mock_tag, pr_numbers_json, branches_json } => {
-            let pr_numbers_json = match pr_numbers_json {
-                Some(json_str) => {
-                    let parsed: Vec<u64> = serde_json::from_str(&json_str).map_err(|e| {
-                        AppError::Validation(format!("Invalid pr-numbers-json: {}", e))
-                    })?;
-                    Some(parsed)
-                }
-                None => None,
-            };
-            let branches_json = match branches_json {
-                Some(json_str) => {
-                    let parsed: Vec<String> = serde_json::from_str(&json_str).map_err(|e| {
-                        AppError::Validation(format!("Invalid branches-json: {}", e))
-                    })?;
-                    Some(parsed)
-                }
-                None => None,
-            };
-            let options =
-                workflow::WorkflowCleanupMockOptions { mock_tag, pr_numbers_json, branches_json };
-            let output = workflow::cleanup_mock(options)?;
-            workflow::write_workflow_output(&output)
-        }
-    }
-}
-
-fn run_workflow_pr(command: WorkflowPrCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    match command {
-        WorkflowPrCommands::LabelFromBranch { branch } => {
-            let options = workflow::WorkflowPrLabelOptions { branch };
-            let output = workflow::pr_label_from_branch(options)?;
-            workflow::write_workflow_output(&output)
-        }
-    }
-}
-
-fn run_workflow_workstreams(command: WorkflowWorkstreamsCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    match command {
-        WorkflowWorkstreamsCommands::Inspect { workstream } => {
-            let options = workflow::WorkflowWorkstreamsInspectOptions { workstream };
-            let output = workflow::workstreams_inspect(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowWorkstreamsCommands::Clean { command } => match command {
-            WorkflowWorkstreamsCleanCommands::Issue { issue_file } => {
-                let options = workflow::WorkflowWorkstreamsCleanIssueOptions { issue_file };
-                let output = workflow::workstreams_clean_issue(options)?;
-                workflow::write_workflow_output(&output)
-            }
-        },
-    }
-}
-
-fn run_workflow_matrix(command: WorkflowMatrixCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow::{self, matrix};
-
-    match command {
-        WorkflowMatrixCommands::Workstreams => {
-            let options = matrix::MatrixWorkstreamsOptions {};
-            let output = matrix::workstreams(options)?;
-            workflow::write_workflow_output(&output)
-        }
-
-        WorkflowMatrixCommands::PendingWorkstreams { workstreams_json, mock } => {
-            let workstreams_json: matrix::PendingWorkstreamsInput =
-                serde_json::from_str(&workstreams_json).map_err(|e| {
-                    AppError::Validation(format!("Invalid workstreams-json: {}", e))
-                })?;
-            let options = matrix::MatrixPendingWorkstreamsOptions { workstreams_json, mock };
-            let output = matrix::pending_workstreams(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowMatrixCommands::Routing { workstreams_json, routing_labels } => {
-            let workstreams_json: matrix::RoutingWorkstreamsInput =
-                serde_json::from_str(&workstreams_json).map_err(|e| {
-                    AppError::Validation(format!("Invalid workstreams-json: {}", e))
-                })?;
-            let options = matrix::MatrixRoutingOptions { workstreams_json, routing_labels };
-            let output = matrix::routing(options)?;
-            workflow::write_workflow_output(&output)
-        }
-    }
 }

@@ -59,23 +59,24 @@ tests/
 | `jlo init workflows (--remote \| --self-hosted)` | `i w` | Install workflow kit into `.github/` |
 | `jlo update [--prompt-preview] [--adopt-managed]` | `u` | Update workspace to current jlo version |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
-| `jlo run narrator [--prompt-preview] [--mock]` | `r n` | Run narrator (produces changes feed) |
-| `jlo run observers --workstream <name> [--role <name> \| --scheduled] [--mock]` | `r o` | Run observer agents |
-| `jlo run deciders --workstream <name> [--role <name> \| --scheduled] [--mock]` | `r d` | Run decider agents |
-| `jlo run planners <path> [--mock]` | `r p` | Run planner (issue-driven) |
-| `jlo run implementers <path> [--mock]` | `r i` | Run implementer (issue-driven) |
+| `jlo run narrator [--prompt-preview] [--branch <branch>] [--mock]` | `r n` | Run narrator (produces changes feed) |
+| `jlo run observers --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |
+| `jlo run deciders --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
+| `jlo run planners <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (issue-driven) |
+| `jlo run implementers <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (issue-driven) |
 | `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate .jules/ structure and content |
-| `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
+| `jlo workflow doctor [--workstream <name>]` | `wf` | Validate workspace for workflow use |
 | `jlo workflow matrix workstreams` | | Generate workstream matrix for GitHub Actions |
-| `jlo workflow matrix roles --layer <layer> [--workstreams-json <json>]` | | Generate role matrix for GitHub Actions |
-| `jlo workflow run <layer> [--matrix-json <json>] [--mock]` | | Run layer and return wait-gating metadata |
-| `jlo workflow wait prs --layer <layer> [...]` | | Wait for PRs (merge or label mode) |
-| `jlo workflow cleanup mock --mock-tag <tag>` | | Cleanup mock artifacts |
+| `jlo workflow matrix pending-workstreams --workstreams-json <json> [--mock]` | | Generate pending workstreams matrix |
+| `jlo workflow matrix routing --workstreams-json <json> --routing-labels <csv>` | | Generate routing matrix for issues |
+| `jlo workflow run <workstream> <layer> [--mock]` | | Run layer and return wait-gating metadata |
+| `jlo workflow cleanup mock --mock-tag <tag> [--pr-numbers-json <json>] [--branches-json <json>]` | | Cleanup mock artifacts |
+| `jlo workflow pr label-from-branch [--branch <branch>]` | | Apply category label to implementer PR |
 | `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state |
 | `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
-| `jlo setup list` | `s ls` | List available components |
-| `jlo setup list --detail <component>` | | Show component details |
+| `jlo setup list [--detail <component>]` | `s ls` | List available components |
+| `jlo deinit` | | Remove jlo-managed assets (branch + workflows) |
 
 ## Verification Commands
 
