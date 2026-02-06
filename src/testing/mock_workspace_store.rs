@@ -10,7 +10,7 @@ use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 #[allow(dead_code)]
 pub struct MockWorkspaceStore {
     pub exists: RefCell<bool>,
-    pub roles: RefCell<HashMap<(Layer, String), bool>>,
+    pub roles: RefCell<HashMap<(Layer, RoleId), bool>>,
     pub version: RefCell<Option<String>>,
     pub created_structure: RefCell<bool>,
     pub files: RefCell<HashMap<String, String>>,
@@ -28,7 +28,8 @@ impl MockWorkspaceStore {
     }
 
     pub fn add_role(&self, layer: Layer, role_id: &str) {
-        self.roles.borrow_mut().insert((layer, role_id.to_string()), true);
+        let id = RoleId::new(role_id).expect("Invalid role_id provided in test setup");
+        self.roles.borrow_mut().insert((layer, id), true);
     }
 
     pub fn with_file(self, path: &str, content: &str) -> Self {
@@ -62,7 +63,7 @@ impl WorkspaceStore for MockWorkspaceStore {
     }
 
     fn role_exists_in_layer(&self, layer: Layer, role_id: &RoleId) -> bool {
-        self.roles.borrow().contains_key(&(layer, role_id.as_str().to_string()))
+        self.roles.borrow().contains_key(&(layer, role_id.clone()))
     }
 
     fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
@@ -79,12 +80,12 @@ impl WorkspaceStore for MockWorkspaceStore {
         let roles = self.discover_roles()?;
 
         // Exact match
-        if let Some(role) = roles.iter().find(|r| r.id == query) {
+        if let Some(role) = roles.iter().find(|r| r.id.as_str() == query) {
             return Ok(Some(role.clone()));
         }
 
         // Prefix match
-        let matches: Vec<_> = roles.iter().filter(|r| r.id.starts_with(query)).collect();
+        let matches: Vec<_> = roles.iter().filter(|r| r.id.as_str().starts_with(query)).collect();
         match matches.len() {
             1 => Ok(Some(matches[0].clone())),
             _ => Ok(None),
@@ -105,7 +106,7 @@ impl WorkspaceStore for MockWorkspaceStore {
         role_id: &RoleId,
         _role_yaml: &str,
     ) -> Result<(), AppError> {
-        self.roles.borrow_mut().insert((layer, role_id.as_str().to_string()), true);
+        self.roles.borrow_mut().insert((layer, role_id.clone()), true);
         Ok(())
     }
 

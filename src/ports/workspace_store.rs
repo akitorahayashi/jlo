@@ -6,7 +6,7 @@ use std::path::PathBuf;
 #[allow(dead_code)]
 pub struct DiscoveredRole {
     pub layer: Layer,
-    pub id: String,
+    pub id: RoleId,
 }
 
 /// Port for workspace operations (.jules/ directory management).
