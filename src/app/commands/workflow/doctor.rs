@@ -41,7 +41,7 @@ pub fn execute(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, A
         workstream: options.workstream,
     };
 
-    let outcome = crate::app::commands::doctor::execute(&workspace.jules_path(), doctor_options)?;
+    let outcome = crate::app::commands::doctor::execute(&workspace, doctor_options)?;
 
     Ok(WorkflowDoctorOutput { schema_version: 1, ok: outcome.errors == 0 && outcome.warnings == 0 })
 }

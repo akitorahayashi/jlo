@@ -1,8 +1,8 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::app::commands::run::parse_config_content;
 use crate::domain::{AppError, Layer, RunConfig};
+use crate::ports::WorkspaceStore;
 use crate::services::assets::scaffold_assets::scaffold_file_content;
 use crate::services::assets::workstream_template_assets::workstream_template_content;
 
@@ -10,19 +10,18 @@ use super::DoctorOptions;
 use super::diagnostics::Diagnostics;
 
 pub fn collect_workstreams(
-    jules_path: &Path,
+    store: &impl WorkspaceStore,
     filter: Option<&str>,
 ) -> Result<Vec<String>, AppError> {
-    let workstreams_dir = jules_path.join("workstreams");
-    if !workstreams_dir.exists() {
+    let workstreams_dir = store.jules_path().join("workstreams");
+    if !store.is_dir(workstreams_dir.to_str().unwrap()) {
         return Ok(Vec::new());
     }
 
     let mut workstreams = Vec::new();
-    for entry in fs::read_dir(&workstreams_dir)? {
-        let entry = entry?;
-        if entry.path().is_dir() {
-            let name = entry.file_name().to_string_lossy().to_string();
+    for entry in store.list_dir(workstreams_dir.to_str().unwrap())? {
+        if store.is_dir(entry.to_str().unwrap()) {
+            let name = entry.file_name().unwrap().to_string_lossy().to_string();
             workstreams.push(name);
         }
     }
@@ -39,16 +38,18 @@ pub fn collect_workstreams(
 }
 
 pub fn read_run_config(
-    jules_path: &Path,
+    store: &impl WorkspaceStore,
     diagnostics: &mut Diagnostics,
 ) -> Result<RunConfig, AppError> {
-    let config_path = jules_path.join("config.toml");
-    if !config_path.exists() {
+    let config_path = store.jules_path().join("config.toml");
+    let config_path_str = config_path.to_str().unwrap();
+
+    if !store.file_exists(config_path_str) {
         diagnostics.push_error(config_path.display().to_string(), "Missing .jules/config.toml");
         return Ok(RunConfig::default());
     }
 
-    let content = match fs::read_to_string(&config_path) {
+    let content = match store.read_file(config_path_str) {
         Ok(content) => content,
         Err(err) => {
             diagnostics.push_error(config_path.display().to_string(), err.to_string());
@@ -65,8 +66,9 @@ pub fn read_run_config(
     }
 }
 
-pub struct StructuralInputs<'a> {
-    pub jules_path: &'a Path,
+pub struct StructuralInputs<'a, S: WorkspaceStore> {
+    pub store: &'a S,
+    pub jules_path: PathBuf,
     pub root: &'a Path,
     pub workstreams: &'a [String],
     pub issue_labels: &'a [String],
@@ -75,9 +77,15 @@ pub struct StructuralInputs<'a> {
     pub applied_fixes: &'a mut Vec<String>,
 }
 
-pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnostics) {
+pub fn structural_checks<S: WorkspaceStore>(
+    inputs: StructuralInputs<'_, S>,
+    diagnostics: &mut Diagnostics,
+) {
+    let store = inputs.store;
+    let jules_path = &inputs.jules_path;
+
     ensure_path_exists(
-        inputs.root,
+        store,
         ".jules/JULES.md",
         inputs.options,
         inputs.applied_fixes,
@@ -85,7 +93,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         true,
     );
     ensure_path_exists(
-        inputs.root,
+        store,
         ".jules/README.md",
         inputs.options,
         inputs.applied_fixes,
@@ -93,7 +101,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         true,
     );
     ensure_path_exists(
-        inputs.root,
+        store,
         ".jules/config.toml",
         inputs.options,
         inputs.applied_fixes,
@@ -101,7 +109,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         true,
     );
     ensure_path_exists(
-        inputs.root,
+        store,
         ".jules/.jlo-version",
         inputs.options,
         inputs.applied_fixes,
@@ -109,62 +117,67 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         true,
     );
     ensure_directory_exists(
-        inputs.jules_path.join("roles"),
+        store,
+        jules_path.join("roles"),
         inputs.options,
         inputs.applied_fixes,
         diagnostics,
     );
     ensure_directory_exists(
-        inputs.jules_path.join("workstreams"),
+        store,
+        jules_path.join("workstreams"),
         inputs.options,
         inputs.applied_fixes,
         diagnostics,
     );
     // Narrator output directory
     ensure_directory_exists(
-        inputs.jules_path.join("changes"),
+        store,
+        jules_path.join("changes"),
         inputs.options,
         inputs.applied_fixes,
         diagnostics,
     );
 
-    check_version_file(inputs.jules_path, env!("CARGO_PKG_VERSION"), diagnostics);
+    check_version_file(store, env!("CARGO_PKG_VERSION"), diagnostics);
 
     for layer in Layer::ALL {
-        let layer_dir = inputs.jules_path.join("roles").join(layer.dir_name());
-        if !layer_dir.exists() {
+        let layer_dir = jules_path.join("roles").join(layer.dir_name());
+        let layer_dir_str = layer_dir.to_str().unwrap();
+
+        if !store.is_dir(layer_dir_str) {
             diagnostics.push_error(layer_dir.display().to_string(), "Missing layer directory");
             continue;
         }
 
         let contracts = layer_dir.join("contracts.yml");
-        if !contracts.exists() {
+        if !store.file_exists(contracts.to_str().unwrap()) {
             diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
         }
 
         // Check schemas/ directory (all layers have this)
         let schemas_dir = layer_dir.join("schemas");
-        if !schemas_dir.exists() {
+        if !store.is_dir(schemas_dir.to_str().unwrap()) {
             diagnostics.push_error(schemas_dir.display().to_string(), "Missing schemas/");
         }
 
         // Check prompt_assembly.yml (all layers have this)
         let prompt_assembly = layer_dir.join("prompt_assembly.yml");
-        if !prompt_assembly.exists() {
+        if !store.file_exists(prompt_assembly.to_str().unwrap()) {
             diagnostics
                 .push_error(prompt_assembly.display().to_string(), "Missing prompt_assembly.yml");
         }
 
         if layer.is_single_role() {
             let prompt = layer_dir.join("prompt.yml");
-            if !prompt.exists() {
+            if !store.file_exists(prompt.to_str().unwrap()) {
                 diagnostics.push_error(prompt.display().to_string(), "Missing prompt.yml");
             }
 
             // Narrator requires change.yml schema template
             if layer == Layer::Narrators {
                 let change_template = layer_dir.join("schemas").join("change.yml");
-                if !change_template.exists() {
+                if !store.file_exists(change_template.to_str().unwrap()) {
                     diagnostics
                         .push_error(change_template.display().to_string(), "Missing change.yml");
                 }
@@ -172,19 +185,19 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         } else {
             // Check for prompt.yml in multi-role layers
             let prompt = layer_dir.join("prompt.yml");
-            if !prompt.exists() {
+            if !store.file_exists(prompt.to_str().unwrap()) {
                 diagnostics.push_error(prompt.display().to_string(), "Missing prompt.yml");
             }
 
             // Check roles/ container directory for multi-role layers
             let roles_container = layer_dir.join("roles");
-            if !roles_container.exists() {
+            if !store.is_dir(roles_container.to_str().unwrap()) {
                 diagnostics
                     .push_error(roles_container.display().to_string(), "Missing roles/ directory");
             } else {
-                for entry in list_subdirs(&roles_container, diagnostics) {
+                for entry in list_subdirs(store, &roles_container, diagnostics) {
                     let role_file = entry.join("role.yml");
-                    if !role_file.exists() {
+                    if !store.file_exists(role_file.to_str().unwrap()) {
                         diagnostics.push_error(role_file.display().to_string(), "Missing role.yml");
                     }
                 }
@@ -193,14 +206,15 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
     }
 
     for workstream in inputs.workstreams {
-        let ws_dir = inputs.jules_path.join("workstreams").join(workstream);
-        if !ws_dir.exists() {
+        let ws_dir = jules_path.join("workstreams").join(workstream);
+        if !store.is_dir(ws_dir.to_str().unwrap()) {
             diagnostics.push_error(ws_dir.display().to_string(), "Missing workstream directory");
             continue;
         }
 
         let scheduled_path = ws_dir.join("scheduled.toml");
         ensure_workstream_template_exists(
+            store,
             scheduled_path,
             "scheduled.toml",
             inputs.options,
@@ -211,6 +225,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         // Exchange directory structure (events and issues)
         let exchange_dir = ws_dir.join("exchange");
         ensure_directory_exists(
+            store,
             exchange_dir.clone(),
             inputs.options,
             inputs.applied_fixes,
@@ -219,6 +234,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
 
         let events_dir = exchange_dir.join("events");
         ensure_directory_exists(
+            store,
             events_dir.clone(),
             inputs.options,
             inputs.applied_fixes,
@@ -226,6 +242,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         );
         for state in inputs.event_states {
             ensure_directory_exists(
+                store,
                 events_dir.join(state),
                 inputs.options,
                 inputs.applied_fixes,
@@ -235,6 +252,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
 
         let issues_dir = exchange_dir.join("issues");
         ensure_directory_exists(
+            store,
             issues_dir.clone(),
             inputs.options,
             inputs.applied_fixes,
@@ -242,6 +260,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         );
         for label in inputs.issue_labels {
             ensure_directory_exists(
+                store,
                 issues_dir.join(label),
                 inputs.options,
                 inputs.applied_fixes,
@@ -252,6 +271,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         // Workstations directory
         let workstations_dir = ws_dir.join("workstations");
         ensure_directory_exists(
+            store,
             workstations_dir,
             inputs.options,
             inputs.applied_fixes,
@@ -260,13 +280,19 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
     }
 }
 
-fn check_version_file(jules_path: &Path, current_version: &str, diagnostics: &mut Diagnostics) {
-    let version_path = jules_path.join(".jlo-version");
-    if !version_path.exists() {
+fn check_version_file(
+    store: &impl WorkspaceStore,
+    current_version: &str,
+    diagnostics: &mut Diagnostics,
+) {
+    let version_path = store.jules_path().join(".jlo-version");
+    let version_path_str = version_path.to_str().unwrap();
+
+    if !store.file_exists(version_path_str) {
         return;
     }
 
-    let content = match fs::read_to_string(&version_path) {
+    let content = match store.read_file(version_path_str) {
         Ok(content) => content.trim().to_string(),
         Err(err) => {
             diagnostics.push_error(version_path.display().to_string(), err.to_string());
@@ -319,17 +345,19 @@ fn compare_versions(left: &[u32], right: &[u32]) -> i32 {
 }
 
 fn ensure_directory_exists(
+    store: &impl WorkspaceStore,
     path: PathBuf,
     options: &DoctorOptions,
     applied_fixes: &mut Vec<String>,
     diagnostics: &mut Diagnostics,
 ) {
-    if path.exists() {
+    let path_str = path.to_str().unwrap();
+    if store.is_dir(path_str) {
         return;
     }
 
     if options.fix {
-        if let Err(err) = fs::create_dir_all(&path) {
+        if let Err(err) = store.create_dir_all(path_str) {
             diagnostics.push_error(path.display().to_string(), err.to_string());
         } else {
             applied_fixes.push(format!("Created directory {}", path.display()));
@@ -341,73 +369,76 @@ fn ensure_directory_exists(
 }
 
 fn ensure_path_exists(
-    root: &Path,
+    store: &impl WorkspaceStore,
     rel_path: &str,
     options: &DoctorOptions,
     applied_fixes: &mut Vec<String>,
     diagnostics: &mut Diagnostics,
     fixable_from_scaffold: bool,
 ) {
-    let full_path = root.join(rel_path);
-    if full_path.exists() {
+    if store.file_exists(rel_path) {
         return;
     }
 
     if options.fix && fixable_from_scaffold {
-        attempt_fix_file(full_path, rel_path, options, applied_fixes, diagnostics);
+        attempt_fix_file(store, rel_path, options, applied_fixes, diagnostics);
     } else {
-        diagnostics.push_error(full_path.display().to_string(), "Missing required file");
+        diagnostics.push_error(rel_path.to_string(), "Missing required file");
     }
 }
 
 fn attempt_fix_file(
-    full_path: PathBuf,
-    scaffold_path: &str,
+    store: &impl WorkspaceStore,
+    path: &str,
     options: &DoctorOptions,
     applied_fixes: &mut Vec<String>,
     diagnostics: &mut Diagnostics,
 ) {
     if !options.fix {
-        diagnostics.push_error(full_path.display().to_string(), "Missing required file");
+        diagnostics.push_error(path.to_string(), "Missing required file");
         return;
     }
+
+    let scaffold_path = path;
 
     let content = match scaffold_file_content(scaffold_path) {
         Some(content) => content,
         None => {
             diagnostics.push_error(
-                full_path.display().to_string(),
+                path.to_string(),
                 "Missing required file (no scaffold fix available)",
             );
             return;
         }
     };
 
-    if let Some(parent) = full_path.parent()
-        && let Err(err) = fs::create_dir_all(parent)
-    {
-        diagnostics.push_error(full_path.display().to_string(), err.to_string());
+    let path_buf = PathBuf::from(path);
+    if let Some(parent) = path_buf.parent() {
+        if !store.is_dir(parent.to_str().unwrap()) {
+            let _ = store.create_dir_all(parent.to_str().unwrap());
+        }
+    }
+
+    if let Err(err) = store.write_file(path, &content) {
+        diagnostics.push_error(path.to_string(), err.to_string());
         return;
     }
 
-    if let Err(err) = fs::write(&full_path, content) {
-        diagnostics.push_error(full_path.display().to_string(), err.to_string());
-        return;
-    }
-
-    applied_fixes.push(format!("Restored {}", full_path.display()));
+    applied_fixes.push(format!("Restored {}", path));
     diagnostics
-        .push_warning(full_path.display().to_string(), "Restored missing file from scaffold");
+        .push_warning(path.to_string(), "Restored missing file from scaffold");
 }
 
 fn ensure_workstream_template_exists(
+    store: &impl WorkspaceStore,
     full_path: PathBuf,
     template_path: &str,
     options: &DoctorOptions,
     applied_fixes: &mut Vec<String>,
     diagnostics: &mut Diagnostics,
 ) {
-    if full_path.exists() {
+    let path_str = full_path.to_str().unwrap();
+    if store.file_exists(path_str) {
         return;
     }
 
@@ -425,14 +456,11 @@ fn ensure_workstream_template_exists(
         }
     };
 
-    if let Some(parent) = full_path.parent()
-        && let Err(err) = fs::create_dir_all(parent)
-    {
-        diagnostics.push_error(full_path.display().to_string(), err.to_string());
-        return;
+    if let Some(parent) = full_path.parent() {
+        let _ = store.create_dir_all(parent.to_str().unwrap());
     }
 
-    if let Err(err) = fs::write(&full_path, content) {
+    if let Err(err) = store.write_file(path_str, &content) {
         diagnostics.push_error(full_path.display().to_string(), err.to_string());
         return;
     }
@@ -442,24 +470,17 @@ fn ensure_workstream_template_exists(
         .push_warning(full_path.display().to_string(), "Restored missing file from templates");
 }
 
-pub fn list_subdirs(path: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> {
+pub fn list_subdirs(
+    store: &impl WorkspaceStore,
+    path: &Path,
+    diagnostics: &mut Diagnostics,
+) -> Vec<PathBuf> {
     let mut dirs = Vec::new();
-    match fs::read_dir(path) {
+    match store.list_dir(path.to_str().unwrap()) {
         Ok(entries) => {
             for entry in entries {
-                match entry {
-                    Ok(entry) => {
-                        let entry_path = entry.path();
-                        if entry_path.is_dir() {
-                            dirs.push(entry_path);
-                        }
-                    }
-                    Err(err) => {
-                        diagnostics.push_error(
-                            path.display().to_string(),
-                            format!("Failed to read directory entry: {}", err),
-                        );
-                    }
+                if store.is_dir(entry.to_str().unwrap()) {
+                    dirs.push(entry);
                 }
             }
         }
@@ -475,9 +496,9 @@ pub fn list_subdirs(path: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> 
 
 #[cfg(test)]
 mod tests {
-    use assert_fs::prelude::*;
-
     use crate::app::commands::doctor::diagnostics::Diagnostics;
+    use crate::services::adapters::memory_workspace_store::MemoryWorkspaceStore;
+    use crate::ports::WorkspaceStore;
 
     use super::*;
 
@@ -508,36 +529,36 @@ mod tests {
 
     #[test]
     fn test_check_version_file_missing_is_ok() {
-        let temp = assert_fs::TempDir::new().unwrap();
+        let store = MemoryWorkspaceStore::new();
         let mut diagnostics = Diagnostics::default();
-        check_version_file(temp.path(), "1.0.0", &mut diagnostics);
+        check_version_file(&store, "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
     }
 
     #[test]
     fn test_check_version_file_match_is_ok() {
-        let temp = assert_fs::TempDir::new().unwrap();
-        temp.child(".jlo-version").write_str("1.0.0").unwrap();
+        let store = MemoryWorkspaceStore::new();
+        store.write_file(".jules/.jlo-version", "1.0.0").unwrap();
         let mut diagnostics = Diagnostics::default();
-        check_version_file(temp.path(), "1.0.0", &mut diagnostics);
+        check_version_file(&store, "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
     }
 
     #[test]
     fn test_check_version_file_workspace_older_is_ok() {
-        let temp = assert_fs::TempDir::new().unwrap();
-        temp.child(".jlo-version").write_str("0.9.0").unwrap();
+        let store = MemoryWorkspaceStore::new();
+        store.write_file(".jules/.jlo-version", "0.9.0").unwrap();
         let mut diagnostics = Diagnostics::default();
-        check_version_file(temp.path(), "1.0.0", &mut diagnostics);
+        check_version_file(&store, "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
     }
 
     #[test]
     fn test_check_version_file_workspace_newer_is_error() {
-        let temp = assert_fs::TempDir::new().unwrap();
-        temp.child(".jlo-version").write_str("2.0.0").unwrap();
+        let store = MemoryWorkspaceStore::new();
+        store.write_file(".jules/.jlo-version", "2.0.0").unwrap();
         let mut diagnostics = Diagnostics::default();
-        check_version_file(temp.path(), "1.0.0", &mut diagnostics);
+        check_version_file(&store, "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 1);
         assert!(
             diagnostics.errors()[0].message.contains("Workspace version is newer than the binary")
@@ -546,85 +567,78 @@ mod tests {
 
     #[test]
     fn test_check_version_file_invalid_format_is_error() {
-        let temp = assert_fs::TempDir::new().unwrap();
-        temp.child(".jlo-version").write_str("invalid").unwrap();
+        let store = MemoryWorkspaceStore::new();
+        store.write_file(".jules/.jlo-version", "invalid").unwrap();
         let mut diagnostics = Diagnostics::default();
-        check_version_file(temp.path(), "1.0.0", &mut diagnostics);
+        check_version_file(&store, "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 1);
         assert!(diagnostics.errors()[0].message.contains("Invalid version format"));
     }
 
     #[test]
     fn test_collect_workstreams() {
-        let temp = assert_fs::TempDir::new().unwrap();
-        let ws_dir = temp.child("workstreams");
-        ws_dir.create_dir_all().unwrap();
-
-        ws_dir.child("ws1").create_dir_all().unwrap();
-        ws_dir.child("ws2").create_dir_all().unwrap();
-        ws_dir.child("file.txt").touch().unwrap(); // Should be ignored
+        let store = MemoryWorkspaceStore::new();
+        store.create_dir_all(".jules/workstreams/ws1").unwrap();
+        store.create_dir_all(".jules/workstreams/ws2").unwrap();
+        store.write_file(".jules/workstreams/file.txt", "").unwrap(); // Should be ignored
 
         // Test listing all
-        let result = collect_workstreams(temp.path(), None).unwrap();
+        let result = collect_workstreams(&store, None).unwrap();
         assert_eq!(result, vec!["ws1", "ws2"]);
 
         // Test filter exists
-        let result = collect_workstreams(temp.path(), Some("ws1")).unwrap();
+        let result = collect_workstreams(&store, Some("ws1")).unwrap();
         assert_eq!(result, vec!["ws1"]);
 
         // Test filter missing
-        let result = collect_workstreams(temp.path(), Some("ws3"));
+        let result = collect_workstreams(&store, Some("ws3"));
         assert!(result.is_err());
     }
 
-    fn create_valid_workspace(temp: &assert_fs::TempDir) {
-        temp.child(".jules/JULES.md").touch().unwrap();
-        temp.child(".jules/README.md").touch().unwrap();
-        temp.child(".jules/config.toml").touch().unwrap();
-        temp.child(".jules/.jlo-version").write_str(env!("CARGO_PKG_VERSION")).unwrap();
-        temp.child(".jules/changes").create_dir_all().unwrap();
+    fn create_valid_workspace(store: &MemoryWorkspaceStore) {
+        store.write_file(".jules/JULES.md", "").unwrap();
+        store.write_file(".jules/README.md", "").unwrap();
+        store.write_file(".jules/config.toml", "").unwrap();
+        store.write_file(".jules/.jlo-version", env!("CARGO_PKG_VERSION")).unwrap();
+        store.create_dir_all(".jules/changes").unwrap();
 
         // Layers
         for layer in Layer::ALL {
-            let layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
-            layer_dir.create_dir_all().unwrap();
-            layer_dir.child("contracts.yml").touch().unwrap();
-            layer_dir.child("schemas").create_dir_all().unwrap();
-            layer_dir.child("prompt_assembly.yml").touch().unwrap();
+            let layer_dir = format!(".jules/roles/{}", layer.dir_name());
+            store.create_dir_all(&layer_dir).unwrap();
+            store.write_file(&format!("{}/contracts.yml", layer_dir), "").unwrap();
+            store.create_dir_all(&format!("{}/schemas", layer_dir)).unwrap();
+            store.write_file(&format!("{}/prompt_assembly.yml", layer_dir), "").unwrap();
 
             if layer.is_single_role() {
-                layer_dir.child("prompt.yml").touch().unwrap();
+                store.write_file(&format!("{}/prompt.yml", layer_dir), "").unwrap();
                 if layer == Layer::Narrators {
-                    layer_dir.child("schemas/change.yml").touch().unwrap();
+                    store.write_file(&format!("{}/schemas/change.yml", layer_dir), "").unwrap();
                 }
             } else {
-                layer_dir.child("prompt.yml").touch().unwrap(); // Required for multi-role too according to code
-                let role_dir = layer_dir.child("roles/my-role");
-                role_dir.create_dir_all().unwrap();
-                role_dir.child("role.yml").touch().unwrap();
+                store.write_file(&format!("{}/prompt.yml", layer_dir), "").unwrap();
+                let role_dir = format!("{}/roles/my-role", layer_dir);
+                store.create_dir_all(&role_dir).unwrap();
+                store.write_file(&format!("{}/role.yml", role_dir), "").unwrap();
             }
         }
 
         // Workstream
-        let ws_dir = temp.child(".jules/workstreams/generic");
-        ws_dir.create_dir_all().unwrap();
-        ws_dir.child("scheduled.toml").touch().unwrap();
+        let ws_dir = ".jules/workstreams/generic";
+        store.create_dir_all(ws_dir).unwrap();
+        store.write_file(&format!("{}/scheduled.toml", ws_dir), "").unwrap();
 
-        let exchange = ws_dir.child("exchange");
-        exchange.child("events").create_dir_all().unwrap();
-        exchange.child("issues").create_dir_all().unwrap();
+        let exchange = format!("{}/exchange", ws_dir);
+        store.create_dir_all(&format!("{}/events/pending", exchange)).unwrap();
+        store.create_dir_all(&format!("{}/issues/tests", exchange)).unwrap();
 
-        // We need to match inputs for event states and issue labels
-        exchange.child("events/pending").create_dir_all().unwrap();
-        exchange.child("issues/tests").create_dir_all().unwrap();
-
-        ws_dir.child("workstations").create_dir_all().unwrap();
+        store.create_dir_all(&format!("{}/workstations", ws_dir)).unwrap();
     }
 
     #[test]
     fn test_structural_checks_success() {
-        let temp = assert_fs::TempDir::new().unwrap();
-        create_valid_workspace(&temp);
+        let store = MemoryWorkspaceStore::new();
+        create_valid_workspace(&store);
 
         let mut applied_fixes = Vec::new();
         let mut diagnostics = Diagnostics::default();
@@ -634,8 +648,9 @@ mod tests {
         let options = DoctorOptions { fix: false, strict: false, workstream: None };
 
         let inputs = StructuralInputs {
-            jules_path: &temp.path().join(".jules"),
-            root: temp.path(),
+            store: &store,
+            jules_path: PathBuf::from(".jules"),
+            root: Path::new("."),
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
@@ -654,13 +669,13 @@ mod tests {
 
     #[test]
     fn test_structural_checks_missing_critical_files() {
-        let temp = assert_fs::TempDir::new().unwrap();
-        create_valid_workspace(&temp);
+        let store = MemoryWorkspaceStore::new();
+        create_valid_workspace(&store);
 
         // Remove config.toml
-        std::fs::remove_file(temp.path().join(".jules/config.toml")).unwrap();
+        store.remove_file(".jules/config.toml").unwrap();
         // Remove JULES.md
-        std::fs::remove_file(temp.path().join(".jules/JULES.md")).unwrap();
+        store.remove_file(".jules/JULES.md").unwrap();
 
         let mut applied_fixes = Vec::new();
         let mut diagnostics = Diagnostics::default();
@@ -670,8 +685,9 @@ mod tests {
         let options = DoctorOptions { fix: false, strict: false, workstream: None };
 
         let inputs = StructuralInputs {
-            jules_path: &temp.path().join(".jules"),
-            root: temp.path(),
+            store: &store,
+            jules_path: PathBuf::from(".jules"),
+            root: Path::new("."),
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
@@ -684,17 +700,16 @@ mod tests {
         // Expect at least 2 errors
         assert!(diagnostics.error_count() >= 2);
         let errors: Vec<String> = diagnostics.errors().iter().map(|e| e.message.clone()).collect();
-        // The error message is "Missing required file" based on ensure_path_exists
         assert!(errors.contains(&"Missing required file".to_string()));
     }
 
     #[test]
     fn test_structural_checks_missing_layer_files() {
-        let temp = assert_fs::TempDir::new().unwrap();
-        create_valid_workspace(&temp);
+        let store = MemoryWorkspaceStore::new();
+        create_valid_workspace(&store);
 
         // Remove implementers contracts
-        std::fs::remove_file(temp.path().join(".jules/roles/implementers/contracts.yml")).unwrap();
+        store.remove_file(".jules/roles/implementers/contracts.yml").unwrap();
 
         let mut applied_fixes = Vec::new();
         let mut diagnostics = Diagnostics::default();
@@ -704,8 +719,9 @@ mod tests {
         let options = DoctorOptions { fix: false, strict: false, workstream: None };
 
         let inputs = StructuralInputs {
-            jules_path: &temp.path().join(".jules"),
-            root: temp.path(),
+            store: &store,
+            jules_path: PathBuf::from(".jules"),
+            root: Path::new("."),
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,

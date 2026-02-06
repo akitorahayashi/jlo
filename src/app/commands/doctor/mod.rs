@@ -9,6 +9,7 @@ mod yaml;
 use std::path::Path;
 
 use crate::domain::AppError;
+use crate::ports::WorkspaceStore;
 use crate::services::assets::scaffold_assets::{
     list_event_states, list_issue_labels, read_enum_values,
 };
@@ -30,12 +31,14 @@ pub struct DoctorOutcome {
     pub exit_code: i32,
 }
 
-pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
-    if !jules_path.exists() {
+pub fn execute(store: &impl WorkspaceStore, options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
+    if !store.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 
+    let jules_path = store.jules_path();
     let root = jules_path.parent().unwrap_or(Path::new(".")).to_path_buf();
+
     let issue_labels = list_issue_labels()?;
     let event_states = list_event_states()?;
     let event_confidence =
@@ -45,13 +48,14 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
     let mut diagnostics = Diagnostics::default();
     let mut applied_fixes = Vec::new();
 
-    let workstreams = structure::collect_workstreams(jules_path, options.workstream.as_deref())?;
+    let workstreams = structure::collect_workstreams(store, options.workstream.as_deref())?;
 
-    let _run_config = structure::read_run_config(jules_path, &mut diagnostics)?;
+    let _run_config = structure::read_run_config(store, &mut diagnostics)?;
 
     structure::structural_checks(
         structure::StructuralInputs {
-            jules_path,
+            store,
+            jules_path: jules_path.clone(),
             root: &root,
             workstreams: &workstreams,
             issue_labels: &issue_labels,
@@ -62,11 +66,12 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         &mut diagnostics,
     );
 
-    let prompt_entries = schema::collect_prompt_entries(jules_path, &mut diagnostics)?;
+    let prompt_entries = schema::collect_prompt_entries(store, &jules_path, &mut diagnostics)?;
 
     schema::schema_checks(
         schema::SchemaInputs {
-            jules_path,
+            store,
+            jules_path: &jules_path,
             root: &root,
             workstreams: &workstreams,
             issue_labels: &issue_labels,
@@ -78,14 +83,15 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         &mut diagnostics,
     );
 
-    naming::naming_checks(jules_path, &workstreams, &issue_labels, &event_states, &mut diagnostics);
+    naming::naming_checks(store, &jules_path, &workstreams, &issue_labels, &event_states, &mut diagnostics);
 
     let semantic_context =
-        semantic::semantic_context(jules_path, &workstreams, &issue_labels, &mut diagnostics);
-    semantic::semantic_checks(jules_path, &workstreams, &semantic_context, &mut diagnostics);
+        semantic::semantic_context(store, &jules_path, &workstreams, &issue_labels, &mut diagnostics);
+    semantic::semantic_checks(store, &jules_path, &workstreams, &semantic_context, &mut diagnostics);
 
     quality::quality_checks(
-        jules_path,
+        store,
+        &jules_path,
         &workstreams,
         &issue_labels,
         &event_states,

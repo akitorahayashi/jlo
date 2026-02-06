@@ -1,12 +1,17 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde_yaml::Mapping;
 
+use crate::ports::WorkspaceStore;
+
 use super::diagnostics::Diagnostics;
 
-pub fn load_yaml_mapping(path: &Path, diagnostics: &mut Diagnostics) -> Option<Mapping> {
-    let content = match fs::read_to_string(path) {
+pub fn load_yaml_mapping(
+    store: &impl WorkspaceStore,
+    path: &Path,
+    diagnostics: &mut Diagnostics,
+) -> Option<Mapping> {
+    let content = match store.read_file(path.to_str().unwrap()) {
         Ok(content) => content,
         Err(err) => {
             diagnostics.push_error(path.display().to_string(), err.to_string());
@@ -139,26 +144,20 @@ pub fn ensure_id(map: &Mapping, path: &Path, key: &str, diagnostics: &mut Diagno
     }
 }
 
-pub fn read_yaml_files(dir: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> {
+pub fn read_yaml_files(
+    store: &impl WorkspaceStore,
+    dir: &Path,
+    diagnostics: &mut Diagnostics,
+) -> Vec<PathBuf> {
     let mut files = Vec::new();
-    match fs::read_dir(dir) {
+    match store.list_dir(dir.to_str().unwrap()) {
         Ok(entries) => {
             for entry in entries {
-                match entry {
-                    Ok(entry) => {
-                        let path = entry.path();
-                        if path.is_file()
-                            && path.extension().and_then(|ext| ext.to_str()) == Some("yml")
-                        {
-                            files.push(path);
-                        }
-                    }
-                    Err(err) => {
-                        diagnostics.push_error(
-                            dir.display().to_string(),
-                            format!("Failed to read directory entry: {}", err),
-                        );
-                    }
+                // entry is full path (PathBuf)
+                if !store.is_dir(entry.to_str().unwrap())
+                    && entry.extension().and_then(|ext| ext.to_str()) == Some("yml")
+                {
+                    files.push(entry);
                 }
             }
         }
@@ -172,22 +171,33 @@ pub fn read_yaml_files(dir: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf
     files
 }
 
-pub fn read_yaml_string(path: &Path, key: &str, diagnostics: &mut Diagnostics) -> Option<String> {
-    let map = load_yaml_mapping(path, diagnostics)?;
+pub fn read_yaml_string(
+    store: &impl WorkspaceStore,
+    path: &Path,
+    key: &str,
+    diagnostics: &mut Diagnostics,
+) -> Option<String> {
+    let map = load_yaml_mapping(store, path, diagnostics)?;
     get_string(&map, key)
 }
 
 pub fn read_yaml_strings(
+    store: &impl WorkspaceStore,
     path: &Path,
     key: &str,
     diagnostics: &mut Diagnostics,
 ) -> Option<Vec<String>> {
-    let map = load_yaml_mapping(path, diagnostics)?;
+    let map = load_yaml_mapping(store, path, diagnostics)?;
     Some(get_sequence_strings(&map, key))
 }
 
-pub fn read_yaml_bool(path: &Path, key: &str, diagnostics: &mut Diagnostics) -> Option<bool> {
-    let map = load_yaml_mapping(path, diagnostics)?;
+pub fn read_yaml_bool(
+    store: &impl WorkspaceStore,
+    path: &Path,
+    key: &str,
+    diagnostics: &mut Diagnostics,
+) -> Option<bool> {
+    let map = load_yaml_mapping(store, path, diagnostics)?;
     get_bool(&map, key)
 }
 

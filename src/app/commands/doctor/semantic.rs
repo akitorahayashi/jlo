@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use chrono::{NaiveDate, Utc};
 
 use crate::domain::{AppError, Layer};
+use crate::ports::WorkspaceStore;
 use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
 use super::diagnostics::Diagnostics;
@@ -20,6 +21,7 @@ pub struct SemanticContext {
 }
 
 pub fn semantic_context(
+    store: &impl WorkspaceStore,
     jules_path: &Path,
     workstreams: &[String],
     issue_labels: &[String],
@@ -31,10 +33,10 @@ pub fn semantic_context(
         let ws_dir = jules_path.join("workstreams").join(workstream);
         let exchange_dir = ws_dir.join("exchange");
         let decided_dir = exchange_dir.join("events/decided");
-        for entry in read_yaml_files(&decided_dir, diagnostics) {
-            if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
+        for entry in read_yaml_files(store, &decided_dir, diagnostics) {
+            if let Some(id) = read_yaml_string(store, &entry, "id", diagnostics) {
                 context.decided_events.insert(id.clone(), entry.clone());
-                if let Some(issue_id) = read_yaml_string(&entry, "issue_id", diagnostics)
+                if let Some(issue_id) = read_yaml_string(store, &entry, "issue_id", diagnostics)
                     && !issue_id.is_empty()
                 {
                     context.event_issue_map.insert(id, issue_id);
@@ -44,11 +46,11 @@ pub fn semantic_context(
 
         let issues_dir = exchange_dir.join("issues");
         for label in issue_labels {
-            for entry in read_yaml_files(&issues_dir.join(label), diagnostics) {
-                if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
+            for entry in read_yaml_files(store, &issues_dir.join(label), diagnostics) {
+                if let Some(id) = read_yaml_string(store, &entry, "id", diagnostics) {
                     context.issues.insert(id.clone(), entry.clone());
                     if let Some(source_events) =
-                        read_yaml_strings(&entry, "source_events", diagnostics)
+                        read_yaml_strings(store, &entry, "source_events", diagnostics)
                     {
                         context.issue_sources.insert(id, source_events);
                     }
@@ -61,6 +63,7 @@ pub fn semantic_context(
 }
 
 pub fn semantic_checks(
+    store: &impl WorkspaceStore,
     jules_path: &Path,
     workstreams: &[String],
     context: &SemanticContext,
@@ -99,14 +102,14 @@ pub fn semantic_checks(
     let mut existing_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
     for layer in [Layer::Observers, Layer::Deciders] {
         let roles_container = roles_dir.join(layer.dir_name()).join("roles");
-        if roles_container.exists() {
+        let roles_container_str = roles_container.to_str().unwrap();
+        if store.is_dir(roles_container_str) {
             let mut role_set = HashSet::new();
-            match std::fs::read_dir(&roles_container) {
+            match store.list_dir(roles_container_str) {
                 Ok(entries) => {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.is_dir() {
-                            let name = entry.file_name().to_string_lossy().to_string();
+                    for entry in entries {
+                        if store.is_dir(entry.to_str().unwrap()) {
+                            let name = entry.file_name().unwrap().to_string_lossy().to_string();
                             role_set.insert(name);
                         }
                     }
@@ -123,13 +126,9 @@ pub fn semantic_checks(
     }
 
     let mut scheduled_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
-    let root = jules_path.parent().unwrap_or(Path::new("."));
-    let store = crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore::new(
-        root.to_path_buf(),
-    );
 
     for workstream in workstreams {
-        match load_schedule(&store, workstream) {
+        match load_schedule(store, workstream) {
             Ok(schedule) => {
                 for role in schedule.observers.roles {
                     scheduled_roles
@@ -179,10 +178,10 @@ pub fn semantic_checks(
     }
 
     for path in context.issues.values() {
-        if let Some(requires) = read_yaml_bool(path, "requires_deep_analysis", diagnostics)
+        if let Some(requires) = read_yaml_bool(store, path, "requires_deep_analysis", diagnostics)
             && requires
         {
-            match read_yaml_string(path, "deep_analysis_reason", diagnostics) {
+            match read_yaml_string(store, path, "deep_analysis_reason", diagnostics) {
                 Some(reason) if !reason.trim().is_empty() => {}
                 _ => {
                     diagnostics.push_error(
@@ -192,7 +191,7 @@ pub fn semantic_checks(
                 }
             }
 
-            if let Some(date) = read_yaml_string(path, "created_at", diagnostics)
+            if let Some(date) = read_yaml_string(store, path, "created_at", diagnostics)
                 && let Ok(parsed) = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
             {
                 let days = (Utc::now().date_naive() - parsed).num_days();

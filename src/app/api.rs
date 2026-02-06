@@ -215,5 +215,5 @@ pub fn doctor_at(
     options: DoctorOptions,
 ) -> Result<DoctorOutcome, AppError> {
     let workspace = FilesystemWorkspaceStore::new(path.into());
-    doctor::execute(&workspace.jules_path(), options)
+    doctor::execute(&workspace, options)
 }

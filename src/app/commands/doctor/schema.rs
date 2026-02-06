@@ -1,10 +1,10 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use chrono::NaiveDate;
 use serde_yaml::Mapping;
 
 use crate::domain::{AppError, Layer};
+use crate::ports::WorkspaceStore;
 
 use super::diagnostics::Diagnostics;
 use super::structure::list_subdirs;
@@ -19,7 +19,8 @@ pub(crate) struct PromptEntry {
     pub contracts: Vec<String>,
 }
 
-pub struct SchemaInputs<'a> {
+pub struct SchemaInputs<'a, S: WorkspaceStore> {
+    pub store: &'a S,
     pub jules_path: &'a Path,
     pub root: &'a Path,
     pub workstreams: &'a [String],
@@ -31,6 +32,7 @@ pub struct SchemaInputs<'a> {
 }
 
 pub fn collect_prompt_entries(
+    store: &impl WorkspaceStore,
     jules_path: &Path,
     diagnostics: &mut Diagnostics,
 ) -> Result<Vec<PromptEntry>, AppError> {
@@ -38,26 +40,27 @@ pub fn collect_prompt_entries(
 
     for layer in Layer::ALL {
         let layer_dir = jules_path.join("roles").join(layer.dir_name());
-        if !layer_dir.exists() {
+        let layer_dir_str = layer_dir.to_str().unwrap();
+        if !store.is_dir(layer_dir_str) {
             continue;
         }
 
         if layer.is_single_role() {
             // Single-role layers have prompt.yml directly in layer directory
             let prompt_path = layer_dir.join("prompt.yml");
-            if prompt_path.exists()
-                && let Some(entry) = parse_prompt(&prompt_path, layer, diagnostics)
+            if store.file_exists(prompt_path.to_str().unwrap())
+                && let Some(entry) = parse_prompt(store, &prompt_path, layer, diagnostics)
             {
                 entries.push(entry);
             }
         } else {
             // Multi-role layers have role.yml in each role subdirectory under roles/
             let roles_container = layer_dir.join("roles");
-            if roles_container.exists() {
-                for role_dir in list_subdirs(&roles_container, diagnostics) {
+            if store.is_dir(roles_container.to_str().unwrap()) {
+                for role_dir in list_subdirs(store, &roles_container, diagnostics) {
                     let role_path = role_dir.join("role.yml");
-                    if role_path.exists()
-                        && let Some(entry) = parse_role_file(&role_path, layer, diagnostics)
+                    if store.file_exists(role_path.to_str().unwrap())
+                        && let Some(entry) = parse_role_file(store, &role_path, layer, diagnostics)
                     {
                         entries.push(entry);
                     }
@@ -69,11 +72,16 @@ pub fn collect_prompt_entries(
     Ok(entries)
 }
 
-pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
+pub fn schema_checks<S: WorkspaceStore>(
+    inputs: SchemaInputs<'_, S>,
+    diagnostics: &mut Diagnostics,
+) {
+    let store = inputs.store;
+
     for entry in inputs.prompt_entries {
         for contract in &entry.contracts {
             let contract_path = inputs.root.join(contract);
-            if !contract_path.exists() {
+            if !store.file_exists(contract_path.to_str().unwrap()) {
                 diagnostics.push_error(
                     entry.path.display().to_string(),
                     format!("Contract not found: {}", contract),
@@ -84,33 +92,33 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
 
     // Validate changes/latest.yml if present
     let latest_path = inputs.jules_path.join("changes").join("latest.yml");
-    if latest_path.exists() {
+    if store.file_exists(latest_path.to_str().unwrap()) {
         let change_schema_path =
             inputs.jules_path.join("roles").join("narrator").join("schemas").join("change.yml");
-        validate_changes_latest(&latest_path, &change_schema_path, diagnostics);
+        validate_changes_latest(store, &latest_path, &change_schema_path, diagnostics);
     }
 
     for layer in Layer::ALL {
         let layer_dir = inputs.jules_path.join("roles").join(layer.dir_name());
-        if !layer_dir.exists() {
+        if !store.is_dir(layer_dir.to_str().unwrap()) {
             continue;
         }
 
         let contracts_path = layer_dir.join("contracts.yml");
-        if contracts_path.exists() {
-            validate_contracts(&contracts_path, layer, diagnostics);
+        if store.file_exists(contracts_path.to_str().unwrap()) {
+            validate_contracts(store, &contracts_path, layer, diagnostics);
         }
 
         if layer == Layer::Observers || layer == Layer::Deciders {
             let roles_container = layer_dir.join("roles");
-            if roles_container.exists() {
-                for role_dir in list_subdirs(&roles_container, diagnostics) {
+            if store.is_dir(roles_container.to_str().unwrap()) {
+                for role_dir in list_subdirs(store, &roles_container, diagnostics) {
                     let role_path = role_dir.join("role.yml");
-                    if role_path.exists() {
+                    if store.file_exists(role_path.to_str().unwrap()) {
                         if layer == Layer::Observers {
-                            validate_role(&role_path, &role_dir, diagnostics);
+                            validate_role(store, &role_path, &role_dir, diagnostics);
                         } else {
-                            validate_decider_role(&role_path, diagnostics);
+                            validate_decider_role(store, &role_path, diagnostics);
                         }
                     }
                 }
@@ -125,31 +133,37 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         let events_dir = exchange_dir.join("events");
         for state in inputs.event_states {
             let state_dir = events_dir.join(state);
-            for entry in read_yaml_files(&state_dir, diagnostics) {
-                validate_event(&entry, state, inputs.event_confidence, diagnostics);
-                check_placeholders(&entry, diagnostics);
+            for entry in read_yaml_files(store, &state_dir, diagnostics) {
+                validate_event(store, &entry, state, inputs.event_confidence, diagnostics);
+                check_placeholders(store, &entry, diagnostics);
             }
         }
 
         let issues_dir = exchange_dir.join("issues");
         for label in inputs.issue_labels {
             let label_dir = issues_dir.join(label);
-            for entry in read_yaml_files(&label_dir, diagnostics) {
+            for entry in read_yaml_files(store, &label_dir, diagnostics) {
                 validate_issue(
+                    store,
                     &entry,
                     label,
                     inputs.issue_labels,
                     inputs.issue_priorities,
                     diagnostics,
                 );
-                check_placeholders(&entry, diagnostics);
+                check_placeholders(store, &entry, diagnostics);
             }
         }
     }
 }
 
-fn parse_prompt(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) -> Option<PromptEntry> {
-    let data = load_yaml_mapping(path, diagnostics)?;
+fn parse_prompt(
+    store: &impl WorkspaceStore,
+    path: &Path,
+    layer: Layer,
+    diagnostics: &mut Diagnostics,
+) -> Option<PromptEntry> {
+    let data = load_yaml_mapping(store, path, diagnostics)?;
     parse_prompt_data(&data, path, layer, diagnostics)
 }
 
@@ -197,12 +211,13 @@ fn parse_prompt_data(
 }
 
 fn validate_event(
+    store: &impl WorkspaceStore,
     path: &Path,
     state: &str,
     event_confidence: &[String],
     diagnostics: &mut Diagnostics,
 ) {
-    let data = match load_yaml_mapping(path, diagnostics) {
+    let data = match load_yaml_mapping(store, path, diagnostics) {
         Some(data) => data,
         None => return,
     };
@@ -278,13 +293,14 @@ fn validate_event_data(
 }
 
 fn validate_issue(
+    store: &impl WorkspaceStore,
     path: &Path,
     label: &str,
     issue_labels: &[String],
     issue_priorities: &[String],
     diagnostics: &mut Diagnostics,
 ) {
-    let data = match load_yaml_mapping(path, diagnostics) {
+    let data = match load_yaml_mapping(store, path, diagnostics) {
         Some(data) => data,
         None => return,
     };
@@ -374,8 +390,13 @@ fn validate_issue_data(
     }
 }
 
-fn validate_role(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
-    let data = match load_yaml_mapping(path, diagnostics) {
+fn validate_role(
+    store: &impl WorkspaceStore,
+    path: &Path,
+    role_dir: &Path,
+    diagnostics: &mut Diagnostics,
+) {
+    let data = match load_yaml_mapping(store, path, diagnostics) {
         Some(data) => data,
         None => return,
     };
@@ -427,11 +448,12 @@ fn validate_role_data(data: &Mapping, path: &Path, role_dir: &Path, diagnostics:
 
 /// Parse multi-role layer role.yml for entry collection
 fn parse_role_file(
+    store: &impl WorkspaceStore,
     path: &Path,
     layer: Layer,
     diagnostics: &mut Diagnostics,
 ) -> Option<PromptEntry> {
-    let data = load_yaml_mapping(path, diagnostics)?;
+    let data = load_yaml_mapping(store, path, diagnostics)?;
     parse_role_file_data(&data, path, layer, diagnostics)
 }
 
@@ -459,8 +481,8 @@ fn parse_role_file_data(
 }
 
 /// Validate decider role.yml schema
-fn validate_decider_role(path: &Path, diagnostics: &mut Diagnostics) {
-    let data = match load_yaml_mapping(path, diagnostics) {
+fn validate_decider_role(store: &impl WorkspaceStore, path: &Path, diagnostics: &mut Diagnostics) {
+    let data = match load_yaml_mapping(store, path, diagnostics) {
         Some(data) => data,
         None => return,
     };
@@ -487,8 +509,13 @@ fn validate_decider_role_data(data: &Mapping, path: &Path, diagnostics: &mut Dia
     }
 }
 
-fn validate_contracts(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) {
-    let data = match load_yaml_mapping(path, diagnostics) {
+fn validate_contracts(
+    store: &impl WorkspaceStore,
+    path: &Path,
+    layer: Layer,
+    diagnostics: &mut Diagnostics,
+) {
+    let data = match load_yaml_mapping(store, path, diagnostics) {
         Some(data) => data,
         None => return,
     };
@@ -522,13 +549,18 @@ fn validate_contracts_data(
 }
 
 /// Validate .jules/changes/latest.yml schema.
-fn validate_changes_latest(path: &Path, template_path: &Path, diagnostics: &mut Diagnostics) {
-    let data = match load_yaml_mapping(path, diagnostics) {
+fn validate_changes_latest(
+    store: &impl WorkspaceStore,
+    path: &Path,
+    template_path: &Path,
+    diagnostics: &mut Diagnostics,
+) {
+    let data = match load_yaml_mapping(store, path, diagnostics) {
         Some(data) => data,
         None => return,
     };
 
-    let allowed_modes = extract_enum_from_template(template_path, "selection_mode");
+    let allowed_modes = extract_enum_from_template(store, template_path, "selection_mode");
     validate_changes_latest_data(&data, path, &allowed_modes, diagnostics);
 }
 
@@ -614,8 +646,12 @@ fn validate_changes_latest_data(
 
 /// Extract allowed enum values from the change.yml template by parsing comments.
 /// Looks for lines like: `selection_mode: value  # Allowed: value1, value2`
-fn extract_enum_from_template(template_path: &Path, field: &str) -> Vec<String> {
-    let content = match fs::read_to_string(template_path) {
+fn extract_enum_from_template(
+    store: &impl WorkspaceStore,
+    template_path: &Path,
+    field: &str,
+) -> Vec<String> {
+    let content = match store.read_file(template_path.to_str().unwrap()) {
         Ok(c) => c,
         Err(_) => return vec![],
     };
@@ -635,8 +671,8 @@ fn extract_enum_from_template(template_path: &Path, field: &str) -> Vec<String> 
     vec![]
 }
 
-fn check_placeholders(path: &Path, diagnostics: &mut Diagnostics) {
-    let content = match fs::read_to_string(path) {
+fn check_placeholders(store: &impl WorkspaceStore, path: &Path, diagnostics: &mut Diagnostics) {
+    let content = match store.read_file(path.to_str().unwrap()) {
         Ok(content) => content,
         Err(err) => {
             diagnostics

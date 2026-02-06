@@ -1,9 +1,12 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+use crate::ports::WorkspaceStore;
 
 use super::diagnostics::Diagnostics;
 use super::yaml::is_kebab_case;
 
 pub fn naming_checks(
+    store: &impl WorkspaceStore,
     jules_path: &Path,
     workstreams: &[String],
     issue_labels: &[String],
@@ -16,14 +19,14 @@ pub fn naming_checks(
 
         let events_dir = exchange_dir.join("events");
         for state in event_states {
-            for entry in list_files(&events_dir.join(state), diagnostics) {
+            for entry in list_files(store, &events_dir.join(state), diagnostics) {
                 validate_filename(&entry, diagnostics, "event");
             }
         }
 
         let issues_dir = exchange_dir.join("issues");
         for label in issue_labels {
-            for entry in list_files(&issues_dir.join(label), diagnostics) {
+            for entry in list_files(store, &issues_dir.join(label), diagnostics) {
                 validate_filename(&entry, diagnostics, "issue");
             }
         }
@@ -49,24 +52,19 @@ fn validate_filename(path: &Path, diagnostics: &mut Diagnostics, kind: &str) {
     }
 }
 
-fn list_files(dir: &Path, diagnostics: &mut Diagnostics) -> Vec<std::path::PathBuf> {
+fn list_files(
+    store: &impl WorkspaceStore,
+    dir: &Path,
+    diagnostics: &mut Diagnostics,
+) -> Vec<PathBuf> {
     let mut files = Vec::new();
-    match std::fs::read_dir(dir) {
+    let dir_str = dir.to_str().unwrap();
+    match store.list_dir(dir_str) {
         Ok(entries) => {
             for entry in entries {
-                match entry {
-                    Ok(entry) => {
-                        let path = entry.path();
-                        if path.is_file() {
-                            files.push(path);
-                        }
-                    }
-                    Err(err) => {
-                        diagnostics.push_error(
-                            dir.display().to_string(),
-                            format!("Failed to read directory entry: {}", err),
-                        );
-                    }
+                // entry is PathBuf, full path usually
+                if !store.is_dir(entry.to_str().unwrap()) {
+                    files.push(entry);
                 }
             }
         }
