@@ -3,18 +3,20 @@ schema_version: 2
 observer: "data_arch"
 workstream: "generic"
 
-updated_at: "2026-02-06T14:00:00Z"
+updated_at: "2026-02-06T16:30:00Z"
 
 goals:
-  - "Identify violations of boundary sovereignty in domain entities."
-  - "Detect direct filesystem usage bypassing abstractions."
-  - "Flag fragile data parsing implementations."
+  - "Monitor for further boundary violations in domain entities."
+  - "Track resolution of identified architectural leaks."
+  - "Ensure new API commands support path parameters."
 
 rules: []
 
 ignore: []
 
 log:
+  - at: "2026-02-06T16:30:00Z"
+    summary: "Emitted 3 events: Domain Minijinja coupling (8k2m9p), Domain Infra leak (x5y1z3), Run API CWD hardcoding (q7w4r2)."
   - at: "2026-02-06T14:00:00Z"
     summary: "Emitted 3 events: Service Layer Mixing (lay3rs), Direct FS usage (fsbyp1), Untyped parsing (fragp1)."
   - at: "2026-02-06T12:00:00Z"
