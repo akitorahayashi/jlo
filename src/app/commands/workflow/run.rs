@@ -258,37 +258,54 @@ fn find_issues_for_workstream(
     workstream: &str,
     layer: Layer,
 ) -> Result<Vec<std::path::PathBuf>, AppError> {
-    let status_dir = match layer {
-        Layer::Planners => "ready_for_planner",
-        Layer::Implementers => "ready_for_implementer",
-        _ => return Err(AppError::Validation("Invalid layer for issue discovery".to_string())),
-    };
+    if layer != Layer::Planners && layer != Layer::Implementers {
+        return Err(AppError::Validation("Invalid layer for issue discovery".to_string()));
+    }
 
-    let issues_dir =
-        jules_path.join("workstreams").join(workstream).join("issues").join(status_dir);
+    let issues_root =
+        jules_path.join("workstreams").join(workstream).join("exchange").join("issues");
 
-    if !issues_dir.exists() {
+    if !issues_root.exists() {
         return Ok(Vec::new());
     }
 
     let mut issues = Vec::new();
-    let entries = std::fs::read_dir(&issues_dir).map_err(AppError::Io)?;
+    let routing_labels = resolve_routing_labels(&issues_root)?;
 
-    for entry in entries {
-        match entry {
-            Ok(entry) => {
-                let path = entry.path();
-                if path.extension().is_some_and(|ext| ext == "md" || ext == "yml" || ext == "yaml")
-                {
-                    issues.push(path);
+    for label in routing_labels {
+        let label_dir = issues_root.join(&label);
+        if !label_dir.exists() {
+            continue;
+        }
+
+        let entries = std::fs::read_dir(&label_dir).map_err(AppError::Io)?;
+        for entry in entries {
+            match entry {
+                Ok(entry) => {
+                    let path = entry.path();
+                    let is_issue_file =
+                        path.extension().is_some_and(|ext| ext == "yml" || ext == "yaml");
+                    if !is_issue_file {
+                        continue;
+                    }
+
+                    let requires_deep_analysis = read_requires_deep_analysis(&path)?;
+                    let belongs_to_layer = match layer {
+                        Layer::Planners => requires_deep_analysis,
+                        Layer::Implementers => !requires_deep_analysis,
+                        _ => false,
+                    };
+                    if belongs_to_layer {
+                        issues.push(path);
+                    }
                 }
-            }
-            Err(e) => {
-                eprintln!(
-                    "Warning: Failed to read directory entry in {}: {}",
-                    issues_dir.display(),
-                    e
-                );
+                Err(e) => {
+                    eprintln!(
+                        "Warning: Failed to read directory entry in {}: {}",
+                        label_dir.display(),
+                        e
+                    );
+                }
             }
         }
     }
@@ -297,9 +314,65 @@ fn find_issues_for_workstream(
     Ok(issues)
 }
 
+fn resolve_routing_labels(issues_root: &Path) -> Result<Vec<String>, AppError> {
+    if let Ok(labels_csv) = std::env::var("ROUTING_LABELS") {
+        let labels: Vec<String> = labels_csv
+            .split(',')
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string)
+            .collect();
+
+        if labels.is_empty() {
+            return Err(AppError::Validation(
+                "ROUTING_LABELS is set but does not contain any labels".to_string(),
+            ));
+        }
+        return Ok(labels);
+    }
+
+    eprintln!("ROUTING_LABELS is not set; discovering labels from {}", issues_root.display());
+    let mut discovered = Vec::new();
+    let entries = std::fs::read_dir(issues_root).map_err(AppError::Io)?;
+    for entry in entries {
+        let entry = entry.map_err(AppError::Io)?;
+        if entry.path().is_dir() {
+            discovered.push(entry.file_name().to_string_lossy().to_string());
+        }
+    }
+
+    discovered.sort();
+    if discovered.is_empty() {
+        return Err(AppError::Validation(format!(
+            "No issue label directories found under {}",
+            issues_root.display()
+        )));
+    }
+
+    Ok(discovered)
+}
+
+fn read_requires_deep_analysis(path: &Path) -> Result<bool, AppError> {
+    let content = std::fs::read_to_string(path).map_err(AppError::Io)?;
+    let parsed: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|error| {
+        AppError::ParseError { what: path.display().to_string(), details: error.to_string() }
+    })?;
+
+    match &parsed["requires_deep_analysis"] {
+        serde_yaml::Value::Bool(value) => Ok(*value),
+        _ => Err(AppError::Validation(format!(
+            "Missing or invalid requires_deep_analysis in {}",
+            path.display()
+        ))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
+    use std::fs;
+    use tempfile::tempdir;
 
     #[test]
     fn workflow_run_options_with_workstream() {
@@ -311,5 +384,69 @@ mod tests {
         assert_eq!(options.workstream, "generic");
         assert_eq!(options.layer, Layer::Observers);
         assert!(!options.mock);
+    }
+
+    fn setup_workspace(root: &Path) {
+        fs::create_dir_all(root.join(".jules")).unwrap();
+        fs::write(root.join(".jules/version"), env!("CARGO_PKG_VERSION")).unwrap();
+    }
+
+    fn write_issue(root: &Path, label: &str, name: &str, requires_deep_analysis: bool) {
+        let issue_dir = root.join(".jules/workstreams/alpha/exchange/issues").join(label);
+        fs::create_dir_all(&issue_dir).unwrap();
+        let content = format!(
+            "id: test01\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n",
+            requires_deep_analysis
+        );
+        fs::write(issue_dir.join(format!("{}.yml", name)), content).unwrap();
+    }
+
+    #[test]
+    #[serial]
+    fn planner_issue_discovery_filters_by_requires_deep_analysis() {
+        let dir = tempdir().unwrap();
+        let root = dir.path();
+        setup_workspace(root);
+
+        write_issue(root, "bugs", "requires-planning", true);
+        write_issue(root, "bugs", "ready-to-implement", false);
+        write_issue(root, "docs", "ignored-by-routing", true);
+
+        let jules_path = root.join(".jules");
+
+        unsafe {
+            std::env::set_var("ROUTING_LABELS", "bugs");
+        }
+        let issues = find_issues_for_workstream(&jules_path, "alpha", Layer::Planners).unwrap();
+        unsafe {
+            std::env::remove_var("ROUTING_LABELS");
+        }
+
+        assert_eq!(issues.len(), 1);
+        assert!(issues[0].to_string_lossy().contains("requires-planning.yml"));
+    }
+
+    #[test]
+    #[serial]
+    fn implementer_issue_discovery_uses_non_deep_issues() {
+        let dir = tempdir().unwrap();
+        let root = dir.path();
+        setup_workspace(root);
+
+        write_issue(root, "bugs", "requires-planning", true);
+        write_issue(root, "bugs", "ready-to-implement", false);
+
+        let jules_path = root.join(".jules");
+
+        unsafe {
+            std::env::set_var("ROUTING_LABELS", "bugs");
+        }
+        let issues = find_issues_for_workstream(&jules_path, "alpha", Layer::Implementers).unwrap();
+        unsafe {
+            std::env::remove_var("ROUTING_LABELS");
+        }
+
+        assert_eq!(issues.len(), 1);
+        assert!(issues[0].to_string_lossy().contains("ready-to-implement.yml"));
     }
 }
