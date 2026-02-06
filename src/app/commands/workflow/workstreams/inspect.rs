@@ -76,7 +76,11 @@ pub(super) fn inspect_at(
     })
 }
 
-fn summarize_events(store: &impl WorkspaceStore, root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError> {
+fn summarize_events(
+    store: &impl WorkspaceStore,
+    root: &Path,
+    ws_dir: &Path,
+) -> Result<EventSummary, AppError> {
     let events_dir = ws_dir.join("exchange").join("events");
     if !store.file_exists(events_dir.to_str().unwrap()) {
         return Err(AppError::Validation(format!(
@@ -115,7 +119,11 @@ fn summarize_events(store: &impl WorkspaceStore, root: &Path, ws_dir: &Path) -> 
     Ok(EventSummary { states, pending_files, items })
 }
 
-fn summarize_issues(store: &impl WorkspaceStore, root: &Path, ws_dir: &Path) -> Result<IssueSummary, AppError> {
+fn summarize_issues(
+    store: &impl WorkspaceStore,
+    root: &Path,
+    ws_dir: &Path,
+) -> Result<IssueSummary, AppError> {
     let issues_dir = ws_dir.join("exchange").join("issues");
     if !store.file_exists(issues_dir.to_str().unwrap()) {
         return Err(AppError::Validation(format!(
@@ -166,14 +174,24 @@ fn to_repo_relative(root: &Path, path: &Path) -> String {
     path.strip_prefix(root).unwrap_or(path).to_string_lossy().to_string()
 }
 
-fn read_event_item(store: &impl WorkspaceStore, root: &Path, path: &Path, state: &str) -> Result<EventItem, AppError> {
+fn read_event_item(
+    store: &impl WorkspaceStore,
+    root: &Path,
+    path: &Path,
+    state: &str,
+) -> Result<EventItem, AppError> {
     let map = read_yaml_mapping(store, path)?;
     let id = read_required_id(&map, path, "id")?;
 
     Ok(EventItem { path: to_repo_relative(root, path), state: state.to_string(), id })
 }
 
-fn read_issue_item(store: &impl WorkspaceStore, root: &Path, path: &Path, label: &str) -> Result<IssueItem, AppError> {
+fn read_issue_item(
+    store: &impl WorkspaceStore,
+    root: &Path,
+    path: &Path,
+    label: &str,
+) -> Result<IssueItem, AppError> {
     let map = read_yaml_mapping(store, path)?;
     let id = read_required_id(&map, path, "id")?;
     let requires_deep_analysis = read_required_bool(&map, path, "requires_deep_analysis")?;
@@ -318,8 +336,8 @@ fn is_valid_id(value: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use std::fs;
+    use tempfile::tempdir;
 
     #[test]
     fn inspect_collects_counts_and_files() {

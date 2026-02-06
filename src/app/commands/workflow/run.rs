@@ -279,8 +279,7 @@ fn find_issues_for_workstream(
 
         let entries = store.list_dir(label_dir.to_str().unwrap())?;
         for path in entries {
-            let is_issue_file =
-                path.extension().is_some_and(|ext| ext == "yml" || ext == "yaml");
+            let is_issue_file = path.extension().is_some_and(|ext| ext == "yml" || ext == "yaml");
             if !is_issue_file {
                 continue;
             }
@@ -301,7 +300,10 @@ fn find_issues_for_workstream(
     Ok(issues)
 }
 
-fn resolve_routing_labels(store: &impl WorkspaceStore, issues_root: &Path) -> Result<Vec<String>, AppError> {
+fn resolve_routing_labels(
+    store: &impl WorkspaceStore,
+    issues_root: &Path,
+) -> Result<Vec<String>, AppError> {
     if let Ok(labels_csv) = std::env::var("ROUTING_LABELS") {
         let labels: Vec<String> = labels_csv
             .split(',')
@@ -365,9 +367,9 @@ fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Resu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::serial;
-    use crate::services::adapters::memory_workspace_store::MemoryWorkspaceStore;
     use crate::ports::WorkspaceStore;
+    use crate::services::adapters::memory_workspace_store::MemoryWorkspaceStore;
+    use serial_test::serial;
 
     #[test]
     fn workflow_run_options_with_workstream() {
@@ -385,7 +387,12 @@ mod tests {
         store.write_version(env!("CARGO_PKG_VERSION")).unwrap();
     }
 
-    fn write_issue(store: &MemoryWorkspaceStore, label: &str, name: &str, requires_deep_analysis: bool) {
+    fn write_issue(
+        store: &MemoryWorkspaceStore,
+        label: &str,
+        name: &str,
+        requires_deep_analysis: bool,
+    ) {
         let issue_dir = format!(".jules/workstreams/alpha/exchange/issues/{}", label);
         let content = format!(
             "id: test01\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n",

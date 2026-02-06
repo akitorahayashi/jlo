@@ -14,9 +14,8 @@ pub struct MatrixRoutingOptions {
     /// Workstreams JSON from `matrix workstreams` output.
     pub workstreams_json: WorkstreamsMatrix,
     /// Routing labels as CSV (e.g., "bugs,feats,refacts,tests,docs").
+
     pub routing_labels: String,
-    /// Optional workspace root path.
-    pub workspace_root: Option<PathBuf>,
 }
 
 /// Input workstreams matrix (from matrix workstreams output).
@@ -226,11 +225,7 @@ mod tests {
 
         let output = execute(
             &store,
-            MatrixRoutingOptions {
-                workstreams_json,
-                routing_labels: "bugs,feats".into(),
-                workspace_root: None,
-            },
+            MatrixRoutingOptions { workstreams_json, routing_labels: "bugs,feats".into() },
         )
         .unwrap();
 
@@ -278,10 +273,9 @@ mod tests {
             MatrixRoutingOptions {
                 workstreams_json: WorkstreamsMatrix { include: vec![] },
                 routing_labels: "".into(),
-                workspace_root: None,
+                routing_labels: "".into(),
             },
         );
-
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("routing_labels must not be empty"));

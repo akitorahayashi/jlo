@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use crate::domain::{AppError, Layer, PromptAssetLoader, RoleId, JULES_DIR, VERSION_FILE};
+use crate::domain::{AppError, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
 /// In-memory workspace store for testing.
@@ -21,8 +21,7 @@ impl MemoryWorkspaceStore {
 
 impl PromptAssetLoader for MemoryWorkspaceStore {
     fn read_asset(&self, path: &Path) -> std::io::Result<String> {
-        self.read_file(path.to_str().unwrap())
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+        self.read_file(path.to_str().unwrap()).map_err(|e| std::io::Error::other(e.to_string()))
     }
 
     fn asset_exists(&self, path: &Path) -> bool {
@@ -71,7 +70,8 @@ impl WorkspaceStore for MemoryWorkspaceStore {
     }
 
     fn role_exists_in_layer(&self, layer: Layer, role_id: &RoleId) -> bool {
-        let path = self.jules_path()
+        let path = self
+            .jules_path()
             .join("roles")
             .join(layer.dir_name())
             .join("roles")
@@ -91,7 +91,8 @@ impl WorkspaceStore for MemoryWorkspaceStore {
     }
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-         let path = self.jules_path()
+        let path = self
+            .jules_path()
             .join("roles")
             .join(role.layer.dir_name())
             .join("roles")
@@ -105,7 +106,8 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         role_id: &RoleId,
         role_yaml: &str,
     ) -> Result<(), AppError> {
-        let path = self.jules_path()
+        let path = self
+            .jules_path()
             .join("roles")
             .join(layer.dir_name())
             .join("roles")
@@ -116,10 +118,7 @@ impl WorkspaceStore for MemoryWorkspaceStore {
     }
 
     fn create_workstream(&self, name: &str) -> Result<(), AppError> {
-         let path = self.jules_path()
-            .join("workstreams")
-            .join(name)
-            .join("placeholder");
+        let path = self.jules_path().join("workstreams").join(name).join("placeholder");
         self.write_file(path.to_str().unwrap(), "")
     }
 
@@ -137,8 +136,9 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         let files = self.files.lock().unwrap();
         let path = PathBuf::from(path);
         match files.get(&path) {
-            Some(bytes) => String::from_utf8(bytes.clone())
-                .map_err(|e| AppError::AssetError(e.to_string())),
+            Some(bytes) => {
+                String::from_utf8(bytes.clone()).map_err(|e| AppError::AssetError(e.to_string()))
+            }
             None => Err(AppError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 format!("File not found: {}", path.display()),
@@ -164,10 +164,10 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         let mut results = Vec::new();
 
         for key in files.keys() {
-            if let Some(parent) = key.parent() {
-                if parent == path {
-                    results.push(key.clone());
-                }
+            if let Some(parent) = key.parent()
+                && parent == path
+            {
+                results.push(key.clone());
             }
         }
         results.sort();
@@ -207,10 +207,10 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         let mut files = self.files.lock().unwrap();
         let src_path = PathBuf::from(src);
         if let Some(content) = files.get(&src_path).cloned() {
-             files.insert(PathBuf::from(dst), content);
-             Ok(0)
+            files.insert(PathBuf::from(dst), content);
+            Ok(0)
         } else {
-             Err(AppError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "src not found")))
+            Err(AppError::Io(std::io::Error::new(std::io::ErrorKind::NotFound, "src not found")))
         }
     }
 

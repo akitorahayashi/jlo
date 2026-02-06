@@ -53,11 +53,8 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
 
     // Generate/merge env.toml
     let env_toml_path = ".jules/setup/env.toml";
-    let existing_content = if store.file_exists(env_toml_path) {
-        Some(store.read_file(env_toml_path)?)
-    } else {
-        None
-    };
+    let existing_content =
+        if store.file_exists(env_toml_path) { Some(store.read_file(env_toml_path)?) } else { None };
     let env_content = ArtifactGenerator::merge_env_toml(&components, existing_content.as_deref())?;
     store.write_file(env_toml_path, &env_content)?;
 

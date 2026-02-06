@@ -124,7 +124,9 @@ pub fn semantic_checks(
 
     let mut scheduled_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
     let root = jules_path.parent().unwrap_or(Path::new("."));
-    let store = crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore::new(root.to_path_buf());
+    let store = crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore::new(
+        root.to_path_buf(),
+    );
 
     for workstream in workstreams {
         match load_schedule(&store, workstream) {
