@@ -3,8 +3,8 @@ use std::path::Path;
 
 use serde_yaml::Value;
 
-use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::adapters::assets::workflow_kit_assets::load_workflow_kit;
+use crate::domain::{AppError, WorkflowRunnerMode};
 
 /// The workflow file whose schedule should be preserved during overwrite.
 const SCHEDULE_PRESERVE_FILE: &str = ".github/workflows/jules-workflows.yml";

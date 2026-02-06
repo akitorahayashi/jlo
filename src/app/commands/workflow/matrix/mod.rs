@@ -31,7 +31,6 @@ pub fn pending_workstreams(
 
 /// Export planner/implementer issue matrices from workstream inspection and routing labels.
 pub fn routing(options: MatrixRoutingOptions) -> Result<MatrixRoutingOutput, AppError> {
-    let store =
-        crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
+    let store = crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
     routing::execute(&store, options)
 }

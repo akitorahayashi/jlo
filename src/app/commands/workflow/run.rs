@@ -9,7 +9,7 @@ use std::path::Path;
 
 use crate::app::commands::run::{self, RunOptions};
 use crate::domain::{AppError, Layer};
-use crate::ports::{GitPort, GitHubPort, WorkspaceStore};
+use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 use crate::adapters::workstream_schedule_filesystem::load_schedule;
 
@@ -374,8 +374,8 @@ fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Resu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::WorkspaceStore;
     use crate::adapters::memory_workspace_store::MemoryWorkspaceStore;
+    use crate::ports::WorkspaceStore;
     use serial_test::serial;
 
     #[test]

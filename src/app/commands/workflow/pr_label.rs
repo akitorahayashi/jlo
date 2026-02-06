@@ -6,9 +6,9 @@ use serde::Serialize;
 use std::fs;
 use std::path::Path;
 
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 /// Options for workflow pr label-from-branch command.
 #[derive(Debug, Clone)]

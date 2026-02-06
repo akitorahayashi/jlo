@@ -5,15 +5,15 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
+use crate::adapters::git_command::GitCommandAdapter;
+use crate::adapters::github_command::GitHubCommandAdapter;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::{
     AppContext,
     commands::{deinit, doctor, init_scaffold, init_workflows, run, setup, template, update},
 };
 use crate::ports::WorkspaceStore;
-use crate::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
-use crate::adapters::git_command::GitCommandAdapter;
-use crate::adapters::github_command::GitHubCommandAdapter;
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};

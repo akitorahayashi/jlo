@@ -32,8 +32,7 @@ pub fn doctor(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, Ap
 
 /// Execute workflow run command.
 pub fn run(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
-    let store =
-        crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
+    let store = crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
 
     let jules_path = store.jules_path();
     let git_root = jules_path.parent().unwrap_or(&jules_path).to_path_buf();

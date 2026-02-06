@@ -10,9 +10,9 @@ use super::narrator_logic::{
     GitContext, MAX_COMMITS, RangeContext, Stats, build_git_context, determine_range_strategy,
 };
 use super::prompt::assemble_single_role_prompt;
+use crate::adapters::jules_client_http::HttpJulesClient;
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, GitPort, JulesClient, SessionRequest, WorkspaceStore};
-use crate::adapters::jules_client_http::HttpJulesClient;
 
 /// Execute the Narrator layer.
 pub fn execute<G, W>(

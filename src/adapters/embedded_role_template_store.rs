@@ -10,8 +10,7 @@ const INTERNAL_DOC_FILE: &str = "AGENTS.md";
 
 /// Role templates for multi-role layers
 mod templates {
-    pub static OBSERVER_ROLE: &str =
-        include_str!("../assets/templates/layers/observers/role.yml");
+    pub static OBSERVER_ROLE: &str = include_str!("../assets/templates/layers/observers/role.yml");
     pub static DECIDER_ROLE: &str = include_str!("../assets/templates/layers/deciders/role.yml");
 }
 

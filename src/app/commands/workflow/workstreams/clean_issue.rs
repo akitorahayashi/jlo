@@ -3,10 +3,10 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::domain::AppError;
-use crate::ports::{GitPort, WorkspaceStore};
 use crate::adapters::git_command::GitCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::domain::AppError;
+use crate::ports::{GitPort, WorkspaceStore};
 
 use super::inspect::{WorkflowWorkstreamsInspectOptions, inspect_at};
 

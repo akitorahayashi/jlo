@@ -230,8 +230,8 @@ fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Resu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::WorkspaceStore;
     use crate::adapters::memory_workspace_store::MemoryWorkspaceStore;
+    use crate::ports::WorkspaceStore;
 
     fn setup_workspace(store: &MemoryWorkspaceStore) {
         store.write_version(env!("CARGO_PKG_VERSION")).unwrap();

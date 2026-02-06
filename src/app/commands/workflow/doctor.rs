@@ -4,9 +4,9 @@
 
 use serde::Serialize;
 
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 /// Options for workflow doctor command.
 #[derive(Debug, Clone, Default)]

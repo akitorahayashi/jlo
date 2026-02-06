@@ -1,10 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::app::commands::run::parse_config_content;
-use crate::domain::{AppError, Layer, RunConfig};
 use crate::adapters::assets::scaffold_assets::scaffold_file_content;
 use crate::adapters::assets::workstream_template_assets::workstream_template_content;
+use crate::app::commands::run::parse_config_content;
+use crate::domain::{AppError, Layer, RunConfig};
 
 use super::DoctorOptions;
 use super::diagnostics::Diagnostics;

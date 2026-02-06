@@ -5,9 +5,9 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 /// Options for matrix pending-workstreams command.
 #[derive(Debug, Clone)]

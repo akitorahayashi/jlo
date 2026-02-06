@@ -3,9 +3,9 @@ use std::io::IsTerminal;
 use dialoguer::Select;
 
 use crate::app::AppContext;
+use crate::app::services::role_factory::RoleFactory;
 use crate::domain::{AppError, Layer};
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
-use crate::app::services::role_factory::RoleFactory;
 
 use super::outcome::TemplateOutcome;
 use super::wizard::run_template_wizard;
