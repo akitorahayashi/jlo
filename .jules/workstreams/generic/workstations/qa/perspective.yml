@@ -3,17 +3,20 @@ schema_version: 2
 observer: "qa"
 workstream: "generic"
 
-updated_at: "2026-02-05T20:00:00Z"
+updated_at: "2026-02-05T20:15:00Z"
 
 goals:
   - "Refactor validation logic to be unit-testable"
   - "Decouple API tests from global state"
+  - "Isolate Narrator logic from IO"
 
 rules: []
 
 ignore: []
 
 log:
+  - at: "2026-02-05T20:15:00Z"
+    summary: "Emitted events for Doctor schema IO coupling, Narrator logic IO coupling, and Matrix Routing global state modification."
   - at: "2026-02-05T20:00:00Z"
     summary: "Identified missing unit tests for Narrator logic and Schema validation."
   - at: "2026-02-05T19:38:50Z"

@@ -1,0 +1,19 @@
+schema_version: 1
+id: "a1b2c3"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "qa"
+confidence: "high"
+title: "Narrator logic coupled with IO prevents unit testing"
+statement: |
+  Core Narrator logic for determining commit ranges and assembling prompts is tightly coupled with `GitPort` and `WorkspaceStore` implementations. These logic components are private and lack unit tests, relying entirely on integration tests or manual verification.
+evidence:
+  - path: "src/app/commands/run/narrator.rs"
+    loc:
+      - "collect_git_context"
+      - "determine_range"
+    note: "Private functions mixing logic with trait-based I/O, uncovered by unit tests."
+tags:
+  - "testability"
+  - "narrator"
+  - "missing-tests"

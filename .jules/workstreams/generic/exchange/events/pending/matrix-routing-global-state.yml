@@ -1,0 +1,18 @@
+schema_version: 1
+id: "g7h8i9"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "qa"
+confidence: "high"
+title: "Matrix Routing tests modify global state"
+statement: |
+  The Matrix Routing command tests modify the process-wide current working directory using `std::env::set_current_dir`. This prevents parallel test execution and can cause flaky failures if other tests rely on the CWD.
+evidence:
+  - path: "src/app/commands/workflow/matrix/routing.rs"
+    loc:
+      - "tests::routes_issues_by_deep_analysis"
+    note: "Test explicitly sets current dir via `std::env::set_current_dir(root)`."
+tags:
+  - "flakiness"
+  - "global-state"
+  - "matrix"
