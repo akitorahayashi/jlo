@@ -1,0 +1,38 @@
+schema_version: 2
+id: "s8d2f5"
+source_events:
+  - "srvmix"
+  - "lay3rs"
+  - "appamb"
+  - "depinv"
+title: "Structural Inconsistency in Services and App Layers"
+label: "refacts"
+priority: "high"
+summary: "The `src/services` directory mixes architectural layers, and `src/app` violates dependency inversion."
+problem: |
+  The codebase exhibits significant architectural violations:
+  1. `src/services` is a low-cohesion directory mixing adapters (infrastructure), application logic (services), and assets.
+  2. `src/app` (commands) directly imports concrete adapters from `src/services/adapters` instead of relying on abstractions (ports).
+  3. Application logic is split between `src/app` and `src/services/application`, creating ambiguity about where core logic belongs.
+impact: |
+  1. **Reduced Maintainability**: Ambiguous layer boundaries make it hard to locate code and understand dependencies.
+  2. **Testing Difficulty**: Direct coupling to concrete adapters in `src/app` makes unit testing commands difficult without full mocks.
+  3. **Fragility**: Changes in infrastructure adapters can ripple into application logic due to tight coupling.
+desired_outcome: |
+  1. `src/services` is refactored to strictly separate layers (e.g., move adapters to `src/adapters` or `src/infrastructure`).
+  2. `src/app` depends only on ports defined in `src/domain` or `src/ports`.
+  3. All application services are consolidated within the application layer.
+affected_areas:
+  - "src/services/mod.rs"
+  - "src/services/adapters/"
+  - "src/services/application/"
+  - "src/app/api.rs"
+acceptance_criteria:
+  - "`src/services` does not mix adapters, application logic, and assets as siblings."
+  - "`src/app` does not import any module from `src/services/adapters` directly."
+  - "Application logic currently in `src/services/application` is moved to a proper home (e.g., `src/app/services`)."
+verification_commands:
+  - "cargo check"
+  - "cargo test"
+requires_deep_analysis: false
+deep_analysis_reason: ""
