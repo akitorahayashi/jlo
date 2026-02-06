@@ -112,7 +112,7 @@ pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     };
 
     let result =
-        crate::app::api::run(target_layer, role, workstream, prompt_preview, branch, issue, mock)?;
+        crate::api::run(target_layer, role, workstream, prompt_preview, branch, issue, mock)?;
 
     if !result.prompt_preview && !result.roles.is_empty() && !result.sessions.is_empty() {
         println!("✅ Created {} Jules session(s)", result.sessions.len());

@@ -4,6 +4,7 @@ mod config;
 mod config_dto;
 pub mod mock;
 
+pub use config::load_config;
 pub use config::parse_config_content;
 pub mod narrator;
 pub(crate) mod narrator_logic;
@@ -16,10 +17,9 @@ use std::path::PathBuf;
 use crate::domain::{AppError, Layer, RoleId};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
-use self::config::{detect_repository_source, load_config};
+use self::config::{detect_repository_source, load_config as _load_config};
 use self::prompt::assemble_prompt;
 use crate::ports::{AutomationMode, JulesClient, SessionRequest};
-use crate::services::adapters::jules_client_http::HttpJulesClient;
 
 /// Options for the run command.
 #[derive(Debug, Clone)]
@@ -52,17 +52,19 @@ pub struct RunResult {
 }
 
 /// Execute the run command.
-pub fn execute<G, H, W>(
+pub fn execute<G, H, W, C>(
     jules_path: &Path,
     options: RunOptions,
     git: &G,
     github: &H,
     workspace: &W,
+    client: Option<&C>,
 ) -> Result<RunResult, AppError>
 where
     G: GitPort,
     H: GitHubPort,
     W: WorkspaceStore + crate::domain::PromptAssetLoader,
+    C: JulesClient,
 {
     // Handle mock mode
     if options.mock {
@@ -77,6 +79,7 @@ where
             options.branch.as_deref(),
             git,
             workspace,
+            client,
         );
     }
 
@@ -99,18 +102,20 @@ where
             is_ci,
             github,
             workspace,
+            client,
         );
     }
 
     // Observers/Deciders: single role execution
-    execute_single_role(jules_path, &options, workspace)
+    execute_single_role(jules_path, &options, workspace, client)
 }
 
 /// Execute a single observer or decider role.
-fn execute_single_role<W: WorkspaceStore + crate::domain::PromptAssetLoader>(
+fn execute_single_role<W: WorkspaceStore + crate::domain::PromptAssetLoader, C: JulesClient>(
     jules_path: &Path,
     options: &RunOptions,
     workspace: &W,
+    client: Option<&C>,
 ) -> Result<RunResult, AppError> {
     let role = options.role.as_ref().ok_or_else(|| {
         AppError::MissingArgument("Role is required for observers/deciders".to_string())
@@ -124,7 +129,7 @@ fn execute_single_role<W: WorkspaceStore + crate::domain::PromptAssetLoader>(
     validate_role_exists(jules_path, options.layer, role_id.as_str())?;
 
     // Load config
-    let config = load_config(jules_path)?;
+    let config = _load_config(jules_path)?;
     let starting_branch = options.branch.clone().unwrap_or_else(|| config.run.jules_branch.clone());
 
     if options.prompt_preview {
@@ -142,8 +147,9 @@ fn execute_single_role<W: WorkspaceStore + crate::domain::PromptAssetLoader>(
     // Determine repository source from git
     let source = detect_repository_source()?;
 
+    let client = client.ok_or_else(|| AppError::InternalError("Client required".into()))?;
+
     // Execute with Jules API
-    let client = HttpJulesClient::from_env_with_config(&config.jules)?;
     let session_id = execute_session(
         jules_path,
         options.layer,
@@ -151,7 +157,7 @@ fn execute_single_role<W: WorkspaceStore + crate::domain::PromptAssetLoader>(
         workstream,
         &starting_branch,
         &source,
-        &client,
+        client,
         workspace,
     )?;
 

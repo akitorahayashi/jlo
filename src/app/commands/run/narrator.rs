@@ -11,20 +11,23 @@ use super::narrator_logic::{
 };
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
-use crate::ports::{AutomationMode, GitPort, JulesClient, SessionRequest, WorkspaceStore};
-use crate::services::adapters::jules_client_http::HttpJulesClient;
+use crate::ports::{
+    AutomationMode, CommitInfo, GitPort, JulesClient, SessionRequest, WorkspaceStore,
+};
 
 /// Execute the Narrator layer.
-pub fn execute<G, W>(
+pub fn execute<G, W, C>(
     jules_path: &Path,
     prompt_preview: bool,
     branch: Option<&str>,
     git: &G,
     workspace: &W,
+    client: Option<&C>,
 ) -> Result<RunResult, AppError>
 where
     G: GitPort,
     W: WorkspaceStore,
+    C: JulesClient,
 {
     let config = load_config(jules_path)?;
 
@@ -59,7 +62,8 @@ where
     let source = detect_repository_source()?;
     let prompt = build_narrator_prompt(jules_path, &git_context, workspace)?;
 
-    let client = HttpJulesClient::from_env_with_config(&config.jules)?;
+    let client = client.ok_or_else(|| AppError::InternalError("Jules client required".into()))?;
+
     let request = SessionRequest {
         prompt,
         source,

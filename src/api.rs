@@ -5,15 +5,17 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
+use crate::adapters::git_command::GitCommandAdapter;
+use crate::adapters::github_command::GitHubCommandAdapter;
+use crate::adapters::jules_client_http::HttpJulesClient;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::{
     AppContext,
     commands::{deinit, doctor, init_scaffold, init_workflows, run, setup, template, update},
 };
 use crate::ports::WorkspaceStore;
-use crate::services::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
-use crate::services::adapters::git_command::GitCommandAdapter;
-use crate::services::adapters::github_command::GitHubCommandAdapter;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::ports::{JulesClient, SessionRequest, SessionResponse};
 
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
@@ -24,6 +26,18 @@ pub use crate::app::commands::update::{UpdateOptions, UpdateResult};
 pub use crate::domain::AppError;
 pub use crate::domain::Layer;
 pub use crate::domain::WorkflowRunnerMode;
+
+struct LazyClient {
+    jules_path: PathBuf,
+}
+
+impl JulesClient for LazyClient {
+    fn create_session(&self, request: SessionRequest) -> Result<SessionResponse, AppError> {
+        let config = crate::app::commands::run::load_config(&self.jules_path)?;
+        let client = HttpJulesClient::from_env_with_config(&config.jules)?;
+        client.create_session(request)
+    }
+}
 
 /// ceate an AppContext for a given path.
 fn create_context(
@@ -138,8 +152,11 @@ pub fn run(
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
 
+    let lazy_client = LazyClient { jules_path: workspace.jules_path() };
+    let client = if !mock && !prompt_preview { Some(&lazy_client) } else { None };
+
     let options = RunOptions { layer, role, workstream, prompt_preview, branch, issue, mock };
-    run::execute(&workspace.jules_path(), options, &git, &github, &workspace)
+    run::execute(&workspace.jules_path(), options, &git, &github, &workspace, client)
 }
 
 // =============================================================================

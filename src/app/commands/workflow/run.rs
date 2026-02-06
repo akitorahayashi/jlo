@@ -7,14 +7,15 @@ use chrono::Utc;
 use serde::Serialize;
 use std::path::Path;
 
+use crate::adapters::git_command::GitCommandAdapter;
+use crate::adapters::github_command::GitHubCommandAdapter;
+use crate::adapters::issue_filesystem::read_issue_header;
+use crate::adapters::jules_client_http::HttpJulesClient;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::adapters::workstream_schedule_filesystem::load_schedule;
 use crate::app::commands::run::{self, RunOptions};
 use crate::domain::{AppError, Layer};
-use crate::ports::WorkspaceStore;
-use crate::services::adapters::git_command::GitCommandAdapter;
-use crate::services::adapters::github_command::GitHubCommandAdapter;
-use crate::services::adapters::issue_filesystem::read_issue_header;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
-use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
+use crate::ports::{JulesClient, WorkspaceStore};
 
 /// Options for workflow run command.
 #[derive(Debug, Clone)]
@@ -83,8 +84,15 @@ pub fn execute(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppErro
         None
     };
 
+    let client = if !options.mock {
+        let config = run::load_config(&workspace.jules_path())?;
+        Some(HttpJulesClient::from_env_with_config(&config.jules)?)
+    } else {
+        None
+    };
+
     // Execute layer runs for the specified workstream
-    let run_results = execute_layer(&options, &workspace)?;
+    let run_results = execute_layer(&options, &workspace, client.as_ref())?;
 
     Ok(WorkflowRunOutput {
         schema_version: 1,
@@ -102,36 +110,52 @@ struct RunResults {
 }
 
 /// Execute runs for a layer on a specific workstream.
-fn execute_layer(
+fn execute_layer<C>(
     options: &WorkflowRunOptions,
     workspace: &FilesystemWorkspaceStore,
-) -> Result<RunResults, AppError> {
+    client: Option<&C>,
+) -> Result<RunResults, AppError>
+where
+    C: JulesClient,
+{
     let jules_path = workspace.jules_path();
     let git_root = jules_path.parent().unwrap_or(&jules_path).to_path_buf();
     let git = GitCommandAdapter::new(git_root);
     let github = GitHubCommandAdapter::new();
 
     match options.layer {
-        Layer::Narrators => execute_narrator(options, &jules_path, &git, &github, workspace),
-        Layer::Observers => execute_multi_role(options, &jules_path, &git, &github, workspace),
-        Layer::Deciders => execute_multi_role(options, &jules_path, &git, &github, workspace),
-        Layer::Planners => execute_issue_layer(options, &jules_path, &git, &github, workspace),
-        Layer::Implementers => execute_issue_layer(options, &jules_path, &git, &github, workspace),
+        Layer::Narrators => {
+            execute_narrator(options, &jules_path, &git, &github, workspace, client)
+        }
+        Layer::Observers => {
+            execute_multi_role(options, &jules_path, &git, &github, workspace, client)
+        }
+        Layer::Deciders => {
+            execute_multi_role(options, &jules_path, &git, &github, workspace, client)
+        }
+        Layer::Planners => {
+            execute_issue_layer(options, &jules_path, &git, &github, workspace, client)
+        }
+        Layer::Implementers => {
+            execute_issue_layer(options, &jules_path, &git, &github, workspace, client)
+        }
     }
 }
 
 /// Execute narrator (workstream-independent).
-fn execute_narrator<G, H, W>(
+fn execute_narrator<G, H, W, C>(
     options: &WorkflowRunOptions,
     jules_path: &Path,
     git: &G,
     github: &H,
     workspace: &W,
+    client: Option<&C>,
 ) -> Result<RunResults, AppError>
 where
     G: crate::ports::GitPort,
     H: crate::ports::GitHubPort,
     W: WorkspaceStore + crate::domain::PromptAssetLoader,
+    C: JulesClient,
 {
     let run_options = RunOptions {
         layer: Layer::Narrators,
@@ -144,23 +168,25 @@ where
     };
 
     eprintln!("Executing: narrator{}", if options.mock { " (mock)" } else { "" });
-    run::execute(jules_path, run_options, git, github, workspace)?;
+    run::execute(jules_path, run_options, git, github, workspace, client)?;
 
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
 }
 
 /// Execute multi-role layer (observers, deciders) for a specific workstream.
-fn execute_multi_role<G, H, W>(
+fn execute_multi_role<G, H, W, C>(
     options: &WorkflowRunOptions,
     jules_path: &Path,
     git: &G,
     github: &H,
     workspace: &W,
+    client: Option<&C>,
 ) -> Result<RunResults, AppError>
 where
     G: crate::ports::GitPort,
     H: crate::ports::GitHubPort,
     W: WorkspaceStore + crate::domain::PromptAssetLoader,
+    C: JulesClient,
 {
     let workstream = &options.workstream;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
@@ -206,24 +232,26 @@ where
             role,
             mock_suffix
         );
-        run::execute(jules_path, run_options, git, github, workspace)?;
+        run::execute(jules_path, run_options, git, github, workspace, client)?;
     }
 
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
 }
 
 /// Execute issue-based layers (planners, implementers) for a specific workstream.
-fn execute_issue_layer<G, H, W>(
+fn execute_issue_layer<G, H, W, C>(
     options: &WorkflowRunOptions,
     jules_path: &Path,
     git: &G,
     github: &H,
     workspace: &W,
+    client: Option<&C>,
 ) -> Result<RunResults, AppError>
 where
     G: crate::ports::GitPort,
     H: crate::ports::GitHubPort,
     W: WorkspaceStore + crate::domain::PromptAssetLoader,
+    C: JulesClient,
 {
     let workstream = &options.workstream;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
@@ -257,7 +285,7 @@ where
             issue_path.display(),
             mock_suffix
         );
-        run::execute(jules_path, run_options, git, github, workspace)?;
+        run::execute(jules_path, run_options, git, github, workspace, client)?;
     }
 
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })

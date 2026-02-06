@@ -7,14 +7,13 @@ use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, GitHubPort, JulesClient, SessionRequest, WorkspaceStore};
-use crate::services::adapters::jules_client_http::HttpJulesClient;
 
 const PLANNER_WORKFLOW_NAME: &str = "jules-run-planner.yml";
 const IMPLEMENTER_WORKFLOW_NAME: &str = "jules-run-implementer.yml";
 
 /// Execute a single-role layer (Planners or Implementers).
 #[allow(clippy::too_many_arguments)]
-pub fn execute<H, W>(
+pub fn execute<H, W, C>(
     jules_path: &Path,
     layer: Layer,
     issue_path: &Path,
@@ -23,10 +22,12 @@ pub fn execute<H, W>(
     is_ci: bool,
     github: &H,
     workspace: &W,
+    client: Option<&C>,
 ) -> Result<RunResult, AppError>
 where
     H: GitHubPort,
     W: WorkspaceStore,
+    C: JulesClient,
 {
     // Validate issue file requirement
     let path_str = issue_path
@@ -102,13 +103,14 @@ where
     let source = detect_repository_source()?;
 
     // Execute with appropriate client
-    let client = HttpJulesClient::from_env_with_config(&config.jules)?;
+    let client = client.ok_or_else(|| AppError::InternalError("Jules client required".into()))?;
+
     let session_id = execute_session(
         jules_path,
         layer,
         &starting_branch,
         &source,
-        &client,
+        client,
         &issue_content,
         issue_path,
         workspace,

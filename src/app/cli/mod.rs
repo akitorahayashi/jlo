@@ -127,19 +127,18 @@ fn run_template(
     name: Option<String>,
     workstream: Option<String>,
 ) -> Result<(), AppError> {
-    let outcome =
-        crate::app::api::template(layer.as_deref(), name.as_deref(), workstream.as_deref())?;
+    let outcome = crate::api::template(layer.as_deref(), name.as_deref(), workstream.as_deref())?;
 
     let entity_type = match &outcome {
-        crate::app::api::TemplateOutcome::Role { .. } => "role",
-        crate::app::api::TemplateOutcome::Workstream { .. } => "workstream",
+        crate::api::TemplateOutcome::Role { .. } => "role",
+        crate::api::TemplateOutcome::Workstream { .. } => "workstream",
     };
     println!("✅ Created new {} at {}/", entity_type, outcome.display_path());
     Ok(())
 }
 
 fn run_update(prompt_preview: bool, adopt_managed: bool) -> Result<(), AppError> {
-    let result = crate::app::api::update(prompt_preview, adopt_managed)?;
+    let result = crate::api::update(prompt_preview, adopt_managed)?;
 
     if !result.prompt_preview {
         if result.updated.is_empty() && result.created.is_empty() && result.removed.is_empty() {

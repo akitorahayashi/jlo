@@ -3,7 +3,7 @@
 use crate::domain::AppError;
 
 pub fn run_deinit() -> Result<(), AppError> {
-    let outcome = crate::app::api::deinit()?;
+    let outcome = crate::api::deinit()?;
 
     if outcome.deleted_branch {
         println!("✅ Deleted local 'jules' branch");

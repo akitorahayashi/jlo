@@ -23,7 +23,7 @@ pub enum SetupCommands {
 }
 
 pub fn run_setup_gen(path: Option<PathBuf>) -> Result<(), AppError> {
-    let components = crate::app::api::setup_gen(path.as_deref())?;
+    let components = crate::api::setup_gen(path.as_deref())?;
     println!("✅ Generated install.sh with {} component(s)", components.len());
     for (i, name) in components.iter().enumerate() {
         println!("  {}. {}", i + 1, name);
@@ -33,7 +33,7 @@ pub fn run_setup_gen(path: Option<PathBuf>) -> Result<(), AppError> {
 
 pub fn run_setup_list(detail: Option<String>) -> Result<(), AppError> {
     if let Some(component) = detail {
-        let info = crate::app::api::setup_detail(&component)?;
+        let info = crate::api::setup_detail(&component)?;
         println!("{}: {}", info.name, info.summary);
         if !info.dependencies.is_empty() {
             println!("\nDependencies:");
@@ -55,7 +55,7 @@ pub fn run_setup_list(detail: Option<String>) -> Result<(), AppError> {
         println!("\nInstall Script:");
         println!("{}", info.script_content);
     } else {
-        let components = crate::app::api::setup_list()?;
+        let components = crate::api::setup_list()?;
         println!("Available components:");
         for comp in components {
             println!("  {} - {}", comp.name, comp.summary);

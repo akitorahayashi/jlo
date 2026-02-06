@@ -28,7 +28,7 @@ pub enum InitCommands {
 pub fn run_init(command: Option<InitCommands>) -> Result<(), AppError> {
     match command.unwrap_or(InitCommands::Scaffold) {
         InitCommands::Scaffold => {
-            crate::app::api::init()?;
+            crate::api::init()?;
             println!("✅ Initialized .jules/ workspace");
             Ok(())
         }
@@ -42,7 +42,7 @@ pub fn run_init(command: Option<InitCommands>) -> Result<(), AppError> {
                     "Runner mode is required. Use --remote or --self-hosted.".into(),
                 ));
             };
-            crate::app::api::init_workflows(mode)?;
+            crate::api::init_workflows(mode)?;
             println!("✅ Installed workflow kit ({})", mode.label());
             Ok(())
         }

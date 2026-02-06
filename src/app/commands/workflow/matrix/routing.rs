@@ -6,10 +6,10 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::adapters::issue_filesystem::read_issue_header;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
-use crate::services::adapters::issue_filesystem::read_issue_header;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 /// Options for matrix routing command.
 #[derive(Debug, Clone)]

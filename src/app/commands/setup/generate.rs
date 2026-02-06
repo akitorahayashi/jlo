@@ -2,11 +2,11 @@
 
 use std::path::Path;
 
+use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 use crate::app::config::SetupConfig;
+use crate::app::services::artifact_generator::ArtifactGenerator;
+use crate::app::services::dependency_resolver::DependencyResolver;
 use crate::domain::AppError;
-use crate::services::application::artifact_generator::ArtifactGenerator;
-use crate::services::application::dependency_resolver::DependencyResolver;
-use crate::services::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 
 /// Execute the setup gen command.
 ///

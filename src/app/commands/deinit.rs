@@ -2,9 +2,9 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
+use crate::adapters::assets::workflow_kit_assets::load_workflow_kit;
 use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::GitPort;
-use crate::services::assets::workflow_kit_assets::load_workflow_kit;
 
 #[derive(Debug, Default)]
 pub struct DeinitOutcome {
