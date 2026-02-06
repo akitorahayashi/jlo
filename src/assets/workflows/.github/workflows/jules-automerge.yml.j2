@@ -47,34 +47,35 @@ jobs:
           set -euo pipefail
           git fetch origin jules --depth=1
 
-          mapfile -t contract_paths < <(git ls-tree -r --name-only origin/jules:.jules/roles | awk '/contracts.yml$/')
-          contract_count=$(printf '%s\n' "${contract_paths[@]}" | wc -l | tr -d ' ')
-          if [ "$contract_count" -eq 0 ]; then
+          contract_paths=$(git ls-tree -r --name-only origin/jules:.jules/roles | awk '/contracts.yml$/')
+          if [ -z "$contract_paths" ]; then
             echo "::error::No contracts.yml found under .jules/roles on jules branch."
             exit 1
           fi
 
-          prefixes=()
-          for path in "${contract_paths[@]}"; do
+          prefixes=""
+          while IFS= read -r path; do
+            [ -z "$path" ] && continue
             prefix=$(git show "origin/jules:.jules/roles/$path" | awk -F':' '/^branch_prefix:/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); gsub(/["'\'']/, "", $2); print $2; exit}')
             if [ -n "$prefix" ]; then
-              prefixes+=("$prefix")
+              prefixes="${prefixes}${prefix}"$'\n'
             fi
-          done
+          done <<< "$contract_paths"
 
-          prefix_count=$(printf '%s\n' "${prefixes[@]}" | wc -l | tr -d ' ')
+          prefix_count=$(printf '%s' "$prefixes" | awk 'NF{count++} END{print count+0}')
           if [ "$prefix_count" -eq 0 ]; then
             echo "::error::No branch_prefix entries found in contracts.yml on jules branch."
             exit 1
           fi
 
           match=false
-          for prefix in "${prefixes[@]}"; do
+          while IFS= read -r prefix; do
+            [ -z "$prefix" ] && continue
             if [[ "$HEAD_REF" == "$prefix"* ]]; then
               match=true
               break
             fi
-          done
+          done <<< "$prefixes"
 
           echo "match=$match" >> "$GITHUB_OUTPUT"
 
