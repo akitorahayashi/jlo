@@ -1,0 +1,19 @@
+schema_version: 1
+id: "d4e5f6"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "qa"
+confidence: "high"
+title: "Doctor schema validation coupled to filesystem"
+statement: |
+  The schema validation logic in `src/app/commands/doctor/schema.rs` is tightly coupled to filesystem operations (reading files via `load_yaml_mapping`), preventing unit testing of complex validation rules without disk I/O.
+evidence:
+  - path: "src/app/commands/doctor/schema.rs"
+    loc:
+      - "validate_changes_latest"
+      - "validate_contracts"
+    note: "Functions take `Path` and perform internal file I/O, making them impure and hard to test."
+tags:
+  - "testability"
+  - "coupling"
+  - "doctor"
