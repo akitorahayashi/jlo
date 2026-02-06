@@ -28,9 +28,8 @@ impl MockWorkspaceStore {
     }
 
     pub fn add_role(&self, layer: Layer, role_id: &str) {
-        if let Ok(id) = RoleId::new(role_id) {
-            self.roles.borrow_mut().insert((layer, id), true);
-        }
+        let id = RoleId::new(role_id).expect("Invalid role_id provided in test setup");
+        self.roles.borrow_mut().insert((layer, id), true);
     }
 
     pub fn with_file(self, path: &str, content: &str) -> Self {
