@@ -23,31 +23,38 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 .jules/
 ├── JULES.md              # Agent contract (formal rules)
 ├── README.md             # Human guide (informal)
+├── config.toml           # Workspace configuration
+├── github-labels.json    # GitHub labels definition
 ├── changes/
 │   └── latest.yml        # Narrator output (bounded changes summary)
 ├── roles/
 │   ├── narrator/
 │   │   ├── prompt.yml    # Entry point
+│   │   ├── prompt_assembly.yml # Prompt construction rules
 │   │   ├── contracts.yml # Layer contract
 │   │   └── schemas/
 │   │       └── change.yml
 │   ├── observers/
 │   │   ├── contracts.yml
+│   │   ├── prompt_assembly.yml # Prompt construction rules
 │   │   ├── schemas/
 │   │   │   └── event.yml
 │   │   └── <role>/
 │   │       └── role.yml
 │   ├── deciders/
 │   │   ├── contracts.yml
+│   │   ├── prompt_assembly.yml # Prompt construction rules
 │   │   ├── schemas/
 │   │   │   ├── issue.yml
 │   │   └── <role>/
 │   │       └── role.yml
 │   ├── planners/
 │   │   ├── prompt.yml
+│   │   ├── prompt_assembly.yml # Prompt construction rules
 │   │   └── contracts.yml
 │   └── implementers/
 │       ├── prompt.yml
+│       ├── prompt_assembly.yml # Prompt construction rules
 │       └── contracts.yml
 ├── workstreams/
 │   └── <workstream>/
