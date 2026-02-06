@@ -5,6 +5,7 @@ source_events:
   - "lay3rs"
   - "appamb"
   - "depinv"
+  - "runadc"
 title: "Structural Inconsistency in Services and App Layers"
 label: "refacts"
 priority: "high"
@@ -14,6 +15,7 @@ problem: |
   1. `src/services` is a low-cohesion directory mixing adapters (infrastructure), application logic (services), and assets.
   2. `src/app` (commands) directly imports concrete adapters from `src/services/adapters` instead of relying on abstractions (ports).
   3. Application logic is split between `src/app` and `src/services/application`, creating ambiguity about where core logic belongs.
+  4. The `workflow::run` command specifically hardcodes dependencies by directly instantiating `GitCommandAdapter` and `GitHubCommandAdapter`.
 impact: |
   1. **Reduced Maintainability**: Ambiguous layer boundaries make it hard to locate code and understand dependencies.
   2. **Testing Difficulty**: Direct coupling to concrete adapters in `src/app` makes unit testing commands difficult without full mocks.
@@ -27,9 +29,11 @@ affected_areas:
   - "src/services/adapters/"
   - "src/services/application/"
   - "src/app/api.rs"
+  - "src/app/commands/workflow/run.rs"
 acceptance_criteria:
   - "`src/services` does not mix adapters, application logic, and assets as siblings."
   - "`src/app` does not import any module from `src/services/adapters` directly."
+  - "`src/app/commands/workflow/run.rs` accepts adapter traits (ports) instead of concrete structs."
   - "Application logic currently in `src/services/application` is moved to a proper home (e.g., `src/app/services`)."
 verification_commands:
   - "cargo check"

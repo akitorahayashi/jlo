@@ -1,0 +1,32 @@
+schema_version: 2
+id: "a8f3g2"
+source_events:
+  - "8k2m9p"
+  - "x5y1z3"
+title: "Domain Layer Purity Violations"
+label: "refacts"
+priority: "medium"
+summary: "The domain layer leaks infrastructure details and depends on external libraries, violating Clean Architecture."
+problem: |
+  The domain layer (`src/domain`) should be pure and independent of infrastructure concerns. However, it currently:
+  1. Depends on `minijinja` in `src/domain/prompt/prompt_assembly.rs` for template rendering.
+  2. Re-exports `std::io::Error` and `toml::de::Error` in `src/domain/error.rs` (via `AppError`), leaking implementation details of the persistence layer.
+impact: |
+  1. **Tight Coupling**: The domain logic is coupled to specific template engines and IO mechanisms.
+  2. **Testing Difficulty**: Domain logic cannot be tested without these dependencies.
+  3. **Architecture Violation**: Makes it harder to swap out infrastructure implementations (e.g., changing storage or template engine).
+desired_outcome: |
+  1. `minijinja` dependency is moved to an adapter (e.g., `src/adapters/template.rs`) or a port definition.
+  2. `AppError` defines its own domain-specific error variants instead of wrapping `std::io::Error` directly.
+affected_areas:
+  - "src/domain/prompt/prompt_assembly.rs"
+  - "src/domain/error.rs"
+acceptance_criteria:
+  - "`src/domain` does not import `minijinja`."
+  - "`AppError` does not contain `#[from] std::io::Error` or `#[from] toml::de::Error`."
+  - "Template rendering logic is behind a trait/port."
+verification_commands:
+  - "cargo check"
+  - "! grep -r 'minijinja' src/domain"
+requires_deep_analysis: false
+deep_analysis_reason: ""

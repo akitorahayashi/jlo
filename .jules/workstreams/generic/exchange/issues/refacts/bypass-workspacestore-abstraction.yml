@@ -2,12 +2,13 @@ schema_version: 2
 id: "g4h7j2"
 source_events:
   - "fsbyp1"
+  - "docio1"
 title: "Direct Filesystem Usage Bypassing Abstractions"
 label: "refacts"
 priority: "medium"
 summary: "Commands are using `std::fs` directly instead of the `WorkspaceStore` abstraction."
 problem: |
-  Several commands (e.g., `setup::generate`, `workflow::matrix::routing`) bypass the `WorkspaceStore` abstraction and interact directly with the filesystem using `std::fs`. This reduces testability and couples the code to the physical environment.
+  Several commands (e.g., `setup::generate`, `workflow::matrix::routing`, `doctor::structure`) bypass the `WorkspaceStore` abstraction and interact directly with the filesystem using `std::fs`. This reduces testability and couples the code to the physical environment.
 impact: |
   1. **Poor Testability**: Code using `std::fs` cannot be unit tested without creating temporary files on disk, making tests slower and more fragile.
   2. **Inconsistent IO**: Bypassing the central store means we miss out on potential benefits like caching, consistent error handling, or virtualized environments (e.g., for `jlo run --mock`).
@@ -17,9 +18,11 @@ affected_areas:
   - "src/app/commands/setup/generate.rs"
   - "src/app/commands/workflow/matrix/routing.rs"
   - "src/app/commands/workflow/run.rs"
+  - "src/app/commands/doctor/structure.rs"
 acceptance_criteria:
   - "`src/app/commands/setup/generate.rs` uses `WorkspaceStore` (or a `SetupPort`) instead of `std::fs`."
   - "`src/app/commands/workflow/matrix/routing.rs` uses `WorkspaceStore` instead of `std::fs`."
+  - "`src/app/commands/doctor/structure.rs` uses `WorkspaceStore` instead of `std::fs`."
   - "Unit tests for these commands can run against a memory-backed store."
 verification_commands:
   - "cargo check"

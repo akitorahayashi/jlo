@@ -1,0 +1,32 @@
+schema_version: 2
+id: "b9j4k5"
+source_events:
+  - "wsstor"
+title: "WorkspaceStore Trait Mixes Domain and I/O Responsibilities"
+label: "refacts"
+priority: "high"
+summary: "The `WorkspaceStore` trait violates SRP by mixing low-level I/O with high-level domain logic."
+problem: |
+  The `WorkspaceStore` trait defines both low-level filesystem operations (`read_file`, `write_file`) and high-level domain logic (`role_exists_in_layer`, `discover_roles`, `find_role_fuzzy`). This forces all implementations, including mocks, to duplicate complex domain logic (like directory structure knowledge) instead of just implementing storage.
+impact: |
+  1. **Fragile Mocks**: `MemoryWorkspaceStore` must reimplement production directory logic to be useful, leading to drift and bugs in tests.
+  2. **High Coupling**: Domain logic about where roles are stored is coupled to the storage mechanism.
+  3. **Violation of SRP**: The store does too much.
+desired_outcome: |
+  1. Split `WorkspaceStore` into two traits/structs:
+      - `FileStore` (Port): Pure I/O (read, write, list).
+      - `WorkspaceRepository` (Service/Adapter): Domain logic that uses `FileStore` to find/manage roles.
+  2. Implement `WorkspaceRepository` once as a concrete service that takes a `FileStore`.
+affected_areas:
+  - "src/ports/workspace_store.rs"
+  - "src/services/adapters/filesystem_workspace_store.rs"
+  - "src/services/adapters/memory_workspace_store.rs"
+acceptance_criteria:
+  - "`WorkspaceStore` (or `FileStore`) trait only contains `read_file`, `write_file`, etc."
+  - "Role discovery and management logic is moved to a concrete `WorkspaceRepository` service."
+  - "Mocks only need to implement the simple I/O trait."
+verification_commands:
+  - "cargo check"
+  - "cargo test"
+requires_deep_analysis: false
+deep_analysis_reason: ""

@@ -2,7 +2,7 @@ schema_version: 1
 
 # Metadata
 id: "wsstor"
-issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+issue_id: "b9j4k5" # ID of the issue that processed this event (empty if unprocessed)
 created_at: "2026-02-06"
 author_role: "structural_arch"
 confidence: "high"
