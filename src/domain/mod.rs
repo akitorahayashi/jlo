@@ -1,27 +1,16 @@
-mod component;
-mod component_id;
-mod error;
-mod layer;
-pub mod manifest;
-mod mock_config;
-mod prompt_assembly;
-mod role_id;
-mod run_config;
-mod schedule;
-mod validation;
-mod workflow_runner_mode;
-mod workspace_layout;
+pub mod configuration;
+pub mod error;
+pub mod identities;
+pub mod prompt;
+pub mod workspace;
 
-pub use component::{Component, EnvSpec};
-pub use component_id::ComponentId;
+pub use configuration::{
+    ExecutionConfig, JulesApiConfig, MockConfig, MockOutput, RunConfig, WorkflowRunnerMode,
+    WorkstreamSchedule,
+};
 pub use error::AppError;
-pub use layer::Layer;
-pub use mock_config::{MockConfig, MockOutput};
-#[allow(unused_imports)]
-pub use prompt_assembly::{AssembledPrompt, PromptAssemblyError, PromptAssemblySpec};
-pub use prompt_assembly::{PromptAssetLoader, PromptContext, assemble_prompt, assemble_with_issue};
-pub use role_id::RoleId;
-pub use run_config::{ExecutionConfig, JulesApiConfig, RunConfig};
-pub use schedule::WorkstreamSchedule;
-pub use workflow_runner_mode::WorkflowRunnerMode;
-pub use workspace_layout::{JULES_DIR, VERSION_FILE};
+pub use identities::{ComponentId, RoleId};
+pub use prompt::{
+    PromptAssemblyError, PromptAssetLoader, PromptContext, assemble_prompt, assemble_with_issue,
+};
+pub use workspace::{Component, EnvSpec, JULES_DIR, Layer, ScaffoldManifest, VERSION_FILE};

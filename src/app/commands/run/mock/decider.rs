@@ -53,32 +53,19 @@ where
     let label_dir = issues_dir.join(&label);
     std::fs::create_dir_all(&label_dir)?;
 
-    let mock_issue_template = include_str!("assets/decider_issue.yml");
+    let mock_issue_template = super::MOCK_ASSETS
+        .get_file("decider_issue.yml")
+        .expect("Mock asset missing: decider_issue.yml")
+        .contents_utf8()
+        .expect("Invalid UTF-8 in decider_issue.yml");
 
-    // Move any mock pending events to decided first, collecting event IDs
-    let mut moved_dest_files: Vec<PathBuf> = Vec::new();
+    // Move any mock pending events to decided first
     let mut moved_src_files: Vec<PathBuf> = Vec::new();
-    let mut source_event_ids: Vec<String> = Vec::new();
     if pending_dir.exists() {
         for entry in std::fs::read_dir(&pending_dir)? {
             let entry = entry?;
             let path = entry.path();
-            if path
-                .file_name()
-                .map(|n| n.to_string_lossy().contains(&config.mock_tag))
-                .unwrap_or(false)
-            {
-                // Extract event ID from filename (format: mock-{scope}-{event_id}.yml)
-                if let Some(filename) = path.file_name() {
-                    let name = filename.to_string_lossy();
-                    // Parse event ID from filename
-                    if let Some(id_part) = name.strip_prefix(&format!("mock-{}-", config.mock_tag))
-                        && let Some(event_id) = id_part.strip_suffix(".yml")
-                    {
-                        source_event_ids.push(event_id.to_string());
-                    }
-                }
-
+            if mock_event_id_from_path(&path, &config.mock_tag).is_some() {
                 let dest = decided_dir.join(path.file_name().ok_or_else(|| {
                     AppError::Validation(format!(
                         "Pending event missing filename: {}",
@@ -87,24 +74,26 @@ where
                 })?);
                 std::fs::rename(&path, &dest)?;
                 moved_src_files.push(path);
-                moved_dest_files.push(dest);
             }
         }
     }
 
-    // Sort to determine assignment order (stable assignment based on ID)
-    source_event_ids.sort();
+    let decided_mock_files = list_mock_decided_files(&decided_dir, &config.mock_tag)?;
+    let source_event_ids: Vec<String> = decided_mock_files
+        .iter()
+        .filter_map(|path| mock_event_id_from_path(path, &config.mock_tag))
+        .collect();
 
-    // Select distinct events for distinct paths (or generate if missing)
-    let planner_event_id = source_event_ids
-        .first()
-        .cloned()
-        .unwrap_or_else(|| format!("mock-event-planner-{}", generate_mock_id()));
+    if source_event_ids.len() < 2 {
+        return Err(AppError::Validation(format!(
+            "Mock decider requires at least 2 decided events for tag '{}', found {}",
+            config.mock_tag,
+            source_event_ids.len()
+        )));
+    }
 
-    let impl_event_id = source_event_ids
-        .get(1)
-        .cloned()
-        .unwrap_or_else(|| format!("mock-event-impl-{}", generate_mock_id()));
+    let planner_event_id = source_event_ids[0].clone();
+    let impl_event_id = source_event_ids[1].clone();
 
     // Issue 1: requires deep analysis (for planner)
     let planner_issue_id = generate_mock_id();
@@ -144,61 +133,75 @@ where
         &impl_issue_content,
     )?;
 
-    // Update moved event files to set issue_id (decided events must have issue_id)
-    for dest_file in &moved_dest_files {
-        if let Some(filename) = dest_file.file_name() {
-            let name = filename.to_string_lossy();
-            let event_id = if let Some(id_part) =
-                name.strip_prefix(&format!("mock-{}-", config.mock_tag))
-                && let Some(event_id) = id_part.strip_suffix(".yml")
-            {
-                event_id.to_string()
-            } else {
-                continue;
-            };
+    // Ensure all tag-matched decided events have issue_id.
+    // Extra events (e.g., workflow re-run with same mock tag) are attached to implementer issue.
+    for decided_file in &decided_mock_files {
+        if let Some(event_id) = mock_event_id_from_path(decided_file, &config.mock_tag) {
+            let assigned_issue_id =
+                if event_id == planner_event_id { &planner_issue_id } else { &impl_issue_id };
 
-            // Determine which issue ID to use based on event ID matching
-            let assigned_issue_id = if event_id == planner_event_id {
-                &planner_issue_id
-            } else if event_id == impl_event_id {
-                &impl_issue_id
-            } else {
-                continue; // Unknown event, skip update
-            };
-
-            let content = match std::fs::read_to_string(dest_file) {
+            let content = match std::fs::read_to_string(decided_file) {
                 Ok(content) => content,
                 Err(err) => {
                     println!(
                         "::warning::Failed to read decided event file {}: {}",
-                        dest_file.display(),
+                        decided_file.display(),
                         err
                     );
                     continue;
                 }
             };
 
-            // Update issue_id in the event file
-            let updated_content = if content.contains("issue_id: \"\"") {
-                content.replace("issue_id: \"\"", &format!("issue_id: \"{}\"", assigned_issue_id))
-            } else {
-                // Append if not present in template
-                format!("{}\nissue_id: \"{}\"", content, assigned_issue_id)
+            let mut yaml_value: serde_yaml::Value = match serde_yaml::from_str(&content) {
+                Ok(value) => value,
+                Err(err) => {
+                    println!(
+                        "::warning::Failed to parse decided event file {} as YAML: {}",
+                        decided_file.display(),
+                        err
+                    );
+                    continue;
+                }
             };
 
-            if let Err(err) = std::fs::write(dest_file, updated_content) {
+            let Some(mapping) = yaml_value.as_mapping_mut() else {
+                println!(
+                    "::warning::Decided event file is not a YAML mapping: {}",
+                    decided_file.display()
+                );
+                continue;
+            };
+
+            mapping.insert(
+                serde_yaml::Value::String("issue_id".to_string()),
+                serde_yaml::Value::String(assigned_issue_id.to_string()),
+            );
+
+            let updated_content = match serde_yaml::to_string(&yaml_value) {
+                Ok(value) => value,
+                Err(err) => {
+                    println!(
+                        "::warning::Failed to render decided event YAML {}: {}",
+                        decided_file.display(),
+                        err
+                    );
+                    continue;
+                }
+            };
+
+            if let Err(err) = std::fs::write(decided_file, updated_content) {
                 println!(
                     "::warning::Failed to write decided event file {}: {}",
-                    dest_file.display(),
+                    decided_file.display(),
                     err
                 );
             }
         }
     }
 
-    // Commit and push (include moved event files)
+    // Commit and push (include moved/deleted files and decided updates)
     let mut files: Vec<&Path> = vec![planner_issue_file.as_path(), impl_issue_file.as_path()];
-    for f in &moved_dest_files {
+    for f in &decided_mock_files {
         files.push(f.as_path());
     }
     for f in &moved_src_files {
@@ -224,4 +227,61 @@ where
         mock_pr_url: pr.url,
         mock_tag: config.mock_tag.clone(),
     })
+}
+
+fn mock_event_id_from_path(path: &Path, mock_tag: &str) -> Option<String> {
+    let file_name = path.file_name()?.to_str()?;
+    let prefix = format!("mock-{}-", mock_tag);
+    file_name.strip_prefix(&prefix)?.strip_suffix(".yml").map(ToString::to_string)
+}
+
+fn list_mock_decided_files(decided_dir: &Path, mock_tag: &str) -> Result<Vec<PathBuf>, AppError> {
+    if !decided_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    let mut files: Vec<PathBuf> = std::fs::read_dir(decided_dir)?
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+        .filter(|path| path.is_file())
+        .filter(|path| mock_event_id_from_path(path, mock_tag).is_some())
+        .collect();
+
+    files.sort();
+    Ok(files)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{list_mock_decided_files, mock_event_id_from_path};
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn parses_mock_event_id_from_path() {
+        let mock_tag = "mock-run-123";
+        let valid_path = std::path::Path::new("mock-mock-run-123-a1b2c3.yml");
+        let invalid_path = std::path::Path::new("mock-other-tag-a1b2c3.yml");
+
+        assert_eq!(mock_event_id_from_path(valid_path, mock_tag), Some("a1b2c3".to_string()));
+        assert_eq!(mock_event_id_from_path(invalid_path, mock_tag), None);
+    }
+
+    #[test]
+    fn lists_only_tagged_decided_files_in_sorted_order() {
+        let dir = tempdir().expect("tempdir");
+        let decided_dir = dir.path().join("decided");
+        fs::create_dir_all(&decided_dir).expect("mkdir");
+
+        fs::write(decided_dir.join("mock-mock-run-123-bbbbbb.yml"), "id: bbbbbb\n").expect("write");
+        fs::write(decided_dir.join("mock-mock-run-123-aaaaaa.yml"), "id: aaaaaa\n").expect("write");
+        fs::write(decided_dir.join("mock-other-run-cccccc.yml"), "id: cccccc\n").expect("write");
+        fs::write(decided_dir.join("notes.txt"), "ignored\n").expect("write");
+
+        let files = list_mock_decided_files(&decided_dir, "mock-run-123").expect("list");
+
+        assert_eq!(files.len(), 2);
+        assert!(files[0].to_string_lossy().ends_with("mock-mock-run-123-aaaaaa.yml"));
+        assert!(files[1].to_string_lossy().ends_with("mock-mock-run-123-bbbbbb.yml"));
+    }
 }

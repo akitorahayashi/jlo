@@ -12,6 +12,9 @@ pub mod narrator;
 pub mod observer;
 pub mod planner;
 
+use include_dir::{Dir, include_dir};
+pub static MOCK_ASSETS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/mock");
+
 use std::path::Path;
 
 use crate::app::commands::run::RunOptions;

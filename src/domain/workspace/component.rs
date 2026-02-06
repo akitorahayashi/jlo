@@ -1,6 +1,6 @@
 //! Component domain model.
 
-use super::component_id::ComponentId;
+use crate::domain::ComponentId;
 use serde::Deserialize;
 
 /// Environment variable specification for a component.

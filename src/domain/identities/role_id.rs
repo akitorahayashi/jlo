@@ -1,4 +1,4 @@
-use super::AppError;
+use crate::domain::AppError;
 use crate::impl_validated_id;
 use serde::{Deserialize, Deserializer};
 

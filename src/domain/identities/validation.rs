@@ -24,7 +24,7 @@ macro_rules! impl_validated_id {
         impl $name {
             /// Validate and create a new instance.
             pub fn new(id: &str) -> Result<Self, $crate::domain::AppError> {
-                if $crate::domain::validation::validate_identifier(id, $allow_dots) {
+                if $crate::domain::identities::validation::validate_identifier(id, $allow_dots) {
                     Ok(Self(id.to_string()))
                 } else {
                     Err($err_variant(id.to_string()))

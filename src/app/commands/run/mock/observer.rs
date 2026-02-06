@@ -43,7 +43,11 @@ where
         .join("events")
         .join("pending");
 
-    let mock_event_template = include_str!("assets/observer_event.yml");
+    let mock_event_template = super::MOCK_ASSETS
+        .get_file("observer_event.yml")
+        .expect("Mock asset missing: observer_event.yml")
+        .contents_utf8()
+        .expect("Invalid UTF-8 in observer_event.yml");
 
     // Create mock event 1 (for planner routing)
     let event_id_1 = generate_mock_id();

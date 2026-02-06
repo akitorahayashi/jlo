@@ -137,7 +137,7 @@ pub enum AppError {
 
     /// Workstream schedule error.
     #[error(transparent)]
-    Schedule(#[from] crate::domain::schedule::ScheduleError),
+    Schedule(#[from] crate::domain::configuration::schedule::ScheduleError),
 
     /// Issue file not found at path.
     #[error("Issue file not found: {0}")]
@@ -149,7 +149,7 @@ pub enum AppError {
 
     /// Prompt assembly failed.
     #[error(transparent)]
-    PromptAssembly(#[from] crate::domain::prompt_assembly::PromptAssemblyError),
+    PromptAssembly(#[from] crate::domain::PromptAssemblyError),
 
     /// Git execution failed.
     #[error("Git error running '{command}': {details}")]
