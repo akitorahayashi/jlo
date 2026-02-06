@@ -169,17 +169,28 @@ impl WorkspaceStore for MockWorkspaceStore {
     }
 
     fn list_dir(&self, path: &str) -> Result<Vec<PathBuf>, AppError> {
-        // Simple implementation: find all files that start with path/
+        // Find direct children (files and directories)
         let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
-        let mut results = Vec::new();
+        let path_obj = Path::new(path);
+        let mut results = std::collections::HashSet::new();
+
         for key in self.files.borrow().keys() {
             if key.starts_with(&prefix) {
-                // Return full path
-                results.push(PathBuf::from(key));
+                let suffix = &key[prefix.len()..];
+                if let Some(slash_idx) = suffix.find('/') {
+                    // It's a subdirectory
+                    let dir_name = &suffix[..slash_idx];
+                    results.insert(path_obj.join(dir_name));
+                } else {
+                    // It's a file directly in this directory
+                    results.insert(PathBuf::from(key));
+                }
             }
         }
-        results.sort();
-        Ok(results)
+
+        let mut results_vec: Vec<PathBuf> = results.into_iter().collect();
+        results_vec.sort();
+        Ok(results_vec)
     }
 
     fn set_executable(&self, _path: &str) -> Result<(), AppError> {

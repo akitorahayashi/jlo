@@ -114,14 +114,34 @@ pub fn execute(
         let issues_dir =
             jules_path.join("workstreams").join(&ws_entry.workstream).join("exchange/issues");
 
-        if !store.file_exists(issues_dir.to_str().unwrap()) {
+        let issues_dir_str = match issues_dir.to_str() {
+            Some(s) => s,
+            None => {
+                return Err(AppError::Validation(format!(
+                    "Invalid path: {}",
+                    issues_dir.display()
+                )));
+            }
+        };
+
+        if !store.file_exists(issues_dir_str) {
             continue;
         }
 
         // Only scan directories matching routing labels
         for label in &labels {
             let label_dir = issues_dir.join(label);
-            if !store.file_exists(label_dir.to_str().unwrap()) {
+            let label_dir_str = match label_dir.to_str() {
+                Some(s) => s,
+                None => {
+                    return Err(AppError::Validation(format!(
+                        "Invalid path: {}",
+                        label_dir.display()
+                    )));
+                }
+            };
+
+            if !store.file_exists(label_dir_str) {
                 continue;
             }
 
@@ -164,10 +184,24 @@ pub fn execute(
 }
 
 fn list_yml_files(store: &impl WorkspaceStore, dir: &Path) -> Result<Vec<PathBuf>, AppError> {
-    let entries = store.list_dir(dir.to_str().unwrap())?;
+    let dir_str = dir
+        .to_str()
+        .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", dir.display())))?;
+
+    let entries = store.list_dir(dir_str)?;
     let mut files: Vec<PathBuf> = entries
         .into_iter()
-        .filter(|path| path.extension().map(|ext| ext == "yml").unwrap_or(false))
+        .filter(|path| {
+            let is_yml = path.extension().map(|ext| ext == "yml").unwrap_or(false);
+            if !is_yml {
+                return false;
+            }
+            // Ensure it's not a directory
+            match path.to_str() {
+                Some(p) => !store.is_dir(p),
+                None => false,
+            }
+        })
         .collect();
     files.sort();
     Ok(files)
@@ -178,7 +212,10 @@ fn to_repo_relative(root: &Path, path: &Path) -> String {
 }
 
 fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Result<bool, AppError> {
-    let content = store.read_file(path.to_str().unwrap())?;
+    let path_str = path
+        .to_str()
+        .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", path.display())))?;
+    let content = store.read_file(path_str)?;
     let value: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|e| {
         AppError::ParseError { what: path.display().to_string(), details: e.to_string() }
     })?;
