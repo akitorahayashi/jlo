@@ -1,4 +1,3 @@
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde_yaml::{Mapping, Value};
@@ -29,20 +28,20 @@ pub fn execute(
         return Err(AppError::WorkspaceNotFound);
     }
 
-    let jules_path = workspace.jules_path();
-    inspect_at(&jules_path, options)
+    inspect_at(&workspace, options)
 }
 
 pub(super) fn inspect_at(
-    jules_path: &Path,
+    store: &impl WorkspaceStore,
     options: WorkflowWorkstreamsInspectOptions,
 ) -> Result<WorkflowWorkstreamsInspectOutput, AppError> {
+    let jules_path = store.jules_path();
     let ws_dir = jules_path.join("workstreams").join(&options.workstream);
-    if !ws_dir.exists() {
+    if !store.file_exists(ws_dir.to_str().unwrap()) {
         return Err(AppError::WorkstreamNotFound(options.workstream.clone()));
     }
 
-    let schedule = load_schedule(jules_path, &options.workstream)?;
+    let schedule = load_schedule(store, &options.workstream)?;
     let schedule_summary = ScheduleSummary {
         version: schedule.version,
         enabled: schedule.enabled,
@@ -65,8 +64,8 @@ pub(super) fn inspect_at(
     };
 
     let root = jules_path.parent().unwrap_or(Path::new("."));
-    let events = summarize_events(root, &ws_dir)?;
-    let issues = summarize_issues(root, &ws_dir)?;
+    let events = summarize_events(store, root, &ws_dir)?;
+    let issues = summarize_issues(store, root, &ws_dir)?;
 
     Ok(WorkflowWorkstreamsInspectOutput {
         schema_version: 1,
@@ -77,9 +76,9 @@ pub(super) fn inspect_at(
     })
 }
 
-fn summarize_events(root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError> {
+fn summarize_events(store: &impl WorkspaceStore, root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError> {
     let events_dir = ws_dir.join("exchange").join("events");
-    if !events_dir.exists() {
+    if !store.file_exists(events_dir.to_str().unwrap()) {
         return Err(AppError::Validation(format!(
             "Missing events directory: {}",
             events_dir.display()
@@ -90,7 +89,7 @@ fn summarize_events(root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError
     let mut pending_files = Vec::new();
     let mut items = Vec::new();
 
-    let state_dirs = list_subdirectories(&events_dir)?;
+    let state_dirs = list_subdirectories(store, &events_dir)?;
 
     for state_dir in state_dirs {
         let state_name = state_dir
@@ -98,7 +97,7 @@ fn summarize_events(root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError
             .map(|name| name.to_string_lossy().to_string())
             .unwrap_or_else(|| "unknown".to_string());
 
-        let files = list_yml_files(&state_dir)?;
+        let files = list_yml_files(store, &state_dir)?;
         states.push(EventStateSummary { name: state_name.clone(), count: files.len() });
 
         if state_name == "pending" {
@@ -106,7 +105,7 @@ fn summarize_events(root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError
         }
 
         for path in &files {
-            let item = read_event_item(root, path, &state_name)?;
+            let item = read_event_item(store, root, path, &state_name)?;
             items.push(item);
         }
     }
@@ -116,9 +115,9 @@ fn summarize_events(root: &Path, ws_dir: &Path) -> Result<EventSummary, AppError
     Ok(EventSummary { states, pending_files, items })
 }
 
-fn summarize_issues(root: &Path, ws_dir: &Path) -> Result<IssueSummary, AppError> {
+fn summarize_issues(store: &impl WorkspaceStore, root: &Path, ws_dir: &Path) -> Result<IssueSummary, AppError> {
     let issues_dir = ws_dir.join("exchange").join("issues");
-    if !issues_dir.exists() {
+    if !store.file_exists(issues_dir.to_str().unwrap()) {
         return Err(AppError::Validation(format!(
             "Missing issues directory: {}",
             issues_dir.display()
@@ -127,14 +126,14 @@ fn summarize_issues(root: &Path, ws_dir: &Path) -> Result<IssueSummary, AppError
 
     let mut labels = Vec::new();
     let mut items = Vec::new();
-    let label_dirs = list_subdirectories(&issues_dir)?;
+    let label_dirs = list_subdirectories(store, &issues_dir)?;
 
     for label_dir in label_dirs {
         let label_name = label_dir
             .file_name()
             .map(|name| name.to_string_lossy().to_string())
             .unwrap_or_else(|| "unknown".to_string());
-        let files = list_yml_files(&label_dir)?;
+        let files = list_yml_files(store, &label_dir)?;
         let rel_files = files.iter().map(|path| to_repo_relative(root, path)).collect::<Vec<_>>();
         labels.push(IssueLabelSummary {
             name: label_name.clone(),
@@ -143,7 +142,7 @@ fn summarize_issues(root: &Path, ws_dir: &Path) -> Result<IssueSummary, AppError
         });
 
         for path in &files {
-            let item = read_issue_item(root, path, &label_name)?;
+            let item = read_issue_item(store, root, path, &label_name)?;
             items.push(item);
         }
     }
@@ -153,11 +152,10 @@ fn summarize_issues(root: &Path, ws_dir: &Path) -> Result<IssueSummary, AppError
     Ok(IssueSummary { labels, items })
 }
 
-fn list_yml_files(dir: &Path) -> Result<Vec<PathBuf>, AppError> {
-    let mut files: Vec<PathBuf> = fs::read_dir(dir)?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().is_file())
-        .map(|entry| entry.path())
+fn list_yml_files(store: &impl WorkspaceStore, dir: &Path) -> Result<Vec<PathBuf>, AppError> {
+    let entries = store.list_dir(dir.to_str().unwrap())?;
+    let mut files: Vec<PathBuf> = entries
+        .into_iter()
         .filter(|path| path.extension().map(|ext| ext == "yml").unwrap_or(false))
         .collect();
     files.sort();
@@ -168,15 +166,15 @@ fn to_repo_relative(root: &Path, path: &Path) -> String {
     path.strip_prefix(root).unwrap_or(path).to_string_lossy().to_string()
 }
 
-fn read_event_item(root: &Path, path: &Path, state: &str) -> Result<EventItem, AppError> {
-    let map = read_yaml_mapping(path)?;
+fn read_event_item(store: &impl WorkspaceStore, root: &Path, path: &Path, state: &str) -> Result<EventItem, AppError> {
+    let map = read_yaml_mapping(store, path)?;
     let id = read_required_id(&map, path, "id")?;
 
     Ok(EventItem { path: to_repo_relative(root, path), state: state.to_string(), id })
 }
 
-fn read_issue_item(root: &Path, path: &Path, label: &str) -> Result<IssueItem, AppError> {
-    let map = read_yaml_mapping(path)?;
+fn read_issue_item(store: &impl WorkspaceStore, root: &Path, path: &Path, label: &str) -> Result<IssueItem, AppError> {
+    let map = read_yaml_mapping(store, path)?;
     let id = read_required_id(&map, path, "id")?;
     let requires_deep_analysis = read_required_bool(&map, path, "requires_deep_analysis")?;
     let source_events = read_required_string_list(&map, path, "source_events")?;
@@ -190,8 +188,8 @@ fn read_issue_item(root: &Path, path: &Path, label: &str) -> Result<IssueItem, A
     })
 }
 
-fn read_yaml_mapping(path: &Path) -> Result<Mapping, AppError> {
-    let content = fs::read_to_string(path)?;
+fn read_yaml_mapping(store: &impl WorkspaceStore, path: &Path) -> Result<Mapping, AppError> {
+    let content = store.read_file(path.to_str().unwrap())?;
     let value: Value = serde_yaml::from_str(&content).map_err(|err| AppError::ParseError {
         what: path.display().to_string(),
         details: err.to_string(),
@@ -321,6 +319,7 @@ fn is_valid_id(value: &str) -> bool {
 mod tests {
     use super::*;
     use tempfile::tempdir;
+    use std::fs;
 
     #[test]
     fn inspect_collects_counts_and_files() {
@@ -362,8 +361,9 @@ roles = []
         )
         .unwrap();
 
+        let store = FilesystemWorkspaceStore::new(root.to_path_buf());
         let output = inspect_at(
-            &jules_path,
+            &store,
             WorkflowWorkstreamsInspectOptions { workstream: "alpha".to_string() },
         )
         .unwrap();

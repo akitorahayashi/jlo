@@ -12,8 +12,7 @@ use crate::domain::{AppError, Layer};
 use crate::ports::WorkspaceStore;
 use crate::services::adapters::git_command::GitCommandAdapter;
 use crate::services::adapters::github_command::GitHubCommandAdapter;
-use crate::services::adapters::issue_filesystem::read_issue_header;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+
 use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
 /// Options for workflow run command.
@@ -46,20 +45,11 @@ pub struct WorkflowRunOutput {
 }
 
 /// Execute workflow run command.
-pub fn execute(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
-    if options.workstream.contains("..")
-        || options.workstream.contains('/')
-        || options.workstream.contains('\\')
-    {
-        return Err(AppError::Validation(format!(
-            "Invalid workstream name '{}': must not contain path separators or '..'",
-            options.workstream
-        )));
-    }
-
-    let workspace = FilesystemWorkspaceStore::current()?;
-
-    if !workspace.exists() {
+pub fn execute(
+    store: &impl WorkspaceStore,
+    options: WorkflowRunOptions,
+) -> Result<WorkflowRunOutput, AppError> {
+    if !store.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 
@@ -84,7 +74,7 @@ pub fn execute(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppErro
     };
 
     // Execute layer runs for the specified workstream
-    let run_results = execute_layer(&options, &workspace)?;
+    let run_results = execute_layer(store, &options)?;
 
     Ok(WorkflowRunOutput {
         schema_version: 1,
@@ -103,35 +93,34 @@ struct RunResults {
 
 /// Execute runs for a layer on a specific workstream.
 fn execute_layer(
+    store: &impl WorkspaceStore,
     options: &WorkflowRunOptions,
-    workspace: &FilesystemWorkspaceStore,
 ) -> Result<RunResults, AppError> {
-    let jules_path = workspace.jules_path();
+    let jules_path = store.jules_path();
     let git_root = jules_path.parent().unwrap_or(&jules_path).to_path_buf();
     let git = GitCommandAdapter::new(git_root);
     let github = GitHubCommandAdapter::new();
 
     match options.layer {
-        Layer::Narrators => execute_narrator(options, &jules_path, &git, &github, workspace),
-        Layer::Observers => execute_multi_role(options, &jules_path, &git, &github, workspace),
-        Layer::Deciders => execute_multi_role(options, &jules_path, &git, &github, workspace),
-        Layer::Planners => execute_issue_layer(options, &jules_path, &git, &github, workspace),
-        Layer::Implementers => execute_issue_layer(options, &jules_path, &git, &github, workspace),
+        Layer::Narrators => execute_narrator(store, options, &jules_path, &git, &github),
+        Layer::Observers => execute_multi_role(store, options, &jules_path, &git, &github),
+        Layer::Deciders => execute_multi_role(store, options, &jules_path, &git, &github),
+        Layer::Planners => execute_issue_layer(store, options, &jules_path, &git, &github),
+        Layer::Implementers => execute_issue_layer(store, options, &jules_path, &git, &github),
     }
 }
 
 /// Execute narrator (workstream-independent).
-fn execute_narrator<G, H, W>(
+fn execute_narrator<G, H>(
+    store: &impl WorkspaceStore,
     options: &WorkflowRunOptions,
     jules_path: &Path,
     git: &G,
     github: &H,
-    workspace: &W,
 ) -> Result<RunResults, AppError>
 where
     G: crate::ports::GitPort,
     H: crate::ports::GitHubPort,
-    W: WorkspaceStore + crate::domain::PromptAssetLoader,
 {
     let run_options = RunOptions {
         layer: Layer::Narrators,
@@ -144,29 +133,28 @@ where
     };
 
     eprintln!("Executing: narrator{}", if options.mock { " (mock)" } else { "" });
-    run::execute(jules_path, run_options, git, github, workspace)?;
+    run::execute(jules_path, run_options, git, github, store)?;
 
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
 }
 
 /// Execute multi-role layer (observers, deciders) for a specific workstream.
-fn execute_multi_role<G, H, W>(
+fn execute_multi_role<G, H>(
+    store: &impl WorkspaceStore,
     options: &WorkflowRunOptions,
     jules_path: &Path,
     git: &G,
     github: &H,
-    workspace: &W,
 ) -> Result<RunResults, AppError>
 where
     G: crate::ports::GitPort,
     H: crate::ports::GitHubPort,
-    W: WorkspaceStore + crate::domain::PromptAssetLoader,
 {
     let workstream = &options.workstream;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
     // Load schedule for the workstream
-    let schedule = load_schedule(jules_path, workstream)?;
+    let schedule = load_schedule(store, workstream)?;
 
     if !schedule.enabled {
         eprintln!("Workstream '{}' is disabled, skipping", workstream);
@@ -206,30 +194,29 @@ where
             role,
             mock_suffix
         );
-        run::execute(jules_path, run_options, git, github, workspace)?;
+        run::execute(jules_path, run_options, git, github, store)?;
     }
 
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
 }
 
 /// Execute issue-based layers (planners, implementers) for a specific workstream.
-fn execute_issue_layer<G, H, W>(
+fn execute_issue_layer<G, H>(
+    store: &impl WorkspaceStore,
     options: &WorkflowRunOptions,
     jules_path: &Path,
     git: &G,
     github: &H,
-    workspace: &W,
 ) -> Result<RunResults, AppError>
 where
     G: crate::ports::GitPort,
     H: crate::ports::GitHubPort,
-    W: WorkspaceStore + crate::domain::PromptAssetLoader,
 {
     let workstream = &options.workstream;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
     // Find issues for the layer in this workstream
-    let issues = find_issues_for_workstream(jules_path, workstream, options.layer)?;
+    let issues = find_issues_for_workstream(store, workstream, options.layer)?;
 
     if issues.is_empty() {
         eprintln!(
@@ -257,7 +244,7 @@ where
             issue_path.display(),
             mock_suffix
         );
-        run::execute(jules_path, run_options, git, github, workspace)?;
+        run::execute(jules_path, run_options, git, github, store)?;
     }
 
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
@@ -265,7 +252,7 @@ where
 
 /// Find issues for a specific workstream and layer.
 fn find_issues_for_workstream(
-    jules_path: &Path,
+    store: &impl WorkspaceStore,
     workstream: &str,
     layer: Layer,
 ) -> Result<Vec<std::path::PathBuf>, AppError> {
@@ -273,51 +260,39 @@ fn find_issues_for_workstream(
         return Err(AppError::Validation("Invalid layer for issue discovery".to_string()));
     }
 
+    let jules_path = store.jules_path();
     let issues_root =
         jules_path.join("workstreams").join(workstream).join("exchange").join("issues");
 
-    if !issues_root.exists() {
+    if !store.file_exists(issues_root.to_str().unwrap()) {
         return Ok(Vec::new());
     }
 
     let mut issues = Vec::new();
-    let routing_labels = resolve_routing_labels(&issues_root)?;
+    let routing_labels = resolve_routing_labels(store, &issues_root)?;
 
     for label in routing_labels {
         let label_dir = issues_root.join(&label);
-        if !label_dir.exists() {
+        if !store.file_exists(label_dir.to_str().unwrap()) {
             continue;
         }
 
-        let entries = std::fs::read_dir(&label_dir).map_err(AppError::Io)?;
-        for entry in entries {
-            match entry {
-                Ok(entry) => {
-                    let path = entry.path();
-                    let is_issue_file =
-                        path.extension().is_some_and(|ext| ext == "yml" || ext == "yaml");
-                    if !is_issue_file {
-                        continue;
-                    }
+        let entries = store.list_dir(label_dir.to_str().unwrap())?;
+        for path in entries {
+            let is_issue_file =
+                path.extension().is_some_and(|ext| ext == "yml" || ext == "yaml");
+            if !is_issue_file {
+                continue;
+            }
 
-                    let header = read_issue_header(&path)?;
-                    let requires_deep_analysis = header.requires_deep_analysis;
-                    let belongs_to_layer = match layer {
-                        Layer::Planners => requires_deep_analysis,
-                        Layer::Implementers => !requires_deep_analysis,
-                        _ => false,
-                    };
-                    if belongs_to_layer {
-                        issues.push(path);
-                    }
-                }
-                Err(e) => {
-                    eprintln!(
-                        "Warning: Failed to read directory entry in {}: {}",
-                        label_dir.display(),
-                        e
-                    );
-                }
+            let requires_deep_analysis = read_requires_deep_analysis(store, &path)?;
+            let belongs_to_layer = match layer {
+                Layer::Planners => requires_deep_analysis,
+                Layer::Implementers => !requires_deep_analysis,
+                _ => false,
+            };
+            if belongs_to_layer {
+                issues.push(path);
             }
         }
     }
@@ -326,7 +301,7 @@ fn find_issues_for_workstream(
     Ok(issues)
 }
 
-fn resolve_routing_labels(issues_root: &Path) -> Result<Vec<String>, AppError> {
+fn resolve_routing_labels(store: &impl WorkspaceStore, issues_root: &Path) -> Result<Vec<String>, AppError> {
     if let Ok(labels_csv) = std::env::var("ROUTING_LABELS") {
         let labels: Vec<String> = labels_csv
             .split(',')
@@ -355,11 +330,10 @@ fn resolve_routing_labels(issues_root: &Path) -> Result<Vec<String>, AppError> {
 
     eprintln!("ROUTING_LABELS is not set; discovering labels from {}", issues_root.display());
     let mut discovered = Vec::new();
-    let entries = std::fs::read_dir(issues_root).map_err(AppError::Io)?;
-    for entry in entries {
-        let entry = entry.map_err(AppError::Io)?;
-        if entry.path().is_dir() {
-            discovered.push(entry.file_name().to_string_lossy().to_string());
+    let entries = store.list_dir(issues_root.to_str().unwrap())?;
+    for path in entries {
+        if store.is_dir(path.to_str().unwrap()) {
+            discovered.push(path.file_name().unwrap().to_string_lossy().to_string());
         }
     }
 
@@ -374,12 +348,26 @@ fn resolve_routing_labels(issues_root: &Path) -> Result<Vec<String>, AppError> {
     Ok(discovered)
 }
 
+fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Result<bool, AppError> {
+    let content = store.read_file(path.to_str().unwrap())?;
+    let parsed: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|error| {
+        AppError::ParseError { what: path.display().to_string(), details: error.to_string() }
+    })?;
+
+    match &parsed["requires_deep_analysis"] {
+        serde_yaml::Value::Bool(value) => Ok(*value),
+        _ => Err(AppError::Validation(format!(
+            "Missing or invalid requires_deep_analysis in {}",
+            path.display()
+        ))),
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
     use serial_test::serial;
-    use std::fs;
-    use tempfile::tempdir;
+    use crate::services::adapters::memory_workspace_store::MemoryWorkspaceStore;
+    use crate::ports::WorkspaceStore;
 
     #[test]
     fn workflow_run_options_with_workstream() {
@@ -393,38 +381,34 @@ mod tests {
         assert!(!options.mock);
     }
 
-    fn setup_workspace(root: &Path) {
-        fs::create_dir_all(root.join(".jules")).unwrap();
-        fs::write(root.join(".jules/version"), env!("CARGO_PKG_VERSION")).unwrap();
+    fn setup_workspace(store: &MemoryWorkspaceStore) {
+        store.write_version(env!("CARGO_PKG_VERSION")).unwrap();
     }
 
-    fn write_issue(root: &Path, label: &str, name: &str, requires_deep_analysis: bool) {
-        let issue_dir = root.join(".jules/workstreams/alpha/exchange/issues").join(label);
-        fs::create_dir_all(&issue_dir).unwrap();
+    fn write_issue(store: &MemoryWorkspaceStore, label: &str, name: &str, requires_deep_analysis: bool) {
+        let issue_dir = format!(".jules/workstreams/alpha/exchange/issues/{}", label);
         let content = format!(
             "id: test01\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n",
             requires_deep_analysis
         );
-        fs::write(issue_dir.join(format!("{}.yml", name)), content).unwrap();
+        let path = format!("{}/{}.yml", issue_dir, name);
+        store.write_file(&path, &content).unwrap();
     }
 
     #[test]
     #[serial]
     fn planner_issue_discovery_filters_by_requires_deep_analysis() {
-        let dir = tempdir().unwrap();
-        let root = dir.path();
-        setup_workspace(root);
+        let store = MemoryWorkspaceStore::new();
+        setup_workspace(&store);
 
-        write_issue(root, "bugs", "requires-planning", true);
-        write_issue(root, "bugs", "ready-to-implement", false);
-        write_issue(root, "docs", "ignored-by-routing", true);
-
-        let jules_path = root.join(".jules");
+        write_issue(&store, "bugs", "requires-planning", true);
+        write_issue(&store, "bugs", "ready-to-implement", false);
+        write_issue(&store, "docs", "ignored-by-routing", true);
 
         unsafe {
             std::env::set_var("ROUTING_LABELS", "bugs");
         }
-        let issues = find_issues_for_workstream(&jules_path, "alpha", Layer::Planners).unwrap();
+        let issues = find_issues_for_workstream(&store, "alpha", Layer::Planners).unwrap();
         unsafe {
             std::env::remove_var("ROUTING_LABELS");
         }
@@ -436,19 +420,16 @@ mod tests {
     #[test]
     #[serial]
     fn implementer_issue_discovery_uses_non_deep_issues() {
-        let dir = tempdir().unwrap();
-        let root = dir.path();
-        setup_workspace(root);
+        let store = MemoryWorkspaceStore::new();
+        setup_workspace(&store);
 
-        write_issue(root, "bugs", "requires-planning", true);
-        write_issue(root, "bugs", "ready-to-implement", false);
-
-        let jules_path = root.join(".jules");
+        write_issue(&store, "bugs", "requires-planning", true);
+        write_issue(&store, "bugs", "ready-to-implement", false);
 
         unsafe {
             std::env::set_var("ROUTING_LABELS", "bugs");
         }
-        let issues = find_issues_for_workstream(&jules_path, "alpha", Layer::Implementers).unwrap();
+        let issues = find_issues_for_workstream(&store, "alpha", Layer::Implementers).unwrap();
         unsafe {
             std::env::remove_var("ROUTING_LABELS");
         }

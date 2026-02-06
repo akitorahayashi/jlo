@@ -168,6 +168,34 @@ impl WorkspaceStore for MockWorkspaceStore {
         Ok(())
     }
 
+    fn list_dir(&self, path: &str) -> Result<Vec<PathBuf>, AppError> {
+        // Simple implementation: find all files that start with path/
+        let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
+        let mut results = Vec::new();
+        for key in self.files.borrow().keys() {
+            if key.starts_with(&prefix) {
+                // Return full path
+                results.push(PathBuf::from(key));
+            }
+        }
+        results.sort();
+        Ok(results)
+    }
+
+    fn set_executable(&self, _path: &str) -> Result<(), AppError> {
+        Ok(())
+    }
+
+    fn file_exists(&self, path: &str) -> bool {
+        self.files.borrow().contains_key(path)
+    }
+
+    fn is_dir(&self, path: &str) -> bool {
+        // Check if it is a prefix of any file
+        let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
+        self.files.borrow().keys().any(|k| k.starts_with(&prefix))
+    }
+
     fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {
         Ok(())
     }

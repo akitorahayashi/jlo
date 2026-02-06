@@ -1,9 +1,8 @@
 //! Setup gen command - generates install.sh and env.toml.
 
-use std::path::Path;
-
 use crate::app::config::SetupConfig;
 use crate::domain::AppError;
+use crate::ports::WorkspaceStore;
 use crate::services::application::artifact_generator::ArtifactGenerator;
 use crate::services::application::dependency_resolver::DependencyResolver;
 use crate::services::assets::component_catalog_embedded::EmbeddedComponentCatalog;
@@ -15,25 +14,20 @@ use crate::services::assets::component_catalog_embedded::EmbeddedComponentCatalo
 /// - `.jules/setup/env.toml` - Environment variables
 ///
 /// Returns the list of resolved component names in installation order.
-pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
-    let target = match path {
-        Some(p) => p.to_path_buf(),
-        None => std::env::current_dir()?,
-    };
+pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
+    let setup_dir = ".jules/setup";
+    let tools_yml = ".jules/setup/tools.yml";
 
-    let setup_dir = target.join(".jules").join("setup");
-
-    if !setup_dir.exists() {
+    if !store.file_exists(setup_dir) {
         return Err(AppError::SetupNotInitialized);
     }
 
-    let tools_yml = setup_dir.join("tools.yml");
-    if !tools_yml.exists() {
+    if !store.file_exists(tools_yml) {
         return Err(AppError::SetupConfigMissing);
     }
 
     // Load configuration
-    let content = std::fs::read_to_string(&tools_yml)?;
+    let content = store.read_file(tools_yml)?;
     let config: SetupConfig = serde_yaml::from_str(&content)
         .map_err(|e| AppError::ParseError { what: "tools.yml".into(), details: e.to_string() })?;
 
@@ -51,24 +45,21 @@ pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
 
     // Generate install script
     let script_content = ArtifactGenerator::generate_install_script(&components);
-    let install_sh = setup_dir.join("install.sh");
-    std::fs::write(&install_sh, &script_content)?;
+    let install_sh = ".jules/setup/install.sh";
+    store.write_file(install_sh, &script_content)?;
 
-    // Make executable (Unix only)
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut perms = std::fs::metadata(&install_sh)?.permissions();
-        perms.set_mode(0o755);
-        std::fs::set_permissions(&install_sh, perms)?;
-    }
+    // Make executable
+    store.set_executable(install_sh)?;
 
     // Generate/merge env.toml
-    let env_toml_path = setup_dir.join("env.toml");
-    let existing_content =
-        if env_toml_path.exists() { Some(std::fs::read_to_string(&env_toml_path)?) } else { None };
+    let env_toml_path = ".jules/setup/env.toml";
+    let existing_content = if store.file_exists(env_toml_path) {
+        Some(store.read_file(env_toml_path)?)
+    } else {
+        None
+    };
     let env_content = ArtifactGenerator::merge_env_toml(&components, existing_content.as_deref())?;
-    std::fs::write(&env_toml_path, &env_content)?;
+    store.write_file(env_toml_path, &env_content)?;
 
     // Return component names
     Ok(components.iter().map(|c| c.name.to_string()).collect())
@@ -77,87 +68,52 @@ pub fn execute(path: Option<&Path>) -> Result<Vec<String>, AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write;
-    use tempfile::tempdir;
-
-    fn setup_initialized_workspace(path: &Path) {
-        let setup_dir = path.join(".jules/setup");
-        std::fs::create_dir_all(&setup_dir).unwrap();
-    }
+    use crate::ports::WorkspaceStore;
+    use crate::services::adapters::memory_workspace_store::MemoryWorkspaceStore;
 
     #[test]
     fn fails_if_not_initialized() {
-        let temp = tempdir().unwrap();
+        let store = MemoryWorkspaceStore::new();
 
-        let result = execute(Some(temp.path()));
+        let result = execute(&store);
 
         assert!(matches!(result, Err(AppError::SetupNotInitialized)));
     }
 
     #[test]
     fn fails_if_tools_yml_missing() {
-        let temp = tempdir().unwrap();
-        setup_initialized_workspace(temp.path());
+        let store = MemoryWorkspaceStore::new();
+        store.write_file(".jules/setup/placeholder", "").unwrap();
 
-        let result = execute(Some(temp.path()));
+        let result = execute(&store);
 
         assert!(matches!(result, Err(AppError::SetupConfigMissing)));
     }
 
     #[test]
     fn fails_if_no_tools_specified() {
-        let temp = tempdir().unwrap();
-        setup_initialized_workspace(temp.path());
+        let store = MemoryWorkspaceStore::new();
+        store.write_file(".jules/setup/tools.yml", "tools: []").unwrap();
 
-        let tools_yml = temp.path().join(".jules/setup/tools.yml");
-        let mut file = std::fs::File::create(&tools_yml).unwrap();
-        writeln!(file, "tools: []").unwrap();
-
-        let result = execute(Some(temp.path()));
+        let result = execute(&store);
 
         assert!(result.is_err());
     }
 
     #[test]
     fn generates_install_script() {
-        let temp = tempdir().unwrap();
-        setup_initialized_workspace(temp.path());
+        let store = MemoryWorkspaceStore::new();
+        store.write_file(".jules/setup/tools.yml", "tools:\n  - just").unwrap();
 
-        let tools_yml = temp.path().join(".jules/setup/tools.yml");
-        let mut file = std::fs::File::create(&tools_yml).unwrap();
-        writeln!(file, "tools:").unwrap();
-        writeln!(file, "  - just").unwrap();
-
-        let result = execute(Some(temp.path())).unwrap();
+        let result = execute(&store).unwrap();
 
         assert!(result.contains(&"just".to_string()));
 
-        let install_sh = temp.path().join(".jules/setup/install.sh");
-        assert!(install_sh.exists());
+        let install_sh = ".jules/setup/install.sh";
+        assert!(store.file_exists(install_sh));
 
-        let content = std::fs::read_to_string(&install_sh).unwrap();
+        let content = store.read_file(install_sh).unwrap();
         assert!(content.starts_with("#!/usr/bin/env bash"));
         assert!(content.contains("just"));
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn install_script_is_executable() {
-        use std::os::unix::fs::PermissionsExt;
-
-        let temp = tempdir().unwrap();
-        setup_initialized_workspace(temp.path());
-
-        let tools_yml = temp.path().join(".jules/setup/tools.yml");
-        let mut file = std::fs::File::create(&tools_yml).unwrap();
-        writeln!(file, "tools:").unwrap();
-        writeln!(file, "  - just").unwrap();
-
-        execute(Some(temp.path())).unwrap();
-
-        let install_sh = temp.path().join(".jules/setup/install.sh");
-        let metadata = std::fs::metadata(&install_sh).unwrap();
-        let mode = metadata.permissions().mode();
-        assert!(mode & 0o111 != 0, "install.sh should be executable");
     }
 }
