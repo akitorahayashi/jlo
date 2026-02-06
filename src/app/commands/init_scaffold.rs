@@ -1,10 +1,8 @@
 use std::collections::BTreeMap;
 
 use crate::app::AppContext;
-use crate::domain::AppError;
-use crate::domain::manifest::{
-    MANIFEST_FILENAME, ScaffoldManifest, hash_content, is_default_role_file,
-};
+use crate::domain::workspace::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};
+use crate::domain::{AppError, ScaffoldManifest};
 use crate::ports::{GitPort, RoleTemplateStore, WorkspaceStore};
 
 /// Execute the init command.

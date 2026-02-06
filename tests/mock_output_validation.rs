@@ -49,7 +49,7 @@ fn mock_narrator_change_file_passes_doctor() {
     setup_scaffold_with_workstream(&ctx, "generic");
 
     // Copy mock change file to workspace
-    let mock_change = include_str!("../src/app/commands/run/mock/assets/narrator_change.yml");
+    let mock_change = include_str!("../src/assets/mock/narrator_change.yml");
     let changes_dir = ctx.jules_path().join("changes");
     fs::create_dir_all(&changes_dir).expect("Failed to create changes directory");
 
@@ -66,7 +66,7 @@ fn mock_observer_event_file_passes_doctor() {
     setup_scaffold_with_workstream(&ctx, "test-workstream");
 
     // Copy mock event file to workspace
-    let mock_event = include_str!("../src/app/commands/run/mock/assets/observer_event.yml");
+    let mock_event = include_str!("../src/assets/mock/observer_event.yml");
     let events_dir = ctx
         .jules_path()
         .join("workstreams")
@@ -90,7 +90,7 @@ fn mock_decider_issue_file_passes_doctor() {
     setup_scaffold_with_workstream(&ctx, "test-workstream");
 
     // Create the referenced event in decided state (simulating what decider does)
-    let mock_event = include_str!("../src/app/commands/run/mock/assets/observer_event.yml");
+    let mock_event = include_str!("../src/assets/mock/observer_event.yml");
     let events_dir = ctx
         .jules_path()
         .join("workstreams")
@@ -113,7 +113,7 @@ fn mock_decider_issue_file_passes_doctor() {
     .expect("Failed to write event file");
 
     // Copy mock issue file to workspace - apply the same transformations as mock decider
-    let mock_issue = include_str!("../src/app/commands/run/mock/assets/decider_issue.yml");
+    let mock_issue = include_str!("../src/assets/mock/decider_issue.yml");
     let issues_dir = ctx
         .jules_path()
         .join("workstreams")

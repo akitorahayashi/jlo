@@ -5,10 +5,8 @@ use std::path::PathBuf;
 
 use chrono::Utc;
 
-use crate::domain::AppError;
-use crate::domain::manifest::{
-    MANIFEST_FILENAME, ScaffoldManifest, hash_content, is_default_role_file,
-};
+use crate::domain::workspace::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};
+use crate::domain::{AppError, ScaffoldManifest};
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
 
 /// Files that are managed by jlo and will be overwritten on update.
@@ -249,10 +247,10 @@ where
                 let current = workspace.read_file(&path)?;
                 let current_hash = hash_content(&current);
                 if current_hash == recorded_hash {
-                    to_remove.push(path.clone());
+                    to_remove.push(path.to_string());
                 } else {
                     skipped.push(SkippedUpdate {
-                        path: path.clone(),
+                        path: path.to_string(),
                         reason:
                             "Default role removed upstream but modified locally; left in place."
                                 .to_string(),
