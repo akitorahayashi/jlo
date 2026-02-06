@@ -154,7 +154,12 @@ pub fn run(
 ///
 /// Returns the list of resolved component names in installation order.
 pub fn setup_gen(path: Option<&Path>) -> Result<Vec<String>, AppError> {
-    setup::generate(path)
+    let store = if let Some(p) = path {
+        FilesystemWorkspaceStore::new(p.to_path_buf())
+    } else {
+        FilesystemWorkspaceStore::current()?
+    };
+    setup::generate(&store)
 }
 
 /// List all available components.

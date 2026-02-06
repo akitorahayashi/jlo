@@ -70,6 +70,18 @@ pub trait WorkspaceStore: PromptAssetLoader {
     /// Remove a file.
     fn remove_file(&self, path: &str) -> Result<(), AppError>;
 
+    /// List files in a directory (returns full paths).
+    fn list_dir(&self, path: &str) -> Result<Vec<PathBuf>, AppError>;
+
+    /// Set file executable (Unix-only, mostly for install.sh).
+    fn set_executable(&self, path: &str) -> Result<(), AppError>;
+
+    /// Check if a generic file exists.
+    fn file_exists(&self, path: &str) -> bool;
+
+    /// Check if a path is a directory.
+    fn is_dir(&self, path: &str) -> bool;
+
     /// Create directory recursively.
     fn create_dir_all(&self, path: &str) -> Result<(), AppError>;
 

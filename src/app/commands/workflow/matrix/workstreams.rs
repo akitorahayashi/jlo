@@ -55,14 +55,14 @@ pub fn execute(_options: MatrixWorkstreamsOptions) -> Result<MatrixWorkstreamsOu
 
     let mut include = Vec::new();
 
-    for entry in list_subdirectories(&workstreams_dir)? {
+    for entry in list_subdirectories(&workspace, &workstreams_dir)? {
         let name =
             entry.file_name().map(|value| value.to_string_lossy().to_string()).unwrap_or_default();
         if name.is_empty() {
             continue;
         }
 
-        let schedule = load_schedule(&jules_path, &name)?;
+        let schedule = load_schedule(&workspace, &name)?;
         if schedule.enabled {
             include.push(WorkstreamMatrixEntry { workstream: name });
         }

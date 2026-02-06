@@ -53,8 +53,10 @@ pub fn execute(
     let (workstream, issue_rel) =
         resolve_workstream_and_issue_path(&canonical_jules, &canonical_issue, &workspace)?;
 
+    let canonical_root = canonical_jules.parent().unwrap_or(Path::new(".")).to_path_buf();
+    let canonical_store = FilesystemWorkspaceStore::new(canonical_root);
     let inspect_output =
-        inspect_at(&canonical_jules, WorkflowWorkstreamsInspectOptions { workstream })?;
+        inspect_at(&canonical_store, WorkflowWorkstreamsInspectOptions { workstream })?;
 
     let issue_item =
         inspect_output.issues.items.iter().find(|item| item.path == issue_rel).ok_or_else(
