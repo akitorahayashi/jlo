@@ -231,7 +231,11 @@ fn run_workflow_matrix(command: WorkflowMatrixCommands) -> Result<(), AppError> 
                 serde_json::from_str(&workstreams_json).map_err(|e| {
                     AppError::Validation(format!("Invalid workstreams-json: {}", e))
                 })?;
-            let options = matrix::MatrixRoutingOptions { workstreams_json, routing_labels };
+            let options = matrix::MatrixRoutingOptions {
+                workstreams_json,
+                routing_labels,
+                workspace_root: None,
+            };
             let output = matrix::routing(options)?;
             workflow::write_workflow_output(&output)
         }
