@@ -14,7 +14,6 @@ pub struct MatrixRoutingOptions {
     /// Workstreams JSON from `matrix workstreams` output.
     pub workstreams_json: WorkstreamsMatrix,
     /// Routing labels as CSV (e.g., "bugs,feats,refacts,tests,docs").
-
     pub routing_labels: String,
 }
 
@@ -309,7 +308,6 @@ mod tests {
             &store,
             MatrixRoutingOptions {
                 workstreams_json: WorkstreamsMatrix { include: vec![] },
-                routing_labels: "".into(),
                 routing_labels: "".into(),
             },
         );
