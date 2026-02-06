@@ -102,6 +102,16 @@ pub fn execute(options: MatrixRoutingOptions) -> Result<MatrixRoutingOutput, App
     let mut implementer_issues = Vec::new();
 
     for ws_entry in &options.workstreams_json.include {
+        if ws_entry.workstream.contains("..")
+            || ws_entry.workstream.contains('/')
+            || ws_entry.workstream.contains('\\')
+        {
+            return Err(AppError::Validation(format!(
+                "Invalid workstream name '{}': must not contain path separators or '..'",
+                ws_entry.workstream
+            )));
+        }
+
         let issues_dir =
             jules_path.join("workstreams").join(&ws_entry.workstream).join("exchange/issues");
 

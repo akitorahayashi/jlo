@@ -47,6 +47,16 @@ pub struct WorkflowRunOutput {
 
 /// Execute workflow run command.
 pub fn execute(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
+    if options.workstream.contains("..")
+        || options.workstream.contains('/')
+        || options.workstream.contains('\\')
+    {
+        return Err(AppError::Validation(format!(
+            "Invalid workstream name '{}': must not contain path separators or '..'",
+            options.workstream
+        )));
+    }
+
     let workspace = FilesystemWorkspaceStore::current()?;
 
     if !workspace.exists() {
@@ -330,6 +340,16 @@ fn resolve_routing_labels(issues_root: &Path) -> Result<Vec<String>, AppError> {
                 "ROUTING_LABELS is set but does not contain any labels".to_string(),
             ));
         }
+
+        for label in &labels {
+            if label.contains("..") || label.contains('/') || label.contains('\\') {
+                return Err(AppError::Validation(format!(
+                    "Invalid routing label '{}': must not contain path separators or '..'",
+                    label
+                )));
+            }
+        }
+
         return Ok(labels);
     }
 
