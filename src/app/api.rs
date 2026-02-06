@@ -7,9 +7,7 @@ use std::path::{Path, PathBuf};
 
 use crate::app::{
     AppContext,
-    commands::{
-        deinit, doctor, init_scaffold, init_workflows, run, setup, template, update, workstreams,
-    },
+    commands::{deinit, doctor, init_scaffold, init_workflows, run, setup, template, update},
 };
 use crate::ports::WorkspaceStore;
 use crate::services::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
@@ -23,9 +21,6 @@ pub use crate::app::commands::run::{RunOptions, RunResult};
 pub use crate::app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
 pub use crate::app::commands::template::TemplateOutcome;
 pub use crate::app::commands::update::{UpdateOptions, UpdateResult};
-pub use crate::app::commands::workstreams::{
-    WorkstreamInspectFormat, WorkstreamInspectOptions, WorkstreamInspectOutput,
-};
 pub use crate::domain::AppError;
 pub use crate::domain::Layer;
 pub use crate::domain::WorkflowRunnerMode;
@@ -145,19 +140,6 @@ pub fn run(
 
     let options = RunOptions { layer, role, workstream, prompt_preview, branch, issue, mock };
     run::execute(&workspace.jules_path(), options, &git, &github, &workspace)
-}
-
-// =============================================================================
-// Workstream Inspection APIs
-// =============================================================================
-
-/// Inspect a workstream and return state in machine-readable form.
-pub fn workstreams_inspect(
-    options: WorkstreamInspectOptions,
-) -> Result<WorkstreamInspectOutput, AppError> {
-    let workspace = get_current_workspace()?;
-
-    workstreams::inspect(&workspace.jules_path(), options)
 }
 
 // =============================================================================

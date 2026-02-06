@@ -7,4 +7,3 @@ pub mod setup;
 pub mod template;
 pub mod update;
 pub mod workflow;
-pub mod workstreams;

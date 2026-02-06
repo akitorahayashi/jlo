@@ -66,11 +66,6 @@ enum Commands {
         #[command(subcommand)]
         command: WorkflowCommands,
     },
-    /// Inspect workstreams for automation
-    Workstreams {
-        #[command(subcommand)]
-        command: WorkstreamCommands,
-    },
     /// Validate .jules/ structure and content
     Doctor {
         /// Attempt to auto-fix recoverable issues
@@ -245,6 +240,11 @@ enum WorkflowCommands {
         #[command(subcommand)]
         command: WorkflowPrCommands,
     },
+    /// Workstream inspection and cleanup
+    Workstreams {
+        #[command(subcommand)]
+        command: WorkflowWorkstreamsCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -260,18 +260,6 @@ enum WorkflowCleanupCommands {
         /// Branches JSON array to delete
         #[arg(long)]
         branches_json: Option<String>,
-    },
-    /// Clean up a processed issue and its source events
-    ProcessedIssue {
-        /// Path to the issue file
-        #[arg(long)]
-        issue_file: String,
-        /// Commit changes (default: true)
-        #[arg(long, default_value = "true")]
-        commit: bool,
-        /// Push changes (default: true)
-        #[arg(long, default_value = "true")]
-        push: bool,
     },
 }
 
@@ -311,15 +299,25 @@ enum WorkflowMatrixCommands {
 }
 
 #[derive(Subcommand)]
-enum WorkstreamCommands {
-    /// Inspect a workstream and output JSON/YAML
+enum WorkflowWorkstreamsCommands {
+    /// Inspect a workstream and output JSON
     Inspect {
         /// Workstream name
-        #[arg(long)]
         workstream: String,
-        /// Output format (json or yaml)
-        #[arg(long, default_value = "json")]
-        format: String,
+    },
+    /// Cleanup operations for workstreams
+    Clean {
+        #[command(subcommand)]
+        command: WorkflowWorkstreamsCleanCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum WorkflowWorkstreamsCleanCommands {
+    /// Remove a processed issue and its source events
+    Issue {
+        /// Path to the issue file
+        issue_file: String,
     },
 }
 
@@ -341,7 +339,6 @@ pub fn run() {
         },
         Commands::Run { layer } => run_agents(layer).map(|_| 0),
         Commands::Workflow { command } => run_workflow(command).map(|_| 0),
-        Commands::Workstreams { command } => run_workstreams(command).map(|_| 0),
         Commands::Doctor { fix, strict, workstream } => run_doctor(fix, strict, workstream),
         Commands::Deinit => run_deinit().map(|_| 0),
     };
@@ -543,50 +540,6 @@ fn run_deinit() -> Result<(), AppError> {
     Ok(())
 }
 
-fn run_workstreams(command: WorkstreamCommands) -> Result<(), AppError> {
-    match command {
-        WorkstreamCommands::Inspect { workstream, format } => {
-            let format = parse_workstream_format(&format)?;
-            let output = crate::app::api::workstreams_inspect(crate::WorkstreamInspectOptions {
-                workstream,
-                format: format.clone(),
-            })?;
-
-            match format {
-                crate::WorkstreamInspectFormat::Json => {
-                    print_json(&output)?;
-                }
-                crate::WorkstreamInspectFormat::Yaml => {
-                    print_yaml(&output)?;
-                }
-            }
-            Ok(())
-        }
-    }
-}
-
-fn parse_workstream_format(format: &str) -> Result<crate::WorkstreamInspectFormat, AppError> {
-    match format {
-        "json" => Ok(crate::WorkstreamInspectFormat::Json),
-        "yaml" => Ok(crate::WorkstreamInspectFormat::Yaml),
-        _ => Err(AppError::Validation("Invalid workstream inspect format".into())),
-    }
-}
-
-fn print_json<T: serde::Serialize>(value: &T) -> Result<(), AppError> {
-    let json = serde_json::to_string_pretty(value)
-        .map_err(|err| AppError::InternalError(format!("Failed to serialize output: {}", err)))?;
-    println!("{}", json);
-    Ok(())
-}
-
-fn print_yaml<T: serde::Serialize>(value: &T) -> Result<(), AppError> {
-    let yaml = serde_yaml::to_string(value)
-        .map_err(|err| AppError::InternalError(format!("Failed to serialize output: {}", err)))?;
-    println!("{}", yaml.trim_end());
-    Ok(())
-}
-
 fn parse_layer(value: &str) -> Result<crate::domain::Layer, AppError> {
     crate::domain::Layer::from_dir_name(value)
         .ok_or_else(|| AppError::InvalidLayer { name: value.to_string() })
@@ -617,6 +570,7 @@ fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
         }
         WorkflowCommands::Cleanup { command } => run_workflow_cleanup(command),
         WorkflowCommands::Pr { command } => run_workflow_pr(command),
+        WorkflowCommands::Workstreams { command } => run_workflow_workstreams(command),
     }
 }
 
@@ -648,12 +602,6 @@ fn run_workflow_cleanup(command: WorkflowCleanupCommands) -> Result<(), AppError
             let output = workflow::cleanup_mock(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowCleanupCommands::ProcessedIssue { issue_file, commit, push } => {
-            let options =
-                workflow::WorkflowCleanupProcessedIssueOptions { issue_file, commit, push };
-            let output = workflow::cleanup_processed_issue(options)?;
-            workflow::write_workflow_output(&output)
-        }
     }
 }
 
@@ -666,6 +614,25 @@ fn run_workflow_pr(command: WorkflowPrCommands) -> Result<(), AppError> {
             let output = workflow::pr_label_from_branch(options)?;
             workflow::write_workflow_output(&output)
         }
+    }
+}
+
+fn run_workflow_workstreams(command: WorkflowWorkstreamsCommands) -> Result<(), AppError> {
+    use crate::app::commands::workflow;
+
+    match command {
+        WorkflowWorkstreamsCommands::Inspect { workstream } => {
+            let options = workflow::WorkflowWorkstreamsInspectOptions { workstream };
+            let output = workflow::workstreams_inspect(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowWorkstreamsCommands::Clean { command } => match command {
+            WorkflowWorkstreamsCleanCommands::Issue { issue_file } => {
+                let options = workflow::WorkflowWorkstreamsCleanIssueOptions { issue_file };
+                let output = workflow::workstreams_clean_issue(options)?;
+                workflow::write_workflow_output(&output)
+            }
+        },
     }
 }
 
