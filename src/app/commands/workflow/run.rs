@@ -66,9 +66,7 @@ pub fn execute(
         })?;
 
         if !tag.contains("mock") {
-            return Err(AppError::Validation(
-                "mock_tag must contain 'mock' substring".to_string(),
-            ));
+            return Err(AppError::Validation("mock_tag must contain 'mock' substring".to_string()));
         }
         Some(tag)
     } else {
@@ -218,7 +216,12 @@ where
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
     // Find issues for the layer in this workstream
-    let issues = find_issues_for_workstream(store, workstream, options.layer, options.routing_labels.as_deref())?;
+    let issues = find_issues_for_workstream(
+        store,
+        workstream,
+        options.layer,
+        options.routing_labels.as_deref(),
+    )?;
 
     if issues.is_empty() {
         eprintln!(
@@ -312,9 +315,7 @@ fn resolve_routing_labels(
         let labels: Vec<String> = labels.to_vec();
 
         if labels.is_empty() {
-            return Err(AppError::Validation(
-                "Provided routing_labels is empty".to_string(),
-            ));
+            return Err(AppError::Validation("Provided routing_labels is empty".to_string()));
         }
 
         for label in &labels {
@@ -414,7 +415,9 @@ mod tests {
         write_issue(&store, "docs", "ignored-by-routing", true);
 
         let routing_labels = vec!["bugs".to_string()];
-        let issues = find_issues_for_workstream(&store, "alpha", Layer::Planners, Some(&routing_labels)).unwrap();
+        let issues =
+            find_issues_for_workstream(&store, "alpha", Layer::Planners, Some(&routing_labels))
+                .unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("requires-planning.yml"));
@@ -430,7 +433,9 @@ mod tests {
         write_issue(&store, "bugs", "ready-to-implement", false);
 
         let routing_labels = vec!["bugs".to_string()];
-        let issues = find_issues_for_workstream(&store, "alpha", Layer::Implementers, Some(&routing_labels)).unwrap();
+        let issues =
+            find_issues_for_workstream(&store, "alpha", Layer::Implementers, Some(&routing_labels))
+                .unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("ready-to-implement.yml"));
