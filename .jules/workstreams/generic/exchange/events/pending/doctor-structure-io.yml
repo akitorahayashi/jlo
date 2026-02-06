@@ -1,0 +1,32 @@
+schema_version: 1
+id: "docio1"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "qa"
+confidence: "high"
+
+title: "Doctor Structural Checks Coupled to IO"
+statement: |
+  The `structural_checks` logic in `doctor/structure.rs` bypasses the `WorkspaceStore` abstraction and uses `std::fs` directly, preventing pure unit testing without filesystem access.
+
+evidence:
+  - path: "src/app/commands/doctor/structure.rs"
+    loc:
+      - "1-2"
+    note: "Direct import of `std::fs`."
+  - path: "src/app/commands/doctor/structure.rs"
+    loc:
+      - "16-25"
+    note: "Use of `fs::read_dir` in `collect_workstreams`."
+  - path: "src/app/commands/doctor/structure.rs"
+    loc:
+      - "273-288"
+    note: "Use of `fs::create_dir_all` in `ensure_directory_exists`."
+  - path: "src/app/commands/doctor/yaml.rs"
+    loc:
+      - "1-6"
+    note: "Similar pattern in `yaml.rs` using `std::fs` directly."
+
+tags:
+  - "testability"
+  - "coupling"

@@ -1,0 +1,28 @@
+schema_version: 1
+id: "runenv"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "qa"
+confidence: "high"
+
+title: "Workflow Run Depends on Global Environment"
+statement: |
+  The `workflow::run` command directly accesses environment variables (`JULES_MOCK_TAG`, `ROUTING_LABELS`) instead of accepting them via configuration or arguments, creating implicit global state dependencies in tests.
+
+evidence:
+  - path: "src/app/commands/workflow/run.rs"
+    loc:
+      - "59"
+    note: "Direct call to `std::env::var(\"JULES_MOCK_TAG\")`."
+  - path: "src/app/commands/workflow/run.rs"
+    loc:
+      - "309"
+    note: "Direct call to `std::env::var(\"ROUTING_LABELS\")`."
+  - path: "src/app/commands/workflow/run.rs"
+    loc:
+      - "402-404"
+    note: "Test usage of `unsafe { std::env::set_var(...) }` demonstrating the coupling."
+
+tags:
+  - "global-state"
+  - "determinism"
