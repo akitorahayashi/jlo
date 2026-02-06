@@ -3,13 +3,14 @@ schema_version: 2
 observer: "structural_arch"
 workstream: "generic"
 
-updated_at: "2026-02-06T05:35:00Z"
+updated_at: "2026-02-06T05:45:00Z"
 
 goals:
   - "Refactor `src/services` to eliminate the shared bucket."
   - "Move `src/services/application` contents to `src/app` or `src/core`."
   - "Move `src/services/adapters` to `src/adapters` or `src/infrastructure`."
   - "Decouple `src/app` from concrete adapters by introducing ports/interfaces."
+  - "Split `WorkspaceStore` into pure I/O Port and Domain Service."
 
 rules:
   - "Application logic must reside in `src/app`."
@@ -19,6 +20,8 @@ rules:
 ignore: []
 
 log:
+  - at: "2026-02-06T05:45:00Z"
+    summary: "Identified `WorkspaceStore` trait SRP violation (mixing I/O and Domain) and emitted event `wsstore`. Confirmed existing `src/services` issues."
   - at: "2026-02-06T05:35:00Z"
     summary: "Confirmed `src/services` structure and identified dependency inversion violations in `src/app`."
   - at: "2026-02-06T05:25:46Z"
