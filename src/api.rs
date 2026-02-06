@@ -39,7 +39,7 @@ impl JulesClient for LazyClient {
     }
 }
 
-/// ceate an AppContext for a given path.
+/// create an AppContext for a given path.
 fn create_context(
     path: std::path::PathBuf,
 ) -> AppContext<FilesystemWorkspaceStore, EmbeddedRoleTemplateStore> {
