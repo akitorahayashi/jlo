@@ -1,7 +1,7 @@
 use std::process::Command;
 
 use crate::domain::AppError;
-use crate::ports::{GitHubPort, PullRequestInfo};
+use crate::ports::{GitHubPort, IssueInfo, PullRequestInfo};
 
 #[derive(Debug, Clone, Default)]
 pub struct GitHubCommandAdapter;
@@ -111,5 +111,41 @@ impl GitHubPort for GitHubCommandAdapter {
         let endpoint = format!("repos/{{owner}}/{{repo}}/git/refs/heads/{}", branch);
         self.run_gh(&["api", "-X", "DELETE", &endpoint])?;
         Ok(())
+    }
+
+    fn create_issue(
+        &self,
+        title: &str,
+        body: &str,
+        labels: &[&str],
+    ) -> Result<IssueInfo, AppError> {
+        let mut args = vec!["issue", "create", "--title", title, "--body", body];
+        let labels_csv = labels.join(",");
+        if !labels.is_empty() {
+            args.push("--label");
+            args.push(&labels_csv);
+        }
+
+        let output = self.run_gh(&args)?;
+
+        // gh issue create prints the issue URL on success
+        let url = output.trim();
+        if !url.starts_with("https://") {
+            return Err(AppError::ExternalToolError {
+                tool: "gh".into(),
+                error: format!("Unexpected output from gh issue create: {}", output),
+            });
+        }
+
+        // Extract issue number from URL (format: https://github.com/owner/repo/issues/123)
+        let issue_number =
+            url.split('/').next_back().and_then(|s| s.parse::<u64>().ok()).ok_or_else(|| {
+                AppError::ParseError {
+                    what: "issue URL".into(),
+                    details: format!("Could not extract issue number from URL: {}", url),
+                }
+            })?;
+
+        Ok(IssueInfo { number: issue_number, url: url.to_string() })
     }
 }

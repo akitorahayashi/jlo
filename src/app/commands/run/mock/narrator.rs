@@ -144,6 +144,15 @@ mod tests {
         fn delete_branch(&self, _branch: &str) -> Result<(), AppError> {
             panic!("mock narrator no-op must not call delete_branch");
         }
+
+        fn create_issue(
+            &self,
+            _title: &str,
+            _body: &str,
+            _labels: &[&str],
+        ) -> Result<crate::ports::IssueInfo, AppError> {
+            panic!("mock narrator no-op must not call create_issue");
+        }
     }
 
     struct DummyWorkspace;

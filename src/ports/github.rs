@@ -14,6 +14,15 @@ pub struct PullRequestInfo {
     pub base: String,
 }
 
+/// Information about a created issue.
+#[derive(Debug, Clone)]
+pub struct IssueInfo {
+    /// Issue number.
+    pub number: u64,
+    /// Issue URL.
+    pub url: String,
+}
+
 pub trait GitHubPort {
     /// Dispatch a workflow via generic inputs.
     fn dispatch_workflow(
@@ -40,4 +49,10 @@ pub trait GitHubPort {
     /// Delete a remote branch.
     #[allow(dead_code)]
     fn delete_branch(&self, branch: &str) -> Result<(), AppError>;
+
+    // === Issue operations ===
+
+    /// Create a GitHub issue with the given title, body, and labels.
+    fn create_issue(&self, title: &str, body: &str, labels: &[&str])
+    -> Result<IssueInfo, AppError>;
 }
