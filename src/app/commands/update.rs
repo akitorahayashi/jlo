@@ -63,9 +63,13 @@ where
         }
     };
 
-    let binary_parts: Vec<u32> = binary_version.split('.').filter_map(|s| s.parse().ok()).collect();
-    let workspace_parts: Vec<u32> =
-        workspace_version.split('.').filter_map(|s| s.parse().ok()).collect();
+    // Helper to parse version string, ignoring pre-release suffixes (e.g. 1.2.3-beta -> 1.2.3)
+    let parse_version = |v: &str| -> Vec<u32> {
+        v.split('-').next().unwrap_or(v).split('.').filter_map(|s| s.parse().ok()).collect()
+    };
+
+    let binary_parts = parse_version(binary_version);
+    let workspace_parts = parse_version(&workspace_version);
 
     let version_cmp = compare_versions(&binary_parts, &workspace_parts);
 

@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use crate::app::AppContext;
 use crate::app::commands::init_workflows;
 use crate::domain::workspace::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};
+use crate::domain::workspace::{JLO_DIR, VERSION_FILE};
 use crate::domain::{AppError, ScaffoldManifest, WorkflowRunnerMode};
 use crate::ports::{GitPort, RoleTemplateStore, WorkspaceStore};
 
@@ -40,8 +41,8 @@ where
     }
 
     // Write version pin to .jlo/
-    let jlo_version_path = ".jlo/.jlo-version";
-    ctx.workspace().write_file(jlo_version_path, &format!("{}\n", env!("CARGO_PKG_VERSION")))?;
+    let jlo_version_path = format!("{}/{}", JLO_DIR, VERSION_FILE);
+    ctx.workspace().write_file(&jlo_version_path, &format!("{}\n", env!("CARGO_PKG_VERSION")))?;
 
     // Create .jules/ runtime workspace (for local development convenience)
     let scaffold_files = ctx.templates().scaffold_files();

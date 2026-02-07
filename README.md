@@ -1,31 +1,37 @@
 # jlo
 
-CLI tool for deploying `.jules/` workspace scaffolding and orchestrating scheduled LLM agent execution.
+CLI tool for managing `.jlo/` control-plane scaffolding and orchestrating scheduled LLM agent execution via GitHub Actions.
 
 ## Architecture
 
 | Component | Responsibility |
 |-----------|----------------|
-| **jlo** | `.jules/` scaffold installation, agent orchestration, prompt assembly |
-| **GitHub Actions** | Workflow triggers: cron schedules, manual dispatch, merge control |
+| **jlo** | `.jlo/` control-plane management, `.jules/` scaffold installation, prompt assembly |
+| **GitHub Actions** | Workflow triggers: cron schedules, bootstrap, merge control |
 | **Jules API** | Execution: code analysis, artifact generation, branch/PR creation |
+
+### Branch Topology
+
+| Branch | Purpose |
+|--------|---------|
+| Control branch (e.g. `main`) | Hosts `.jlo/` intent overlay and `.github/` workflow kit |
+| `jules` | Hosts materialized `.jules/` runtime state (managed by workflow bootstrap) |
 
 ## Quick Start
 
 ```bash
 cargo install --path .
 cd your-project
-jlo init
+jlo init --remote
 ```
 
 ## Commands
 
 | Command | Alias | Description |
 |---------|-------|-------------|
-| `jlo init [scaffold]` | `i` | Create `.jules/` workspace with setup directory |
-| `jlo init workflows (--remote | --self-hosted)` | `i w` | Install workflow kit into `.github/` |
-| `jlo update [--prompt-preview]` | `u` | Advance .jlo/ control-plane version pin |
-| `jlo deinit` | | Remove jlo-managed branch and workflow kit files |
+| `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow kit |
+| `jlo update [--prompt-preview]` | `u` | Advance `.jlo/` control-plane version pin |
+| `jlo deinit` | | Remove `.jlo/`, workflow kit, and local `jules` branch |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
@@ -119,16 +125,15 @@ Exit codes:
 
 ### Deinit Command
 
-`jlo deinit` removes the local `jules` branch and deletes workflow kit files from `.github/` on the current branch.
+`jlo deinit` removes the `.jlo/` control plane, the local `jules` branch, and workflow kit files from `.github/`.
 The command refuses to run while the current branch is `jules` or `jules-test-*`.
 GitHub secrets (such as `JULES_API_KEY` and `JULES_API_SECRET`) remain configured and require manual removal.
 
 ### Other Examples
 
 ```bash
-jlo init                                    # Initialize workspace
-jlo init workflows --remote                 # Install workflow kit (GitHub-hosted)
-jlo init workflows --self-hosted            # Install workflow kit (self-hosted runners)
+jlo init --remote                           # Initialize control plane + workflow kit (GitHub-hosted)
+jlo init --self-hosted                      # Initialize control plane + workflow kit (self-hosted)
 jlo template                                # Open interactive template wizard
 jlo template -l observers -n security -w generic
 
@@ -140,9 +145,9 @@ jlo setup gen                               # Generate install script
 
 ## GitHub Actions Integration
 
-Install the workflow kit with `jlo init workflows` to populate the Jules orchestration files in `.github/`.
+`jlo init --remote` (or `--self-hosted`) installs the Jules orchestration files in `.github/`.
 
-Workflows use `jlo run` for agent execution and `jlo workflow` commands for orchestration.
+Workflows use `jlo workflow bootstrap` to materialize `.jules/` on the `jules` branch, then `jlo workflow run` for agent execution.
 
 Workflow kit layout:
 
@@ -181,8 +186,9 @@ Workflow kit layout:
 
 ## Documentation
 
-- **Workflow details**: `.jules/README.md` (created by `jlo init`)
-- **Agent contracts**: `.jules/JULES.md` (created by `jlo init`)
+- **Control plane ownership**: `docs/CONTROL_PLANE_OWNERSHIP.md`
+- **Workflow details**: `.jules/README.md` (materialized by bootstrap)
+- **Agent contracts**: `.jules/JULES.md` (materialized by bootstrap)
 - **Development guide**: `AGENTS.md`
 
 ## Development
