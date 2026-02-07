@@ -793,14 +793,22 @@ fn validate_innovator_perspective(path: &Path, persona_name: &str, diagnostics: 
     }
 }
 
+fn validate_innovator_document_common_fields(
+    data: &Mapping,
+    path: &Path,
+    diagnostics: &mut Diagnostics,
+) {
+    ensure_int(data, path, "schema_version", diagnostics, Some(1));
+    ensure_id(data, path, "id", diagnostics);
+    ensure_non_empty_string(data, path, "persona", diagnostics);
+    ensure_date(data, path, "created_at", diagnostics);
+    ensure_non_empty_string(data, path, "title", diagnostics);
+    ensure_non_empty_string(data, path, "problem", diagnostics);
+}
+
 fn validate_innovator_idea(path: &Path, diagnostics: &mut Diagnostics) {
     if let Some(data) = load_yaml_mapping(path, diagnostics) {
-        ensure_int(&data, path, "schema_version", diagnostics, Some(1));
-        ensure_id(&data, path, "id", diagnostics);
-        ensure_non_empty_string(&data, path, "persona", diagnostics);
-        ensure_date(&data, path, "created_at", diagnostics);
-        ensure_non_empty_string(&data, path, "title", diagnostics);
-        ensure_non_empty_string(&data, path, "problem", diagnostics);
+        validate_innovator_document_common_fields(&data, path, diagnostics);
         ensure_non_empty_string(&data, path, "introduction", diagnostics);
         ensure_non_empty_string(&data, path, "expected_value", diagnostics);
     }
@@ -808,12 +816,7 @@ fn validate_innovator_idea(path: &Path, diagnostics: &mut Diagnostics) {
 
 fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
     if let Some(data) = load_yaml_mapping(path, diagnostics) {
-        ensure_int(&data, path, "schema_version", diagnostics, Some(1));
-        ensure_id(&data, path, "id", diagnostics);
-        ensure_non_empty_string(&data, path, "persona", diagnostics);
-        ensure_date(&data, path, "created_at", diagnostics);
-        ensure_non_empty_string(&data, path, "title", diagnostics);
-        ensure_non_empty_string(&data, path, "problem", diagnostics);
+        validate_innovator_document_common_fields(&data, path, diagnostics);
         ensure_non_empty_string(&data, path, "introduction", diagnostics);
         ensure_non_empty_string(&data, path, "importance", diagnostics);
         ensure_non_empty_sequence(&data, path, "impact_surface", diagnostics);

@@ -129,18 +129,25 @@ where
                 proposal_path.display()
             )));
         }
-        if data.problem.trim().is_empty()
-            || data.introduction.trim().is_empty()
-            || data.importance.trim().is_empty()
-            || data.implementation_cost.trim().is_empty()
-            || data.impact_surface.is_empty()
-            || data.consistency_risks.is_empty()
-            || data.verification_signals.is_empty()
-        {
-            return Err(AppError::Validation(format!(
-                "Proposal missing required decision fields: {}",
-                proposal_path.display()
-            )));
+
+        let required_fields = vec![
+            ("problem", data.problem.trim().is_empty()),
+            ("introduction", data.introduction.trim().is_empty()),
+            ("importance", data.importance.trim().is_empty()),
+            ("implementation_cost", data.implementation_cost.trim().is_empty()),
+            ("impact_surface", data.impact_surface.is_empty()),
+            ("consistency_risks", data.consistency_risks.is_empty()),
+            ("verification_signals", data.verification_signals.is_empty()),
+        ];
+
+        for (field_name, is_missing) in required_fields {
+            if is_missing {
+                return Err(AppError::Validation(format!(
+                    "Proposal missing '{}': {}",
+                    field_name,
+                    proposal_path.display()
+                )));
+            }
         }
 
         let issue_title = format!("[innovator/{}] {}", persona, data.title.trim());
