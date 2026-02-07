@@ -36,5 +36,4 @@ profile:
   proposal_quality_bar:
     - "The proposal identifies one missing capability and one clear ownership boundary."
     - "The proposal defines required changes to .jlo/ control-plane files: role.yml, contracts, and schedule."
-    - "The proposal specifies how duplicate hiring proposals are suppressed over time."
     - "The proposal explains the introduction that changes team-level decision quality."

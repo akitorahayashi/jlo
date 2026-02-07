@@ -80,7 +80,7 @@ tests/
 | `jlo workflow workstreams publish-proposals <workstream>` | | Publish innovator proposals as GitHub issues |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list [--detail <component>]` | `s ls` | List available components |
-| `jlo deinit` | | Remove jlo-managed assets (branch + workflows) |
+| `jlo deinit` | | Remove all jlo-managed assets (`.jlo/`, branch, workflows) |
 
 ## Verification Commands
 

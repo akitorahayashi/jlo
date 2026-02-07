@@ -161,7 +161,7 @@ Workflow kit layout:
 | `JULES_PAUSED` | Skip scheduled runs when set to `true` | (unset) |
 | `JULES_TARGET_BRANCH` | Target branch for implementer output | `main` |
 
-**Schedule Preservation**: When reinstalling with `jlo init workflows`, the existing `on.schedule` block in `jules-workflows.yml` is preserved.
+**Schedule Preservation**: When reinstalling with `jlo init --remote --overwrite` (or `--self-hosted --overwrite`), the existing `on.schedule` block in `jules-workflows.yml` is preserved.
 
 **Branch Strategy**:
 
