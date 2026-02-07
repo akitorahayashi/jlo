@@ -1,0 +1,26 @@
+  generate-decider-matrix:
+    needs: [generate-workstream-matrix, wait-after-observers]
+    if: |
+      always() &&
+      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
+      (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
+    runs-on: {{ runner }}
+    timeout-minutes: 10
+    outputs:
+      json: {{ gha_expr("steps.matrix.outputs.json") }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Generate decider matrix from pending events
+        id: matrix
+        env:
+          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
+        run: |
+          WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
+          jlo workflow matrix pending-workstreams --workstreams-json "$WORKSTREAMS_JSON"

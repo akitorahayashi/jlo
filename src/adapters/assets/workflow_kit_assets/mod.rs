@@ -1,0 +1,197 @@
+mod action_dirs;
+mod asset_collect;
+mod render_plan;
+mod template_engine;
+
+use include_dir::{Dir, include_dir};
+use minijinja::context;
+
+use crate::domain::{AppError, WorkflowRunnerMode};
+use crate::ports::ScaffoldFile;
+
+use self::action_dirs::collect_action_dirs;
+use self::asset_collect::{AssetSourceFile, collect_asset_sources};
+use self::render_plan::should_render_asset;
+use self::template_engine::{build_template_environment, render_template_by_name};
+
+static WORKFLOWS_ASSET_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/workflows/.github");
+
+#[derive(Debug)]
+pub struct WorkflowKitAssets {
+    pub files: Vec<ScaffoldFile>,
+    pub action_dirs: Vec<String>,
+}
+
+pub fn load_workflow_kit(mode: WorkflowRunnerMode) -> Result<WorkflowKitAssets, AppError> {
+    let sources = collect_asset_sources(&WORKFLOWS_ASSET_DIR)?;
+    if sources.is_empty() {
+        return Err(AppError::InternalError(format!(
+            "Workflow kit assets are empty for mode '{}'",
+            mode.label()
+        )));
+    }
+
+    let env = build_template_environment(&sources)?;
+
+    let runner = match mode {
+        WorkflowRunnerMode::Remote => "ubuntu-latest",
+        WorkflowRunnerMode::SelfHosted => "self-hosted",
+    };
+    let ctx = context! {
+        runner => runner,
+    };
+
+    let mut files = render_scaffold_files(&sources, &env, &ctx)?;
+
+    for file in &mut files {
+        file.path = format!(".github/{}", file.path);
+    }
+
+    files.sort_by(|a, b| a.path.cmp(&b.path));
+
+    if files.is_empty() {
+        return Err(AppError::InternalError(format!(
+            "No renderable workflow kit assets for mode '{}'",
+            mode.label()
+        )));
+    }
+
+    let action_dirs = collect_action_dirs(&files);
+    Ok(WorkflowKitAssets { files, action_dirs })
+}
+
+fn render_scaffold_files(
+    sources: &[AssetSourceFile],
+    env: &minijinja::Environment<'_>,
+    ctx: &minijinja::Value,
+) -> Result<Vec<ScaffoldFile>, AppError> {
+    let mut files = Vec::new();
+
+    for source in sources {
+        if !should_render_asset(source) {
+            continue;
+        }
+
+        let rendered_content = if source.is_template() {
+            render_template_by_name(env, source.template_name(), ctx)?
+        } else {
+            source.content.clone()
+        };
+
+        files.push(ScaffoldFile { path: source.output_path(), content: rendered_content });
+    }
+
+    Ok(files)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+    use yamllint_rs::{FileProcessor, ProcessingOptions, Severity};
+
+    #[test]
+    fn workflow_kit_assets_load() {
+        let remote = load_workflow_kit(WorkflowRunnerMode::Remote).expect("remote assets");
+        assert!(!remote.files.is_empty(), "remote kit should have files");
+
+        let self_hosted =
+            load_workflow_kit(WorkflowRunnerMode::SelfHosted).expect("self-hosted assets");
+        assert!(!self_hosted.files.is_empty(), "self-hosted kit should have files");
+    }
+
+    #[test]
+    fn workflow_templates_parse_with_serde_yaml() {
+        for mode in [WorkflowRunnerMode::Remote, WorkflowRunnerMode::SelfHosted] {
+            let kit = load_workflow_kit(mode).expect("should load workflow kit");
+            for file in &kit.files {
+                if !file.path.ends_with(".yml") && !file.path.ends_with(".yaml") {
+                    continue;
+                }
+                let result: Result<serde_yaml::Value, _> = serde_yaml::from_str(&file.content);
+                if result.is_err() {
+                    // Output lines around the error for debugging
+                    let lines: Vec<&str> = file.content.lines().collect();
+                    for (i, line) in lines.iter().enumerate() {
+                        if (170..=185).contains(&i) {
+                            eprintln!("L{}: {:?}", i + 1, line);
+                        }
+                    }
+                }
+                assert!(
+                    result.is_ok(),
+                    "{} ({} mode) failed to parse with serde_yaml: {}",
+                    file.path,
+                    mode.label(),
+                    result.unwrap_err()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn workflow_templates_pass_yaml_lint_remote() {
+        validate_yaml_lint(WorkflowRunnerMode::Remote);
+    }
+
+    #[test]
+    fn workflow_templates_pass_yaml_lint_self_hosted() {
+        validate_yaml_lint(WorkflowRunnerMode::SelfHosted);
+    }
+
+    fn validate_yaml_lint(mode: WorkflowRunnerMode) {
+        let kit = load_workflow_kit(mode).expect("should load workflow kit");
+
+        let mut config = yamllint_rs::config::Config::new();
+        config.set_rule_enabled("line-length", false);
+        config.set_rule_enabled("indentation", false);
+        config.set_rule_enabled("truthy", false);
+        config.set_rule_enabled("document-start", false);
+        config.set_rule_enabled("comments", false);
+
+        let processor = FileProcessor::with_config(ProcessingOptions::default(), config);
+
+        let mut errors = Vec::new();
+
+        for file in &kit.files {
+            if !file.path.ends_with(".yml") && !file.path.ends_with(".yaml") {
+                continue;
+            }
+
+            let mut temp = NamedTempFile::new().expect("create temp file");
+            temp.write_all(file.content.as_bytes()).expect("write temp file");
+
+            match processor.process_file(temp.path()) {
+                Ok(result) => {
+                    let issues: Vec<_> = result
+                        .issues
+                        .iter()
+                        .filter(|(issue, _)| issue.severity == Severity::Error)
+                        .collect();
+
+                    if !issues.is_empty() {
+                        let mut msg = format!("\n  {}:", file.path);
+                        for (issue, line) in &issues {
+                            msg.push_str(&format!(
+                                "\n    L{}: {} - {}",
+                                issue.line, issue.message, line
+                            ));
+                        }
+                        errors.push(msg);
+                    }
+                }
+                Err(e) => {
+                    errors.push(format!("\n  {}: failed to lint - {}", file.path, e));
+                }
+            }
+        }
+
+        assert!(
+            errors.is_empty(),
+            "YAML lint errors for {} mode:{}",
+            mode.label(),
+            errors.join("")
+        );
+    }
+}

@@ -1,0 +1,52 @@
+{%- macro wait_for_processing(job_name, needs, run_job, process_name) %}
+  {{ job_name }}:
+    needs: {{ needs }}
+    if: |
+      always() &&
+      needs.{{ run_job }}.result == 'success'
+    runs-on: {{ runner }}
+    timeout-minutes: 60
+    outputs:
+      json: {{ gha_expr("steps.wait.outputs.json") }}
+    steps:
+      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
+        id: wait
+        shell: bash
+        run: |
+          set -euo pipefail
+          trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
+
+          if [ "{{ gha_expr("env.MOCK_MODE") }}" = "true" ]; then
+            TOTAL_SECONDS=30
+            echo "Mock mode enabled: overriding wait to 30 seconds."
+          else
+            TOTAL_SECONDS=$(({{ gha_expr("env.WAIT_MINUTES") }} * 60))
+          fi
+
+          if [ "$TOTAL_SECONDS" -le 0 ]; then
+            echo "Wait skipped (TOTAL_SECONDS=$TOTAL_SECONDS)."
+            echo "json={}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -n "{{ process_name }}" ]; then
+            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process {{ process_name }}..."
+          else
+            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process..."
+          fi
+          ELAPSED=0
+          INTERVAL=5
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            STEP=$INTERVAL
+            REMAINING=$((TOTAL_SECONDS - ELAPSED))
+            if [ "$REMAINING" -lt "$STEP" ]; then
+              STEP=$REMAINING
+            fi
+            sleep "$STEP" &
+            wait $!
+            ELAPSED=$((ELAPSED + STEP))
+            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+          done
+          echo "Wait complete."
+          echo "json={}" >> "$GITHUB_OUTPUT"
+{%- endmacro %}
