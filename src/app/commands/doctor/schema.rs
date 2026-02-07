@@ -790,35 +790,26 @@ fn validate_innovator_perspective(path: &Path, persona_name: &str, diagnostics: 
 }
 
 fn validate_innovator_idea(path: &Path, diagnostics: &mut Diagnostics) {
-    let data = match load_yaml_mapping(path, diagnostics) {
-        Some(data) => data,
-        None => return,
-    };
-
-    ensure_int(&data, path, "schema_version", diagnostics, Some(1));
-    ensure_id(&data, path, "id", diagnostics);
-    ensure_non_empty_string(&data, path, "persona", diagnostics);
-    ensure_date(&data, path, "created_at", diagnostics);
-    ensure_non_empty_string(&data, path, "title", diagnostics);
-    ensure_non_empty_string(&data, path, "problem", diagnostics);
-    ensure_non_empty_string(&data, path, "solution", diagnostics);
-    ensure_non_empty_string(&data, path, "impact", diagnostics);
+    if let Some(data) = load_yaml_mapping(path, diagnostics) {
+        validate_innovator_document(&data, path, diagnostics);
+    }
 }
 
 fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
-    let data = match load_yaml_mapping(path, diagnostics) {
-        Some(data) => data,
-        None => return,
-    };
+    if let Some(data) = load_yaml_mapping(path, diagnostics) {
+        validate_innovator_document(&data, path, diagnostics);
+    }
+}
 
-    ensure_int(&data, path, "schema_version", diagnostics, Some(1));
-    ensure_id(&data, path, "id", diagnostics);
-    ensure_non_empty_string(&data, path, "persona", diagnostics);
-    ensure_date(&data, path, "created_at", diagnostics);
-    ensure_non_empty_string(&data, path, "title", diagnostics);
-    ensure_non_empty_string(&data, path, "problem", diagnostics);
-    ensure_non_empty_string(&data, path, "solution", diagnostics);
-    ensure_non_empty_string(&data, path, "impact", diagnostics);
+fn validate_innovator_document(data: &Mapping, path: &Path, diagnostics: &mut Diagnostics) {
+    ensure_int(data, path, "schema_version", diagnostics, Some(1));
+    ensure_id(data, path, "id", diagnostics);
+    ensure_non_empty_string(data, path, "persona", diagnostics);
+    ensure_date(data, path, "created_at", diagnostics);
+    ensure_non_empty_string(data, path, "title", diagnostics);
+    ensure_non_empty_string(data, path, "problem", diagnostics);
+    ensure_non_empty_string(data, path, "solution", diagnostics);
+    ensure_non_empty_string(data, path, "impact", diagnostics);
 }
 
 fn validate_innovator_comment(path: &Path, diagnostics: &mut Diagnostics) {

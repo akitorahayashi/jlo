@@ -61,10 +61,23 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   │   ├── prompt.yml    # Entry point
 │   │   ├── prompt_assembly.yml # Prompt construction rules
 │   │   └── contracts.yml
-│   └── implementers/
+│   ├── implementers/
+│   │   ├── prompt.yml    # Entry point
+│   │   ├── prompt_assembly.yml # Prompt construction rules
+│   │   └── contracts.yml
+│   └── innovators/
 │       ├── prompt.yml    # Entry point
 │       ├── prompt_assembly.yml # Prompt construction rules
-│       └── contracts.yml
+│       ├── contracts.yml # Layer contract
+│       ├── schemas/
+│       │   ├── perspective.yml
+│       │   ├── idea.yml
+│       │   ├── proposal.yml
+│       │   └── comment.yml
+│       └── roles/
+│           ├── <persona>/
+│           │   └── role.yml
+│           └── .gitkeep
 ├── workstreams/
 │   └── <workstream>/
 │       ├── events/
@@ -76,6 +89,13 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │           ├── <label>/
 │           │   └── .gitkeep
 │           └── .gitkeep
+│       └── innovators/
+│           └── <persona>/
+│               ├── perspective.yml
+│               ├── idea.yml       # Temporary (creation phase)
+│               ├── proposal.yml   # Temporary (refinement output)
+│               └── comments/
+│                   └── .gitkeep
 └── setup/
     ├── tools.yml         # Tool selection
     ├── env.toml          # Environment variables (generated/merged)
@@ -100,7 +120,7 @@ See "Critical Design Principles" above for the contract structure.
 |------|-------|---------|
 | `prompt.yml` | Role | Entry point. Lists all contracts to follow. |
 | `prompt_assembly.yml` | Layer | Rules for constructing prompts from contracts. |
-| `role.yml` | Role | Specialized focus (observers/deciders only). |
+| `role.yml` | Role | Specialized focus (observers/deciders/innovators). |
 | `contracts.yml` | Layer | Workflow, inputs, outputs, constraints shared within layer. |
 | `JULES.md` | Global | Rules applying to ALL layers (branch naming, system boundaries). |
 
@@ -114,6 +134,10 @@ Schemas define the structure for artifacts produced by agents.
 | `event.yml` | `.jules/roles/observers/schemas/` | Observer event structure |
 | `perspective.yml` | `.jules/roles/observers/schemas/` | Observer perspective structure |
 | `issue.yml` | `.jules/roles/deciders/schemas/` | Issue structure |
+| `perspective.yml` | `.jules/roles/innovators/schemas/` | Innovator persona memory |
+| `idea.yml` | `.jules/roles/innovators/schemas/` | Idea draft structure |
+| `proposal.yml` | `.jules/roles/innovators/schemas/` | Finalized proposal structure |
+| `comment.yml` | `.jules/roles/innovators/schemas/` | Observer feedback on ideas |
 
 **Rule**: Agents copy the schema and fill its fields. Never invent structure.
 
@@ -131,6 +155,7 @@ Workstreams isolate events and issues so that decider rules do not mix across un
 |-----------|---------|
 | `.jules/workstreams/<workstream>/events/<state>/` | Observer outputs, Decider inputs |
 | `.jules/workstreams/<workstream>/issues/<label>/` | Decider/Planner outputs, Implementer inputs |
+| `.jules/workstreams/<workstream>/exchange/innovators/<persona>/` | Innovator perspectives, ideas, proposals, comments |
 
 ## Data Flow
 
@@ -139,6 +164,9 @@ The pipeline is file-based and uses local issues as the handoff point:
 ```
 narrator -> observers -> deciders -> [planners] -> implementers
 (changes)   (events)    (issues)    (expand)      (code changes)
+
+innovators (independent cycle)
+perspective -> idea -> comments -> proposal
 ```
 
 1. **Narrator** runs first, producing `.jules/changes/latest.yml` for observer context.
@@ -146,6 +174,7 @@ narrator -> observers -> deciders -> [planners] -> implementers
 3. **Deciders** read events, emit issues, and link related events via `source_events`.
 4. **Planners** expand issues with `requires_deep_analysis: true`.
 5. **Implementers** execute approved tasks and create PRs with code changes.
+6. **Innovators** run independently: each persona maintains a `perspective.yml`, drafts `idea.yml`, receives `comments/` from other personas, and produces `proposal.yml`.
 
 ## Setup Compiler
 

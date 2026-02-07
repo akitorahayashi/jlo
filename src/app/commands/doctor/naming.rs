@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use super::diagnostics::Diagnostics;
+use super::structure::list_subdirs;
 use super::yaml::is_kebab_case;
 
 pub fn naming_checks(
@@ -31,7 +32,7 @@ pub fn naming_checks(
         // Validate innovator comment filenames
         let innovators_dir = exchange_dir.join("innovators");
         if innovators_dir.exists() {
-            for persona_dir in list_persona_dirs(&innovators_dir, diagnostics) {
+            for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
                 let comments_dir = persona_dir.join("comments");
                 for entry in list_files(&comments_dir, diagnostics) {
                     validate_filename(&entry, diagnostics, "innovator comment");
@@ -58,29 +59,6 @@ fn validate_filename(path: &Path, diagnostics: &mut Diagnostics, kind: &str) {
             format!("{} filename must be kebab-case", kind),
         );
     }
-}
-
-fn list_persona_dirs(dir: &Path, diagnostics: &mut Diagnostics) -> Vec<std::path::PathBuf> {
-    let mut dirs = Vec::new();
-    if let Ok(entries) = std::fs::read_dir(dir) {
-        for entry in entries {
-            match entry {
-                Ok(entry) => {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        dirs.push(path);
-                    }
-                }
-                Err(err) => {
-                    diagnostics.push_error(
-                        dir.display().to_string(),
-                        format!("Failed to read directory entry: {}", err),
-                    );
-                }
-            }
-        }
-    }
-    dirs
 }
 
 fn list_files(dir: &Path, diagnostics: &mut Diagnostics) -> Vec<std::path::PathBuf> {
