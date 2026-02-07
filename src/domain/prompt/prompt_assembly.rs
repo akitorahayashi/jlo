@@ -6,12 +6,11 @@
 
 use std::collections::HashMap;
 use std::path::{Component, Path};
-use std::sync::OnceLock;
 
-use minijinja::{Environment, UndefinedBehavior};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::Layer;
+use crate::domain::prompt::TemplateRenderer;
 
 /// Abstraction for prompt asset loading.
 pub trait PromptAssetLoader {
@@ -188,6 +187,7 @@ pub fn assemble_prompt(
     layer: Layer,
     context: &PromptContext,
     loader: &impl PromptAssetLoader,
+    renderer: &impl TemplateRenderer,
 ) -> Result<AssembledPrompt, PromptAssemblyError> {
     let layer_dir = jules_path.join("roles").join(layer.dir_name());
     let root = jules_path.parent().unwrap_or(Path::new("."));
@@ -201,7 +201,7 @@ pub fn assemble_prompt(
 
     // Load base prompt.yml
     let prompt_path = layer_dir.join("prompt.yml");
-    let base_prompt = load_prompt(&prompt_path, context, loader)?;
+    let base_prompt = load_prompt(&prompt_path, context, loader, renderer)?;
 
     // Assemble includes
     let mut parts = vec![base_prompt];
@@ -209,7 +209,7 @@ pub fn assemble_prompt(
     let mut skipped_files = Vec::new();
 
     for include in &spec.includes {
-        let resolved_path = render_template(
+        let resolved_path = renderer.render(
             &include.path,
             context,
             &format!("prompt_assembly include path ({})", include.title),
@@ -288,8 +288,9 @@ pub fn assemble_with_issue(
     layer: Layer,
     issue_content: &str,
     loader: &impl PromptAssetLoader,
+    renderer: &impl TemplateRenderer,
 ) -> Result<AssembledPrompt, PromptAssemblyError> {
-    let mut result = assemble_prompt(jules_path, layer, &PromptContext::new(), loader)?;
+    let mut result = assemble_prompt(jules_path, layer, &PromptContext::new(), loader, renderer)?;
 
     result.content.push_str(&format!("\n---\n# Issue\n{}", issue_content));
     result.included_files.push("(issue content embedded)".to_string());
@@ -339,6 +340,7 @@ fn load_prompt(
     path: &Path,
     context: &PromptContext,
     loader: &impl PromptAssetLoader,
+    renderer: &impl TemplateRenderer,
 ) -> Result<String, PromptAssemblyError> {
     if !loader.asset_exists(path) {
         return Err(PromptAssemblyError::PromptNotFound(path.display().to_string()));
@@ -349,51 +351,7 @@ fn load_prompt(
         reason: err.to_string(),
     })?;
 
-    render_template(&content, context, &path.display().to_string())
-}
-
-static ENV: OnceLock<Environment<'static>> = OnceLock::new();
-
-/// Render a template string using strict Jinja-compatible semantics.
-///
-/// Only `{{ ... }}` interpolation is allowed. Control structures are rejected.
-fn render_template(
-    template: &str,
-    context: &PromptContext,
-    template_name: &str,
-) -> Result<String, PromptAssemblyError> {
-    if let Some(token) = disallowed_template_token(template) {
-        return Err(PromptAssemblyError::TemplateSyntaxNotAllowed {
-            template: template_name.to_string(),
-            token: token.to_string(),
-        });
-    }
-
-    let env = ENV.get_or_init(|| {
-        let mut env = Environment::new();
-        env.set_undefined_behavior(UndefinedBehavior::Strict);
-        env
-    });
-
-    env.render_str(template, &context.variables)
-        .map_err(|err| template_render_error(template_name, err))
-}
-
-fn disallowed_template_token(template: &str) -> Option<&'static str> {
-    if template.contains("{%") {
-        return Some("{%");
-    }
-    if template.contains("{#") {
-        return Some("{#");
-    }
-    None
-}
-
-fn template_render_error(template_name: &str, err: impl std::fmt::Display) -> PromptAssemblyError {
-    PromptAssemblyError::TemplateRenderError {
-        template: template_name.to_string(),
-        reason: err.to_string(),
-    }
+    renderer.render(&content, context, &path.display().to_string())
 }
 
 #[cfg(test)]
@@ -449,6 +407,18 @@ mod tests {
         }
     }
 
+    struct MockRenderer;
+    impl TemplateRenderer for MockRenderer {
+        fn render(
+            &self,
+            template: &str,
+            _context: &PromptContext,
+            _template_name: &str,
+        ) -> Result<String, PromptAssemblyError> {
+            Ok(template.to_string()) // Simplistic mock pass-through
+        }
+    }
+
     #[test]
     fn prompt_context_with_var() {
         let ctx =
@@ -492,6 +462,7 @@ includes:
     #[test]
     fn test_assemble_prompt_mock_loader() {
         let mock_loader = MockPromptLoader::new();
+        let mock_renderer = MockRenderer;
         let jules_path = Path::new(".jules");
 
         // Setup mock files for Planners layer
@@ -510,8 +481,13 @@ includes:
         mock_loader
             .add_file(".jules/roles/planners/contracts.yml", "layer: planners\nconstraints: []");
 
-        let result =
-            assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_loader);
+        let result = assemble_prompt(
+            jules_path,
+            Layer::Planners,
+            &PromptContext::new(),
+            &mock_loader,
+            &mock_renderer,
+        );
 
         assert!(result.is_ok());
         let assembled = result.unwrap();

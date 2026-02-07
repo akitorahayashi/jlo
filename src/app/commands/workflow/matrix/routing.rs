@@ -216,6 +216,8 @@ mod tests {
     use crate::adapters::memory_workspace_store::MemoryWorkspaceStore;
     use crate::ports::WorkspaceStore;
 
+    // These tests use MemoryWorkspaceStore and do not modify the process-wide current working directory,
+    // ensuring safe parallel execution.
     fn setup_workspace(store: &MemoryWorkspaceStore) {
         store.write_version(env!("CARGO_PKG_VERSION")).unwrap();
     }

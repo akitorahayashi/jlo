@@ -5,6 +5,8 @@
 
 use std::path::Path;
 
+use crate::adapters::template::MinijinjaTemplateRenderer;
+use crate::domain::identities::validation::{validate_identifier, validate_safe_path_component};
 use crate::domain::{
     AppError, Layer, PromptAssetLoader, PromptContext, assemble_prompt as assemble_prompt_domain,
     assemble_with_issue,
@@ -20,9 +22,24 @@ pub fn assemble_prompt(
     workstream: &str,
     loader: &impl PromptAssetLoader,
 ) -> Result<String, AppError> {
-    let context = PromptContext::new().with_var("workstream", workstream).with_var("role", role);
+    // Validate role and workstream to prevent prompt injection
+    if !validate_identifier(role, false) {
+        return Err(AppError::Validation(format!(
+            "Invalid role '{}': must be alphanumeric with hyphens or underscores",
+            role
+        )));
+    }
+    if !validate_safe_path_component(workstream) {
+        return Err(AppError::Validation(format!(
+            "Invalid workstream '{}': must be alphanumeric with hyphens or underscores",
+            workstream
+        )));
+    }
 
-    Ok(assemble_prompt_domain(jules_path, layer, &context, loader)
+    let context = PromptContext::new().with_var("workstream", workstream).with_var("role", role);
+    let renderer = MinijinjaTemplateRenderer::new();
+
+    Ok(assemble_prompt_domain(jules_path, layer, &context, loader, &renderer)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
 }
@@ -36,7 +53,8 @@ pub fn assemble_single_role_prompt(
     layer: Layer,
     loader: &impl PromptAssetLoader,
 ) -> Result<String, AppError> {
-    Ok(assemble_prompt_domain(jules_path, layer, &PromptContext::new(), loader)
+    let renderer = MinijinjaTemplateRenderer::new();
+    Ok(assemble_prompt_domain(jules_path, layer, &PromptContext::new(), loader, &renderer)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
 }
@@ -52,7 +70,8 @@ pub fn assemble_issue_prompt(
     issue_content: &str,
     loader: &impl PromptAssetLoader,
 ) -> Result<String, AppError> {
-    Ok(assemble_with_issue(jules_path, layer, issue_content, loader)
+    let renderer = MinijinjaTemplateRenderer::new();
+    Ok(assemble_with_issue(jules_path, layer, issue_content, loader, &renderer)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
 }

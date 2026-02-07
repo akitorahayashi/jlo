@@ -5,7 +5,6 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
 
@@ -61,10 +60,9 @@ pub struct PendingWorkstreamEntry {
 
 /// Execute matrix pending-workstreams command.
 pub fn execute(
+    workspace: &impl WorkspaceStore,
     options: MatrixPendingWorkstreamsOptions,
 ) -> Result<MatrixPendingWorkstreamsOutput, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-
     if !workspace.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
@@ -121,6 +119,7 @@ fn has_yml_files(dir: &std::path::Path) -> Result<bool, AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
     use std::fs;
     use tempfile::tempdir;
 
@@ -145,6 +144,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let root = dir.path();
         setup_workspace(root);
+        let store = FilesystemWorkspaceStore::new(root.to_path_buf());
 
         // alpha has pending events
         create_pending_event(root, "alpha", "event1");
@@ -155,8 +155,6 @@ mod tests {
         // gamma has pending events
         create_pending_event(root, "gamma", "event2");
 
-        std::env::set_current_dir(root).unwrap();
-
         let workstreams_json = WorkstreamsMatrix {
             include: vec![
                 WorkstreamEntry { workstream: "alpha".into() },
@@ -166,7 +164,8 @@ mod tests {
         };
 
         let output =
-            execute(MatrixPendingWorkstreamsOptions { workstreams_json, mock: false }).unwrap();
+            execute(&store, MatrixPendingWorkstreamsOptions { workstreams_json, mock: false })
+                .unwrap();
 
         assert_eq!(output.schema_version, 1);
         assert_eq!(output.count, 2);
@@ -182,16 +181,16 @@ mod tests {
         let dir = tempdir().unwrap();
         let root = dir.path();
         setup_workspace(root);
+        let store = FilesystemWorkspaceStore::new(root.to_path_buf());
 
         create_empty_pending_dir(root, "alpha");
-
-        std::env::set_current_dir(root).unwrap();
 
         let workstreams_json =
             WorkstreamsMatrix { include: vec![WorkstreamEntry { workstream: "alpha".into() }] };
 
         let output =
-            execute(MatrixPendingWorkstreamsOptions { workstreams_json, mock: false }).unwrap();
+            execute(&store, MatrixPendingWorkstreamsOptions { workstreams_json, mock: false })
+                .unwrap();
 
         assert_eq!(output.schema_version, 1);
         assert_eq!(output.count, 0);

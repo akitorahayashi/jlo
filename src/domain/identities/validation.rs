@@ -18,6 +18,31 @@ pub fn validate_identifier(id: &str, allow_dots: bool) -> bool {
     id.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || (allow_dots && c == '.'))
 }
 
+/// Validates a path component for safe filesystem operations.
+///
+/// This is stricter than validate_identifier - used for user-provided path components
+/// like workstream names to prevent path traversal attacks.
+///
+/// Checks:
+/// - Non-empty
+/// - No path separators (/, \)
+/// - Not "." or ".."
+/// - Does not start with '.' (hidden files)
+/// - No null bytes
+/// - Characters are alphanumeric, '-', or '_' only (no dots)
+pub fn validate_safe_path_component(component: &str) -> bool {
+    if component.is_empty() || component.starts_with('.') {
+        return false;
+    }
+    if component.contains('/') || component.contains('\\') || component.contains('\0') {
+        return false;
+    }
+    if component == "." || component == ".." {
+        return false;
+    }
+    component.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+}
+
 #[macro_export]
 macro_rules! impl_validated_id {
     ($name:ident, $allow_dots:expr, $err_variant:path) => {
@@ -83,5 +108,26 @@ mod tests {
         assert!(!validate_identifier(".", false));
         assert!(!validate_identifier("..", false));
         assert!(!validate_identifier("has space", false));
+    }
+
+    #[test]
+    fn safe_path_component_valid() {
+        assert!(validate_safe_path_component("valid-name"));
+        assert!(validate_safe_path_component("valid_name"));
+        assert!(validate_safe_path_component("ValidName123"));
+    }
+
+    #[test]
+    fn safe_path_component_invalid() {
+        assert!(!validate_safe_path_component(""));
+        assert!(!validate_safe_path_component("../escape"));
+        assert!(!validate_safe_path_component("../../.."));
+        assert!(!validate_safe_path_component(".hidden"));
+        assert!(!validate_safe_path_component("has/slash"));
+        assert!(!validate_safe_path_component("has\\backslash"));
+        assert!(!validate_safe_path_component("."));
+        assert!(!validate_safe_path_component(".."));
+        assert!(!validate_safe_path_component("has.dot"));
+        assert!(!validate_safe_path_component("null\0byte"));
     }
 }
