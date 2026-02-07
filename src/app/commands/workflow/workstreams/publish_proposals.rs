@@ -97,9 +97,9 @@ where
         });
     }
 
-    let mut published = Vec::new();
-    let mut deleted_paths: Vec<PathBuf> = Vec::new();
-
+    // Pass 1: Validate all proposals before any side-effects (issue creation).
+    // This prevents partial failure leaving orphaned issues on GitHub.
+    let mut validated: Vec<(String, PathBuf, String, String)> = Vec::new();
     for (persona, proposal_path) in &proposals {
         let content = workspace.read_file(
             proposal_path
@@ -132,7 +132,15 @@ where
             persona,
         );
 
-        let issue: IssueInfo = github.create_issue(&issue_title, &issue_body, &[])?;
+        validated.push((persona.clone(), proposal_path.clone(), issue_title, issue_body));
+    }
+
+    // Pass 2: Create issues and clean up artifacts (all proposals validated).
+    let mut published = Vec::new();
+    let mut deleted_paths: Vec<PathBuf> = Vec::new();
+
+    for (persona, proposal_path, issue_title, issue_body) in &validated {
+        let issue: IssueInfo = github.create_issue(issue_title, issue_body, &[])?;
 
         published.push(PublishedProposal {
             persona: persona.clone(),
@@ -141,7 +149,7 @@ where
             issue_url: issue.url.clone(),
         });
 
-        // Remove proposal artifact and its associated comments directory
+        // Remove proposal artifact
         workspace.remove_file(
             proposal_path
                 .to_str()
@@ -151,11 +159,13 @@ where
 
         // Clean comments directory if present
         let comments_dir = proposal_path.parent().unwrap_or(Path::new(".")).join("comments");
-        let comments_dir_str = comments_dir.to_str().unwrap_or("");
-        if let Ok(entries) = workspace.list_dir(comments_dir_str) {
+        if let Some(comments_dir_str) = comments_dir.to_str()
+            && !comments_dir_str.is_empty()
+            && let Ok(entries) = workspace.list_dir(comments_dir_str)
+        {
             for entry in entries {
                 if let Some(path_str) = entry.to_str() {
-                    let _ = workspace.remove_file(path_str);
+                    workspace.remove_file(path_str)?;
                     deleted_paths.push(entry);
                 }
             }
@@ -195,16 +205,22 @@ fn discover_proposals<W: WorkspaceStore>(
 
     let mut proposals = Vec::new();
     for persona_dir in persona_dirs {
-        if !workspace.is_dir(persona_dir.to_str().unwrap_or("")) {
+        let Some(persona_dir_str) = persona_dir.to_str() else { continue };
+        if !workspace.is_dir(persona_dir_str) {
             continue;
         }
-        let persona_name =
-            persona_dir.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+
+        let Some(persona_name) = persona_dir.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        if persona_name.is_empty() {
+            continue;
+        }
 
         let proposal_path = persona_dir.join("proposal.yml");
-        let proposal_str = proposal_path.to_str().unwrap_or("");
+        let Some(proposal_str) = proposal_path.to_str() else { continue };
         if workspace.file_exists(proposal_str) {
-            proposals.push((persona_name, proposal_path));
+            proposals.push((persona_name.to_string(), proposal_path));
         }
     }
 
