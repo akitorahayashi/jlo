@@ -247,7 +247,8 @@ impl TestContext {
     /// Assert that all built-in roles exist in their correct layers.
     ///
     /// Note: Narrator, Planners and Implementers are single-role layers with flat structure
-    /// (prompt.yml directly in the layer directory, not in a role subdirectory).
+    /// Assert all builtin roles exist: multi-role layers have role subdirectories,
+    /// single-role layers have contracts.yml directly in the layer directory.
     pub fn assert_all_builtin_roles_exist(&self) {
         // Multi-role layers have role subdirectories
         self.assert_role_in_layer_exists("observers", "taxonomy");
@@ -257,7 +258,7 @@ impl TestContext {
         self.assert_role_in_layer_exists("observers", "consistency");
         self.assert_role_in_layer_exists("deciders", "triage_generic");
 
-        // Single-role layers have prompt.yml directly in layer directory
+        // Single-role layers have contracts.yml directly in layer directory
         self.assert_single_role_layer_exists("narrator");
         self.assert_single_role_layer_exists("planners");
         self.assert_single_role_layer_exists("implementers");
@@ -267,11 +268,6 @@ impl TestContext {
     pub fn assert_single_role_layer_exists(&self, layer: &str) {
         let layer_path = self.jules_path().join("roles").join(layer);
         assert!(layer_path.exists(), "Layer directory should exist at {}", layer_path.display());
-        assert!(
-            layer_path.join("prompt.yml").exists(),
-            "Layer prompt.yml should exist at {}",
-            layer_path.join("prompt.yml").display()
-        );
         assert!(
             layer_path.join("contracts.yml").exists(),
             "Layer contracts.yml should exist at {}",

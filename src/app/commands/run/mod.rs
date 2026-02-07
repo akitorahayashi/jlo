@@ -236,9 +236,9 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader>(
     }
 
     let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
-    let prompt_path = jules_path.join("roles").join(layer.dir_name()).join("prompt.yml");
+    let assembly_path = jules_path.join("roles").join(layer.dir_name()).join("prompt_assembly.yml");
 
-    println!("  Prompt: {}", prompt_path.display());
+    println!("  Assembly: {}", assembly_path.display());
     if contracts_path.exists() {
         println!("  Contracts: {}", contracts_path.display());
     }

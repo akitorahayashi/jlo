@@ -74,13 +74,14 @@ fn init_creates_complete_layer_structure() {
     assert!(jules.join("roles/deciders/prompt_assembly.yml").exists());
 
     // Single-role layers have flat structure (no roles subdirectory)
-    assert!(jules.join("roles/narrator/prompt.yml").exists());
     assert!(jules.join("roles/narrator/contracts.yml").exists());
     assert!(jules.join("roles/narrator/schemas/change.yml").exists());
-    assert!(jules.join("roles/planners/prompt.yml").exists());
     assert!(jules.join("roles/planners/contracts.yml").exists());
-    assert!(jules.join("roles/implementers/prompt.yml").exists());
     assert!(jules.join("roles/implementers/contracts.yml").exists());
+
+    // Innovators use phase-specific contracts
+    assert!(jules.join("roles/innovators/contracts_creation.yml").exists());
+    assert!(jules.join("roles/innovators/contracts_refinement.yml").exists());
 }
 
 #[test]
