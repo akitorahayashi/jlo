@@ -31,9 +31,9 @@ jlo init
 | `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
 | `jlo workflow matrix <cmd>` | | Generate GitHub Actions matrices |
 | `jlo workflow run <layer> [--matrix-json <json>] [--mock]` | | Run layer with JSON output |
-| `jlo workflow wait prs --layer <layer> [...]` | | Wait for PRs and return status |
 | `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state for automation |
 | `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
+| `jlo workflow workstreams publish-proposals <workstream>` | | Publish innovator proposals as GitHub issues |
 | `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate `.jules/` structure and content |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` script and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
@@ -44,7 +44,7 @@ jlo init
 
 ### Run Command
 
-Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `o` (observers), `d` (deciders), `p` (planners), `i` (implementers) (e.g., `jlo r o ...`).
+Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `o` (observers), `d` (deciders), `p` (planners), `i` (implementers), `x` (innovators) (e.g., `jlo r o ...`).
 
 ```bash
 jlo run observers --workstream generic --scheduled            # Run scheduled observer roles
@@ -73,6 +73,7 @@ Single-role layers are issue-driven and do not support the `--role` flag.
 jlo run narrator --mock             # Mock narrator execution
 jlo run observers --mock            # Mock observer execution
 jlo run deciders --mock             # Mock decider execution
+jlo run innovators --mock           # Mock innovator execution (toggle idea.yml)
 ```
 
 Mock mode creates real branches and PRs with synthetic commit content, enabling E2E workflow validation in CI. The mock tag is auto-generated from `JULES_MOCK_TAG` env var or a timestamp.
@@ -166,6 +167,7 @@ Workflow kit layout:
 | `jules-decider-*` | Deciders | `jules` | Auto-merged |
 | `jules-planner-*` | Planners | `jules` | Auto-merged |
 | `jules-implementer-*` | Implementers | `main` | Human review |
+| `jules-innovator-*` | Innovators | `jules` | Auto-merged |
 
 **Flow**:
 1. **Sync**: `jules` branch syncs from `main` periodically
@@ -173,6 +175,7 @@ Workflow kit layout:
 3. **Triage**: Deciders link and consolidate events into issue files
 4. **Expansion**: Planners expand issues that require deep analysis
 5. **Implementation**: Implementers are dispatched by workflow policy or manual dispatch with a local issue file
+6. **Innovation**: Innovators generate ideas and proposals, published as GitHub issues
 
 **Pause/Resume**: Set the repository pause variable referenced by the workflows to skip scheduled runs.
 
