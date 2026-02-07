@@ -42,6 +42,18 @@ fn init_workflows_installs_remote_kit() {
         workflow.contains("Run implementers for each workstream"),
         "Should run implementers for each workstream"
     );
+    assert!(
+        workflow.contains("Run innovators (first pass) for each workstream"),
+        "Should run innovators first pass for each workstream"
+    );
+    assert!(
+        workflow.contains("Run innovators (second pass) for each workstream"),
+        "Should run innovators second pass for each workstream"
+    );
+    assert!(
+        workflow.contains("Publish proposals for each workstream"),
+        "Should publish proposals for each workstream"
+    );
     // Verify no script references
     assert!(
         !workflow.contains(".github/scripts/"),
@@ -247,6 +259,14 @@ fn init_workflows_includes_mock_support() {
     assert!(workflow.contains("MOCK_MODE:"), "Should set MOCK_MODE env var");
     assert!(workflow.contains("JULES_MOCK_TAG:"), "Should set JULES_MOCK_TAG env var");
     assert!(workflow.contains("JLO_RUN_FLAGS:"), "Should set JLO_RUN_FLAGS env var");
+
+    // Two-pass innovator cycle should be present for mock determinism
+    assert!(workflow.contains("run-innovators-1:"), "Should have first innovator pass job");
+    assert!(workflow.contains("run-innovators-2:"), "Should have second innovator pass job");
+    assert!(workflow.contains("publish-proposals:"), "Should have publish-proposals job");
+
+    // Entry point should include innovators
+    assert!(workflow.contains("- innovators"), "Entry point choices should include innovators");
 }
 
 #[test]
