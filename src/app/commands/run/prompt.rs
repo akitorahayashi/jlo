@@ -40,7 +40,14 @@ pub fn assemble_prompt(
 
     let mut context =
         PromptContext::new().with_var("workstream", workstream).with_var("role", role);
-    if let Some(phase_val) = phase {
+    if layer == Layer::Innovators {
+        let phase_val = phase.ok_or_else(|| {
+            AppError::MissingArgument(
+                "--phase is required for innovators (creation or refinement)".to_string(),
+            )
+        })?;
+        context = context.with_var("phase", phase_val);
+    } else if let Some(phase_val) = phase {
         context = context.with_var("phase", phase_val);
     }
     let renderer = MinijinjaTemplateRenderer::new();

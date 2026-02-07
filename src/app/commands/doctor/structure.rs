@@ -139,17 +139,14 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
 
         // Innovators use phase-specific contracts; all other layers use contracts.yml
         if layer == Layer::Innovators {
-            let creation = layer_dir.join("contracts_creation.yml");
-            if !creation.exists() {
-                diagnostics
-                    .push_error(creation.display().to_string(), "Missing contracts_creation.yml");
-            }
-            let refinement = layer_dir.join("contracts_refinement.yml");
-            if !refinement.exists() {
-                diagnostics.push_error(
-                    refinement.display().to_string(),
-                    "Missing contracts_refinement.yml",
-                );
+            for phase in ["creation", "refinement"] {
+                let contract_file = layer_dir.join(format!("contracts_{}.yml", phase));
+                if !contract_file.exists() {
+                    diagnostics.push_error(
+                        contract_file.display().to_string(),
+                        format!("Missing contracts_{}.yml", phase),
+                    );
+                }
             }
         } else {
             let contracts = layer_dir.join("contracts.yml");

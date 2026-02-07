@@ -235,12 +235,21 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader>(
         return Ok(());
     }
 
-    let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
-    let assembly_path = jules_path.join("roles").join(layer.dir_name()).join("prompt_assembly.yml");
-
-    println!("  Assembly: {}", assembly_path.display());
-    if contracts_path.exists() {
-        println!("  Contracts: {}", contracts_path.display());
+    if layer == Layer::Innovators {
+        if let Some(p) = phase {
+            let contracts_path = jules_path
+                .join("roles")
+                .join(layer.dir_name())
+                .join(format!("contracts_{}.yml", p));
+            if contracts_path.exists() {
+                println!("  Contracts: {}", contracts_path.display());
+            }
+        }
+    } else {
+        let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
+        if contracts_path.exists() {
+            println!("  Contracts: {}", contracts_path.display());
+        }
     }
     println!("  Role config: {}", role_yml_path.display());
 

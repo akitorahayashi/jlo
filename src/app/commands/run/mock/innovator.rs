@@ -138,12 +138,12 @@ where
         // Refinement phase mock: remove idea.yml (simulates proposal creation + cleanup)
         if workspace.file_exists(idea_path_str) {
             workspace.remove_file(idea_path_str)?;
+            let files: Vec<&Path> = vec![idea_path.as_path()];
+            git.commit_files(
+                &format!("[{}] innovator: mock refinement (remove idea)", config.mock_tag),
+                &files,
+            )?;
         }
-        let files: Vec<&Path> = vec![idea_path.as_path()];
-        git.commit_files(
-            &format!("[{}] innovator: mock refinement (remove idea)", config.mock_tag),
-            &files,
-        )?;
     }
 
     git.push_branch(&branch_name, false)?;
