@@ -31,23 +31,9 @@ impl ScaffoldManifest {
         Self { schema_version: MANIFEST_SCHEMA_VERSION, files }
     }
 
+    #[cfg(test)]
     pub fn to_map(&self) -> BTreeMap<String, String> {
         self.files.iter().map(|entry| (entry.path.clone(), entry.sha256.clone())).collect()
-    }
-
-    pub fn from_yaml(content: &str) -> Result<Self, AppError> {
-        let manifest: ScaffoldManifest = serde_yaml::from_str(content).map_err(|err| {
-            AppError::ParseError { what: MANIFEST_FILENAME.to_string(), details: err.to_string() }
-        })?;
-
-        if manifest.schema_version != MANIFEST_SCHEMA_VERSION {
-            return Err(AppError::WorkspaceIntegrity(format!(
-                "Unsupported scaffold manifest schema version: {} (expected {})",
-                manifest.schema_version, MANIFEST_SCHEMA_VERSION
-            )));
-        }
-
-        Ok(manifest)
     }
 
     pub fn to_yaml(&self) -> Result<String, AppError> {

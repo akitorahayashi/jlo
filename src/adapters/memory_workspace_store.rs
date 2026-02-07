@@ -212,17 +212,6 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         Ok(())
     }
 
-    fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError> {
-        let mut files = self.files.lock().unwrap();
-        let src_path = PathBuf::from(src);
-        if let Some(content) = files.get(&src_path).cloned() {
-            files.insert(PathBuf::from(dst), content);
-            Ok(0)
-        } else {
-            Err(AppError::from(std::io::Error::new(std::io::ErrorKind::NotFound, "src not found")))
-        }
-    }
-
     fn resolve_path(&self, path: &str) -> PathBuf {
         PathBuf::from(path)
     }

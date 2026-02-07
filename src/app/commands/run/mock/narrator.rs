@@ -273,10 +273,6 @@ mod tests {
             panic!("mock narrator no-op must not call create_dir_all");
         }
 
-        fn copy_file(&self, _src: &str, _dst: &str) -> Result<u64, AppError> {
-            panic!("mock narrator no-op must not call copy_file");
-        }
-
         fn resolve_path(&self, _path: &str) -> PathBuf {
             panic!("mock narrator no-op must not call resolve_path");
         }

@@ -59,7 +59,7 @@ tests/
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow kit |
-| `jlo update [--prompt-preview] [--adopt-managed]` | `u` | Update `.jlo/` workspace to current jlo version |
+| `jlo update [--prompt-preview]` | `u` | Advance `.jlo/` control-plane version pin |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run narrator [--prompt-preview] [--branch <branch>] [--mock]` | `r n` | Run narrator (produces changes feed) |
 | `jlo run observers --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |

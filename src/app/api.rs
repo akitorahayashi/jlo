@@ -185,20 +185,15 @@ pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
 ///
 /// # Arguments
 /// * `prompt_preview` - Show planned changes without applying
-/// * `adopt_managed` - Record current default role files as managed baseline
-pub fn update(prompt_preview: bool, adopt_managed: bool) -> Result<UpdateResult, AppError> {
-    update_at(std::env::current_dir()?, prompt_preview, adopt_managed)
+pub fn update(prompt_preview: bool) -> Result<UpdateResult, AppError> {
+    update_at(std::env::current_dir()?, prompt_preview)
 }
 
 /// Update workspace at the specified path.
-pub fn update_at(
-    path: std::path::PathBuf,
-    prompt_preview: bool,
-    adopt_managed: bool,
-) -> Result<UpdateResult, AppError> {
+pub fn update_at(path: std::path::PathBuf, prompt_preview: bool) -> Result<UpdateResult, AppError> {
     let workspace = FilesystemWorkspaceStore::new(path);
     let templates = EmbeddedRoleTemplateStore::new();
-    let options = UpdateOptions { prompt_preview, adopt_managed };
+    let options = UpdateOptions { prompt_preview };
     update::execute(&workspace, options, &templates)
 }
 

@@ -549,7 +549,7 @@ fn run_narrator_skips_when_no_codebase_changes() {
 fn update_requires_workspace() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["update"]).assert().failure().stderr(predicate::str::contains("No .jules/"));
+    ctx.cli().args(["update"]).assert().failure().stderr(predicate::str::contains("No .jlo/"));
 }
 
 #[test]
@@ -559,7 +559,7 @@ fn update_prompt_preview_shows_plan() {
     ctx.cli().args(["init", "--remote"]).assert().success();
 
     // Simulate an older version to trigger update logic
-    let version_file = ctx.work_dir().join(".jules").join(".jlo-version");
+    let version_file = ctx.work_dir().join(".jlo").join(".jlo-version");
     std::fs::write(&version_file, "0.0.0").expect("write version");
 
     ctx.cli()

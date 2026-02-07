@@ -311,17 +311,6 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         fs::create_dir_all(full_path).map_err(AppError::from)
     }
 
-    fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError> {
-        let src_path = self.resolve_path(src);
-        let dst_path = self.resolve_path(dst);
-        self.validate_path_within_root(&src_path)?;
-        self.validate_path_within_root(&dst_path)?;
-        if let Some(parent) = dst_path.parent() {
-            fs::create_dir_all(parent).map_err(AppError::from)?;
-        }
-        fs::copy(src_path, dst_path).map_err(AppError::from)
-    }
-
     fn resolve_path(&self, path: &str) -> PathBuf {
         self.root.join(path)
     }

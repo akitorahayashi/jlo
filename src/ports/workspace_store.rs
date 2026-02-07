@@ -91,9 +91,6 @@ pub trait WorkspaceStore: PromptAssetLoader {
     /// Create directory recursively.
     fn create_dir_all(&self, path: &str) -> Result<(), AppError>;
 
-    /// Copy a file.
-    fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError>;
-
     /// Get the absolute path to a file within the workspace/root.
     fn resolve_path(&self, path: &str) -> PathBuf;
 

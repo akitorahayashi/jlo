@@ -219,12 +219,6 @@ impl WorkspaceStore for MockWorkspaceStore {
         Ok(())
     }
 
-    fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError> {
-        let content = self.read_file(src)?;
-        self.write_file(dst, &content)?;
-        Ok(content.len() as u64)
-    }
-
     fn resolve_path(&self, path: &str) -> PathBuf {
         PathBuf::from(path)
     }

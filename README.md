@@ -24,7 +24,7 @@ jlo init
 |---------|-------|-------------|
 | `jlo init [scaffold]` | `i` | Create `.jules/` workspace with setup directory |
 | `jlo init workflows (--remote | --self-hosted)` | `i w` | Install workflow kit into `.github/` |
-| `jlo update [--prompt-preview] [--adopt-managed]` | `u` | Update workspace to current jlo version |
+| `jlo update [--prompt-preview]` | `u` | Advance .jlo/ control-plane version pin |
 | `jlo deinit` | | Remove jlo-managed branch and workflow kit files |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |

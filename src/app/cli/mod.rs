@@ -39,15 +39,12 @@ enum Commands {
         #[arg(short = 's', long, conflicts_with = "remote", required_unless_present = "remote")]
         self_hosted: bool,
     },
-    /// Update .jules/ workspace to current jlo version
+    /// Advance .jlo/ control-plane version pin
     #[clap(visible_alias = "u")]
     Update {
         /// Show planned changes without applying
         #[arg(long)]
         prompt_preview: bool,
-        /// Adopt current default role files as managed baseline (skips conditional updates)
-        #[arg(long)]
-        adopt_managed: bool,
     },
     /// Apply a template (workstream or role)
     #[clap(visible_alias = "tp")]
@@ -102,9 +99,7 @@ pub fn run() {
 
     let result: Result<i32, AppError> = match cli.command {
         Commands::Init { remote, self_hosted } => init::run_init(remote, self_hosted).map(|_| 0),
-        Commands::Update { prompt_preview, adopt_managed } => {
-            run_update(prompt_preview, adopt_managed).map(|_| 0)
-        }
+        Commands::Update { prompt_preview } => run_update(prompt_preview).map(|_| 0),
         Commands::Template { layer, name, workstream } => {
             run_template(layer, name, workstream).map(|_| 0)
         }
@@ -147,43 +142,16 @@ fn run_template(
     Ok(())
 }
 
-fn run_update(prompt_preview: bool, adopt_managed: bool) -> Result<(), AppError> {
-    let result = crate::app::api::update(prompt_preview, adopt_managed)?;
+fn run_update(prompt_preview: bool) -> Result<(), AppError> {
+    let result = crate::app::api::update(prompt_preview)?;
 
     if !result.prompt_preview {
-        if result.updated.is_empty() && result.created.is_empty() && result.removed.is_empty() {
+        if result.created.is_empty() && result.previous_version == env!("CARGO_PKG_VERSION") {
             println!("✅ Workspace already up to date");
-            if result.adopted_managed {
-                println!("  Managed baseline recorded for default role files");
-            }
-            if !result.skipped.is_empty() {
-                println!("  Skipped {} file(s):", result.skipped.len());
-                for skipped in &result.skipped {
-                    println!("    - {} ({})", skipped.path, skipped.reason);
-                }
-            }
         } else {
             println!("✅ Updated workspace to version {}", env!("CARGO_PKG_VERSION"));
-            if !result.updated.is_empty() {
-                println!("  Updated {} file(s)", result.updated.len());
-            }
             if !result.created.is_empty() {
                 println!("  Created {} file(s)", result.created.len());
-            }
-            if !result.removed.is_empty() {
-                println!("  Removed {} file(s)", result.removed.len());
-            }
-            if !result.skipped.is_empty() {
-                println!("  Skipped {} file(s):", result.skipped.len());
-                for skipped in &result.skipped {
-                    println!("    - {} ({})", skipped.path, skipped.reason);
-                }
-            }
-            if result.adopted_managed {
-                println!("  Managed baseline recorded for default role files");
-            }
-            if let Some(backup) = result.backup_path {
-                println!("  Backup at: {}", backup.display());
             }
         }
     }

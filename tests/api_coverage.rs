@@ -31,7 +31,7 @@ fn test_api_coverage_full_flow() {
     assert_eq!(doctor_outcome.exit_code, 0);
 
     // 3. Update (prompt preview)
-    let update_result = update_at(root.clone(), true, false).expect("update failed");
+    let update_result = update_at(root.clone(), true).expect("update failed");
     assert!(update_result.prompt_preview);
 
     // 4. Template (create role in generic workstream)
