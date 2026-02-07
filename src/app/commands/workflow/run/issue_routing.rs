@@ -1,3 +1,4 @@
+use crate::domain::identities::validation::validate_safe_path_component;
 use crate::domain::{AppError, IssueHeader, Layer};
 use crate::ports::WorkspaceStore;
 use std::path::{Path, PathBuf};
@@ -11,6 +12,13 @@ pub(crate) fn find_issues_for_workstream(
 ) -> Result<Vec<PathBuf>, AppError> {
     if layer != Layer::Planners && layer != Layer::Implementers {
         return Err(AppError::Validation("Invalid layer for issue discovery".to_string()));
+    }
+
+    if !validate_safe_path_component(workstream) {
+        return Err(AppError::Validation(format!(
+            "Invalid workstream name '{}': must be alphanumeric with hyphens or underscores only",
+            workstream
+        )));
     }
 
     let jules_path = store.jules_path();
