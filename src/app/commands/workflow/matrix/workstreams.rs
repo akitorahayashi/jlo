@@ -83,6 +83,7 @@ pub fn execute(_options: MatrixWorkstreamsOptions) -> Result<MatrixWorkstreamsOu
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::fs;
     use tempfile::tempdir;
 
@@ -99,6 +100,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn returns_only_enabled_workstreams() {
         let dir = tempdir().unwrap();
         let root = dir.path();
@@ -162,6 +164,7 @@ roles = []
     }
 
     #[test]
+    #[serial]
     fn empty_matrix_when_no_enabled_workstreams() {
         let dir = tempdir().unwrap();
         let root = dir.path();
