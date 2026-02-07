@@ -79,7 +79,7 @@ A layer-level change means one of the following:
 
 8. Tests and docs
 - Update integration tests that assert layer count, structure, workflow text, and mock behavior.
-- Update docs under `docs/` and existing AGENTS/README references as needed.
+- Update docs under `docs/` and other relevant READMEs as needed.
 
 ## Removing a Layer: Change Order
 
@@ -119,4 +119,4 @@ A layer-level change means one of the following:
 - Doctor checks updated for new/removed artifacts.
 - Workflow templates updated.
 - Mock behavior and cleanup updated.
-- Tests updated (`cli`, `workflow_kit`, `mock_mode`, API).
+- Tests updated (`cli_flow`, `cli_commands`, `workflow_kit`, `mock_mode`).
