@@ -1,9 +1,9 @@
 //! jlo: Deploy and manage .jules/ workspace scaffolding for organizational memory.
 
+pub(crate) mod adapters;
 pub(crate) mod app;
 pub(crate) mod domain;
 pub(crate) mod ports;
-pub(crate) mod services;
 
 #[cfg(test)]
 pub(crate) mod testing;

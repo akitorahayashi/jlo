@@ -1,11 +1,11 @@
 //! Setup gen command - generates install.sh and env.toml.
 
+use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 use crate::app::config::SetupConfig;
+use crate::app::services::artifact_generator::ArtifactGenerator;
+use crate::app::services::dependency_resolver::DependencyResolver;
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
-use crate::services::application::artifact_generator::ArtifactGenerator;
-use crate::services::application::dependency_resolver::DependencyResolver;
-use crate::services::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 
 /// Execute the setup gen command.
 ///
@@ -65,8 +65,8 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::adapters::memory_workspace_store::MemoryWorkspaceStore;
     use crate::ports::WorkspaceStore;
-    use crate::services::adapters::memory_workspace_store::MemoryWorkspaceStore;
 
     #[test]
     fn fails_if_not_initialized() {

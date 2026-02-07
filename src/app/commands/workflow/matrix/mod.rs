@@ -19,19 +19,20 @@ use crate::domain::AppError;
 
 /// Export enabled workstreams as a GitHub Actions matrix.
 pub fn workstreams(options: MatrixWorkstreamsOptions) -> Result<MatrixWorkstreamsOutput, AppError> {
-    workstreams::execute(options)
+    let store = crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
+    workstreams::execute(&store, options)
 }
 
 /// Export workstreams with pending events as a GitHub Actions matrix.
 pub fn pending_workstreams(
     options: MatrixPendingWorkstreamsOptions,
 ) -> Result<MatrixPendingWorkstreamsOutput, AppError> {
-    pending_workstreams::execute(options)
+    let store = crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
+    pending_workstreams::execute(&store, options)
 }
 
 /// Export planner/implementer issue matrices from workstream inspection and routing labels.
 pub fn routing(options: MatrixRoutingOptions) -> Result<MatrixRoutingOutput, AppError> {
-    let store =
-        crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
+    let store = crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
     routing::execute(&store, options)
 }

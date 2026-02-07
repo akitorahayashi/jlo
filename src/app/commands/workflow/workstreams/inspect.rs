@@ -2,12 +2,10 @@ use std::path::{Path, PathBuf};
 
 use serde_yaml::{Mapping, Value};
 
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::adapters::workstream_schedule_filesystem::{list_subdirectories, load_schedule};
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
-use crate::services::adapters::workstream_schedule_filesystem::{
-    list_subdirectories, load_schedule,
-};
 
 use super::model::{
     EventItem, EventStateSummary, EventSummary, IssueItem, IssueLabelSummary, IssueSummary,

@@ -5,15 +5,15 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
+use crate::adapters::git_command::GitCommandAdapter;
+use crate::adapters::github_command::GitHubCommandAdapter;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::{
     AppContext,
     commands::{deinit, doctor, init_scaffold, init_workflows, run, setup, template, update},
 };
 use crate::ports::WorkspaceStore;
-use crate::services::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
-use crate::services::adapters::git_command::GitCommandAdapter;
-use crate::services::adapters::github_command::GitHubCommandAdapter;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
@@ -32,15 +32,6 @@ fn create_context(
     let workspace = FilesystemWorkspaceStore::new(path);
     let templates = EmbeddedRoleTemplateStore::new();
     AppContext::new(workspace, templates)
-}
-
-/// get and validate the current workspace.
-fn get_current_workspace() -> Result<FilesystemWorkspaceStore, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
-    if !workspace.exists() {
-        return Err(AppError::WorkspaceNotFound);
-    }
-    Ok(workspace)
 }
 
 /// Initialize a new `.jules/` workspace in the current directory.
@@ -131,10 +122,26 @@ pub fn run(
     issue: Option<std::path::PathBuf>,
     mock: bool,
 ) -> Result<RunResult, AppError> {
-    let workspace = get_current_workspace()?;
+    run_at(layer, role, workstream, prompt_preview, branch, issue, mock, std::env::current_dir()?)
+}
 
-    // Assume current directory is workspace root since we require running from root
-    let root = std::env::current_dir()?;
+#[allow(clippy::too_many_arguments)]
+pub fn run_at(
+    layer: Layer,
+    role: Option<String>,
+    workstream: Option<String>,
+    prompt_preview: bool,
+    branch: Option<String>,
+    issue: Option<std::path::PathBuf>,
+    mock: bool,
+    root: impl Into<PathBuf>,
+) -> Result<RunResult, AppError> {
+    let root = root.into();
+    let workspace = FilesystemWorkspaceStore::new(root.clone());
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
 

@@ -1,5 +1,5 @@
 use crate::domain::AppError;
-use crate::ports::CommitInfo;
+use crate::ports::{CommitInfo, DiffStat};
 
 /// Maximum number of commits to include in the bounded sample.
 pub const MAX_COMMITS: usize = 50;
@@ -34,6 +34,32 @@ pub struct GitContext {
     pub stats: Stats,
     pub commits: Vec<CommitInfo>,
     pub truncation_note: String,
+}
+
+#[derive(Debug)]
+pub struct NarratorGitData {
+    pub range: RangeContext,
+    pub has_changes: bool,
+    pub commits_total: u32,
+    pub commits: Vec<CommitInfo>,
+    pub diffstat: DiffStat,
+}
+
+/// Analyze collected git data and build context if applicable.
+pub fn analyze_git_context(data: NarratorGitData) -> Option<GitContext> {
+    if !data.has_changes {
+        return None;
+    }
+
+    let stats = Stats {
+        commits_total: data.commits_total,
+        commits_included: data.commits.len() as u32,
+        files_changed: data.diffstat.files_changed,
+        insertions: data.diffstat.insertions,
+        deletions: data.diffstat.deletions,
+    };
+
+    Some(build_git_context(data.range, stats, data.commits))
 }
 
 /// Determine the commit range strategy based on inputs.

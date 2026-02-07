@@ -8,12 +8,10 @@ use serde::Serialize;
 use std::path::Path;
 
 use crate::app::commands::run::{self, RunOptions};
-use crate::domain::{AppError, Layer};
-use crate::ports::WorkspaceStore;
-use crate::services::adapters::git_command::GitCommandAdapter;
-use crate::services::adapters::github_command::GitHubCommandAdapter;
+use crate::domain::{AppError, IssueHeader, Layer};
+use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
-use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
+use crate::adapters::workstream_schedule_filesystem::load_schedule;
 
 /// Options for workflow run command.
 #[derive(Debug, Clone)]
@@ -24,6 +22,10 @@ pub struct WorkflowRunOptions {
     pub layer: Layer,
     /// Run in mock mode.
     pub mock: bool,
+    /// Mock tag (required if mock is true).
+    pub mock_tag: Option<String>,
+    /// Routing labels (optional override).
+    pub routing_labels: Option<Vec<String>>,
 }
 
 /// Output of workflow run command.
@@ -45,10 +47,16 @@ pub struct WorkflowRunOutput {
 }
 
 /// Execute workflow run command.
-pub fn execute(
+pub fn execute<G, H>(
     store: &impl WorkspaceStore,
     options: WorkflowRunOptions,
-) -> Result<WorkflowRunOutput, AppError> {
+    git: &G,
+    github: &H,
+) -> Result<WorkflowRunOutput, AppError>
+where
+    G: GitPort,
+    H: GitHubPort,
+{
     if !store.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
@@ -57,16 +65,12 @@ pub fn execute(
 
     // Mock mode configuration
     let mock_tag = if options.mock {
-        let tag = std::env::var("JULES_MOCK_TAG").map_err(|_| {
-            AppError::Validation(
-                "Mock mode requires JULES_MOCK_TAG environment variable".to_string(),
-            )
+        let tag = options.mock_tag.clone().ok_or_else(|| {
+            AppError::Validation("Mock mode requires mock_tag in options".to_string())
         })?;
 
         if !tag.contains("mock") {
-            return Err(AppError::Validation(
-                "JULES_MOCK_TAG must contain 'mock' substring".to_string(),
-            ));
+            return Err(AppError::Validation("mock_tag must contain 'mock' substring".to_string()));
         }
         Some(tag)
     } else {
@@ -74,7 +78,7 @@ pub fn execute(
     };
 
     // Execute layer runs for the specified workstream
-    let run_results = execute_layer(store, &options)?;
+    let run_results = execute_layer(store, &options, git, github)?;
 
     Ok(WorkflowRunOutput {
         schema_version: 1,
@@ -92,21 +96,24 @@ struct RunResults {
 }
 
 /// Execute runs for a layer on a specific workstream.
-fn execute_layer(
+fn execute_layer<G, H>(
     store: &impl WorkspaceStore,
     options: &WorkflowRunOptions,
-) -> Result<RunResults, AppError> {
+    git: &G,
+    github: &H,
+) -> Result<RunResults, AppError>
+where
+    G: GitPort,
+    H: GitHubPort,
+{
     let jules_path = store.jules_path();
-    let git_root = jules_path.parent().unwrap_or(&jules_path).to_path_buf();
-    let git = GitCommandAdapter::new(git_root);
-    let github = GitHubCommandAdapter::new();
 
     match options.layer {
-        Layer::Narrators => execute_narrator(store, options, &jules_path, &git, &github),
-        Layer::Observers => execute_multi_role(store, options, &jules_path, &git, &github),
-        Layer::Deciders => execute_multi_role(store, options, &jules_path, &git, &github),
-        Layer::Planners => execute_issue_layer(store, options, &jules_path, &git, &github),
-        Layer::Implementers => execute_issue_layer(store, options, &jules_path, &git, &github),
+        Layer::Narrators => execute_narrator(store, options, &jules_path, git, github),
+        Layer::Observers => execute_multi_role(store, options, &jules_path, git, github),
+        Layer::Deciders => execute_multi_role(store, options, &jules_path, git, github),
+        Layer::Planners => execute_issue_layer(store, options, &jules_path, git, github),
+        Layer::Implementers => execute_issue_layer(store, options, &jules_path, git, github),
     }
 }
 
@@ -119,8 +126,8 @@ fn execute_narrator<G, H>(
     github: &H,
 ) -> Result<RunResults, AppError>
 where
-    G: crate::ports::GitPort,
-    H: crate::ports::GitHubPort,
+    G: GitPort,
+    H: GitHubPort,
 {
     let run_options = RunOptions {
         layer: Layer::Narrators,
@@ -147,8 +154,8 @@ fn execute_multi_role<G, H>(
     github: &H,
 ) -> Result<RunResults, AppError>
 where
-    G: crate::ports::GitPort,
-    H: crate::ports::GitHubPort,
+    G: GitPort,
+    H: GitHubPort,
 {
     let workstream = &options.workstream;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
@@ -209,14 +216,19 @@ fn execute_issue_layer<G, H>(
     github: &H,
 ) -> Result<RunResults, AppError>
 where
-    G: crate::ports::GitPort,
-    H: crate::ports::GitHubPort,
+    G: GitPort,
+    H: GitHubPort,
 {
     let workstream = &options.workstream;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
     // Find issues for the layer in this workstream
-    let issues = find_issues_for_workstream(store, workstream, options.layer)?;
+    let issues = find_issues_for_workstream(
+        store,
+        workstream,
+        options.layer,
+        options.routing_labels.as_deref(),
+    )?;
 
     if issues.is_empty() {
         eprintln!(
@@ -255,6 +267,7 @@ fn find_issues_for_workstream(
     store: &impl WorkspaceStore,
     workstream: &str,
     layer: Layer,
+    routing_labels: Option<&[String]>,
 ) -> Result<Vec<std::path::PathBuf>, AppError> {
     if layer != Layer::Planners && layer != Layer::Implementers {
         return Err(AppError::Validation("Invalid layer for issue discovery".to_string()));
@@ -269,7 +282,7 @@ fn find_issues_for_workstream(
     }
 
     let mut issues = Vec::new();
-    let routing_labels = resolve_routing_labels(store, &issues_root)?;
+    let routing_labels = resolve_routing_labels(store, &issues_root, routing_labels)?;
 
     for label in routing_labels {
         let label_dir = issues_root.join(&label);
@@ -284,7 +297,7 @@ fn find_issues_for_workstream(
                 continue;
             }
 
-            let requires_deep_analysis = read_requires_deep_analysis(store, &path)?;
+            let requires_deep_analysis = IssueHeader::read(store, &path)?.requires_deep_analysis;
             let belongs_to_layer = match layer {
                 Layer::Planners => requires_deep_analysis,
                 Layer::Implementers => !requires_deep_analysis,
@@ -303,19 +316,13 @@ fn find_issues_for_workstream(
 fn resolve_routing_labels(
     store: &impl WorkspaceStore,
     issues_root: &Path,
+    routing_labels: Option<&[String]>,
 ) -> Result<Vec<String>, AppError> {
-    if let Ok(labels_csv) = std::env::var("ROUTING_LABELS") {
-        let labels: Vec<String> = labels_csv
-            .split(',')
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
-            .map(str::to_string)
-            .collect();
+    if let Some(labels) = routing_labels {
+        let labels: Vec<String> = labels.to_vec();
 
         if labels.is_empty() {
-            return Err(AppError::Validation(
-                "ROUTING_LABELS is set but does not contain any labels".to_string(),
-            ));
+            return Err(AppError::Validation("Provided routing_labels is empty".to_string()));
         }
 
         for label in &labels {
@@ -350,25 +357,11 @@ fn resolve_routing_labels(
     Ok(discovered)
 }
 
-fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Result<bool, AppError> {
-    let content = store.read_file(path.to_str().unwrap())?;
-    let parsed: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|error| {
-        AppError::ParseError { what: path.display().to_string(), details: error.to_string() }
-    })?;
-
-    match &parsed["requires_deep_analysis"] {
-        serde_yaml::Value::Bool(value) => Ok(*value),
-        _ => Err(AppError::Validation(format!(
-            "Missing or invalid requires_deep_analysis in {}",
-            path.display()
-        ))),
-    }
-}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::adapters::memory_workspace_store::MemoryWorkspaceStore;
     use crate::ports::WorkspaceStore;
-    use crate::services::adapters::memory_workspace_store::MemoryWorkspaceStore;
     use serial_test::serial;
 
     #[test]
@@ -377,6 +370,8 @@ mod tests {
             workstream: "generic".to_string(),
             layer: Layer::Observers,
             mock: false,
+            mock_tag: None,
+            routing_labels: None,
         };
         assert_eq!(options.workstream, "generic");
         assert_eq!(options.layer, Layer::Observers);
@@ -412,13 +407,10 @@ mod tests {
         write_issue(&store, "bugs", "ready-to-implement", false);
         write_issue(&store, "docs", "ignored-by-routing", true);
 
-        unsafe {
-            std::env::set_var("ROUTING_LABELS", "bugs");
-        }
-        let issues = find_issues_for_workstream(&store, "alpha", Layer::Planners).unwrap();
-        unsafe {
-            std::env::remove_var("ROUTING_LABELS");
-        }
+        let routing_labels = vec!["bugs".to_string()];
+        let issues =
+            find_issues_for_workstream(&store, "alpha", Layer::Planners, Some(&routing_labels))
+                .unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("requires-planning.yml"));
@@ -433,13 +425,10 @@ mod tests {
         write_issue(&store, "bugs", "requires-planning", true);
         write_issue(&store, "bugs", "ready-to-implement", false);
 
-        unsafe {
-            std::env::set_var("ROUTING_LABELS", "bugs");
-        }
-        let issues = find_issues_for_workstream(&store, "alpha", Layer::Implementers).unwrap();
-        unsafe {
-            std::env::remove_var("ROUTING_LABELS");
-        }
+        let routing_labels = vec!["bugs".to_string()];
+        let issues =
+            find_issues_for_workstream(&store, "alpha", Layer::Implementers, Some(&routing_labels))
+                .unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("ready-to-implement.yml"));

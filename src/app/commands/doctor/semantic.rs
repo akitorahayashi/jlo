@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 
 use chrono::{NaiveDate, Utc};
 
+use crate::adapters::workstream_schedule_filesystem::load_schedule;
 use crate::domain::{AppError, Layer};
-use crate::services::adapters::workstream_schedule_filesystem::load_schedule;
 
 use super::diagnostics::Diagnostics;
 use super::yaml::{read_yaml_bool, read_yaml_files, read_yaml_string, read_yaml_strings};
@@ -124,9 +124,8 @@ pub fn semantic_checks(
 
     let mut scheduled_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
     let root = jules_path.parent().unwrap_or(Path::new("."));
-    let store = crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore::new(
-        root.to_path_buf(),
-    );
+    let store =
+        crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::new(root.to_path_buf());
 
     for workstream in workstreams {
         match load_schedule(&store, workstream) {

@@ -8,11 +8,11 @@ use std::process::Command;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::adapters::git_command::GitCommandAdapter;
+use crate::adapters::github_command::GitHubCommandAdapter;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
-use crate::services::adapters::git_command::GitCommandAdapter;
-use crate::services::adapters::github_command::GitHubCommandAdapter;
-use crate::services::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 
 /// Options for workflow cleanup mock command.
 #[derive(Debug, Clone)]
@@ -160,7 +160,7 @@ fn delete_mock_files(
         let relative = to_repo_relative(&root, file);
         git.run_command(&["rm", "-f", "--ignore-unmatch", "--", &relative], None)?;
         if file.exists() {
-            std::fs::remove_file(file).map_err(AppError::Io)?;
+            std::fs::remove_file(file).map_err(AppError::from)?;
         }
     }
 
@@ -182,11 +182,11 @@ fn collect_mock_files(jules_path: &Path, mock_tag: &str) -> Result<Vec<PathBuf>,
     let mut files = Vec::new();
 
     while let Some(path) = stack.pop() {
-        let metadata = std::fs::metadata(&path).map_err(AppError::Io)?;
+        let metadata = std::fs::metadata(&path).map_err(AppError::from)?;
         if metadata.is_dir() {
-            let entries = std::fs::read_dir(&path).map_err(AppError::Io)?;
+            let entries = std::fs::read_dir(&path).map_err(AppError::from)?;
             for entry in entries {
-                stack.push(entry.map_err(AppError::Io)?.path());
+                stack.push(entry.map_err(AppError::from)?.path());
             }
             continue;
         }
@@ -210,7 +210,7 @@ fn is_mock_file(path: &Path, mock_tag: &str) -> Result<bool, AppError> {
     match std::fs::read_to_string(path) {
         Ok(content) => Ok(content.contains(mock_tag)),
         Err(error) if error.kind() == std::io::ErrorKind::InvalidData => Ok(false),
-        Err(error) => Err(AppError::Io(error)),
+        Err(error) => Err(AppError::from(error)),
     }
 }
 
