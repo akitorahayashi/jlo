@@ -5,6 +5,7 @@
 
 use std::path::Path;
 
+use crate::domain::identities::validation::{validate_identifier, validate_safe_path_component};
 use crate::domain::{
     AppError, Layer, PromptAssetLoader, PromptContext, assemble_prompt as assemble_prompt_domain,
     assemble_with_issue,
@@ -21,6 +22,20 @@ pub fn assemble_prompt(
     workstream: &str,
     loader: &impl PromptAssetLoader,
 ) -> Result<String, AppError> {
+    // Validate role and workstream to prevent prompt injection
+    if !validate_identifier(role, false) {
+        return Err(AppError::Validation(format!(
+            "Invalid role '{}': must be alphanumeric with hyphens or underscores",
+            role
+        )));
+    }
+    if !validate_safe_path_component(workstream) {
+        return Err(AppError::Validation(format!(
+            "Invalid workstream '{}': must be alphanumeric with hyphens or underscores",
+            workstream
+        )));
+    }
+
     let context = PromptContext::new().with_var("workstream", workstream).with_var("role", role);
     let renderer = MinijinjaTemplateRenderer::new();
 

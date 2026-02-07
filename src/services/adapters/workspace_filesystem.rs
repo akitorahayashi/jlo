@@ -230,11 +230,13 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
 
     fn read_file(&self, path: &str) -> Result<String, AppError> {
         let full_path = self.resolve_path(path);
+        self.validate_path_within_root(&full_path)?;
         fs::read_to_string(full_path).map_err(AppError::from)
     }
 
     fn write_file(&self, path: &str, content: &str) -> Result<(), AppError> {
         let full_path = self.resolve_path(path);
+        self.validate_path_within_root(&full_path)?;
         if let Some(parent) = full_path.parent() {
             fs::create_dir_all(parent).map_err(AppError::from)?;
         }
@@ -243,6 +245,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
 
     fn remove_file(&self, path: &str) -> Result<(), AppError> {
         let full_path = self.resolve_path(path);
+        self.validate_path_within_root(&full_path)?;
         if full_path.exists() {
             fs::remove_file(full_path).map_err(AppError::from)?;
         }
@@ -251,6 +254,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
 
     fn list_dir(&self, path: &str) -> Result<Vec<PathBuf>, AppError> {
         let full_path = self.resolve_path(path);
+        self.validate_path_within_root(&full_path)?;
         let entries = fs::read_dir(full_path).map_err(AppError::from)?;
         let mut paths = Vec::new();
         for entry in entries {
@@ -264,6 +268,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
 
     fn set_executable(&self, path: &str) -> Result<(), AppError> {
         let full_path = self.resolve_path(path);
+        self.validate_path_within_root(&full_path)?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -275,21 +280,34 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
     }
 
     fn file_exists(&self, path: &str) -> bool {
-        self.resolve_path(path).exists()
+        let full_path = self.resolve_path(path);
+        // For existence checks, allow traversal detection to fail silently
+        if self.validate_path_within_root(&full_path).is_err() {
+            return false;
+        }
+        full_path.exists()
     }
 
     fn is_dir(&self, path: &str) -> bool {
-        self.resolve_path(path).is_dir()
+        let full_path = self.resolve_path(path);
+        // For existence checks, allow traversal detection to fail silently
+        if self.validate_path_within_root(&full_path).is_err() {
+            return false;
+        }
+        full_path.is_dir()
     }
 
     fn create_dir_all(&self, path: &str) -> Result<(), AppError> {
         let full_path = self.resolve_path(path);
+        self.validate_path_within_root(&full_path)?;
         fs::create_dir_all(full_path).map_err(AppError::from)
     }
 
     fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError> {
         let src_path = self.resolve_path(src);
         let dst_path = self.resolve_path(dst);
+        self.validate_path_within_root(&src_path)?;
+        self.validate_path_within_root(&dst_path)?;
         if let Some(parent) = dst_path.parent() {
             fs::create_dir_all(parent).map_err(AppError::from)?;
         }
@@ -311,6 +329,38 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
             self.root.join(path)
         };
         fs::canonicalize(p).map_err(AppError::from)
+    }
+}
+
+// Private helper methods for FilesystemWorkspaceStore
+impl FilesystemWorkspaceStore {
+    /// Validates that a path (or its nearest existing ancestor) is within the workspace root.
+    fn validate_path_within_root(&self, path: &Path) -> Result<(), AppError> {
+        // Find the nearest existing ancestor
+        let mut current = path;
+        while !current.exists() && current != Path::new("") {
+            if let Some(parent) = current.parent() {
+                current = parent;
+            } else {
+                break;
+            }
+        }
+
+        // If we found an existing path, validate it's within root
+        if current.exists() {
+            let canonical_current = current
+                .canonicalize()
+                .map_err(|_| AppError::PathTraversal(path.display().to_string()))?;
+            let canonical_root = self
+                .root
+                .canonicalize()
+                .map_err(|_| AppError::PathTraversal(path.display().to_string()))?;
+
+            if !canonical_current.starts_with(&canonical_root) {
+                return Err(AppError::PathTraversal(path.display().to_string()));
+            }
+        }
+        Ok(())
     }
 }
 

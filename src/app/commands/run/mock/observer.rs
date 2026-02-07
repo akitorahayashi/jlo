@@ -4,6 +4,7 @@ use chrono::Utc;
 
 use crate::app::commands::run::RunOptions;
 use crate::app::commands::run::mock::identity::generate_mock_id;
+use crate::domain::identities::validation::validate_safe_path_component;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
@@ -24,6 +25,14 @@ where
     let workstream = options.workstream.as_deref().ok_or_else(|| {
         AppError::MissingArgument("Workstream is required for observers".to_string())
     })?;
+
+    // Validate workstream name to prevent path traversal
+    if !validate_safe_path_component(workstream) {
+        return Err(AppError::Validation(format!(
+            "Invalid workstream name '{}': must be alphanumeric with hyphens or underscores only",
+            workstream
+        )));
+    }
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Observers, &timestamp)?;

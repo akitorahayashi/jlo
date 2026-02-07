@@ -133,6 +133,10 @@ pub enum AppError {
     #[error("Component '{name}' not found. Available: {available}")]
     ComponentNotFound { name: String, available: String },
 
+    /// Path traversal attempt detected.
+    #[error("Path traversal detected: '{0}' escapes workspace root")]
+    PathTraversal(String),
+
     /// Invalid component metadata.
     #[error("Invalid metadata for '{component}': {reason}")]
     InvalidComponentMetadata { component: String, reason: String },
