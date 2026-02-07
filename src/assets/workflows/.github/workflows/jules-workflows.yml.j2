@@ -100,7 +100,8 @@ jobs:
     'has_workstreams',
     'innovators',
     '.matrix.include[].workstream',
-    'Run innovators (first pass) for each workstream'
+    'Run innovators (first pass) for each workstream',
+    extra_run_args='--phase creation'
 ) }}
   # ============================================================
   # Phase 5: Run observers
@@ -137,7 +138,8 @@ jobs:
     "always() &&
       fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
       (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped') &&
-      (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')"
+      (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')",
+    extra_run_args='--phase refinement'
 ) }}
   # ============================================================
   # Phase 9: Wait for innovator processing (second pass)

@@ -4,12 +4,13 @@ layer: innovators
 runtime_context:
   workstream: "{{workstream}}"
   role: "{{role}}"
+  phase: "{{phase}}"
 
 includes:
   - title: "Role"
     path: ".jules/roles/innovators/roles/{{role}}/role.yml"
   - title: "Layer Contracts"
-    path: ".jules/roles/innovators/contracts.yml"
+    path: ".jules/roles/innovators/contracts_{{phase}}.yml"
   - title: "Observer Comment Schema"
     path: ".jules/roles/innovators/schemas/comment.yml"
   - title: "Change Summary"
@@ -17,4 +18,7 @@ includes:
     optional: true
   - title: "Persona Perspective"
     path: ".jules/workstreams/{{workstream}}/exchange/innovators/{{role}}/perspective.yml"
+    optional: true
+  - title: "Current Idea"
+    path: ".jules/workstreams/{{workstream}}/exchange/innovators/{{role}}/idea.yml"
     optional: true

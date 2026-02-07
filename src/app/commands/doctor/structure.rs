@@ -137,9 +137,25 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             continue;
         }
 
-        let contracts = layer_dir.join("contracts.yml");
-        if !contracts.exists() {
-            diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
+        // Innovators use phase-specific contracts; all other layers use contracts.yml
+        if layer == Layer::Innovators {
+            let creation = layer_dir.join("contracts_creation.yml");
+            if !creation.exists() {
+                diagnostics
+                    .push_error(creation.display().to_string(), "Missing contracts_creation.yml");
+            }
+            let refinement = layer_dir.join("contracts_refinement.yml");
+            if !refinement.exists() {
+                diagnostics.push_error(
+                    refinement.display().to_string(),
+                    "Missing contracts_refinement.yml",
+                );
+            }
+        } else {
+            let contracts = layer_dir.join("contracts.yml");
+            if !contracts.exists() {
+                diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
+            }
         }
 
         // Check schemas/ directory (all layers have this)
@@ -156,11 +172,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         }
 
         if layer.is_single_role() {
-            let prompt = layer_dir.join("prompt.yml");
-            if !prompt.exists() {
-                diagnostics.push_error(prompt.display().to_string(), "Missing prompt.yml");
-            }
-
             // Narrator requires change.yml schema template
             if layer == Layer::Narrators {
                 let change_template = layer_dir.join("schemas").join("change.yml");
@@ -170,12 +181,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
                 }
             }
         } else {
-            // Check for prompt.yml in multi-role layers
-            let prompt = layer_dir.join("prompt.yml");
-            if !prompt.exists() {
-                diagnostics.push_error(prompt.display().to_string(), "Missing prompt.yml");
-            }
-
             // Check roles/ container directory for multi-role layers
             let roles_container = layer_dir.join("roles");
             if !roles_container.exists() {
@@ -610,17 +615,22 @@ mod tests {
         for layer in Layer::ALL {
             let layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
             layer_dir.create_dir_all().unwrap();
-            layer_dir.child("contracts.yml").touch().unwrap();
             layer_dir.child("schemas").create_dir_all().unwrap();
             layer_dir.child("prompt_assembly.yml").touch().unwrap();
 
+            // Innovators use phase-specific contracts; others use contracts.yml
+            if layer == Layer::Innovators {
+                layer_dir.child("contracts_creation.yml").touch().unwrap();
+                layer_dir.child("contracts_refinement.yml").touch().unwrap();
+            } else {
+                layer_dir.child("contracts.yml").touch().unwrap();
+            }
+
             if layer.is_single_role() {
-                layer_dir.child("prompt.yml").touch().unwrap();
                 if layer == Layer::Narrators {
                     layer_dir.child("schemas/change.yml").touch().unwrap();
                 }
             } else {
-                layer_dir.child("prompt.yml").touch().unwrap(); // Required for multi-role too according to code
                 let role_dir = layer_dir.child("roles/my-role");
                 role_dir.create_dir_all().unwrap();
                 role_dir.child("role.yml").touch().unwrap();

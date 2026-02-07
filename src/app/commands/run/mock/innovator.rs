@@ -26,10 +26,10 @@ fn sanitize_yaml_value(value: &str) -> String {
 
 /// Execute mock innovators.
 ///
-/// Toggle semantics:
-/// - If `idea.yml` is absent → create `idea.yml` (creation phase mock).
-/// - If `idea.yml` is present → remove `idea.yml` (refinement phase mock).
-/// - Two invocations in one cycle leave a clean room state.
+/// Phase-driven semantics:
+/// - `--phase creation` → create `idea.yml` (idea generation mock).
+/// - `--phase refinement` → remove `idea.yml` (proposal creation + cleanup mock).
+/// - Phase is required; omitting it is an error.
 pub fn execute_mock_innovators<G, H, W>(
     jules_path: &Path,
     options: &RunOptions,
@@ -50,6 +50,19 @@ where
     let role = options.role.as_deref().ok_or_else(|| {
         AppError::MissingArgument("Role (persona) is required for innovators".to_string())
     })?;
+
+    let phase = options.phase.as_deref().ok_or_else(|| {
+        AppError::MissingArgument(
+            "--phase is required for innovators (creation or refinement)".to_string(),
+        )
+    })?;
+
+    if phase != "creation" && phase != "refinement" {
+        return Err(AppError::Validation(format!(
+            "Invalid phase '{}': must be 'creation' or 'refinement'",
+            phase
+        )));
+    }
 
     // Validate path components
     if !validate_safe_path_component(workstream) {
@@ -90,25 +103,11 @@ where
         room_dir.to_str().ok_or_else(|| AppError::Validation("Invalid room path".to_string()))?;
     workspace.create_dir_all(room_dir_str)?;
 
-    // Check idea.yml existence after checkout to avoid TOCTOU race
-    let idea_exists = workspace.file_exists(idea_path_str);
+    let is_creation = phase == "creation";
 
-    println!(
-        "Mock innovators: {} idea.yml for {}/{}",
-        if idea_exists { "removing" } else { "creating" },
-        workstream,
-        role
-    );
+    println!("Mock innovators: phase={} for {}/{}", phase, workstream, role);
 
-    if idea_exists {
-        // Refinement phase mock: remove idea.yml (simulates proposal creation + cleanup)
-        workspace.remove_file(idea_path_str)?;
-        let files: Vec<&Path> = vec![idea_path.as_path()];
-        git.commit_files(
-            &format!("[{}] innovator: mock refinement (remove idea)", config.mock_tag),
-            &files,
-        )?;
-    } else {
+    if is_creation {
         // Creation phase mock: create idea.yml from template
         let mock_idea_template = super::MOCK_ASSETS
             .get_file("innovator_idea.yml")
@@ -135,20 +134,29 @@ where
             &format!("[{}] innovator: mock creation (create idea)", config.mock_tag),
             &files,
         )?;
+    } else {
+        // Refinement phase mock: remove idea.yml (simulates proposal creation + cleanup)
+        if workspace.file_exists(idea_path_str) {
+            workspace.remove_file(idea_path_str)?;
+        }
+        let files: Vec<&Path> = vec![idea_path.as_path()];
+        git.commit_files(
+            &format!("[{}] innovator: mock refinement (remove idea)", config.mock_tag),
+            &files,
+        )?;
     }
 
     git.push_branch(&branch_name, false)?;
 
     // Create PR targeting jules branch
-    let action = if idea_exists { "refinement" } else { "creation" };
     let pr = github.create_pull_request(
         &branch_name,
         &config.jules_branch,
-        &format!("[{}] Innovator {} {}", config.mock_tag, role, action),
+        &format!("[{}] Innovator {} {}", config.mock_tag, role, phase),
         &format!(
             "Mock innovator run for workflow validation.\n\n\
              Mock tag: `{}`\nWorkstream: `{}`\nPersona: `{}`\nPhase: {}",
-            config.mock_tag, workstream, role, action
+            config.mock_tag, workstream, role, phase
         ),
     )?;
 
@@ -302,7 +310,7 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_creates_idea_when_absent() {
+    fn mock_innovator_creates_idea_with_creation_phase() {
         let jules_path = PathBuf::from(".jules");
         let workspace = MockWorkspaceStore::new().with_exists(true);
         let git = FakeGit::new();
@@ -317,6 +325,7 @@ mod tests {
             branch: None,
             issue: None,
             mock: true,
+            phase: Some("creation".to_string()),
         };
 
         let result =
@@ -332,7 +341,7 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_removes_idea_when_present() {
+    fn mock_innovator_removes_idea_with_refinement_phase() {
         let jules_path = PathBuf::from(".jules");
         let workspace = MockWorkspaceStore::new().with_exists(true);
         let git = FakeGit::new();
@@ -351,6 +360,7 @@ mod tests {
             branch: None,
             issue: None,
             mock: true,
+            phase: Some("refinement".to_string()),
         };
 
         let result =
@@ -362,11 +372,62 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_double_toggle_leaves_clean_state() {
-        // Note: Both invocations may produce the same branch name when run
-        // within the same second. This is acceptable because FakeGit does
-        // not enforce branch uniqueness, and real execution is serialized
-        // by the workflow scheduler with distinct timestamps.
+    fn mock_innovator_creation_then_refinement_is_deterministic() {
+        let jules_path = PathBuf::from(".jules");
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let github = FakeGitHub;
+        let config = make_config();
+
+        let idea_path = jules_path.join("workstreams/generic/exchange/innovators/alice/idea.yml");
+
+        // Creation phase: creates idea.yml
+        let create_options = RunOptions {
+            layer: Layer::Innovators,
+            role: Some("alice".to_string()),
+            workstream: Some("generic".to_string()),
+            prompt_preview: false,
+            branch: None,
+            issue: None,
+            mock: true,
+            phase: Some("creation".to_string()),
+        };
+        let _ = execute_mock_innovators(
+            &jules_path,
+            &create_options,
+            &config,
+            &git,
+            &github,
+            &workspace,
+        )
+        .unwrap();
+        assert!(workspace.file_exists(idea_path.to_str().unwrap()));
+
+        // Refinement phase: removes idea.yml
+        let refine_options = RunOptions {
+            layer: Layer::Innovators,
+            role: Some("alice".to_string()),
+            workstream: Some("generic".to_string()),
+            prompt_preview: false,
+            branch: None,
+            issue: None,
+            mock: true,
+            phase: Some("refinement".to_string()),
+        };
+        let _ = execute_mock_innovators(
+            &jules_path,
+            &refine_options,
+            &config,
+            &git,
+            &github,
+            &workspace,
+        )
+        .unwrap();
+        assert!(!workspace.file_exists(idea_path.to_str().unwrap()));
+    }
+
+    #[test]
+    fn mock_innovator_rejects_missing_phase() {
         let jules_path = PathBuf::from(".jules");
         let workspace = MockWorkspaceStore::new().with_exists(true);
         let git = FakeGit::new();
@@ -381,18 +442,35 @@ mod tests {
             branch: None,
             issue: None,
             mock: true,
+            phase: None,
         };
 
-        let idea_path = jules_path.join("workstreams/generic/exchange/innovators/alice/idea.yml");
+        let result =
+            execute_mock_innovators(&jules_path, &options, &config, &git, &github, &workspace);
+        assert!(result.is_err());
+    }
 
-        // First invocation: creates idea.yml
-        let _ = execute_mock_innovators(&jules_path, &options, &config, &git, &github, &workspace)
-            .unwrap();
-        assert!(workspace.file_exists(idea_path.to_str().unwrap()));
+    #[test]
+    fn mock_innovator_rejects_invalid_phase() {
+        let jules_path = PathBuf::from(".jules");
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let github = FakeGitHub;
+        let config = make_config();
 
-        // Second invocation: removes idea.yml
-        let _ = execute_mock_innovators(&jules_path, &options, &config, &git, &github, &workspace)
-            .unwrap();
-        assert!(!workspace.file_exists(idea_path.to_str().unwrap()));
+        let options = RunOptions {
+            layer: Layer::Innovators,
+            role: Some("alice".to_string()),
+            workstream: Some("generic".to_string()),
+            prompt_preview: false,
+            branch: None,
+            issue: None,
+            mock: true,
+            phase: Some("invalid".to_string()),
+        };
+
+        let result =
+            execute_mock_innovators(&jules_path, &options, &config, &git, &github, &workspace);
+        assert!(result.is_err());
     }
 }

@@ -101,6 +101,16 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             validate_contracts_file(&contracts_path, layer, diagnostics);
         }
 
+        // Validate phase-specific contracts for innovators
+        if layer == Layer::Innovators {
+            for phase in &["creation", "refinement"] {
+                let phase_contracts = layer_dir.join(format!("contracts_{}.yml", phase));
+                if phase_contracts.exists() {
+                    validate_contracts_file(&phase_contracts, layer, diagnostics);
+                }
+            }
+        }
+
         if layer == Layer::Observers || layer == Layer::Deciders {
             let roles_container = layer_dir.join("roles");
             if roles_container.exists() {

@@ -115,9 +115,6 @@ pub enum PromptAssemblyError {
     /// Failed to read an include file.
     IncludeReadError { path: String, reason: String },
 
-    /// The prompt.yml file was not found (for base prompt).
-    PromptNotFound(String),
-
     /// Failed to read prompt.yml.
     PromptReadError { path: String, reason: String },
 
@@ -152,9 +149,6 @@ impl std::fmt::Display for PromptAssemblyError {
             }
             Self::IncludeReadError { path, reason } => {
                 write!(f, "Failed to read include {}: {}", path, reason)
-            }
-            Self::PromptNotFound(path) => {
-                write!(f, "Prompt not found: {}", path)
             }
             Self::PromptReadError { path, reason } => {
                 write!(f, "Failed to read prompt {}: {}", path, reason)
@@ -199,14 +193,19 @@ pub fn assemble_prompt(
     // Validate required context variables
     validate_context(&spec, context)?;
 
-    // Load base prompt.yml
+    // Load base prompt.yml (optional — returns empty when absent)
     let prompt_path = layer_dir.join("prompt.yml");
     let base_prompt = load_prompt(&prompt_path, context, loader, renderer)?;
 
     // Assemble includes
-    let mut parts = vec![base_prompt];
-    let mut included_files = vec![prompt_path.display().to_string()];
+    let mut parts = Vec::new();
+    let mut included_files = Vec::new();
     let mut skipped_files = Vec::new();
+
+    if !base_prompt.is_empty() {
+        parts.push(base_prompt);
+        included_files.push(prompt_path.display().to_string());
+    }
 
     for include in &spec.includes {
         let resolved_path = renderer.render(
@@ -335,7 +334,7 @@ fn validate_context(
     Ok(())
 }
 
-/// Load the base prompt.yml and render templates.
+/// Load the base prompt.yml if it exists. Returns empty string when absent.
 fn load_prompt(
     path: &Path,
     context: &PromptContext,
@@ -343,7 +342,7 @@ fn load_prompt(
     renderer: &impl TemplateRenderer,
 ) -> Result<String, PromptAssemblyError> {
     if !loader.asset_exists(path) {
-        return Err(PromptAssemblyError::PromptNotFound(path.display().to_string()));
+        return Ok(String::new());
     }
 
     let content = loader.read_asset(path).map_err(|err| PromptAssemblyError::PromptReadError {

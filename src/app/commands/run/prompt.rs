@@ -14,12 +14,14 @@ use crate::domain::{
 
 /// Assemble the full prompt for a role in a multi-role layer.
 ///
-/// Multi-role layers (observers, deciders) require workstream and role context.
+/// Multi-role layers (observers, deciders, innovators) require workstream and role context.
+/// Innovators additionally require a phase context variable.
 pub fn assemble_prompt(
     jules_path: &Path,
     layer: Layer,
     role: &str,
     workstream: &str,
+    phase: Option<&str>,
     loader: &impl PromptAssetLoader,
 ) -> Result<String, AppError> {
     // Validate role and workstream to prevent prompt injection
@@ -36,7 +38,11 @@ pub fn assemble_prompt(
         )));
     }
 
-    let context = PromptContext::new().with_var("workstream", workstream).with_var("role", role);
+    let mut context =
+        PromptContext::new().with_var("workstream", workstream).with_var("role", role);
+    if let Some(phase_val) = phase {
+        context = context.with_var("phase", phase_val);
+    }
     let renderer = MinijinjaTemplateRenderer::new();
 
     Ok(assemble_prompt_domain(jules_path, layer, &context, loader, &renderer)
