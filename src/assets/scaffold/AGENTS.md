@@ -39,7 +39,7 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   │   ├── prompt.yml    # Entry point
 │   │   ├── prompt_assembly.yml # Prompt construction rules
 │   │   ├── contracts.yml # Layer contract
-│   │   ├── index.md      # Role documentation
+
 │   │   ├── schemas/
 │   │   │   ├── event.yml
 │   │   │   └── perspective.yml
