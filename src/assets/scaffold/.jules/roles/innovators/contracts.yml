@@ -8,6 +8,11 @@ constraints:
   - Proposals must address the repository's actual state, not hypothetical improvements
   - Do NOT duplicate proposals already listed in perspective.yml recent_proposals
   - Do NOT edit files outside of .jules/
+  - Proposals must define an introduction that changes boundaries, behavior, or decision quality
+  - Do NOT publish proposals that are only static-analysis-driven local refactoring findings
+  - Proposal quality is measured by decision value, not description volume
+  - Every proposal must satisfy role.yml profile.proposal_quality_bar
+  - Evidence in the proposal must meet role.yml profile.evidence_expectations
 
 inputs:
   - Source code and repository files
@@ -25,4 +30,6 @@ outputs:
 workflow:
   - "1. Read role.yml and perspective.yml to establish identity and context."
   - "2. If idea.yml is absent (Creation phase): Inspect the codebase, consider recent_proposals to avoid duplicates, and create idea.yml."
-  - "3. If idea.yml is present (Refinement phase): Read comments/*.yml, incorporate feedback, create proposal.yml, update perspective.yml recent_proposals, delete idea.yml and comments/*.yml."
+  - "3. If idea.yml is present (Refinement phase): Read comments/*.yml and create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals."
+  - "4. Update perspective.yml recent_proposals, then delete idea.yml and comments/*.yml."
+  - "5. Before final output, self-check against role.yml proposal_quality_bar and evidence_expectations."

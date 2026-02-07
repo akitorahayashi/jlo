@@ -8,7 +8,7 @@ created_at: "YYYY-MM-DD"
 title: "<short descriptive title>"
 problem: |
   <what is wrong or can be improved>
-solution: |
-  <proposed approach to address the problem>
-impact: |
-  <expected benefit or improvement>
+introduction: |
+  <what new mechanism, boundary, or process should be introduced>
+expected_value: |
+  <expected improvement if this introduction is adopted>
