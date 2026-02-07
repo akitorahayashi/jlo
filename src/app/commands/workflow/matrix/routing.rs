@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-use crate::domain::AppError;
+use crate::domain::{AppError, IssueHeader};
 use crate::ports::WorkspaceStore;
 
 /// Options for matrix routing command.
@@ -146,7 +146,7 @@ pub fn execute(
 
             let files = list_yml_files(store, &label_dir)?;
             for file_path in files {
-                let requires_deep = read_requires_deep_analysis(store, &file_path)?;
+                let requires_deep = IssueHeader::read(store, &file_path)?.requires_deep_analysis;
                 let rel_path = to_repo_relative(root, &file_path);
 
                 if requires_deep {
@@ -210,23 +210,6 @@ fn to_repo_relative(root: &Path, path: &Path) -> String {
     path.strip_prefix(root).unwrap_or(path).to_string_lossy().to_string()
 }
 
-fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Result<bool, AppError> {
-    let path_str = path
-        .to_str()
-        .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", path.display())))?;
-    let content = store.read_file(path_str)?;
-    let value: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|e| {
-        AppError::ParseError { what: path.display().to_string(), details: e.to_string() }
-    })?;
-
-    match &value["requires_deep_analysis"] {
-        serde_yaml::Value::Bool(b) => Ok(*b),
-        _ => Err(AppError::Validation(format!(
-            "Missing or invalid requires_deep_analysis in {}",
-            path.display()
-        ))),
-    }
-}
 #[cfg(test)]
 mod tests {
     use super::*;

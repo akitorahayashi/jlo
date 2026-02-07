@@ -8,7 +8,7 @@ use serde::Serialize;
 use std::path::Path;
 
 use crate::app::commands::run::{self, RunOptions};
-use crate::domain::{AppError, Layer};
+use crate::domain::{AppError, IssueHeader, Layer};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 use crate::adapters::workstream_schedule_filesystem::load_schedule;
@@ -291,7 +291,7 @@ fn find_issues_for_workstream(
                 continue;
             }
 
-            let requires_deep_analysis = read_requires_deep_analysis(store, &path)?;
+            let requires_deep_analysis = IssueHeader::read(store, &path)?.requires_deep_analysis;
             let belongs_to_layer = match layer {
                 Layer::Planners => requires_deep_analysis,
                 Layer::Implementers => !requires_deep_analysis,
@@ -357,20 +357,6 @@ fn resolve_routing_labels(
     Ok(discovered)
 }
 
-fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Result<bool, AppError> {
-    let content = store.read_file(path.to_str().unwrap())?;
-    let parsed: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|error| {
-        AppError::ParseError { what: path.display().to_string(), details: error.to_string() }
-    })?;
-
-    match &parsed["requires_deep_analysis"] {
-        serde_yaml::Value::Bool(value) => Ok(*value),
-        _ => Err(AppError::Validation(format!(
-            "Missing or invalid requires_deep_analysis in {}",
-            path.display()
-        ))),
-    }
-}
 #[cfg(test)]
 mod tests {
     use super::*;
