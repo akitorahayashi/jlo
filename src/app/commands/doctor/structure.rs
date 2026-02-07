@@ -257,6 +257,28 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             inputs.applied_fixes,
             diagnostics,
         );
+
+        // Innovator rooms directory
+        let innovators_dir = exchange_dir.join("innovators");
+        ensure_directory_exists(
+            innovators_dir.clone(),
+            inputs.options,
+            inputs.applied_fixes,
+            diagnostics,
+        );
+
+        // Validate each innovator room structure
+        if innovators_dir.exists() {
+            for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
+                let comments_dir = persona_dir.join("comments");
+                if !comments_dir.exists() {
+                    diagnostics.push_error(
+                        comments_dir.display().to_string(),
+                        "Missing comments/ directory in innovator room",
+                    );
+                }
+            }
+        }
     }
 }
 
@@ -617,6 +639,9 @@ mod tests {
         // We need to match inputs for event states and issue labels
         exchange.child("events/pending").create_dir_all().unwrap();
         exchange.child("issues/tests").create_dir_all().unwrap();
+
+        // Innovator rooms directory
+        exchange.child("innovators").create_dir_all().unwrap();
 
         ws_dir.child("workstations").create_dir_all().unwrap();
     }

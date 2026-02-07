@@ -13,12 +13,20 @@ pub enum Layer {
     Planners,
     /// Implementers: Execute approved tasks, create PRs with code changes (executor_global)
     Implementers,
+    /// Innovators: Generate improvement proposals through brainstorming and feedback cycles
+    Innovators,
 }
 
 impl Layer {
     /// All available layers in order.
-    pub const ALL: [Layer; 5] =
-        [Layer::Narrators, Layer::Observers, Layer::Deciders, Layer::Planners, Layer::Implementers];
+    pub const ALL: [Layer; 6] = [
+        Layer::Narrators,
+        Layer::Observers,
+        Layer::Deciders,
+        Layer::Planners,
+        Layer::Implementers,
+        Layer::Innovators,
+    ];
 
     /// Directory name for this layer.
     pub fn dir_name(&self) -> &'static str {
@@ -28,6 +36,7 @@ impl Layer {
             Layer::Deciders => "deciders",
             Layer::Planners => "planners",
             Layer::Implementers => "implementers",
+            Layer::Innovators => "innovators",
         }
     }
 
@@ -39,6 +48,7 @@ impl Layer {
             Layer::Deciders => "Decider",
             Layer::Planners => "Planner",
             Layer::Implementers => "Implementer",
+            Layer::Innovators => "Innovator",
         }
     }
 
@@ -50,6 +60,7 @@ impl Layer {
             "deciders" | "decider" => Some(Layer::Deciders),
             "planners" | "planner" => Some(Layer::Planners),
             "implementers" | "implementer" => Some(Layer::Implementers),
+            "innovators" | "innovator" => Some(Layer::Innovators),
             _ => None,
         }
     }
@@ -62,6 +73,9 @@ impl Layer {
             Layer::Deciders => "Read events, emit issues. Delete processed events.",
             Layer::Planners => "Read issues requiring deep analysis, expand them in-place.",
             Layer::Implementers => "Execute approved tasks, create PRs with code changes.",
+            Layer::Innovators => {
+                "Generate improvement proposals through brainstorming and feedback."
+            }
         }
     }
 
@@ -72,6 +86,14 @@ impl Layer {
     /// custom role creation or scheduled role lists.
     pub fn is_single_role(&self) -> bool {
         matches!(self, Layer::Narrators | Layer::Planners | Layer::Implementers)
+    }
+
+    /// Whether this layer uses innovator room exchange structure.
+    ///
+    /// Innovator layers have a persona-based exchange directory structure
+    /// under `exchange/innovators/<persona>/` instead of events/issues.
+    pub fn is_innovator(&self) -> bool {
+        matches!(self, Layer::Innovators)
     }
 
     /// Whether this layer is issue-driven.
@@ -122,6 +144,7 @@ mod tests {
         assert!(!Layer::Deciders.is_single_role());
         assert!(Layer::Planners.is_single_role());
         assert!(Layer::Implementers.is_single_role());
+        assert!(!Layer::Innovators.is_single_role());
     }
 
     #[test]
@@ -131,5 +154,16 @@ mod tests {
         assert!(!Layer::Deciders.is_issue_driven());
         assert!(Layer::Planners.is_issue_driven());
         assert!(Layer::Implementers.is_issue_driven());
+        assert!(!Layer::Innovators.is_issue_driven());
+    }
+
+    #[test]
+    fn innovator_layer_is_identified() {
+        assert!(!Layer::Narrators.is_innovator());
+        assert!(!Layer::Observers.is_innovator());
+        assert!(!Layer::Deciders.is_innovator());
+        assert!(!Layer::Planners.is_innovator());
+        assert!(!Layer::Implementers.is_innovator());
+        assert!(Layer::Innovators.is_innovator());
     }
 }

@@ -116,6 +116,18 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
                 }
             }
         }
+
+        if layer == Layer::Innovators {
+            let roles_container = layer_dir.join("roles");
+            if roles_container.exists() {
+                for role_dir in list_subdirs(&roles_container, diagnostics) {
+                    let role_path = role_dir.join("role.yml");
+                    if role_path.exists() {
+                        validate_innovator_role_file(&role_path, &role_dir, diagnostics);
+                    }
+                }
+            }
+        }
     }
 
     for workstream in inputs.workstreams {
@@ -143,6 +155,39 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
                     diagnostics,
                 );
                 check_placeholders_file(&entry, diagnostics);
+            }
+        }
+
+        // Validate innovator room files
+        let innovators_dir = exchange_dir.join("innovators");
+        if innovators_dir.exists() {
+            for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
+                let persona_name =
+                    persona_dir.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+
+                let perspective_path = persona_dir.join("perspective.yml");
+                if perspective_path.exists() {
+                    validate_innovator_perspective(&perspective_path, &persona_name, diagnostics);
+                }
+
+                let idea_path = persona_dir.join("idea.yml");
+                if idea_path.exists() {
+                    validate_innovator_idea(&idea_path, diagnostics);
+                    check_placeholders_file(&idea_path, diagnostics);
+                }
+
+                let proposal_path = persona_dir.join("proposal.yml");
+                if proposal_path.exists() {
+                    validate_innovator_proposal(&proposal_path, diagnostics);
+                    check_placeholders_file(&proposal_path, diagnostics);
+                }
+
+                let comments_dir = persona_dir.join("comments");
+                if comments_dir.exists() {
+                    for entry in read_yaml_files(&comments_dir, diagnostics) {
+                        validate_innovator_comment(&entry, diagnostics);
+                    }
+                }
             }
         }
     }
@@ -684,6 +729,110 @@ fn ensure_date(map: &serde_yaml::Mapping, path: &Path, key: &str, diagnostics: &
     if NaiveDate::parse_from_str(&value, "%Y-%m-%d").is_err() {
         diagnostics.push_error(path.display().to_string(), format!("{} must be YYYY-MM-DD", key));
     }
+}
+
+// --- Innovator validation functions ---
+
+fn validate_innovator_role_file(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
+    let data = match load_yaml_mapping(path, diagnostics) {
+        Some(data) => data,
+        None => return,
+    };
+
+    ensure_non_empty_string(&data, path, "role", diagnostics);
+
+    let layer_value = get_string(&data, "layer").unwrap_or_default();
+    if layer_value != "innovators" {
+        diagnostics.push_error(path.display().to_string(), "layer must be 'innovators'");
+    }
+
+    match data.get("profile") {
+        Some(serde_yaml::Value::Mapping(profile_map)) => {
+            if get_string(profile_map, "bias_focus").is_none() {
+                diagnostics.push_error(path.display().to_string(), "Missing profile.bias_focus");
+            }
+        }
+        Some(_) => {
+            diagnostics.push_error(path.display().to_string(), "'profile' must be a mapping");
+        }
+        None => {
+            diagnostics.push_error(path.display().to_string(), "Missing profile section");
+        }
+    }
+
+    let role_name = role_dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
+    let role_value = get_string(&data, "role").unwrap_or_default();
+    if !role_value.is_empty() && role_value != role_name {
+        diagnostics.push_error(
+            path.display().to_string(),
+            format!("role '{}' does not match directory '{}'", role_value, role_name),
+        );
+    }
+}
+
+fn validate_innovator_perspective(path: &Path, persona_name: &str, diagnostics: &mut Diagnostics) {
+    let data = match load_yaml_mapping(path, diagnostics) {
+        Some(data) => data,
+        None => return,
+    };
+
+    ensure_int(&data, path, "schema_version", diagnostics, Some(1));
+    ensure_non_empty_string(&data, path, "persona", diagnostics);
+    ensure_non_empty_string(&data, path, "bias_focus", diagnostics);
+
+    let persona_value = get_string(&data, "persona").unwrap_or_default();
+    if !persona_value.is_empty() && persona_value != persona_name {
+        diagnostics.push_error(
+            path.display().to_string(),
+            format!("persona '{}' does not match directory '{}'", persona_value, persona_name),
+        );
+    }
+}
+
+fn validate_innovator_idea(path: &Path, diagnostics: &mut Diagnostics) {
+    let data = match load_yaml_mapping(path, diagnostics) {
+        Some(data) => data,
+        None => return,
+    };
+
+    ensure_int(&data, path, "schema_version", diagnostics, Some(1));
+    ensure_id(&data, path, "id", diagnostics);
+    ensure_non_empty_string(&data, path, "persona", diagnostics);
+    ensure_date(&data, path, "created_at", diagnostics);
+    ensure_non_empty_string(&data, path, "title", diagnostics);
+    ensure_non_empty_string(&data, path, "problem", diagnostics);
+    ensure_non_empty_string(&data, path, "solution", diagnostics);
+    ensure_non_empty_string(&data, path, "impact", diagnostics);
+}
+
+fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
+    let data = match load_yaml_mapping(path, diagnostics) {
+        Some(data) => data,
+        None => return,
+    };
+
+    ensure_int(&data, path, "schema_version", diagnostics, Some(1));
+    ensure_id(&data, path, "id", diagnostics);
+    ensure_non_empty_string(&data, path, "persona", diagnostics);
+    ensure_date(&data, path, "created_at", diagnostics);
+    ensure_non_empty_string(&data, path, "title", diagnostics);
+    ensure_non_empty_string(&data, path, "problem", diagnostics);
+    ensure_non_empty_string(&data, path, "solution", diagnostics);
+    ensure_non_empty_string(&data, path, "impact", diagnostics);
+}
+
+fn validate_innovator_comment(path: &Path, diagnostics: &mut Diagnostics) {
+    let data = match load_yaml_mapping(path, diagnostics) {
+        Some(data) => data,
+        None => return,
+    };
+
+    ensure_int(&data, path, "schema_version", diagnostics, Some(1));
+    ensure_non_empty_string(&data, path, "author", diagnostics);
+
+    let comment_types = ["risk", "supplement", "alternative"];
+    ensure_enum(&data, path, "type", &comment_types, diagnostics);
+    ensure_non_empty_string(&data, path, "content", diagnostics);
 }
 
 #[cfg(test)]

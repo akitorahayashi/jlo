@@ -12,6 +12,8 @@ const INTERNAL_DOC_FILE: &str = "AGENTS.md";
 mod templates {
     pub static OBSERVER_ROLE: &str = include_str!("../assets/templates/layers/observers/role.yml");
     pub static DECIDER_ROLE: &str = include_str!("../assets/templates/layers/deciders/role.yml");
+    pub static INNOVATOR_ROLE: &str =
+        include_str!("../assets/templates/layers/innovators/role.yml");
 }
 
 /// Embedded role template store implementation.
@@ -40,6 +42,7 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
         match layer {
             Layer::Observers => templates::OBSERVER_ROLE.to_string(),
             Layer::Deciders => templates::DECIDER_ROLE.to_string(),
+            Layer::Innovators => templates::INNOVATOR_ROLE.to_string(),
             Layer::Narrators | Layer::Planners | Layer::Implementers => String::new(),
         }
     }
@@ -99,6 +102,17 @@ mod tests {
         assert!(yaml.contains("role: ROLE_NAME"));
         assert!(yaml.contains("layer: deciders"));
         assert!(yaml.contains("profile:"));
+    }
+
+    #[test]
+    fn generate_role_yaml_for_innovators() {
+        let store = EmbeddedRoleTemplateStore::new();
+        let yaml = store.generate_role_yaml("custom", Layer::Innovators);
+
+        assert!(yaml.contains("role: ROLE_NAME"));
+        assert!(yaml.contains("layer: innovators"));
+        assert!(yaml.contains("profile:"));
+        assert!(yaml.contains("bias_focus:"));
     }
 
     #[test]

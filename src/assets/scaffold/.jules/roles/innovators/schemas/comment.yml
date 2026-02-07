@@ -1,0 +1,6 @@
+schema_version: 1
+
+author: "<role>"
+type: "risk|supplement|alternative"
+content: |
+  <feedback content>

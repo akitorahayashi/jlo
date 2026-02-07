@@ -174,8 +174,8 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         let role_dir = self.role_path_in_layer(layer, role_id.as_str());
         fs::create_dir_all(&role_dir)?;
 
-        // Write role.yml for multi-role layers (observers, deciders)
-        if matches!(layer, Layer::Observers | Layer::Deciders) {
+        // Write role.yml for multi-role layers (observers, deciders, innovators)
+        if matches!(layer, Layer::Observers | Layer::Deciders | Layer::Innovators) {
             fs::write(role_dir.join("role.yml"), role_yaml)?;
         }
 

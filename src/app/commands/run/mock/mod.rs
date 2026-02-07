@@ -63,6 +63,11 @@ where
         Layer::Implementers => {
             execute_mock_implementers(jules_path, options, &mock_config, git, github, workspace)
         }
+        Layer::Innovators => {
+            return Err(AppError::Validation(
+                "Innovator layer mock execution is not yet implemented".into(),
+            ));
+        }
     }?;
 
     // Write outputs

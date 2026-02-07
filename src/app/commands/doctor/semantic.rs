@@ -97,7 +97,7 @@ pub fn semantic_checks(
     // With the new scaffold structure, roles are under .jules/roles/<layer>/roles/<role>/
     let roles_dir = jules_path.join("roles");
     let mut existing_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
-    for layer in [Layer::Observers, Layer::Deciders] {
+    for layer in [Layer::Observers, Layer::Deciders, Layer::Innovators] {
         let roles_container = roles_dir.join(layer.dir_name()).join("roles");
         if roles_container.exists() {
             let mut role_set = HashSet::new();
@@ -161,6 +161,25 @@ pub fn semantic_checks(
                             role.name.as_str().to_string(),
                             "Decider role listed in scheduled.toml but missing from filesystem",
                         );
+                    }
+                }
+
+                if let Some(ref innovators) = schedule.innovators {
+                    for role in &innovators.roles {
+                        scheduled_roles
+                            .entry(Layer::Innovators)
+                            .or_default()
+                            .insert(role.name.as_str().to_string());
+                        // Validate role exists in filesystem
+                        if !existing_roles
+                            .get(&Layer::Innovators)
+                            .is_some_and(|roles| roles.contains(role.name.as_str()))
+                        {
+                            diagnostics.push_error(
+                                role.name.as_str().to_string(),
+                                "Innovator role listed in scheduled.toml but missing from filesystem",
+                            );
+                        }
                     }
                 }
             }

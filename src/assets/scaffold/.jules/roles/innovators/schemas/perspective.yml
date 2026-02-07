@@ -1,0 +1,14 @@
+schema_version: 1
+
+persona: "<persona_id>"
+workstream: "<workstream>"
+
+bias_focus: "<primary analytical lens for this persona>"
+current_view: |
+  <current assessment of the codebase through this persona's lens>
+historical_learnings: |
+  <accumulated insights from past analysis cycles>
+
+# Newest first; keep max 5 entries (FIFO).
+recent_proposals:
+  - "<title of recent proposal>"
