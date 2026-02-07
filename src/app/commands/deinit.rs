@@ -3,6 +3,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::adapters::assets::workflow_kit_assets::load_workflow_kit;
+use crate::domain::workspace::workspace_layout::JLO_DIR;
 use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::GitPort;
 
@@ -11,6 +12,7 @@ pub struct DeinitOutcome {
     pub deleted_branch: bool,
     pub deleted_files: Vec<String>,
     pub deleted_action_dirs: Vec<String>,
+    pub deleted_jlo: bool,
 }
 
 pub fn execute(root: &Path, git: &impl GitPort) -> Result<DeinitOutcome, AppError> {
@@ -55,5 +57,14 @@ pub fn execute(root: &Path, git: &impl GitPort) -> Result<DeinitOutcome, AppErro
 
     let deleted_branch = git.delete_branch("jules", true)?;
 
-    Ok(DeinitOutcome { deleted_branch, deleted_files, deleted_action_dirs })
+    // Remove .jlo/ control plane
+    let jlo_path = root.join(JLO_DIR);
+    let deleted_jlo = if jlo_path.exists() {
+        fs::remove_dir_all(&jlo_path)?;
+        true
+    } else {
+        false
+    };
+
+    Ok(DeinitOutcome { deleted_branch, deleted_files, deleted_action_dirs, deleted_jlo })
 }

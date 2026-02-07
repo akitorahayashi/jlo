@@ -17,4 +17,6 @@ pub use issue::IssueHeader;
 pub use prompt::{
     PromptAssemblyError, PromptAssetLoader, PromptContext, assemble_prompt, assemble_with_issue,
 };
-pub use workspace::{Component, EnvSpec, JULES_DIR, Layer, ScaffoldManifest, VERSION_FILE};
+pub use workspace::{
+    Component, EnvSpec, JLO_DIR, JULES_DIR, Layer, ScaffoldManifest, VERSION_FILE,
+};

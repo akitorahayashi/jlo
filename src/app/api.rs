@@ -34,18 +34,18 @@ fn create_context(
     AppContext::new(workspace, templates)
 }
 
-/// Initialize a new `.jules/` workspace in the current directory.
-pub fn init() -> Result<(), AppError> {
-    init_at(std::env::current_dir()?)
+/// Initialize a new `.jlo/` control plane and workflow kit in the current directory.
+pub fn init(mode: WorkflowRunnerMode) -> Result<(), AppError> {
+    init_at(std::env::current_dir()?, mode)
 }
 
-/// Initialize a new `.jules/` workspace at the specified path.
-pub fn init_at(path: impl Into<PathBuf>) -> Result<(), AppError> {
+/// Initialize a new `.jlo/` control plane and workflow kit at the specified path.
+pub fn init_at(path: impl Into<PathBuf>, mode: WorkflowRunnerMode) -> Result<(), AppError> {
     let path = path.into();
     let ctx = create_context(path.clone());
 
     let git = GitCommandAdapter::new(path);
-    init_scaffold::execute(&ctx, &git)?;
+    init_scaffold::execute(&ctx, &git, mode)?;
     Ok(())
 }
 
@@ -60,12 +60,7 @@ pub fn deinit_at(path: std::path::PathBuf) -> Result<DeinitOutcome, AppError> {
     deinit::execute(&path, &git)
 }
 
-/// Initialize a new workflow kit in the current directory.
-pub fn init_workflows(mode: WorkflowRunnerMode) -> Result<(), AppError> {
-    init_workflows_at(std::env::current_dir()?, mode)
-}
-
-/// Initialize a new workflow kit at the specified path.
+/// Initialize a new workflow kit at the specified path (standalone operation).
 pub fn init_workflows_at(
     path: std::path::PathBuf,
     mode: WorkflowRunnerMode,
@@ -190,20 +185,15 @@ pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
 ///
 /// # Arguments
 /// * `prompt_preview` - Show planned changes without applying
-/// * `adopt_managed` - Record current default role files as managed baseline
-pub fn update(prompt_preview: bool, adopt_managed: bool) -> Result<UpdateResult, AppError> {
-    update_at(std::env::current_dir()?, prompt_preview, adopt_managed)
+pub fn update(prompt_preview: bool) -> Result<UpdateResult, AppError> {
+    update_at(std::env::current_dir()?, prompt_preview)
 }
 
 /// Update workspace at the specified path.
-pub fn update_at(
-    path: std::path::PathBuf,
-    prompt_preview: bool,
-    adopt_managed: bool,
-) -> Result<UpdateResult, AppError> {
+pub fn update_at(path: std::path::PathBuf, prompt_preview: bool) -> Result<UpdateResult, AppError> {
     let workspace = FilesystemWorkspaceStore::new(path);
     let templates = EmbeddedRoleTemplateStore::new();
-    let options = UpdateOptions { prompt_preview, adopt_managed };
+    let options = UpdateOptions { prompt_preview };
     update::execute(&workspace, options, &templates)
 }
 

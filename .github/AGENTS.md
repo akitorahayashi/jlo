@@ -1,6 +1,18 @@
 # GitHub Actions Workflow Context
 
 See [root AGENTS.md](../AGENTS.md) for design principles.
+See [CONTROL_PLANE_OWNERSHIP.md](../docs/CONTROL_PLANE_OWNERSHIP.md) for the `.jlo/` vs `.jules/` ownership model and projection rules.
+
+## Branch Topology
+
+| Branch | Contents | Owner |
+|--------|----------|-------|
+| Control branch (e.g. `main`) | `.jlo/` (user intent overlay), `.github/` (workflow kit) | User + `jlo init` |
+| `jules` | `.jules/` (runtime scaffold, materialized by bootstrap) | Workflow automation |
+
+The `jules` branch is **never edited directly** by users. Its `.jules/` directory is assembled by the bootstrap job from two sources:
+1. **Embedded scaffold** — `jlo workflow bootstrap` writes the base structure from the `jlo` binary's embedded assets.
+2. **Control-plane projection** — The bootstrap workflow reads `.jlo/` files from the control branch via `git ls-tree`/`git show` and overlays them onto `.jules/`, skipping `.jlo-version`.
 
 ## Branch Strategy
 
@@ -15,14 +27,14 @@ See [root AGENTS.md](../AGENTS.md) for design principles.
 
 ## Workflow Files
 
-Jules workflows are installed via `jlo init workflows` and follow these patterns:
+Jules workflows are installed via `jlo init --remote` (or `--self-hosted`) and follow these patterns:
 
 - `.github/workflows/jules-*.yml`
 - `.github/actions/` (Jules composite actions)
 
 Non-Jules CI workflows remain in `.github/workflows/` alongside the kit.
 
-The workflow kit is generated from `src/assets/workflows/.github/`. Edit that source directory, not `.github/`, and re-run `jlo init workflows` to apply changes.
+The workflow kit is generated from `src/assets/workflows/.github/`. Edit that source directory, not `.github/`, and re-run `jlo init` to apply changes.
 
 ## Composite Actions
 
@@ -68,14 +80,14 @@ Repository variables and secrets referenced by `.github/workflows/jules-*.yml`:
 
 ## Schedule Preservation
 
-When reinstalling the workflow kit with `jlo init workflows --overwrite`, the existing `on.schedule` block in `jules-workflows.yml` is preserved. If the existing file contains invalid YAML, installation fails with an explicit error.
+When reinstalling the workflow kit with `jlo init --remote --overwrite` (or `--self-hosted --overwrite`), the existing `on.schedule` block in `jules-workflows.yml` is preserved. If the existing file contains invalid YAML, installation fails with an explicit error.
 
 ## Mock Mode Validation
 
 The `validate-workflow-kit.yml` workflow tests the workflow kit without Jules API:
 
 1. **build** → Compile jlo
-2. **validate-scaffold** → Test `jlo init scaffold` and `jlo init workflows`
+2. **validate-scaffold** → Test `jlo init --remote` (scaffold + workflows)
 3. **mock-e2e** → Validate `jlo run <layer> --dry-run` for all layers
 4. **validate-workflow-template** → Verify rendered workflow contains mock support
 
@@ -87,7 +99,8 @@ Triggers:
 
 ## Repository Requirements
 
-- The `jules` branch exists and contains the `.jules/` scaffold
+- The `jules` branch is created and maintained by workflow automation (bootstrap job)
+- The control branch contains `.jlo/` (user intent overlay) and `.github/` (workflow kit)
 - Branch protection on `jules` with required status checks and auto-merge enabled
 - Bot account used by workflows has write access
 - Auto-review tools configured for on-demand review only

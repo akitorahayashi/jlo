@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use crate::domain::{AppError, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
+use crate::domain::{AppError, JLO_DIR, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
 /// In-memory workspace store for testing.
@@ -44,8 +44,17 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         files.keys().any(|p| p.starts_with(JULES_DIR))
     }
 
+    fn jlo_exists(&self) -> bool {
+        let files = self.files.lock().unwrap();
+        files.keys().any(|p| p.starts_with(JLO_DIR))
+    }
+
     fn jules_path(&self) -> PathBuf {
         PathBuf::from(JULES_DIR)
+    }
+
+    fn jlo_path(&self) -> PathBuf {
+        PathBuf::from(JLO_DIR)
     }
 
     fn create_structure(&self, scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
@@ -201,17 +210,6 @@ impl WorkspaceStore for MemoryWorkspaceStore {
 
     fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {
         Ok(())
-    }
-
-    fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError> {
-        let mut files = self.files.lock().unwrap();
-        let src_path = PathBuf::from(src);
-        if let Some(content) = files.get(&src_path).cloned() {
-            files.insert(PathBuf::from(dst), content);
-            Ok(0)
-        } else {
-            Err(AppError::from(std::io::Error::new(std::io::ErrorKind::NotFound, "src not found")))
-        }
     }
 
     fn resolve_path(&self, path: &str) -> PathBuf {

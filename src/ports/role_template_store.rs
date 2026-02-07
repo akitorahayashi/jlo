@@ -11,8 +11,14 @@ pub struct ScaffoldFile {
 
 /// Port for accessing role templates and scaffold content.
 pub trait RoleTemplateStore {
-    /// Get all scaffold files (for workspace initialization).
+    /// Get all scaffold files (for workspace initialization and bootstrap).
     fn scaffold_files(&self) -> Vec<ScaffoldFile>;
+
+    /// Get control-plane intent files for `.jlo/` initialization.
+    ///
+    /// Returns user-owned files (config, role customizations, schedules, setup)
+    /// mapped from `.jules/` scaffold paths to `.jlo/` paths.
+    fn control_plane_files(&self) -> Vec<ScaffoldFile>;
 
     /// Get the template for a specific layer.
     #[allow(dead_code)]

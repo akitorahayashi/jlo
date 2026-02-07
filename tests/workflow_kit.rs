@@ -1,6 +1,7 @@
 mod common;
 
 use common::TestContext;
+use jlo::{WorkflowRunnerMode, init_workflows_at};
 use predicates::prelude::*;
 use std::fs;
 
@@ -8,11 +9,7 @@ use std::fs;
 fn init_workflows_installs_remote_kit() {
     let ctx = TestContext::new();
 
-    ctx.cli()
-        .args(["init", "workflows", "--remote"])
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Installed workflow kit"));
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     let root = ctx.work_dir();
     assert!(root.join(".github/workflows/jules-workflows.yml").exists());
@@ -30,7 +27,6 @@ fn init_workflows_installs_remote_kit() {
         !root.join(".github/scripts").exists(),
         "Workflow kit should not include .github/scripts"
     );
-    assert!(!root.join(".jules").exists());
 
     let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
     assert!(!workflow.contains("strategy: matrix"), "Should not use matrix strategy");
@@ -77,11 +73,7 @@ fn init_workflows_installs_remote_kit() {
 fn init_workflows_installs_self_hosted_kit() {
     let ctx = TestContext::new();
 
-    ctx.cli()
-        .args(["init", "workflows", "--self-hosted"])
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Installed workflow kit"));
+    ctx.cli().args(["init", "--self-hosted"]).assert().success();
 
     let root = ctx.work_dir();
     let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
@@ -95,14 +87,10 @@ fn init_workflows_installs_self_hosted_kit() {
 }
 
 #[test]
-fn init_workflows_requires_runner_mode() {
+fn init_requires_runner_mode() {
     let ctx = TestContext::new();
 
-    ctx.cli()
-        .args(["init", "workflows"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("required"));
+    ctx.cli().args(["init"]).assert().failure().stderr(predicate::str::contains("required"));
 }
 
 #[test]
@@ -125,7 +113,8 @@ fn init_workflows_respects_unrelated_files() {
     fs::create_dir_all(unrelated_action.parent().unwrap()).unwrap();
     fs::write(&unrelated_action, "custom action").unwrap();
 
-    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
+    // Use API directly — testing workflow kit re-install over existing files
+    init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote).unwrap();
 
     let updated_workflow = fs::read_to_string(&kit_workflow).unwrap();
     assert!(updated_workflow.contains("Jules Workflows"));
@@ -161,7 +150,7 @@ jobs:
 "#;
     fs::write(&workflow_path, existing_workflow).unwrap();
 
-    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
+    init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote).unwrap();
 
     let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
     // The preserved schedule should contain the custom cron entries
@@ -185,11 +174,8 @@ fn init_workflows_fails_on_invalid_schedule() {
     let invalid_yaml = "name: [invalid\n  yaml: content";
     fs::write(&workflow_path, invalid_yaml).unwrap();
 
-    ctx.cli()
-        .args(["init", "workflows", "--remote"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("Failed to parse"));
+    let result = init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote);
+    assert!(result.is_err(), "Should fail on invalid YAML");
 }
 
 #[test]
@@ -205,7 +191,7 @@ fn init_workflows_keeps_existing_actions_when_schedule_parse_fails() {
     fs::create_dir_all(action_path.parent().unwrap()).unwrap();
     fs::write(&action_path, "keep this action").unwrap();
 
-    ctx.cli().args(["init", "workflows", "--remote"]).assert().failure();
+    let _ = init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote);
 
     let action_content = fs::read_to_string(&action_path).unwrap();
     assert_eq!(action_content, "keep this action");
@@ -229,7 +215,7 @@ jobs:
 "#;
     fs::write(&workflow_path, existing_workflow).unwrap();
 
-    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
+    init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote).unwrap();
 
     let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
     // The kit's default schedule should be present
@@ -261,7 +247,7 @@ jobs:
 "#;
     fs::write(&workflow_path, existing_workflow).unwrap();
 
-    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
+    init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote).unwrap();
 
     let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
     // The preserved default should be present
@@ -277,7 +263,7 @@ jobs:
 fn init_workflows_includes_mock_support() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     let root = ctx.work_dir();
     let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
@@ -304,7 +290,7 @@ fn init_workflows_includes_mock_support() {
 fn init_workflows_no_scripts_references() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     let root = ctx.work_dir();
 

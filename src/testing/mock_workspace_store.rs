@@ -73,8 +73,16 @@ impl WorkspaceStore for MockWorkspaceStore {
         *self.exists.borrow()
     }
 
+    fn jlo_exists(&self) -> bool {
+        *self.exists.borrow()
+    }
+
     fn jules_path(&self) -> PathBuf {
         PathBuf::from(".jules")
+    }
+
+    fn jlo_path(&self) -> PathBuf {
+        PathBuf::from(".jlo")
     }
 
     fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
@@ -209,12 +217,6 @@ impl WorkspaceStore for MockWorkspaceStore {
 
     fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {
         Ok(())
-    }
-
-    fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError> {
-        let content = self.read_file(src)?;
-        self.write_file(dst, &content)?;
-        Ok(content.len() as u64)
     }
 
     fn resolve_path(&self, path: &str) -> PathBuf {

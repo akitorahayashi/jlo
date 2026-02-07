@@ -9,13 +9,19 @@ pub struct DiscoveredRole {
     pub id: RoleId,
 }
 
-/// Port for workspace operations (.jules/ directory management).
+/// Port for workspace operations (.jules/ and .jlo/ directory management).
 pub trait WorkspaceStore: PromptAssetLoader {
-    /// Check if the workspace exists.
+    /// Check if the runtime workspace (.jules/) exists.
     fn exists(&self) -> bool;
+
+    /// Check if the control plane (.jlo/) exists.
+    fn jlo_exists(&self) -> bool;
 
     /// Path to the .jules/ directory.
     fn jules_path(&self) -> PathBuf;
+
+    /// Path to the .jlo/ directory.
+    fn jlo_path(&self) -> PathBuf;
 
     /// Create the workspace directory structure.
     fn create_structure(&self, scaffold_files: &[super::ScaffoldFile]) -> Result<(), AppError>;
@@ -84,9 +90,6 @@ pub trait WorkspaceStore: PromptAssetLoader {
 
     /// Create directory recursively.
     fn create_dir_all(&self, path: &str) -> Result<(), AppError>;
-
-    /// Copy a file.
-    fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError>;
 
     /// Get the absolute path to a file within the workspace/root.
     fn resolve_path(&self, path: &str) -> PathBuf;

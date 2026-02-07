@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::adapters::assets::workstream_template_assets::workstream_template_files;
-use crate::domain::{AppError, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
+use crate::domain::{AppError, JLO_DIR, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
 /// Filesystem-based workspace store implementation.
@@ -56,8 +56,16 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         self.jules_path().exists()
     }
 
+    fn jlo_exists(&self) -> bool {
+        self.jlo_path().exists()
+    }
+
     fn jules_path(&self) -> PathBuf {
         self.root.join(JULES_DIR)
+    }
+
+    fn jlo_path(&self) -> PathBuf {
+        self.root.join(JLO_DIR)
     }
 
     fn create_structure(&self, scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
@@ -301,17 +309,6 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         let full_path = self.resolve_path(path);
         self.validate_path_within_root(&full_path)?;
         fs::create_dir_all(full_path).map_err(AppError::from)
-    }
-
-    fn copy_file(&self, src: &str, dst: &str) -> Result<u64, AppError> {
-        let src_path = self.resolve_path(src);
-        let dst_path = self.resolve_path(dst);
-        self.validate_path_within_root(&src_path)?;
-        self.validate_path_within_root(&dst_path)?;
-        if let Some(parent) = dst_path.parent() {
-            fs::create_dir_all(parent).map_err(AppError::from)?;
-        }
-        fs::copy(src_path, dst_path).map_err(AppError::from)
     }
 
     fn resolve_path(&self, path: &str) -> PathBuf {

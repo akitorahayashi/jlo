@@ -6,8 +6,10 @@ use common::TestContext;
 fn init_fails_if_exists() {
     let ctx = TestContext::new();
 
-    jlo::init_at(ctx.work_dir().to_path_buf()).expect("first init should succeed");
-    let err = jlo::init_at(ctx.work_dir().to_path_buf()).expect_err("second init should fail");
+    jlo::init_at(ctx.work_dir().to_path_buf(), jlo::WorkflowRunnerMode::Remote)
+        .expect("first init should succeed");
+    let err = jlo::init_at(ctx.work_dir().to_path_buf(), jlo::WorkflowRunnerMode::Remote)
+        .expect_err("second init should fail");
     assert!(matches!(err, jlo::AppError::WorkspaceExists));
 }
 

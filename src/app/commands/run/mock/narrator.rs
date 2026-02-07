@@ -180,8 +180,16 @@ mod tests {
             panic!("mock narrator no-op must not call exists");
         }
 
+        fn jlo_exists(&self) -> bool {
+            panic!("mock narrator no-op must not call jlo_exists");
+        }
+
         fn jules_path(&self) -> PathBuf {
             panic!("mock narrator no-op must not call jules_path");
+        }
+
+        fn jlo_path(&self) -> PathBuf {
+            panic!("mock narrator no-op must not call jlo_path");
         }
 
         fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
@@ -263,10 +271,6 @@ mod tests {
 
         fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {
             panic!("mock narrator no-op must not call create_dir_all");
-        }
-
-        fn copy_file(&self, _src: &str, _dst: &str) -> Result<u64, AppError> {
-            panic!("mock narrator no-op must not call copy_file");
         }
 
         fn resolve_path(&self, _path: &str) -> PathBuf {

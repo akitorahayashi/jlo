@@ -10,7 +10,7 @@ use std::fs;
 
 /// Helper to initialize scaffold and create a workstream
 fn setup_scaffold_with_workstream(ctx: &TestContext, workstream: &str) {
-    ctx.cli().args(["init", "scaffold"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     // Create a workstream with scheduled.toml
     let workstream_path = ctx.jules_path().join("workstreams").join(workstream);

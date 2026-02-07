@@ -12,7 +12,7 @@ use predicates::prelude::*;
 
 /// Helper to initialize scaffold in a test context
 fn setup_scaffold(ctx: &TestContext) {
-    ctx.cli().args(["init", "scaffold"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 }
 
 #[test]

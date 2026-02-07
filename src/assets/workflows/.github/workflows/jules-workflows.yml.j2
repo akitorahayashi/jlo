@@ -73,6 +73,11 @@ env:
 {% import "workflows/jules-workflows/macros/run_job.j2" as run_macro %}
 jobs:
   # ============================================================
+  # Phase 0: Bootstrap runtime workspace on jules branch
+  # ============================================================
+{% include "workflows/jules-workflows/components/bootstrap.yml.j2" %}
+
+  # ============================================================
   # Phase 1: Run narrator (changes feed generation)
   # ============================================================
 {% include "workflows/jules-workflows/components/run-narrator.yml.j2" %}

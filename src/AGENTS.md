@@ -46,18 +46,20 @@ tests/
 
 | Term | Definition |
 |------|------------|
-| **Scaffold** | The immutable `.jules/` directory structure managed by `jlo init` and `jlo update`. |
+| **Control plane** | The `.jlo/` directory on the control branch (e.g. `main`). Source of truth for all configuration, role definitions, and version pins. |
+| **Runtime plane** | The `.jules/` directory on the `jules` branch. Materialized from `.jlo/` by workflow bootstrap; hosts agent exchange artifacts. |
+| **Scaffold** | Embedded static files in `src/assets/scaffold/` that seed `.jlo/` on init and are reconciled on update. |
+| **Projection** | Deterministic materialization of `.jules/` from `.jlo/` + scaffold assets during workflow bootstrap. See `docs/CONTROL_PLANE_OWNERSHIP.md`. |
 | **Template** | Blueprints for creating new roles or workstreams, applied via `jlo template`. |
-| **Workflow kit** | `.github/` automation assets installed by `jlo init workflows`. |
+| **Workflow kit** | `.github/` automation assets installed by `jlo init`. |
 | **Component** | Development tools managed by `jlo setup`, defined in `src/assets/catalog/`. |
 
 ## CLI Commands
 
 | Command | Alias | Description |
 |---------|-------|-------------|
-| `jlo init [scaffold]` | `i` | Create `.jules/` structure with setup directory |
-| `jlo init workflows (--remote \| --self-hosted)` | `i w` | Install workflow kit into `.github/` |
-| `jlo update [--prompt-preview] [--adopt-managed]` | `u` | Update workspace to current jlo version |
+| `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow kit |
+| `jlo update [--prompt-preview]` | `u` | Advance `.jlo/` control-plane version pin |
 | `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
 | `jlo run narrator [--prompt-preview] [--branch <branch>] [--mock]` | `r n` | Run narrator (produces changes feed) |
 | `jlo run observers --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |
@@ -78,7 +80,7 @@ tests/
 | `jlo workflow workstreams publish-proposals <workstream>` | | Publish innovator proposals as GitHub issues |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list [--detail <component>]` | `s ls` | List available components |
-| `jlo deinit` | | Remove jlo-managed assets (branch + workflows) |
+| `jlo deinit` | | Remove all jlo-managed assets (`.jlo/`, branch, workflows) |
 
 ## Verification Commands
 

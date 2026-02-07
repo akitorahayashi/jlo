@@ -1,5 +1,7 @@
   run-narrator:
+    needs: [bootstrap]
     if: >-
+      needs.bootstrap.result == 'success' &&
       vars.JULES_PAUSED != 'true' &&
       (
         github.event_name == 'schedule' ||
@@ -22,13 +24,6 @@
 
       - name: Configure Git
         uses: ./.github/actions/configure-git
-
-      - name: Validate .jules workspace exists
-        run: |
-          if [ ! -d ".jules" ]; then
-            echo "::error::.jules directory is missing on the 'jules' branch."
-            exit 1
-          fi
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
