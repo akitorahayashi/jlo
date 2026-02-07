@@ -73,6 +73,12 @@ where
         })?;
 
     let observer_role = options.role.as_deref().unwrap_or("mock");
+    if !validate_safe_path_component(observer_role) {
+        return Err(AppError::Validation(format!(
+            "Invalid role name '{}': must be alphanumeric with hyphens or underscores only",
+            observer_role
+        )));
+    }
 
     // Create mock event 1 (for planner routing)
     let event_id_1 = generate_mock_id();
@@ -138,9 +144,10 @@ where
                 .ok_or_else(|| AppError::Validation("Invalid comments path".to_string()))?;
             workspace.create_dir_all(comments_dir_str)?;
 
-            // Deterministic filename: observer-{observer_role}-{event_id}.yml
+            // Deterministic filename: observer-{observer_role}-{mock_tag}.yml
+            // Uses mock_tag (not event_id) to ensure idempotency per run.
             let comment_file =
-                comments_dir.join(format!("observer-{}-{}.yml", observer_role, event_id_1));
+                comments_dir.join(format!("observer-{}-{}.yml", observer_role, config.mock_tag));
             let comment_content = mock_comment_template
                 .replace(COMMENT_TMPL_AUTHOR, observer_role)
                 .replace(COMMENT_TMPL_TAG, &config.mock_tag);
