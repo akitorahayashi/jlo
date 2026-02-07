@@ -12,6 +12,7 @@ use crate::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::AppContext;
 use crate::domain::workspace::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};
+use crate::domain::workspace::workspace_layout::{JULES_DIR, VERSION_FILE};
 use crate::domain::{AppError, ScaffoldManifest};
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
 
@@ -77,7 +78,7 @@ pub fn execute(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOut
 
 /// Read the `.jlo-version` from the `.jules/` runtime workspace.
 fn read_runtime_version(root: &Path) -> Option<String> {
-    let version_path = root.join(".jules/.jlo-version");
+    let version_path = root.join(JULES_DIR).join(VERSION_FILE);
     std::fs::read_to_string(version_path).ok().map(|s| s.trim().to_string())
 }
 

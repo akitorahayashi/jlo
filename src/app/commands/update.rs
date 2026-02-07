@@ -95,7 +95,7 @@ where
             continue;
         }
         // Only create missing files; never overwrite user-owned content
-        if !workspace.resolve_path(&file.path).exists() {
+        if !workspace.file_exists(&file.path) {
             to_create.push((file.path.clone(), file.content.clone()));
         }
     }

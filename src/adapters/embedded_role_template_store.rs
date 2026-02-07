@@ -40,25 +40,22 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
         let mut files = Vec::new();
         collect_files(&SCAFFOLD_DIR, &mut files);
 
-        // Collect .jlo/ scaffold files directly
-        let mut result: Vec<ScaffoldFile> =
-            files.iter().filter(|f| f.path.starts_with(".jlo/")).cloned().collect();
-
-        // Extract user intent files from .jules/ scaffold and remap to .jlo/ paths:
-        // - role.yml files (user-customizable role definitions)
-        // - scheduled.toml (workstream schedules)
+        let mut result = Vec::new();
         for f in &files {
-            if !f.path.starts_with(".jules/") {
-                continue;
-            }
-            let is_role_yml = f.path.ends_with("/role.yml")
-                && f.path.contains("/roles/")
-                && f.path.split('/').count() >= 6;
-            let is_schedule = f.path.ends_with("/scheduled.toml");
+            if f.path.starts_with(".jlo/") {
+                result.push(f.clone());
+            } else if f.path.starts_with(".jules/") {
+                // A path like `.jules/roles/observers/roles/my-role/role.yml` has 6 segments.
+                // This identifies user-customizable role definitions.
+                let is_role_yml = f.path.ends_with("/role.yml")
+                    && f.path.contains("/roles/")
+                    && f.path.split('/').count() >= 6;
+                let is_schedule = f.path.ends_with("/scheduled.toml");
 
-            if is_role_yml || is_schedule {
-                let jlo_path = f.path.replacen(".jules/", ".jlo/", 1);
-                result.push(ScaffoldFile { path: jlo_path, content: f.content.clone() });
+                if is_role_yml || is_schedule {
+                    let jlo_path = f.path.replacen(".jules/", ".jlo/", 1);
+                    result.push(ScaffoldFile { path: jlo_path, content: f.content.clone() });
+                }
             }
         }
 

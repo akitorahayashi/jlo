@@ -36,11 +36,7 @@ where
     // Create .jlo/ control plane (minimal intent overlay)
     let control_plane_files = ctx.templates().control_plane_files();
     for entry in &control_plane_files {
-        let path = ctx.workspace().resolve_path(&entry.path);
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        std::fs::write(&path, &entry.content)?;
+        ctx.workspace().write_file(&entry.path, &entry.content)?;
     }
 
     // Write version pin to .jlo/
