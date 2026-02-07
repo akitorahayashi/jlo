@@ -8,6 +8,7 @@ pub mod config;
 pub mod decider;
 pub mod identity;
 pub mod implementer;
+pub mod innovator;
 pub mod narrator;
 pub mod observer;
 pub mod planner;
@@ -25,6 +26,7 @@ use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 use self::config::{load_mock_config, validate_mock_prerequisites};
 use self::decider::execute_mock_deciders;
 use self::implementer::execute_mock_implementers;
+use self::innovator::execute_mock_innovators;
 use self::narrator::execute_mock_narrator;
 use self::observer::execute_mock_observers;
 use self::planner::execute_mock_planners;
@@ -64,9 +66,7 @@ where
             execute_mock_implementers(jules_path, options, &mock_config, git, github, workspace)
         }
         Layer::Innovators => {
-            return Err(AppError::Validation(
-                "Innovator layer mock execution is not yet implemented".into(),
-            ));
+            execute_mock_innovators(jules_path, options, &mock_config, git, github, workspace)
         }
     }?;
 

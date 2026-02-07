@@ -26,9 +26,7 @@ where
         Layer::Deciders => execute_multi_role(store, options, &jules_path, git, github),
         Layer::Planners => execute_issue_layer(store, options, &jules_path, git, github),
         Layer::Implementers => execute_issue_layer(store, options, &jules_path, git, github),
-        Layer::Innovators => {
-            Err(AppError::Validation("Innovator layer execution is not yet implemented".into()))
-        }
+        Layer::Innovators => execute_multi_role(store, options, &jules_path, git, github),
     }
 }
 
@@ -87,6 +85,9 @@ where
     let roles = match options.layer {
         Layer::Observers => schedule.observers.enabled_roles(),
         Layer::Deciders => schedule.deciders.enabled_roles(),
+        Layer::Innovators => {
+            schedule.innovators.as_ref().map(|l| l.enabled_roles()).unwrap_or_default()
+        }
         _ => {
             return Err(AppError::Validation("Invalid layer for multi-role execution".to_string()));
         }
