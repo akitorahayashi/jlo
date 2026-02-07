@@ -1,0 +1,45 @@
+  bootstrap:
+    runs-on: {{ runner }}
+    timeout-minutes: 10
+    outputs:
+      json: {{ gha_expr("steps.bootstrap.outputs.json") }}
+    env:
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Ensure jules branch
+        run: |
+          set -euo pipefail
+          if git rev-parse --verify origin/jules >/dev/null 2>&1; then
+            echo "jules branch exists, checking out"
+            git checkout jules
+          else
+            echo "Creating orphan jules branch from HEAD"
+            git checkout --orphan jules
+            git rm -rf . 2>/dev/null || true
+            git commit --allow-empty -m "chore: initialize jules branch"
+          fi
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Bootstrap runtime workspace
+        id: bootstrap
+        run: |
+          set -euo pipefail
+          jlo workflow bootstrap
+          if [ -n "$(git status --porcelain .jules)" ]; then
+            git add .jules/
+            git commit -m "chore: bootstrap .jules/ runtime workspace [jlo $(jlo --version | awk '{print $2}')]"
+            git push origin jules
+            echo "committed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+          fi

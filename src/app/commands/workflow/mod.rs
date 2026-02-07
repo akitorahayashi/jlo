@@ -3,6 +3,7 @@
 //! This module provides machine I/O primitives that remain usable outside GitHub Actions
 //! (e.g. self-hosted workers), while keeping workflow YAML thin.
 
+pub mod bootstrap;
 pub mod cleanup;
 mod doctor;
 pub mod matrix;
@@ -12,6 +13,7 @@ mod run;
 #[path = "workstreams/mod.rs"]
 pub mod workstreams;
 
+pub use bootstrap::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
 pub use cleanup::{WorkflowCleanupMockOptions, WorkflowCleanupMockOutput};
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
 pub use output::write_workflow_output;
@@ -25,6 +27,11 @@ pub use workstreams::{
 
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
+
+/// Execute workflow bootstrap.
+pub fn bootstrap(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOutput, AppError> {
+    bootstrap::execute(options)
+}
 
 /// Execute workflow doctor validation.
 pub fn doctor(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, AppError> {

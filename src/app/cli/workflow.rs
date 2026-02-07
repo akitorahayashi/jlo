@@ -5,6 +5,8 @@ use clap::Subcommand;
 
 #[derive(Subcommand)]
 pub enum WorkflowCommands {
+    /// Bootstrap the .jules/ runtime workspace on the current branch
+    Bootstrap,
     /// Validation gate for .jules/ workspace
     Doctor {
         /// Limit checks to a specific workstream
@@ -132,6 +134,14 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
     use crate::app::commands::workflow;
 
     match command {
+        WorkflowCommands::Bootstrap => {
+            let root = std::env::current_dir().map_err(|e| {
+                AppError::InternalError(format!("Failed to get current directory: {}", e))
+            })?;
+            let options = workflow::WorkflowBootstrapOptions { root };
+            let output = workflow::bootstrap(options)?;
+            workflow::write_workflow_output(&output)
+        }
         WorkflowCommands::Doctor { workstream } => {
             let options = workflow::WorkflowDoctorOptions { workstream };
             let output = workflow::doctor(options)?;
