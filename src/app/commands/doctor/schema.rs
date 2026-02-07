@@ -753,6 +753,7 @@ evidence: []
     fn test_validate_issue_data_valid() {
         let yaml = r#"
 schema_version: 2
+requires_deep_analysis: false
 id: "abc123"
 source_events: ["ev1234"]
 title: "Bug fix"
