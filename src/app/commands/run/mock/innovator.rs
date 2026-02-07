@@ -8,6 +8,22 @@ use crate::domain::identities::validation::validate_safe_path_component;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
+// Template placeholder constants (must match src/assets/mock/innovator_idea.yml)
+const TMPL_ID: &str = "mock01";
+const TMPL_PERSONA: &str = "mock-persona";
+const TMPL_WORKSTREAM: &str = "mock-workstream";
+const TMPL_DATE: &str = "2026-02-05";
+const TMPL_TAG: &str = "test-tag";
+
+/// Sanitize a value for safe embedding in YAML scalar fields.
+/// Strips characters that could break YAML structure.
+fn sanitize_yaml_value(value: &str) -> String {
+    value
+        .chars()
+        .filter(|c| !matches!(c, '\n' | '\r' | ':' | '#' | '\'' | '"' | '{' | '}' | '[' | ']'))
+        .collect()
+}
+
 /// Execute mock innovators.
 ///
 /// Toggle semantics:
@@ -61,17 +77,8 @@ where
         .to_str()
         .ok_or_else(|| AppError::Validation("Invalid idea.yml path".to_string()))?;
 
-    let idea_exists = workspace.file_exists(idea_path_str);
-
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Innovators, &timestamp)?;
-
-    println!(
-        "Mock innovators: {} idea.yml for {}/{}",
-        if idea_exists { "removing" } else { "creating" },
-        workstream,
-        role
-    );
 
     // Fetch and checkout from jules branch
     git.fetch("origin")?;
@@ -82,6 +89,16 @@ where
     let room_dir_str =
         room_dir.to_str().ok_or_else(|| AppError::Validation("Invalid room path".to_string()))?;
     workspace.create_dir_all(room_dir_str)?;
+
+    // Check idea.yml existence after checkout to avoid TOCTOU race
+    let idea_exists = workspace.file_exists(idea_path_str);
+
+    println!(
+        "Mock innovators: {} idea.yml for {}/{}",
+        if idea_exists { "removing" } else { "creating" },
+        workstream,
+        role
+    );
 
     if idea_exists {
         // Refinement phase mock: remove idea.yml (simulates proposal creation + cleanup)
@@ -95,17 +112,22 @@ where
         // Creation phase mock: create idea.yml from template
         let mock_idea_template = super::MOCK_ASSETS
             .get_file("innovator_idea.yml")
-            .expect("Mock asset missing: innovator_idea.yml")
+            .ok_or_else(|| {
+                AppError::InternalError("Mock asset missing: innovator_idea.yml".to_string())
+            })?
             .contents_utf8()
-            .expect("Invalid UTF-8 in innovator_idea.yml");
+            .ok_or_else(|| {
+                AppError::InternalError("Invalid UTF-8 in innovator_idea.yml".to_string())
+            })?;
 
         let idea_id = generate_mock_id();
+        let safe_tag = sanitize_yaml_value(&config.mock_tag);
         let idea_content = mock_idea_template
-            .replace("mock01", &idea_id)
-            .replace("mock-persona", role)
-            .replace("mock-workstream", workstream)
-            .replace("2026-02-05", &Utc::now().format("%Y-%m-%d").to_string())
-            .replace("test-tag", &config.mock_tag);
+            .replace(TMPL_ID, &idea_id)
+            .replace(TMPL_PERSONA, role)
+            .replace(TMPL_WORKSTREAM, workstream)
+            .replace(TMPL_DATE, &Utc::now().format("%Y-%m-%d").to_string())
+            .replace(TMPL_TAG, &safe_tag);
 
         workspace.write_file(idea_path_str, &idea_content)?;
         let files: Vec<&Path> = vec![idea_path.as_path()];
@@ -333,6 +355,10 @@ mod tests {
 
     #[test]
     fn mock_innovator_double_toggle_leaves_clean_state() {
+        // Note: Both invocations may produce the same branch name when run
+        // within the same second. This is acceptable because FakeGit does
+        // not enforce branch uniqueness, and real execution is serialized
+        // by the workflow scheduler with distinct timestamps.
         let jules_path = PathBuf::from(".jules");
         let workspace = MockWorkspaceStore::new().with_exists(true);
         let git = FakeGit::new();
