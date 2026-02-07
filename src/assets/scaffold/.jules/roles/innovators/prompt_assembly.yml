@@ -10,6 +10,8 @@ includes:
     path: ".jules/roles/innovators/roles/{{role}}/role.yml"
   - title: "Layer Contracts"
     path: ".jules/roles/innovators/contracts.yml"
+  - title: "Observer Comment Schema"
+    path: ".jules/roles/innovators/schemas/comment.yml"
   - title: "Change Summary"
     path: ".jules/changes/latest.yml"
     optional: true

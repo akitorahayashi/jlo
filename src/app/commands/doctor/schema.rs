@@ -837,6 +837,46 @@ fn validate_innovator_comment(path: &Path, diagnostics: &mut Diagnostics) {
 
     let comment_types = ["risk", "supplement", "alternative"];
     ensure_enum(&data, path, "type", &comment_types, diagnostics);
+    ensure_non_empty_string(&data, path, "target", diagnostics);
+    ensure_non_empty_string(&data, path, "summary", diagnostics);
+    ensure_non_empty_string(&data, path, "rationale", diagnostics);
+
+    if let Some(evidence) = get_sequence(&data, "evidence") {
+        if evidence.is_empty() {
+            diagnostics.push_error(path.display().to_string(), "evidence must have entries");
+        } else {
+            for (idx, entry) in evidence.iter().enumerate() {
+                if let serde_yaml::Value::Mapping(map) = entry {
+                    if get_string(map, "path").unwrap_or_default().is_empty() {
+                        diagnostics.push_error(
+                            path.display().to_string(),
+                            format!("evidence[{}].path is required", idx),
+                        );
+                    }
+                    if get_sequence(map, "loc").map(|seq| seq.is_empty()).unwrap_or(true) {
+                        diagnostics.push_error(
+                            path.display().to_string(),
+                            format!("evidence[{}].loc is required", idx),
+                        );
+                    }
+                    if get_string(map, "note").unwrap_or_default().is_empty() {
+                        diagnostics.push_error(
+                            path.display().to_string(),
+                            format!("evidence[{}].note is required", idx),
+                        );
+                    }
+                } else {
+                    diagnostics.push_error(
+                        path.display().to_string(),
+                        format!("evidence[{}] must be a map", idx),
+                    );
+                }
+            }
+        }
+    } else {
+        diagnostics.push_error(path.display().to_string(), "Missing evidence list");
+    }
+
     ensure_non_empty_string(&data, path, "content", diagnostics);
 }
 

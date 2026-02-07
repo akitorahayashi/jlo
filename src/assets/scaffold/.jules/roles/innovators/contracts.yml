@@ -20,6 +20,7 @@ inputs:
   - .jules/roles/innovators/roles/<role>/role.yml (Innovator Persona Definition)
   - .jules/workstreams/<workstream>/exchange/innovators/<persona>/perspective.yml (Persona Memory)
   - .jules/workstreams/<workstream>/exchange/innovators/<persona>/idea.yml (Current Idea, if present)
+  - .jules/roles/innovators/schemas/comment.yml (Observer feedback comment schema)
   - .jules/workstreams/<workstream>/exchange/innovators/<persona>/comments/*.yml (Observer Feedback)
 
 outputs:
@@ -30,6 +31,6 @@ outputs:
 workflow:
   - "1. Read role.yml and perspective.yml to establish identity and context."
   - "2. If idea.yml is absent (Creation phase): Inspect the codebase, consider recent_proposals to avoid duplicates, and create idea.yml."
-  - "3. If idea.yml is present (Refinement phase): Read comments/*.yml and create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals."
+  - "3. If idea.yml is present (Refinement phase): Read comments/*.yml as structured feedback defined by schemas/comment.yml and create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals."
   - "4. Update perspective.yml recent_proposals, then delete idea.yml and comments/*.yml."
   - "5. Before final output, self-check against role.yml proposal_quality_bar and evidence_expectations."
