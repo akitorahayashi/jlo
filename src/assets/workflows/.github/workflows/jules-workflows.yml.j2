@@ -24,6 +24,7 @@ on:
           - deciders
           - planners
           - implementers
+          - innovators
         default: narrator
       wait_minutes:
         description: 'Minutes to wait between layers (Jules async processing time)'
@@ -188,7 +189,47 @@ jobs:
         run: jlo workflow matrix workstreams
 
   # ============================================================
-  # Phase 4: Run observers
+  # Phase 4: Run innovators (first pass — idea creation)
+  # ============================================================
+  run-innovators-1:
+    needs: generate-workstream-matrix
+    if: |
+      always() &&
+      needs.generate-workstream-matrix.result == 'success' &&
+      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true
+    runs-on: {{ runner }}
+    timeout-minutes: 30
+    outputs:
+      json: {{ gha_expr("steps.run.outputs.json") }}
+    env:
+      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Run innovators (first pass) for each workstream
+        id: run
+        env:
+          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
+        run: |
+          set -euo pipefail
+          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
+            echo "Running innovators (first pass) for workstream: $ws"
+            jlo workflow run "$ws" innovators {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          done
+
+  # ============================================================
+  # Phase 5: Run observers
   # ============================================================
   run-observers:
     needs: generate-workstream-matrix
@@ -228,7 +269,7 @@ jobs:
           done
 
   # ============================================================
-  # Phase 5: Wait for observer processing
+  # Phase 6: Wait for observer processing
   # ============================================================
   wait-after-observers:
     needs: [generate-workstream-matrix, run-observers]
@@ -261,7 +302,150 @@ jobs:
           process_name: observers
 
   # ============================================================
-  # Phase 6: Generate decider matrix (pending events check)
+  # Phase 7: Wait for innovator processing (first pass)
+  # ============================================================
+  wait-after-innovators-1:
+    needs: [run-innovators-1]
+    if: |
+      always() &&
+      needs.run-innovators-1.result == 'success'
+    runs-on: {{ runner }}
+    timeout-minutes: 60
+    outputs:
+      json: {{ gha_expr("steps.wait.outputs.json") }}
+    env:
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
+        id: wait
+        uses: ./.github/actions/wait
+        with:
+          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
+          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
+          process_name: innovators-1
+
+  # ============================================================
+  # Phase 8: Run innovators (second pass — proposal and cleanup)
+  # ============================================================
+  run-innovators-2:
+    needs: [generate-workstream-matrix, wait-after-observers, wait-after-innovators-1]
+    if: |
+      always() &&
+      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
+      (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped') &&
+      (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')
+    runs-on: {{ runner }}
+    timeout-minutes: 30
+    outputs:
+      json: {{ gha_expr("steps.run.outputs.json") }}
+    env:
+      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Run innovators (second pass) for each workstream
+        id: run
+        env:
+          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
+        run: |
+          set -euo pipefail
+          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
+            echo "Running innovators (second pass) for workstream: $ws"
+            jlo workflow run "$ws" innovators {{ gha_raw("env.JLO_RUN_FLAGS") }}
+          done
+
+  # ============================================================
+  # Phase 9: Wait for innovator processing (second pass)
+  # ============================================================
+  wait-after-innovators-2:
+    needs: [run-innovators-2]
+    if: |
+      always() &&
+      needs.run-innovators-2.result == 'success'
+    runs-on: {{ runner }}
+    timeout-minutes: 60
+    outputs:
+      json: {{ gha_expr("steps.wait.outputs.json") }}
+    env:
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
+        id: wait
+        uses: ./.github/actions/wait
+        with:
+          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
+          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
+          process_name: innovators-2
+
+  # ============================================================
+  # Phase 10: Publish innovator proposals as GitHub issues
+  # ============================================================
+  publish-proposals:
+    needs: [generate-workstream-matrix, wait-after-innovators-2]
+    if: |
+      always() &&
+      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
+      (needs.wait-after-innovators-2.result == 'success' || needs.wait-after-innovators-2.result == 'skipped')
+    runs-on: {{ runner }}
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Publish proposals for each workstream
+        env:
+          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
+        run: |
+          set -euo pipefail
+          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
+            echo "Publishing proposals for workstream: $ws"
+            jlo workflow workstreams publish-proposals "$ws"
+          done
+
+  # ============================================================
+  # Phase 11: Generate decider matrix (pending events check)
   # ============================================================
   generate-decider-matrix:
     needs: [generate-workstream-matrix, wait-after-observers]
@@ -291,7 +475,7 @@ jobs:
           jlo workflow matrix pending-workstreams --workstreams-json "$WORKSTREAMS_JSON"
 
   # ============================================================
-  # Phase 8: Run deciders
+  # Phase 12: Run deciders
   # ============================================================
   run-deciders:
     needs: [generate-decider-matrix]
@@ -331,7 +515,7 @@ jobs:
           done
 
   # ============================================================
-  # Phase 9: Wait for decider processing
+  # Phase 13: Wait for decider processing
   # ============================================================
   wait-after-deciders:
     needs: [generate-decider-matrix, run-deciders]
@@ -364,7 +548,7 @@ jobs:
           process_name: deciders
 
   # ============================================================
-  # Phase 10: Generate routing matrices (new issues)
+  # Phase 14: Generate routing matrices (new issues)
   # ============================================================
   generate-planner-matrix:
     needs: [generate-workstream-matrix, generate-decider-matrix, run-deciders, wait-after-deciders]
@@ -396,7 +580,7 @@ jobs:
           jlo workflow matrix routing --workstreams-json "$WORKSTREAMS_JSON" --routing-labels "$ROUTING_LABELS"
 
   # ============================================================
-  # Phase 11: Run planners
+  # Phase 15: Run planners
   # ============================================================
   run-planners:
     needs: [generate-planner-matrix]
@@ -437,7 +621,7 @@ jobs:
           done
 
   # ============================================================
-  # Phase 12: Wait for planner PRs
+  # Phase 16: Wait for planner PRs
   # ============================================================
   wait-after-planners:
     needs: [run-planners]
@@ -470,7 +654,7 @@ jobs:
           process_name: planners
 
   # ============================================================
-  # Phase 13: Run implementers
+  # Phase 17: Run implementers
   # ============================================================
   run-implementers:
     needs: [generate-planner-matrix]
@@ -512,7 +696,7 @@ jobs:
           done
 
   # ============================================================
-  # Phase 14: Wait for implementer labels
+  # Phase 18: Wait for implementer labels
   # ============================================================
   wait-after-implementers:
     needs: [run-implementers]
