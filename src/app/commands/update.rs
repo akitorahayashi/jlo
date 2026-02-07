@@ -437,6 +437,10 @@ mod tests {
             self.files.clone()
         }
 
+        fn control_plane_files(&self) -> Vec<ScaffoldFile> {
+            self.files.iter().filter(|f| f.path.starts_with(".jlo/")).cloned().collect()
+        }
+
         fn layer_template(&self, _layer: Layer) -> &str {
             ""
         }

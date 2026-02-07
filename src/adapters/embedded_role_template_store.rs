@@ -30,8 +30,40 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
     fn scaffold_files(&self) -> Vec<ScaffoldFile> {
         let mut files = Vec::new();
         collect_files(&SCAFFOLD_DIR, &mut files);
+        // Return only .jules/ scaffold files (not .jlo/)
+        files.retain(|f| f.path.starts_with(".jules/"));
         files.sort_by(|a, b| a.path.cmp(&b.path));
         files
+    }
+
+    fn control_plane_files(&self) -> Vec<ScaffoldFile> {
+        let mut files = Vec::new();
+        collect_files(&SCAFFOLD_DIR, &mut files);
+
+        // Collect .jlo/ scaffold files directly
+        let mut result: Vec<ScaffoldFile> =
+            files.iter().filter(|f| f.path.starts_with(".jlo/")).cloned().collect();
+
+        // Extract user intent files from .jules/ scaffold and remap to .jlo/ paths:
+        // - role.yml files (user-customizable role definitions)
+        // - scheduled.toml (workstream schedules)
+        for f in &files {
+            if !f.path.starts_with(".jules/") {
+                continue;
+            }
+            let is_role_yml = f.path.ends_with("/role.yml")
+                && f.path.contains("/roles/")
+                && f.path.split('/').count() >= 6;
+            let is_schedule = f.path.ends_with("/scheduled.toml");
+
+            if is_role_yml || is_schedule {
+                let jlo_path = f.path.replacen(".jules/", ".jlo/", 1);
+                result.push(ScaffoldFile { path: jlo_path, content: f.content.clone() });
+            }
+        }
+
+        result.sort_by(|a, b| a.path.cmp(&b.path));
+        result
     }
 
     fn layer_template(&self, _layer: Layer) -> &str {
@@ -81,6 +113,58 @@ mod tests {
         let store = EmbeddedRoleTemplateStore::new();
         let files = store.scaffold_files();
         assert!(files.iter().any(|f| f.path == ".jules/JULES.md"));
+    }
+
+    #[test]
+    fn scaffold_excludes_jlo_files() {
+        let store = EmbeddedRoleTemplateStore::new();
+        let files = store.scaffold_files();
+        assert!(files.iter().all(|f| f.path.starts_with(".jules/")));
+    }
+
+    #[test]
+    fn control_plane_files_include_config() {
+        let store = EmbeddedRoleTemplateStore::new();
+        let files = store.control_plane_files();
+        assert!(files.iter().any(|f| f.path == ".jlo/config.toml"));
+    }
+
+    #[test]
+    fn control_plane_files_include_setup() {
+        let store = EmbeddedRoleTemplateStore::new();
+        let files = store.control_plane_files();
+        assert!(files.iter().any(|f| f.path == ".jlo/setup/tools.yml"));
+        assert!(files.iter().any(|f| f.path == ".jlo/setup/.gitignore"));
+    }
+
+    #[test]
+    fn control_plane_files_include_role_customizations() {
+        let store = EmbeddedRoleTemplateStore::new();
+        let files = store.control_plane_files();
+        assert!(
+            files
+                .iter()
+                .any(|f| f.path.starts_with(".jlo/roles/") && f.path.ends_with("/role.yml"))
+        );
+    }
+
+    #[test]
+    fn control_plane_files_include_schedule() {
+        let store = EmbeddedRoleTemplateStore::new();
+        let files = store.control_plane_files();
+        assert!(files.iter().any(|f| f.path.ends_with("/scheduled.toml")));
+    }
+
+    #[test]
+    fn control_plane_files_exclude_managed_framework() {
+        let store = EmbeddedRoleTemplateStore::new();
+        let files = store.control_plane_files();
+        // Managed framework files should not be in control plane
+        assert!(files.iter().all(|f| !f.path.ends_with("/contracts.yml")));
+        assert!(files.iter().all(|f| !f.path.ends_with("/prompt.yml")));
+        assert!(files.iter().all(|f| !f.path.contains("/schemas/")));
+        assert!(files.iter().all(|f| f.path != ".jlo/JULES.md"));
+        assert!(files.iter().all(|f| f.path != ".jlo/README.md"));
     }
 
     #[test]

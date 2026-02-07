@@ -20,7 +20,7 @@ impl TestContext {
         let work_dir = root.path().join("work");
         fs::create_dir_all(&work_dir).expect("Failed to create test work directory");
 
-        // Initialize git repo and switch to jules branch to satisfy init requirements
+        // Initialize git repo on a control branch (not 'jules')
         let output = std::process::Command::new("git")
             .arg("init")
             .current_dir(&work_dir)
@@ -29,17 +29,6 @@ impl TestContext {
         assert!(
             output.status.success(),
             "git init failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-
-        let output = std::process::Command::new("git")
-            .args(["checkout", "-b", "jules"])
-            .current_dir(&work_dir)
-            .output()
-            .expect("Failed to checkout jules branch");
-        assert!(
-            output.status.success(),
-            "git checkout failed: {}",
             String::from_utf8_lossy(&output.stderr)
         );
 
@@ -86,6 +75,21 @@ impl TestContext {
         let mut cmd = Command::cargo_bin("jlo").expect("Failed to locate jlo binary");
         cmd.current_dir(dir.as_ref()).env("HOME", self.home());
         cmd
+    }
+
+    /// Path to the .jlo directory in the work directory.
+    pub fn jlo_path(&self) -> PathBuf {
+        self.work_dir.join(".jlo")
+    }
+
+    /// Assert that .jlo directory exists.
+    pub fn assert_jlo_exists(&self) {
+        assert!(self.jlo_path().exists(), ".jlo directory should exist");
+    }
+
+    /// Assert that .jlo directory does not exist.
+    pub fn assert_jlo_not_exists(&self) {
+        assert!(!self.jlo_path().exists(), ".jlo directory should not exist");
     }
 
     /// Path to the .jules directory in the work directory.
@@ -275,7 +279,22 @@ impl TestContext {
         );
     }
 
-    /// Read the .jlo-version file.
+    /// Read the .jlo-version file from the .jlo/ control plane.
+    pub fn read_jlo_version(&self) -> Option<String> {
+        let version_path = self.jlo_path().join(".jlo-version");
+        if version_path.exists() {
+            Some(
+                fs::read_to_string(version_path)
+                    .expect("Failed to read version")
+                    .trim()
+                    .to_string(),
+            )
+        } else {
+            None
+        }
+    }
+
+    /// Read the .jlo-version file from the .jules/ runtime workspace.
     pub fn read_version(&self) -> Option<String> {
         let version_path = self.jules_path().join(".jlo-version");
         if version_path.exists() {

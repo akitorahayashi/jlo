@@ -1,6 +1,5 @@
 use jlo::{
-    DoctorOptions, WorkflowRunnerMode, doctor_at, init_at, init_workflows_at, setup_list,
-    template_at, update_at,
+    DoctorOptions, WorkflowRunnerMode, doctor_at, init_at, setup_list, template_at, update_at,
 };
 use tempfile::TempDir;
 
@@ -9,40 +8,20 @@ fn test_api_coverage_full_flow() {
     let temp = TempDir::new().unwrap();
     let root = temp.path().to_path_buf();
 
-    // 1. Init
-    // Initialize git repo because jlo init requires it
+    // Initialize git repo
     std::process::Command::new("git")
         .current_dir(&root)
         .arg("init")
         .status()
         .expect("failed to init git");
 
-    // Also need to be on a branch named 'jules' or similar?
-    // Memory says: "The `jlo init` command implementation ... strictly enforces that the current git branch is named `jules` before proceeding."
-    // Let's create and checkout branch 'jules'.
-    std::process::Command::new("git")
-        .current_dir(&root)
-        .args(["checkout", "-b", "jules"])
-        .status()
-        .or_else(|_| {
-            // If checkout -b fails (maybe initial commit needed?), try creating it differently.
-            // Actually on empty repo, checkout -b works if it's the first branch? No, HEAD points to nothing.
-            // Need an initial commit first.
-            std::process::Command::new("git")
-                .current_dir(&root)
-                .args(["commit", "--allow-empty", "-m", "initial", "--no-gpg-sign"])
-                .status()
-                .and_then(|_| {
-                    std::process::Command::new("git")
-                        .current_dir(&root)
-                        .args(["checkout", "-b", "jules"])
-                        .status()
-                })
-        })
-        .expect("failed to setup jules branch");
+    // Init requires a non-jules branch (control branch)
+    // Default branch after git init is typically 'main' or 'master'; that's fine.
 
-    init_at(root.clone()).expect("init failed");
-    assert!(root.join(".jules").exists());
+    init_at(root.clone(), WorkflowRunnerMode::Remote).expect("init failed");
+    assert!(root.join(".jlo").exists(), ".jlo/ control plane should exist");
+    assert!(root.join(".jules").exists(), ".jules/ runtime workspace should exist");
+    assert!(root.join(".github/workflows").exists(), "workflow kit should be installed");
 
     // 2. Doctor (fresh init should pass)
     let doctor_outcome =
@@ -55,21 +34,12 @@ fn test_api_coverage_full_flow() {
     assert!(update_result.prompt_preview);
 
     // 4. Template (create role in generic workstream)
-    // "generic" workstream is created by init
-    // Note: Roles are created in global layer directory, not workstream directory.
     let _ = template_at(Some("observers"), Some("test-observer"), Some("generic"), root.clone())
         .expect("template role failed");
 
     // Check global role location: .jules/roles/<layer>/roles/<role>
     let role_path = root.join(".jules/roles/observers/roles/test-observer");
     assert!(role_path.exists(), "Role not found at {:?}", role_path);
-
-    // 5. Init workflows
-    init_workflows_at(root.clone(), WorkflowRunnerMode::Remote).expect("init workflows failed");
-    // Check if one of the workflows exists
-    // Note: The actual path depends on what init_workflows does.
-    // It usually creates .github/workflows
-    assert!(root.join(".github/workflows").exists());
 }
 
 #[test]

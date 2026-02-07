@@ -10,11 +10,12 @@ fn init_creates_jules_directory() {
     let ctx = TestContext::new();
 
     ctx.cli()
-        .arg("init")
+        .args(["init", "--remote"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Initialized .jules/"));
+        .stdout(predicate::str::contains("Initialized .jlo/"));
 
+    ctx.assert_jlo_exists();
     ctx.assert_jules_exists();
     assert!(ctx.read_version().is_some());
     ctx.assert_layer_structure_exists();
@@ -29,14 +30,21 @@ fn init_creates_jules_directory() {
 fn init_fails_if_jules_exists() {
     let ctx = TestContext::new();
 
-    ctx.cli().arg("init").assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
-    ctx.cli().arg("init").assert().failure().stderr(predicate::str::contains("already exists"));
+    ctx.cli()
+        .args(["init", "--remote"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("already exists"));
 }
 
 #[test]
 fn deinit_fails_on_jules_branch() {
     let ctx = TestContext::new();
+
+    // Must be on 'jules' branch for deinit to reject
+    ctx.git_checkout_branch("jules", true);
 
     ctx.cli()
         .args(["deinit"])
@@ -71,9 +79,17 @@ fn deinit_removes_workflows_and_branch() {
         .output()
         .expect("git commit failed");
 
-    ctx.git_checkout_branch("main", true);
+    // Init on the control branch (already on main/master after git init)
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
-    ctx.cli().args(["init", "workflows", "--remote"]).assert().success();
+    // Create a 'jules' branch so deinit can delete it, then return to control branch
+    ctx.git_checkout_branch("jules", true);
+    let switch_back = Command::new("git")
+        .args(["checkout", "-"])
+        .current_dir(ctx.work_dir())
+        .output()
+        .expect("git checkout - failed");
+    assert!(switch_back.status.success(), "switch back to control branch failed");
 
     let workflow_path = ctx.work_dir().join(".github/workflows/jules-workflows.yml");
     let action_path = ctx.work_dir().join(".github/actions/install-jlo/action.yml");
@@ -104,7 +120,7 @@ fn deinit_removes_workflows_and_branch() {
 fn template_creates_new_role() {
     let ctx = TestContext::new();
 
-    ctx.cli().arg("init").assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
         .args(["template", "-l", "observers", "-n", "custom-role", "-w", "generic"])
@@ -119,7 +135,7 @@ fn template_creates_new_role() {
 fn template_fails_for_invalid_layer() {
     let ctx = TestContext::new();
 
-    ctx.cli().arg("init").assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
         .args(["template", "-l", "invalid", "-n", "test"])
@@ -132,7 +148,7 @@ fn template_fails_for_invalid_layer() {
 fn template_fails_for_existing_role() {
     let ctx = TestContext::new();
 
-    ctx.cli().arg("init").assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
         .args(["template", "-l", "observers", "-n", "taxonomy", "-w", "generic"])
@@ -156,7 +172,7 @@ fn template_fails_without_workspace() {
 fn template_requires_workstream_noninteractive() {
     let ctx = TestContext::new();
 
-    ctx.cli().arg("init").assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
         .args(["template", "-l", "observers", "-n", "missing-workstream"])
@@ -189,7 +205,7 @@ fn help_lists_visible_aliases() {
 fn doctor_passes_on_fresh_workspace() {
     let ctx = TestContext::new();
 
-    ctx.cli().arg("init").assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli().args(["doctor"]).assert().success();
 }
@@ -198,7 +214,7 @@ fn doctor_passes_on_fresh_workspace() {
 fn doctor_reports_schema_errors() {
     let ctx = TestContext::new();
 
-    ctx.cli().arg("init").assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     let event_dir = ctx.work_dir().join(".jules/workstreams/generic/exchange/events/pending");
     std::fs::create_dir_all(&event_dir).unwrap();
@@ -225,10 +241,10 @@ fn init_creates_setup_structure() {
     let ctx = TestContext::new();
 
     ctx.cli()
-        .args(["init"])
+        .args(["init", "--remote"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Initialized .jules/"));
+        .stdout(predicate::str::contains("Initialized .jlo/"));
 
     assert!(ctx.work_dir().join(".jules/setup").exists());
     assert!(ctx.work_dir().join(".jules/setup/tools.yml").exists());
@@ -250,7 +266,7 @@ fn setup_gen_requires_init() {
 fn setup_gen_produces_script() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     // Write tools config
     let tools_yml = ctx.work_dir().join(".jules/setup/tools.yml");
@@ -311,7 +327,7 @@ fn setup_list_detail_not_found() {
 fn run_implementers_requires_issue_file() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
         .args(["run", "implementers"])
@@ -324,7 +340,7 @@ fn run_implementers_requires_issue_file() {
 fn run_planners_requires_issue_file() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
         .args(["run", "planners"])
@@ -337,7 +353,7 @@ fn run_planners_requires_issue_file() {
 fn run_implementers_with_missing_issue_file() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
         .args(["run", "implementers", ".jules/workstreams/generic/issues/nonexistent.yml"])
@@ -350,7 +366,7 @@ fn run_implementers_with_missing_issue_file() {
 fn run_implementers_prompt_preview_with_issue_file() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     // Create a test issue file in workstreams
     let issue_dir = ctx.work_dir().join(".jules/workstreams/generic/issues/medium");
@@ -380,7 +396,7 @@ fn run_implementers_prompt_preview_with_issue_file() {
 fn run_planners_prompt_preview_with_issue_file() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     // Create a test issue file in workstreams
     let issue_dir = ctx.work_dir().join(".jules/workstreams/generic/issues/medium");
@@ -410,7 +426,7 @@ fn run_planners_prompt_preview_with_issue_file() {
 fn run_narrator_prompt_preview() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     // Configure git user for commits
     let output = std::process::Command::new("git")
@@ -481,7 +497,7 @@ fn run_narrator_prompt_preview() {
 fn run_narrator_skips_when_no_codebase_changes() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     // Configure git user for commits
     let output = std::process::Command::new("git")
@@ -540,7 +556,7 @@ fn update_requires_workspace() {
 fn update_prompt_preview_shows_plan() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     // Simulate an older version to trigger update logic
     let version_file = ctx.work_dir().join(".jules").join(".jlo-version");
@@ -557,7 +573,7 @@ fn update_prompt_preview_shows_plan() {
 fn update_noop_when_current() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli().args(["update"]).assert().success().stdout(predicate::str::contains("already"));
 }
@@ -566,7 +582,7 @@ fn update_noop_when_current() {
 fn update_alias_works() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init"]).assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli().args(["u", "--prompt-preview"]).assert().success();
 }

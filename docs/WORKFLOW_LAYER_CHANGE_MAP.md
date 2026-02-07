@@ -10,6 +10,7 @@ A layer-level change means one of the following:
 
 ## Authoritative Sources
 - Layer model: `src/domain/workspace/layer.rs`
+- Control-plane ownership: `docs/CONTROL_PLANE_OWNERSHIP.md`
 - CLI entry points: `src/app/cli/run.rs`, `src/app/cli/workflow.rs`
 - Runtime dispatch: `src/app/commands/run/mod.rs`, `src/app/commands/workflow/run/layer_executor.rs`
 - Schedule model: `src/domain/configuration/schedule.rs`
@@ -105,6 +106,9 @@ A layer-level change means one of the following:
 - Auto-merge branch matching is driven by `branch_prefix` values in `.jules/roles/**/contracts.yml`.
 - `.jules/`-only scope remains the automerge safety boundary.
 - `jlo init workflows` preserves schedule and `wait_minutes` defaults from existing workflow files.
+- Control-plane files live under `.jlo/` on the control branch; `.jules/` is materialized by workflow bootstrap.
+- `install-jlo` reads the version pin from the control branch `.jlo/.jlo-version`, not from `origin/jules`.
+- Projection from `.jlo/` to `.jules/` never overwrites agent-generated exchange artifacts.
 
 ## Mock Maintenance Invariants
 - Mock mode is a first-class execution path, not a test stub.

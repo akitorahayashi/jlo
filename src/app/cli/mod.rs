@@ -24,11 +24,20 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Create .jules/ workspace structure
+    /// Initialize .jlo/ control plane and install workflow kit
     #[clap(visible_alias = "i")]
     Init {
-        #[command(subcommand)]
-        command: Option<init::InitCommands>,
+        /// Install the GitHub-hosted runner workflow kit
+        #[arg(
+            short = 'r',
+            long,
+            conflicts_with = "self_hosted",
+            required_unless_present = "self_hosted"
+        )]
+        remote: bool,
+        /// Install the self-hosted runner workflow kit
+        #[arg(short = 's', long, conflicts_with = "remote", required_unless_present = "remote")]
+        self_hosted: bool,
     },
     /// Update .jules/ workspace to current jlo version
     #[clap(visible_alias = "u")]
@@ -92,7 +101,7 @@ pub fn run() {
     let cli = Cli::parse();
 
     let result: Result<i32, AppError> = match cli.command {
-        Commands::Init { command } => init::run_init(command).map(|_| 0),
+        Commands::Init { remote, self_hosted } => init::run_init(remote, self_hosted).map(|_| 0),
         Commands::Update { prompt_preview, adopt_managed } => {
             run_update(prompt_preview, adopt_managed).map(|_| 0)
         }

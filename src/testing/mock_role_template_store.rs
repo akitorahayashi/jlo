@@ -25,6 +25,11 @@ impl RoleTemplateStore for MockRoleTemplateStore {
         self.scaffold_files.clone()
     }
 
+    fn control_plane_files(&self) -> Vec<ScaffoldFile> {
+        // Filter for .jlo/ files and remap user intent files
+        self.scaffold_files.iter().filter(|f| f.path.starts_with(".jlo/")).cloned().collect()
+    }
+
     fn layer_template(&self, _layer: Layer) -> &str {
         ""
     }

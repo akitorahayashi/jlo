@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use crate::domain::{AppError, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
+use crate::domain::{AppError, JLO_DIR, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
 /// In-memory workspace store for testing.
@@ -44,8 +44,17 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         files.keys().any(|p| p.starts_with(JULES_DIR))
     }
 
+    fn jlo_exists(&self) -> bool {
+        let files = self.files.lock().unwrap();
+        files.keys().any(|p| p.starts_with(JLO_DIR))
+    }
+
     fn jules_path(&self) -> PathBuf {
         PathBuf::from(JULES_DIR)
+    }
+
+    fn jlo_path(&self) -> PathBuf {
+        PathBuf::from(JLO_DIR)
     }
 
     fn create_structure(&self, scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {

@@ -73,8 +73,16 @@ impl WorkspaceStore for MockWorkspaceStore {
         *self.exists.borrow()
     }
 
+    fn jlo_exists(&self) -> bool {
+        *self.exists.borrow()
+    }
+
     fn jules_path(&self) -> PathBuf {
         PathBuf::from(".jules")
+    }
+
+    fn jlo_path(&self) -> PathBuf {
+        PathBuf::from(".jlo")
     }
 
     fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {

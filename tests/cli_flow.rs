@@ -10,7 +10,7 @@ fn user_can_init_and_create_custom_role() {
     let ctx = TestContext::new();
 
     // Initialize workspace
-    ctx.cli().arg("init").assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     // All built-in roles should exist after init in their layers
     ctx.assert_all_builtin_roles_exist();
@@ -31,7 +31,7 @@ fn user_can_use_command_aliases() {
     let ctx = TestContext::new();
 
     // Use 'i' alias for init
-    ctx.cli().arg("i").assert().success();
+    ctx.cli().args(["i", "--remote"]).assert().success();
 
     // Use 'tp' alias for template (with a multi-role layer)
     ctx.cli()
@@ -47,7 +47,7 @@ fn user_can_use_command_aliases() {
 fn init_creates_complete_layer_structure() {
     let ctx = TestContext::new();
 
-    ctx.cli().arg("init").assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     // Verify layer structure
     ctx.assert_jules_exists();
@@ -88,7 +88,7 @@ fn init_creates_complete_layer_structure() {
 fn template_creates_observer_role() {
     let ctx = TestContext::new();
 
-    ctx.cli().arg("init").assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
         .args(["template", "-l", "observers", "-n", "custom-obs", "-w", "generic"])
@@ -106,7 +106,7 @@ fn template_creates_observer_role() {
 fn template_rejects_single_role_layers() {
     let ctx = TestContext::new();
 
-    ctx.cli().arg("init").assert().success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     // Narrator is single-role and should not accept template creation
     ctx.cli()

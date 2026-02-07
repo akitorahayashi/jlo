@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::adapters::assets::workstream_template_assets::workstream_template_files;
-use crate::domain::{AppError, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
+use crate::domain::{AppError, JLO_DIR, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
 /// Filesystem-based workspace store implementation.
@@ -56,8 +56,16 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         self.jules_path().exists()
     }
 
+    fn jlo_exists(&self) -> bool {
+        self.jlo_path().exists()
+    }
+
     fn jules_path(&self) -> PathBuf {
         self.root.join(JULES_DIR)
+    }
+
+    fn jlo_path(&self) -> PathBuf {
+        self.root.join(JLO_DIR)
     }
 
     fn create_structure(&self, scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {

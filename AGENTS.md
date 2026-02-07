@@ -39,3 +39,4 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 - [.github/AGENTS.md](.github/AGENTS.md) — GitHub Actions workflows
 - [src/assets/scaffold/AGENTS.md](src/assets/scaffold/AGENTS.md) — `.jules/` scaffold design
 - [src/assets/templates/AGENTS.md](src/assets/templates/AGENTS.md) — Template system
+- [docs/CONTROL_PLANE_OWNERSHIP.md](docs/CONTROL_PLANE_OWNERSHIP.md) — `.jlo/` vs `.jules/` ownership model and projection rules
