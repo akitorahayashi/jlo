@@ -183,3 +183,42 @@ fn mock_observer_comment_file_passes_doctor() {
     // Run doctor to validate
     ctx.cli().args(["doctor", "--workstream", "test-workstream"]).assert().success();
 }
+
+#[test]
+fn mock_innovator_idea_file_passes_doctor() {
+    let ctx = TestContext::new();
+    setup_scaffold_with_workstream(&ctx, "test-workstream");
+
+    let room_dir = ctx
+        .jules_path()
+        .join("workstreams")
+        .join("test-workstream")
+        .join("exchange")
+        .join("innovators")
+        .join("alice");
+    let comments_dir = room_dir.join("comments");
+    fs::create_dir_all(&comments_dir).expect("Failed to create innovator comments directory");
+
+    // Seed perspective so the room resembles real execution context.
+    let perspective = r#"schema_version: 1
+persona: "alice"
+workstream: "test-workstream"
+bias_focus: "High-leverage improvements"
+current_view: |
+  Current architecture has repetitive workflow logic.
+historical_learnings: |
+  Role-level contracts reduce drift when coupled with doctor checks.
+recent_proposals: []
+"#;
+    fs::write(room_dir.join("perspective.yml"), perspective).expect("Failed to write perspective");
+
+    let mock_idea = include_str!("../src/assets/mock/innovator_idea.yml");
+    let idea = mock_idea
+        .replace("mock01", "abc123")
+        .replace("mock-persona", "alice")
+        .replace("mock-workstream", "test-workstream")
+        .replace("test-tag", "mock-local-20260205120000");
+    fs::write(room_dir.join("idea.yml"), idea).expect("Failed to write idea");
+
+    ctx.cli().args(["doctor", "--workstream", "test-workstream"]).assert().success();
+}

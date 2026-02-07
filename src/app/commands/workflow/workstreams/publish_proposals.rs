@@ -44,9 +44,17 @@ struct ProposalData {
     #[serde(default)]
     problem: String,
     #[serde(default)]
-    solution: String,
+    introduction: String,
     #[serde(default)]
-    impact: String,
+    importance: String,
+    #[serde(default)]
+    impact_surface: Vec<String>,
+    #[serde(default)]
+    implementation_cost: String,
+    #[serde(default)]
+    consistency_risks: Vec<String>,
+    #[serde(default)]
+    verification_signals: Vec<String>,
 }
 
 pub fn execute(
@@ -115,19 +123,47 @@ where
             ))
         })?;
 
-        if data.title.is_empty() {
+        if data.title.trim().is_empty() {
             return Err(AppError::Validation(format!(
                 "Proposal missing title: {}",
                 proposal_path.display()
             )));
         }
 
-        let issue_title = format!("[innovator/{}] {}", persona, data.title);
+        let required_fields = vec![
+            ("problem", data.problem.trim().is_empty()),
+            ("introduction", data.introduction.trim().is_empty()),
+            ("importance", data.importance.trim().is_empty()),
+            ("implementation_cost", data.implementation_cost.trim().is_empty()),
+            ("impact_surface", data.impact_surface.is_empty()),
+            ("consistency_risks", data.consistency_risks.is_empty()),
+            ("verification_signals", data.verification_signals.is_empty()),
+        ];
+
+        for (field_name, is_missing) in required_fields {
+            if is_missing {
+                return Err(AppError::Validation(format!(
+                    "Proposal missing '{}': {}",
+                    field_name,
+                    proposal_path.display()
+                )));
+            }
+        }
+
+        let issue_title = format!("[innovator/{}] {}", persona, data.title.trim());
+        let impact_surface = render_list(&data.impact_surface);
+        let consistency_risks = render_list(&data.consistency_risks);
+        let verification_signals = render_list(&data.verification_signals);
+
         let issue_body = format!(
-            "## Problem\n\n{}\n\n## Solution\n\n{}\n\n## Impact\n\n{}\n\n---\n\n_Published from proposal `{}` by innovator persona `{}`._",
+            "## Problem\n\n{}\n\n## Introduction\n\n{}\n\n## Why It Matters\n\n{}\n\n## Impact Surface\n\n{}\n\n## Implementation Cost\n\n{}\n\n## Consistency Risks\n\n{}\n\n## Verification Signals\n\n{}\n\n---\n\n_Published from proposal `{}` by innovator persona `{}`._",
             data.problem.trim(),
-            data.solution.trim(),
-            data.impact.trim(),
+            data.introduction.trim(),
+            data.importance.trim(),
+            impact_surface,
+            data.implementation_cost.trim(),
+            consistency_risks,
+            verification_signals,
             data.id,
             persona,
         );
@@ -225,6 +261,10 @@ fn discover_proposals<W: WorkspaceStore>(
     }
 
     Ok(proposals)
+}
+
+fn render_list(items: &[String]) -> String {
+    items.iter().map(|line| format!("- {}", line.trim())).collect::<Vec<_>>().join("\n")
 }
 
 #[cfg(test)]
@@ -358,10 +398,19 @@ created_at: "2026-02-05"
 title: "Improve error messages"
 problem: |
   Error messages lack context.
-solution: |
-  Add structured error types with source chains.
-impact: |
-  Faster debugging for developers.
+introduction: |
+  Introduce structured error narratives that preserve causal context.
+importance: |
+  Debugging feedback quality is currently limiting development speed.
+impact_surface:
+  - "Error reporting boundaries"
+  - "Developer troubleshooting workflow"
+implementation_cost: |
+  Medium effort due to error path normalization and output updates.
+consistency_risks:
+  - "Mixed error style during adoption window"
+verification_signals:
+  - "Reduced ambiguity in reproduced failure reports"
 "#
     }
 
@@ -393,6 +442,9 @@ impact: |
         assert_eq!(issues.len(), 1);
         assert!(issues[0].0.contains("[innovator/alice]"));
         assert!(issues[0].0.contains("Improve error messages"));
+        assert!(issues[0].1.contains("## Why It Matters"));
+        assert!(issues[0].1.contains("## Implementation Cost"));
+        assert!(issues[0].1.contains("## Consistency Risks"));
     }
 
     #[test]

@@ -2,10 +2,16 @@ role: ROLE_NAME
 layer: innovators
 
 profile:
-  bias_focus: "# TODO: Describe the primary analytical lens for this innovator persona"
-  interests:
-    - "# TODO: List areas of the codebase this persona focuses on"
-  principles:
-    - "# TODO: Core beliefs guiding proposal generation"
+  bias_focus: "# TODO: Describe the leverage lens for this persona (what class of improvements it prioritizes)"
+  analysis_points:
+    - "# TODO: List recurring repository patterns this persona investigates"
+  first_principles:
+    - "# TODO: Core beliefs that determine proposal direction and tradeoffs"
+  guiding_questions:
+    - "# TODO: Questions this persona asks before committing to a proposal"
   anti_patterns:
-    - "# TODO: What kinds of proposals this persona avoids"
+    - "# TODO: What this persona rejects as low-leverage or high-risk proposals"
+  evidence_expectations:
+    - "# TODO: Evidence quality bar required before proposing an idea"
+  proposal_quality_bar:
+    - "# TODO: Non-negotiable checks a proposal must satisfy before publication"

@@ -748,9 +748,13 @@ fn validate_innovator_role_file(path: &Path, role_dir: &Path, diagnostics: &mut 
 
     match data.get("profile") {
         Some(serde_yaml::Value::Mapping(profile_map)) => {
-            if get_string(profile_map, "bias_focus").is_none() {
-                diagnostics.push_error(path.display().to_string(), "Missing profile.bias_focus");
-            }
+            ensure_non_empty_string(profile_map, path, "bias_focus", diagnostics);
+            ensure_non_empty_sequence(profile_map, path, "analysis_points", diagnostics);
+            ensure_non_empty_sequence(profile_map, path, "first_principles", diagnostics);
+            ensure_non_empty_sequence(profile_map, path, "guiding_questions", diagnostics);
+            ensure_non_empty_sequence(profile_map, path, "anti_patterns", diagnostics);
+            ensure_non_empty_sequence(profile_map, path, "evidence_expectations", diagnostics);
+            ensure_non_empty_sequence(profile_map, path, "proposal_quality_bar", diagnostics);
         }
         Some(_) => {
             diagnostics.push_error(path.display().to_string(), "'profile' must be a mapping");
@@ -789,27 +793,37 @@ fn validate_innovator_perspective(path: &Path, persona_name: &str, diagnostics: 
     }
 }
 
-fn validate_innovator_idea(path: &Path, diagnostics: &mut Diagnostics) {
-    if let Some(data) = load_yaml_mapping(path, diagnostics) {
-        validate_innovator_document(&data, path, diagnostics);
-    }
-}
-
-fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
-    if let Some(data) = load_yaml_mapping(path, diagnostics) {
-        validate_innovator_document(&data, path, diagnostics);
-    }
-}
-
-fn validate_innovator_document(data: &Mapping, path: &Path, diagnostics: &mut Diagnostics) {
+fn validate_innovator_document_common_fields(
+    data: &Mapping,
+    path: &Path,
+    diagnostics: &mut Diagnostics,
+) {
     ensure_int(data, path, "schema_version", diagnostics, Some(1));
     ensure_id(data, path, "id", diagnostics);
     ensure_non_empty_string(data, path, "persona", diagnostics);
     ensure_date(data, path, "created_at", diagnostics);
     ensure_non_empty_string(data, path, "title", diagnostics);
     ensure_non_empty_string(data, path, "problem", diagnostics);
-    ensure_non_empty_string(data, path, "solution", diagnostics);
-    ensure_non_empty_string(data, path, "impact", diagnostics);
+}
+
+fn validate_innovator_idea(path: &Path, diagnostics: &mut Diagnostics) {
+    if let Some(data) = load_yaml_mapping(path, diagnostics) {
+        validate_innovator_document_common_fields(&data, path, diagnostics);
+        ensure_non_empty_string(&data, path, "introduction", diagnostics);
+        ensure_non_empty_string(&data, path, "expected_value", diagnostics);
+    }
+}
+
+fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
+    if let Some(data) = load_yaml_mapping(path, diagnostics) {
+        validate_innovator_document_common_fields(&data, path, diagnostics);
+        ensure_non_empty_string(&data, path, "introduction", diagnostics);
+        ensure_non_empty_string(&data, path, "importance", diagnostics);
+        ensure_non_empty_sequence(&data, path, "impact_surface", diagnostics);
+        ensure_non_empty_string(&data, path, "implementation_cost", diagnostics);
+        ensure_non_empty_sequence(&data, path, "consistency_risks", diagnostics);
+        ensure_non_empty_sequence(&data, path, "verification_signals", diagnostics);
+    }
 }
 
 fn validate_innovator_comment(path: &Path, diagnostics: &mut Diagnostics) {
