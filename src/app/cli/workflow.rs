@@ -107,6 +107,11 @@ pub enum WorkflowWorkstreamsCommands {
         #[command(subcommand)]
         command: WorkflowWorkstreamsCleanCommands,
     },
+    /// Publish merged proposals as GitHub issues
+    PublishProposals {
+        /// Workstream name
+        workstream: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -210,6 +215,11 @@ fn run_workflow_workstreams(command: WorkflowWorkstreamsCommands) -> Result<(), 
                 workflow::write_workflow_output(&output)
             }
         },
+        WorkflowWorkstreamsCommands::PublishProposals { workstream } => {
+            let options = workflow::WorkflowWorkstreamsPublishProposalsOptions { workstream };
+            let output = workflow::workstreams_publish_proposals(options)?;
+            workflow::write_workflow_output(&output)
+        }
     }
 }
 

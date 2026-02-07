@@ -1,0 +1,397 @@
+//! Publish innovator proposals as GitHub issues.
+//!
+//! Scans all innovator rooms in a workstream for merged `proposal.yml` files,
+//! creates a GitHub issue from each proposal, and removes the proposal artifact
+//! to mark publication as complete.
+
+use std::path::{Path, PathBuf};
+
+use serde::{Deserialize, Serialize};
+
+use crate::adapters::git_command::GitCommandAdapter;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::domain::AppError;
+use crate::ports::{GitHubPort, GitPort, IssueInfo, WorkspaceStore};
+
+#[derive(Debug, Clone)]
+pub struct WorkflowWorkstreamsPublishProposalsOptions {
+    pub workstream: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct WorkflowWorkstreamsPublishProposalsOutput {
+    pub schema_version: u32,
+    pub published: Vec<PublishedProposal>,
+    pub committed: bool,
+    pub pushed: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PublishedProposal {
+    pub persona: String,
+    pub proposal_path: String,
+    pub issue_number: u64,
+    pub issue_url: String,
+}
+
+/// Minimal deserialization of proposal.yml for issue creation.
+#[derive(Debug, Deserialize)]
+struct ProposalData {
+    #[serde(default)]
+    id: String,
+    #[serde(default)]
+    title: String,
+    #[serde(default)]
+    problem: String,
+    #[serde(default)]
+    solution: String,
+    #[serde(default)]
+    impact: String,
+}
+
+pub fn execute(
+    options: WorkflowWorkstreamsPublishProposalsOptions,
+) -> Result<WorkflowWorkstreamsPublishProposalsOutput, AppError> {
+    let workspace = FilesystemWorkspaceStore::current()?;
+    if !workspace.exists() {
+        return Err(AppError::WorkspaceNotFound);
+    }
+
+    let jules_path = workspace.jules_path();
+    let root = jules_path.parent().unwrap_or(Path::new(".")).to_path_buf();
+    let git = GitCommandAdapter::new(root.canonicalize().map_err(|e| {
+        AppError::InternalError(format!("Failed to resolve workspace root: {}", e))
+    })?);
+    let github = crate::adapters::github_command::GitHubCommandAdapter::new();
+
+    execute_with(&workspace, &options, &git, &github)
+}
+
+/// Core logic, injectable for testing.
+fn execute_with<W, G, H>(
+    workspace: &W,
+    options: &WorkflowWorkstreamsPublishProposalsOptions,
+    git: &G,
+    github: &H,
+) -> Result<WorkflowWorkstreamsPublishProposalsOutput, AppError>
+where
+    W: WorkspaceStore,
+    G: GitPort,
+    H: GitHubPort,
+{
+    let jules_path = workspace.jules_path();
+    let innovators_dir = jules_path
+        .join("workstreams")
+        .join(&options.workstream)
+        .join("exchange")
+        .join("innovators");
+
+    let proposals = discover_proposals(&innovators_dir, workspace)?;
+
+    if proposals.is_empty() {
+        return Ok(WorkflowWorkstreamsPublishProposalsOutput {
+            schema_version: 1,
+            published: vec![],
+            committed: false,
+            pushed: false,
+        });
+    }
+
+    let mut published = Vec::new();
+    let mut deleted_paths: Vec<PathBuf> = Vec::new();
+
+    for (persona, proposal_path) in &proposals {
+        let content = workspace.read_file(
+            proposal_path
+                .to_str()
+                .ok_or_else(|| AppError::Validation("Invalid proposal path".to_string()))?,
+        )?;
+
+        let data: ProposalData = serde_yaml::from_str(&content).map_err(|e| {
+            AppError::Validation(format!(
+                "Invalid YAML in proposal {}: {}",
+                proposal_path.display(),
+                e
+            ))
+        })?;
+
+        if data.title.is_empty() {
+            return Err(AppError::Validation(format!(
+                "Proposal missing title: {}",
+                proposal_path.display()
+            )));
+        }
+
+        let issue_title = format!("[innovator/{}] {}", persona, data.title);
+        let issue_body = format!(
+            "## Problem\n\n{}\n\n## Solution\n\n{}\n\n## Impact\n\n{}\n\n---\n\n_Published from proposal `{}` by innovator persona `{}`._",
+            data.problem.trim(),
+            data.solution.trim(),
+            data.impact.trim(),
+            data.id,
+            persona,
+        );
+
+        let issue: IssueInfo = github.create_issue(&issue_title, &issue_body, &[])?;
+
+        published.push(PublishedProposal {
+            persona: persona.clone(),
+            proposal_path: proposal_path.display().to_string(),
+            issue_number: issue.number,
+            issue_url: issue.url.clone(),
+        });
+
+        // Remove proposal artifact and its associated comments directory
+        workspace.remove_file(
+            proposal_path
+                .to_str()
+                .ok_or_else(|| AppError::Validation("Invalid proposal path".to_string()))?,
+        )?;
+        deleted_paths.push(proposal_path.clone());
+
+        // Clean comments directory if present
+        let comments_dir = proposal_path.parent().unwrap_or(Path::new(".")).join("comments");
+        let comments_dir_str = comments_dir.to_str().unwrap_or("");
+        if let Ok(entries) = workspace.list_dir(comments_dir_str) {
+            for entry in entries {
+                if let Some(path_str) = entry.to_str() {
+                    let _ = workspace.remove_file(path_str);
+                    deleted_paths.push(entry);
+                }
+            }
+        }
+    }
+
+    // Commit and push the deletions
+    let files_refs: Vec<&Path> = deleted_paths.iter().map(|p| p.as_path()).collect();
+    git.commit_files(
+        &format!("jules: publish {} innovator proposal(s)", published.len()),
+        &files_refs,
+    )?;
+    let branch = git.get_current_branch()?;
+    git.push_branch(branch.trim(), false)?;
+
+    Ok(WorkflowWorkstreamsPublishProposalsOutput {
+        schema_version: 1,
+        published,
+        committed: true,
+        pushed: true,
+    })
+}
+
+/// Discover proposal.yml files across all innovator persona rooms.
+fn discover_proposals<W: WorkspaceStore>(
+    innovators_dir: &Path,
+    workspace: &W,
+) -> Result<Vec<(String, PathBuf)>, AppError> {
+    let dir_str = innovators_dir
+        .to_str()
+        .ok_or_else(|| AppError::Validation("Invalid innovators path".to_string()))?;
+
+    let persona_dirs = match workspace.list_dir(dir_str) {
+        Ok(dirs) => dirs,
+        Err(_) => return Ok(Vec::new()), // No innovators directory
+    };
+
+    let mut proposals = Vec::new();
+    for persona_dir in persona_dirs {
+        if !workspace.is_dir(persona_dir.to_str().unwrap_or("")) {
+            continue;
+        }
+        let persona_name =
+            persona_dir.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+
+        let proposal_path = persona_dir.join("proposal.yml");
+        let proposal_str = proposal_path.to_str().unwrap_or("");
+        if workspace.file_exists(proposal_str) {
+            proposals.push((persona_name, proposal_path));
+        }
+    }
+
+    Ok(proposals)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testing::MockWorkspaceStore;
+
+    struct FakeGit;
+    impl GitPort for FakeGit {
+        fn get_head_sha(&self) -> Result<String, AppError> {
+            Ok("abc123".to_string())
+        }
+        fn get_current_branch(&self) -> Result<String, AppError> {
+            Ok("jules".to_string())
+        }
+        fn commit_exists(&self, _sha: &str) -> bool {
+            true
+        }
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
+            Ok("abc000".to_string())
+        }
+        fn has_changes(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<bool, AppError> {
+            Ok(false)
+        }
+        fn count_commits(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<u32, AppError> {
+            Ok(0)
+        }
+        fn collect_commits(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+            _limit: usize,
+        ) -> Result<Vec<crate::ports::CommitInfo>, AppError> {
+            Ok(Vec::new())
+        }
+        fn get_diffstat(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<crate::ports::DiffStat, AppError> {
+            Ok(Default::default())
+        }
+        fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
+            Ok(String::new())
+        }
+        fn checkout_branch(&self, _branch: &str, _create: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn push_branch(&self, _branch: &str, _force: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn commit_files(&self, _message: &str, _files: &[&Path]) -> Result<String, AppError> {
+            Ok("abc123".to_string())
+        }
+        fn fetch(&self, _remote: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> {
+            Ok(true)
+        }
+    }
+
+    struct FakeGitHub {
+        created_issues: std::cell::RefCell<Vec<(String, String)>>,
+    }
+
+    impl FakeGitHub {
+        fn new() -> Self {
+            Self { created_issues: std::cell::RefCell::new(Vec::new()) }
+        }
+    }
+
+    impl GitHubPort for FakeGitHub {
+        fn dispatch_workflow(
+            &self,
+            _workflow_name: &str,
+            _inputs: &[(&str, &str)],
+        ) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn create_pull_request(
+            &self,
+            head: &str,
+            base: &str,
+            _title: &str,
+            _body: &str,
+        ) -> Result<crate::ports::PullRequestInfo, AppError> {
+            Ok(crate::ports::PullRequestInfo {
+                number: 42,
+                url: "https://example.com/pr/42".into(),
+                head: head.to_string(),
+                base: base.to_string(),
+            })
+        }
+        fn close_pull_request(&self, _pr_number: u64) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn delete_branch(&self, _branch: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn create_issue(
+            &self,
+            title: &str,
+            body: &str,
+            _labels: &[&str],
+        ) -> Result<IssueInfo, AppError> {
+            let count = self.created_issues.borrow().len() as u64 + 1;
+            self.created_issues.borrow_mut().push((title.to_string(), body.to_string()));
+            Ok(IssueInfo { number: count, url: format!("https://example.com/issues/{}", count) })
+        }
+    }
+
+    fn proposal_yaml() -> &'static str {
+        r#"schema_version: 1
+id: "abc123"
+persona: "alice"
+workstream: "generic"
+created_at: "2026-02-05"
+title: "Improve error messages"
+problem: |
+  Error messages lack context.
+solution: |
+  Add structured error types with source chains.
+impact: |
+  Faster debugging for developers.
+"#
+    }
+
+    #[test]
+    fn publishes_proposal_and_removes_artifact() {
+        let proposal_path = ".jules/workstreams/generic/exchange/innovators/alice/proposal.yml";
+        let workspace =
+            MockWorkspaceStore::new().with_exists(true).with_file(proposal_path, proposal_yaml());
+
+        let git = FakeGit;
+        let github = FakeGitHub::new();
+
+        let options =
+            WorkflowWorkstreamsPublishProposalsOptions { workstream: "generic".to_string() };
+
+        let output = execute_with(&workspace, &options, &git, &github).unwrap();
+
+        assert_eq!(output.published.len(), 1);
+        assert_eq!(output.published[0].persona, "alice");
+        assert_eq!(output.published[0].issue_number, 1);
+        assert!(output.committed);
+        assert!(output.pushed);
+
+        // Proposal file should be removed
+        assert!(!workspace.file_exists(proposal_path));
+
+        // Verify issue was created with correct title
+        let issues = github.created_issues.borrow();
+        assert_eq!(issues.len(), 1);
+        assert!(issues[0].0.contains("[innovator/alice]"));
+        assert!(issues[0].0.contains("Improve error messages"));
+    }
+
+    #[test]
+    fn no_proposals_returns_empty_output() {
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit;
+        let github = FakeGitHub::new();
+
+        let options =
+            WorkflowWorkstreamsPublishProposalsOptions { workstream: "generic".to_string() };
+
+        let output = execute_with(&workspace, &options, &git, &github).unwrap();
+
+        assert!(output.published.is_empty());
+        assert!(!output.committed);
+        assert!(!output.pushed);
+    }
+}

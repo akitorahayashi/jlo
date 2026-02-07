@@ -20,6 +20,7 @@ pub use run::{WorkflowRunOptions, WorkflowRunOutput};
 pub use workstreams::{
     WorkflowWorkstreamsCleanIssueOptions, WorkflowWorkstreamsCleanIssueOutput,
     WorkflowWorkstreamsInspectOptions, WorkflowWorkstreamsInspectOutput,
+    WorkflowWorkstreamsPublishProposalsOptions, WorkflowWorkstreamsPublishProposalsOutput,
 };
 
 use crate::domain::AppError;
@@ -61,6 +62,13 @@ pub fn workstreams_clean_issue(
     options: WorkflowWorkstreamsCleanIssueOptions,
 ) -> Result<WorkflowWorkstreamsCleanIssueOutput, AppError> {
     workstreams::clean_issue(options)
+}
+
+/// Execute workflow workstreams publish-proposals command.
+pub fn workstreams_publish_proposals(
+    options: WorkflowWorkstreamsPublishProposalsOptions,
+) -> Result<WorkflowWorkstreamsPublishProposalsOutput, AppError> {
+    workstreams::publish_proposals(options)
 }
 
 /// Execute workflow pr label-from-branch command.

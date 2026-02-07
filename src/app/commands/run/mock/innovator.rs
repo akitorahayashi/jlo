@@ -279,6 +279,14 @@ mod tests {
         fn delete_branch(&self, _branch: &str) -> Result<(), AppError> {
             Ok(())
         }
+        fn create_issue(
+            &self,
+            _title: &str,
+            _body: &str,
+            _labels: &[&str],
+        ) -> Result<crate::ports::IssueInfo, AppError> {
+            Ok(crate::ports::IssueInfo { number: 1, url: "https://example.com/issues/1".into() })
+        }
     }
 
     fn make_config() -> MockConfig {
