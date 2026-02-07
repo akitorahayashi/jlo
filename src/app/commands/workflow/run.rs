@@ -284,7 +284,7 @@ fn find_issues_for_workstream(
                 continue;
             }
 
-            let requires_deep_analysis = read_requires_deep_analysis(store, &path)?;
+            let requires_deep_analysis = IssueHeader::read(store, &path)?.requires_deep_analysis;
             let belongs_to_layer = match layer {
                 Layer::Planners => requires_deep_analysis,
                 Layer::Implementers => !requires_deep_analysis,
@@ -350,14 +350,6 @@ fn resolve_routing_labels(
     Ok(discovered)
 }
 
-fn read_requires_deep_analysis(store: &impl WorkspaceStore, path: &Path) -> Result<bool, AppError> {
-    let content = store.read_file(path.to_str().unwrap())?;
-    let header: IssueHeader = serde_yaml::from_str(&content).map_err(|error| {
-        AppError::ParseError { what: path.display().to_string(), details: error.to_string() }
-    })?;
-
-    Ok(header.requires_deep_analysis)
-}
 #[cfg(test)]
 mod tests {
     use super::*;
