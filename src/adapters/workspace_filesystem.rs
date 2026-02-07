@@ -335,33 +335,57 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
 // Private helper methods for FilesystemWorkspaceStore
 impl FilesystemWorkspaceStore {
     /// Validates that a path (or its nearest existing ancestor) is within the workspace root.
+    /// Validates that a path is within the workspace root.
+    ///
+    /// This implementation uses logical path normalization to resolve `..` and `.` components
+    /// without relying on the filesystem (unlike `fs::canonicalize`). This ensures that
+    /// even if intermediate directories don't exist, we can still correctly validation
+    /// that the final path would lie within the root.
     fn validate_path_within_root(&self, path: &Path) -> Result<(), AppError> {
-        // Find the nearest existing ancestor
-        let mut current = path;
-        while !current.exists() && current != Path::new("") {
-            if let Some(parent) = current.parent() {
-                current = parent;
-            } else {
-                break;
-            }
+        let full_path = if path.is_absolute() { path.to_path_buf() } else { self.root.join(path) };
+
+        let normalized_path = normalize_path(&full_path);
+        let normalized_root = normalize_path(&self.root);
+
+        if !normalized_path.starts_with(&normalized_root) {
+            return Err(AppError::PathTraversal(path.display().to_string()));
         }
 
-        // If we found an existing path, validate it's within root
-        if current.exists() {
-            let canonical_current = current
-                .canonicalize()
-                .map_err(|_| AppError::PathTraversal(path.display().to_string()))?;
-            let canonical_root = self
-                .root
-                .canonicalize()
-                .map_err(|_| AppError::PathTraversal(path.display().to_string()))?;
-
-            if !canonical_current.starts_with(&canonical_root) {
-                return Err(AppError::PathTraversal(path.display().to_string()));
-            }
-        }
         Ok(())
     }
+}
+
+/// Normalize path by resolving `.` and `..` components logically.
+/// This does not access the filesystem.
+fn normalize_path(path: &Path) -> PathBuf {
+    let mut components = path.components().peekable();
+    let mut ret = if let Some(std::path::Component::RootDir) = components.peek() {
+        components.next();
+        PathBuf::from("/")
+    } else {
+        PathBuf::new()
+    };
+
+    for component in components {
+        match component {
+            std::path::Component::Prefix(..) => {
+                // Keep prefix as is (e.g., C:\ on Windows)
+                ret.push(component.as_os_str());
+            }
+            std::path::Component::RootDir => {
+                // Should have been handled at the start, but just in case
+                ret.push(component.as_os_str());
+            }
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                ret.pop();
+            }
+            std::path::Component::Normal(c) => {
+                ret.push(c);
+            }
+        }
+    }
+    ret
 }
 
 #[cfg(test)]
@@ -494,5 +518,30 @@ mod tests {
         // No match
         let found = ws.find_role_fuzzy("nonexistent").unwrap();
         assert!(found.is_none());
+    }
+
+    #[test]
+    fn validate_path_prevents_traversal_with_nonexistent_components() {
+        let (_dir, ws) = test_workspace();
+        // "nonexistent/../../etc/passwd" style attack
+
+        // Case 1: Simple escape
+        let bad_path = "../result.txt";
+        let result = ws.validate_path_within_root(&ws.resolve_path(bad_path));
+        assert!(result.is_err(), "Should detect simple traversal");
+
+        // Case 2: Escape with non-existent intermediate
+        // root/nonexistent/../../outside
+        let bad_path_complex = "nonexistent/../../outside_result.txt";
+        let result = ws.validate_path_within_root(&ws.resolve_path(bad_path_complex));
+        assert!(
+            result.is_err(),
+            "Should detect traversal even if 'nonexistent' components don't exist"
+        );
+
+        // Case 3: Valid path with .. that stays inside
+        let good_path_complex = "subdir/../result.txt";
+        let result = ws.validate_path_within_root(&ws.resolve_path(good_path_complex));
+        assert!(result.is_ok(), "Should allow .. that stays within root: {:?}", result.err());
     }
 }
