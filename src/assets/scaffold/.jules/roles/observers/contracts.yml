@@ -19,6 +19,7 @@ inputs:
 outputs:
   - .jules/workstreams/<workstream>/exchange/events/pending/*.yml
   - .jules/workstreams/<workstream>/workstations/<role>/perspective.yml
+  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/comments/*.yml (bridge, if innovators scheduled)
 
 workflow:
   - "1. Read role.yml, latest.yml (if present), open issues, and recent events."

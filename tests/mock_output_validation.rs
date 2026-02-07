@@ -153,3 +153,33 @@ fn mock_decider_issue_file_passes_doctor() {
     // Run doctor to validate
     ctx.cli().args(["doctor", "--workstream", "test-workstream"]).assert().success();
 }
+
+#[test]
+fn mock_observer_comment_file_passes_doctor() {
+    let ctx = TestContext::new();
+    setup_scaffold_with_workstream(&ctx, "test-workstream");
+
+    // Create innovator persona directory with a comment
+    let comments_dir = ctx
+        .jules_path()
+        .join("workstreams")
+        .join("test-workstream")
+        .join("exchange")
+        .join("innovators")
+        .join("alice")
+        .join("comments");
+
+    fs::create_dir_all(&comments_dir).expect("Failed to create comments directory");
+
+    let mock_comment = include_str!("../src/assets/mock/observer_comment.yml");
+    // Replace template placeholders so doctor won't flag them
+    let comment_content = mock_comment
+        .replace("mock-author", "taxonomy")
+        .replace("test-tag", "mock-local-20260205120000");
+
+    let comment_file = comments_dir.join("observer-taxonomy-abc123.yml");
+    fs::write(&comment_file, comment_content).expect("Failed to write comment file");
+
+    // Run doctor to validate
+    ctx.cli().args(["doctor", "--workstream", "test-workstream"]).assert().success();
+}
