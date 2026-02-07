@@ -16,7 +16,7 @@
           set -euo pipefail
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
-          if [ {{ gha_expr("env.MOCK_MODE") }} = "true" ]; then
+          if [ "{{ gha_expr("env.MOCK_MODE") }}" = "true" ]; then
             TOTAL_SECONDS=30
             echo "Mock mode enabled: overriding wait to 30 seconds."
           else
