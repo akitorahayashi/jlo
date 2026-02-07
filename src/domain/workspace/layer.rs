@@ -81,9 +81,9 @@ impl Layer {
 
     /// Whether this layer has a single, fixed role (no subdirectories).
     ///
-    /// Single-role layers (Narrators, Planners, Implementers) have prompt.yml directly
-    /// in the layer directory rather than in role subdirectories. They do not support
-    /// custom role creation or scheduled role lists.
+    /// Single-role layers (Narrators, Planners, Implementers) have contracts.yml
+    /// directly in the layer directory rather than in role subdirectories. They do not
+    /// support custom role creation or scheduled role lists.
     pub fn is_single_role(&self) -> bool {
         matches!(self, Layer::Narrators | Layer::Planners | Layer::Implementers)
     }

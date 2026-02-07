@@ -66,7 +66,7 @@ tests/
 | `jlo run deciders --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
 | `jlo run planners <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (issue-driven) |
 | `jlo run implementers <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (issue-driven) |
-| `jlo run innovators --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
+| `jlo run innovators --role <role> --workstream <workstream> --phase <creation\|refinement> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
 | `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate .jules/ structure and content |
 | `jlo workflow doctor [--workstream <name>]` | `wf` | Validate workspace for workflow use |
 | `jlo workflow matrix workstreams` | | Generate workstream matrix for GitHub Actions |

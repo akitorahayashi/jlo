@@ -19,7 +19,7 @@ All scaffold files, workflow kits, configurations, and prompts must exist as rea
 - **How**: Use `include_dir!` to load `src/assets/scaffold` and `src/assets/workflows` as authoritative sources of truth.
 
 ### 2. Prompt Hierarchy (No Duplication)
-Prompts are constructed as a flat list of contracts in `prompt.yml`.
+Prompts are constructed by `prompt_assembly.yml` which declares includes concatenated into the final prompt.
 
 ```yaml
 contracts:
