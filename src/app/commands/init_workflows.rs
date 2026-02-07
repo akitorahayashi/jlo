@@ -13,6 +13,10 @@ const SCHEDULE_PRESERVE_FILE: &str = ".github/workflows/jules-workflows.yml";
 pub fn execute_workflows(root: &Path, mode: WorkflowRunnerMode) -> Result<(), AppError> {
     let kit = load_workflow_kit(mode)?;
 
+    // Parse existing workflow config before mutating any files.
+    // This prevents partial deletion when the existing workflow has invalid YAML.
+    let preserved_config = extract_preserved_config(root)?;
+
     for action_dir in &kit.action_dirs {
         let destination = root.join(action_dir);
         if destination.exists() {
@@ -23,9 +27,6 @@ pub fn execute_workflows(root: &Path, mode: WorkflowRunnerMode) -> Result<(), Ap
             }
         }
     }
-
-    // Extract existing configuration from the main workflow file before overwrite
-    let preserved_config = extract_preserved_config(root)?;
 
     for file in &kit.files {
         let destination = root.join(&file.path);

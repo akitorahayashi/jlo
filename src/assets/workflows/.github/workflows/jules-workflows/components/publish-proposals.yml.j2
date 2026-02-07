@@ -1,0 +1,32 @@
+  publish-proposals:
+    needs: [generate-workstream-matrix, wait-after-innovators-2]
+    if: |
+      always() &&
+      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
+      (needs.wait-after-innovators-2.result == 'success' || needs.wait-after-innovators-2.result == 'skipped')
+    runs-on: {{ runner }}
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Publish proposals for each workstream
+        env:
+          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
+        run: |
+          set -euo pipefail
+          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
+            echo "Publishing proposals for workstream: $ws"
+            jlo workflow workstreams publish-proposals "$ws"
+          done

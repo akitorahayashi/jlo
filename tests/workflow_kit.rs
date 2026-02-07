@@ -17,6 +17,14 @@ fn init_workflows_installs_remote_kit() {
     let root = ctx.work_dir();
     assert!(root.join(".github/workflows/jules-workflows.yml").exists());
     assert!(root.join(".github/actions/install-jlo/action.yml").exists());
+    assert!(
+        !root.join(".github/actions/wait/action.yml").exists(),
+        "Workflow kit should not include legacy wait action"
+    );
+    assert!(
+        !root.join(".github/workflows/jules-workflows/components").exists(),
+        "Workflow kit should not include workflow template components"
+    );
     // Scripts directory no longer ships with workflow kit
     assert!(
         !root.join(".github/scripts").exists(),
@@ -58,6 +66,10 @@ fn init_workflows_installs_remote_kit() {
     assert!(
         !workflow.contains(".github/scripts/"),
         "Workflow should not reference .github/scripts/"
+    );
+    assert!(
+        !workflow.contains("{% include"),
+        "Rendered workflow should not contain template include directives"
     );
 }
 
@@ -178,6 +190,25 @@ fn init_workflows_fails_on_invalid_schedule() {
         .assert()
         .failure()
         .stderr(predicate::str::contains("Failed to parse"));
+}
+
+#[test]
+fn init_workflows_keeps_existing_actions_when_schedule_parse_fails() {
+    let ctx = TestContext::new();
+    let root = ctx.work_dir();
+
+    let workflow_path = root.join(".github/workflows/jules-workflows.yml");
+    fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
+    fs::write(&workflow_path, "name: [invalid\n  yaml: content").unwrap();
+
+    let action_path = root.join(".github/actions/install-jlo/action.yml");
+    fs::create_dir_all(action_path.parent().unwrap()).unwrap();
+    fs::write(&action_path, "keep this action").unwrap();
+
+    ctx.cli().args(["init", "workflows", "--remote"]).assert().failure();
+
+    let action_content = fs::read_to_string(&action_path).unwrap();
+    assert_eq!(action_content, "keep this action");
 }
 
 #[test]

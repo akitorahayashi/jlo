@@ -69,662 +69,135 @@ env:
   MOCK_MODE: {{ gha_expr("(github.event.inputs.mock == 'true') || (inputs.mock == true)") }}
   JULES_MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.run_id)") }}
   JLO_RUN_FLAGS: {{ gha_expr("((github.event.inputs.mock == 'true') || (inputs.mock == true)) && '--mock' || ''") }}
-
+{% import "workflows/jules-workflows/macros/wait_job.j2" as wait_macro %}
+{% import "workflows/jules-workflows/macros/run_job.j2" as run_macro %}
 jobs:
   # ============================================================
   # Phase 1: Run narrator (changes feed generation)
   # ============================================================
-  run-narrator:
-    if: >-
-      vars.JULES_PAUSED != 'true' &&
-      (
-        github.event_name == 'schedule' ||
-        (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') == 'narrator') ||
-        (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') == 'narrator')
-      )
-    runs-on: {{ runner }}
-    timeout-minutes: 30
-    outputs:
-      json: {{ gha_expr("steps.run.outputs.json") }}
-    env:
-      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Validate .jules workspace exists
-        run: |
-          if [ ! -d ".jules" ]; then
-            echo "::error::.jules directory is missing on the 'jules' branch."
-            exit 1
-          fi
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Run narrator
-        id: run
-        run: jlo workflow run global narrator {{ gha_raw("env.JLO_RUN_FLAGS") }}
-
-      - name: Validate workspace (fail-fast)
-        run: jlo doctor
+{% include "workflows/jules-workflows/components/run-narrator.yml.j2" %}
 
   # ============================================================
   # Phase 2: Wait for narrator processing
   # ============================================================
-  wait-after-narrator:
-    needs: run-narrator
-    if: |
-      always() &&
-      needs.run-narrator.result == 'success'
-    runs-on: {{ runner }}
-    timeout-minutes: 60
-    outputs:
-      json: {{ gha_expr("steps.wait.outputs.json") }}
-    env:
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        id: wait
-        uses: ./.github/actions/wait
-        with:
-          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
-          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
-          process_name: narrator
-
+{{ wait_macro.wait_for_processing('wait-after-narrator', 'run-narrator', 'run-narrator', 'narrator') }}
   # ============================================================
   # Phase 3: Generate workstream matrix
   # ============================================================
-  generate-workstream-matrix:
-    needs: wait-after-narrator
-    if: |
-      always() &&
-      vars.JULES_PAUSED != 'true' &&
-      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') &&
-      (needs.wait-after-narrator.result == 'success' || needs.wait-after-narrator.result == 'skipped')
-    runs-on: {{ runner }}
-    timeout-minutes: 10
-    outputs:
-      json: {{ gha_expr("steps.matrix.outputs.json") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Validate .jules workspace
-        run: |
-          if [ ! -d ".jules" ]; then
-            echo "::error::.jules directory is missing on the 'jules' branch."
-            exit 1
-          fi
-          if ! ls .jules/workstreams/*/scheduled.toml >/dev/null 2>&1; then
-            echo "::error::No workstream scheduled.toml found under .jules/workstreams/."
-            exit 1
-          fi
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Generate workstream matrix
-        id: matrix
-        run: jlo workflow matrix workstreams
+{% include "workflows/jules-workflows/components/generate-workstream-matrix.yml.j2" %}
 
   # ============================================================
-  # Phase 4: Run innovators (first pass — idea creation)
+  # Phase 4: Run innovators (first pass - idea creation)
   # ============================================================
-  run-innovators-1:
-    needs: generate-workstream-matrix
-    if: |
-      always() &&
-      needs.generate-workstream-matrix.result == 'success' &&
-      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true
-    runs-on: {{ runner }}
-    timeout-minutes: 30
-    outputs:
-      json: {{ gha_expr("steps.run.outputs.json") }}
-    env:
-      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Run innovators (first pass) for each workstream
-        id: run
-        env:
-          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
-        run: |
-          set -euo pipefail
-          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
-            echo "Running innovators (first pass) for workstream: $ws"
-            jlo workflow run "$ws" innovators {{ gha_raw("env.JLO_RUN_FLAGS") }}
-          done
-
+{{ run_macro.run_agent_job(
+    'run-innovators-1',
+    'generate-workstream-matrix',
+    'has_workstreams',
+    'innovators',
+    '.matrix.include[].workstream',
+    'Run innovators (first pass) for each workstream'
+) }}
   # ============================================================
   # Phase 5: Run observers
   # ============================================================
-  run-observers:
-    needs: generate-workstream-matrix
-    if: |
-      always() &&
-      needs.generate-workstream-matrix.result == 'success' &&
-      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true
-    runs-on: {{ runner }}
-    timeout-minutes: 30
-    outputs:
-      json: {{ gha_expr("steps.run.outputs.json") }}
-    env:
-      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Run observers for each workstream
-        id: run
-        env:
-          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
-        run: |
-          set -euo pipefail
-          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
-            echo "Running observers for workstream: $ws"
-            jlo workflow run "$ws" observers {{ gha_raw("env.JLO_RUN_FLAGS") }}
-          done
-
+{{ run_macro.run_agent_job(
+    'run-observers',
+    'generate-workstream-matrix',
+    'has_workstreams',
+    'observers',
+    '.matrix.include[].workstream',
+    'Run observers for each workstream'
+) }}
   # ============================================================
   # Phase 6: Wait for observer processing
   # ============================================================
-  wait-after-observers:
-    needs: [generate-workstream-matrix, run-observers]
-    if: |
-      always() &&
-      needs.run-observers.result == 'success'
-    runs-on: {{ runner }}
-    timeout-minutes: 60
-    outputs:
-      json: {{ gha_expr("steps.wait.outputs.json") }}
-    env:
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        id: wait
-        uses: ./.github/actions/wait
-        with:
-          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
-          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
-          process_name: observers
-
+{{ wait_macro.wait_for_processing('wait-after-observers', 'run-observers', 'run-observers', 'observers') }}
   # ============================================================
   # Phase 7: Wait for innovator processing (first pass)
   # ============================================================
-  wait-after-innovators-1:
-    needs: [run-innovators-1]
-    if: |
-      always() &&
-      needs.run-innovators-1.result == 'success'
-    runs-on: {{ runner }}
-    timeout-minutes: 60
-    outputs:
-      json: {{ gha_expr("steps.wait.outputs.json") }}
-    env:
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        id: wait
-        uses: ./.github/actions/wait
-        with:
-          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
-          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
-          process_name: innovators-1
-
+{{ wait_macro.wait_for_processing('wait-after-innovators-1', 'run-innovators-1', 'run-innovators-1', 'innovators (first pass)') }}
   # ============================================================
-  # Phase 8: Run innovators (second pass — proposal and cleanup)
+  # Phase 8: Run innovators (second pass - proposal and cleanup)
   # ============================================================
-  run-innovators-2:
-    needs: [generate-workstream-matrix, wait-after-observers, wait-after-innovators-1]
-    if: |
-      always() &&
+{{ run_macro.run_agent_job(
+    'run-innovators-2',
+    'generate-workstream-matrix',
+    'has_workstreams',
+    'innovators',
+    '.matrix.include[].workstream',
+    'Run innovators (second pass) for each workstream',
+    false,
+    {},
+    ['generate-workstream-matrix', 'wait-after-observers', 'wait-after-innovators-1'],
+    "always() &&
       fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
       (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped') &&
-      (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')
-    runs-on: {{ runner }}
-    timeout-minutes: 30
-    outputs:
-      json: {{ gha_expr("steps.run.outputs.json") }}
-    env:
-      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Run innovators (second pass) for each workstream
-        id: run
-        env:
-          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
-        run: |
-          set -euo pipefail
-          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
-            echo "Running innovators (second pass) for workstream: $ws"
-            jlo workflow run "$ws" innovators {{ gha_raw("env.JLO_RUN_FLAGS") }}
-          done
-
+      (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')"
+) }}
   # ============================================================
   # Phase 9: Wait for innovator processing (second pass)
   # ============================================================
-  wait-after-innovators-2:
-    needs: [run-innovators-2]
-    if: |
-      always() &&
-      needs.run-innovators-2.result == 'success'
-    runs-on: {{ runner }}
-    timeout-minutes: 60
-    outputs:
-      json: {{ gha_expr("steps.wait.outputs.json") }}
-    env:
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        id: wait
-        uses: ./.github/actions/wait
-        with:
-          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
-          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
-          process_name: innovators-2
-
+{{ wait_macro.wait_for_processing('wait-after-innovators-2', 'run-innovators-2', 'run-innovators-2', 'innovators (second pass)') }}
   # ============================================================
   # Phase 10: Publish innovator proposals as GitHub issues
   # ============================================================
-  publish-proposals:
-    needs: [generate-workstream-matrix, wait-after-innovators-2]
-    if: |
-      always() &&
-      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
-      (needs.wait-after-innovators-2.result == 'success' || needs.wait-after-innovators-2.result == 'skipped')
-    runs-on: {{ runner }}
-    timeout-minutes: 30
-    env:
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Publish proposals for each workstream
-        env:
-          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
-        run: |
-          set -euo pipefail
-          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
-            echo "Publishing proposals for workstream: $ws"
-            jlo workflow workstreams publish-proposals "$ws"
-          done
+{% include "workflows/jules-workflows/components/publish-proposals.yml.j2" %}
 
   # ============================================================
   # Phase 11: Generate decider matrix (pending events check)
   # ============================================================
-  generate-decider-matrix:
-    needs: [generate-workstream-matrix, wait-after-observers]
-    if: |
-      always() &&
-      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
-      (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
-    runs-on: {{ runner }}
-    timeout-minutes: 10
-    outputs:
-      json: {{ gha_expr("steps.matrix.outputs.json") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Generate decider matrix from pending events
-        id: matrix
-        env:
-          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
-        run: |
-          WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
-          jlo workflow matrix pending-workstreams --workstreams-json "$WORKSTREAMS_JSON"
+{% include "workflows/jules-workflows/components/generate-decider-matrix.yml.j2" %}
 
   # ============================================================
   # Phase 12: Run deciders
   # ============================================================
-  run-deciders:
-    needs: [generate-decider-matrix]
-    if: |
-      always() &&
-      needs.generate-decider-matrix.result == 'success' &&
-      fromJSON(needs.generate-decider-matrix.outputs.json).has_pending == true
-    runs-on: {{ runner }}
-    timeout-minutes: 30
-    outputs:
-      json: {{ gha_expr("steps.run.outputs.json") }}
-    env:
-      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Run deciders for each pending workstream
-        id: run
-        env:
-          MATRIX_OUTPUT: {{ gha_expr("needs.generate-decider-matrix.outputs.json") }}
-        run: |
-          set -euo pipefail
-          echo "$MATRIX_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
-            echo "Running deciders for workstream: $ws"
-            jlo workflow run "$ws" deciders {{ gha_raw("env.JLO_RUN_FLAGS") }}
-          done
-
+{{ run_macro.run_agent_job(
+    'run-deciders',
+    'generate-decider-matrix',
+    'has_pending',
+    'deciders',
+    '.matrix.include[].workstream',
+    'Run deciders for each pending workstream'
+) }}
   # ============================================================
   # Phase 13: Wait for decider processing
   # ============================================================
-  wait-after-deciders:
-    needs: [generate-decider-matrix, run-deciders]
-    if: |
-      always() &&
-      needs.run-deciders.result == 'success'
-    runs-on: {{ runner }}
-    timeout-minutes: 60
-    outputs:
-      json: {{ gha_expr("steps.wait.outputs.json") }}
-    env:
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        id: wait
-        uses: ./.github/actions/wait
-        with:
-          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
-          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
-          process_name: deciders
-
+{{ wait_macro.wait_for_processing('wait-after-deciders', 'run-deciders', 'run-deciders', 'deciders') }}
   # ============================================================
   # Phase 14: Generate routing matrices (new issues)
   # ============================================================
-  generate-planner-matrix:
-    needs: [generate-workstream-matrix, generate-decider-matrix, run-deciders, wait-after-deciders]
-    if: |
-      always() &&
-      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
-      (needs.generate-decider-matrix.result == 'success' || needs.generate-decider-matrix.result == 'skipped') &&
-      (needs.run-deciders.result == 'success' || needs.run-deciders.result == 'skipped') &&
-      (needs.wait-after-deciders.result == 'success' || needs.wait-after-deciders.result == 'skipped')
-    runs-on: {{ runner }}
-    timeout-minutes: 10
-    outputs:
-      json: {{ gha_expr("steps.matrix.outputs.json") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Generate planner and implementer matrices
-        id: matrix
-        env:
-          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
-        run: |
-          WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
-          jlo workflow matrix routing --workstreams-json "$WORKSTREAMS_JSON" --routing-labels "$ROUTING_LABELS"
+{% include "workflows/jules-workflows/components/generate-planner-matrix.yml.j2" %}
 
   # ============================================================
   # Phase 15: Run planners
   # ============================================================
-  run-planners:
-    needs: [generate-planner-matrix]
-    if: |
-      always() &&
-      needs.generate-planner-matrix.result == 'success' &&
-      fromJSON(needs.generate-planner-matrix.outputs.json).has_planners == true
-    runs-on: {{ runner }}
-    timeout-minutes: 30
-    outputs:
-      json: {{ gha_expr("steps.run.outputs.json") }}
-    env:
-      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Run planners for each workstream
-        id: run
-        env:
-          MATRIX_OUTPUT: {{ gha_expr("needs.generate-planner-matrix.outputs.json") }}
-        run: |
-          set -euo pipefail
-          echo "$MATRIX_OUTPUT" | jq -r '.planner_matrix.include[].workstream // empty' | sort -u | while read ws; do
-            [ -z "$ws" ] && continue
-            echo "Running planners for workstream: $ws"
-            jlo workflow run "$ws" planners {{ gha_raw("env.JLO_RUN_FLAGS") }}
-          done
-
+{{ run_macro.run_agent_job(
+    'run-planners',
+    'generate-planner-matrix',
+    'has_planners',
+    'planners',
+    '.planner_matrix.include[].workstream // empty',
+    'Run planners for each workstream',
+    true
+) }}
   # ============================================================
   # Phase 16: Wait for planner PRs
   # ============================================================
-  wait-after-planners:
-    needs: [run-planners]
-    if: |
-      always() &&
-      needs.run-planners.result == 'success'
-    runs-on: {{ runner }}
-    timeout-minutes: 60
-    outputs:
-      json: {{ gha_expr("steps.wait.outputs.json") }}
-    env:
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        id: wait
-        uses: ./.github/actions/wait
-        with:
-          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
-          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
-          process_name: planners
-
+{{ wait_macro.wait_for_processing('wait-after-planners', 'run-planners', 'run-planners', 'planners') }}
   # ============================================================
   # Phase 17: Run implementers
   # ============================================================
-  run-implementers:
-    needs: [generate-planner-matrix]
-    if: |
-      always() &&
-      needs.generate-planner-matrix.result == 'success' &&
-      fromJSON(needs.generate-planner-matrix.outputs.json).has_implementers == true
-    runs-on: {{ runner }}
-    timeout-minutes: 30
-    outputs:
-      json: {{ gha_expr("steps.run.outputs.json") }}
-    env:
-      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
-      TARGET_BRANCH: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Run implementers for each workstream
-        id: run
-        env:
-          MATRIX_OUTPUT: {{ gha_expr("needs.generate-planner-matrix.outputs.json") }}
-        run: |
-          set -euo pipefail
-          echo "$MATRIX_OUTPUT" | jq -r '.implementer_matrix.include[].workstream // empty' | sort -u | while read ws; do
-            [ -z "$ws" ] && continue
-            echo "Running implementers for workstream: $ws"
-            jlo workflow run "$ws" implementers {{ gha_raw("env.JLO_RUN_FLAGS") }}
-          done
-
+{{ run_macro.run_agent_job(
+    'run-implementers',
+    'generate-planner-matrix',
+    'has_implementers',
+    'implementers',
+    '.implementer_matrix.include[].workstream // empty',
+    'Run implementers for each workstream',
+    true,
+    {'TARGET_BRANCH': gha_expr("vars.JULES_TARGET_BRANCH || 'main'")}
+) }}
   # ============================================================
   # Phase 18: Wait for implementer labels
   # ============================================================
-  wait-after-implementers:
-    needs: [run-implementers]
-    if: |
-      always() &&
-      needs.run-implementers.result == 'success'
-    runs-on: {{ runner }}
-    timeout-minutes: 60
-    outputs:
-      json: {{ gha_expr("steps.wait.outputs.json") }}
-    env:
-      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-      GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
-      TARGET_BRANCH: {{ gha_expr("vars.JULES_TARGET_BRANCH || 'main'") }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: jules
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
-        id: wait
-        uses: ./.github/actions/wait
-        with:
-          wait_minutes: {{ gha_expr("env.WAIT_MINUTES") }}
-          mock_mode: {{ gha_expr("env.MOCK_MODE") }}
-          process_name: implementers
+{{ wait_macro.wait_for_processing('wait-after-implementers', 'run-implementers', 'run-implementers', 'implementers') }}
