@@ -9,11 +9,12 @@ fn test_api_coverage_full_flow() {
     let root = temp.path().to_path_buf();
 
     // Initialize git repo
-    std::process::Command::new("git")
+    let git_init_status = std::process::Command::new("git")
         .current_dir(&root)
         .arg("init")
         .status()
         .expect("failed to init git");
+    assert!(git_init_status.success(), "git init should succeed");
 
     // Init requires a non-jules branch (control branch)
     // Default branch after git init is typically 'main' or 'master'; that's fine.

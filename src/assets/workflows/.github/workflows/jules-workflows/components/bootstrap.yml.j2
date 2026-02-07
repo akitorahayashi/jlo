@@ -1,8 +1,6 @@
   bootstrap:
     runs-on: {{ runner }}
     timeout-minutes: 10
-    outputs:
-      json: {{ gha_expr("steps.bootstrap.outputs.json") }}
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
     steps:
@@ -24,6 +22,7 @@
             echo "Creating orphan jules branch from HEAD"
             git checkout --orphan jules
             git rm -rf . 2>/dev/null || true
+            git clean -fd
             git commit --allow-empty -m "chore: initialize jules branch"
           fi
 
