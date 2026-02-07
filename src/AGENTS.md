@@ -64,6 +64,7 @@ tests/
 | `jlo run deciders --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
 | `jlo run planners <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (issue-driven) |
 | `jlo run implementers <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (issue-driven) |
+| `jlo run innovators --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
 | `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate .jules/ structure and content |
 | `jlo workflow doctor [--workstream <name>]` | `wf` | Validate workspace for workflow use |
 | `jlo workflow matrix workstreams` | | Generate workstream matrix for GitHub Actions |
@@ -74,6 +75,7 @@ tests/
 | `jlo workflow pr label-from-branch [--branch <branch>]` | | Apply category label to implementer PR |
 | `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state |
 | `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
+| `jlo workflow workstreams publish-proposals <workstream>` | | Publish innovator proposals as GitHub issues |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list [--detail <component>]` | `s ls` | List available components |
 | `jlo deinit` | | Remove jlo-managed assets (branch + workflows) |
@@ -111,10 +113,11 @@ cargo test --test mock_mode       # Mock execution flow
 | Deciders | Multi-role | `jlo run deciders --workstream <name>` | `workstreams/<workstream>/scheduled.toml` |
 | Planners | Single-role | `jlo run planners <path>` | None (issue path) |
 | Implementers | Single-role | `jlo run implementers <path>` | None (issue path) |
+| Innovators | Multi-role | `jlo run innovators --workstream <name>` | `workstreams/<workstream>/scheduled.toml` |
 
 **Single-role layers**: Narrator, Planners, Implementers have a fixed role with `prompt.yml` in the layer directory. Template creation not supported.
 
-**Multi-role layers**: Observers and Deciders support multiple configurable roles listed in `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `prompt.yml`.
+**Multi-role layers**: Observers, Deciders, and Innovators support multiple configurable roles listed in `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `prompt.yml`.
 
 ## Mock Mode
 

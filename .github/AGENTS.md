@@ -11,6 +11,7 @@ See [root AGENTS.md](../AGENTS.md) for design principles.
 | Decider | `jules` | `jules-decider-*` | ✅ (if `.jules/` only) |
 | Planner | `jules` | `jules-planner-*` | ✅ (if `.jules/` only) |
 | Implementer | `main` | `jules-implementer-*` | ❌ (human review) |
+| Innovator | `jules` | `jules-innovator-*` | ✅ (if `.jules/` only) |
 
 ## Workflow Files
 
@@ -36,7 +37,7 @@ Workflow orchestration uses `jlo workflow` commands:
 - `jlo workflow matrix pending-workstreams` → Generate decider matrix
 - `jlo workflow matrix routing` → Generate planner/implementer routing
 - `jlo workflow run <layer>` → Execute layer with JSON output
-- `jlo workflow wait prs` → Wait for PRs with configurable mode
+- `jlo workflow workstreams publish-proposals <workstream>` → Publish innovator proposals
 
 ## Workflow Execution Flow
 
@@ -44,13 +45,16 @@ The primary orchestration workflow in `.github/workflows/jules-*.yml` orchestrat
 
 1. **Narrator** → Produces `.jules/changes/latest.yml`
 2. **Doctor Validation** → Validates workspace structure
-3. **Observer Matrix Generation** → Reads workstream schedules
-4. **Observer Execution** → Sequential execution (max-parallel=1)
-5. **Decider Matrix Generation** → Reads workstream schedules
-6. **Decider Execution** → Sequential execution (max-parallel=1)
-7. **Routing Matrix Generation** → Identifies issues for planner/implementer
-8. **Planner Execution** → Sequential execution for deep analysis
-9. **Implementer Execution** → Sequential execution for code changes
+3. **Workstream Matrix Generation** → Reads workstream schedules
+4. **Innovator Execution (first pass)** → Idea creation (parallel with observers)
+5. **Observer Execution** → Sequential execution (max-parallel=1)
+6. **Innovator Execution (second pass)** → Proposal refinement and cleanup
+7. **Proposal Publication** → Published as GitHub issues
+8. **Decider Matrix Generation** → Reads workstream schedules
+9. **Decider Execution** → Sequential execution (max-parallel=1)
+10. **Routing Matrix Generation** → Identifies issues for planner/implementer
+11. **Planner Execution** → Sequential execution for deep analysis
+12. **Implementer Execution** → Sequential execution for code changes
 
 ## Required Configuration
 
@@ -75,7 +79,7 @@ The `validate-workflow-kit.yml` workflow tests the workflow kit without Jules AP
 3. **mock-e2e** → Validate `jlo run <layer> --dry-run` for all layers
 4. **validate-workflow-template** → Verify rendered workflow contains mock support
 
-Mock mode (`--mock`) creates real branches/PRs with synthetic content. Scope is auto-generated from `JULES_MOCK_SCOPE` env var. The kit scripts pass `JLO_RUN_FLAGS` to jlo commands, enabling mock flags via environment variable.
+Mock mode (`--mock`) creates real branches/PRs with synthetic content. Mock tag is auto-generated from `JULES_MOCK_TAG` env var. The kit scripts pass `JLO_RUN_FLAGS` to jlo commands, enabling mock flags via environment variable.
 
 Triggers:
 - Pull requests modifying `src/assets/workflows/**`, `src/app/commands/run/**`, or `src/domain/mock_config.rs`
