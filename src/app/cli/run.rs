@@ -88,6 +88,25 @@ pub enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
+    /// Run innovator agent (single role, workstream-based)
+    #[clap(visible_alias = "x")]
+    Innovators {
+        /// Role (persona) to run
+        #[arg(short = 'r', long)]
+        role: String,
+        /// Target workstream
+        #[arg(short = 'w', long)]
+        workstream: String,
+        /// Show assembled prompts without executing
+        #[arg(long, conflicts_with = "mock")]
+        prompt_preview: bool,
+        /// Override the starting branch
+        #[arg(long)]
+        branch: Option<String>,
+        /// Run in mock mode (no Jules API, real git/GitHub operations)
+        #[arg(long, conflicts_with = "prompt_preview")]
+        mock: bool,
+    },
 }
 
 pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
@@ -108,6 +127,9 @@ pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
         }
         RunLayer::Implementers { prompt_preview, branch, issue, mock } => {
             (Layer::Implementers, None, None, prompt_preview, branch, Some(issue), mock)
+        }
+        RunLayer::Innovators { role, workstream, prompt_preview, branch, mock } => {
+            (Layer::Innovators, Some(role), Some(workstream), prompt_preview, branch, None, mock)
         }
     };
 

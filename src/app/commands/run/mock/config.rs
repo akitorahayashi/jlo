@@ -52,9 +52,14 @@ pub fn load_mock_config<W: WorkspaceStore>(
 
     // Load branch prefixes from contracts.yml files
     let mut branch_prefixes = HashMap::new();
-    for layer in
-        [Layer::Narrators, Layer::Observers, Layer::Deciders, Layer::Planners, Layer::Implementers]
-    {
+    for layer in [
+        Layer::Narrators,
+        Layer::Observers,
+        Layer::Deciders,
+        Layer::Planners,
+        Layer::Implementers,
+        Layer::Innovators,
+    ] {
         let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
         let contracts_path_str = contracts_path
             .to_str()

@@ -102,21 +102,23 @@ where
         );
     }
 
-    // Observers/Deciders: single role execution
+    // Observers/Deciders/Innovators: single role execution
     execute_single_role(jules_path, &options, workspace)
 }
 
-/// Execute a single observer or decider role.
+/// Execute a single observer, decider, or innovator role.
 fn execute_single_role<W: WorkspaceStore + crate::domain::PromptAssetLoader>(
     jules_path: &Path,
     options: &RunOptions,
     workspace: &W,
 ) -> Result<RunResult, AppError> {
-    let role = options.role.as_ref().ok_or_else(|| {
-        AppError::MissingArgument("Role is required for observers/deciders".to_string())
-    })?;
+    let layer_name = options.layer.dir_name();
+    let role = options
+        .role
+        .as_ref()
+        .ok_or_else(|| AppError::MissingArgument(format!("Role is required for {}", layer_name)))?;
     let workstream = options.workstream.as_ref().ok_or_else(|| {
-        AppError::MissingArgument("Workstream is required for observers/deciders".to_string())
+        AppError::MissingArgument(format!("Workstream is required for {}", layer_name))
     })?;
 
     // Validate role exists

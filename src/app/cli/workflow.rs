@@ -20,7 +20,7 @@ pub enum WorkflowCommands {
     Run {
         /// Target workstream (e.g., generic, alpha)
         workstream: String,
-        /// Target layer (narrator, observers, deciders, planners, implementers)
+        /// Target layer (narrator, observers, deciders, planners, implementers, innovators)
         layer: String,
         /// Run in mock mode (requires JULES_MOCK_TAG)
         #[arg(long)]
