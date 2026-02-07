@@ -364,7 +364,17 @@ pub fn validate_issue(
         }
     }
 
-    let requires_deep = get_bool(data, "requires_deep_analysis").unwrap_or(false);
+    let requires_deep = match get_bool(data, "requires_deep_analysis") {
+        Some(val) => val,
+        None => {
+            diagnostics.push_error(
+                path.display().to_string(),
+                "requires_deep_analysis is required (true/false)",
+            );
+            return;
+        }
+    };
+
     let deep_reason = get_string(data, "deep_analysis_reason").unwrap_or_default();
     if requires_deep && deep_reason.trim().is_empty() {
         diagnostics.push_error(
@@ -743,6 +753,7 @@ evidence: []
     fn test_validate_issue_data_valid() {
         let yaml = r#"
 schema_version: 2
+requires_deep_analysis: false
 id: "abc123"
 source_events: ["ev1234"]
 title: "Bug fix"
@@ -764,5 +775,33 @@ verification_commands: ["cargo test"]
 
         validate_issue(&data, &path, "bugs", &labels, &priorities, &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_validate_issue_missing_requires_deep_analysis() {
+        let yaml = r#"
+schema_version: 2
+id: "abc123"
+source_events: ["ev1234"]
+title: "Bug fix"
+label: "bugs"
+priority: "high"
+summary: "Summary"
+problem: "Problem"
+impact: "Impact"
+desired_outcome: "Outcome"
+affected_areas: ["src/"]
+acceptance_criteria: ["Done"]
+verification_commands: ["cargo test"]
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("test.yml");
+        let mut diagnostics = Diagnostics::default();
+        let labels = vec!["bugs".to_string()];
+        let priorities = vec!["high".to_string()];
+
+        validate_issue(&data, &path, "bugs", &labels, &priorities, &mut diagnostics);
+        assert!(diagnostics.error_count() > 0);
+        assert!(diagnostics.errors()[0].message.contains("requires_deep_analysis is required"));
     }
 }

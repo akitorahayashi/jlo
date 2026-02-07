@@ -98,39 +98,80 @@ where
     // Issue 1: requires deep analysis (for planner)
     let planner_issue_id = generate_mock_id();
     let planner_issue_file = label_dir.join(format!("mock-planner-{}.yml", config.mock_tag));
-    let planner_issue_content = mock_issue_template
-        .replace("mock01", &planner_issue_id)
-        .replace("test-tag", &config.mock_tag)
-        .replace("event1", &planner_event_id)
-        .replace(
-            "requires_deep_analysis: false",
-            "requires_deep_analysis: true\ndeep_analysis_reason: \"Mock issue requires architectural analysis-for-workflow-validation\"",
-        )
-        .replace(
-            "Mock issue for workflow validation",
-            "Mock issue requiring deep analysis",
-        )
-        .replace("medium", "high"); // Make it high priority for planner
+
+    let mut planner_issue_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
+        .map_err(|e| {
+            AppError::InternalError(format!("Failed to parse mock issue template: {}", e))
+        })?;
+
+    if let Some(mapping) = planner_issue_yaml.as_mapping_mut() {
+        mapping.insert("id".into(), planner_issue_id.clone().into());
+        mapping.insert(
+            "summary".into(),
+            format!(
+                "This is a mock issue created by jlo --mock for workflow-kit validation. Mock tag: {}",
+                config.mock_tag
+            )
+            .into(),
+        );
+        let src_events = mapping
+            .entry("source_events".into())
+            .or_insert_with(|| serde_yaml::Value::Sequence(vec![]));
+        if let Some(seq) = src_events.as_sequence_mut() {
+            seq.clear();
+            seq.push(planner_event_id.clone().into());
+        }
+
+        mapping.insert("title".into(), "Mock issue requiring deep analysis".into());
+        mapping.insert("priority".into(), "high".into());
+        mapping.insert("requires_deep_analysis".into(), true.into());
+        mapping.insert(
+            "deep_analysis_reason".into(),
+            "Mock issue requires architectural analysis-for-workflow-validation".into(),
+        );
+    }
 
     workspace.write_file(
         planner_issue_file
             .to_str()
             .ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
-        &planner_issue_content,
+        &serde_yaml::to_string(&planner_issue_yaml).unwrap(),
     )?;
 
     // Issue 2: ready for implementer
     let impl_issue_id = generate_mock_id();
     let impl_issue_file = label_dir.join(format!("mock-impl-{}.yml", config.mock_tag));
-    let impl_issue_content = mock_issue_template
-        .replace("mock01", &impl_issue_id)
-        .replace("test-tag", &config.mock_tag)
-        .replace("event1", &impl_event_id)
-        .replace("Mock issue for workflow validation", "Mock issue ready for implementation");
+
+    let mut impl_issue_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
+        .map_err(|e| {
+            AppError::InternalError(format!("Failed to parse mock issue template: {}", e))
+        })?;
+
+    if let Some(mapping) = impl_issue_yaml.as_mapping_mut() {
+        mapping.insert("id".into(), impl_issue_id.clone().into());
+        mapping.insert(
+            "summary".into(),
+            format!(
+                "This is a mock issue created by jlo --mock for workflow-kit validation. Mock tag: {}",
+                config.mock_tag
+            )
+            .into(),
+        );
+        let src_events = mapping
+            .entry("source_events".into())
+            .or_insert_with(|| serde_yaml::Value::Sequence(vec![]));
+        if let Some(seq) = src_events.as_sequence_mut() {
+            seq.clear();
+            seq.push(impl_event_id.clone().into());
+        }
+
+        mapping.insert("title".into(), "Mock issue ready for implementation".into());
+        mapping.insert("requires_deep_analysis".into(), false.into());
+    }
 
     workspace.write_file(
         impl_issue_file.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
-        &impl_issue_content,
+        &serde_yaml::to_string(&impl_issue_yaml).unwrap(),
     )?;
 
     // Ensure all tag-matched decided events have issue_id.
