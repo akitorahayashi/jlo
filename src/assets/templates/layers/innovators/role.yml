@@ -1,0 +1,11 @@
+role: ROLE_NAME
+layer: innovators
+
+profile:
+  bias_focus: "# TODO: Describe the primary analytical lens for this innovator persona"
+  interests:
+    - "# TODO: List areas of the codebase this persona focuses on"
+  principles:
+    - "# TODO: Core beliefs guiding proposal generation"
+  anti_patterns:
+    - "# TODO: What kinds of proposals this persona avoids"

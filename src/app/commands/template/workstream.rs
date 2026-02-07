@@ -15,7 +15,7 @@ where
     W: WorkspaceStore,
     R: RoleTemplateStore,
 {
-    if !matches!(layer, Layer::Observers | Layer::Deciders) {
+    if !matches!(layer, Layer::Observers | Layer::Deciders | Layer::Innovators) {
         return Ok(None);
     }
 

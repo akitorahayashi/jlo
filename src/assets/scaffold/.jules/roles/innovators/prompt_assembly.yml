@@ -1,0 +1,18 @@
+schema_version: 1
+layer: innovators
+
+runtime_context:
+  workstream: "{{workstream}}"
+  role: "{{role}}"
+
+includes:
+  - title: "Role"
+    path: ".jules/roles/innovators/roles/{{role}}/role.yml"
+  - title: "Layer Contracts"
+    path: ".jules/roles/innovators/contracts.yml"
+  - title: "Change Summary"
+    path: ".jules/changes/latest.yml"
+    optional: true
+  - title: "Persona Perspective"
+    path: ".jules/workstreams/{{workstream}}/exchange/innovators/{{role}}/perspective.yml"
+    optional: true

@@ -16,3 +16,6 @@ roles = [
 roles = [
   { name = "triage_generic", enabled = true },
 ]
+
+[innovators]
+roles = []

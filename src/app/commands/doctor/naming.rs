@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use super::diagnostics::Diagnostics;
+use super::structure::list_subdirs;
 use super::yaml::is_kebab_case;
 
 pub fn naming_checks(
@@ -25,6 +26,17 @@ pub fn naming_checks(
         for label in issue_labels {
             for entry in list_files(&issues_dir.join(label), diagnostics) {
                 validate_filename(&entry, diagnostics, "issue");
+            }
+        }
+
+        // Validate innovator comment filenames
+        let innovators_dir = exchange_dir.join("innovators");
+        if innovators_dir.exists() {
+            for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
+                let comments_dir = persona_dir.join("comments");
+                for entry in list_files(&comments_dir, diagnostics) {
+                    validate_filename(&entry, diagnostics, "innovator comment");
+                }
             }
         }
     }

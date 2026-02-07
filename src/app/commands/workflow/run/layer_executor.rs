@@ -26,6 +26,9 @@ where
         Layer::Deciders => execute_multi_role(store, options, &jules_path, git, github),
         Layer::Planners => execute_issue_layer(store, options, &jules_path, git, github),
         Layer::Implementers => execute_issue_layer(store, options, &jules_path, git, github),
+        Layer::Innovators => {
+            Err(AppError::Validation("Innovator layer execution is not yet implemented".into()))
+        }
     }
 }
 

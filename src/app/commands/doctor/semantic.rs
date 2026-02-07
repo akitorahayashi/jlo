@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use chrono::{NaiveDate, Utc};
 
 use crate::adapters::workstream_schedule_filesystem::load_schedule;
+use crate::domain::configuration::schedule::ScheduleLayer;
 use crate::domain::{AppError, Layer};
 
 use super::diagnostics::Diagnostics;
@@ -97,7 +98,7 @@ pub fn semantic_checks(
     // With the new scaffold structure, roles are under .jules/roles/<layer>/roles/<role>/
     let roles_dir = jules_path.join("roles");
     let mut existing_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
-    for layer in [Layer::Observers, Layer::Deciders] {
+    for layer in [Layer::Observers, Layer::Deciders, Layer::Innovators] {
         let roles_container = roles_dir.join(layer.dir_name()).join("roles");
         if roles_container.exists() {
             let mut role_set = HashSet::new();
@@ -130,38 +131,28 @@ pub fn semantic_checks(
     for workstream in workstreams {
         match load_schedule(&store, workstream) {
             Ok(schedule) => {
-                for role in schedule.observers.roles {
-                    scheduled_roles
-                        .entry(Layer::Observers)
-                        .or_default()
-                        .insert(role.name.as_str().to_string());
-                    // Validate role exists in filesystem
-                    if !existing_roles
-                        .get(&Layer::Observers)
-                        .is_some_and(|roles| roles.contains(role.name.as_str()))
-                    {
-                        diagnostics.push_error(
-                            role.name.as_str().to_string(),
-                            "Observer role listed in scheduled.toml but missing from filesystem",
-                        );
-                    }
-                }
-
-                for role in schedule.deciders.roles {
-                    scheduled_roles
-                        .entry(Layer::Deciders)
-                        .or_default()
-                        .insert(role.name.as_str().to_string());
-                    // Validate role exists in filesystem
-                    if !existing_roles
-                        .get(&Layer::Deciders)
-                        .is_some_and(|roles| roles.contains(role.name.as_str()))
-                    {
-                        diagnostics.push_error(
-                            role.name.as_str().to_string(),
-                            "Decider role listed in scheduled.toml but missing from filesystem",
-                        );
-                    }
+                validate_scheduled_layer(
+                    Layer::Observers,
+                    &schedule.observers,
+                    &existing_roles,
+                    &mut scheduled_roles,
+                    diagnostics,
+                );
+                validate_scheduled_layer(
+                    Layer::Deciders,
+                    &schedule.deciders,
+                    &existing_roles,
+                    &mut scheduled_roles,
+                    diagnostics,
+                );
+                if let Some(ref innovators) = schedule.innovators {
+                    validate_scheduled_layer(
+                        Layer::Innovators,
+                        innovators,
+                        &existing_roles,
+                        &mut scheduled_roles,
+                        diagnostics,
+                    );
                 }
             }
             Err(AppError::ScheduleConfigMissing(_)) => {
@@ -202,6 +193,27 @@ pub fn semantic_checks(
                     );
                 }
             }
+        }
+    }
+}
+
+fn validate_scheduled_layer(
+    layer: Layer,
+    schedule_layer: &ScheduleLayer,
+    existing_roles: &HashMap<Layer, HashSet<String>>,
+    scheduled_roles: &mut HashMap<Layer, HashSet<String>>,
+    diagnostics: &mut Diagnostics,
+) {
+    for role in &schedule_layer.roles {
+        scheduled_roles.entry(layer).or_default().insert(role.name.as_str().to_string());
+        if !existing_roles.get(&layer).is_some_and(|roles| roles.contains(role.name.as_str())) {
+            diagnostics.push_error(
+                role.name.as_str().to_string(),
+                format!(
+                    "{} role listed in scheduled.toml but missing from filesystem",
+                    layer.display_name()
+                ),
+            );
         }
     }
 }

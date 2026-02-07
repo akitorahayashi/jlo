@@ -27,6 +27,9 @@ roles = []
 
 [deciders]
 roles = []
+
+[innovators]
+roles = []
 "#,
     )
     .expect("Failed to write scheduled.toml");
@@ -40,6 +43,7 @@ roles = []
     fs::create_dir_all(exchange.join("issues").join("feats")).unwrap();
     fs::create_dir_all(exchange.join("issues").join("refacts")).unwrap();
     fs::create_dir_all(exchange.join("issues").join("tests")).unwrap();
+    fs::create_dir_all(exchange.join("innovators")).unwrap();
     fs::create_dir_all(workstream_path.join("workstations")).unwrap();
 }
 

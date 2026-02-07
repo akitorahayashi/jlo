@@ -19,6 +19,8 @@ pub struct WorkstreamSchedule {
     pub enabled: bool,
     pub observers: ScheduleLayer,
     pub deciders: ScheduleLayer,
+    #[serde(default)]
+    pub innovators: Option<ScheduleLayer>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -63,6 +65,9 @@ impl WorkstreamSchedule {
 
         Self::validate_roles("observers", &self.observers)?;
         Self::validate_roles("deciders", &self.deciders)?;
+        if let Some(ref innovators) = self.innovators {
+            Self::validate_roles("innovators", innovators)?;
+        }
 
         Ok(())
     }
