@@ -5,6 +5,12 @@ use crate::domain::AppError;
 pub fn run_deinit() -> Result<(), AppError> {
     let outcome = crate::app::api::deinit()?;
 
+    if outcome.deleted_jlo {
+        println!("✅ Removed .jlo/ control plane");
+    } else {
+        println!("ℹ️ No .jlo/ control plane found");
+    }
+
     if outcome.deleted_branch {
         println!("✅ Deleted local 'jules' branch");
     } else {

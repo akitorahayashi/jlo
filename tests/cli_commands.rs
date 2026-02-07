@@ -93,17 +93,21 @@ fn deinit_removes_workflows_and_branch() {
 
     let workflow_path = ctx.work_dir().join(".github/workflows/jules-workflows.yml");
     let action_path = ctx.work_dir().join(".github/actions/install-jlo/action.yml");
+    let jlo_path = ctx.work_dir().join(".jlo");
     assert!(workflow_path.exists(), "workflow kit file should exist before deinit");
     assert!(action_path.exists(), "workflow action should exist before deinit");
+    assert!(jlo_path.exists(), ".jlo/ should exist before deinit");
 
     ctx.cli()
         .args(["deinit"])
         .assert()
         .success()
+        .stdout(predicate::str::contains("Removed .jlo/ control plane"))
         .stdout(predicate::str::contains("Deleted local 'jules' branch"));
 
     assert!(!workflow_path.exists(), "workflow kit file should be removed");
     assert!(!action_path.exists(), "workflow action should be removed");
+    assert!(!jlo_path.exists(), ".jlo/ should be removed after deinit");
 
     let output = Command::new("git")
         .args(["branch", "--list", "jules"])
