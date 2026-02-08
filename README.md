@@ -32,7 +32,8 @@ jlo init --remote
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow kit |
 | `jlo update [--prompt-preview]` | `u` | Advance `.jlo/` control-plane version pin |
 | `jlo deinit` | | Remove `.jlo/`, workflow kit, and local `jules` branch |
-| `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
+| `jlo create role <layer> <name>` | `c` | Create a custom role under `.jlo/` |
+| `jlo create workstream <name>` | `c` | Create a workstream under `.jlo/` |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
 | `jlo workflow matrix <cmd>` | | Generate GitHub Actions matrices |
@@ -40,13 +41,18 @@ jlo init --remote
 | `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state for automation |
 | `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
 | `jlo workflow workstreams publish-proposals <workstream>` | | Publish innovator proposals as GitHub issues |
-| `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate `.jules/` structure and content |
+| `jlo doctor [--strict] [--workstream <name>]` | | Validate `.jules/` structure and content |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` script and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
 
-### Template Command
+### Create Command
 
-`jlo template` opens an interactive wizard to apply a workstream template or create an observer/decider role. When creating roles non-interactively, pass an explicit `--workstream` to avoid defaulting to an unintended workstream.
+`jlo create` adds new roles or workstreams to the `.jlo/` control plane.
+
+```bash
+jlo create role observers taxonomy     # Create observer role
+jlo create workstream my-stream        # Create workstream
+```
 
 ### Run Command
 
@@ -115,7 +121,6 @@ Validate the `.jules/` workspace after agent execution:
 jlo doctor
 jlo doctor --workstream generic
 jlo doctor --strict
-jlo doctor --fix
 ```
 
 Exit codes:
@@ -134,8 +139,8 @@ GitHub secrets (such as `JULES_API_KEY` and `JULES_API_SECRET`) remain configure
 ```bash
 jlo init --remote                           # Initialize control plane + workflow kit (GitHub-hosted)
 jlo init --self-hosted                      # Initialize control plane + workflow kit (self-hosted)
-jlo template                                # Open interactive template wizard
-jlo template -l observers -n security -w generic
+jlo create role observers security                         # Create observer role
+jlo create workstream ops                                   # Create workstream
 
 # Setup compiler
 jlo setup list                              # List available components

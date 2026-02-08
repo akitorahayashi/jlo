@@ -25,8 +25,8 @@ src/assets/templates/
 
 | Template Type | Location | Applied By | Result |
 |---------------|----------|------------|--------|
-| **Role** | `layers/<layer>/role.yml` | `jlo template -l <layer> -n <name>` | Creates `.jules/roles/<layer>/<name>/role.yml` |
-| **Workstream** | `workstreams/<name>/` | `jlo template -w <name>` | Creates `.jules/workstreams/<name>/` with event/issue directories |
+| **Role** | `layers/<layer>/role.yml` | `jlo create role <layer> <name>` | Creates `.jlo/roles/<layer>/roles/<name>/role.yml` |
+| **Workstream** | `workstreams/<name>/` | `jlo create workstream <name>` | Creates `.jlo/workstreams/<name>/scheduled.toml` |
 
 ## Role Templates
 
@@ -42,15 +42,15 @@ Single-role layers (Narrator, Planners, Implementers) have a fixed role with `co
 
 ```bash
 # Create a new observer role
-jlo template -l observers -n taxonomy
+jlo create role observers taxonomy
 
 # Create a new decider role
-jlo template -l deciders -n triage
+jlo create role deciders triage
 ```
 
 ### Result
 
-Creates `.jules/roles/<layer>/<name>/role.yml` populated from the template.
+Creates `.jlo/roles/<layer>/roles/<name>/role.yml` populated from the template.
 
 ## Workstream Templates
 
@@ -66,29 +66,20 @@ Workstream templates define the directory structure for events and issues.
 ### Application
 
 ```bash
-# Apply the exchange workstream template
-jlo template -w exchange
+# Create a workstream
+jlo create workstream exchange
 ```
 
 ### Result
 
-Creates:
-```
-.jules/workstreams/<name>/
-  events/
-    <state>/          # State directories from template
-  issues/
-    <label>/          # Label directories from template
-```
+Creates `.jlo/workstreams/<name>/scheduled.toml` seeded from the template.
 
-Also creates `.jules/workstreams/<name>/scheduled.toml` if `scheduled.toml` exists in the template.
-
-## Relationship to jlo template Command
+## Relationship to jlo create Command
 
 See [src/AGENTS.md](../../../src/AGENTS.md) for CLI command details.
 
-The `jlo template` command:
+The `jlo create` command:
 1. Reads templates from `src/assets/templates/`
-2. Validates the target location
-3. Copies and populates the template files
+2. Validates the target location in `.jlo/`
+3. Populates the template file
 4. Reports success or error

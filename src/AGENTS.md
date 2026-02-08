@@ -50,7 +50,7 @@ tests/
 | **Runtime plane** | The `.jules/` directory on the `jules` branch. Materialized from `.jlo/` by workflow bootstrap; hosts agent exchange artifacts. |
 | **Scaffold** | Embedded static files in `src/assets/scaffold/` that seed `.jlo/` on init and are reconciled on update. |
 | **Projection** | Deterministic materialization of `.jules/` from `.jlo/` + scaffold assets during workflow bootstrap. See `docs/CONTROL_PLANE_OWNERSHIP.md`. |
-| **Template** | Blueprints for creating new roles or workstreams, applied via `jlo template`. |
+| **Create** | CLI command to add new roles or workstreams to the `.jlo/` control plane. |
 | **Workflow kit** | `.github/` automation assets installed by `jlo init`. |
 | **Component** | Development tools managed by `jlo setup`, defined in `src/assets/catalog/`. |
 
@@ -60,14 +60,15 @@ tests/
 |---------|-------|-------------|
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow kit |
 | `jlo update [--prompt-preview]` | `u` | Advance `.jlo/` control-plane version pin |
-| `jlo template [-l layer] [-n name] [-w workstream]` | `tp` | Apply a template (workstream or role) |
+| `jlo create role <layer> <name>` | `c` | Create a custom role under `.jlo/` |
+| `jlo create workstream <name>` | `c` | Create a workstream under `.jlo/` |
 | `jlo run narrator [--prompt-preview] [--branch <branch>] [--mock]` | `r n` | Run narrator (produces changes feed) |
 | `jlo run observers --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |
 | `jlo run deciders --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
 | `jlo run planners <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (issue-driven) |
 | `jlo run implementers <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (issue-driven) |
 | `jlo run innovators --role <role> --workstream <workstream> --phase <creation\|refinement> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
-| `jlo doctor [--fix] [--strict] [--workstream <name>]` | | Validate .jules/ structure and content |
+| `jlo doctor [--strict] [--workstream <name>]` | | Validate .jules/ structure and content |
 | `jlo workflow doctor [--workstream <name>]` | `wf` | Validate workspace for workflow use |
 | `jlo workflow matrix workstreams` | | Generate workstream matrix for GitHub Actions |
 | `jlo workflow matrix pending-workstreams --workstreams-json <json> [--mock]` | | Generate pending workstreams matrix |

@@ -19,8 +19,8 @@ Users never checkout or edit the `jules` branch directly. All configuration is p
 |------|-------|-------------|
 | `.jlo/.jlo-version` | jlo | Pinned jlo binary version. Written by `init`, advanced by `update`. |
 | `.jlo/config.toml` | User | Workspace configuration. Created by `init`; never overwritten. |
-| `.jlo/roles/<layer>/roles/<role>/role.yml` | User | Role-specific customizations. Created by `template`; never overwritten. |
-| `.jlo/workstreams/<ws>/scheduled.toml` | User | Workstream schedule and role roster. Created by `template`; never overwritten. |
+| `.jlo/roles/<layer>/roles/<role>/role.yml` | User | Role-specific customizations. Created by `create`; never overwritten. |
+| `.jlo/workstreams/<ws>/scheduled.toml` | User | Workstream schedule and role roster. Created by `create`; never overwritten. |
 | `.jlo/setup/tools.yml` | User | Tool selection. Created by `init`; never overwritten. |
 
 ### `.jules/` — Runtime Data Plane (jules branch)
@@ -71,14 +71,15 @@ Workflow bootstrap is the sole authority for producing `.jules/` on the `jules` 
 
 ### Bootstrap Algorithm
 
-1. Read `.jlo/.jlo-version` from the control branch.
-2. Load embedded scaffold assets for that version.
+1. Verify `.jlo/` and `.jlo/.jlo-version` exist (hard preconditions).
+2. Load embedded scaffold assets for the pinned version.
 3. Checkout `jules` branch (create from orphan if absent).
 4. Write all managed framework files from embedded scaffold to `.jules/`.
 5. Overlay user intent files from `.jlo/` (config, schedules, role customizations) into `.jules/`.
-6. Ensure structural directories exist (layer dirs, workstream exchange dirs with `.gitkeep`).
-7. Never delete or modify paths under `.jules/workstreams/*/exchange/` or `.jules/changes/`.
-8. Commit changes (if any) to `jules` with a deterministic message.
+6. Delete projected workstreams absent from `.jlo/workstreams/`.
+7. Delete projected roles absent from `.jlo/roles/<layer>/roles/`.
+8. Write managed manifest (`.jules/.managed-defaults.yml`).
+9. Commit changes (if any) to `jules` with a deterministic message.
 
 ### Idempotency
 
