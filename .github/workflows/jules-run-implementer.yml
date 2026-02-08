@@ -1,0 +1,41 @@
+# Jules Run Implementer
+#
+# Manual execution of the implementer layer for a specific issue.
+# Separated from the main orchestration workflow to allow targeted execution.
+
+name: Jules Run Implementer
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_file:
+        description: 'Issue file path'
+        type: string
+        required: true
+      prompt_preview:
+        description: 'Show prompts without executing'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  implementers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: jules
+          fetch-depth: 0
+
+      - name: Run implementer
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+        uses: ./.github/actions/run-implementer
+        with:
+          issue_file: ${{ inputs.issue_file }}
+          prompt_preview: ${{ inputs.prompt_preview }}
+          target_branch: ${{ vars.JULES_TARGET_BRANCH || 'main' }}

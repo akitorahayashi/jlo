@@ -1,0 +1,53 @@
+name: Sync main to jules
+
+on:
+  push:
+    branches:
+      - main
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check if jules branch exists
+        id: check-branch
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          if gh api repos/${{ github.repository }}/branches/jules --silent 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "::notice::jules branch does not exist, skipping sync"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check-branch.outputs.exists == 'true'
+        with:
+          ref: jules
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        if: steps.check-branch.outputs.exists == 'true'
+        uses: ./.github/actions/configure-git
+
+      - name: Merge main into jules
+        if: steps.check-branch.outputs.exists == 'true'
+        run: |
+          git fetch origin main
+          # Merge main, preferring main's code changes
+          git merge origin/main --no-edit -X theirs || {
+            # On conflict, preserve .jules/ from jules branch
+            git checkout --ours .jules/
+            git add .jules/
+            git commit --no-edit
+          }
+
+      - name: Push changes
+        if: steps.check-branch.outputs.exists == 'true'
+        run: git push origin jules

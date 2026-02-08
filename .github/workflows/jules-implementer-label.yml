@@ -1,0 +1,94 @@
+name: Jules Implementer Label
+
+on:
+  push:
+    branches:
+      - 'jules-implementer-*'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  label-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Checkout jules; label definitions and contracts are read from the jules branch.
+          ref: jules
+          fetch-depth: 1
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Apply category label
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::Missing GH_TOKEN (secrets.JLO_BOT_TOKEN). Refusing to fall back to the default workflow token."
+            exit 1
+          fi
+
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "::error::Missing gh CLI."
+            exit 1
+          fi
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::error::Missing jq."
+            exit 1
+          fi
+
+          PR_NUMBER=""
+          for i in {1..12}; do
+            PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --repo "$REPO" --json number -q '.[0].number')
+            if [ -n "$PR_NUMBER" ]; then
+              break
+            fi
+            sleep 5
+          done
+          if [ -z "$PR_NUMBER" ]; then
+            echo "::notice::No PR found yet for branch $BRANCH_NAME. Skipping label."
+            exit 0
+          fi
+
+          if [[ ! "$BRANCH_NAME" =~ ^jules-implementer-([a-z0-9]+)-([a-z0-9]{6})- ]]; then
+            echo "::error::Implementer branch name must follow: jules-implementer-<label>-<id>-<short_description>"
+            echo "::error::Got: $BRANCH_NAME"
+            exit 1
+          fi
+
+          label="${BASH_REMATCH[1]}"
+          issue_id="${BASH_REMATCH[2]}"
+
+          echo "Detected issue label: $label"
+          echo "Detected issue id: $issue_id"
+
+          label_config=".jules/github-labels.json"
+          if [ ! -f "$label_config" ]; then
+            echo "::error::Missing label definition file on jules branch: .jules/github-labels.json"
+            exit 1
+          fi
+
+          color=$(jq -r --arg label "$label" '.issue_labels[$label].color // empty' "$label_config")
+          if [ -z "$color" ] || [ "$color" = "null" ]; then
+            echo "::error::Missing color for '$label' in .jules/github-labels.json on jules branch"
+            exit 1
+          fi
+          if [[ ! "$color" =~ ^[0-9a-fA-F]{6}$ ]]; then
+            echo "::error::Invalid label color '$color' for '$label' in .jules/github-labels.json on jules branch (expected 6-digit hex)"
+            exit 1
+          fi
+
+          # Ensure the label exists (and has the desired color).
+          if gh label list --repo "$REPO" --json name -q '.[].name' | grep -Fxq "$label"; then
+            gh label edit "$label" --repo "$REPO" --color "$color"
+          else
+            gh label create "$label" --repo "$REPO" --color "$color"
+          fi
+
+          # Apply label to the PR.
+          gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "$label"

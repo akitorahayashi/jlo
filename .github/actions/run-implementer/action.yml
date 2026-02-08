@@ -1,0 +1,55 @@
+name: 'Run Implementer'
+description: 'Run an implementer for a single issue and clean up related events'
+inputs:
+  issue_file:
+    description: 'Issue file path'
+    required: true
+  prompt_preview:
+    description: 'Show prompts without executing'
+    required: false
+    default: 'false'
+  target_branch:
+    description: 'Target branch for implementer output'
+    required: false
+    default: 'main'
+runs:
+  using: "composite"
+  steps:
+    - name: Validate inputs
+      shell: bash
+      env:
+        ISSUE_FILE: ${{ inputs.issue_file }}
+      run: |
+        if [ -z "$ISSUE_FILE" ]; then
+          echo "::error::issue_file is required"
+          exit 1
+        fi
+        if [ ! -f "$ISSUE_FILE" ]; then
+          echo "::error::Issue file not found in repository: $ISSUE_FILE"
+          exit 1
+        fi
+
+    - name: Install jlo
+      uses: ./.github/actions/install-jlo
+
+    - name: Configure Git
+      if: ${{ inputs.prompt_preview != 'true' }}
+      uses: ./.github/actions/configure-git
+
+    - name: Run implementers
+      shell: bash
+      env:
+        ISSUE_FILE: ${{ inputs.issue_file }}
+        PROMPT_PREVIEW: ${{ inputs.prompt_preview }}
+        TARGET_BRANCH: ${{ inputs.target_branch }}
+      run: |
+        args=("$ISSUE_FILE")
+        [ "$PROMPT_PREVIEW" = "true" ] && args+=("--prompt-preview")
+        jlo run implementers "${args[@]}" --branch "$TARGET_BRANCH"
+
+    - name: Delete processed issue and source events
+      if: ${{ inputs.prompt_preview != 'true' }}
+      shell: bash
+      env:
+        ISSUE_FILE: ${{ inputs.issue_file }}
+      run: jlo workflow workstreams clean issue "$ISSUE_FILE"
