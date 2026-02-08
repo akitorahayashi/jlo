@@ -1,32 +1,38 @@
 schema_version: 1
 
-id: "d22330"
-created_at: "2026-02-08T16:01:36Z"
+id: "nr92x8"
+created_at: "2026-02-08T20:25:00Z"
 
 range:
-  from_commit: "59129a1bbe7ef5f6e4140d8f17cc5e79cce84f7d"
-  to_commit: "2f2426ffc02d2a2df3122ded7cde2c78f0187694"
-  selection_mode: "bootstrap"
-  selection_detail: "Last 20 commits with non-.jules/ changes"
+  from_commit: "2f2426ffc02d2a2df3122ded7cde2c78f0187694"
+  to_commit: "d772bbfc5d690c1094906a6900b1034df704a43b"
+  selection_mode: incremental
   excluded_paths:
     - .jules/
 
 stats:
-  commits_total: 1
-  commits_included: 1
-  files_changed: 100
-  insertions: 3563
-  deletions: 317
+  commits_total: 4
+  commits_included: 4
+  files_changed: 22
+  insertions: 1118
+  deletions: 674
 
 commits:
-  - sha: "f5fb732"
-    subject: "fix: enhance merge handling in jules-sync workflow to allow unrelated histories and improve error reporting"
+  - sha: "bbd1f56"
+    subject: "Refactor workflow initialization and rendering (#452)"
+  - sha: "94bc717"
+    subject: "Merge remote-tracking branch 'origin/main' into jules"
+  - sha: "0b2ea5a"
+    subject: "Bump JLO version from 9.2.2 to 9.3.0"
+  - sha: "515731e"
+    subject: "Merge remote-tracking branch 'origin/main' into jules"
 
 summary:
-  overview: "This update (f5fb732) enhances the `jules-sync` workflow to support merging unrelated histories and improves error reporting. It also includes significant updates to application services, commands, and scaffold assets."
+  overview: "This update introduces a major refactor to workflow initialization and rendering (bbd1f56), establishing a new domain-driven architecture and extensive scaffolding for the Jules system. It also bumps the JLO version to 9.3.0."
   notable_changes:
-    - "Updated `jules-sync` workflow to allow unrelated histories"
-    - "Added or updated `publish_proposals` workflow command"
-    - "Significant updates to `src/assets/scaffold`"
-    - "Additions to `src/app/services` including artifact generation and dependency resolution"
+    - "Refactored workflow initialization and rendering with new domain models (configuration, identities, prompt, workspace)."
+    - "Added extensive scaffolding assets and role definitions in `src/assets/scaffold`."
+    - "Implemented port interfaces (`Git`, `GitHub`, `WorkspaceStore`) to decouple infrastructure."
+    - "Added comprehensive integration tests for CLI commands and workflows."
+    - "Bumped JLO version to 9.3.0."
   truncation_note: ""
