@@ -63,6 +63,11 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
         result
     }
 
+    fn control_plane_skeleton_files(&self) -> Vec<ScaffoldFile> {
+        let all = self.control_plane_files();
+        all.into_iter().filter(|f| !is_entity_file(&f.path)).collect()
+    }
+
     fn layer_template(&self, _layer: Layer) -> &str {
         ""
     }
@@ -92,6 +97,14 @@ fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
             DirEntry::Dir(subdir) => collect_files(subdir, files),
         }
     }
+}
+
+/// Returns true for user-authored entity files (role definitions and workstream schedules).
+/// These are mutable intent files that should not be recreated by `update` if deleted.
+fn is_entity_file(path: &str) -> bool {
+    let is_role = path.ends_with("/role.yml") && path.contains("/roles/");
+    let is_schedule = path.ends_with("/scheduled.toml") && path.contains("/workstreams/");
+    is_role || is_schedule
 }
 
 #[cfg(test)]
@@ -162,6 +175,18 @@ mod tests {
         assert!(files.iter().all(|f| !f.path.contains("/schemas/")));
         assert!(files.iter().all(|f| f.path != ".jlo/JULES.md"));
         assert!(files.iter().all(|f| f.path != ".jlo/README.md"));
+    }
+
+    #[test]
+    fn skeleton_files_exclude_entities() {
+        let store = EmbeddedRoleTemplateStore::new();
+        let skeleton = store.control_plane_skeleton_files();
+        // Skeleton must not contain role definitions or schedules
+        assert!(skeleton.iter().all(|f| !f.path.ends_with("/role.yml")));
+        assert!(skeleton.iter().all(|f| !f.path.ends_with("/scheduled.toml")));
+        // But must contain infrastructure
+        assert!(skeleton.iter().any(|f| f.path == ".jlo/config.toml"));
+        assert!(skeleton.iter().any(|f| f.path == ".jlo/setup/tools.yml"));
     }
 
     #[test]

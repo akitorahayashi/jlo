@@ -100,10 +100,6 @@ impl WorkspaceStore for MockWorkspaceStore {
         Ok(self.version.borrow().clone())
     }
 
-    fn role_exists_in_layer(&self, layer: Layer, role_id: &RoleId) -> bool {
-        self.roles.borrow().contains_key(&(layer, role_id.clone()))
-    }
-
     fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
         let roles: Vec<DiscoveredRole> = self
             .roles
@@ -136,28 +132,6 @@ impl WorkspaceStore for MockWorkspaceStore {
         } else {
             None
         }
-    }
-
-    fn scaffold_role_in_layer(
-        &self,
-        layer: Layer,
-        role_id: &RoleId,
-        _role_yaml: &str,
-    ) -> Result<(), AppError> {
-        self.roles.borrow_mut().insert((layer, role_id.clone()), true);
-        Ok(())
-    }
-
-    fn create_workstream(&self, _name: &str) -> Result<(), AppError> {
-        Ok(())
-    }
-
-    fn list_workstreams(&self) -> Result<Vec<String>, AppError> {
-        Ok(vec!["generic".to_string()])
-    }
-
-    fn workstream_exists(&self, name: &str) -> bool {
-        name == "generic"
     }
 
     fn read_file(&self, path: &str) -> Result<String, AppError> {

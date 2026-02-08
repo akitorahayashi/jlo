@@ -89,8 +89,9 @@ where
         });
     }
 
-    // Load control-plane files from scaffold and find missing user intent files
-    let control_plane_files = templates.control_plane_files();
+    // Load control-plane skeleton files only — entity files (roles, schedules)
+    // are not recreated during update to respect intentional deletions.
+    let control_plane_files = templates.control_plane_skeleton_files();
     let mut to_create: Vec<(String, String)> = Vec::new();
 
     for file in &control_plane_files {
@@ -187,6 +188,14 @@ mod tests {
 
         fn control_plane_files(&self) -> Vec<ScaffoldFile> {
             self.control_files.clone()
+        }
+
+        fn control_plane_skeleton_files(&self) -> Vec<ScaffoldFile> {
+            self.control_files
+                .iter()
+                .filter(|f| !(f.path.ends_with("/role.yml") || f.path.ends_with("/scheduled.toml")))
+                .cloned()
+                .collect()
         }
 
         fn layer_template(&self, _layer: Layer) -> &str {
@@ -294,5 +303,51 @@ mod tests {
 
         assert!(result.created.is_empty());
         assert_eq!(result.previous_version, env!("CARGO_PKG_VERSION"));
+    }
+
+    #[test]
+    fn test_update_does_not_recreate_deleted_entities() {
+        let temp = TempDir::new().unwrap();
+        let jlo_path = temp.path().join(".jlo");
+        fs::create_dir_all(&jlo_path).unwrap();
+
+        // Write version file (must be older to trigger update)
+        fs::write(jlo_path.join(".jlo-version"), "0.0.0").unwrap();
+
+        // Simulate a scaffold that ships both skeleton and entity files
+        let mock_store = MockRoleTemplateStore {
+            control_files: vec![
+                ScaffoldFile {
+                    path: ".jlo/config.toml".to_string(),
+                    content: "# config".to_string(),
+                },
+                ScaffoldFile {
+                    path: ".jlo/roles/observers/roles/default/role.yml".to_string(),
+                    content: "role: default".to_string(),
+                },
+                ScaffoldFile {
+                    path: ".jlo/workstreams/generic/scheduled.toml".to_string(),
+                    content: "enabled = true".to_string(),
+                },
+            ],
+        };
+
+        let options = UpdateOptions { prompt_preview: false };
+        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let result = execute(&workspace, options, &mock_store).unwrap();
+
+        // Skeleton file (config.toml) should be created
+        assert!(result.created.contains(&".jlo/config.toml".to_string()));
+
+        // Entity files should NOT be created — user may have intentionally deleted them
+        assert!(
+            !result.created.contains(&".jlo/roles/observers/roles/default/role.yml".to_string())
+        );
+        assert!(!result.created.contains(&".jlo/workstreams/generic/scheduled.toml".to_string()));
+
+        // Verify files on disk
+        assert!(temp.path().join(".jlo/config.toml").exists());
+        assert!(!temp.path().join(".jlo/roles/observers/roles/default/role.yml").exists());
+        assert!(!temp.path().join(".jlo/workstreams/generic/scheduled.toml").exists());
     }
 }

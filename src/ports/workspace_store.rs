@@ -33,9 +33,6 @@ pub trait WorkspaceStore: PromptAssetLoader {
     #[allow(dead_code)]
     fn read_version(&self) -> Result<Option<String>, AppError>;
 
-    /// Check if a role exists in a specific layer.
-    fn role_exists_in_layer(&self, layer: Layer, role_id: &RoleId) -> bool;
-
     /// Discover all existing roles across all layers.
     #[allow(dead_code)]
     fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError>;
@@ -47,23 +44,6 @@ pub trait WorkspaceStore: PromptAssetLoader {
     /// Get the directory path for a specific role.
     #[allow(dead_code)]
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf>;
-
-    /// Scaffold a new role under a specific layer.
-    fn scaffold_role_in_layer(
-        &self,
-        layer: Layer,
-        role_id: &RoleId,
-        role_yaml: &str,
-    ) -> Result<(), AppError>;
-
-    /// Create a new workstream directory structure.
-    fn create_workstream(&self, name: &str) -> Result<(), AppError>;
-
-    /// List existing workstreams.
-    fn list_workstreams(&self) -> Result<Vec<String>, AppError>;
-
-    /// Check if a workstream exists.
-    fn workstream_exists(&self, name: &str) -> bool;
 
     // --- Generic File Operations ---
 

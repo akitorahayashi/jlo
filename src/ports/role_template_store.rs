@@ -20,6 +20,12 @@ pub trait RoleTemplateStore {
     /// mapped from `.jules/` scaffold paths to `.jlo/` paths.
     fn control_plane_files(&self) -> Vec<ScaffoldFile>;
 
+    /// Get control-plane skeleton files only (config, setup, infrastructure).
+    ///
+    /// Excludes role definitions and workstream schedules. Used by `update`
+    /// to fill missing infrastructure without recreating deleted entities.
+    fn control_plane_skeleton_files(&self) -> Vec<ScaffoldFile>;
+
     /// Get the template for a specific layer.
     #[allow(dead_code)]
     fn layer_template(&self, layer: Layer) -> &str;

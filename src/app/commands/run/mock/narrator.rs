@@ -30,7 +30,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::RoleId;
     use crate::ports::{CommitInfo, DiffStat, DiscoveredRole, PullRequestInfo, ScaffoldFile};
     use std::collections::HashMap;
     use std::path::PathBuf;
@@ -204,10 +203,6 @@ mod tests {
             panic!("mock narrator no-op must not call read_version");
         }
 
-        fn role_exists_in_layer(&self, _layer: Layer, _role_id: &RoleId) -> bool {
-            panic!("mock narrator no-op must not call role_exists_in_layer");
-        }
-
         fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
             panic!("mock narrator no-op must not call discover_roles");
         }
@@ -218,27 +213,6 @@ mod tests {
 
         fn role_path(&self, _role: &DiscoveredRole) -> Option<PathBuf> {
             panic!("mock narrator no-op must not call role_path");
-        }
-
-        fn scaffold_role_in_layer(
-            &self,
-            _layer: Layer,
-            _role_id: &RoleId,
-            _role_yaml: &str,
-        ) -> Result<(), AppError> {
-            panic!("mock narrator no-op must not call scaffold_role_in_layer");
-        }
-
-        fn create_workstream(&self, _name: &str) -> Result<(), AppError> {
-            panic!("mock narrator no-op must not call create_workstream");
-        }
-
-        fn list_workstreams(&self) -> Result<Vec<String>, AppError> {
-            panic!("mock narrator no-op must not call list_workstreams");
-        }
-
-        fn workstream_exists(&self, _name: &str) -> bool {
-            panic!("mock narrator no-op must not call workstream_exists");
         }
 
         fn read_file(&self, _path: &str) -> Result<String, AppError> {

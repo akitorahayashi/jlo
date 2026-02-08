@@ -121,68 +121,87 @@ fn deinit_removes_workflows_and_branch() {
 }
 
 #[test]
-fn template_creates_new_role() {
+fn create_role_succeeds() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
-        .args(["template", "-l", "observers", "-n", "custom-role", "-w", "generic"])
+        .args(["create", "role", "observers", "custom-role"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Created new role"));
 
-    ctx.assert_role_in_layer_exists("observers", "custom-role");
+    let role_path = ctx.jlo_path().join("roles/observers/roles/custom-role/role.yml");
+    assert!(role_path.exists(), "Role should exist in .jlo/");
 }
 
 #[test]
-fn template_fails_for_invalid_layer() {
+fn create_workstream_succeeds() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
-        .args(["template", "-l", "invalid", "-n", "test"])
+        .args(["create", "workstream", "my-stream"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Created new workstream"));
+
+    let ws_path = ctx.jlo_path().join("workstreams/my-stream/scheduled.toml");
+    assert!(ws_path.exists(), "Workstream should exist in .jlo/");
+}
+
+#[test]
+fn create_role_fails_for_invalid_layer() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init", "--remote"]).assert().success();
+
+    ctx.cli()
+        .args(["create", "role", "invalid", "test"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Invalid layer"));
 }
 
 #[test]
-fn template_fails_for_existing_role() {
+fn create_role_fails_for_existing_role() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
 
+    // Create a role first
+    ctx.cli().args(["create", "role", "observers", "my-obs"]).assert().success();
+
+    // Attempt duplicate creation
     ctx.cli()
-        .args(["template", "-l", "observers", "-n", "taxonomy", "-w", "generic"])
+        .args(["create", "role", "observers", "my-obs"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("already exists"));
 }
 
 #[test]
-fn template_fails_without_workspace() {
+fn create_role_fails_without_workspace() {
     let ctx = TestContext::new();
 
     ctx.cli()
-        .args(["template", "-l", "observers", "-n", "test", "-w", "generic"])
+        .args(["create", "role", "observers", "test"])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("No .jules/"));
+        .stderr(predicate::str::contains("workspace"));
 }
 
 #[test]
-fn template_requires_workstream_noninteractive() {
+fn create_workstream_fails_without_workspace() {
     let ctx = TestContext::new();
 
-    ctx.cli().args(["init", "--remote"]).assert().success();
-
     ctx.cli()
-        .args(["template", "-l", "observers", "-n", "missing-workstream"])
+        .args(["create", "workstream", "test"])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Workstream is required"));
+        .stderr(predicate::str::contains("workspace"));
 }
 
 #[test]
@@ -201,7 +220,7 @@ fn help_lists_visible_aliases() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("--help").assert().success().stdout(
-        predicate::str::contains("[aliases: i]").and(predicate::str::contains("[aliases: tp]")),
+        predicate::str::contains("[aliases: i]").and(predicate::str::contains("[aliases: c]")),
     );
 }
 

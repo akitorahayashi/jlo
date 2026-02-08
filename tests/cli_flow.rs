@@ -15,14 +15,15 @@ fn user_can_init_and_create_custom_role() {
     // All built-in roles should exist after init in their layers
     ctx.assert_all_builtin_roles_exist();
 
-    // Create a custom observer role
+    // Create a custom observer role via create command (writes to .jlo/)
     ctx.cli()
-        .args(["template", "-l", "observers", "-n", "security", "-w", "generic"])
+        .args(["create", "role", "observers", "security"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Created new role"));
 
-    ctx.assert_role_in_layer_exists("observers", "security");
+    let role_path = ctx.jlo_path().join("roles/observers/roles/security/role.yml");
+    assert!(role_path.exists(), "Custom role should exist in .jlo/ control plane");
 }
 
 #[test]
@@ -33,13 +34,11 @@ fn user_can_use_command_aliases() {
     // Use 'i' alias for init
     ctx.cli().args(["i", "--remote"]).assert().success();
 
-    // Use 'tp' alias for template (with a multi-role layer)
-    ctx.cli()
-        .args(["tp", "-l", "deciders", "-n", "my-decider", "-w", "generic"])
-        .assert()
-        .success();
+    // Use 'c' alias for create
+    ctx.cli().args(["c", "role", "deciders", "my-decider"]).assert().success();
 
-    ctx.assert_role_in_layer_exists("deciders", "my-decider");
+    let role_path = ctx.jlo_path().join("roles/deciders/roles/my-decider/role.yml");
+    assert!(role_path.exists(), "Role created via alias should exist in .jlo/");
 }
 
 #[test]
@@ -86,46 +85,42 @@ fn init_creates_complete_layer_structure() {
 
 #[test]
 #[serial]
-fn template_creates_observer_role() {
+fn create_role_in_observers() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
 
-    ctx.cli()
-        .args(["template", "-l", "observers", "-n", "custom-obs", "-w", "generic"])
-        .assert()
-        .success();
+    ctx.cli().args(["create", "role", "observers", "custom-obs"]).assert().success();
 
-    // Observer roles should have role.yml under roles/ container
-    let role_path = ctx.jules_path().join("roles/observers/roles/custom-obs");
-    let role_yml = role_path.join("role.yml");
-    assert!(role_yml.exists(), "Observer role should have role.yml");
+    // Role should exist in .jlo/ control plane
+    let role_path = ctx.jlo_path().join("roles/observers/roles/custom-obs/role.yml");
+    assert!(role_path.exists(), "Observer role should have role.yml in .jlo/");
 }
 
 #[test]
 #[serial]
-fn template_rejects_single_role_layers() {
+fn create_role_rejects_single_role_layers() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
 
-    // Narrator is single-role and should not accept template creation
+    // Narrator is single-role and should not accept role creation
     ctx.cli()
-        .args(["template", "-l", "narrator", "-n", "custom-narrator"])
+        .args(["create", "role", "narrator", "custom-narrator"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("single-role"));
 
-    // Planners are single-role and should not accept template creation
+    // Planners are single-role and should not accept role creation
     ctx.cli()
-        .args(["template", "-l", "planners", "-n", "custom-planner"])
+        .args(["create", "role", "planners", "custom-planner"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("single-role"));
 
-    // Implementers are single-role and should not accept template creation
+    // Implementers are single-role and should not accept role creation
     ctx.cli()
-        .args(["template", "-l", "implementers", "-n", "custom-impl"])
+        .args(["create", "role", "implementers", "custom-impl"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("single-role"));

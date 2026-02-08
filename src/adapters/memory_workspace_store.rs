@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use crate::domain::{AppError, JLO_DIR, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
+use crate::domain::{AppError, JLO_DIR, JULES_DIR, PromptAssetLoader, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
 /// In-memory workspace store for testing.
@@ -78,18 +78,6 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         }
     }
 
-    fn role_exists_in_layer(&self, layer: Layer, role_id: &RoleId) -> bool {
-        let path = self
-            .jules_path()
-            .join("roles")
-            .join(layer.dir_name())
-            .join("roles")
-            .join(role_id.as_str())
-            .join("role.yml");
-
-        self.file_exists(path.to_str().unwrap())
-    }
-
     fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
         // Rudimentary implementation for testing
         Ok(vec![])
@@ -107,38 +95,6 @@ impl WorkspaceStore for MemoryWorkspaceStore {
             .join("roles")
             .join(role.id.as_str());
         Some(path)
-    }
-
-    fn scaffold_role_in_layer(
-        &self,
-        layer: Layer,
-        role_id: &RoleId,
-        role_yaml: &str,
-    ) -> Result<(), AppError> {
-        let path = self
-            .jules_path()
-            .join("roles")
-            .join(layer.dir_name())
-            .join("roles")
-            .join(role_id.as_str())
-            .join("role.yml");
-
-        self.write_file(path.to_str().unwrap(), role_yaml)
-    }
-
-    fn create_workstream(&self, name: &str) -> Result<(), AppError> {
-        let path = self.jules_path().join("workstreams").join(name).join("placeholder");
-        self.write_file(path.to_str().unwrap(), "")
-    }
-
-    fn list_workstreams(&self) -> Result<Vec<String>, AppError> {
-        Ok(vec![])
-    }
-
-    fn workstream_exists(&self, name: &str) -> bool {
-        let files = self.files.lock().unwrap();
-        let prefix = self.jules_path().join("workstreams").join(name);
-        files.keys().any(|p| p.starts_with(&prefix))
     }
 
     fn read_file(&self, path: &str) -> Result<String, AppError> {

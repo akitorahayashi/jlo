@@ -17,16 +17,18 @@ fn init_creates_workspace_via_cli() {
 
 #[test]
 #[serial]
-fn template_creates_role_via_cli() {
+fn create_role_via_cli() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
-        .args(["template", "-l", "observers", "-n", "my-role", "-w", "generic"])
+        .args(["create", "role", "observers", "my-role"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("observers/my-role"));
+        .stdout(predicate::str::contains("observers"));
 
-    ctx.assert_role_in_layer_exists("observers", "my-role");
+    // Role should exist in .jlo/ control plane
+    let role_path = ctx.jlo_path().join("roles/observers/roles/my-role/role.yml");
+    assert!(role_path.exists(), "Role should exist in .jlo/ at {}", role_path.display());
 }

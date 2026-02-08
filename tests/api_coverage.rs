@@ -1,5 +1,5 @@
 use jlo::{
-    DoctorOptions, WorkflowRunnerMode, doctor_at, init_at, setup_list, template_at, update_at,
+    DoctorOptions, WorkflowRunnerMode, create_role_at, doctor_at, init_at, setup_list, update_at,
 };
 use tempfile::TempDir;
 
@@ -33,13 +33,14 @@ fn test_api_coverage_full_flow() {
     let update_result = update_at(root.clone(), true).expect("update failed");
     assert!(update_result.prompt_preview);
 
-    // 4. Template (create role in generic workstream)
-    let _ = template_at(Some("observers"), Some("test-observer"), Some("generic"), root.clone())
-        .expect("template role failed");
+    // 4. Create role under .jlo/ control plane
+    let outcome =
+        create_role_at("observers", "test-observer", root.clone()).expect("create role failed");
+    assert_eq!(outcome.entity_type(), "role");
 
-    // Check global role location: .jules/roles/<layer>/roles/<role>
-    let role_path = root.join(".jules/roles/observers/roles/test-observer");
-    assert!(role_path.exists(), "Role not found at {:?}", role_path);
+    // Role should exist in .jlo/ control plane
+    let jlo_role_path = root.join(".jlo/roles/observers/roles/test-observer");
+    assert!(jlo_role_path.exists(), "Role not found in .jlo/ at {:?}", jlo_role_path);
 }
 
 #[test]

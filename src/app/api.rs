@@ -11,9 +11,7 @@ use crate::adapters::github_command::GitHubCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::{
     AppContext,
-    commands::{
-        create, deinit, doctor, init_scaffold, init_workflows, run, setup, template, update,
-    },
+    commands::{create, deinit, doctor, init_scaffold, init_workflows, run, setup, update},
 };
 use crate::ports::WorkspaceStore;
 
@@ -22,7 +20,6 @@ pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
 pub use crate::app::commands::run::{RunOptions, RunResult};
 pub use crate::app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
-pub use crate::app::commands::template::TemplateOutcome;
 pub use crate::app::commands::update::{UpdateOptions, UpdateResult};
 pub use crate::domain::AppError;
 pub use crate::domain::Layer;
@@ -69,29 +66,6 @@ pub fn init_workflows_at(
     mode: WorkflowRunnerMode,
 ) -> Result<(), AppError> {
     init_workflows::execute_workflows(&path, mode)
-}
-
-/// Apply a template for a role or workstream.
-///
-/// Returns a `TemplateOutcome` describing the created resource.
-pub fn template(
-    layer: Option<&str>,
-    role_name: Option<&str>,
-    workstream: Option<&str>,
-) -> Result<TemplateOutcome, AppError> {
-    template_at(layer, role_name, workstream, std::env::current_dir()?)
-}
-
-/// Apply a template for a role or workstream at the specified path.
-pub fn template_at(
-    layer: Option<&str>,
-    role_name: Option<&str>,
-    workstream: Option<&str>,
-    root: std::path::PathBuf,
-) -> Result<TemplateOutcome, AppError> {
-    let ctx = create_context(root);
-
-    template::execute(&ctx, layer, role_name, workstream)
 }
 
 // =============================================================================

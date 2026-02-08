@@ -46,19 +46,6 @@ enum Commands {
         #[arg(long)]
         prompt_preview: bool,
     },
-    /// Apply a template (workstream or role)
-    #[clap(visible_alias = "tp")]
-    Template {
-        /// Layer: observers or deciders (multi-role layers only)
-        #[arg(short, long)]
-        layer: Option<String>,
-        /// Name for the new role (blank role only)
-        #[arg(short, long)]
-        name: Option<String>,
-        /// Target workstream for observers/deciders
-        #[arg(short, long)]
-        workstream: Option<String>,
-    },
     /// Create a new role or workstream under .jlo/
     #[clap(visible_alias = "c")]
     Create {
@@ -119,9 +106,6 @@ pub fn run() {
     let result: Result<i32, AppError> = match cli.command {
         Commands::Init { remote, self_hosted } => init::run_init(remote, self_hosted).map(|_| 0),
         Commands::Update { prompt_preview } => run_update(prompt_preview).map(|_| 0),
-        Commands::Template { layer, name, workstream } => {
-            run_template(layer, name, workstream).map(|_| 0)
-        }
         Commands::Create { command } => run_create(command).map(|_| 0),
         Commands::Setup { command } => match command {
             setup::SetupCommands::Gen { path } => setup::run_setup_gen(path).map(|_| 0),
@@ -144,22 +128,6 @@ pub fn run() {
             std::process::exit(1);
         }
     }
-}
-
-fn run_template(
-    layer: Option<String>,
-    name: Option<String>,
-    workstream: Option<String>,
-) -> Result<(), AppError> {
-    let outcome =
-        crate::app::api::template(layer.as_deref(), name.as_deref(), workstream.as_deref())?;
-
-    let entity_type = match &outcome {
-        crate::app::api::TemplateOutcome::Role { .. } => "role",
-        crate::app::api::TemplateOutcome::Workstream { .. } => "workstream",
-    };
-    println!("✅ Created new {} at {}/", entity_type, outcome.display_path());
-    Ok(())
 }
 
 fn run_update(prompt_preview: bool) -> Result<(), AppError> {
