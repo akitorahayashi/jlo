@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
@@ -124,30 +125,22 @@ pub fn detect_workflow_runner_mode(root: &Path) -> Result<WorkflowRunnerMode, Ap
         .and_then(|v| v.as_mapping())
         .ok_or_else(|| AppError::Validation("Workflow kit is missing jobs section.".into()))?;
 
-    let mut has_self_hosted = false;
-    let mut has_ubuntu = false;
-
-    let mut check_label = |label: &str| {
-        if label == "self-hosted" {
-            has_self_hosted = true;
-        }
-        if label == "ubuntu-latest" {
-            has_ubuntu = true;
-        }
-    };
-
-    for job in jobs.values() {
-        let runs_on = job.get("runs-on");
-        if let Some(Value::String(label)) = runs_on {
-            check_label(label);
-        } else if let Some(Value::Sequence(seq)) = runs_on {
-            for item in seq {
-                if let Value::String(label) = item {
-                    check_label(label);
-                }
+    let labels: BTreeSet<&str> = jobs
+        .values()
+        .filter_map(|job| job.get("runs-on"))
+        .flat_map(|runs_on| {
+            if let Some(label) = runs_on.as_str() {
+                vec![label]
+            } else if let Some(seq) = runs_on.as_sequence() {
+                seq.iter().filter_map(|value| value.as_str()).collect()
+            } else {
+                vec![]
             }
-        }
-    }
+        })
+        .collect();
+
+    let has_self_hosted = labels.contains("self-hosted");
+    let has_ubuntu = labels.contains("ubuntu-latest");
 
     match (has_self_hosted, has_ubuntu) {
         (true, false) => Ok(WorkflowRunnerMode::SelfHosted),
@@ -221,16 +214,17 @@ pub fn load_workflow_render_config(root: &Path) -> Result<WorkflowRenderConfig, 
         ));
     }
 
-    let mut schedule_crons = Vec::with_capacity(raw_crons.len());
-    for cron in raw_crons {
-        let trimmed = cron.trim();
-        if trimmed.is_empty() {
-            return Err(AppError::Validation(
-                "workflow.cron entries must be non-empty strings.".into(),
-            ));
-        }
-        schedule_crons.push(trimmed.to_string());
-    }
+    let schedule_crons = raw_crons
+        .into_iter()
+        .map(|cron| {
+            let trimmed = cron.trim();
+            if trimmed.is_empty() {
+                Err(AppError::Validation("workflow.cron entries must be non-empty strings.".into()))
+            } else {
+                Ok(trimmed.to_string())
+            }
+        })
+        .collect::<Result<Vec<String>, _>>()?;
 
     let wait_minutes_default = workflow.wait_minutes_default.ok_or_else(|| {
         AppError::Validation("Missing workflow.wait_minutes_default in .jlo/config.toml.".into())
