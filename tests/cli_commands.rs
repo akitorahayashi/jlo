@@ -12,11 +12,8 @@ fn write_jlo_config(root: &Path, crons: &[&str], wait_minutes_default: u32) {
     let jlo_dir = root.join(".jlo");
     fs::create_dir_all(&jlo_dir).unwrap();
 
-    let cron_entries = crons
-        .iter()
-        .map(|cron| format!("\"{}\"", cron))
-        .collect::<Vec<_>>()
-        .join(", ");
+    let cron_entries =
+        crons.iter().map(|cron| format!("\"{}\"", cron)).collect::<Vec<_>>().join(", ");
 
     let content = format!(
         r#"[run]
