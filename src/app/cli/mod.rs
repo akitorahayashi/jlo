@@ -134,12 +134,29 @@ fn run_update(prompt_preview: bool) -> Result<(), AppError> {
     let result = crate::app::api::update(prompt_preview)?;
 
     if !result.prompt_preview {
-        if result.created.is_empty() && result.previous_version == env!("CARGO_PKG_VERSION") {
+        if !result.warnings.is_empty() {
+            println!("⚠️  Update warnings:");
+            for warning in &result.warnings {
+                println!("  • {}", warning);
+            }
+        }
+
+        if result.created.is_empty()
+            && result.updated.is_empty()
+            && !result.workflow_refreshed
+            && result.previous_version == env!("CARGO_PKG_VERSION")
+        {
             println!("✅ Workspace already up to date");
         } else {
             println!("✅ Updated workspace to version {}", env!("CARGO_PKG_VERSION"));
             if !result.created.is_empty() {
                 println!("  Created {} file(s)", result.created.len());
+            }
+            if !result.updated.is_empty() {
+                println!("  Refreshed {} managed default file(s)", result.updated.len());
+            }
+            if result.workflow_refreshed {
+                println!("  Refreshed workflow kit");
             }
         }
     }

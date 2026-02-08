@@ -10,6 +10,7 @@ fn init_creates_workspace_via_cli() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
+    ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     ctx.assert_jules_exists();
     ctx.assert_layer_structure_exists();

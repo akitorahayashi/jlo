@@ -82,7 +82,7 @@ pub enum AppError {
     AssetError(String),
 
     /// Workspace already exists at the target location.
-    #[error(".jules/ workspace already exists")]
+    #[error(".jlo/ workspace already exists")]
     WorkspaceExists,
 
     /// No .jules/ workspace found in the current directory.

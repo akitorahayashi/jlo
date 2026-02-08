@@ -31,9 +31,13 @@ impl ScaffoldManifest {
         Self { schema_version: MANIFEST_SCHEMA_VERSION, files }
     }
 
-    #[cfg(test)]
     pub fn to_map(&self) -> BTreeMap<String, String> {
         self.files.iter().map(|entry| (entry.path.clone(), entry.sha256.clone())).collect()
+    }
+
+    pub fn from_yaml(content: &str) -> Result<Self, AppError> {
+        serde_yaml::from_str(content)
+            .map_err(|err| AppError::InternalError(format!("Failed to parse manifest: {}", err)))
     }
 
     pub fn to_yaml(&self) -> Result<String, AppError> {
@@ -53,6 +57,31 @@ pub fn is_default_role_file(path: &str) -> bool {
         && parts[1] == "roles"
         && parts[3] == "roles"
         && parts[5] == "role.yml"
+    {
+        return true;
+    }
+
+    false
+}
+
+pub fn is_control_plane_entity_file(path: &str) -> bool {
+    let parts: Vec<&str> = path.split('/').collect();
+
+    // .jlo/roles/<layer>/roles/<role>/role.yml
+    if parts.len() == 6
+        && parts[0] == ".jlo"
+        && parts[1] == "roles"
+        && parts[3] == "roles"
+        && parts[5] == "role.yml"
+    {
+        return true;
+    }
+
+    // .jlo/workstreams/<workstream>/scheduled.toml
+    if parts.len() == 4
+        && parts[0] == ".jlo"
+        && parts[1] == "workstreams"
+        && parts[3] == "scheduled.toml"
     {
         return true;
     }

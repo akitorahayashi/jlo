@@ -1,5 +1,6 @@
 use jlo::{
     DoctorOptions, WorkflowRunnerMode, create_role_at, doctor_at, init_at, setup_list, update_at,
+    workflow_bootstrap_at,
 };
 use tempfile::TempDir;
 
@@ -21,6 +22,7 @@ fn test_api_coverage_full_flow() {
 
     init_at(root.clone(), WorkflowRunnerMode::Remote).expect("init failed");
     assert!(root.join(".jlo").exists(), ".jlo/ control plane should exist");
+    workflow_bootstrap_at(root.clone()).expect("bootstrap failed");
     assert!(root.join(".jules").exists(), ".jules/ runtime workspace should exist");
     assert!(root.join(".github/workflows").exists(), "workflow kit should be installed");
 

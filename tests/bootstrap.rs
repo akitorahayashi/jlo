@@ -11,9 +11,10 @@ use common::TestContext;
 use predicates::prelude::*;
 use std::fs;
 
-/// Initialize a full workspace (`.jlo/` + `.jules/` + workflows).
+/// Initialize a full workspace (`.jlo/` + workflows) and materialize `.jules/` via bootstrap.
 fn init_workspace(ctx: &TestContext) {
     ctx.cli().args(["init", "--remote"]).assert().success();
+    ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 }
 
 // ---------------------------------------------------------------------------

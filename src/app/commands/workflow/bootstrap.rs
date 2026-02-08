@@ -140,11 +140,10 @@ where
     let jlo_path = root.join(JLO_DIR);
     let mut count = 0;
 
-    // Collect all files under .jlo/ recursively and project to .jules/
+    // Collect all files under .jlo/ recursively and project only allowlisted inputs to .jules/
     let files = collect_files_recursive(&jlo_path, &jlo_path)?;
     for (rel_path, content) in files {
-        // Skip the version file and internal-only files
-        if rel_path == VERSION_FILE {
+        if !should_project_control_file(&rel_path) {
             continue;
         }
 
@@ -161,7 +160,7 @@ fn delete_absent_workstreams(root: &Path) -> Result<(), AppError> {
     let jlo_ws_dir = root.join(JLO_DIR).join("workstreams");
     let jules_ws_dir = root.join(JULES_DIR).join("workstreams");
 
-    let jlo_workstreams = list_subdirs(&jlo_ws_dir);
+    let jlo_workstreams = list_workstreams_with_schedule(&jlo_ws_dir);
     let jules_workstreams = list_subdirs(&jules_ws_dir);
 
     for ws in &jules_workstreams {
@@ -191,7 +190,7 @@ fn delete_absent_roles(root: &Path) -> Result<(), AppError> {
         let jules_roles_dir =
             root.join(JULES_DIR).join("roles").join(layer.dir_name()).join("roles");
 
-        let jlo_roles = list_subdirs(&jlo_roles_dir);
+        let jlo_roles = list_roles_with_definition(&jlo_roles_dir);
         let jules_roles = list_subdirs(&jules_roles_dir);
 
         for role in &jules_roles {
@@ -209,6 +208,31 @@ fn delete_absent_roles(root: &Path) -> Result<(), AppError> {
     }
 
     Ok(())
+}
+
+fn should_project_control_file(rel_path: &str) -> bool {
+    if rel_path == VERSION_FILE {
+        return false;
+    }
+
+    if rel_path == "config.toml" {
+        return true;
+    }
+
+    if rel_path.starts_with("setup/") {
+        return true;
+    }
+
+    let parts: Vec<&str> = rel_path.split('/').collect();
+    if parts.len() == 5 && parts[0] == "roles" && parts[2] == "roles" && parts[4] == "role.yml" {
+        return true;
+    }
+
+    if parts.len() == 3 && parts[0] == "workstreams" && parts[2] == "scheduled.toml" {
+        return true;
+    }
+
+    false
 }
 
 /// Recursively collect all files under a directory as (relative_path, content) pairs.
@@ -247,6 +271,40 @@ fn list_subdirs(dir: &Path) -> BTreeSet<String> {
     if let Ok(entries) = std::fs::read_dir(dir) {
         for entry in entries.flatten() {
             if entry.path().is_dir() {
+                names.insert(entry.file_name().to_string_lossy().to_string());
+            }
+        }
+    }
+    names
+}
+
+fn list_workstreams_with_schedule(dir: &Path) -> BTreeSet<String> {
+    let mut names = BTreeSet::new();
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let schedule = path.join("scheduled.toml");
+            if schedule.exists() {
+                names.insert(entry.file_name().to_string_lossy().to_string());
+            }
+        }
+    }
+    names
+}
+
+fn list_roles_with_definition(dir: &Path) -> BTreeSet<String> {
+    let mut names = BTreeSet::new();
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let role_file = path.join("role.yml");
+            if role_file.exists() {
                 names.insert(entry.file_name().to_string_lossy().to_string());
             }
         }

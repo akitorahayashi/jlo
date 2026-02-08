@@ -51,6 +51,64 @@ pub fn execute_workflows(root: &Path, mode: WorkflowRunnerMode) -> Result<(), Ap
     Ok(())
 }
 
+/// Detect the workflow runner mode from the existing workflow kit.
+pub fn detect_runner_mode(root: &Path) -> Result<WorkflowRunnerMode, AppError> {
+    let workflow_path = root.join(SCHEDULE_PRESERVE_FILE);
+    if !workflow_path.exists() {
+        return Err(AppError::Validation(
+            "Workflow kit not found. Run 'jlo init' to install workflows before updating.".into(),
+        ));
+    }
+
+    let content = fs::read_to_string(&workflow_path)?;
+    let yaml: Value = serde_yaml::from_str(&content).map_err(|e| AppError::ParseError {
+        what: format!("workflow file '{}'", SCHEDULE_PRESERVE_FILE),
+        details: e.to_string(),
+    })?;
+
+    let jobs = yaml
+        .get("jobs")
+        .and_then(|v| v.as_mapping())
+        .ok_or_else(|| AppError::Validation("Workflow kit is missing jobs section.".into()))?;
+
+    let mut has_self_hosted = false;
+    let mut has_ubuntu = false;
+
+    for job in jobs.values() {
+        let runs_on = job.get("runs-on");
+        if let Some(Value::String(label)) = runs_on {
+            if label == "self-hosted" {
+                has_self_hosted = true;
+            }
+            if label == "ubuntu-latest" {
+                has_ubuntu = true;
+            }
+        } else if let Some(Value::Sequence(seq)) = runs_on {
+            for item in seq {
+                if let Value::String(label) = item {
+                    if label == "self-hosted" {
+                        has_self_hosted = true;
+                    }
+                    if label == "ubuntu-latest" {
+                        has_ubuntu = true;
+                    }
+                }
+            }
+        }
+    }
+
+    match (has_self_hosted, has_ubuntu) {
+        (true, false) => Ok(WorkflowRunnerMode::SelfHosted),
+        (false, true) => Ok(WorkflowRunnerMode::Remote),
+        (false, false) => {
+            Err(AppError::Validation("Could not detect runner mode from workflow kit.".into()))
+        }
+        (true, true) => Err(AppError::Validation(
+            "Workflow kit uses mixed runner labels; runner mode is ambiguous.".into(),
+        )),
+    }
+}
+
 #[derive(Debug, Default)]
 struct PreservedConfig {
     schedule: Option<Value>,
