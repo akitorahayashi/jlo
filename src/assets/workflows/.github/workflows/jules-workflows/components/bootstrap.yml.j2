@@ -1,4 +1,7 @@
   bootstrap:
+    if: >-
+      vars.JLO_PAUSED != 'true' ||
+      github.event_name == 'workflow_call'
     runs-on: {{ runner }}
     timeout-minutes: 10
     env:
