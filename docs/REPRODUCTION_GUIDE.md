@@ -5,7 +5,7 @@ This document describes the repository state required to reproduce the Jules wor
 ## Required Configuration
 
 Configure repository variables and secrets referenced by the workflow kit (see `.github/workflows/jules-*.yml`).
-Branch protection on `jules` must require the workflow status checks and allow auto-merge.
+Branch protection on `JULES_WORKER_BRANCH` must require the workflow status checks and allow auto-merge.
 
 ## Required Files
 
@@ -22,16 +22,16 @@ If you use automated review tools, configure them to suppress reviews on Jules-m
 
 ### .jlo/ (control plane)
 
-The `.jlo/` directory is the user-facing intent overlay, created by `jlo init` on the control branch (e.g. `main`). It contains role definitions, version pins, and configuration.
+The `.jlo/` directory is the user-facing intent overlay, created by `jlo init` on `JLO_TARGET_BRANCH`. It contains role definitions, version pins, and configuration.
 
 ### .jules/ (runtime)
 
-The `.jules/` directory on the `jules` branch is assembled automatically by the workflow bootstrap job. Users never edit it directly.
+The `.jules/` directory on `JULES_WORKER_BRANCH` is assembled automatically by the workflow bootstrap job. Users never edit it directly.
 
 ## Repository State
 
-- The control branch contains `.jlo/` and `.github/` (installed by `jlo init`).
-- The `jules` branch is created and maintained by workflow automation (bootstrap job).
+- The `JLO_TARGET_BRANCH` branch contains `.jlo/` and `.github/` (installed by `jlo init`).
+- The `JULES_WORKER_BRANCH` branch is created and maintained by workflow automation (bootstrap job).
 - The git identity configured by the workflow kit matches the target repository's bot account.
 - The bot account used by workflows has write access to the repository.
 - Auto-review tools are configured for on-demand review only for Jules-managed PRs.

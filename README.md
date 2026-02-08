@@ -130,8 +130,8 @@ Exit codes:
 
 ### Deinit Command
 
-`jlo deinit` removes the `.jlo/` control plane, the local `jules` branch, and workflow kit files from `.github/`.
-The command refuses to run while the current branch is `jules` or `jules-test-*`.
+`jlo deinit` removes the `.jlo/` control plane, the local `JULES_WORKER_BRANCH`, and workflow kit files from `.github/`.
+The command refuses to run while the current branch is `JULES_WORKER_BRANCH` or `jules-test-*`.
 GitHub secrets (such as `JULES_API_KEY` and `JULES_API_SECRET`) remain configured and require manual removal.
 
 ### Other Examples
@@ -152,7 +152,7 @@ jlo setup gen                               # Generate install script
 
 `jlo init --remote` (or `--self-hosted`) installs the Jules orchestration files in `.github/`.
 
-Workflows use `jlo workflow bootstrap` to materialize `.jules/` on the `jules` branch, then `jlo workflow run` for agent execution.
+Workflows use `jlo workflow bootstrap` to materialize `.jules/` on `JULES_WORKER_BRANCH`, then `jlo workflow run` for agent execution.
 
 Workflow kit layout:
 
@@ -164,7 +164,8 @@ Workflow kit layout:
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `JLO_PAUSED` | Skip scheduled runs when set to `true` | (unset) |
-| `JULES_TARGET_BRANCH` | Target branch for implementer output | `main` |
+| `JLO_TARGET_BRANCH` | Control branch for `.jlo/` and implementer output | (unset) |
+| `JULES_WORKER_BRANCH` | Runtime branch for `.jules/` execution | (unset) |
 
 **Schedule Preservation**: When reinstalling with `jlo init --remote --overwrite` (or `--self-hosted --overwrite`), the existing `on.schedule` block in `jules-workflows.yml` is preserved.
 
@@ -172,15 +173,15 @@ Workflow kit layout:
 
 | Branch Pattern | Agent Type | Base Branch | Merge Strategy |
 |----------------|------------|-------------|----------------|
-| `jules` | N/A | `main` | Synced from main |
-| `jules-observer-*` | Observers | `jules` | Auto-merged |
-| `jules-decider-*` | Deciders | `jules` | Auto-merged |
-| `jules-planner-*` | Planners | `jules` | Auto-merged |
-| `jules-implementer-*` | Implementers | `main` | Human review |
-| `jules-innovator-*` | Innovators | `jules` | Auto-merged |
+| `JULES_WORKER_BRANCH` | N/A | `JLO_TARGET_BRANCH` | Synced from target |
+| `jules-observer-*` | Observers | `JULES_WORKER_BRANCH` | Auto-merged |
+| `jules-decider-*` | Deciders | `JULES_WORKER_BRANCH` | Auto-merged |
+| `jules-planner-*` | Planners | `JULES_WORKER_BRANCH` | Auto-merged |
+| `jules-implementer-*` | Implementers | `JLO_TARGET_BRANCH` | Human review |
+| `jules-innovator-*` | Innovators | `JULES_WORKER_BRANCH` | Auto-merged |
 
 **Flow**:
-1. **Sync**: `jules` branch syncs from `main` periodically
+1. **Sync**: `JULES_WORKER_BRANCH` syncs from `JLO_TARGET_BRANCH` periodically
 2. **Analysis**: Observers create event files under `.jules/workstreams/<workstream>/events/`
 3. **Triage**: Deciders link and consolidate events into issue files
 4. **Expansion**: Planners expand issues that require deep analysis

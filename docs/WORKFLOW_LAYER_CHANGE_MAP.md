@@ -32,7 +32,7 @@ A layer-level change means one of the following:
 | Doctor validation | Structural/schema/semantic checks iterate layers and workstream data contracts | `src/app/commands/doctor/*.rs` |
 | Matrix/routing orchestration | Workflow matrix/run logic assumes current layer set | `src/app/commands/workflow/matrix/*.rs`, `src/app/commands/workflow/run/*.rs` |
 | Workflow orchestration | Layer sequence is defined in workflow templates | `src/assets/workflows/.github/workflows/jules-workflows.yml.j2` |
-| Auto-merge qualification | Branch prefixes are read from `.jules/roles/**/contracts.yml` on `jules` branch | `src/assets/workflows/.github/workflows/jules-automerge.yml.j2` |
+| Auto-merge qualification | Branch prefixes are read from `.jules/roles/**/contracts.yml` on `JULES_WORKER_BRANCH` | `src/assets/workflows/.github/workflows/jules-automerge.yml.j2` |
 | Mock behavior | Per-layer mock behavior is implemented in dedicated modules | `src/app/commands/run/mock/*.rs` |
 | Failure recovery | Mock residue cleanup scope is explicit and code-defined | `src/app/commands/workflow/cleanup/mock.rs` |
 | Tests | Integration tests assert layer structure, workflow text, and mock behavior | `tests/cli_flow.rs`, `tests/cli_commands.rs`, `tests/workflow_kit.rs`, `tests/mock_mode.rs` |
@@ -107,7 +107,7 @@ A layer-level change means one of the following:
 - `.jules/`-only scope remains the automerge safety boundary.
 - `jlo init` preserves schedule and `wait_minutes` defaults from existing workflow files.
 - Control-plane files live under `.jlo/` on the control branch; `.jules/` is materialized by workflow bootstrap.
-- `install-jlo` reads the version pin from the control branch `.jlo/.jlo-version`, not from `origin/jules`.
+- `install-jlo` reads the version pin from `JLO_TARGET_BRANCH` `.jlo/.jlo-version`, not from `origin/JULES_WORKER_BRANCH`.
 - Projection from `.jlo/` to `.jules/` never overwrites agent-generated exchange artifacts.
 
 ## Mock Maintenance Invariants

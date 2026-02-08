@@ -7,23 +7,23 @@ See [CONTROL_PLANE_OWNERSHIP.md](../docs/CONTROL_PLANE_OWNERSHIP.md) for the `.j
 
 | Branch | Contents | Owner |
 |--------|----------|-------|
-| Control branch (e.g. `main`) | `.jlo/` (user intent overlay), `.github/` (workflow kit) | User + `jlo init` |
-| `jules` | `.jules/` (runtime scaffold, materialized by bootstrap) | Workflow automation |
+| `JLO_TARGET_BRANCH` | `.jlo/` (user intent overlay), `.github/` (workflow kit) | User + `jlo init` |
+| `JULES_WORKER_BRANCH` | `.jules/` (runtime scaffold, materialized by bootstrap) | Workflow automation |
 
-The `jules` branch is **never edited directly** by users. Its `.jules/` directory is assembled by the bootstrap job from two sources:
+The `JULES_WORKER_BRANCH` branch is **never edited directly** by users. Its `.jules/` directory is assembled by the bootstrap job from two sources:
 1. **Embedded scaffold** — `jlo workflow bootstrap` writes the base structure from the `jlo` binary's embedded assets.
-2. **Control-plane projection** — The bootstrap workflow reads `.jlo/` files from the control branch via `git ls-tree`/`git show` and overlays them onto `.jules/`, skipping `.jlo-version`.
+2. **Intent overlay** — `jlo workflow bootstrap` overlays `.jlo/` inputs that are present on the worker branch (created from `JLO_TARGET_BRANCH`).
 
 ## Branch Strategy
 
 | Agent Type | Starting Branch | Output Branch | Auto-merge |
 |------------|-----------------|---------------|------------|
-| Narrator | `jules` | `jules-narrator-*` | ✅ (if `.jules/` only) |
-| Observer | `jules` | `jules-observer-*` | ✅ (if `.jules/` only) |
-| Decider | `jules` | `jules-decider-*` | ✅ (if `.jules/` only) |
-| Planner | `jules` | `jules-planner-*` | ✅ (if `.jules/` only) |
-| Implementer | `main` | `jules-implementer-*` | ❌ (human review) |
-| Innovator | `jules` | `jules-innovator-*` | ✅ (if `.jules/` only) |
+| Narrator | `JULES_WORKER_BRANCH` | `jules-narrator-*` | ✅ (if `.jules/` only) |
+| Observer | `JULES_WORKER_BRANCH` | `jules-observer-*` | ✅ (if `.jules/` only) |
+| Decider | `JULES_WORKER_BRANCH` | `jules-decider-*` | ✅ (if `.jules/` only) |
+| Planner | `JULES_WORKER_BRANCH` | `jules-planner-*` | ✅ (if `.jules/` only) |
+| Implementer | `JLO_TARGET_BRANCH` | `jules-implementer-*` | ❌ (human review) |
+| Innovator | `JULES_WORKER_BRANCH` | `jules-innovator-*` | ✅ (if `.jules/` only) |
 
 ## Workflow Files
 
@@ -35,6 +35,8 @@ Jules workflows are installed via `jlo init --remote` (or `--self-hosted`) and f
 Non-Jules CI workflows remain in `.github/workflows/` alongside the kit.
 
 The workflow kit is generated from `src/assets/workflows/.github/`. Edit that source directory, not `.github/`, and re-run `jlo init` to apply changes.
+
+The `jules-*.yml` files under `.github/` are jlo’s dogfooding artifacts. Direct edits are not recommended; workflow changes are made in `src/assets/workflows/.github/` and the related rendering pipeline. See `src/assets/workflows/AGENTS.md` for the template pipeline summary.
 
 ## Composite Actions
 
@@ -76,7 +78,8 @@ Repository variables and secrets referenced by `.github/workflows/jules-*.yml`:
 |------|------|---------|
 | `JULES_API_KEY` | Secret | API key for Jules service |
 | `JLO_PAUSED` | Variable | Set to `true` to skip scheduled runs |
-| `JULES_TARGET_BRANCH` | Variable | Target branch for implementer output (default: `main`) |
+| `JLO_TARGET_BRANCH` | Variable | Control branch for `.jlo/` and implementer output |
+| `JULES_WORKER_BRANCH` | Variable | Runtime branch for `.jules/` execution |
 
 ## Schedule Preservation
 
@@ -99,9 +102,9 @@ Triggers:
 
 ## Repository Requirements
 
-- The `jules` branch is created and maintained by workflow automation (bootstrap job)
-- The control branch contains `.jlo/` (user intent overlay) and `.github/` (workflow kit)
-- Branch protection on `jules` with required status checks and auto-merge enabled
+- The `JULES_WORKER_BRANCH` branch is created and maintained by workflow automation (bootstrap job)
+- The `JLO_TARGET_BRANCH` branch contains `.jlo/` (user intent overlay) and `.github/` (workflow kit)
+- Branch protection on `JULES_WORKER_BRANCH` with required status checks and auto-merge enabled
 - Bot account used by workflows has write access
 - Auto-review tools configured for on-demand review only
 

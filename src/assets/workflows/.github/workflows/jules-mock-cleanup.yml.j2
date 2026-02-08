@@ -11,6 +11,10 @@ permissions:
   contents: write
   pull-requests: write
 
+env:
+  JLO_TARGET_BRANCH: {{ gha_expr("vars.JLO_TARGET_BRANCH") }}
+  JULES_WORKER_BRANCH: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
+
 jobs:
   cleanup-mock-artifacts:
     runs-on: {{ runner }}
@@ -20,9 +24,21 @@ jobs:
       GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
       JULES_MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.event.workflow_run.id)") }}
     steps:
+      - name: Validate branch variables
+        run: |
+          set -euo pipefail
+          if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
+            echo "::error::JLO_TARGET_BRANCH is required."
+            exit 1
+          fi
+          if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
+            echo "::error::JULES_WORKER_BRANCH is required."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
         with:
-          ref: jules
+          ref: {{ gha_expr("env.JULES_WORKER_BRANCH") }}
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 

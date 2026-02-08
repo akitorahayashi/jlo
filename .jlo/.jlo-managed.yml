@@ -38,5 +38,3 @@ files:
   sha256: 68bdc09d10a96ff73fae1c8437d5f668bbfdf0d04772fb6e67616478d172ec02
 - path: .jlo/roles/observers/roles/ui_designer/role.yml
   sha256: e96d57985a0e2cb8536892dde6656cc1f7896c83340147ee7a926b2720fe5238
-- path: .jlo/workstreams/generic/scheduled.toml
-  sha256: bca63d52a986aee547e98f700819543003de67ec4b788e2feedae6a192c86ed9
