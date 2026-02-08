@@ -1,0 +1,17 @@
+version = 1
+enabled = true
+
+[observers]
+roles = [
+  { name = "structural_arch", enabled = true },
+]
+
+[deciders]
+roles = [
+  { name = "triage_generic", enabled = true },
+]
+
+[innovators]
+roles = [
+  { name = "recruiter", enabled = false },
+]
