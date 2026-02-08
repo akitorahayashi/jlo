@@ -12,7 +12,6 @@ roles = [
   { name = "consistency", enabled = true },
   { name = "tactician", enabled = true },
   { name = "librarian", enabled = true },
-  { name = "structural_arch", enabled = true },
 ]
 
 [deciders]
