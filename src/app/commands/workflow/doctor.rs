@@ -36,7 +36,6 @@ pub fn execute(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, A
 
     // Delegate to existing doctor logic but translate to workflow output
     let doctor_options = crate::app::commands::doctor::DoctorOptions {
-        fix: false,
         strict: true, // Workflow mode is strict by default
         workstream: options.workstream,
     };

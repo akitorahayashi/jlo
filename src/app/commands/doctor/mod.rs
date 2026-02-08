@@ -18,7 +18,6 @@ pub use diagnostics::{Diagnostic, Diagnostics, Severity};
 
 #[derive(Debug, Clone, Default)]
 pub struct DoctorOptions {
-    pub fix: bool,
     pub strict: bool,
     pub workstream: Option<String>,
 }
@@ -43,7 +42,6 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
     let issue_priorities = read_enum_values(".jules/roles/deciders/schemas/issue.yml", "priority")?;
 
     let mut diagnostics = Diagnostics::default();
-    let mut applied_fixes = Vec::new();
 
     let workstreams = structure::collect_workstreams(jules_path, options.workstream.as_deref())?;
 
@@ -56,8 +54,6 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
-            options: &options,
-            applied_fixes: &mut applied_fixes,
         },
         &mut diagnostics,
     );
@@ -110,13 +106,6 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         eprintln!("Check completed with {} warning(s).", warnings);
     } else {
         eprintln!("Check failed: {} error(s), {} warning(s) found.", errors, warnings);
-    }
-
-    if !applied_fixes.is_empty() {
-        println!("\nApplied fixes:");
-        for fix in &applied_fixes {
-            println!("- {}", fix);
-        }
     }
 
     Ok(DoctorOutcome { errors, warnings, exit_code })
