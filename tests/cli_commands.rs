@@ -3,7 +3,35 @@ mod common;
 use common::TestContext;
 use predicates::prelude::*;
 use std::fs;
+use std::path::Path;
 use std::process::Command;
+
+const DEFAULT_CRON: &str = "0 20 * * *";
+
+fn write_jlo_config(root: &Path, crons: &[&str], wait_minutes_default: u32) {
+    let jlo_dir = root.join(".jlo");
+    fs::create_dir_all(&jlo_dir).unwrap();
+
+    let cron_entries = crons
+        .iter()
+        .map(|cron| format!("\"{}\"", cron))
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    let content = format!(
+        r#"[run]
+default_branch = "main"
+jules_branch = "jules"
+
+[workflow]
+cron = [{}]
+wait_minutes_default = {}
+"#,
+        cron_entries, wait_minutes_default
+    );
+
+    fs::write(jlo_dir.join("config.toml"), content).unwrap();
+}
 
 #[test]
 fn init_creates_jules_directory() {
@@ -263,6 +291,8 @@ fn doctor_reports_schema_errors() {
 fn workflow_render_writes_expected_files() {
     let ctx = TestContext::new();
 
+    write_jlo_config(ctx.work_dir(), &[DEFAULT_CRON], 30);
+
     let output_dir = ctx.work_dir().join(".tmp/workflow-kit-render/remote");
     ctx.cli()
         .args(["workflow", "render", "remote", "--output-dir"])
@@ -284,6 +314,8 @@ fn workflow_render_writes_expected_files() {
 fn workflow_render_uses_default_output_dir() {
     let ctx = TestContext::new();
 
+    write_jlo_config(ctx.work_dir(), &[DEFAULT_CRON], 30);
+
     ctx.cli().args(["workflow", "render", "remote"]).assert().success();
 
     // Default output writes directly to repository .github/
@@ -294,6 +326,8 @@ fn workflow_render_uses_default_output_dir() {
 #[test]
 fn workflow_render_overwrites_by_default() {
     let ctx = TestContext::new();
+
+    write_jlo_config(ctx.work_dir(), &[DEFAULT_CRON], 30);
 
     let output_dir = ctx.work_dir().join(".tmp/workflow-kit-render/overwrite");
     fs::create_dir_all(&output_dir).unwrap();

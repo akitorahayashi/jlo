@@ -105,7 +105,6 @@ A layer-level change means one of the following:
 - Workflow kit source of truth is `src/assets/workflows/.github/`; generated `.github/` files are installation outputs.
 - Auto-merge branch matching is driven by `branch_prefix` values in `.jules/roles/**/contracts.yml`.
 - `.jules/`-only scope remains the automerge safety boundary.
-- `jlo init` preserves schedule and `wait_minutes` defaults from existing workflow files.
 - Control-plane files live under `.jlo/` on the control branch; `.jules/` is materialized by workflow bootstrap.
 - `install-jlo` reads the version pin from `JLO_TARGET_BRANCH` `.jlo/.jlo-version`, not from `origin/JULES_WORKER_BRANCH`.
 - Projection from `.jlo/` to `.jules/` never overwrites agent-generated exchange artifacts.
