@@ -53,12 +53,17 @@ jobs:
 
       - name: Merge target branch into worker
         run: |
+          set -euo pipefail
           git fetch origin "$JLO_TARGET_BRANCH"
           # Merge control branch, preferring control-plane code changes.
-          git merge "origin/$JLO_TARGET_BRANCH" --no-edit -X theirs || {
+          git merge "origin/$JLO_TARGET_BRANCH" --no-edit -X theirs --allow-unrelated-histories || {
             # On conflict, preserve runtime plane from the worker branch.
             git checkout --ours .jules/
             git add .jules/
+            if git diff --cached --quiet; then
+              echo "::error::Merge failed and no conflict resolution changes were staged."
+              exit 1
+            fi
             git commit --no-edit
           }
 
