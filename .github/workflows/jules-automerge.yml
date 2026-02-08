@@ -28,14 +28,14 @@ on:
 
 jobs:
   validate-and-automerge:
-    if: ${{ github.base_ref == vars.JULES_WORKER_BRANCH }}
+    if: ${{ github.base_ref == (vars.JULES_WORKER_BRANCH || 'jules') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
     env:
-      JLO_TARGET_BRANCH: ${{ vars.JLO_TARGET_BRANCH }}
-      JULES_WORKER_BRANCH: ${{ vars.JULES_WORKER_BRANCH }}
+      JLO_TARGET_BRANCH: ${{ vars.JLO_TARGET_BRANCH || 'main' }}
+      JULES_WORKER_BRANCH: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
     steps:
       - name: Validate branch variables
         run: |

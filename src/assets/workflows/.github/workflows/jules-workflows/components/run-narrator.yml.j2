@@ -2,7 +2,7 @@
     needs: [bootstrap]
     if: >-
       needs.bootstrap.result == 'success' &&
-      (vars.JLO_PAUSED != 'true' || github.event_name != 'schedule') &&
+      ((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule') &&
       (
         github.event_name == 'schedule' ||
         (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') == 'narrator') ||
@@ -18,7 +18,7 @@
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
+          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH || 'jules'") }}
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 

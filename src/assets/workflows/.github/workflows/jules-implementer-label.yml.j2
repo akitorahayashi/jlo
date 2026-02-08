@@ -11,8 +11,8 @@ permissions:
   pull-requests: write
 
 env:
-  JLO_TARGET_BRANCH: {{ gha_expr("vars.JLO_TARGET_BRANCH") }}
-  JULES_WORKER_BRANCH: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
+  JLO_TARGET_BRANCH: {{ gha_expr("vars.JLO_TARGET_BRANCH || 'main'") }}
+  JULES_WORKER_BRANCH: {{ gha_expr("vars.JULES_WORKER_BRANCH || 'jules'") }}
 
 jobs:
   label-pr:
@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           # Checkout worker; label definitions and contracts are read from the worker branch.
-          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
+          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH || 'jules'") }}
           fetch-depth: 1
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 

@@ -12,8 +12,8 @@ permissions:
   pull-requests: write
 
 env:
-  JLO_TARGET_BRANCH: {{ gha_expr("vars.JLO_TARGET_BRANCH") }}
-  JULES_WORKER_BRANCH: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
+  JLO_TARGET_BRANCH: {{ gha_expr("vars.JLO_TARGET_BRANCH || 'main'") }}
+  JULES_WORKER_BRANCH: {{ gha_expr("vars.JULES_WORKER_BRANCH || 'jules'") }}
 
 jobs:
   cleanup-mock-artifacts:
@@ -38,7 +38,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
+          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH || 'jules'") }}
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 

@@ -1,6 +1,6 @@
   bootstrap:
     if: >-
-      vars.JLO_PAUSED != 'true' ||
+      (vars.JLO_PAUSED || 'false') != 'true' ||
       github.event_name != 'schedule'
     runs-on: {{ runner }}
     timeout-minutes: 10
@@ -21,7 +21,7 @@
 
       - uses: actions/checkout@v4
         with:
-          ref: {{ gha_expr("vars.JLO_TARGET_BRANCH") }}
+          ref: {{ gha_expr("vars.JLO_TARGET_BRANCH || 'main'") }}
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 
