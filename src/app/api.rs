@@ -25,7 +25,7 @@ pub use crate::domain::AppError;
 pub use crate::domain::Layer;
 pub use crate::domain::WorkflowRunnerMode;
 
-/// ceate an AppContext for a given path.
+/// Create an `AppContext` for a given path.
 fn create_context(
     path: std::path::PathBuf,
 ) -> AppContext<FilesystemWorkspaceStore, EmbeddedRoleTemplateStore> {

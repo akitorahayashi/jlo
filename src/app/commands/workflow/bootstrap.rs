@@ -90,6 +90,8 @@ where
     W: WorkspaceStore,
     R: RoleTemplateStore,
 {
+    // Counts write operations performed; overlay may overwrite scaffold files,
+    // so this can exceed the unique file count in the final projection.
     let mut files_written: usize = 0;
 
     // 1. Materialize managed framework files from embedded scaffold
@@ -221,6 +223,10 @@ fn collect_files_recursive(base: &Path, dir: &Path) -> Result<Vec<(String, Strin
 
     for entry in entries {
         let path = entry.path();
+        // Skip symlinks to prevent exfiltration of host files in CI environments
+        if path.is_symlink() {
+            continue;
+        }
         if path.is_dir() {
             result.extend(collect_files_recursive(base, &path)?);
         } else if path.is_file() {

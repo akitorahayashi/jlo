@@ -101,7 +101,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         let mut roles = Vec::new();
 
         for layer in Layer::ALL {
-            // For multi-role layers, roles are under .jules/roles/<layer>/roles/
+            // Convention: .jules/roles/<layer>/roles/ (see also role_path)
             let roles_container =
                 self.jules_path().join("roles").join(layer.dir_name()).join("roles");
             if !roles_container.exists() {
@@ -158,6 +158,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
     }
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
+        // Convention: .jules/roles/<layer>/roles/<id> (see also discover_roles)
         let path = self
             .jules_path()
             .join("roles")
