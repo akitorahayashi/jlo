@@ -1,0 +1,31 @@
+schema_version: 1
+
+id: "dep001"
+issue_id: ""
+created_at: "2026-02-08"
+author_role: "structural_arch"
+confidence: "high"
+
+title: "Dependency Violation: Setup commands instantiate adapters directly"
+statement: |
+  The `setup generate` and `setup list` commands directly instantiate the concrete `EmbeddedComponentCatalog` adapter.
+  This violates the Dependency Inversion Principle and couples the application layer to a specific implementation.
+  Commands should accept dependencies via the `ComponentCatalog` port (trait).
+
+evidence:
+  - path: "src/app/commands/setup/generate.rs"
+    loc:
+      - "3"
+      - "39"
+    note: "Direct import and instantiation of EmbeddedComponentCatalog."
+
+  - path: "src/app/commands/setup/list.rs"
+    loc:
+      - "3"
+      - "34"
+      - "47"
+    note: "Direct import and instantiation of EmbeddedComponentCatalog."
+
+tags:
+  - "dependency-inversion"
+  - "coupling"

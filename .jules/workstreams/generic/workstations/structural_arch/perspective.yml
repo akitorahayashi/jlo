@@ -1,0 +1,18 @@
+schema_version: 2
+observer: "structural_arch"
+workstream: "generic"
+
+updated_at: "2026-02-08T16:05:00Z"
+
+goals:
+  - "Enforce strict dependency direction: App -> Ports <- Adapters."
+  - "Move core domain logic out of App services into Domain."
+  - "Ensure commands use dependency injection consistently."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-08T16:05:00Z"
+    summary: "Initialized workstation perspective."

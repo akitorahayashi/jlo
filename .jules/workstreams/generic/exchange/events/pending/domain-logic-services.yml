@@ -1,0 +1,23 @@
+schema_version: 1
+
+id: "dom001"
+issue_id: ""
+created_at: "2026-02-08"
+author_role: "structural_arch"
+confidence: "medium"
+
+title: "Domain Logic Leak: Topological Sort in Application Service"
+statement: |
+  The `DependencyResolver` in `src/app/services/dependency_resolver.rs` contains core domain logic (Kahn's algorithm for topological sorting).
+  This logic is independent of application orchestration and should be located in the domain layer (e.g., `src/domain/dependency_graph.rs`).
+  This separation would improve reusability and clarity of the domain model.
+
+evidence:
+  - path: "src/app/services/dependency_resolver.rs"
+    loc:
+      - "28-132"
+    note: "Implementation of topological sort algorithm."
+
+tags:
+  - "domain-logic"
+  - "cohesion"
