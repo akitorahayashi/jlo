@@ -1,5 +1,5 @@
 name: 'Install jlo'
-description: 'Installs the jlo CLI binary pinned to .jules/.jlo-version on the jules branch'
+description: 'Installs the jlo CLI binary pinned to .jlo/.jlo-version on the control branch'
 
 runs:
   using: 'composite'
@@ -16,21 +16,27 @@ runs:
         fi
 
         if ! git remote get-url origin >/dev/null 2>&1; then
-          echo "::error::origin remote not found; cannot fetch jules branch."
+          echo "::error::origin remote not found; cannot fetch default branch."
           exit 1
         fi
 
-        echo "Fetching origin/jules..."
-        if ! git fetch --quiet --depth=1 origin jules; then
-          echo "::error::jules branch does not exist on origin."
+        # Determine the default (control) branch for version pin lookup.
+        DEFAULT_BRANCH="$(git remote show origin 2>/dev/null | sed -n 's/.*HEAD branch: //p' | tr -d '[:space:]')"
+        if [ -z "$DEFAULT_BRANCH" ]; then
+          DEFAULT_BRANCH="main"
+        fi
+
+        echo "Fetching origin/${DEFAULT_BRANCH} for version pin..."
+        if ! git fetch --quiet --depth=1 origin "${DEFAULT_BRANCH}"; then
+          echo "::error::Failed to fetch ${DEFAULT_BRANCH} branch from origin."
           exit 1
         fi
 
-        JULES_REF="origin/jules"
+        CONTROL_REF="origin/${DEFAULT_BRANCH}"
 
-        VERSION_RAW="$(git show "${JULES_REF}:.jules/.jlo-version" 2>/dev/null | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        VERSION_RAW="$(git show "${CONTROL_REF}:.jlo/.jlo-version" 2>/dev/null | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
         if [ -z "$VERSION_RAW" ]; then
-          echo "::error::.jules/.jlo-version is missing or empty on '${JULES_REF}'."
+          echo "::error::.jlo/.jlo-version is missing or empty on '${CONTROL_REF}'."
           exit 1
         fi
 

@@ -287,6 +287,31 @@ fn init_workflows_includes_mock_support() {
 }
 
 #[test]
+fn init_workflows_uses_jlo_paused_not_jules_paused() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init", "--remote"]).assert().success();
+
+    let root = ctx.work_dir();
+    let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
+
+    assert!(
+        workflow.contains("vars.JLO_PAUSED"),
+        "Workflow should use JLO_PAUSED variable"
+    );
+    assert!(
+        !workflow.contains("vars.JULES_PAUSED"),
+        "Workflow should not use legacy JULES_PAUSED variable"
+    );
+
+    // Pause gating applies only to schedule events
+    assert!(
+        workflow.contains("vars.JLO_PAUSED != 'true' || github.event_name != 'schedule'"),
+        "Pause gating should allow non-schedule events to proceed"
+    );
+}
+
+#[test]
 fn init_workflows_no_scripts_references() {
     let ctx = TestContext::new();
 
