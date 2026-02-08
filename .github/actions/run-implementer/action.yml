@@ -1,5 +1,5 @@
 name: 'Run Implementer'
-description: 'Run an implementer for a single issue and clean up related events'
+description: 'Run an implementer for a single issue and clean up related events (requires jlo preinstalled)'
 inputs:
   issue_file:
     description: 'Issue file path'
@@ -33,12 +33,22 @@ runs:
           exit 1
         fi
 
-    - name: Install jlo
-      uses: ./.github/actions/install-jlo
+    - name: Validate runtime prerequisites
+      shell: bash
+      env:
+        PROMPT_PREVIEW: ${{ inputs.prompt_preview }}
+      run: |
+        if ! command -v jlo >/dev/null 2>&1; then
+          echo "::error::jlo is not installed in PATH. Install jlo before calling this action."
+          exit 1
+        fi
 
-    - name: Configure Git
-      if: ${{ inputs.prompt_preview != 'true' }}
-      uses: ./.github/actions/configure-git
+        if [ "$PROMPT_PREVIEW" != "true" ]; then
+          if [ -z "$(git config user.name || true)" ] || [ -z "$(git config user.email || true)" ]; then
+            echo "::error::Git identity is not configured. Run configure-git before non-preview implementer execution."
+            exit 1
+          fi
+        fi
 
     - name: Run implementers
       shell: bash
