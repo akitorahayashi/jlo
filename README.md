@@ -30,7 +30,7 @@ jlo init --remote
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow kit |
-| `jlo update [--prompt-preview]` | `u` | Advance `.jlo/` control-plane version pin |
+| `jlo update [--prompt-preview]` | `u` | Advance version pin, refresh workflow kit, and refresh unchanged defaults |
 | `jlo deinit` | | Remove `.jlo/`, workflow kit, and local `jules` branch |
 | `jlo create role <layer> <name>` | `c` | Create a custom role under `.jlo/` |
 | `jlo create workstream <name>` | `c` | Create a workstream under `.jlo/` |

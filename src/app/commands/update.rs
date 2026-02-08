@@ -11,7 +11,13 @@
 //! Managed framework files (contracts, schemas, prompts) are materialized by
 //! workflow bootstrap from the embedded scaffold for the pinned version.
 
-use crate::domain::AppError;
+use std::collections::BTreeMap;
+
+use crate::app::commands::init_workflows;
+use crate::domain::workspace::manifest::{
+    MANIFEST_FILENAME, ScaffoldManifest, hash_content, is_control_plane_entity_file,
+};
+use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
 
 /// Result of an update operation.
@@ -19,10 +25,16 @@ use crate::ports::{RoleTemplateStore, WorkspaceStore};
 pub struct UpdateResult {
     /// Files that were created (missing user intent files filled in).
     pub created: Vec<String>,
+    /// Files that were updated (managed defaults refreshed).
+    pub updated: Vec<String>,
+    /// Whether workflow kit was refreshed.
+    pub workflow_refreshed: bool,
     /// Whether this was a prompt preview.
     pub prompt_preview: bool,
     /// Previous version before the update (empty if same-version).
     pub previous_version: String,
+    /// Non-fatal warnings encountered during update.
+    pub warnings: Vec<String>,
 }
 
 /// Options for the update command.
@@ -80,15 +92,6 @@ where
         });
     }
 
-    if version_cmp == 0 {
-        println!("Workspace is already at version {}. Nothing to update.", binary_version);
-        return Ok(UpdateResult {
-            created: vec![],
-            prompt_preview: options.prompt_preview,
-            previous_version: workspace_version,
-        });
-    }
-
     // Load control-plane skeleton files only — entity files (roles, schedules)
     // are not recreated during update to respect intentional deletions.
     let control_plane_files = templates.control_plane_skeleton_files();
@@ -105,6 +108,70 @@ where
         }
     }
 
+    // Build entity default map for controlled refresh
+    let mut entity_defaults = BTreeMap::new();
+    for file in templates.control_plane_files() {
+        if is_control_plane_entity_file(&file.path) {
+            entity_defaults.insert(file.path.clone(), file.content.clone());
+        }
+    }
+
+    let manifest_path = format!(".jlo/{}", MANIFEST_FILENAME);
+    let mut warnings = Vec::new();
+    let mut manifest_map: BTreeMap<String, String> = if workspace.file_exists(&manifest_path) {
+        let content = workspace.read_file(&manifest_path)?;
+        ScaffoldManifest::from_yaml(&content)?.to_map()
+    } else {
+        warnings.push(
+            "Missing .jlo-managed.yml; defaults will only be recorded when files already match current embedded templates."
+                .to_string(),
+        );
+        BTreeMap::new()
+    };
+
+    let mut to_update: Vec<(String, String)> = Vec::new();
+    let mut manifest_changed = false;
+
+    for (path, default_content) in &entity_defaults {
+        if !workspace.file_exists(path) {
+            if manifest_map.remove(path).is_some() {
+                manifest_changed = true;
+            }
+            continue;
+        }
+
+        let current_content = workspace.read_file(path)?;
+        let current_hash = hash_content(&current_content);
+        let default_hash = hash_content(default_content);
+
+        match manifest_map.get(path) {
+            Some(stored_hash) if stored_hash == &current_hash => {
+                if current_content != *default_content {
+                    to_update.push((path.clone(), default_content.clone()));
+                }
+                if stored_hash != &default_hash {
+                    manifest_map.insert(path.clone(), default_hash);
+                    manifest_changed = true;
+                }
+            }
+            Some(_) => {
+                // User-customized; stop managing this file.
+                manifest_map.remove(path);
+                manifest_changed = true;
+            }
+            None => {
+                // Record only when it already matches current defaults.
+                if current_content == *default_content {
+                    manifest_map.insert(path.clone(), default_hash);
+                    manifest_changed = true;
+                }
+            }
+        }
+    }
+
+    let workflow_mode = detect_workflow_mode(workspace)?;
+    let workflow_will_refresh = workflow_mode.is_some();
+
     // Prompt preview
     if options.prompt_preview {
         println!("=== Prompt Preview: Update Plan ===\n");
@@ -112,18 +179,40 @@ where
         println!("Target version:  {}\n", binary_version);
 
         if to_create.is_empty() {
-            println!("Version pin will be advanced. No new files to create.");
+            println!("No new control-plane files to create.");
         } else {
-            println!("Files to create:");
+            println!("Control-plane files to create:");
             for (path, _) in &to_create {
                 println!("  • {}", path);
             }
         }
 
+        if to_update.is_empty() {
+            println!("No managed defaults to refresh.");
+        } else {
+            println!("Managed defaults to refresh:");
+            for (path, _) in &to_update {
+                println!("  • {}", path);
+            }
+        }
+
+        if workflow_will_refresh {
+            println!("Workflow kit will be refreshed.");
+        }
+
+        if version_cmp > 0 {
+            println!("Version pin will be advanced.");
+        } else {
+            println!("Version pin will remain unchanged.");
+        }
+
         return Ok(UpdateResult {
             created: to_create.into_iter().map(|(p, _)| p).collect(),
+            updated: to_update.into_iter().map(|(p, _)| p).collect(),
+            workflow_refreshed: workflow_will_refresh,
             prompt_preview: true,
             previous_version: workspace_version,
+            warnings,
         });
     }
 
@@ -132,16 +221,55 @@ where
         workspace.write_file(rel_path, content)?;
     }
 
-    // Advance version pin
-    workspace.write_file(version_path, &format!("{}\n", binary_version))?;
+    // Refresh managed defaults
+    for (rel_path, content) in &to_update {
+        workspace.write_file(rel_path, content)?;
+    }
+
+    // Refresh workflow kit
+    let mut workflow_refreshed = false;
+    if let Some(mode) = workflow_mode {
+        init_workflows::execute_workflows(&workspace.resolve_path(""), mode)?;
+        workflow_refreshed = true;
+    }
+
+    if manifest_changed {
+        let manifest = ScaffoldManifest::from_map(manifest_map);
+        let manifest_content = manifest.to_yaml()?;
+        workspace.write_file(&manifest_path, &manifest_content)?;
+    }
+
+    // Advance version pin if needed
+    if version_cmp > 0 {
+        workspace.write_file(version_path, &format!("{}\n", binary_version))?;
+    }
 
     let created_paths: Vec<String> = to_create.into_iter().map(|(p, _)| p).collect();
+    let updated_paths: Vec<String> = to_update.into_iter().map(|(p, _)| p).collect();
 
     Ok(UpdateResult {
         created: created_paths,
+        updated: updated_paths,
+        workflow_refreshed,
         prompt_preview: false,
         previous_version: workspace_version,
+        warnings,
     })
+}
+
+fn detect_workflow_mode<W>(workspace: &W) -> Result<Option<WorkflowRunnerMode>, AppError>
+where
+    W: WorkspaceStore,
+{
+    let root = workspace.resolve_path("");
+    match init_workflows::detect_runner_mode(&root) {
+        Ok(mode) => Ok(Some(mode)),
+        Err(_) => {
+            // Workflow kit not found; skip refresh. This is normal for fresh workspaces
+            // or in tests that don't set up a complete environment.
+            Ok(None)
+        }
+    }
 }
 
 /// Compare two version arrays. Returns -1, 0, or 1.
@@ -213,6 +341,14 @@ mod tests {
         let jlo_path = temp.path().join(".jlo");
         fs::create_dir_all(&jlo_path).unwrap();
 
+        let workflow_path = temp.path().join(".github/workflows");
+        fs::create_dir_all(&workflow_path).unwrap();
+        fs::write(
+            workflow_path.join("jules-workflows.yml"),
+            "jobs:\n  bootstrap:\n    runs-on: ubuntu-latest\n",
+        )
+        .unwrap();
+
         // Write version file (must be older than current to trigger update)
         fs::write(jlo_path.join(".jlo-version"), "0.0.0").unwrap();
 
@@ -245,6 +381,14 @@ mod tests {
         let temp = TempDir::new().unwrap();
         let jlo_path = temp.path().join(".jlo");
         fs::create_dir_all(&jlo_path).unwrap();
+
+        let workflow_path = temp.path().join(".github/workflows");
+        fs::create_dir_all(&workflow_path).unwrap();
+        fs::write(
+            workflow_path.join("jules-workflows.yml"),
+            "jobs:\n  bootstrap:\n    runs-on: ubuntu-latest\n",
+        )
+        .unwrap();
 
         fs::write(jlo_path.join(".jlo-version"), "0.0.0").unwrap();
         // User has customized config
@@ -288,7 +432,7 @@ mod tests {
     }
 
     #[test]
-    fn test_update_noop_when_current_version() {
+    fn test_update_succeeds_when_current_version() {
         let temp = TempDir::new().unwrap();
         let jlo_path = temp.path().join(".jlo");
         fs::create_dir_all(&jlo_path).unwrap();

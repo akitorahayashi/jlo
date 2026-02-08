@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 
 use crate::app::AppContext;
 use crate::app::commands::init_workflows;
-use crate::domain::workspace::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};
+use crate::domain::workspace::manifest::{
+    MANIFEST_FILENAME, hash_content, is_control_plane_entity_file,
+};
 use crate::domain::workspace::{JLO_DIR, VERSION_FILE};
 use crate::domain::{AppError, ScaffoldManifest, WorkflowRunnerMode};
 use crate::ports::{GitPort, RoleTemplateStore, WorkspaceStore};
@@ -44,21 +46,16 @@ where
     let jlo_version_path = format!("{}/{}", JLO_DIR, VERSION_FILE);
     ctx.workspace().write_file(&jlo_version_path, &format!("{}\n", env!("CARGO_PKG_VERSION")))?;
 
-    // Create .jules/ runtime workspace (for local development convenience)
-    let scaffold_files = ctx.templates().scaffold_files();
-    ctx.workspace().create_structure(&scaffold_files)?;
-    ctx.workspace().write_version(env!("CARGO_PKG_VERSION"))?;
-
-    // Create managed manifest for .jules/
+    // Create managed manifest for .jlo/ default entity files
     let mut map = BTreeMap::new();
-    for file in &scaffold_files {
-        if is_default_role_file(&file.path) {
+    for file in &control_plane_files {
+        if is_control_plane_entity_file(&file.path) {
             map.insert(file.path.clone(), hash_content(&file.content));
         }
     }
     let managed_manifest = ScaffoldManifest::from_map(map);
     let manifest_content = managed_manifest.to_yaml()?;
-    let manifest_path = format!(".jules/{}", MANIFEST_FILENAME);
+    let manifest_path = format!("{}/{}", JLO_DIR, MANIFEST_FILENAME);
     ctx.workspace().write_file(&manifest_path, &manifest_content)?;
 
     // Install workflow kit

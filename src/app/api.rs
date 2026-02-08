@@ -21,6 +21,7 @@ pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
 pub use crate::app::commands::run::{RunOptions, RunResult};
 pub use crate::app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
 pub use crate::app::commands::update::{UpdateOptions, UpdateResult};
+pub use crate::app::commands::workflow::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
 pub use crate::domain::AppError;
 pub use crate::domain::Layer;
 pub use crate::domain::WorkflowRunnerMode;
@@ -237,4 +238,16 @@ pub fn doctor_at(
 ) -> Result<DoctorOutcome, AppError> {
     let workspace = FilesystemWorkspaceStore::new(path.into());
     doctor::execute(&workspace.jules_path(), options)
+}
+
+// =============================================================================
+// Workflow Command API
+// =============================================================================
+
+/// Materialize `.jules/` from `.jlo/` using the workflow bootstrap process.
+pub fn workflow_bootstrap_at(
+    path: impl Into<PathBuf>,
+) -> Result<WorkflowBootstrapOutput, AppError> {
+    let options = WorkflowBootstrapOptions { root: path.into() };
+    crate::app::commands::workflow::bootstrap(options)
 }

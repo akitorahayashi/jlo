@@ -8,6 +8,7 @@
 | `jules` | Hosts materialized `.jules/` runtime state and agent exchange artifacts | Workflow bootstrap only (never user-edited directly) |
 
 Users never checkout or edit the `jules` branch directly. All configuration is performed on the control branch under `.jlo/`.
+`jlo init` installs the control-plane and workflow kit only; `.jules/` is created by workflow bootstrap on the `jules` branch.
 
 ## Directory Ownership
 
@@ -22,6 +23,7 @@ Users never checkout or edit the `jules` branch directly. All configuration is p
 | `.jlo/roles/<layer>/roles/<role>/role.yml` | User | Role-specific customizations. Created by `create`; never overwritten. |
 | `.jlo/workstreams/<ws>/scheduled.toml` | User | Workstream schedule and role roster. Created by `create`; never overwritten. |
 | `.jlo/setup/tools.yml` | User | Tool selection. Created by `init`; never overwritten. |
+| `.jlo/.jlo-managed.yml` | jlo | Managed-defaults manifest for role.yml and scheduled.toml. Used by `update` to refresh unchanged defaults safely. |
 
 ### `.jules/` — Runtime Data Plane (jules branch)
 
@@ -87,12 +89,14 @@ Running bootstrap twice with the same `.jlo/` inputs and jlo version produces no
 
 ## Update Semantics
 
-`jlo update` is a control-plane version-pin advancement operation, not runtime file reconciliation.
+`jlo update` is a control-plane maintenance operation that advances the version pin, refreshes the workflow kit, and safely refreshes default entity files that have not been customized.
 
 | Action | Description |
 |--------|-------------|
 | Advance `.jlo/.jlo-version` | Write the current binary version to the version pin. |
-| Reconcile user intent files | Create missing user-owned files from scaffold defaults without overwriting existing ones. |
+| Reconcile control-plane skeleton | Create missing control-plane files from scaffold defaults without overwriting existing ones. |
+| Refresh managed defaults | Update role.yml and scheduled.toml only when they match the managed-defaults manifest. |
+| Refresh workflow kit | Reinstall `.github/` workflows using the existing runner mode. |
 | **Not in scope** | Patching managed framework files (that is bootstrap's responsibility on `jules`). |
 | **Not in scope** | Reading or writing `.jules/` or any runtime artifacts. |
 | **Not in scope** | Reading or writing `.jules/workstreams/*/exchange/` (agent-generated). |

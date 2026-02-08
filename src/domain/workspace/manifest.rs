@@ -1,6 +1,7 @@
 //! Scaffold manifest domain entity.
 
 use std::collections::BTreeMap;
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -31,9 +32,13 @@ impl ScaffoldManifest {
         Self { schema_version: MANIFEST_SCHEMA_VERSION, files }
     }
 
-    #[cfg(test)]
     pub fn to_map(&self) -> BTreeMap<String, String> {
         self.files.iter().map(|entry| (entry.path.clone(), entry.sha256.clone())).collect()
+    }
+
+    pub fn from_yaml(content: &str) -> Result<Self, AppError> {
+        serde_yaml::from_str(content)
+            .map_err(|err| AppError::InternalError(format!("Failed to parse manifest: {}", err)))
     }
 
     pub fn to_yaml(&self) -> Result<String, AppError> {
@@ -53,6 +58,33 @@ pub fn is_default_role_file(path: &str) -> bool {
         && parts[1] == "roles"
         && parts[3] == "roles"
         && parts[5] == "role.yml"
+    {
+        return true;
+    }
+
+    false
+}
+
+pub fn is_control_plane_entity_file(path: &str) -> bool {
+    let path_obj = Path::new(path);
+    let components: Vec<_> =
+        path_obj.components().map(|c| c.as_os_str().to_str().unwrap_or("")).collect();
+
+    // .jlo/roles/<layer>/roles/<role>/role.yml
+    if components.len() == 6
+        && components[0] == ".jlo"
+        && components[1] == "roles"
+        && components[3] == "roles"
+        && components[5] == "role.yml"
+    {
+        return true;
+    }
+
+    // .jlo/workstreams/<workstream>/scheduled.toml
+    if components.len() == 4
+        && components[0] == ".jlo"
+        && components[1] == "workstreams"
+        && components[3] == "scheduled.toml"
     {
         return true;
     }

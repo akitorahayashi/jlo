@@ -12,9 +12,6 @@ fn user_can_init_and_create_custom_role() {
     // Initialize workspace
     ctx.cli().args(["init", "--remote"]).assert().success();
 
-    // All built-in roles should exist after init in their layers
-    ctx.assert_all_builtin_roles_exist();
-
     // Create a custom observer role via create command (writes to .jlo/)
     ctx.cli()
         .args(["create", "role", "observers", "security"])
@@ -47,6 +44,7 @@ fn init_creates_complete_layer_structure() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
+    ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     // Verify layer structure
     ctx.assert_jules_exists();
