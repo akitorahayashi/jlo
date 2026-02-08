@@ -12,8 +12,8 @@ permissions:
   pull-requests: write
 
 env:
-  JLO_TARGET_BRANCH: ${{ vars.JLO_TARGET_BRANCH || 'main' }}
-  JULES_WORKER_BRANCH: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+  JLO_TARGET_BRANCH: 'main'
+  JULES_WORKER_BRANCH: 'jules'
 
 jobs:
   label-pr:
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           # Checkout worker; label definitions and contracts are read from the worker branch.
-          ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+          ref: 'jules'
           fetch-depth: 1
           token: ${{ secrets.JLO_BOT_TOKEN }}
 

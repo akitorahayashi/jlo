@@ -78,12 +78,12 @@ Repository variables and secrets referenced by `.github/workflows/jules-*.yml`:
 |------|------|----------|----------|
 | `JULES_API_KEY` | Secret | API key for Jules service | (required) |
 | `JLO_PAUSED` | Variable | Set to `true` to skip scheduled runs | `false` |
-| `JLO_TARGET_BRANCH` | Variable | Control branch for `.jlo/` and implementer output | `main` |
-| `JULES_WORKER_BRANCH` | Variable | Runtime branch for `.jules/` execution | `jules` |
+
+Branch values (`target_branch`, `worker_branch`) are rendered at build time from `.jlo/config.toml` and baked into the workflow YAML. They are not read from repository variables at runtime.
 
 ## Schedule Preservation
 
-When reinstalling the workflow kit with `jlo init --remote --overwrite` (or `--self-hosted --overwrite`), the existing `on.schedule` block in `jules-workflows.yml` is preserved. If the existing file contains invalid YAML, installation fails with an explicit error.
+When reinstalling the workflow kit with `jlo init --remote` (or `--self-hosted`), the existing `on.schedule` block in `jules-workflows.yml` is preserved. If the existing file contains invalid YAML, installation fails with an explicit error.
 
 ## Mock Mode Validation
 

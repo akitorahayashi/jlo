@@ -24,8 +24,8 @@ permissions:
   pull-requests: write
 
 env:
-  JLO_TARGET_BRANCH: ${{ vars.JLO_TARGET_BRANCH || 'main' }}
-  JULES_WORKER_BRANCH: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+  JLO_TARGET_BRANCH: 'main'
+  JULES_WORKER_BRANCH: 'jules'
 
 jobs:
   implementers:
@@ -45,7 +45,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+          ref: 'jules'
           fetch-depth: 0
 
       - name: Install jlo
@@ -62,4 +62,4 @@ jobs:
         with:
           issue_file: ${{ inputs.issue_file }}
           prompt_preview: ${{ inputs.prompt_preview }}
-          target_branch: ${{ vars.JLO_TARGET_BRANCH || 'main' }}
+          target_branch: 'main'

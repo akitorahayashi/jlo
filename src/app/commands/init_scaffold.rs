@@ -60,7 +60,8 @@ where
 
     // Install workflow kit
     let root = ctx.workspace().resolve_path("");
-    init_workflows::execute_workflows(&root, mode)?;
+    let branches = init_workflows::load_branch_config(&root);
+    init_workflows::execute_workflows(&root, mode, &branches)?;
 
     Ok(())
 }

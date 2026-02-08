@@ -503,12 +503,7 @@ fn render_workflow_kit(ctx: &TestContext, mode: &str, suffix: &str) -> PathBuf {
         ctx.work_dir().join(".tmp/workflow-kit-render/tests").join(format!("{}-{}", mode, suffix));
 
     let mut command = ctx.cli();
-    command
-        .args(["workflow", "render", mode, "--output"])
-        .arg(&output_dir)
-        .arg("--overwrite")
-        .assert()
-        .success();
+    command.args(["workflow", "render", mode, "--output-dir"]).arg(&output_dir).assert().success();
 
     output_dir
 }

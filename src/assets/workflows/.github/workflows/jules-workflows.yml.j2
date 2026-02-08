@@ -69,8 +69,8 @@ env:
   MOCK_MODE: {{ gha_expr("github.event.inputs.mock || inputs.mock") }}
   JULES_MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.run_id)") }}
   JLO_RUN_FLAGS: {{ gha_expr("(github.event.inputs.mock || inputs.mock) && '--mock' || ''") }}
-  JLO_TARGET_BRANCH: {{ gha_expr("vars.JLO_TARGET_BRANCH || 'main'") }}
-  JULES_WORKER_BRANCH: {{ gha_expr("vars.JULES_WORKER_BRANCH || 'jules'") }}
+  JLO_TARGET_BRANCH: '{{ target_branch }}'
+  JULES_WORKER_BRANCH: '{{ worker_branch }}'
 {% import "workflows/jules-workflows/macros/wait_job.j2" as wait_macro %}
 {% import "workflows/jules-workflows/macros/run_job.j2" as run_macro %}
 jobs:
@@ -204,7 +204,7 @@ jobs:
     '.implementer_matrix.include[].workstream // empty',
     'Run implementers for each workstream',
     true,
-  {'TARGET_BRANCH': gha_expr("vars.JLO_TARGET_BRANCH || 'main'")}
+  {'TARGET_BRANCH': "'" ~ target_branch ~ "'"}
 ) }}
   # ============================================================
   # Phase 18: Wait for implementer labels
