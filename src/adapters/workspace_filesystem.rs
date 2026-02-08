@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::adapters::assets::workstream_template_assets::workstream_template_files;
 use crate::domain::{AppError, JLO_DIR, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
@@ -25,11 +24,6 @@ impl FilesystemWorkspaceStore {
 
     fn version_path(&self) -> PathBuf {
         self.jules_path().join(VERSION_FILE)
-    }
-
-    fn role_path_in_layer(&self, layer: Layer, role_id: &str) -> PathBuf {
-        // Multi-role layers use a roles/ container for role directories
-        self.jules_path().join("roles").join(layer.dir_name()).join("roles").join(role_id)
     }
 }
 
@@ -103,16 +97,11 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         Ok(Some(content.trim().to_string()))
     }
 
-    fn role_exists_in_layer(&self, layer: Layer, role_id: &RoleId) -> bool {
-        let role_dir = self.role_path_in_layer(layer, role_id.as_str());
-        role_dir.join("role.yml").exists()
-    }
-
     fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
         let mut roles = Vec::new();
 
         for layer in Layer::ALL {
-            // For multi-role layers, roles are under .jules/roles/<layer>/roles/
+            // Convention: .jules/roles/<layer>/roles/ (see also role_path)
             let roles_container =
                 self.jules_path().join("roles").join(layer.dir_name()).join("roles");
             if !roles_container.exists() {
@@ -126,7 +115,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
                 }
                 let role_id_str = entry.file_name().to_string_lossy().to_string();
                 if let Ok(role_id) = RoleId::new(&role_id_str)
-                    && self.role_exists_in_layer(layer, &role_id)
+                    && entry.path().join("role.yml").exists()
                 {
                     roles.push(DiscoveredRole { layer, id: role_id });
                 }
@@ -169,71 +158,14 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
     }
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        let path = self.role_path_in_layer(role.layer, role.id.as_str());
+        // Convention: .jules/roles/<layer>/roles/<id> (see also discover_roles)
+        let path = self
+            .jules_path()
+            .join("roles")
+            .join(role.layer.dir_name())
+            .join("roles")
+            .join(role.id.as_str());
         if path.exists() { Some(path) } else { None }
-    }
-
-    fn scaffold_role_in_layer(
-        &self,
-        layer: Layer,
-        role_id: &RoleId,
-        role_yaml: &str,
-    ) -> Result<(), AppError> {
-        let role_dir = self.role_path_in_layer(layer, role_id.as_str());
-        fs::create_dir_all(&role_dir)?;
-
-        // Write role.yml for multi-role layers (observers, deciders, innovators)
-        if matches!(layer, Layer::Observers | Layer::Deciders | Layer::Innovators) {
-            fs::write(role_dir.join("role.yml"), role_yaml)?;
-        }
-
-        Ok(())
-    }
-
-    fn create_workstream(&self, name: &str) -> Result<(), AppError> {
-        let ws_dir = self.jules_path().join("workstreams").join(name);
-
-        if ws_dir.exists() {
-            return Err(AppError::WorkstreamExists(name.into()));
-        }
-
-        // Create workstream structure
-        fs::create_dir_all(&ws_dir)?;
-
-        let template_files = workstream_template_files()?;
-        for file in template_files {
-            let target_path = ws_dir.join(&file.path);
-            if let Some(parent) = target_path.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            fs::write(target_path, file.content)?;
-        }
-
-        Ok(())
-    }
-
-    fn list_workstreams(&self) -> Result<Vec<String>, AppError> {
-        let ws_dir = self.jules_path().join("workstreams");
-
-        if !ws_dir.exists() {
-            return Ok(vec![]);
-        }
-
-        let mut workstreams = Vec::new();
-        for entry in fs::read_dir(&ws_dir)? {
-            let entry = entry?;
-            if entry.path().is_dir() {
-                let name = entry.file_name().to_string_lossy().to_string();
-                workstreams.push(name);
-            }
-        }
-
-        workstreams.sort();
-        Ok(workstreams)
-    }
-
-    fn workstream_exists(&self, name: &str) -> bool {
-        self.jules_path().join("workstreams").join(name).exists()
     }
 
     fn read_file(&self, path: &str) -> Result<String, AppError> {
@@ -441,32 +373,18 @@ mod tests {
     }
 
     #[test]
-    fn scaffold_role_in_layer_creates_structure() {
-        let (_dir, ws) = test_workspace();
-        ws.create_structure(&[]).unwrap();
-
-        let role_id = RoleId::new("my-role").unwrap();
-        ws.scaffold_role_in_layer(Layer::Observers, &role_id, "role: my-role\nlayer: observers")
-            .unwrap();
-
-        // With new structure, roles are under roles/ container
-        let role_dir = ws.jules_path().join("roles/observers/roles/my-role");
-        assert!(role_dir.join("role.yml").exists());
-    }
-
-    #[test]
     fn discover_roles_finds_and_sorts_roles() {
         let (_dir, ws) = test_workspace();
         ws.create_structure(&[]).unwrap();
 
-        // Create some roles
-        let obs_role = RoleId::new("taxonomy").unwrap();
-        ws.scaffold_role_in_layer(Layer::Observers, &obs_role, "role: taxonomy\nlayer: observers")
-            .unwrap();
+        // Create role directories directly (scaffold_role_in_layer removed with template retirement)
+        let obs_dir = ws.jules_path().join("roles/observers/roles/taxonomy");
+        fs::create_dir_all(&obs_dir).unwrap();
+        fs::write(obs_dir.join("role.yml"), "role: taxonomy\nlayer: observers").unwrap();
 
-        let dec_role = RoleId::new("screener").unwrap();
-        ws.scaffold_role_in_layer(Layer::Deciders, &dec_role, "role: screener\nlayer: deciders")
-            .unwrap();
+        let dec_dir = ws.jules_path().join("roles/deciders/roles/screener");
+        fs::create_dir_all(&dec_dir).unwrap();
+        fs::write(dec_dir.join("role.yml"), "role: screener\nlayer: deciders").unwrap();
 
         // Note: Planners is a single-role layer, so we don't create roles in it
 
@@ -486,13 +404,13 @@ mod tests {
         let (_dir, ws) = test_workspace();
         ws.create_structure(&[]).unwrap();
 
-        let obs_role = RoleId::new("taxonomy").unwrap();
-        ws.scaffold_role_in_layer(Layer::Observers, &obs_role, "role: taxonomy\nlayer: observers")
-            .unwrap();
+        let obs_dir = ws.jules_path().join("roles/observers/roles/taxonomy");
+        fs::create_dir_all(&obs_dir).unwrap();
+        fs::write(obs_dir.join("role.yml"), "role: taxonomy\nlayer: observers").unwrap();
 
-        let dec_role = RoleId::new("taxman").unwrap();
-        ws.scaffold_role_in_layer(Layer::Deciders, &dec_role, "role: taxman\nlayer: deciders")
-            .unwrap();
+        let dec_dir = ws.jules_path().join("roles/deciders/roles/taxman");
+        fs::create_dir_all(&dec_dir).unwrap();
+        fs::write(dec_dir.join("role.yml"), "role: taxman\nlayer: deciders").unwrap();
 
         // Exact match
         let found = ws.find_role_fuzzy("taxonomy").unwrap().unwrap();

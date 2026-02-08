@@ -1,26 +1,8 @@
-use include_dir::{Dir, DirEntry, include_dir};
-use std::path::Path;
+use include_dir::{Dir, include_dir};
 
 use crate::domain::AppError;
-use crate::ports::ScaffoldFile;
 
 static TEMPLATES_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/templates");
-
-pub fn workstream_template_files() -> Result<Vec<ScaffoldFile>, AppError> {
-    let workstreams_dir = TEMPLATES_DIR
-        .get_dir("workstreams")
-        .ok_or_else(|| AppError::InternalError("Missing workstream templates directory".into()))?;
-
-    let mut files = Vec::new();
-    collect_files(workstreams_dir, workstreams_dir.path(), &mut files);
-    files.sort_by(|a, b| a.path.cmp(&b.path));
-
-    if files.is_empty() {
-        return Err(AppError::InternalError("Workstream templates directory has no files".into()));
-    }
-
-    Ok(files)
-}
 
 pub fn workstream_template_content(path: &str) -> Result<String, AppError> {
     let full_path = format!("workstreams/{}", path);
@@ -32,41 +14,9 @@ pub fn workstream_template_content(path: &str) -> Result<String, AppError> {
     })
 }
 
-fn collect_files(dir: &Dir, base_path: &Path, files: &mut Vec<ScaffoldFile>) {
-    for entry in dir.entries() {
-        match entry {
-            DirEntry::File(file) => {
-                if let Some(content) = file.contents_utf8()
-                    && let Ok(relative_path) = file.path().strip_prefix(base_path)
-                {
-                    files.push(ScaffoldFile {
-                        path: relative_path.to_string_lossy().to_string(),
-                        content: content.to_string(),
-                    });
-                }
-            }
-            DirEntry::Dir(subdir) => {
-                collect_files(subdir, base_path, files);
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_workstream_template_files_returns_assets() {
-        let files = workstream_template_files().expect("Failed to get workstream template files");
-        assert!(!files.is_empty(), "Workstream template files should not be empty");
-
-        // Verify scheduled.toml is present
-        assert!(
-            files.iter().any(|f| f.path == "scheduled.toml"),
-            "scheduled.toml should be present"
-        );
-    }
 
     #[test]
     fn test_workstream_template_content_returns_content() {

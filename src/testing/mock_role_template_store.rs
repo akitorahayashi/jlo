@@ -30,6 +30,13 @@ impl RoleTemplateStore for MockRoleTemplateStore {
         self.scaffold_files.iter().filter(|f| f.path.starts_with(".jlo/")).cloned().collect()
     }
 
+    fn control_plane_skeleton_files(&self) -> Vec<ScaffoldFile> {
+        self.control_plane_files()
+            .into_iter()
+            .filter(|f| !(f.path.ends_with("/role.yml") || f.path.ends_with("/scheduled.toml")))
+            .collect()
+    }
+
     fn layer_template(&self, _layer: Layer) -> &str {
         ""
     }

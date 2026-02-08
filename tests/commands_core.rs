@@ -14,10 +14,10 @@ fn init_fails_if_exists() {
 }
 
 #[test]
-fn template_without_workspace_fails() {
+fn create_role_without_workspace_fails() {
     let ctx = TestContext::new();
 
-    let err = jlo::template_at(Some("observers"), Some("test"), None, ctx.work_dir().to_path_buf())
-        .expect_err("template should fail");
+    let err = jlo::create_role_at("observers", "test", ctx.work_dir().to_path_buf())
+        .expect_err("create should fail without workspace");
     assert!(matches!(err, jlo::AppError::WorkspaceNotFound));
 }
