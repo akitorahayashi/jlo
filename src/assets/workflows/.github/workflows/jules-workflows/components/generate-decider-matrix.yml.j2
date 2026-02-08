@@ -11,7 +11,7 @@
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
+          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH || 'jules'") }}
           fetch-depth: 0
 
       - name: Install jlo

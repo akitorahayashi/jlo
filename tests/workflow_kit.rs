@@ -305,7 +305,8 @@ fn init_workflows_uses_jlo_paused_not_jules_paused() {
 
     // Pause gating applies only to schedule events
     assert!(
-        workflow.contains("vars.JLO_PAUSED != 'true' || github.event_name != 'schedule'"),
+        workflow
+            .contains("(vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule'"),
         "Pause gating should allow non-schedule events to proceed"
     );
 }
