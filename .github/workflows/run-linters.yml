@@ -20,9 +20,10 @@ jobs:
         shell: bash
 
       - name: Install aqua
-        run: |
-          brew install aqua
-          aqua i
+        uses: aquaproj/aqua-installer@v2.2.1
+
+      - name: Install aqua packages
+        run: aqua i
         shell: bash
 
       - name: Render workflow kit

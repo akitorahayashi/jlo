@@ -168,6 +168,8 @@ Workflow kit layout:
 | `JLO_TARGET_BRANCH` | Control branch for `.jlo/` and implementer output | (unset) |
 | `JULES_WORKER_BRANCH` | Runtime branch for `.jules/` execution | (unset) |
 
+Workflow expressions read these values from GitHub Actions variables (`vars.*`), so define them as repository variables (for example, `vars.JLO_PAUSED`).
+
 **Schedule Preservation**: When reinstalling with `jlo init --remote --overwrite` (or `--self-hosted --overwrite`), the existing `on.schedule` block in `jules-workflows.yml` is preserved.
 
 **Branch Strategy**:
