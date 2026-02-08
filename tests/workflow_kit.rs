@@ -418,7 +418,14 @@ fn workflow_templates_parse_with_serde_yaml() {
         let ctx = TestContext::new();
         let output_dir = render_workflow_kit(&ctx, mode, "parse");
 
-        for file in collect_yaml_files(&output_dir) {
+        let files = collect_yaml_files(&output_dir);
+        assert!(
+            !files.is_empty(),
+            "Rendered workflow kit produced no YAML files for {} mode",
+            mode
+        );
+
+        for file in files {
             let content = fs::read_to_string(&file)
                 .unwrap_or_else(|e| panic!("Failed to read {}: {}", file.display(), e));
             let result: Result<serde_yaml::Value, _> = serde_yaml::from_str(&content);
@@ -447,6 +454,9 @@ fn validate_yaml_lint(mode: &str) {
     let ctx = TestContext::new();
     let output_dir = render_workflow_kit(&ctx, mode, "lint");
 
+    let files = collect_yaml_files(&output_dir);
+    assert!(!files.is_empty(), "Rendered workflow kit produced no YAML files for {} mode", mode);
+
     let mut config = yamllint_rs::config::Config::new();
     config.set_rule_enabled("line-length", false);
     config.set_rule_enabled("indentation", false);
@@ -458,7 +468,7 @@ fn validate_yaml_lint(mode: &str) {
 
     let mut errors = Vec::new();
 
-    for file in collect_yaml_files(&output_dir) {
+    for file in files {
         match processor.process_file(&file) {
             Ok(result) => {
                 let issues: Vec<_> = result
@@ -509,12 +519,13 @@ fn collect_yaml_files(root: &Path) -> Vec<PathBuf> {
 }
 
 fn collect_yaml_files_into(root: &Path, files: &mut Vec<PathBuf>) {
-    let entries = match fs::read_dir(root) {
-        Ok(entries) => entries,
-        Err(_) => return,
-    };
+    let entries = fs::read_dir(root)
+        .unwrap_or_else(|e| panic!("Failed to read directory {}: {}", root.display(), e));
 
-    for entry in entries.flatten() {
+    for entry in entries {
+        let entry = entry.unwrap_or_else(|e| {
+            panic!("Failed to read directory entry in {}: {}", root.display(), e)
+        });
         let path = entry.path();
         if path.is_dir() {
             collect_yaml_files_into(&path, files);

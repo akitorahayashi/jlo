@@ -19,7 +19,8 @@ jobs:
         run: cargo install --path .
         shell: bash
 
-      - uses: aquaproj/aqua-installer@v4.0.3
+      - name: Install aqua
+        uses: aquaproj/aqua-installer@v4.0.3
         with:
           aqua_version: v2.43.1
           github_token: ${{ github.token }}

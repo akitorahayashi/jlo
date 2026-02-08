@@ -11,6 +11,8 @@ use serde::Serialize;
 use crate::adapters::assets::workflow_kit_assets::load_workflow_kit;
 use crate::domain::{AppError, WorkflowRunnerMode};
 
+const SCHEMA_VERSION: u32 = 1;
+
 /// Options for workflow render command.
 #[derive(Debug, Clone)]
 pub struct WorkflowRenderOptions {
@@ -45,7 +47,7 @@ pub fn execute(options: WorkflowRenderOptions) -> Result<WorkflowRenderOutput, A
     write_workflow_kit(&output_dir, &kit)?;
 
     Ok(WorkflowRenderOutput {
-        schema_version: 1,
+        schema_version: SCHEMA_VERSION,
         mode: options.mode.label().to_string(),
         output_dir: output_dir.to_string_lossy().to_string(),
         file_count: kit.files.len(),

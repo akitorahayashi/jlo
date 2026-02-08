@@ -1,5 +1,5 @@
 registries:
   - type: standard
-    ref: v4.155.1
+    ref: v4.460.1
 packages:
   - name: rhysd/actionlint@v1.7.10

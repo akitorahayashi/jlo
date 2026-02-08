@@ -164,9 +164,9 @@ Workflow kit layout:
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `JLO_PAUSED` | Skip scheduled runs when set to `true` | (unset) |
-| `JLO_TARGET_BRANCH` | Control branch for `.jlo/` and implementer output | (unset) |
-| `JULES_WORKER_BRANCH` | Runtime branch for `.jules/` execution | (unset) |
+| `JLO_PAUSED` | Skip scheduled runs when set to `true` | `false` |
+| `JLO_TARGET_BRANCH` | Control branch for `.jlo/` and implementer output | `main` |
+| `JULES_WORKER_BRANCH` | Runtime branch for `.jules/` execution | `jules` |
 
 Workflow expressions read these values from GitHub Actions variables (`vars.*`), so define them as repository variables (for example, `vars.JLO_PAUSED`).
 
@@ -212,6 +212,7 @@ cargo test --all-targets --all-features                        # Test
 ### Workflow Linting (actionlint)
 
 Workflow kit rendering and linting are deterministic and run against rendered output under `.tmp/`.
+This catches workflow expression-context errors (for example, invalid `vars`/`inputs` usage) before changes are pushed.
 
 ```bash
 just setup
