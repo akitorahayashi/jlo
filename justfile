@@ -7,10 +7,10 @@ setup:
     aqua i
 
 render-remote:
-    cargo run -- workflow render remote --output {{ REMOTE_RENDER_DIR }} --overwrite
+    cargo run -- workflow render remote --output-dir {{ REMOTE_RENDER_DIR }}
 
 render-self-hosted:
-    cargo run -- workflow render self-hosted --output {{ SELF_HOSTED_RENDER_DIR }} --overwrite
+    cargo run -- workflow render self-hosted --output-dir {{ SELF_HOSTED_RENDER_DIR }}
 
 alint:
     just render-remote

@@ -1,3 +1,6 @@
+{# DESIGN GUARD: Branch filtering belongs in `on:` to avoid skipped-run spam.
+   Only PRs targeting the worker branch should trigger this workflow.
+   Branch values are rendered from .jlo/config.toml at generation time. #}
 # Jules Auto-Merge
 #
 # Validates Jules PRs with doctor check and enables auto-merge on success.
@@ -24,17 +27,18 @@ name: Jules Auto-Merge
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    branches:
+      - '{{ worker_branch }}'
 
 jobs:
   validate-and-automerge:
-    if: {{ gha_expr("github.base_ref == (vars.JULES_WORKER_BRANCH || 'jules')") }}
     runs-on: {{ runner }}
     permissions:
       contents: write
       pull-requests: write
     env:
-      JLO_TARGET_BRANCH: {{ gha_expr("vars.JLO_TARGET_BRANCH || 'main'") }}
-      JULES_WORKER_BRANCH: {{ gha_expr("vars.JULES_WORKER_BRANCH || 'jules'") }}
+      JLO_TARGET_BRANCH: '{{ target_branch }}'
+      JULES_WORKER_BRANCH: '{{ worker_branch }}'
     steps:
       - name: Validate branch variables
         run: |

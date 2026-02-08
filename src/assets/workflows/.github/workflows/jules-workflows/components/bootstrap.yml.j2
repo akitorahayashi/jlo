@@ -21,7 +21,7 @@
 
       - uses: actions/checkout@v4
         with:
-          ref: {{ gha_expr("vars.JLO_TARGET_BRANCH || 'main'") }}
+          ref: '{{ target_branch }}'
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 

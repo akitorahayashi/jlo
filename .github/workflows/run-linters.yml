@@ -33,8 +33,8 @@ jobs:
 
       - name: Render workflow kit
         run: |
-          jlo workflow render remote --output .tmp/workflow-kit-render/remote --overwrite
-          jlo workflow render self-hosted --output .tmp/workflow-kit-render/self-hosted --overwrite
+          jlo workflow render remote --output-dir .tmp/workflow-kit-render/remote
+          jlo workflow render self-hosted --output-dir .tmp/workflow-kit-render/self-hosted
         shell: bash
 
       - name: Run actionlint

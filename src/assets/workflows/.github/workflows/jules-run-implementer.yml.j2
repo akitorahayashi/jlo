@@ -23,8 +23,8 @@ permissions:
   pull-requests: write
 
 env:
-  JLO_TARGET_BRANCH: {{ gha_expr("vars.JLO_TARGET_BRANCH || 'main'") }}
-  JULES_WORKER_BRANCH: {{ gha_expr("vars.JULES_WORKER_BRANCH || 'jules'") }}
+  JLO_TARGET_BRANCH: '{{ target_branch }}'
+  JULES_WORKER_BRANCH: '{{ worker_branch }}'
 
 jobs:
   implementers:
@@ -44,7 +44,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH || 'jules'") }}
+          ref: '{{ worker_branch }}'
           fetch-depth: 0
 
       - name: Install jlo
@@ -61,4 +61,4 @@ jobs:
         with:
           issue_file: {{ gha_expr("inputs.issue_file") }}
           prompt_preview: {{ gha_expr("inputs.prompt_preview") }}
-          target_branch: {{ gha_expr("vars.JLO_TARGET_BRANCH || 'main'") }}
+          target_branch: '{{ target_branch }}'
