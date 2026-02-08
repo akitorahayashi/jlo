@@ -39,28 +39,9 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
     fn control_plane_files(&self) -> Vec<ScaffoldFile> {
         let mut files = Vec::new();
         collect_files(&SCAFFOLD_DIR, &mut files);
-
-        let mut result = Vec::new();
-        for f in &files {
-            if f.path.starts_with(".jlo/") {
-                result.push(f.clone());
-            } else if f.path.starts_with(".jules/") {
-                // A path like `.jules/roles/observers/roles/my-role/role.yml` has 6 segments.
-                // This identifies user-customizable role definitions.
-                let is_role_yml = f.path.ends_with("/role.yml")
-                    && f.path.contains("/roles/")
-                    && f.path.split('/').count() >= 6;
-                let is_schedule = f.path.ends_with("/scheduled.toml");
-
-                if is_role_yml || is_schedule {
-                    let jlo_path = f.path.replacen(".jules/", ".jlo/", 1);
-                    result.push(ScaffoldFile { path: jlo_path, content: f.content.clone() });
-                }
-            }
-        }
-
-        result.sort_by(|a, b| a.path.cmp(&b.path));
-        result
+        files.retain(|f| f.path.starts_with(".jlo/"));
+        files.sort_by(|a, b| a.path.cmp(&b.path));
+        files
     }
 
     fn control_plane_skeleton_files(&self) -> Vec<ScaffoldFile> {

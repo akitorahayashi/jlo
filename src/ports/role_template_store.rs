@@ -17,7 +17,7 @@ pub trait RoleTemplateStore {
     /// Get control-plane intent files for `.jlo/` initialization.
     ///
     /// Returns user-owned files (config, role customizations, schedules, setup)
-    /// mapped from `.jules/` scaffold paths to `.jlo/` paths.
+    /// sourced directly from the `.jlo/` scaffold assets.
     fn control_plane_files(&self) -> Vec<ScaffoldFile>;
 
     /// Get control-plane skeleton files only (config, setup, infrastructure).
