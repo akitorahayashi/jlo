@@ -8,6 +8,8 @@ use crate::domain::{ExecutionConfig, JulesApiConfig, RunConfig};
 pub struct RunConfigDto {
     pub run: Option<ExecutionConfigDto>,
     pub jules: Option<JulesApiConfigDto>,
+    #[allow(dead_code)]
+    pub workflow: Option<WorkflowTimingConfigDto>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -26,6 +28,14 @@ pub struct JulesApiConfigDto {
     pub timeout_secs: Option<u64>,
     pub max_retries: Option<u32>,
     pub retry_delay_ms: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[allow(dead_code)]
+pub struct WorkflowTimingConfigDto {
+    pub cron: Option<Vec<String>>,
+    pub wait_minutes_default: Option<u32>,
 }
 
 impl From<RunConfigDto> for RunConfig {

@@ -9,7 +9,7 @@ This document describes how files under `src/assets/workflows/.github/` are tran
 - Asset collection: `src/adapters/assets/workflow_kit_assets/asset_collect.rs`
 - Template engine (MiniJinja): `src/adapters/assets/workflow_kit_assets/template_engine.rs`
 - Render plan (partials exclusion): `src/adapters/assets/workflow_kit_assets/render_plan.rs`
-- Install/write to disk: `src/app/commands/init_workflows.rs`
+- Install/write to disk: `src/app/commands/init.rs`
 
 ## Transformation Rules
 - Every file under `src/assets/workflows/.github/` is loaded by `include_dir!` in `WorkflowKitAssets`.
@@ -23,6 +23,10 @@ This document describes how files under `src/assets/workflows/.github/` are tran
 - `gha_expr` and `gha_raw` functions emit GitHub Actions expressions (e.g., `${{ ... }}`).
 - Rendering context contains:
   - `runner`: `ubuntu-latest` for `WorkflowRunnerMode::Remote`, `self-hosted` for `WorkflowRunnerMode::SelfHosted`.
+  - `target_branch`: rendered from `.jlo/config.toml` (`run.default_branch`).
+  - `worker_branch`: rendered from `.jlo/config.toml` (`run.jules_branch`).
+  - `workflow_schedule_crons`: cron list from `.jlo/config.toml` (`workflow.cron`).
+  - `workflow_wait_minutes_default`: wait default from `.jlo/config.toml` (`workflow.wait_minutes_default`).
 
 ## Installed Output Examples
 - `src/assets/workflows/.github/workflows/jules-workflows.yml.j2`
@@ -33,5 +37,5 @@ This document describes how files under `src/assets/workflows/.github/` are tran
   → `.github/actions/install-jlo/action.yml`
 
 ## Installation Notes
-- `execute_workflows` writes the rendered kit to disk and preserves the `on.schedule` block (and `wait_minutes` default) in `.github/workflows/jules-workflows.yml` when overwriting.
+- `install_workflow_kit` writes the rendered kit to disk, overwriting jlo-managed outputs deterministically.
 - Action directories are detected from rendered paths by `collect_action_dirs` and are cleaned before re-installation.

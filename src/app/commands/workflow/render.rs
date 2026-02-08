@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 
 use crate::adapters::assets::workflow_kit_assets::load_workflow_kit;
-use crate::app::commands::init_workflows::load_branch_config;
+use crate::app::commands::init::load_workflow_render_config;
 use crate::domain::{AppError, WorkflowRunnerMode};
 
 const SCHEMA_VERSION: u32 = 1;
@@ -40,12 +40,12 @@ pub struct WorkflowRenderOutput {
 /// Execute workflow render command.
 pub fn execute(options: WorkflowRenderOptions) -> Result<WorkflowRenderOutput, AppError> {
     let repo_root = find_repo_root(&std::env::current_dir()?)?;
-    let branches = load_branch_config(&repo_root);
+    let render_config = load_workflow_render_config(&repo_root)?;
     let output_dir = resolve_output_dir(&options, &repo_root)?;
 
     prepare_output_dir(&output_dir)?;
 
-    let kit = load_workflow_kit(options.mode, &branches)?;
+    let kit = load_workflow_kit(options.mode, &render_config)?;
     write_workflow_kit(&output_dir, &kit)?;
 
     Ok(WorkflowRenderOutput {

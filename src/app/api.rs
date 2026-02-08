@@ -11,7 +11,7 @@ use crate::adapters::github_command::GitHubCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::{
     AppContext,
-    commands::{create, deinit, doctor, init_scaffold, init_workflows, run, setup, update},
+    commands::{create, deinit, doctor, init, run, setup, update},
 };
 use crate::ports::WorkspaceStore;
 
@@ -46,7 +46,7 @@ pub fn init_at(path: impl Into<PathBuf>, mode: WorkflowRunnerMode) -> Result<(),
     let ctx = create_context(path.clone());
 
     let git = GitCommandAdapter::new(path);
-    init_scaffold::execute(&ctx, &git, mode)?;
+    init::execute(&ctx, &git, mode)?;
     Ok(())
 }
 
@@ -66,8 +66,8 @@ pub fn init_workflows_at(
     path: std::path::PathBuf,
     mode: WorkflowRunnerMode,
 ) -> Result<(), AppError> {
-    let branches = init_workflows::load_branch_config(&path);
-    init_workflows::execute_workflows(&path, mode, &branches)
+    let render_config = init::load_workflow_render_config(&path)?;
+    init::install_workflow_kit(&path, mode, &render_config)
 }
 
 // =============================================================================
