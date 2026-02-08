@@ -75,7 +75,7 @@ Repository variables and secrets referenced by `.github/workflows/jules-*.yml`:
 | Name | Type | Purpose |
 |------|------|---------|
 | `JULES_API_KEY` | Secret | API key for Jules service |
-| `JULES_PAUSED` | Variable | Set to `true` to skip scheduled runs |
+| `JLO_PAUSED` | Variable | Set to `true` to skip scheduled runs |
 | `JULES_TARGET_BRANCH` | Variable | Target branch for implementer output (default: `main`) |
 
 ## Schedule Preservation

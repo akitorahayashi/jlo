@@ -2,7 +2,7 @@
     needs: [bootstrap]
     if: >-
       needs.bootstrap.result == 'success' &&
-      vars.JULES_PAUSED != 'true' &&
+      (vars.JLO_PAUSED != 'true' || github.event_name != 'schedule') &&
       (
         github.event_name == 'schedule' ||
         (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') == 'narrator') ||

@@ -1,0 +1,37 @@
+layer: innovators
+branch_prefix: jules-innovator-
+phase: refinement
+
+constraints:
+  - Do NOT modify source code or non-.jules/ files
+  - Do NOT create or modify events or issues directly
+  - Each innovator works only within their own room directory
+  - Proposals must address the repository's actual state, not hypothetical improvements
+  - Do NOT duplicate proposals already listed in perspective.yml recent_proposals
+  - Do NOT edit files outside of .jules/
+  - Proposals must define an introduction that changes boundaries, behavior, or decision quality
+  - Do NOT publish proposals that are only static-analysis-driven local refactoring findings
+  - Proposal quality is measured by decision value, not description volume
+  - Every proposal must satisfy role.yml profile.proposal_quality_bar
+  - Evidence in the proposal must meet role.yml profile.evidence_expectations
+  - perspective.yml recent_proposals MUST be updated with the new proposal title
+  - idea.yml and all comments/*.yml MUST be deleted after proposal creation
+
+inputs:
+  - .jules/roles/innovators/roles/<role>/role.yml (Innovator Persona Definition)
+  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/perspective.yml (Persona Memory)
+  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/idea.yml (Current Idea)
+  - .jules/roles/innovators/schemas/comment.yml (Observer feedback comment schema)
+  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/comments/*.yml (Observer Feedback)
+
+outputs:
+  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/proposal.yml (Finished proposal)
+  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/perspective.yml (Updated memory with proposal in recent_proposals)
+
+workflow:
+  - "1. Read role.yml and perspective.yml to establish identity and context."
+  - "2. Read idea.yml and all comments/*.yml as structured feedback defined by schemas/comment.yml."
+  - "3. Create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals."
+  - "4. Update perspective.yml recent_proposals (FIFO, max 5, newest first) with the proposal title."
+  - "5. Delete idea.yml and all comments/*.yml."
+  - "6. Before final output, self-check against role.yml proposal_quality_bar and evidence_expectations."

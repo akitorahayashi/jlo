@@ -2,7 +2,7 @@
     needs: wait-after-narrator
     if: |
       always() &&
-      vars.JULES_PAUSED != 'true' &&
+      (vars.JLO_PAUSED != 'true' || github.event_name != 'schedule') &&
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') &&
       (needs.wait-after-narrator.result == 'success' || needs.wait-after-narrator.result == 'skipped')
     runs-on: {{ runner }}
