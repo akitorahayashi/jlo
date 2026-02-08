@@ -20,7 +20,7 @@ jobs:
         shell: bash
 
       - name: Install aqua
-        uses: aquaproj/aqua-installer@v2.2.1
+        uses: aquaproj/aqua-installer@v2
 
       - name: Install aqua packages
         run: aqua i
