@@ -53,7 +53,7 @@
           set -euo pipefail
           if [ -n "$(git status --porcelain .jules)" ]; then
             git add .jules/
-              git commit -m "chore: bootstrap .jules/ runtime workspace [jlo $(jlo --version | awk '{print $2}')]"
+            git commit -m "chore: bootstrap .jules/ runtime workspace [jlo $(jlo --version | awk '{print $2}')]"
             git push origin "${JULES_WORKER_BRANCH}"
             echo "committed=true" >> "$GITHUB_OUTPUT"
           else

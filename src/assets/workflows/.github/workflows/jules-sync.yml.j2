@@ -10,40 +10,8 @@ env:
   JULES_WORKER_BRANCH: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
 
 jobs:
-  check-jules-branch:
-    if: {{ gha_expr("github.event_name != 'push' || github.ref_name == env.JLO_TARGET_BRANCH") }}
-    runs-on: {{ runner }}
-    permissions:
-      contents: read
-    outputs:
-      exists: {{ gha_expr("steps.check-branch.outputs.exists") }}
-    steps:
-      - name: Validate branch variables
-        run: |
-          set -euo pipefail
-          if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
-            echo "::error::JLO_TARGET_BRANCH is required."
-            exit 1
-          fi
-          if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
-            echo "::error::JULES_WORKER_BRANCH is required."
-            exit 1
-          fi
-
-      - name: Check if jules branch exists
-        id: check-branch
-        env:
-          GH_TOKEN: {{ gha_expr("github.token") }}
-        run: |
-          if gh api repos/{{ gha_expr("github.repository") }}/branches/${JULES_WORKER_BRANCH} --silent 2>/dev/null; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
   sync:
-    needs: check-jules-branch
-    if: needs.check-jules-branch.result == 'success'
+    if: {{ gha_expr("github.event_name != 'push' || github.ref_name == env.JLO_TARGET_BRANCH") }}
     runs-on: {{ runner }}
     permissions:
       contents: write
