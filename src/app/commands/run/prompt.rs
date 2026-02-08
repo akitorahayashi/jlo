@@ -47,8 +47,6 @@ pub fn assemble_prompt(
             )
         })?;
         context = context.with_var("phase", phase_val);
-    } else if let Some(phase_val) = phase {
-        context = context.with_var("phase", phase_val);
     }
     let renderer = MinijinjaTemplateRenderer::new();
 
