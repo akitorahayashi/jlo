@@ -145,7 +145,7 @@ Implementers modify source code and require human review.
 
 **Narrator**: Produces `.jules/changes/latest.yml` summarizing recent codebase changes. Runs first, before observers.
 
-**Multi-role layers** (Observers, Deciders, Innovators): Roles are scoped to workstreams and scheduled via `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `role.yml`. Custom roles can be created with `jlo template`.
+**Multi-role layers** (Observers, Deciders, Innovators): Roles are scoped to workstreams and scheduled via `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `role.yml`. Custom roles can be created with `jlo create role <layer> <name>`.
 
 **Single-role layers** (Planners, Implementers): Have a fixed role with `contracts.yml` directly in the layer directory. They are issue-driven and require an issue file path argument. Template creation is not supported.
 

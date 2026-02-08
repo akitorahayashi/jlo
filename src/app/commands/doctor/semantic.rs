@@ -156,7 +156,7 @@ pub fn semantic_checks(
                 }
             }
             Err(AppError::ScheduleConfigMissing(_)) => {
-                // structural checks handle missing scheduled.toml (including --fix)
+                // structural checks handle missing scheduled.toml
             }
             Err(AppError::Schedule(err)) => {
                 diagnostics
