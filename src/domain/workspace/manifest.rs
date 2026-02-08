@@ -1,6 +1,7 @@
 //! Scaffold manifest domain entity.
 
 use std::collections::BTreeMap;
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -65,23 +66,25 @@ pub fn is_default_role_file(path: &str) -> bool {
 }
 
 pub fn is_control_plane_entity_file(path: &str) -> bool {
-    let parts: Vec<&str> = path.split('/').collect();
+    let path_obj = Path::new(path);
+    let components: Vec<_> =
+        path_obj.components().map(|c| c.as_os_str().to_str().unwrap_or("")).collect();
 
     // .jlo/roles/<layer>/roles/<role>/role.yml
-    if parts.len() == 6
-        && parts[0] == ".jlo"
-        && parts[1] == "roles"
-        && parts[3] == "roles"
-        && parts[5] == "role.yml"
+    if components.len() == 6
+        && components[0] == ".jlo"
+        && components[1] == "roles"
+        && components[3] == "roles"
+        && components[5] == "role.yml"
     {
         return true;
     }
 
     // .jlo/workstreams/<workstream>/scheduled.toml
-    if parts.len() == 4
-        && parts[0] == ".jlo"
-        && parts[1] == "workstreams"
-        && parts[3] == "scheduled.toml"
+    if components.len() == 4
+        && components[0] == ".jlo"
+        && components[1] == "workstreams"
+        && components[3] == "scheduled.toml"
     {
         return true;
     }

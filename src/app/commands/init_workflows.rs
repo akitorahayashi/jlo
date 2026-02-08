@@ -74,24 +74,23 @@ pub fn detect_runner_mode(root: &Path) -> Result<WorkflowRunnerMode, AppError> {
     let mut has_self_hosted = false;
     let mut has_ubuntu = false;
 
+    let mut check_label = |label: &str| {
+        if label == "self-hosted" {
+            has_self_hosted = true;
+        }
+        if label == "ubuntu-latest" {
+            has_ubuntu = true;
+        }
+    };
+
     for job in jobs.values() {
         let runs_on = job.get("runs-on");
         if let Some(Value::String(label)) = runs_on {
-            if label == "self-hosted" {
-                has_self_hosted = true;
-            }
-            if label == "ubuntu-latest" {
-                has_ubuntu = true;
-            }
+            check_label(label);
         } else if let Some(Value::Sequence(seq)) = runs_on {
             for item in seq {
                 if let Value::String(label) = item {
-                    if label == "self-hosted" {
-                        has_self_hosted = true;
-                    }
-                    if label == "ubuntu-latest" {
-                        has_ubuntu = true;
-                    }
+                    check_label(label);
                 }
             }
         }

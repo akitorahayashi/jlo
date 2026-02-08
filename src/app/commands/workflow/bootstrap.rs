@@ -223,12 +223,19 @@ fn should_project_control_file(rel_path: &str) -> bool {
         return true;
     }
 
-    let parts: Vec<&str> = rel_path.split('/').collect();
-    if parts.len() == 5 && parts[0] == "roles" && parts[2] == "roles" && parts[4] == "role.yml" {
+    let path = Path::new(rel_path);
+    let components: Vec<_> =
+        path.components().map(|c| c.as_os_str().to_str().unwrap_or("")).collect();
+    if components.len() == 5
+        && components[0] == "roles"
+        && components[2] == "roles"
+        && components[4] == "role.yml"
+    {
         return true;
     }
 
-    if parts.len() == 3 && parts[0] == "workstreams" && parts[2] == "scheduled.toml" {
+    if components.len() == 3 && components[0] == "workstreams" && components[2] == "scheduled.toml"
+    {
         return true;
     }
 
