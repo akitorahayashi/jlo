@@ -4,11 +4,11 @@
 
 | Branch | Purpose | Editable by |
 |--------|---------|-------------|
-| Control branch (e.g. `main`, `development`) | Hosts `.jlo/` intent overlay and `.github/` workflow kit | User (via `jlo init`, `jlo update`, manual edits) |
-| `jules` | Hosts materialized `.jules/` runtime state and agent exchange artifacts | Workflow bootstrap only (never user-edited directly) |
+| `JLO_TARGET_BRANCH` | Hosts `.jlo/` intent overlay and `.github/` workflow kit | User (via `jlo init`, `jlo update`, manual edits) |
+| `JULES_WORKER_BRANCH` | Hosts materialized `.jules/` runtime state and agent exchange artifacts | Workflow bootstrap only (never user-edited directly) |
 
-Users never checkout or edit the `jules` branch directly. All configuration is performed on the control branch under `.jlo/`.
-`jlo init` installs the control-plane and workflow kit only; `.jules/` is created by workflow bootstrap on the `jules` branch.
+Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All configuration is performed on `JLO_TARGET_BRANCH` under `.jlo/`.
+`jlo init` installs the control-plane and workflow kit only; `.jules/` is created by workflow bootstrap on `JULES_WORKER_BRANCH`.
 
 ## Directory Ownership
 
@@ -25,9 +25,9 @@ Users never checkout or edit the `jules` branch directly. All configuration is p
 | `.jlo/setup/tools.yml` | User | Tool selection. Created by `init`; never overwritten. |
 | `.jlo/.jlo-managed.yml` | jlo | Managed-defaults manifest for role.yml and scheduled.toml. Used by `update` to refresh unchanged defaults safely. |
 
-### `.jules/` — Runtime Data Plane (jules branch)
+### `.jules/` — Runtime Data Plane (worker branch)
 
-`.jules/` is the complete runtime workspace materialized by workflow bootstrap. It combines scaffold framework assets (for the pinned version) with user intent overlays from `.jlo/`.
+`.jules/` is the complete runtime workspace materialized by workflow bootstrap. It combines scaffold framework assets (for the pinned version) with user intent overlays from `.jlo/` on `JLO_TARGET_BRANCH`.
 
 | Path | Owner | Written by | Description |
 |------|-------|------------|-------------|
@@ -69,23 +69,23 @@ Users never checkout or edit the `jules` branch directly. All configuration is p
 
 ## Materialization Boundary
 
-Workflow bootstrap is the sole authority for producing `.jules/` on the `jules` branch.
+Workflow bootstrap is the sole authority for producing `.jules/` on `JULES_WORKER_BRANCH`.
 
 ### Bootstrap Algorithm
 
 1. Verify `.jlo/` and `.jlo/.jlo-version` exist (hard preconditions).
 2. Load embedded scaffold assets for the pinned version.
-3. Checkout `jules` branch (create from orphan if absent).
+3. Checkout `JULES_WORKER_BRANCH` (create from `JLO_TARGET_BRANCH` history if absent).
 4. Write all managed framework files from embedded scaffold to `.jules/`.
 5. Overlay user intent files from `.jlo/` (config, schedules, role customizations) into `.jules/`.
 6. Delete projected workstreams absent from `.jlo/workstreams/`.
 7. Delete projected roles absent from `.jlo/roles/<layer>/roles/`.
 8. Write managed manifest (`.jules/.managed-defaults.yml`).
-9. Commit changes (if any) to `jules` with a deterministic message.
+9. Commit changes (if any) to `JULES_WORKER_BRANCH` with a deterministic message.
 
 ### Idempotency
 
-Running bootstrap twice with the same `.jlo/` inputs and jlo version produces no new commits on `jules`. The algorithm is compare-then-write: files are only written when content differs.
+Running bootstrap twice with the same `.jlo/` inputs and jlo version produces no new commits on `JULES_WORKER_BRANCH`. The algorithm is compare-then-write: files are only written when content differs.
 
 ## Update Semantics
 
@@ -97,7 +97,7 @@ Running bootstrap twice with the same `.jlo/` inputs and jlo version produces no
 | Reconcile control-plane skeleton | Create missing control-plane files from scaffold defaults without overwriting existing ones. |
 | Refresh managed defaults | Update role.yml and scheduled.toml only when they match the managed-defaults manifest. |
 | Refresh workflow kit | Reinstall `.github/` workflows using the existing runner mode. |
-| **Not in scope** | Patching managed framework files (that is bootstrap's responsibility on `jules`). |
+| **Not in scope** | Patching managed framework files (that is bootstrap's responsibility on `JULES_WORKER_BRANCH`). |
 | **Not in scope** | Reading or writing `.jules/` or any runtime artifacts. |
 | **Not in scope** | Reading or writing `.jules/workstreams/*/exchange/` (agent-generated). |
 
@@ -107,8 +107,8 @@ Runtime managed assets are expanded from the scaffold for the pinned version dur
 
 1. `jlo init` writes current binary version to `.jlo/.jlo-version` on the control branch.
 2. `jlo update` advances `.jlo/.jlo-version` on the control branch.
-3. Workflow `install-jlo` action reads `.jlo/.jlo-version` from the control branch (not `origin/jules`).
-4. Workflow bootstrap reads `.jlo/.jlo-version`, loads corresponding scaffold, and materializes `.jules/` on `jules`.
+3. Workflow `install-jlo` action reads `.jlo/.jlo-version` from `JLO_TARGET_BRANCH`.
+4. Workflow bootstrap reads `.jlo/.jlo-version`, loads corresponding scaffold, and materializes `.jules/` on `JULES_WORKER_BRANCH`.
 
 ## Failure Policy
 
@@ -116,8 +116,8 @@ Runtime managed assets are expanded from the scaffold for the pinned version dur
 |-----------|----------|
 | `.jlo/` missing on control branch | Hard failure. Bootstrap aborts with explicit error. |
 | `.jlo/.jlo-version` missing or empty | Hard failure. Version pin is required. |
-| `jules` branch does not exist | Bootstrap creates it as an orphan branch with initial materialized content. |
-| `.jules/` missing on existing `jules` | Bootstrap performs full materialization. |
+| `JULES_WORKER_BRANCH` does not exist | Bootstrap creates it from `JLO_TARGET_BRANCH` history with initial materialized content. |
+| `.jules/` missing on existing `JULES_WORKER_BRANCH` | Bootstrap performs full materialization. |
 | Git commit failure during bootstrap | Hard failure. Workflow aborts with details. No silent retry. |
-| `jlo init` on `jules` branch | Rejected. Init creates `.jlo/` which belongs on the control branch. |
+| `jlo init` on `JULES_WORKER_BRANCH` | Rejected. Init creates `.jlo/` which belongs on `JLO_TARGET_BRANCH`. |
 | Exchange artifacts during projection | Skipped unconditionally. Agent-generated files are never touched. |

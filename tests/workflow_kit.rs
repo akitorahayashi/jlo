@@ -349,3 +349,63 @@ fn init_workflows_no_scripts_references() {
         }
     }
 }
+
+#[test]
+fn init_workflows_enforces_explicit_branch_contract() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init", "--remote"]).assert().success();
+
+    let root = ctx.work_dir();
+
+    let primary = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
+    assert!(
+        primary.contains("JLO_TARGET_BRANCH"),
+        "Primary workflow should reference JLO_TARGET_BRANCH"
+    );
+    assert!(
+        primary.contains("JULES_WORKER_BRANCH"),
+        "Primary workflow should reference JULES_WORKER_BRANCH"
+    );
+
+    let sync = fs::read_to_string(root.join(".github/workflows/jules-sync.yml")).unwrap();
+    assert!(sync.contains("JLO_TARGET_BRANCH"), "Sync workflow should reference JLO_TARGET_BRANCH");
+    assert!(
+        sync.contains("JULES_WORKER_BRANCH"),
+        "Sync workflow should reference JULES_WORKER_BRANCH"
+    );
+
+    for entry in fs::read_dir(root.join(".github/workflows")).unwrap() {
+        let entry = entry.unwrap();
+        if entry.path().extension().is_some_and(|ext| ext == "yml") {
+            let content = fs::read_to_string(entry.path()).unwrap();
+            assert!(
+                !content.contains("github.event.repository.default_branch"),
+                "Workflow {} should not reference github.event.repository.default_branch",
+                entry.path().display()
+            );
+            assert!(
+                !content.contains(".jlo-control"),
+                "Workflow {} should not reference .jlo-control",
+                entry.path().display()
+            );
+        }
+    }
+
+    for action_dir in ["install-jlo", "configure-git", "run-implementer"] {
+        let action_path = root.join(format!(".github/actions/{}/action.yml", action_dir));
+        if action_path.exists() {
+            let content = fs::read_to_string(&action_path).unwrap();
+            assert!(
+                !content.contains("github.event.repository.default_branch"),
+                "Action {} should not reference github.event.repository.default_branch",
+                action_dir
+            );
+            assert!(
+                !content.contains(".jlo-control"),
+                "Action {} should not reference .jlo-control",
+                action_dir
+            );
+        }
+    }
+}

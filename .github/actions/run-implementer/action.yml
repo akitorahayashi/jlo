@@ -10,8 +10,7 @@ inputs:
     default: 'false'
   target_branch:
     description: 'Target branch for implementer output'
-    required: false
-    default: 'main'
+    required: true
 runs:
   using: "composite"
   steps:
@@ -19,6 +18,7 @@ runs:
       shell: bash
       env:
         ISSUE_FILE: ${{ inputs.issue_file }}
+        TARGET_BRANCH: ${{ inputs.target_branch }}
       run: |
         if [ -z "$ISSUE_FILE" ]; then
           echo "::error::issue_file is required"
@@ -26,6 +26,10 @@ runs:
         fi
         if [ ! -f "$ISSUE_FILE" ]; then
           echo "::error::Issue file not found in repository: $ISSUE_FILE"
+          exit 1
+        fi
+        if [ -z "$TARGET_BRANCH" ]; then
+          echo "::error::target_branch is required"
           exit 1
         fi
 

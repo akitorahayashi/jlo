@@ -18,7 +18,7 @@
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: jules
+          ref: {{ gha_expr("env.JULES_WORKER_BRANCH") }}
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 

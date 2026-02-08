@@ -10,14 +10,30 @@ permissions:
   issues: write
   pull-requests: write
 
+env:
+  JLO_TARGET_BRANCH: ${{ vars.JLO_TARGET_BRANCH }}
+  JULES_WORKER_BRANCH: ${{ vars.JULES_WORKER_BRANCH }}
+
 jobs:
   label-pr:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate branch variables
+        run: |
+          set -euo pipefail
+          if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
+            echo "::error::JLO_TARGET_BRANCH is required."
+            exit 1
+          fi
+          if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
+            echo "::error::JULES_WORKER_BRANCH is required."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
         with:
-          # Checkout jules; label definitions and contracts are read from the jules branch.
-          ref: jules
+          # Checkout worker; label definitions and contracts are read from the worker branch.
+          ref: ${{ env.JULES_WORKER_BRANCH }}
           fetch-depth: 1
           token: ${{ secrets.JLO_BOT_TOKEN }}
 
@@ -69,17 +85,17 @@ jobs:
 
           label_config=".jules/github-labels.json"
           if [ ! -f "$label_config" ]; then
-            echo "::error::Missing label definition file on jules branch: .jules/github-labels.json"
+            echo "::error::Missing label definition file on ${JULES_WORKER_BRANCH} branch: .jules/github-labels.json"
             exit 1
           fi
 
           color=$(jq -r --arg label "$label" '.issue_labels[$label].color // empty' "$label_config")
           if [ -z "$color" ] || [ "$color" = "null" ]; then
-            echo "::error::Missing color for '$label' in .jules/github-labels.json on jules branch"
+            echo "::error::Missing color for '$label' in .jules/github-labels.json on ${JULES_WORKER_BRANCH} branch"
             exit 1
           fi
           if [[ ! "$color" =~ ^[0-9a-fA-F]{6}$ ]]; then
-            echo "::error::Invalid label color '$color' for '$label' in .jules/github-labels.json on jules branch (expected 6-digit hex)"
+            echo "::error::Invalid label color '$color' for '$label' in .jules/github-labels.json on ${JULES_WORKER_BRANCH} branch (expected 6-digit hex)"
             exit 1
           fi
 

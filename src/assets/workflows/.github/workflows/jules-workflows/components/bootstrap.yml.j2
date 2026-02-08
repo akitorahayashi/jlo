@@ -7,26 +7,38 @@
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
     steps:
+      - name: Validate branch variables
+        run: |
+          set -euo pipefail
+          if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
+            echo "::error::JLO_TARGET_BRANCH is required."
+            exit 1
+          fi
+          if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
+            echo "::error::JULES_WORKER_BRANCH is required."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
         with:
+          ref: {{ gha_expr("env.JLO_TARGET_BRANCH") }}
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 
       - name: Configure Git
         uses: ./.github/actions/configure-git
 
-      - name: Ensure jules branch
+      - name: Ensure worker branch
         run: |
           set -euo pipefail
-          if git rev-parse --verify origin/jules >/dev/null 2>&1; then
-            echo "jules branch exists, checking out"
-            git checkout jules
+          git fetch origin "${JLO_TARGET_BRANCH}" --depth=1
+          if git ls-remote --exit-code --heads origin "${JULES_WORKER_BRANCH}" >/dev/null 2>&1; then
+            echo "${JULES_WORKER_BRANCH} branch exists, checking out"
+            git fetch origin "${JULES_WORKER_BRANCH}" --depth=1
+            git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JULES_WORKER_BRANCH}"
           else
-            echo "Creating orphan jules branch from HEAD"
-            git checkout --orphan jules
-            git rm -rf . 2>/dev/null || true
-            git clean -fd
-            git commit --allow-empty -m "chore: initialize jules branch"
+            echo "Creating ${JULES_WORKER_BRANCH} from ${JLO_TARGET_BRANCH}"
+            git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JLO_TARGET_BRANCH}"
           fi
 
       - name: Install jlo
@@ -35,39 +47,14 @@
       - name: Bootstrap runtime workspace
         run: jlo workflow bootstrap
 
-      - name: Project control-plane overlay
-        run: |
-          set -euo pipefail
-          DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | awk '/HEAD branch/ {print $NF}')
-          DEFAULT_BRANCH=${DEFAULT_BRANCH:-main}
-          echo "Projecting .jlo/ intent from ${DEFAULT_BRANCH} into .jules/"
-
-          # Extract .jlo/ file listing from control branch
-          JLO_FILES=$(git ls-tree -r --name-only "origin/${DEFAULT_BRANCH}" -- .jlo/ 2>/dev/null || true)
-          if [ -z "$JLO_FILES" ]; then
-            echo "No .jlo/ files found on ${DEFAULT_BRANCH}; skipping projection"
-            exit 0
-          fi
-
-          echo "$JLO_FILES" | while IFS= read -r jlo_path; do
-            # Skip the version pin — already handled by bootstrap
-            [ "$jlo_path" = ".jlo/.jlo-version" ] && continue
-
-            # Map .jlo/X to .jules/X
-            jules_path=".jules/${jlo_path#.jlo/}"
-            mkdir -p "$(dirname "$jules_path")"
-            git show "origin/${DEFAULT_BRANCH}:${jlo_path}" > "$jules_path"
-            echo "  projected: ${jlo_path} -> ${jules_path}"
-          done
-
       - name: Commit and push changes
         id: bootstrap
         run: |
           set -euo pipefail
           if [ -n "$(git status --porcelain .jules)" ]; then
             git add .jules/
-            git commit -m "chore: bootstrap .jules/ runtime workspace [jlo $(jlo --version | awk '{print $2}')]"
-            git push origin jules
+              git commit -m "chore: bootstrap .jules/ runtime workspace [jlo $(jlo --version | awk '{print $2}')]"
+            git push origin "${JULES_WORKER_BRANCH}"
             echo "committed=true" >> "$GITHUB_OUTPUT"
           else
             echo "committed=false" >> "$GITHUB_OUTPUT"

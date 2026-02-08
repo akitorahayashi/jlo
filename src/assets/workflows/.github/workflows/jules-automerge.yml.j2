@@ -2,7 +2,7 @@
 #
 # Validates Jules PRs with doctor check and enables auto-merge on success.
 # Only applies when:
-#   1. PR targets the jules branch
+#   1. PR targets the worker branch
 #   2. Head branch matches a known branch_prefix from .jules/roles contracts
 #   3. All changed files are within .jules/ directory
 #   4. Doctor validation passes
@@ -23,17 +23,31 @@ name: Jules Auto-Merge
 
 on:
   pull_request:
-    branches:
-      - jules
     types: [opened, synchronize, reopened]
 
 jobs:
   validate-and-automerge:
+    if: {{ gha_expr("github.base_ref == env.JULES_WORKER_BRANCH") }}
     runs-on: {{ runner }}
     permissions:
       contents: write
       pull-requests: write
+    env:
+      JLO_TARGET_BRANCH: {{ gha_expr("vars.JLO_TARGET_BRANCH") }}
+      JULES_WORKER_BRANCH: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
     steps:
+      - name: Validate branch variables
+        run: |
+          set -euo pipefail
+          if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
+            echo "::error::JLO_TARGET_BRANCH is required."
+            exit 1
+          fi
+          if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
+            echo "::error::JULES_WORKER_BRANCH is required."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
         with:
           ref: {{ gha_expr("github.head_ref") }}
@@ -45,18 +59,18 @@ jobs:
           HEAD_REF: {{ gha_expr("github.head_ref") }}
         run: |
           set -euo pipefail
-          git fetch origin jules --depth=1
+          git fetch origin "${JULES_WORKER_BRANCH}" --depth=1
 
-          contract_paths=$(git ls-tree -r --name-only origin/jules:.jules/roles | awk '/contracts.yml$/')
+          contract_paths=$(git ls-tree -r --name-only "origin/${JULES_WORKER_BRANCH}:.jules/roles" | awk '/contracts.yml$/')
           if [ -z "$contract_paths" ]; then
-            echo "::error::No contracts.yml found under .jules/roles on jules branch."
+            echo "::error::No contracts.yml found under .jules/roles on ${JULES_WORKER_BRANCH} branch."
             exit 1
           fi
 
           prefixes=""
           while IFS= read -r path; do
             [ -z "$path" ] && continue
-            prefix=$(git show "origin/jules:.jules/roles/$path" | awk -F':' '/^branch_prefix:/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); gsub(/["'\'']/, "", $2); print $2; exit}')
+            prefix=$(git show "origin/${JULES_WORKER_BRANCH}:.jules/roles/$path" | awk -F':' '/^branch_prefix:/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); gsub(/["'\'']/, "", $2); print $2; exit}')
             if [ -n "$prefix" ]; then
               prefixes="${prefixes}${prefix}"$'\n'
             fi
@@ -64,7 +78,7 @@ jobs:
 
           prefix_count=$(printf '%s' "$prefixes" | awk 'NF{count++} END{print count+0}')
           if [ "$prefix_count" -eq 0 ]; then
-            echo "::error::No branch_prefix entries found in contracts.yml on jules branch."
+            echo "::error::No branch_prefix entries found in contracts.yml on ${JULES_WORKER_BRANCH} branch."
             exit 1
           fi
 
@@ -91,7 +105,7 @@ jobs:
         if: steps.prefixes.outputs.match == 'true'
         run: |
           # Extract workstream from changed files
-          workstreams=$(git diff --name-only origin/jules...HEAD | grep '^\.jules/workstreams/' | cut -d'/' -f3 | sort -u)
+          workstreams=$(git diff --name-only "origin/${JULES_WORKER_BRANCH}...HEAD" | grep '^\.jules/workstreams/' | cut -d'/' -f3 | sort -u)
 
           if [ -z "$workstreams" ]; then
             echo "No workstream changes detected, running doctor for all workstreams"

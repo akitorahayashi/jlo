@@ -15,24 +15,23 @@ runs:
           exit 1
         fi
 
+        if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
+          echo "::error::JLO_TARGET_BRANCH is required to install jlo."
+          exit 1
+        fi
+
         if ! git remote get-url origin >/dev/null 2>&1; then
-          echo "::error::origin remote not found; cannot fetch default branch."
+          echo "::error::origin remote not found; cannot fetch ${JLO_TARGET_BRANCH}."
           exit 1
         fi
 
-        # Determine the default (control) branch for version pin lookup.
-        DEFAULT_BRANCH="$(git remote show origin 2>/dev/null | sed -n 's/.*HEAD branch: //p' | tr -d '[:space:]')"
-        if [ -z "$DEFAULT_BRANCH" ]; then
-          DEFAULT_BRANCH="main"
-        fi
-
-        echo "Fetching origin/${DEFAULT_BRANCH} for version pin..."
-        if ! git fetch --quiet --depth=1 origin "${DEFAULT_BRANCH}"; then
-          echo "::error::Failed to fetch ${DEFAULT_BRANCH} branch from origin."
+        echo "Fetching origin/${JLO_TARGET_BRANCH} for version pin..."
+        if ! git fetch --quiet --depth=1 origin "${JLO_TARGET_BRANCH}"; then
+          echo "::error::Failed to fetch ${JLO_TARGET_BRANCH} branch from origin."
           exit 1
         fi
 
-        CONTROL_REF="origin/${DEFAULT_BRANCH}"
+        CONTROL_REF="origin/${JLO_TARGET_BRANCH}"
 
         VERSION_RAW="$(git show "${CONTROL_REF}:.jlo/.jlo-version" 2>/dev/null | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
         if [ -z "$VERSION_RAW" ]; then
