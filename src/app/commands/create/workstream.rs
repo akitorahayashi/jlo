@@ -23,7 +23,7 @@ where
         )));
     }
 
-    let ws_dir = ctx.workspace().jlo_path().join("workstreams").join(name);
+    let ws_dir = ctx.workspace().jlo_path().join(super::workstream_relative_path(name));
     if ws_dir.exists() {
         return Err(AppError::Validation(format!(
             "Workstream '{}' already exists at {}",

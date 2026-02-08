@@ -185,10 +185,6 @@ fn run_create(command: CreateCommands) -> Result<(), AppError> {
         CreateCommands::Role { layer, name } => crate::app::api::create_role(&layer, &name)?,
     };
 
-    let entity_type = match &outcome {
-        crate::app::api::CreateOutcome::Role { .. } => "role",
-        crate::app::api::CreateOutcome::Workstream { .. } => "workstream",
-    };
-    println!("✅ Created new {} at {}/", entity_type, outcome.display_path());
+    println!("✅ Created new {} at {}/", outcome.entity_type(), outcome.display_path());
     Ok(())
 }

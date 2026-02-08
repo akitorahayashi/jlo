@@ -34,13 +34,8 @@ where
         )));
     }
 
-    let role_dir = ctx
-        .workspace()
-        .jlo_path()
-        .join("roles")
-        .join(layer_enum.dir_name())
-        .join("roles")
-        .join(name);
+    let role_dir =
+        ctx.workspace().jlo_path().join(super::role_relative_path(layer_enum.dir_name(), name));
 
     if role_dir.exists() {
         return Err(AppError::Validation(format!(

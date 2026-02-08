@@ -14,15 +14,27 @@ pub enum CreateOutcome {
     Workstream { name: String },
 }
 
+pub(crate) fn role_relative_path(layer: &str, role: &str) -> std::path::PathBuf {
+    std::path::Path::new("roles").join(layer).join("roles").join(role)
+}
+
+pub(crate) fn workstream_relative_path(name: &str) -> std::path::PathBuf {
+    std::path::Path::new("workstreams").join(name)
+}
+
 impl CreateOutcome {
     pub fn display_path(&self) -> String {
+        let relative = match self {
+            CreateOutcome::Role { layer, role } => role_relative_path(layer, role),
+            CreateOutcome::Workstream { name } => workstream_relative_path(name),
+        };
+        format!(".jlo/{}", relative.display())
+    }
+
+    pub fn entity_type(&self) -> &'static str {
         match self {
-            CreateOutcome::Role { layer, role } => {
-                format!(".jlo/roles/{}/roles/{}", layer, role)
-            }
-            CreateOutcome::Workstream { name } => {
-                format!(".jlo/workstreams/{}", name)
-            }
+            CreateOutcome::Role { .. } => "role",
+            CreateOutcome::Workstream { .. } => "workstream",
         }
     }
 }
