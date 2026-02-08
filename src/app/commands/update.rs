@@ -229,7 +229,9 @@ where
     // Refresh workflow kit
     let mut workflow_refreshed = false;
     if let Some(mode) = workflow_mode {
-        init_workflows::execute_workflows(&workspace.resolve_path(""), mode)?;
+        let root = workspace.resolve_path("");
+        let branches = init_workflows::load_branch_config(&root);
+        init_workflows::execute_workflows(&root, mode, &branches)?;
         workflow_refreshed = true;
     }
 

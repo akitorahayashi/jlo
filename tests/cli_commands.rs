@@ -265,7 +265,7 @@ fn workflow_render_writes_expected_files() {
 
     let output_dir = ctx.work_dir().join(".tmp/workflow-kit-render/remote");
     ctx.cli()
-        .args(["workflow", "render", "remote", "--output"])
+        .args(["workflow", "render", "remote", "--output-dir"])
         .arg(&output_dir)
         .assert()
         .success();
@@ -286,40 +286,23 @@ fn workflow_render_uses_default_output_dir() {
 
     ctx.cli().args(["workflow", "render", "remote"]).assert().success();
 
-    let default_path = ctx
-        .work_dir()
-        .join(".tmp/workflow-kit-render/remote/.github/workflows/jules-workflows.yml");
-    assert!(default_path.exists(), "Default render output should exist");
+    // Default output writes directly to repository .github/
+    let default_path = ctx.work_dir().join(".github/workflows/jules-workflows.yml");
+    assert!(default_path.exists(), "Default render output should exist in .github/");
 }
 
 #[test]
-fn workflow_render_fails_on_non_empty_output_without_overwrite() {
-    let ctx = TestContext::new();
-
-    let output_dir = ctx.work_dir().join(".tmp/workflow-kit-render/conflict");
-    fs::create_dir_all(&output_dir).unwrap();
-    fs::write(output_dir.join("keep.txt"), "do not overwrite").unwrap();
-
-    ctx.cli()
-        .args(["workflow", "render", "remote", "--output"])
-        .arg(&output_dir)
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("not empty"));
-}
-
-#[test]
-fn workflow_render_overwrite_succeeds() {
+fn workflow_render_overwrites_by_default() {
     let ctx = TestContext::new();
 
     let output_dir = ctx.work_dir().join(".tmp/workflow-kit-render/overwrite");
     fs::create_dir_all(&output_dir).unwrap();
-    fs::write(output_dir.join("keep.txt"), "old content").unwrap();
+    fs::write(output_dir.join("old.txt"), "old content").unwrap();
 
+    // Render overwrites by default (no --overwrite flag needed)
     ctx.cli()
-        .args(["workflow", "render", "remote", "--output"])
+        .args(["workflow", "render", "remote", "--output-dir"])
         .arg(&output_dir)
-        .arg("--overwrite")
         .assert()
         .success();
 

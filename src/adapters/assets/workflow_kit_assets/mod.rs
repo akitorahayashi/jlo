@@ -16,13 +16,34 @@ use self::template_engine::{build_template_environment, render_template_by_name}
 
 static WORKFLOWS_ASSET_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/workflows/.github");
 
+/// Branch configuration for workflow rendering.
+///
+/// Values are sourced from `.jlo/config.toml` (`[run]` section) and rendered
+/// as static literals in generated workflow YAML.
+#[derive(Debug, Clone)]
+pub struct WorkflowBranchConfig {
+    /// Target/control branch (e.g. `main`). Maps to `run.default_branch`.
+    pub target_branch: String,
+    /// Worker branch hosting `.jules/` runtime state. Maps to `run.jules_branch`.
+    pub worker_branch: String,
+}
+
+impl Default for WorkflowBranchConfig {
+    fn default() -> Self {
+        Self { target_branch: "main".to_string(), worker_branch: "jules".to_string() }
+    }
+}
+
 #[derive(Debug)]
 pub struct WorkflowKitAssets {
     pub files: Vec<ScaffoldFile>,
     pub action_dirs: Vec<String>,
 }
 
-pub fn load_workflow_kit(mode: WorkflowRunnerMode) -> Result<WorkflowKitAssets, AppError> {
+pub fn load_workflow_kit(
+    mode: WorkflowRunnerMode,
+    branches: &WorkflowBranchConfig,
+) -> Result<WorkflowKitAssets, AppError> {
     let sources = collect_asset_sources(&WORKFLOWS_ASSET_DIR)?;
     if sources.is_empty() {
         return Err(AppError::InternalError(format!(
@@ -39,6 +60,8 @@ pub fn load_workflow_kit(mode: WorkflowRunnerMode) -> Result<WorkflowKitAssets, 
     };
     let ctx = context! {
         runner => runner,
+        target_branch => &branches.target_branch,
+        worker_branch => &branches.worker_branch,
     };
 
     let mut files = render_scaffold_files(&sources, &env, &ctx)?;
@@ -114,11 +137,13 @@ mod tests {
 
     #[test]
     fn workflow_kit_assets_load() {
-        let remote = load_workflow_kit(WorkflowRunnerMode::Remote).expect("remote assets");
+        let branches = WorkflowBranchConfig::default();
+        let remote =
+            load_workflow_kit(WorkflowRunnerMode::Remote, &branches).expect("remote assets");
         assert!(!remote.files.is_empty(), "remote kit should have files");
 
-        let self_hosted =
-            load_workflow_kit(WorkflowRunnerMode::SelfHosted).expect("self-hosted assets");
+        let self_hosted = load_workflow_kit(WorkflowRunnerMode::SelfHosted, &branches)
+            .expect("self-hosted assets");
         assert!(!self_hosted.files.is_empty(), "self-hosted kit should have files");
     }
 }

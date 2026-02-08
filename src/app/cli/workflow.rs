@@ -35,12 +35,9 @@ pub enum WorkflowCommands {
     Render {
         /// Runner mode (remote or self-hosted)
         mode: crate::domain::WorkflowRunnerMode,
-        /// Output directory for rendered workflow kit
-        #[arg(long)]
-        output: Option<String>,
-        /// Overwrite existing output directory
-        #[arg(long)]
-        overwrite: bool,
+        /// Output directory override (default: repository .github/)
+        #[arg(short = 'o', long = "output-dir")]
+        output_dir: Option<String>,
     },
 
     /// Cleanup operations
@@ -180,9 +177,9 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let output = workflow::run(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowCommands::Render { mode, output, overwrite } => {
-            let output_dir = output.map(std::path::PathBuf::from);
-            let options = workflow::WorkflowRenderOptions { mode, output_dir, overwrite };
+        WorkflowCommands::Render { mode, output_dir } => {
+            let output_dir = output_dir.map(std::path::PathBuf::from);
+            let options = workflow::WorkflowRenderOptions { mode, output_dir };
             let output = workflow::render(options)?;
             workflow::write_workflow_output(&output)
         }

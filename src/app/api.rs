@@ -66,7 +66,8 @@ pub fn init_workflows_at(
     path: std::path::PathBuf,
     mode: WorkflowRunnerMode,
 ) -> Result<(), AppError> {
-    init_workflows::execute_workflows(&path, mode)
+    let branches = init_workflows::load_branch_config(&path);
+    init_workflows::execute_workflows(&path, mode, &branches)
 }
 
 // =============================================================================

@@ -1,17 +1,22 @@
 use std::fs;
 use std::path::Path;
 
+use serde::Deserialize;
 use serde_yaml::Value;
 
-use crate::adapters::assets::workflow_kit_assets::load_workflow_kit;
+use crate::adapters::assets::workflow_kit_assets::{WorkflowBranchConfig, load_workflow_kit};
 use crate::domain::{AppError, WorkflowRunnerMode};
 
 /// The workflow file whose schedule should be preserved during overwrite.
 const SCHEDULE_PRESERVE_FILE: &str = ".github/workflows/jules-workflows.yml";
 
 /// Execute the workflow kit installation.
-pub fn execute_workflows(root: &Path, mode: WorkflowRunnerMode) -> Result<(), AppError> {
-    let kit = load_workflow_kit(mode)?;
+pub fn execute_workflows(
+    root: &Path,
+    mode: WorkflowRunnerMode,
+    branches: &WorkflowBranchConfig,
+) -> Result<(), AppError> {
+    let kit = load_workflow_kit(mode, branches)?;
 
     // Parse existing workflow config before mutating any files.
     // This prevents partial deletion when the existing workflow has invalid YAML.
@@ -201,4 +206,51 @@ fn merge_config_into_workflow(
         what: "merged workflow content".to_string(),
         details: e.to_string(),
     })
+}
+
+// ─── Branch config from .jlo/config.toml ────────────────────────────────────
+
+#[derive(Deserialize, Default)]
+struct BranchConfigDto {
+    #[serde(default)]
+    run: BranchRunDto,
+}
+
+#[derive(Deserialize)]
+struct BranchRunDto {
+    #[serde(default = "default_branch")]
+    default_branch: String,
+    #[serde(default = "default_jules_branch")]
+    jules_branch: String,
+}
+
+impl Default for BranchRunDto {
+    fn default() -> Self {
+        Self { default_branch: default_branch(), jules_branch: default_jules_branch() }
+    }
+}
+
+fn default_branch() -> String {
+    "main".to_string()
+}
+fn default_jules_branch() -> String {
+    "jules".to_string()
+}
+
+/// Read branch configuration from `.jlo/config.toml` at the given repository root.
+///
+/// Falls back to defaults when the config file is absent or unparseable.
+pub fn load_branch_config(root: &Path) -> WorkflowBranchConfig {
+    let config_path = root.join(".jlo/config.toml");
+    let dto: BranchConfigDto = config_path
+        .exists()
+        .then(|| fs::read_to_string(&config_path).ok())
+        .flatten()
+        .and_then(|content| toml::from_str(&content).ok())
+        .unwrap_or_default();
+
+    WorkflowBranchConfig {
+        target_branch: dto.run.default_branch,
+        worker_branch: dto.run.jules_branch,
+    }
 }

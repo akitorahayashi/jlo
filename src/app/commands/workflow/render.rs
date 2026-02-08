@@ -1,7 +1,8 @@
 //! Workflow kit render command.
 //!
-//! Renders the workflow kit to a deterministic output directory without mutating
-//! existing workflow files in the repository.
+//! Renders the workflow kit with config-driven branch values. Default output
+//! writes directly to the repository `.github/` directory, overwriting
+//! jlo-managed files. Use `-o, --output-dir` to redirect output elsewhere.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -9,6 +10,7 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 
 use crate::adapters::assets::workflow_kit_assets::load_workflow_kit;
+use crate::app::commands::init_workflows::load_branch_config;
 use crate::domain::{AppError, WorkflowRunnerMode};
 
 const SCHEMA_VERSION: u32 = 1;
@@ -18,10 +20,8 @@ const SCHEMA_VERSION: u32 = 1;
 pub struct WorkflowRenderOptions {
     /// Runner mode for the workflow kit.
     pub mode: WorkflowRunnerMode,
-    /// Output directory for rendered workflow kit.
+    /// Output directory override. When absent, renders to repository root.
     pub output_dir: Option<PathBuf>,
-    /// Overwrite output directory if it exists and is not empty.
-    pub overwrite: bool,
 }
 
 /// Output of workflow render command.
@@ -39,11 +39,13 @@ pub struct WorkflowRenderOutput {
 
 /// Execute workflow render command.
 pub fn execute(options: WorkflowRenderOptions) -> Result<WorkflowRenderOutput, AppError> {
-    let output_dir = resolve_output_dir(&options)?;
+    let repo_root = find_repo_root(&std::env::current_dir()?)?;
+    let branches = load_branch_config(&repo_root);
+    let output_dir = resolve_output_dir(&options, &repo_root)?;
 
-    prepare_output_dir(&output_dir, options.overwrite)?;
+    prepare_output_dir(&output_dir)?;
 
-    let kit = load_workflow_kit(options.mode)?;
+    let kit = load_workflow_kit(options.mode, &branches)?;
     write_workflow_kit(&output_dir, &kit)?;
 
     Ok(WorkflowRenderOutput {
@@ -54,15 +56,16 @@ pub fn execute(options: WorkflowRenderOptions) -> Result<WorkflowRenderOutput, A
     })
 }
 
-fn resolve_output_dir(options: &WorkflowRenderOptions) -> Result<PathBuf, AppError> {
+fn resolve_output_dir(
+    options: &WorkflowRenderOptions,
+    repo_root: &Path,
+) -> Result<PathBuf, AppError> {
     if let Some(dir) = options.output_dir.as_ref() {
         return normalize_output_dir(dir.clone());
     }
 
-    let current_dir = std::env::current_dir()?;
-    let repo_root = find_repo_root(&current_dir)?;
-
-    Ok(repo_root.join(".tmp").join("workflow-kit-render").join(options.mode.label()))
+    // Default: render directly to repository root (kit paths already include .github/ prefix)
+    Ok(repo_root.to_path_buf())
 }
 
 fn normalize_output_dir(dir: PathBuf) -> Result<PathBuf, AppError> {
@@ -87,27 +90,13 @@ fn find_repo_root(start: &Path) -> Result<PathBuf, AppError> {
     Err(AppError::RepositoryDetectionFailed)
 }
 
-fn prepare_output_dir(output_dir: &Path, overwrite: bool) -> Result<(), AppError> {
-    if output_dir.exists() {
-        if output_dir.is_file() {
-            return Err(AppError::Validation(format!(
-                "Output path '{}' is a file. Provide a directory path.",
-                output_dir.display()
-            )));
-        }
-
-        let mut entries = fs::read_dir(output_dir)?;
-        let has_entries = entries.next().is_some();
-
-        if has_entries {
-            if !overwrite {
-                return Err(AppError::Validation(format!(
-                    "Output directory '{}' is not empty. Use --overwrite to replace it.",
-                    output_dir.display()
-                )));
-            }
-            fs::remove_dir_all(output_dir)?;
-        }
+/// Prepare output directory. Always overwrites jlo-managed content by default.
+fn prepare_output_dir(output_dir: &Path) -> Result<(), AppError> {
+    if output_dir.exists() && output_dir.is_file() {
+        return Err(AppError::Validation(format!(
+            "Output path '{}' is a file. Provide a directory path.",
+            output_dir.display()
+        )));
     }
 
     fs::create_dir_all(output_dir)?;
