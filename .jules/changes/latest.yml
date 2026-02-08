@@ -1,0 +1,32 @@
+schema_version: 1
+
+id: "d22330"
+created_at: "2026-02-08T16:01:36Z"
+
+range:
+  from_commit: "59129a1bbe7ef5f6e4140d8f17cc5e79cce84f7d"
+  to_commit: "2f2426ffc02d2a2df3122ded7cde2c78f0187694"
+  selection_mode: "bootstrap"
+  selection_detail: "Last 20 commits with non-.jules/ changes"
+  excluded_paths:
+    - .jules/
+
+stats:
+  commits_total: 1
+  commits_included: 1
+  files_changed: 100
+  insertions: 3563
+  deletions: 317
+
+commits:
+  - sha: "f5fb732"
+    subject: "fix: enhance merge handling in jules-sync workflow to allow unrelated histories and improve error reporting"
+
+summary:
+  overview: "This update (f5fb732) enhances the `jules-sync` workflow to support merging unrelated histories and improves error reporting. It also includes significant updates to application services, commands, and scaffold assets."
+  notable_changes:
+    - "Updated `jules-sync` workflow to allow unrelated histories"
+    - "Added or updated `publish_proposals` workflow command"
+    - "Significant updates to `src/assets/scaffold`"
+    - "Additions to `src/app/services` including artifact generation and dependency resolution"
+  truncation_note: ""
