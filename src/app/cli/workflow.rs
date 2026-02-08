@@ -32,6 +32,7 @@ pub enum WorkflowCommands {
         phase: Option<String>,
     },
     /// Render workflow kit files to an output directory
+    #[clap(visible_alias = "r")]
     Render {
         /// Runner mode (remote or self-hosted)
         mode: crate::domain::WorkflowRunnerMode,

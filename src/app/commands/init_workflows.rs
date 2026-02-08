@@ -242,10 +242,8 @@ fn default_jules_branch() -> String {
 /// Falls back to defaults when the config file is absent or unparseable.
 pub fn load_branch_config(root: &Path) -> WorkflowBranchConfig {
     let config_path = root.join(".jlo/config.toml");
-    let dto: BranchConfigDto = config_path
-        .exists()
-        .then(|| fs::read_to_string(&config_path).ok())
-        .flatten()
+    let dto: BranchConfigDto = fs::read_to_string(&config_path)
+        .ok()
         .and_then(|content| toml::from_str(&content).ok())
         .unwrap_or_default();
 

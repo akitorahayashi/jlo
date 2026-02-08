@@ -128,6 +128,8 @@ jobs:
             done
           fi
 
+      # Skip/no-op: when a PR touches files outside .jules/, we require human
+      # review for control-plane changes and intentionally skip auto-merge.
       - name: Check scope (files within .jules/ only)
         id: scope
         if: steps.prefixes.outputs.match == 'true'

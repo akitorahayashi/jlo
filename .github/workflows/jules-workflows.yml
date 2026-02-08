@@ -54,8 +54,8 @@ env:
   MOCK_MODE: ${{ github.event.inputs.mock || inputs.mock }}
   JULES_MOCK_TAG: ${{ format('mock-run-{0}', github.run_id) }}
   JLO_RUN_FLAGS: ${{ (github.event.inputs.mock || inputs.mock) && '--mock' || '' }}
-  JLO_TARGET_BRANCH: ${{ vars.JLO_TARGET_BRANCH || 'main' }}
-  JULES_WORKER_BRANCH: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+  JLO_TARGET_BRANCH: main
+  JULES_WORKER_BRANCH: jules
 jobs:
   bootstrap:
     if: (vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule'
@@ -77,7 +77,7 @@ jobs:
         fi
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JLO_TARGET_BRANCH || 'main' }}
+        ref: main
         fetch-depth: 0
         token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
@@ -128,7 +128,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+        ref: jules
         fetch-depth: 0
         token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
@@ -204,7 +204,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+        ref: jules
         fetch-depth: 0
         token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Install jlo
@@ -229,7 +229,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+        ref: jules
         fetch-depth: 0
         token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
@@ -264,7 +264,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+        ref: jules
         fetch-depth: 0
         token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
@@ -402,7 +402,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+        ref: jules
         fetch-depth: 0
         token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
@@ -485,7 +485,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+        ref: jules
         fetch-depth: 0
         token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
@@ -516,7 +516,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+        ref: jules
         fetch-depth: 0
     - name: Install jlo
       uses: ./.github/actions/install-jlo
@@ -544,7 +544,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+        ref: jules
         fetch-depth: 0
         token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
@@ -631,7 +631,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+        ref: jules
         fetch-depth: 0
     - name: Install jlo
       uses: ./.github/actions/install-jlo
@@ -659,7 +659,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+        ref: jules
         fetch-depth: 0
         token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
@@ -741,11 +741,11 @@ jobs:
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-      TARGET_BRANCH: ${{ vars.JLO_TARGET_BRANCH || 'main' }}
+      TARGET_BRANCH: main
     steps:
     - uses: actions/checkout@v4
       with:
-        ref: ${{ vars.JULES_WORKER_BRANCH || 'jules' }}
+        ref: jules
         fetch-depth: 0
         token: ${{ secrets.JLO_BOT_TOKEN }}
     - name: Configure Git
