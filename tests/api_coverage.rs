@@ -25,9 +25,8 @@ fn test_api_coverage_full_flow() {
     assert!(root.join(".github/workflows").exists(), "workflow kit should be installed");
 
     // 2. Doctor (fresh init should pass)
-    let doctor_outcome =
-        doctor_at(root.clone(), DoctorOptions { fix: false, strict: false, workstream: None })
-            .expect("doctor failed");
+    let doctor_outcome = doctor_at(root.clone(), DoctorOptions { strict: false, workstream: None })
+        .expect("doctor failed");
     assert_eq!(doctor_outcome.exit_code, 0);
 
     // 3. Update (prompt preview)

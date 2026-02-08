@@ -1,3 +1,4 @@
+pub mod create;
 pub mod deinit;
 pub mod doctor;
 pub mod init_scaffold;

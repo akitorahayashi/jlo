@@ -11,10 +11,13 @@ use crate::adapters::github_command::GitHubCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::{
     AppContext,
-    commands::{deinit, doctor, init_scaffold, init_workflows, run, setup, template, update},
+    commands::{
+        create, deinit, doctor, init_scaffold, init_workflows, run, setup, template, update,
+    },
 };
 use crate::ports::WorkspaceStore;
 
+pub use crate::app::commands::create::CreateOutcome;
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
 pub use crate::app::commands::run::{RunOptions, RunResult};
@@ -89,6 +92,39 @@ pub fn template_at(
     let ctx = create_context(root);
 
     template::execute(&ctx, layer, role_name, workstream)
+}
+
+// =============================================================================
+// Create Command API
+// =============================================================================
+
+/// Create a new workstream under `.jlo/workstreams/<name>/`.
+pub fn create_workstream(name: &str) -> Result<CreateOutcome, AppError> {
+    create_workstream_at(name, std::env::current_dir()?)
+}
+
+/// Create a new workstream at the specified path.
+pub fn create_workstream_at(
+    name: &str,
+    root: std::path::PathBuf,
+) -> Result<CreateOutcome, AppError> {
+    let ctx = create_context(root);
+    create::create_workstream(&ctx, name)
+}
+
+/// Create a new role under `.jlo/roles/<layer>/roles/<name>/`.
+pub fn create_role(layer: &str, name: &str) -> Result<CreateOutcome, AppError> {
+    create_role_at(layer, name, std::env::current_dir()?)
+}
+
+/// Create a new role at the specified path.
+pub fn create_role_at(
+    layer: &str,
+    name: &str,
+    root: std::path::PathBuf,
+) -> Result<CreateOutcome, AppError> {
+    let ctx = create_context(root);
+    create::create_role(&ctx, layer, name)
 }
 
 // =============================================================================

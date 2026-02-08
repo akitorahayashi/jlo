@@ -1,12 +1,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::adapters::assets::scaffold_assets::scaffold_file_content;
-use crate::adapters::assets::workstream_template_assets::workstream_template_content;
 use crate::app::commands::run::parse_config_content;
 use crate::domain::{AppError, Layer, RunConfig};
 
-use super::DoctorOptions;
 use super::diagnostics::Diagnostics;
 
 pub fn collect_workstreams(
@@ -71,62 +68,17 @@ pub struct StructuralInputs<'a> {
     pub workstreams: &'a [String],
     pub issue_labels: &'a [String],
     pub event_states: &'a [String],
-    pub options: &'a DoctorOptions,
-    pub applied_fixes: &'a mut Vec<String>,
 }
 
 pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnostics) {
-    ensure_path_exists(
-        inputs.root,
-        ".jules/JULES.md",
-        inputs.options,
-        inputs.applied_fixes,
-        diagnostics,
-        true,
-    );
-    ensure_path_exists(
-        inputs.root,
-        ".jules/README.md",
-        inputs.options,
-        inputs.applied_fixes,
-        diagnostics,
-        true,
-    );
-    ensure_path_exists(
-        inputs.root,
-        ".jules/config.toml",
-        inputs.options,
-        inputs.applied_fixes,
-        diagnostics,
-        true,
-    );
-    ensure_path_exists(
-        inputs.root,
-        ".jules/.jlo-version",
-        inputs.options,
-        inputs.applied_fixes,
-        diagnostics,
-        true,
-    );
-    ensure_directory_exists(
-        inputs.jules_path.join("roles"),
-        inputs.options,
-        inputs.applied_fixes,
-        diagnostics,
-    );
-    ensure_directory_exists(
-        inputs.jules_path.join("workstreams"),
-        inputs.options,
-        inputs.applied_fixes,
-        diagnostics,
-    );
+    ensure_path_exists(inputs.root, ".jules/JULES.md", diagnostics);
+    ensure_path_exists(inputs.root, ".jules/README.md", diagnostics);
+    ensure_path_exists(inputs.root, ".jules/config.toml", diagnostics);
+    ensure_path_exists(inputs.root, ".jules/.jlo-version", diagnostics);
+    ensure_directory_exists(inputs.jules_path.join("roles"), diagnostics);
+    ensure_directory_exists(inputs.jules_path.join("workstreams"), diagnostics);
     // Narrator output directory
-    ensure_directory_exists(
-        inputs.jules_path.join("changes"),
-        inputs.options,
-        inputs.applied_fixes,
-        diagnostics,
-    );
+    ensure_directory_exists(inputs.jules_path.join("changes"), diagnostics);
 
     check_version_file(inputs.jules_path, env!("CARGO_PKG_VERSION"), diagnostics);
 
@@ -202,72 +154,31 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         }
 
         let scheduled_path = ws_dir.join("scheduled.toml");
-        ensure_workstream_template_exists(
-            scheduled_path,
-            "scheduled.toml",
-            inputs.options,
-            inputs.applied_fixes,
-            diagnostics,
-        );
+        ensure_workstream_template_exists(scheduled_path, "scheduled.toml", diagnostics);
 
         // Exchange directory structure (events and issues)
         let exchange_dir = ws_dir.join("exchange");
-        ensure_directory_exists(
-            exchange_dir.clone(),
-            inputs.options,
-            inputs.applied_fixes,
-            diagnostics,
-        );
+        ensure_directory_exists(exchange_dir.clone(), diagnostics);
 
         let events_dir = exchange_dir.join("events");
-        ensure_directory_exists(
-            events_dir.clone(),
-            inputs.options,
-            inputs.applied_fixes,
-            diagnostics,
-        );
+        ensure_directory_exists(events_dir.clone(), diagnostics);
         for state in inputs.event_states {
-            ensure_directory_exists(
-                events_dir.join(state),
-                inputs.options,
-                inputs.applied_fixes,
-                diagnostics,
-            );
+            ensure_directory_exists(events_dir.join(state), diagnostics);
         }
 
         let issues_dir = exchange_dir.join("issues");
-        ensure_directory_exists(
-            issues_dir.clone(),
-            inputs.options,
-            inputs.applied_fixes,
-            diagnostics,
-        );
+        ensure_directory_exists(issues_dir.clone(), diagnostics);
         for label in inputs.issue_labels {
-            ensure_directory_exists(
-                issues_dir.join(label),
-                inputs.options,
-                inputs.applied_fixes,
-                diagnostics,
-            );
+            ensure_directory_exists(issues_dir.join(label), diagnostics);
         }
 
         // Workstations directory
         let workstations_dir = ws_dir.join("workstations");
-        ensure_directory_exists(
-            workstations_dir,
-            inputs.options,
-            inputs.applied_fixes,
-            diagnostics,
-        );
+        ensure_directory_exists(workstations_dir, diagnostics);
 
         // Innovator rooms directory
         let innovators_dir = exchange_dir.join("innovators");
-        ensure_directory_exists(
-            innovators_dir.clone(),
-            inputs.options,
-            inputs.applied_fixes,
-            diagnostics,
-        );
+        ensure_directory_exists(innovators_dir.clone(), diagnostics);
 
         // Validate each innovator room structure
         if innovators_dir.exists() {
@@ -342,128 +253,28 @@ fn compare_versions(left: &[u32], right: &[u32]) -> i32 {
     0
 }
 
-fn ensure_directory_exists(
-    path: PathBuf,
-    options: &DoctorOptions,
-    applied_fixes: &mut Vec<String>,
-    diagnostics: &mut Diagnostics,
-) {
-    if path.exists() {
-        return;
-    }
-
-    if options.fix {
-        if let Err(err) = fs::create_dir_all(&path) {
-            diagnostics.push_error(path.display().to_string(), err.to_string());
-        } else {
-            applied_fixes.push(format!("Created directory {}", path.display()));
-            diagnostics.push_warning(path.display().to_string(), "Created missing directory");
-        }
-    } else {
+fn ensure_directory_exists(path: PathBuf, diagnostics: &mut Diagnostics) {
+    if !path.exists() {
         diagnostics.push_error(path.display().to_string(), "Missing directory");
     }
 }
 
-fn ensure_path_exists(
-    root: &Path,
-    rel_path: &str,
-    options: &DoctorOptions,
-    applied_fixes: &mut Vec<String>,
-    diagnostics: &mut Diagnostics,
-    fixable_from_scaffold: bool,
-) {
+fn ensure_path_exists(root: &Path, rel_path: &str, diagnostics: &mut Diagnostics) {
     let full_path = root.join(rel_path);
-    if full_path.exists() {
-        return;
-    }
-
-    if options.fix && fixable_from_scaffold {
-        attempt_fix_file(full_path, rel_path, options, applied_fixes, diagnostics);
-    } else {
+    if !full_path.exists() {
         diagnostics.push_error(full_path.display().to_string(), "Missing required file");
     }
-}
-
-fn attempt_fix_file(
-    full_path: PathBuf,
-    scaffold_path: &str,
-    options: &DoctorOptions,
-    applied_fixes: &mut Vec<String>,
-    diagnostics: &mut Diagnostics,
-) {
-    if !options.fix {
-        diagnostics.push_error(full_path.display().to_string(), "Missing required file");
-        return;
-    }
-
-    let content = match scaffold_file_content(scaffold_path) {
-        Some(content) => content,
-        None => {
-            diagnostics.push_error(
-                full_path.display().to_string(),
-                "Missing required file (no scaffold fix available)",
-            );
-            return;
-        }
-    };
-
-    if let Some(parent) = full_path.parent()
-        && let Err(err) = fs::create_dir_all(parent)
-    {
-        diagnostics.push_error(full_path.display().to_string(), err.to_string());
-        return;
-    }
-
-    if let Err(err) = fs::write(&full_path, content) {
-        diagnostics.push_error(full_path.display().to_string(), err.to_string());
-        return;
-    }
-
-    applied_fixes.push(format!("Restored {}", full_path.display()));
-    diagnostics
-        .push_warning(full_path.display().to_string(), "Restored missing file from scaffold");
 }
 
 fn ensure_workstream_template_exists(
     full_path: PathBuf,
     template_path: &str,
-    options: &DoctorOptions,
-    applied_fixes: &mut Vec<String>,
     diagnostics: &mut Diagnostics,
 ) {
-    if full_path.exists() {
-        return;
-    }
-
-    if !options.fix {
+    if !full_path.exists() {
         diagnostics
             .push_error(full_path.display().to_string(), format!("Missing {}", template_path));
-        return;
     }
-
-    let content = match workstream_template_content(template_path) {
-        Ok(content) => content,
-        Err(err) => {
-            diagnostics.push_error(full_path.display().to_string(), err.to_string());
-            return;
-        }
-    };
-
-    if let Some(parent) = full_path.parent()
-        && let Err(err) = fs::create_dir_all(parent)
-    {
-        diagnostics.push_error(full_path.display().to_string(), err.to_string());
-        return;
-    }
-
-    if let Err(err) = fs::write(&full_path, content) {
-        diagnostics.push_error(full_path.display().to_string(), err.to_string());
-        return;
-    }
-
-    applied_fixes.push(format!("Restored {}", full_path.display()));
-    diagnostics
-        .push_warning(full_path.display().to_string(), "Restored missing file from templates");
 }
 
 pub fn list_subdirs(path: &Path, diagnostics: &mut Diagnostics) -> Vec<PathBuf> {
@@ -658,12 +469,10 @@ mod tests {
         let temp = assert_fs::TempDir::new().unwrap();
         create_valid_workspace(&temp);
 
-        let mut applied_fixes = Vec::new();
         let mut diagnostics = Diagnostics::default();
         let workstreams = vec!["generic".to_string()];
         let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
-        let options = DoctorOptions { fix: false, strict: false, workstream: None };
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
@@ -671,8 +480,6 @@ mod tests {
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
-            options: &options,
-            applied_fixes: &mut applied_fixes,
         };
 
         structural_checks(inputs, &mut diagnostics);
@@ -694,12 +501,10 @@ mod tests {
         // Remove JULES.md
         std::fs::remove_file(temp.path().join(".jules/JULES.md")).unwrap();
 
-        let mut applied_fixes = Vec::new();
         let mut diagnostics = Diagnostics::default();
         let workstreams = vec!["generic".to_string()];
         let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
-        let options = DoctorOptions { fix: false, strict: false, workstream: None };
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
@@ -707,8 +512,6 @@ mod tests {
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
-            options: &options,
-            applied_fixes: &mut applied_fixes,
         };
 
         structural_checks(inputs, &mut diagnostics);
@@ -728,12 +531,10 @@ mod tests {
         // Remove implementers contracts
         std::fs::remove_file(temp.path().join(".jules/roles/implementers/contracts.yml")).unwrap();
 
-        let mut applied_fixes = Vec::new();
         let mut diagnostics = Diagnostics::default();
         let workstreams = vec!["generic".to_string()];
         let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
-        let options = DoctorOptions { fix: false, strict: false, workstream: None };
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
@@ -741,8 +542,6 @@ mod tests {
             workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
-            options: &options,
-            applied_fixes: &mut applied_fixes,
         };
 
         structural_checks(inputs, &mut diagnostics);

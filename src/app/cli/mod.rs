@@ -59,6 +59,12 @@ enum Commands {
         #[arg(short, long)]
         workstream: Option<String>,
     },
+    /// Create a new role or workstream under .jlo/
+    #[clap(visible_alias = "c")]
+    Create {
+        #[command(subcommand)]
+        command: CreateCommands,
+    },
     /// Setup compiler commands
     #[clap(visible_alias = "s")]
     Setup {
@@ -79,9 +85,6 @@ enum Commands {
     },
     /// Validate .jules/ structure and content
     Doctor {
-        /// Attempt to auto-fix recoverable issues
-        #[arg(long)]
-        fix: bool,
         /// Treat warnings as failures
         #[arg(long)]
         strict: bool,
@@ -91,6 +94,22 @@ enum Commands {
     },
     /// Remove jlo-managed assets (branch + workflows)
     Deinit,
+}
+
+#[derive(Subcommand)]
+enum CreateCommands {
+    /// Create a new workstream under .jlo/workstreams/
+    Workstream {
+        /// Name for the new workstream
+        name: String,
+    },
+    /// Create a new role under .jlo/roles/<layer>/roles/
+    Role {
+        /// Layer (observers, deciders, innovators)
+        layer: String,
+        /// Name for the new role
+        name: String,
+    },
 }
 
 /// Entry point for the CLI.
@@ -103,13 +122,14 @@ pub fn run() {
         Commands::Template { layer, name, workstream } => {
             run_template(layer, name, workstream).map(|_| 0)
         }
+        Commands::Create { command } => run_create(command).map(|_| 0),
         Commands::Setup { command } => match command {
             setup::SetupCommands::Gen { path } => setup::run_setup_gen(path).map(|_| 0),
             setup::SetupCommands::List { detail } => setup::run_setup_list(detail).map(|_| 0),
         },
         Commands::Run { layer } => run::run_agents(layer).map(|_| 0),
         Commands::Workflow { command } => workflow::run_workflow(command).map(|_| 0),
-        Commands::Doctor { fix, strict, workstream } => doctor::run_doctor(fix, strict, workstream),
+        Commands::Doctor { strict, workstream } => doctor::run_doctor(strict, workstream),
         Commands::Deinit => deinit::run_deinit().map(|_| 0),
     };
 
@@ -156,5 +176,15 @@ fn run_update(prompt_preview: bool) -> Result<(), AppError> {
         }
     }
 
+    Ok(())
+}
+
+fn run_create(command: CreateCommands) -> Result<(), AppError> {
+    let outcome = match command {
+        CreateCommands::Workstream { name } => crate::app::api::create_workstream(&name)?,
+        CreateCommands::Role { layer, name } => crate::app::api::create_role(&layer, &name)?,
+    };
+
+    println!("✅ Created new {} at {}/", outcome.entity_type(), outcome.display_path());
     Ok(())
 }
