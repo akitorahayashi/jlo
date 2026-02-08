@@ -31,6 +31,17 @@ pub enum WorkflowCommands {
         #[arg(long)]
         phase: Option<String>,
     },
+    /// Render workflow kit files to an output directory
+    Render {
+        /// Runner mode (remote or self-hosted)
+        mode: String,
+        /// Output directory for rendered workflow kit
+        #[arg(long)]
+        output: Option<String>,
+        /// Overwrite existing output directory
+        #[arg(long)]
+        overwrite: bool,
+    },
 
     /// Cleanup operations
     Cleanup {
@@ -169,9 +180,27 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let output = workflow::run(options)?;
             workflow::write_workflow_output(&output)
         }
+        WorkflowCommands::Render { mode, output, overwrite } => {
+            let mode = parse_runner_mode(&mode)?;
+            let output_dir = output.map(std::path::PathBuf::from);
+            let options = workflow::WorkflowRenderOptions { mode, output_dir, overwrite };
+            let output = workflow::render(options)?;
+            workflow::write_workflow_output(&output)
+        }
         WorkflowCommands::Cleanup { command } => run_workflow_cleanup(command),
         WorkflowCommands::Pr { command } => run_workflow_pr(command),
         WorkflowCommands::Workstreams { command } => run_workflow_workstreams(command),
+    }
+}
+
+fn parse_runner_mode(value: &str) -> Result<crate::domain::WorkflowRunnerMode, AppError> {
+    match value {
+        "remote" => Ok(crate::domain::WorkflowRunnerMode::Remote),
+        "self-hosted" => Ok(crate::domain::WorkflowRunnerMode::SelfHosted),
+        _ => Err(AppError::Validation(format!(
+            "Invalid runner mode '{}'. Expected 'remote' or 'self-hosted'.",
+            value
+        ))),
     }
 }
 

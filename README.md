@@ -38,6 +38,7 @@ jlo init --remote
 | `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
 | `jlo workflow matrix <cmd>` | | Generate GitHub Actions matrices |
 | `jlo workflow run <layer> [--matrix-json <json>] [--mock]` | | Run layer with JSON output |
+| `jlo workflow render <mode> [--output <dir>] [--overwrite]` | | Render workflow kit files to a deterministic output directory |
 | `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state for automation |
 | `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
 | `jlo workflow workstreams publish-proposals <workstream>` | | Publish innovator proposals as GitHub issues |
@@ -205,3 +206,14 @@ cargo fmt                                                      # Format
 cargo clippy --all-targets --all-features -- -D warnings       # Lint
 cargo test --all-targets --all-features                        # Test
 ```
+
+### Workflow Linting (actionlint)
+
+Workflow kit rendering and linting are deterministic and run against rendered output under `.tmp/`.
+
+```bash
+just setup
+just alint
+```
+
+The `alint` recipe renders both runner modes and runs `actionlint` via `aqua exec`.

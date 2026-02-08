@@ -44,7 +44,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: {{ gha_expr("env.JULES_WORKER_BRANCH") }}
+          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
           fetch-depth: 0
 
       - name: Install jlo
@@ -61,4 +61,4 @@ jobs:
         with:
           issue_file: {{ gha_expr("inputs.issue_file") }}
           prompt_preview: {{ gha_expr("inputs.prompt_preview") }}
-          target_branch: {{ gha_expr("env.JLO_TARGET_BRANCH") }}
+          target_branch: {{ gha_expr("vars.JLO_TARGET_BRANCH") }}

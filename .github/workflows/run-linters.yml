@@ -15,6 +15,28 @@ jobs:
         with:
           components: rustfmt,clippy
 
+      - name: Install jlo
+        run: cargo install --path .
+        shell: bash
+
+      - name: Install aqua
+        run: |
+          brew install aqua
+          aqua i
+        shell: bash
+
+      - name: Render workflow kit
+        run: |
+          jlo workflow render remote --output .tmp/workflow-kit-render/remote --overwrite
+          jlo workflow render self-hosted --output .tmp/workflow-kit-render/self-hosted --overwrite
+        shell: bash
+
+      - name: Run actionlint
+        run: |
+          aqua exec -- actionlint .tmp/workflow-kit-render/remote/.github/workflows/*.yml
+          aqua exec -- actionlint .tmp/workflow-kit-render/self-hosted/.github/workflows/*.yml
+        shell: bash
+
       - name: Run Linters
         run: |
           cargo fmt --check

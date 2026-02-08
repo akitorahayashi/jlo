@@ -38,7 +38,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: {{ gha_expr("env.JULES_WORKER_BRANCH") }}
+          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 

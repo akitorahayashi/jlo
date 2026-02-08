@@ -204,7 +204,7 @@ jobs:
     '.implementer_matrix.include[].workstream // empty',
     'Run implementers for each workstream',
     true,
-  {'TARGET_BRANCH': gha_expr("env.JLO_TARGET_BRANCH")}
+  {'TARGET_BRANCH': gha_expr("vars.JLO_TARGET_BRANCH")}
 ) }}
   # ============================================================
   # Phase 18: Wait for implementer labels

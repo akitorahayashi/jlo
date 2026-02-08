@@ -27,7 +27,7 @@ on:
 
 jobs:
   validate-and-automerge:
-    if: {{ gha_expr("github.base_ref == env.JULES_WORKER_BRANCH") }}
+    if: {{ gha_expr("github.base_ref == vars.JULES_WORKER_BRANCH") }}
     runs-on: {{ runner }}
     permissions:
       contents: write
