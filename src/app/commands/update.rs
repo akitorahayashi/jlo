@@ -13,7 +13,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::app::commands::init_workflows;
+use crate::app::commands::init;
 use crate::domain::workspace::manifest::{
     MANIFEST_FILENAME, ScaffoldManifest, hash_content, is_control_plane_entity_file,
 };
@@ -230,8 +230,8 @@ where
     let mut workflow_refreshed = false;
     if let Some(mode) = workflow_mode {
         let root = workspace.resolve_path("");
-        let branches = init_workflows::load_branch_config(&root);
-        init_workflows::execute_workflows(&root, mode, &branches)?;
+        let render_config = init::load_workflow_render_config(&root)?;
+        init::install_workflow_kit(&root, mode, &render_config)?;
         workflow_refreshed = true;
     }
 
@@ -264,7 +264,7 @@ where
     W: WorkspaceStore,
 {
     let root = workspace.resolve_path("");
-    match init_workflows::detect_runner_mode(&root) {
+    match init::detect_workflow_runner_mode(&root) {
         Ok(mode) => Ok(Some(mode)),
         Err(_) => {
             // Workflow kit not found; skip refresh. This is normal for fresh workspaces
@@ -306,6 +306,18 @@ mod tests {
     use crate::domain::Layer;
     use crate::ports::ScaffoldFile;
     use assert_fs::TempDir;
+
+    fn sample_config_content() -> String {
+        r#"[run]
+default_branch = "main"
+jules_branch = "jules"
+
+[workflow]
+cron = ["0 20 * * *"]
+wait_minutes_default = 30
+"#
+        .to_string()
+    }
 
     struct MockRoleTemplateStore {
         control_files: Vec<ScaffoldFile>,
@@ -358,7 +370,7 @@ mod tests {
             control_files: vec![
                 ScaffoldFile {
                     path: ".jlo/config.toml".to_string(),
-                    content: "# config".to_string(),
+                    content: sample_config_content(),
                 },
                 ScaffoldFile {
                     path: ".jlo/setup/tools.yml".to_string(),
@@ -375,7 +387,7 @@ mod tests {
         assert!(result.created.contains(&".jlo/setup/tools.yml".to_string()));
 
         let config_path = temp.path().join(".jlo/config.toml");
-        assert_eq!(fs::read_to_string(config_path).unwrap(), "# config");
+        assert_eq!(fs::read_to_string(config_path).unwrap(), sample_config_content());
     }
 
     #[test]
@@ -394,12 +406,20 @@ mod tests {
 
         fs::write(jlo_path.join(".jlo-version"), "0.0.0").unwrap();
         // User has customized config
-        fs::write(jlo_path.join("config.toml"), "user_custom = true").unwrap();
+        let custom_config = r#"[run]
+    default_branch = "custom"
+    jules_branch = "custom-jules"
+
+    [workflow]
+    cron = ["0 12 * * 1-5"]
+    wait_minutes_default = 45
+    "#;
+        fs::write(jlo_path.join("config.toml"), custom_config).unwrap();
 
         let mock_store = MockRoleTemplateStore {
             control_files: vec![ScaffoldFile {
                 path: ".jlo/config.toml".to_string(),
-                content: "# default config".to_string(),
+                content: sample_config_content(),
             }],
         };
 
@@ -411,7 +431,7 @@ mod tests {
         assert!(!result.created.contains(&".jlo/config.toml".to_string()));
 
         let config_path = temp.path().join(".jlo/config.toml");
-        assert_eq!(fs::read_to_string(config_path).unwrap(), "user_custom = true");
+        assert_eq!(fs::read_to_string(config_path).unwrap(), custom_config);
     }
 
     #[test]
@@ -465,7 +485,7 @@ mod tests {
             control_files: vec![
                 ScaffoldFile {
                     path: ".jlo/config.toml".to_string(),
-                    content: "# config".to_string(),
+                    content: sample_config_content(),
                 },
                 ScaffoldFile {
                     path: ".jlo/roles/observers/roles/default/role.yml".to_string(),

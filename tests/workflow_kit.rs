@@ -7,6 +7,37 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use yamllint_rs::{FileProcessor, ProcessingOptions, Severity};
 
+const DEFAULT_CRON: &str = "0 20 * * *";
+
+fn write_jlo_config(root: &Path, crons: &[&str], wait_minutes_default: u32) {
+    let jlo_dir = root.join(".jlo");
+    fs::create_dir_all(&jlo_dir).unwrap();
+
+    let cron_entries =
+        crons.iter().map(|cron| format!("\"{}\"", cron)).collect::<Vec<_>>().join(", ");
+
+    let content = format!(
+        r#"[run]
+default_branch = "main"
+jules_branch = "jules"
+
+[workflow]
+cron = [{}]
+wait_minutes_default = {}
+"#,
+        cron_entries, wait_minutes_default
+    );
+
+    fs::write(jlo_dir.join("config.toml"), content).unwrap();
+}
+
+fn ensure_jlo_config(root: &Path) {
+    let config_path = root.join(".jlo/config.toml");
+    if !config_path.exists() {
+        write_jlo_config(root, &[DEFAULT_CRON], 30);
+    }
+}
+
 #[test]
 fn init_workflows_installs_remote_kit() {
     let ctx = TestContext::new();
@@ -100,6 +131,8 @@ fn init_workflows_respects_unrelated_files() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
 
+    write_jlo_config(root, &[DEFAULT_CRON], 30);
+
     let kit_workflow = root.join(".github/workflows/jules-workflows.yml");
     fs::create_dir_all(kit_workflow.parent().unwrap()).unwrap();
     fs::write(&kit_workflow, "old workflow").unwrap();
@@ -132,7 +165,7 @@ fn init_workflows_respects_unrelated_files() {
 }
 
 #[test]
-fn init_workflows_preserves_schedule() {
+fn init_workflows_renders_timing_from_config() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
 
@@ -152,113 +185,58 @@ jobs:
 "#;
     fs::write(&workflow_path, existing_workflow).unwrap();
 
+    let cron_entries = ["0 12 * * 1-5", "0 6 * * 0"];
+    write_jlo_config(root, &cron_entries, 42);
+
     init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote).unwrap();
 
     let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
-    // The preserved schedule should contain the custom cron entries
+    assert!(updated_workflow.contains("0 12 * * 1-5"), "Schedule should use config values");
+    assert!(updated_workflow.contains("0 6 * * 0"), "Schedule should use config values");
     assert!(
-        updated_workflow.contains("0 12 * * 1-5"),
-        "Custom weekday schedule should be preserved"
+        updated_workflow.contains("default: 42"),
+        "wait_minutes default should use config values"
     );
-    assert!(updated_workflow.contains("0 6 * * 0"), "Custom weekend schedule should be preserved");
-    // The kit content should still be present
     assert!(updated_workflow.contains("Jules"), "Workflow name should be present");
 }
 
 #[test]
-fn init_workflows_fails_on_invalid_schedule() {
+fn init_workflows_requires_config() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
 
-    // Create an existing workflow with invalid YAML
-    let workflow_path = root.join(".github/workflows/jules-workflows.yml");
-    fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
-    let invalid_yaml = "name: [invalid\n  yaml: content";
-    fs::write(&workflow_path, invalid_yaml).unwrap();
-
     let result = init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote);
-    assert!(result.is_err(), "Should fail on invalid YAML");
+    assert!(result.is_err(), "Missing config should fail explicitly");
 }
 
 #[test]
-fn init_workflows_keeps_existing_actions_when_schedule_parse_fails() {
+fn init_workflows_fails_on_invalid_config() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
+
+    let jlo_dir = root.join(".jlo");
+    fs::create_dir_all(&jlo_dir).unwrap();
+    fs::write(jlo_dir.join("config.toml"), "invalid = [").unwrap();
+
+    let result = init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote);
+    assert!(result.is_err(), "Invalid config should fail explicitly");
+}
+
+#[test]
+fn init_workflows_overwrites_invalid_existing_workflow() {
+    let ctx = TestContext::new();
+    let root = ctx.work_dir();
+
+    write_jlo_config(root, &[DEFAULT_CRON], 30);
 
     let workflow_path = root.join(".github/workflows/jules-workflows.yml");
     fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
     fs::write(&workflow_path, "name: [invalid\n  yaml: content").unwrap();
 
-    let action_path = root.join(".github/actions/install-jlo/action.yml");
-    fs::create_dir_all(action_path.parent().unwrap()).unwrap();
-    fs::write(&action_path, "keep this action").unwrap();
-
-    let _ = init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote);
-
-    let action_content = fs::read_to_string(&action_path).unwrap();
-    assert_eq!(action_content, "keep this action");
-}
-
-#[test]
-fn init_workflows_uses_kit_schedule_when_none_exists() {
-    let ctx = TestContext::new();
-    let root = ctx.work_dir();
-
-    // Create an existing workflow without a schedule
-    let workflow_path = root.join(".github/workflows/jules-workflows.yml");
-    fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
-    let existing_workflow = r#"name: Jules Workflows
-
-on:
-  workflow_dispatch: {}
-
-jobs:
-  test: {}
-"#;
-    fs::write(&workflow_path, existing_workflow).unwrap();
-
     init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote).unwrap();
 
     let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
-    // The kit's default schedule should be present
-    assert!(
-        updated_workflow.contains("schedule"),
-        "Kit schedule should be present when existing workflow has none"
-    );
-}
-
-#[test]
-fn init_workflows_preserves_wait_minutes() {
-    let ctx = TestContext::new();
-    let root = ctx.work_dir();
-
-    // Create an existing workflow with a custom wait_minutes default
-    let workflow_path = root.join(".github/workflows/jules-workflows.yml");
-    fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
-    let existing_workflow = r#"name: Jules Workflows
-
-on:
-  workflow_dispatch:
-    inputs:
-      wait_minutes:
-        default: 42
-        description: Custom wait time
-
-jobs:
-  test: {}
-"#;
-    fs::write(&workflow_path, existing_workflow).unwrap();
-
-    init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote).unwrap();
-
-    let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
-    // The preserved default should be present
-    assert!(
-        updated_workflow.contains("default: 42"),
-        "Custom wait_minutes default should be preserved"
-    );
-    // The kit content should still be present
-    assert!(updated_workflow.contains("Jules"), "Workflow name should be present");
+    assert!(updated_workflow.contains("Jules Workflows"));
 }
 
 #[test]
@@ -501,6 +479,8 @@ fn validate_yaml_lint(mode: &str) {
 fn render_workflow_kit(ctx: &TestContext, mode: &str, suffix: &str) -> PathBuf {
     let output_dir =
         ctx.work_dir().join(".tmp/workflow-kit-render/tests").join(format!("{}-{}", mode, suffix));
+
+    ensure_jlo_config(ctx.work_dir());
 
     let mut command = ctx.cli();
     command.args(["workflow", "render", mode, "--output-dir"]).arg(&output_dir).assert().success();

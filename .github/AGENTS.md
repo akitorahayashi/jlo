@@ -81,9 +81,14 @@ Repository variables and secrets referenced by `.github/workflows/jules-*.yml`:
 
 Branch values (`target_branch`, `worker_branch`) are rendered at build time from `.jlo/config.toml` and baked into the workflow YAML. They are not read from repository variables at runtime.
 
-## Schedule Preservation
+## Workflow Timing Configuration
 
-When reinstalling the workflow kit with `jlo init --remote` (or `--self-hosted`), the existing `on.schedule` block in `jules-workflows.yml` is preserved. If the existing file contains invalid YAML, installation fails with an explicit error.
+Workflow timing is rendered from `.jlo/config.toml` and baked into the workflow kit at install time. The authoritative keys are:
+
+- `[workflow].cron` (array of cron strings)
+- `[workflow].wait_minutes_default` (number)
+
+Reinstalling the workflow kit overwrites the schedule and wait defaults with the values in `.jlo/config.toml`. Existing workflow YAML is never used as a configuration source.
 
 ## Mock Mode Validation
 

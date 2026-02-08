@@ -1,8 +1,7 @@
 pub mod create;
 pub mod deinit;
 pub mod doctor;
-pub mod init_scaffold;
-pub mod init_workflows;
+pub mod init;
 pub mod run;
 pub mod setup;
 pub mod update;

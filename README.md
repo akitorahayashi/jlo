@@ -170,7 +170,7 @@ Workflow kit layout:
 
 Workflow expressions read these values from GitHub Actions variables (`vars.*`), so define them as repository variables (for example, `vars.JLO_PAUSED`).
 
-**Schedule Preservation**: When reinstalling with `jlo init --remote --overwrite` (or `--self-hosted --overwrite`), the existing `on.schedule` block in `jules-workflows.yml` is preserved.
+**Workflow Timing**: Schedule cron entries and the default wait minutes are rendered from `.jlo/config.toml` (`[workflow]`) at install time. Reinstalling the kit overwrites existing schedule and wait defaults with the config values.
 
 **Branch Strategy**:
 

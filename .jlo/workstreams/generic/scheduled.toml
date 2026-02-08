@@ -3,6 +3,15 @@ enabled = true
 
 [observers]
 roles = [
+  { name = "taxonomy", enabled = true },
+  { name = "data_arch", enabled = true },
+  { name = "structural_arch", enabled = true },
+  { name = "qa", enabled = true },
+  { name = "cov", enabled = true },
+  { name = "devops", enabled = true },
+  { name = "consistency", enabled = true },
+  { name = "tactician", enabled = true },
+  { name = "librarian", enabled = true },
   { name = "structural_arch", enabled = true },
 ]
 
@@ -13,5 +22,5 @@ roles = [
 
 [innovators]
 roles = [
-  { name = "recruiter", enabled = false },
+  { name = "recruiter", enabled = true },
 ]
