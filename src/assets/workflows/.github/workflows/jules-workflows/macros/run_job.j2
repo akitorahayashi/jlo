@@ -1,4 +1,4 @@
-{%- macro run_agent_job(job_name, needs_job, check_output_key, role, jq_path, step_label, sort_unique=false, extra_env_vars={}, needs_list=none, if_condition=none) %}
+{%- macro run_agent_job(job_name, needs_job, check_output_key, role, jq_path, step_label, sort_unique=false, extra_env_vars={}, needs_list=none, if_condition=none, extra_run_args='') %}
   {{ job_name }}:
     needs: {{ needs_list if needs_list else "[" ~ needs_job ~ "]" }}
     if: |
@@ -38,6 +38,6 @@
           echo "$MATRIX_OUTPUT" | jq -r '{{ jq_path }}' {% if sort_unique %}| sort -u {% endif %}| while read ws; do
             [ -z "$ws" ] && continue
             echo "Running {{ role }} for workstream: $ws"
-            jlo workflow run "$ws" {{ role }} {{ gha_raw("env.JLO_RUN_FLAGS") }}
+            jlo workflow run "$ws" {{ role }} {{ gha_raw("env.JLO_RUN_FLAGS") }}{% if extra_run_args %} {{ extra_run_args }}{% endif %}
           done
 {%- endmacro %}

@@ -50,6 +50,7 @@ where
         branch: None,
         issue: None,
         mock: options.mock,
+        phase: None,
     };
 
     eprintln!("Executing: narrator{}", if options.mock { " (mock)" } else { "" });
@@ -108,6 +109,7 @@ where
             branch: None,
             issue: None,
             mock: options.mock,
+            phase: options.phase.clone(),
         };
 
         eprintln!(
@@ -164,6 +166,7 @@ where
             branch: None,
             issue: Some(issue_path.clone()),
             mock: options.mock,
+            phase: None,
         };
 
         eprintln!(

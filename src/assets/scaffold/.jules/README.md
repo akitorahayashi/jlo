@@ -82,7 +82,6 @@ Implementers modify source code and require human review.
 |
 +-- roles/              # Role definitions (global)
     +-- narrator/       # Single-role layer
-    |   +-- prompt.yml       # Entry point
     |   +-- prompt_assembly.yml # Prompt construction rules
     |   +-- contracts.yml    # Layer contract
     |   +-- schemas/
@@ -93,27 +92,39 @@ Implementers modify source code and require human review.
     |   +-- prompt_assembly.yml # Prompt construction rules
     |   +-- schemas/
     |   |   +-- event.yml    # Event template
-    |   +-- <role>/          # Role subdirectory
-    |       +-- prompt.yml   # Static: run prompt (includes workstream)
-    |       +-- role.yml     # Dynamic: evolving focus
+    |   +-- roles/
+    |       +-- <role>/      # Role subdirectory
+    |           +-- role.yml # Dynamic: evolving focus
     |
     +-- deciders/       # Multi-role layer
     |   +-- contracts.yml    # Shared decider contract
     |   +-- prompt_assembly.yml # Prompt construction rules
     |   +-- schemas/
     |   |   +-- issue.yml    # Issue template
-    |   +-- <role>/          # Role subdirectory
-    |       +-- prompt.yml   # Includes workstream
+    |   +-- roles/
+    |       +-- <role>/      # Role subdirectory
+    |           +-- role.yml
     |
     +-- planners/       # Single-role layer (issue-driven)
-    |   +-- prompt.yml       # Direct prompt (no subdirectory)
     |   +-- prompt_assembly.yml # Prompt construction rules
     |   +-- contracts.yml    # Shared planner contract
     |
     +-- implementers/   # Single-role layer (issue-driven)
-        +-- prompt.yml       # Direct prompt (no subdirectory)
-        +-- prompt_assembly.yml # Prompt construction rules
-        +-- contracts.yml    # Shared implementer contract
+    |   +-- prompt_assembly.yml # Prompt construction rules
+    |   +-- contracts.yml    # Shared implementer contract
+    |
+    +-- innovators/     # Multi-role layer (phase-driven)
+        +-- prompt_assembly.yml      # Prompt construction (uses {{phase}})
+        +-- contracts_creation.yml   # Creation phase contract
+        +-- contracts_refinement.yml # Refinement phase contract
+        +-- schemas/
+        |   +-- perspective.yml
+        |   +-- idea.yml
+        |   +-- proposal.yml
+        |   +-- comment.yml
+        +-- roles/
+            +-- <persona>/
+                +-- role.yml
 |
 +-- setup/
     +-- tools.yml       # Tool selection
@@ -134,9 +145,11 @@ Implementers modify source code and require human review.
 
 **Narrator**: Produces `.jules/changes/latest.yml` summarizing recent codebase changes. Runs first, before observers.
 
-**Multi-role layers** (Observers, Deciders): Roles are scoped to workstreams and scheduled via `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `prompt.yml`. Custom roles can be created with `jlo template`.
+**Multi-role layers** (Observers, Deciders, Innovators): Roles are scoped to workstreams and scheduled via `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `role.yml`. Custom roles can be created with `jlo template`.
 
-**Single-role layers** (Planners, Implementers): Have a fixed role with `prompt.yml` directly in the layer directory. They are issue-driven and require an issue file path argument. Template creation is not supported.
+**Single-role layers** (Planners, Implementers): Have a fixed role with `contracts.yml` directly in the layer directory. They are issue-driven and require an issue file path argument. Template creation is not supported.
+
+**Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated contracts file (`contracts_creation.yml` / `contracts_refinement.yml`) selected at runtime via the `{{phase}}` template variable in `prompt_assembly.yml`.
 
 ## Workstreams
 
@@ -144,7 +157,7 @@ Workstreams isolate events and issues so that decider rules do not mix across un
 
 - A workstream may run observers only (no decider), leaving events for human review.
 - `roles/` remains global (not nested per workstream).
-- Observers and deciders declare their destination workstream in `prompt.yml`.
+- Observers and deciders declare their destination workstream via the `workstream` runtime context variable.
 - If the workstream directory is missing, execution fails fast.
 - Event state directories are defined by the scaffold templates.
 
@@ -153,13 +166,13 @@ The default scaffold creates a `generic` workstream.
 ## Configuration Files
 
 ### contracts.yml
-Layer-level shared constraints and workflows. All roles in the layer reference this file.
+Layer-level shared constraints and workflows. All roles in the layer reference this file. Innovators use phase-specific contracts (`contracts_creation.yml`, `contracts_refinement.yml`) instead.
 
-### prompt.yml
-Execution parameters and references to contracts.yml. Includes `workstream:` field for observers and deciders.
+### prompt_assembly.yml
+Declares runtime context variables and includes for prompt construction. The orchestrator assembles all referenced files into a single prompt sent to the agent.
 
 ### role.yml
-Specialized focus for observers. Continuity lives in the workstation perspective file.
+Specialized focus for observers, deciders, and innovators. Continuity lives in the workstation perspective file.
 
 ### Templates (*.yml)
 Copyable templates (change.yml, event.yml, issue.yml) defining the structure of artifacts.

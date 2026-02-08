@@ -14,6 +14,8 @@ pub struct WorkflowRunOptions {
     pub mock_tag: Option<String>,
     /// Routing labels (optional override).
     pub routing_labels: Option<Vec<String>>,
+    /// Execution phase for innovators (creation or refinement).
+    pub phase: Option<String>,
 }
 
 /// Output of workflow run command.
@@ -52,6 +54,7 @@ mod tests {
             mock: false,
             mock_tag: None,
             routing_labels: None,
+            phase: None,
         };
         assert_eq!(options.workstream, "generic");
         assert_eq!(options.layer, Layer::Observers);

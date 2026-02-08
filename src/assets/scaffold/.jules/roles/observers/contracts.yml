@@ -12,9 +12,11 @@ inputs:
   - Source code and repository files
   - .jules/changes/latest.yml (recent codebase changes, if present)
   - .jules/roles/observers/roles/<role>/role.yml (Specialized Role Definition)
+  - .jules/workstreams/<workstream>/scheduled.toml (scheduled innovator personas)
   - .jules/workstreams/<workstream>/workstations/<role>/perspective.yml (Workstation Memory)
   - .jules/workstreams/<workstream>/exchange/issues/**/*.yml (open issues for suppression)
   - .jules/workstreams/<workstream>/exchange/events/<state>/*.yml (recent events for deduplication)
+  - .jules/roles/innovators/schemas/comment.yml (observer-to-innovator feedback schema)
 
 outputs:
   - .jules/workstreams/<workstream>/exchange/events/pending/*.yml
@@ -27,4 +29,5 @@ workflow:
   - "3. Read workstation memory (perspective.yml). If goals are empty, set 1-3 concrete goals informed by the inspection."
   - "4. Produce 0-3 high-signal findings grounded in the inspected code. Each finding must be evidence-backed and not already covered by open issues."
   - "5. Emit events for new findings (copy schemas/event.yml and fill it)."
-  - "6. Update perspective.yml (set updated_at, refine goals/rules/ignore, prepend a short log entry)."
+  - "6. If innovators are scheduled and idea.yml exists for a persona, create comments/*.yml using innovators/schemas/comment.yml."
+  - "7. Update perspective.yml (set updated_at, refine goals/rules/ignore, prepend a short log entry)."

@@ -11,16 +11,17 @@ This file defines the binding rules for Jules agents operating in this repositor
   - `.jules/roles/deciders/contracts.yml`
   - `.jules/roles/planners/contracts.yml`
   - `.jules/roles/implementers/contracts.yml`
+  - `.jules/roles/innovators/contracts_creation.yml`
+  - `.jules/roles/innovators/contracts_refinement.yml`
 
 If a required contract file is missing or conflicts with another contract, execution stops and the
 conflict is reported.
 
 ## Required Read Order
 
-1. The role's `prompt.yml` (already provided as the run prompt)
-2. `.jules/JULES.md`
-3. The layer `contracts.yml`
-4. Role-specific inputs required by the layer contract
+1. `.jules/JULES.md`
+2. The layer `contracts.yml` (or phase-specific contract for innovators)
+3. Role-specific inputs required by the layer contract
 
 ## Changes Feed
 
@@ -35,7 +36,7 @@ The Narrator layer produces `.jules/changes/latest.yml`, summarizing recent code
 
 Workstreams isolate events and issues so that decider rules do not mix across unrelated operational areas.
 
-- Observers and deciders declare their destination workstream in `prompt.yml` via `workstream: <name>`.
+- Observers and deciders declare their destination workstream via the `workstream` runtime context variable.
 - If the workstream directory is missing, execution fails fast.
 - Planners and implementers do not declare a workstream; the issue file path is authoritative.
 

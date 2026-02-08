@@ -107,6 +107,7 @@ pub fn template_at(
 /// * `branch` - Override the starting branch
 /// * `issue` - Local issue file path (required for planners/implementers)
 /// * `mock` - Run in mock mode (no Jules API, tag from JULES_MOCK_TAG env)
+/// * `phase` - Execution phase for innovators (creation or refinement)
 #[allow(clippy::too_many_arguments)]
 pub fn run(
     layer: Layer,
@@ -116,8 +117,19 @@ pub fn run(
     branch: Option<String>,
     issue: Option<std::path::PathBuf>,
     mock: bool,
+    phase: Option<String>,
 ) -> Result<RunResult, AppError> {
-    run_at(layer, role, workstream, prompt_preview, branch, issue, mock, std::env::current_dir()?)
+    run_at(
+        layer,
+        role,
+        workstream,
+        prompt_preview,
+        branch,
+        issue,
+        mock,
+        phase,
+        std::env::current_dir()?,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -129,6 +141,7 @@ pub fn run_at(
     branch: Option<String>,
     issue: Option<std::path::PathBuf>,
     mock: bool,
+    phase: Option<String>,
     root: impl Into<PathBuf>,
 ) -> Result<RunResult, AppError> {
     let root = root.into();
@@ -140,7 +153,8 @@ pub fn run_at(
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
 
-    let options = RunOptions { layer, role, workstream, prompt_preview, branch, issue, mock };
+    let options =
+        RunOptions { layer, role, workstream, prompt_preview, branch, issue, mock, phase };
     run::execute(&workspace.jules_path(), options, &git, &github, &workspace)
 }
 

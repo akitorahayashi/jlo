@@ -101,7 +101,7 @@ mod tests {
         assert!(is_default_role_file(".jules/roles/deciders/roles/triage_generic/role.yml"));
 
         // Not default role files
-        assert!(!is_default_role_file(".jules/roles/planners/prompt.yml")); // prompt.yml is managed
+        assert!(!is_default_role_file(".jules/roles/planners/contracts.yml")); // contracts.yml is managed
         assert!(!is_default_role_file("src/main.rs"));
         assert!(!is_default_role_file(".jules/roles/observers/roles/qa/other.yml"));
     }

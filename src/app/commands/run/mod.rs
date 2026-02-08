@@ -38,6 +38,8 @@ pub struct RunOptions {
     pub issue: Option<PathBuf>,
     /// Run in mock mode (no Jules API, real git/GitHub operations).
     pub mock: bool,
+    /// Execution phase for innovators (creation or refinement).
+    pub phase: Option<String>,
 }
 
 /// Result of a run execution.
@@ -136,6 +138,7 @@ fn execute_single_role<W: WorkspaceStore + crate::domain::PromptAssetLoader>(
             &role_id,
             workstream,
             &starting_branch,
+            options.phase.as_deref(),
             workspace,
         )?;
         return Ok(RunResult { roles: vec![role.clone()], prompt_preview: true, sessions: vec![] });
@@ -153,6 +156,7 @@ fn execute_single_role<W: WorkspaceStore + crate::domain::PromptAssetLoader>(
         workstream,
         &starting_branch,
         &source,
+        options.phase.as_deref(),
         &client,
         workspace,
     )?;
@@ -185,12 +189,13 @@ fn execute_session<C: JulesClient, L: crate::domain::PromptAssetLoader>(
     workstream: &str,
     starting_branch: &str,
     source: &str,
+    phase: Option<&str>,
     client: &C,
     loader: &L,
 ) -> Result<String, AppError> {
     println!("Executing {} / {}...", layer.dir_name(), role);
 
-    let prompt = assemble_prompt(jules_path, layer, role.as_str(), workstream, loader)?;
+    let prompt = assemble_prompt(jules_path, layer, role.as_str(), workstream, phase, loader)?;
 
     let request = SessionRequest {
         prompt,
@@ -213,6 +218,7 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader>(
     role: &RoleId,
     workstream: &str,
     starting_branch: &str,
+    phase: Option<&str>,
     loader: &L,
 ) -> Result<(), AppError> {
     println!("=== Prompt Preview: {} ===", layer.display_name());
@@ -229,16 +235,26 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader>(
         return Ok(());
     }
 
-    let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
-    let prompt_path = jules_path.join("roles").join(layer.dir_name()).join("prompt.yml");
-
-    println!("  Prompt: {}", prompt_path.display());
-    if contracts_path.exists() {
-        println!("  Contracts: {}", contracts_path.display());
+    if layer == Layer::Innovators {
+        if let Some(p) = phase {
+            let contracts_path = jules_path
+                .join("roles")
+                .join(layer.dir_name())
+                .join(format!("contracts_{}.yml", p));
+            if contracts_path.exists() {
+                println!("  Contracts: {}", contracts_path.display());
+            }
+        }
+    } else {
+        let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
+        if contracts_path.exists() {
+            println!("  Contracts: {}", contracts_path.display());
+        }
     }
     println!("  Role config: {}", role_yml_path.display());
 
-    if let Ok(prompt) = assemble_prompt(jules_path, layer, role.as_str(), workstream, loader) {
+    if let Ok(prompt) = assemble_prompt(jules_path, layer, role.as_str(), workstream, phase, loader)
+    {
         println!("  Assembled prompt: {} chars", prompt.len());
     }
 

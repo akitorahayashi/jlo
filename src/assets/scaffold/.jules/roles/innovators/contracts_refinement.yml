@@ -1,5 +1,6 @@
 layer: innovators
 branch_prefix: jules-innovator-
+phase: refinement
 
 constraints:
   - Do NOT modify source code or non-.jules/ files
@@ -13,23 +14,24 @@ constraints:
   - Proposal quality is measured by decision value, not description volume
   - Every proposal must satisfy role.yml profile.proposal_quality_bar
   - Evidence in the proposal must meet role.yml profile.evidence_expectations
+  - perspective.yml recent_proposals MUST be updated with the new proposal title
+  - idea.yml and all comments/*.yml MUST be deleted after proposal creation
 
 inputs:
-  - Source code and repository files
-  - .jules/changes/latest.yml (recent codebase changes, if present)
   - .jules/roles/innovators/roles/<role>/role.yml (Innovator Persona Definition)
   - .jules/workstreams/<workstream>/exchange/innovators/<persona>/perspective.yml (Persona Memory)
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/idea.yml (Current Idea, if present)
+  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/idea.yml (Current Idea)
+  - .jules/roles/innovators/schemas/comment.yml (Observer feedback comment schema)
   - .jules/workstreams/<workstream>/exchange/innovators/<persona>/comments/*.yml (Observer Feedback)
 
 outputs:
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/idea.yml (Creation phase)
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/proposal.yml (Refinement phase)
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/perspective.yml (Updated memory)
+  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/proposal.yml (Finished proposal)
+  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/perspective.yml (Updated memory with proposal in recent_proposals)
 
 workflow:
   - "1. Read role.yml and perspective.yml to establish identity and context."
-  - "2. If idea.yml is absent (Creation phase): Inspect the codebase, consider recent_proposals to avoid duplicates, and create idea.yml."
-  - "3. If idea.yml is present (Refinement phase): Read comments/*.yml and create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals."
-  - "4. Update perspective.yml recent_proposals, then delete idea.yml and comments/*.yml."
-  - "5. Before final output, self-check against role.yml proposal_quality_bar and evidence_expectations."
+  - "2. Read idea.yml and all comments/*.yml as structured feedback defined by schemas/comment.yml."
+  - "3. Create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals."
+  - "4. Update perspective.yml recent_proposals (FIFO, max 5, newest first) with the proposal title."
+  - "5. Delete idea.yml and all comments/*.yml."
+  - "6. Before final output, self-check against role.yml proposal_quality_bar and evidence_expectations."

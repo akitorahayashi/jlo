@@ -57,6 +57,13 @@ struct ProposalData {
     verification_signals: Vec<String>,
 }
 
+/// Minimal deserialization of perspective.yml for validation.
+#[derive(Debug, Deserialize)]
+struct PerspectiveData {
+    #[serde(default)]
+    recent_proposals: Vec<String>,
+}
+
 pub fn execute(
     options: WorkflowWorkstreamsPublishProposalsOptions,
 ) -> Result<WorkflowWorkstreamsPublishProposalsOutput, AppError> {
@@ -148,6 +155,35 @@ where
                     proposal_path.display()
                 )));
             }
+        }
+
+        // Verify perspective.yml exists and records this proposal
+        let perspective_path =
+            proposal_path.parent().unwrap_or(Path::new(".")).join("perspective.yml");
+        let perspective_path_str = perspective_path
+            .to_str()
+            .ok_or_else(|| AppError::Validation("Invalid perspective path".to_string()))?;
+        if !workspace.file_exists(perspective_path_str) {
+            return Err(AppError::Validation(format!(
+                "perspective.yml missing for persona '{}': refinement must update perspective before publication",
+                persona
+            )));
+        }
+        let perspective_content = workspace.read_file(perspective_path_str)?;
+        let perspective: PerspectiveData =
+            serde_yaml::from_str(&perspective_content).map_err(|e| {
+                AppError::Validation(format!(
+                    "Invalid YAML in perspective {}: {}",
+                    perspective_path.display(),
+                    e
+                ))
+            })?;
+        let title_trimmed = data.title.trim();
+        if !perspective.recent_proposals.iter().any(|p| p.trim() == title_trimmed) {
+            return Err(AppError::Validation(format!(
+                "perspective.yml for '{}' does not list proposal '{}' in recent_proposals: refinement contract violated",
+                persona, title_trimmed
+            )));
         }
 
         let issue_title = format!("[innovator/{}] {}", persona, data.title.trim());
@@ -417,8 +453,13 @@ verification_signals:
     #[test]
     fn publishes_proposal_and_removes_artifact() {
         let proposal_path = ".jules/workstreams/generic/exchange/innovators/alice/proposal.yml";
-        let workspace =
-            MockWorkspaceStore::new().with_exists(true).with_file(proposal_path, proposal_yaml());
+        let perspective_path =
+            ".jules/workstreams/generic/exchange/innovators/alice/perspective.yml";
+        let perspective_yaml = "persona: alice\nworkstream: generic\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let workspace = MockWorkspaceStore::new()
+            .with_exists(true)
+            .with_file(proposal_path, proposal_yaml())
+            .with_file(perspective_path, perspective_yaml);
 
         let git = FakeGit;
         let github = FakeGitHub::new();
