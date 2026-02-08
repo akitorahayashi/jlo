@@ -38,6 +38,7 @@ jlo init --remote
 | `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
 | `jlo workflow matrix <cmd>` | | Generate GitHub Actions matrices |
 | `jlo workflow run <layer> [--matrix-json <json>] [--mock]` | | Run layer with JSON output |
+| `jlo workflow render <mode> [--output <dir>] [--overwrite]` | | Render workflow kit files to a deterministic output directory |
 | `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state for automation |
 | `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
 | `jlo workflow workstreams publish-proposals <workstream>` | | Publish innovator proposals as GitHub issues |
@@ -163,9 +164,11 @@ Workflow kit layout:
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `JLO_PAUSED` | Skip scheduled runs when set to `true` | (unset) |
-| `JLO_TARGET_BRANCH` | Control branch for `.jlo/` and implementer output | (unset) |
-| `JULES_WORKER_BRANCH` | Runtime branch for `.jules/` execution | (unset) |
+| `JLO_PAUSED` | Skip scheduled runs when set to `true` | `false` |
+| `JLO_TARGET_BRANCH` | Control branch for `.jlo/` and implementer output | `main` |
+| `JULES_WORKER_BRANCH` | Runtime branch for `.jules/` execution | `jules` |
+
+Workflow expressions read these values from GitHub Actions variables (`vars.*`), so define them as repository variables (for example, `vars.JLO_PAUSED`).
 
 **Schedule Preservation**: When reinstalling with `jlo init --remote --overwrite` (or `--self-hosted --overwrite`), the existing `on.schedule` block in `jules-workflows.yml` is preserved.
 
@@ -205,3 +208,15 @@ cargo fmt                                                      # Format
 cargo clippy --all-targets --all-features -- -D warnings       # Lint
 cargo test --all-targets --all-features                        # Test
 ```
+
+### Workflow Linting (actionlint)
+
+Workflow kit rendering and linting are deterministic and run against rendered output under `.tmp/`.
+This catches workflow expression-context errors (for example, invalid `vars`/`inputs` usage) before changes are pushed.
+
+```bash
+just setup
+just alint
+```
+
+The `alint` recipe renders both runner modes and runs `actionlint` via `aqua exec`.

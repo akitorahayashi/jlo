@@ -11,7 +11,7 @@
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: {{ gha_expr("env.JULES_WORKER_BRANCH") }}
+          ref: {{ gha_expr("vars.JULES_WORKER_BRANCH") }}
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 
@@ -26,7 +26,7 @@
           WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
         run: |
           set -euo pipefail
-          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read ws; do
+          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read -r ws; do
             echo "Publishing proposals for workstream: $ws"
             jlo workflow workstreams publish-proposals "$ws"
           done

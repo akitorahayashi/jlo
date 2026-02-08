@@ -9,6 +9,7 @@ mod doctor;
 pub mod matrix;
 mod output;
 mod pr_label;
+pub mod render;
 mod run;
 #[path = "workstreams/mod.rs"]
 pub mod workstreams;
@@ -18,6 +19,7 @@ pub use cleanup::{WorkflowCleanupMockOptions, WorkflowCleanupMockOutput};
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
 pub use output::write_workflow_output;
 pub use pr_label::{WorkflowPrLabelOptions, WorkflowPrLabelOutput};
+pub use render::{WorkflowRenderOptions, WorkflowRenderOutput};
 pub use run::{WorkflowRunOptions, WorkflowRunOutput};
 pub use workstreams::{
     WorkflowWorkstreamsCleanIssueOptions, WorkflowWorkstreamsCleanIssueOutput,
@@ -48,6 +50,11 @@ pub fn run(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
     let github = crate::adapters::github_command::GitHubCommandAdapter::new();
 
     run::execute(&store, options, &git, &github)
+}
+
+/// Execute workflow render command.
+pub fn render(options: WorkflowRenderOptions) -> Result<WorkflowRenderOutput, AppError> {
+    render::execute(options)
 }
 
 /// Execute workflow cleanup mock command.

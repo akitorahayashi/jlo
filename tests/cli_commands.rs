@@ -259,6 +259,76 @@ fn doctor_reports_schema_errors() {
         .stderr(predicate::str::contains("evidence must have entries"));
 }
 
+#[test]
+fn workflow_render_writes_expected_files() {
+    let ctx = TestContext::new();
+
+    let output_dir = ctx.work_dir().join(".tmp/workflow-kit-render/remote");
+    ctx.cli()
+        .args(["workflow", "render", "remote", "--output"])
+        .arg(&output_dir)
+        .assert()
+        .success();
+
+    assert!(
+        output_dir.join(".github/workflows/jules-workflows.yml").exists(),
+        "Rendered workflow file should exist"
+    );
+    assert!(
+        output_dir.join(".github/actions/install-jlo/action.yml").exists(),
+        "Rendered action file should exist"
+    );
+}
+
+#[test]
+fn workflow_render_uses_default_output_dir() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["workflow", "render", "remote"]).assert().success();
+
+    let default_path = ctx
+        .work_dir()
+        .join(".tmp/workflow-kit-render/remote/.github/workflows/jules-workflows.yml");
+    assert!(default_path.exists(), "Default render output should exist");
+}
+
+#[test]
+fn workflow_render_fails_on_non_empty_output_without_overwrite() {
+    let ctx = TestContext::new();
+
+    let output_dir = ctx.work_dir().join(".tmp/workflow-kit-render/conflict");
+    fs::create_dir_all(&output_dir).unwrap();
+    fs::write(output_dir.join("keep.txt"), "do not overwrite").unwrap();
+
+    ctx.cli()
+        .args(["workflow", "render", "remote", "--output"])
+        .arg(&output_dir)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("not empty"));
+}
+
+#[test]
+fn workflow_render_overwrite_succeeds() {
+    let ctx = TestContext::new();
+
+    let output_dir = ctx.work_dir().join(".tmp/workflow-kit-render/overwrite");
+    fs::create_dir_all(&output_dir).unwrap();
+    fs::write(output_dir.join("keep.txt"), "old content").unwrap();
+
+    ctx.cli()
+        .args(["workflow", "render", "remote", "--output"])
+        .arg(&output_dir)
+        .arg("--overwrite")
+        .assert()
+        .success();
+
+    assert!(
+        output_dir.join(".github/workflows/jules-workflows.yml").exists(),
+        "Rendered workflow file should exist after overwrite"
+    );
+}
+
 // =============================================================================
 // Setup Command Tests
 // =============================================================================

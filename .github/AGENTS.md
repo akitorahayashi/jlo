@@ -74,12 +74,12 @@ The primary orchestration workflow in `.github/workflows/jules-*.yml` orchestrat
 
 Repository variables and secrets referenced by `.github/workflows/jules-*.yml`:
 
-| Name | Type | Purpose |
-|------|------|---------|
-| `JULES_API_KEY` | Secret | API key for Jules service |
-| `JLO_PAUSED` | Variable | Set to `true` to skip scheduled runs |
-| `JLO_TARGET_BRANCH` | Variable | Control branch for `.jlo/` and implementer output |
-| `JULES_WORKER_BRANCH` | Variable | Runtime branch for `.jules/` execution |
+| Name | Type | Purpose | Default |
+|------|------|----------|----------|
+| `JULES_API_KEY` | Secret | API key for Jules service | (required) |
+| `JLO_PAUSED` | Variable | Set to `true` to skip scheduled runs | `false` |
+| `JLO_TARGET_BRANCH` | Variable | Control branch for `.jlo/` and implementer output | `main` |
+| `JULES_WORKER_BRANCH` | Variable | Runtime branch for `.jules/` execution | `jules` |
 
 ## Schedule Preservation
 

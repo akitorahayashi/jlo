@@ -28,7 +28,7 @@ on:
 
 jobs:
   validate-and-automerge:
-    if: ${{ github.base_ref == env.JULES_WORKER_BRANCH }}
+    if: ${{ github.base_ref == vars.JULES_WORKER_BRANCH }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
