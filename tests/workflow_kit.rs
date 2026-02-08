@@ -295,10 +295,7 @@ fn init_workflows_uses_jlo_paused_not_jules_paused() {
     let root = ctx.work_dir();
     let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
 
-    assert!(
-        workflow.contains("vars.JLO_PAUSED"),
-        "Workflow should use JLO_PAUSED variable"
-    );
+    assert!(workflow.contains("vars.JLO_PAUSED"), "Workflow should use JLO_PAUSED variable");
     assert!(
         !workflow.contains("vars.JULES_PAUSED"),
         "Workflow should not use legacy JULES_PAUSED variable"
