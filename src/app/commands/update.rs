@@ -432,7 +432,7 @@ mod tests {
     }
 
     #[test]
-    fn test_update_noop_when_current_version() {
+    fn test_update_succeeds_when_current_version() {
         let temp = TempDir::new().unwrap();
         let jlo_path = temp.path().join(".jlo");
         fs::create_dir_all(&jlo_path).unwrap();

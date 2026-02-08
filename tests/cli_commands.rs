@@ -607,7 +607,7 @@ fn update_prompt_preview_shows_plan() {
 }
 
 #[test]
-fn update_noop_when_current() {
+fn update_succeeds_when_current() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
