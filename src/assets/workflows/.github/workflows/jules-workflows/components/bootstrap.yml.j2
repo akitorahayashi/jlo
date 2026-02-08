@@ -31,7 +31,6 @@
       - name: Ensure worker branch
         run: |
           set -euo pipefail
-          git fetch origin "${JLO_TARGET_BRANCH}" --depth=1
           if git ls-remote --exit-code --heads origin "${JULES_WORKER_BRANCH}" >/dev/null 2>&1; then
             echo "${JULES_WORKER_BRANCH} branch exists, checking out"
             git fetch origin "${JULES_WORKER_BRANCH}" --depth=1
