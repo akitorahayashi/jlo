@@ -1,13 +1,13 @@
-//! Dependency resolver service.
+//! Setup component resolver service.
 
-use crate::domain::dependency_graph::DependencyGraph;
+use crate::domain::component_graph::ComponentGraph;
 use crate::domain::{AppError, Component};
 use crate::ports::ComponentCatalog;
 
-/// Service for resolving component dependencies using topological sort.
-pub struct DependencyResolver;
+/// Service for resolving component dependencies for setup.
+pub struct SetupComponentResolver;
 
-impl DependencyResolver {
+impl SetupComponentResolver {
     /// Resolve dependencies and return components in installation order.
     ///
     /// Delegates to domain logic.
@@ -15,6 +15,6 @@ impl DependencyResolver {
         requested: &[String],
         catalog: &C,
     ) -> Result<Vec<Component>, AppError> {
-        DependencyGraph::resolve(requested, catalog)
+        ComponentGraph::resolve(requested, catalog)
     }
 }

@@ -6,9 +6,9 @@ use crate::domain::{AppError, Component, ComponentId};
 use crate::ports::ComponentCatalog;
 
 /// Domain logic for resolving component dependencies.
-pub struct DependencyGraph;
+pub struct ComponentGraph;
 
-impl DependencyGraph {
+impl ComponentGraph {
     /// Resolve dependencies and return components in installation order.
     ///
     /// Uses Kahn's algorithm for topological sorting with cycle detection.
@@ -167,7 +167,7 @@ mod tests {
     fn resolve_single_component() {
         let catalog = TestCatalog::new(vec![make_component("a", &[])]);
 
-        let result = DependencyGraph::resolve(&["a".to_string()], &catalog).unwrap();
+        let result = ComponentGraph::resolve(&["a".to_string()], &catalog).unwrap();
 
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].name.as_str(), "a");
@@ -177,7 +177,7 @@ mod tests {
     fn resolve_with_dependency() {
         let catalog = TestCatalog::new(vec![make_component("a", &[]), make_component("b", &["a"])]);
 
-        let result = DependencyGraph::resolve(&["b".to_string()], &catalog).unwrap();
+        let result = ComponentGraph::resolve(&["b".to_string()], &catalog).unwrap();
 
         assert_eq!(result.len(), 2);
         let names: Vec<_> = result.iter().map(|c| c.name.as_str()).collect();
@@ -192,7 +192,7 @@ mod tests {
             make_component("c", &["b"]),
         ]);
 
-        let result = DependencyGraph::resolve(&["c".to_string()], &catalog).unwrap();
+        let result = ComponentGraph::resolve(&["c".to_string()], &catalog).unwrap();
 
         assert_eq!(result.len(), 3);
         let names: Vec<_> = result.iter().map(|c| c.name.as_str()).collect();
@@ -205,7 +205,7 @@ mod tests {
         let catalog =
             TestCatalog::new(vec![make_component("x", &["y"]), make_component("y", &["x"])]);
 
-        let result = DependencyGraph::resolve(&["x".to_string()], &catalog);
+        let result = ComponentGraph::resolve(&["x".to_string()], &catalog);
 
         assert!(matches!(result, Err(AppError::CircularDependency(_))));
     }
@@ -213,7 +213,7 @@ mod tests {
     #[test]
     fn invalid_component_id() {
         let catalog = TestCatalog::new(vec![]);
-        let result = DependencyGraph::resolve(&["invalid/id".to_string()], &catalog);
+        let result = ComponentGraph::resolve(&["invalid/id".to_string()], &catalog);
         assert!(matches!(result, Err(AppError::InvalidComponentId(_))));
     }
 
@@ -282,7 +282,7 @@ mod tests {
     proptest! {
         #[test]
         fn test_resolve_properties((requests, catalog) in catalog_strategy(10)) {
-            let result = DependencyGraph::resolve(&requests, &catalog);
+            let result = ComponentGraph::resolve(&requests, &catalog);
 
             match result {
                 Ok(sorted) => {

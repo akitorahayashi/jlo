@@ -1,12 +1,12 @@
-//! Script and config generator service.
+//! Setup script and config generator service.
 
-use crate::domain::artifacts::ArtifactFactory;
+use crate::domain::setup_artifacts::ArtifactFactory;
 use crate::domain::{AppError, Component};
 
 /// Service for generating setup scripts and configuration files.
-pub struct ArtifactGenerator;
+pub struct SetupScriptGenerator;
 
-impl ArtifactGenerator {
+impl SetupScriptGenerator {
     /// Generate install.sh content from resolved components.
     ///
     /// Delegates to domain logic.

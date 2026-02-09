@@ -2,8 +2,8 @@
 
 use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 use crate::app::config::SetupConfig;
-use crate::app::services::artifact_generator::ArtifactGenerator;
-use crate::app::services::dependency_resolver::DependencyResolver;
+use crate::app::services::setup_component_resolver::SetupComponentResolver;
+use crate::app::services::setup_script_generator::SetupScriptGenerator;
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
 
@@ -41,10 +41,10 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
     let catalog = EmbeddedComponentCatalog::new()?;
 
     // Resolve dependencies
-    let components = DependencyResolver::resolve(&config.tools, &catalog)?;
+    let components = SetupComponentResolver::resolve(&config.tools, &catalog)?;
 
     // Generate install script
-    let script_content = ArtifactGenerator::generate_install_script(&components);
+    let script_content = SetupScriptGenerator::generate_install_script(&components);
     let install_sh = ".jules/setup/install.sh";
     store.write_file(install_sh, &script_content)?;
 
@@ -55,7 +55,8 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
     let env_toml_path = ".jules/setup/env.toml";
     let existing_content =
         if store.file_exists(env_toml_path) { Some(store.read_file(env_toml_path)?) } else { None };
-    let env_content = ArtifactGenerator::merge_env_toml(&components, existing_content.as_deref())?;
+    let env_content =
+        SetupScriptGenerator::merge_env_toml(&components, existing_content.as_deref())?;
     store.write_file(env_toml_path, &env_content)?;
 
     // Return component names
