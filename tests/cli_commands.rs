@@ -708,3 +708,70 @@ fn update_alias_works() {
 
     ctx.cli().args(["u", "--prompt-preview"]).assert().success();
 }
+
+#[test]
+fn verify_scaffold_integrity() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init", "--remote"]).assert().success();
+    ctx.cli().args(["workflow", "bootstrap"]).assert().success();
+
+    // Verify root files
+    let root_files = ["JULES.md", "README.md", "config.toml", "github-labels.json"];
+    for file in root_files {
+        assert!(ctx.jules_path().join(file).exists(), "{} should exist", file);
+    }
+
+    // Verify changes directory
+    assert!(ctx.jules_path().join("changes/.gitkeep").exists(), "changes/.gitkeep should exist");
+    assert!(
+        !ctx.jules_path().join("changes/latest.yml").exists(),
+        "changes/latest.yml should NOT exist"
+    );
+
+    // Verify layers and prompt assemblies
+    let layers = ["narrator", "observers", "deciders", "planners", "implementers", "innovators"];
+    for layer in layers {
+        let layer_path = ctx.jules_path().join("roles").join(layer);
+        assert!(layer_path.exists(), "Layer {} should exist", layer);
+        assert!(
+            layer_path.join("prompt_assembly.yml").exists(),
+            "Layer {} prompt_assembly.yml should exist",
+            layer
+        );
+
+        // Check contracts
+        if layer == "innovators" {
+            assert!(
+                layer_path.join("contracts_creation.yml").exists(),
+                "contracts_creation.yml should exist in innovators"
+            );
+            assert!(
+                layer_path.join("contracts_refinement.yml").exists(),
+                "contracts_refinement.yml should exist in innovators"
+            );
+        } else {
+            assert!(
+                layer_path.join("contracts.yml").exists(),
+                "Layer {} contracts.yml should exist",
+                layer
+            );
+        }
+    }
+
+    // Verify setup
+    let setup_path = ctx.jules_path().join("setup");
+    for file in ["tools.yml", ".gitignore"] {
+        assert!(setup_path.join(file).exists(), "setup/{} should exist", file);
+    }
+    // env.toml and install.sh are generated later, so verify they are NOT there yet
+    for file in ["env.toml", "install.sh"] {
+        assert!(!setup_path.join(file).exists(), "setup/{} should NOT exist yet", file);
+    }
+
+    // Verify workstreams structure
+    assert!(
+        ctx.jules_path().join("workstreams/generic/exchange/events/pending/.gitkeep").exists(),
+        "events/pending/.gitkeep should exist"
+    );
+}
