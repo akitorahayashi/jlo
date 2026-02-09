@@ -20,7 +20,7 @@ jobs:
         shell: bash
 
       - name: Install aqua
-        uses: aquaproj/aqua-installer@v4.0.3
+        uses: aquaproj/aqua-installer@097ac59b80cea8bd5afb5d01f5310d26db620742 # v4.0.3
         with:
           aqua_version: v2.43.1
           github_token: ${{ github.token }}
