@@ -1,0 +1,26 @@
+schema_version: 1
+
+id: "work01"
+issue_id: ""
+created_at: "2026-02-08"
+author_role: "qa"
+confidence: "high"
+
+title: "Workflow run command tightly coupled to concrete adapters"
+statement: |
+  The `src/app/commands/workflow/mod.rs` instantiates `FilesystemWorkspaceStore`, `GitCommandAdapter`, and `GitHubCommandAdapter` directly inside the `run` function.
+  This tight coupling prevents isolated unit testing of the workflow execution logic without:
+  1. Refactoring the function to accept dependencies.
+  2. Relying on heavy, slow integration tests that require a full filesystem and git environment.
+  This violates the "Isolation By Design" first principle.
+
+evidence:
+  - path: "src/app/commands/workflow/mod.rs"
+    loc:
+      - "37-43"
+    note: "Concrete adapter instantiation within the run function."
+
+tags:
+  - "coupling"
+  - "testability"
+  - "refactor"
