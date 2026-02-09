@@ -1,0 +1,29 @@
+schema_version: 1
+
+id: "doc001"
+issue_id: ""
+created_at: "2026-02-09"
+author_role: "librarian"
+confidence: "high"
+
+title: "Documentation Mismatch: Directory Structure"
+statement: |
+  The directory structure described in `src/assets/scaffold/AGENTS.md` (and implied in `docs/CONTROL_PLANE_OWNERSHIP.md`) does not match the actual `.jules` layout, specifically regarding the `exchange/` and `workstations/` directories.
+  The documentation indicates that `events` and `issues` are direct children of the workstream, whereas the implementation nests them under `exchange/`.
+  Additionally, the `workstations` directory is missing from the documentation.
+
+evidence:
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc:
+      - "80-92"
+      - "135-139"
+    note: "Documentation shows flat structure, contradicting the `exchange/` based implementation."
+
+  - path: "docs/CONTROL_PLANE_OWNERSHIP.md"
+    loc:
+      - "56-60"
+    note: "Ownership table lists paths like `.jules/workstreams/<ws>/exchange/events/**`, which actually matches the implementation, but contradicts the AGENTS.md structure."
+
+tags:
+  - "documentation"
+  - "structure"
