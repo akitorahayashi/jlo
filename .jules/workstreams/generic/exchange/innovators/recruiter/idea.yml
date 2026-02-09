@@ -1,0 +1,17 @@
+schema_version: 1
+
+id: "k9d2w1"
+persona: "recruiter"
+workstream: "generic"
+created_at: "2026-02-08"
+
+title: "Introduce Security Auditor Observer"
+problem: |
+  Current observer roles cover component-level safety (`rustacean` for memory, `devops` for supply chain, `data_arch` for validation) but lack a dedicated adversarial perspective on Application Security Logic. No role explicitly owns the detection of logic flaws, complex injection vectors (beyond basic validation), or authorization bypasses. This leaves a blind spot for high-severity vulnerabilities like fragile parsing (e.g., untyped `serde_yaml`) or risky file operations (e.g., path traversal) that slip through standard checks.
+introduction: |
+  Introduce a new observer role, `security_auditor`, focused on "Application Security Posture" and "Adversarial Logic Analysis". This role will scan for logic vulnerabilities, injection risks, and authorization bypasses using an attacker mindset. It will explicitly check for fragile implementations and risky patterns that fall between `devops` (infrastructure) and `rustacean` (memory safety), completing the security triad. Implementation requires defining `.jules/roles/observers/roles/security_auditor/role.yml` and scheduling the new role in `.jules/workstreams/generic/scheduled.toml`.
+expected_value: |
+  1. Reduced risk of high-severity logic vulnerabilities (e.g., path traversal, fragile parsing) slipping into production.
+  2. Clear ownership of "is this secure?" decisions beyond "it compiles" or "it runs in CI".
+  3. Explicit verification of fragile patterns currently missed by existing roles.
+  4. Improved alignment with `devops` and `rustacean` on security standards.
