@@ -14,7 +14,7 @@ CLI tool for managing `.jlo/` control-plane scaffolding and orchestrating schedu
 
 | Branch | Purpose |
 |--------|---------|
-| Control branch (e.g. `main`) | Hosts `.jlo/` intent overlay and `.github/` workflow kit |
+| Control branch (e.g. `main`) | Hosts `.jlo/` intent overlay and `.github/` workflow scaffold |
 | `jules` | Hosts materialized `.jules/` runtime state (managed by workflow bootstrap) |
 
 ## Quick Start
@@ -29,16 +29,16 @@ jlo init --remote
 
 | Command | Alias | Description |
 |---------|-------|-------------|
-| `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow kit |
-| `jlo update [--prompt-preview]` | `u` | Advance version pin, refresh workflow kit, and refresh unchanged defaults |
-| `jlo deinit` | | Remove `.jlo/`, workflow kit, and local `jules` branch |
+| `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow scaffold |
+| `jlo update [--prompt-preview]` | `u` | Advance version pin, refresh workflow scaffold, and refresh unchanged defaults |
+| `jlo deinit` | | Remove `.jlo/`, workflow scaffold, and local `jules` branch |
 | `jlo create role <layer> <name>` | `c` | Create a custom role under `.jlo/` |
 | `jlo create workstream <name>` | `c` | Create a workstream under `.jlo/` |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
 | `jlo workflow matrix <cmd>` | | Generate GitHub Actions matrices |
 | `jlo workflow run <workstream> <layer> [--mock]` | | Run layer and return orchestration metadata |
-| `jlo workflow render <mode> [--output <dir>] [--overwrite]` | | Render workflow kit files to a deterministic output directory |
+| `jlo workflow generate <mode> [--output-dir <dir>]` | `g [-o]` | Generate workflow scaffold files to an output directory |
 | `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state for automation |
 | `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
 | `jlo workflow workstreams publish-proposals <workstream>` | | Publish innovator proposals as GitHub issues |
@@ -129,15 +129,15 @@ Exit codes:
 
 ### Deinit Command
 
-`jlo deinit` removes the `.jlo/` control plane, the local `JULES_WORKER_BRANCH`, and workflow kit files from `.github/`.
+`jlo deinit` removes the `.jlo/` control plane, the local `JULES_WORKER_BRANCH`, and workflow scaffold files from `.github/`.
 The command refuses to run while the current branch is `JULES_WORKER_BRANCH` or `jules-test-*`.
 GitHub secrets (such as `JULES_API_KEY` and `JULES_API_SECRET`) remain configured and require manual removal.
 
 ### Other Examples
 
 ```bash
-jlo init --remote                           # Initialize control plane + workflow kit (GitHub-hosted)
-jlo init --self-hosted                      # Initialize control plane + workflow kit (self-hosted)
+jlo init --remote                           # Initialize control plane + workflow scaffold (GitHub-hosted)
+jlo init --self-hosted                      # Initialize control plane + workflow scaffold (self-hosted)
 jlo create role observers security                         # Create observer role
 jlo create workstream ops                                   # Create workstream
 
@@ -153,7 +153,7 @@ jlo setup gen                               # Generate install script
 
 Workflows use `jlo workflow bootstrap` to materialize `.jules/` on `JULES_WORKER_BRANCH`, then `jlo workflow run` for agent execution.
 
-Workflow kit layout:
+Workflow scaffold layout:
 
 - `.github/workflows/jules-*.yml`
 - `.github/actions/` (Jules composite actions)
@@ -209,7 +209,7 @@ cargo test --all-targets --all-features                        # Test
 
 ### Workflow Linting (actionlint)
 
-Workflow kit rendering and linting are deterministic and run against rendered output under `.tmp/`.
+Workflow scaffold generation and linting are deterministic and run against generated output under `.tmp/`.
 This catches workflow expression-context errors (for example, invalid `vars`/`inputs` usage) before changes are pushed.
 
 ```bash
@@ -217,4 +217,4 @@ just setup
 just alint
 ```
 
-The `alint` recipe renders both runner modes and runs `actionlint` via `aqua exec`.
+The `alint` recipe generates both runner modes and runs `actionlint` via `aqua exec`.

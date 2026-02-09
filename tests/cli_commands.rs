@@ -290,7 +290,7 @@ fn workflow_generate_writes_expected_files() {
 
     write_jlo_config(ctx.work_dir(), &[DEFAULT_CRON], 30);
 
-    let output_dir = ctx.work_dir().join(".tmp/workflow-kit-render/remote");
+    let output_dir = ctx.work_dir().join(".tmp/workflow-scaffold-generate/remote");
     ctx.cli()
         .args(["workflow", "generate", "remote", "--output-dir"])
         .arg(&output_dir)
@@ -326,7 +326,7 @@ fn workflow_generate_overwrites_by_default() {
 
     write_jlo_config(ctx.work_dir(), &[DEFAULT_CRON], 30);
 
-    let output_dir = ctx.work_dir().join(".tmp/workflow-kit-render/overwrite");
+    let output_dir = ctx.work_dir().join(".tmp/workflow-scaffold-generate/overwrite");
     fs::create_dir_all(&output_dir).unwrap();
     fs::write(output_dir.join("old.txt"), "old content").unwrap();
 
