@@ -98,7 +98,7 @@ fn init_workflows_installs_remote_scaffold() {
     );
     assert!(
         !workflow.contains("{% include"),
-        "Rendered workflow should not contain template include directives"
+        "Generated workflow should not contain template include directives"
     );
 }
 
@@ -165,7 +165,7 @@ fn init_workflows_respects_unrelated_files() {
 }
 
 #[test]
-fn init_workflows_renders_timing_from_config() {
+fn init_workflows_generates_timing_from_config() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
 
@@ -395,12 +395,12 @@ fn init_workflows_enforces_explicit_branch_contract() {
 fn workflow_templates_parse_with_serde_yaml() {
     for mode in ["remote", "self-hosted"] {
         let ctx = TestContext::new();
-        let output_dir = render_workflow_scaffold(&ctx, mode, "parse");
+        let output_dir = generate_workflow_scaffold(&ctx, mode, "parse");
 
         let files = collect_yaml_files(&output_dir);
         assert!(
             !files.is_empty(),
-            "Rendered workflow scaffold produced no YAML files for {} mode",
+            "Generated workflow scaffold produced no YAML files for {} mode",
             mode
         );
 
@@ -431,12 +431,12 @@ fn workflow_templates_pass_yaml_lint_self_hosted() {
 
 fn validate_yaml_lint(mode: &str) {
     let ctx = TestContext::new();
-    let output_dir = render_workflow_scaffold(&ctx, mode, "lint");
+    let output_dir = generate_workflow_scaffold(&ctx, mode, "lint");
 
     let files = collect_yaml_files(&output_dir);
     assert!(
         !files.is_empty(),
-        "Rendered workflow scaffold produced no YAML files for {} mode",
+        "Generated workflow scaffold produced no YAML files for {} mode",
         mode
     );
 
@@ -480,10 +480,10 @@ fn validate_yaml_lint(mode: &str) {
     assert!(errors.is_empty(), "YAML lint errors for {} mode:{}", mode, errors.join(""));
 }
 
-fn render_workflow_scaffold(ctx: &TestContext, mode: &str, suffix: &str) -> PathBuf {
+fn generate_workflow_scaffold(ctx: &TestContext, mode: &str, suffix: &str) -> PathBuf {
     let output_dir = ctx
         .work_dir()
-        .join(".tmp/workflow-scaffold-render/tests")
+        .join(".tmp/workflow-scaffold-generate/tests")
         .join(format!("{}-{}", mode, suffix));
 
     ensure_jlo_config(ctx.work_dir());

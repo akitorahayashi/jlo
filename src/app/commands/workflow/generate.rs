@@ -64,7 +64,7 @@ fn resolve_output_dir(
         return normalize_output_dir(dir.clone());
     }
 
-    // Default: render directly to repository root (scaffold paths already include .github/ prefix)
+    // Default: generate directly to repository root (scaffold paths already include .github/ prefix)
     Ok(repo_root.to_path_buf())
 }
 
