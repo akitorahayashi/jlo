@@ -720,25 +720,45 @@ fn verify_scaffold_integrity() {
     assert!(ctx.jules_path().join("JULES.md").exists(), "JULES.md should exist");
     assert!(ctx.jules_path().join("README.md").exists(), "README.md should exist");
     assert!(ctx.jules_path().join("config.toml").exists(), "config.toml should exist");
-    assert!(ctx.jules_path().join("github-labels.json").exists(), "github-labels.json should exist");
+    assert!(
+        ctx.jules_path().join("github-labels.json").exists(),
+        "github-labels.json should exist"
+    );
 
     // Verify changes directory
     assert!(ctx.jules_path().join("changes/.gitkeep").exists(), "changes/.gitkeep should exist");
-    assert!(!ctx.jules_path().join("changes/latest.yml").exists(), "changes/latest.yml should NOT exist");
+    assert!(
+        !ctx.jules_path().join("changes/latest.yml").exists(),
+        "changes/latest.yml should NOT exist"
+    );
 
     // Verify layers and prompt assemblies
     let layers = ["narrator", "observers", "deciders", "planners", "implementers", "innovators"];
     for layer in layers {
         let layer_path = ctx.jules_path().join("roles").join(layer);
         assert!(layer_path.exists(), "Layer {} should exist", layer);
-        assert!(layer_path.join("prompt_assembly.yml").exists(), "Layer {} prompt_assembly.yml should exist", layer);
+        assert!(
+            layer_path.join("prompt_assembly.yml").exists(),
+            "Layer {} prompt_assembly.yml should exist",
+            layer
+        );
 
         // Check contracts
         if layer == "innovators" {
-             assert!(layer_path.join("contracts_creation.yml").exists(), "contracts_creation.yml should exist in innovators");
-             assert!(layer_path.join("contracts_refinement.yml").exists(), "contracts_refinement.yml should exist in innovators");
+            assert!(
+                layer_path.join("contracts_creation.yml").exists(),
+                "contracts_creation.yml should exist in innovators"
+            );
+            assert!(
+                layer_path.join("contracts_refinement.yml").exists(),
+                "contracts_refinement.yml should exist in innovators"
+            );
         } else {
-             assert!(layer_path.join("contracts.yml").exists(), "Layer {} contracts.yml should exist", layer);
+            assert!(
+                layer_path.join("contracts.yml").exists(),
+                "Layer {} contracts.yml should exist",
+                layer
+            );
         }
     }
 
@@ -752,5 +772,8 @@ fn verify_scaffold_integrity() {
     assert!(!setup_path.join("install.sh").exists(), "setup/install.sh should NOT exist yet");
 
     // Verify workstreams structure
-    assert!(ctx.jules_path().join("workstreams/generic/exchange/events/pending/.gitkeep").exists(), "events/pending/.gitkeep should exist");
+    assert!(
+        ctx.jules_path().join("workstreams/generic/exchange/events/pending/.gitkeep").exists(),
+        "events/pending/.gitkeep should exist"
+    );
 }
