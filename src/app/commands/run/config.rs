@@ -8,7 +8,10 @@ use crate::domain::{AppError, RunConfig};
 
 /// Load and parse the run configuration.
 pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
-    let config_path = jules_path.join("config.toml");
+    // jules_path is typically .jules/
+    // We need to look in .jlo/config.toml which is a sibling of .jules/
+    let root = jules_path.parent().unwrap_or(Path::new("."));
+    let config_path = root.join(".jlo/config.toml");
 
     if !config_path.exists() {
         return Err(AppError::RunConfigMissing);

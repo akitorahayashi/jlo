@@ -14,7 +14,7 @@ constraints:
 inputs:
   - Source code and repository files
   - .jules/changes/latest.yml (recent codebase changes, if present)
-  - .jules/roles/innovators/roles/<role>/role.yml (Innovator Persona Definition)
+  - .jlo/roles/innovators/roles/<role>/role.yml (Innovator Persona Definition)
   - .jules/workstreams/<workstream>/exchange/innovators/<persona>/perspective.yml (Persona Memory)
 
 outputs:

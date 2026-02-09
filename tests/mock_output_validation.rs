@@ -13,11 +13,11 @@ fn setup_scaffold_with_workstream(ctx: &TestContext, workstream: &str) {
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
-    // Create a workstream with scheduled.toml
-    let workstream_path = ctx.jules_path().join("workstreams").join(workstream);
-    fs::create_dir_all(&workstream_path).expect("Failed to create workstream dir");
+    // Create a workstream with scheduled.toml in .jlo/ (Control Plane)
+    let jlo_workstream_path = ctx.jlo_path().join("workstreams").join(workstream);
+    fs::create_dir_all(&jlo_workstream_path).expect("Failed to create jlo workstream dir");
 
-    let scheduled_toml = workstream_path.join("scheduled.toml");
+    let scheduled_toml = jlo_workstream_path.join("scheduled.toml");
     fs::write(
         scheduled_toml,
         r#"version = 1
@@ -35,7 +35,8 @@ roles = []
     )
     .expect("Failed to write scheduled.toml");
 
-    // Create expected directory structure
+    // Create expected directory structure in .jules/ (Runtime)
+    let workstream_path = ctx.jules_path().join("workstreams").join(workstream);
     let exchange = workstream_path.join("exchange");
     fs::create_dir_all(exchange.join("events").join("pending")).unwrap();
     fs::create_dir_all(exchange.join("events").join("decided")).unwrap();

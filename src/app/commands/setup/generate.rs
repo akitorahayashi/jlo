@@ -15,10 +15,11 @@ use crate::ports::WorkspaceStore;
 ///
 /// Returns the list of resolved component names in installation order.
 pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
-    let setup_dir = ".jules/setup";
-    let tools_yml = ".jules/setup/tools.yml";
+    let jlo_setup = ".jlo/setup";
+    let tools_yml = ".jlo/setup/tools.yml";
+    let jules_setup = ".jules/setup";
 
-    if !store.file_exists(setup_dir) {
+    if !store.file_exists(jlo_setup) {
         return Err(AppError::SetupNotInitialized);
     }
 
@@ -44,7 +45,31 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
     let components = SetupComponentResolver::resolve(&config.tools, &catalog)?;
 
     // Generate install script
+    // Generate install script
     let script_content = SetupScriptGenerator::generate_install_script(&components);
+    
+    // Ensure .jules/setup exists
+    if !store.file_exists(jules_setup) {
+        // We can't assume create_dir_all exists on WorkspaceStore trait easily without checking implementation,
+        // but typically write_file handles parent dirs or we assume bootstrap created .jules/
+        // Actually, bootstrap only created .jules/.
+        // We should try to write file, if it fails due to directory missing, we might need to create it.
+        // But `write_file` in standard fs adapter usually just writes.
+        // Let's assume write_file handles it or we rely on it.
+        // Wait, FilesystemWorkspaceStore::write_file uses fs::write, which DOES NOT create parents.
+        // We should use `create_dir_all`?
+        // WorkspaceStore trait has `create_directory`? No, it has `create_structure`.
+        // Let's rely on write_file impl or add directory creation if possible.
+        // For now, let's keep it simple. If we need to create the dir, we might need a specific method.
+        // The MemoryWorkspaceStore does not care.
+        // The FilesystemWorkspaceStore `write_file` implementation: 
+        //   fn write_file(&self, path: &str, content: &str) -> Result<(), AppError> {
+        //       let full_path = self.resolve_path(path);
+        //       if let Some(parent) = full_path.parent() { fs::create_dir_all(parent)?; } ...
+        //   }
+        // It DOES create parents! So we are good.
+    }
+
     let install_sh = ".jules/setup/install.sh";
     store.write_file(install_sh, &script_content)?;
 
@@ -81,7 +106,7 @@ mod tests {
     #[test]
     fn fails_if_tools_yml_missing() {
         let store = MemoryWorkspaceStore::new();
-        store.write_file(".jules/setup/placeholder", "").unwrap();
+        store.write_file(".jlo/setup/placeholder", "").unwrap();
 
         let result = execute(&store);
 
@@ -91,7 +116,7 @@ mod tests {
     #[test]
     fn fails_if_no_tools_specified() {
         let store = MemoryWorkspaceStore::new();
-        store.write_file(".jules/setup/tools.yml", "tools: []").unwrap();
+        store.write_file(".jlo/setup/tools.yml", "tools: []").unwrap();
 
         let result = execute(&store);
 
@@ -101,7 +126,7 @@ mod tests {
     #[test]
     fn generates_install_script() {
         let store = MemoryWorkspaceStore::new();
-        store.write_file(".jules/setup/tools.yml", "tools:\n  - just").unwrap();
+        store.write_file(".jlo/setup/tools.yml", "tools:\n  - just").unwrap();
 
         let result = execute(&store).unwrap();
 

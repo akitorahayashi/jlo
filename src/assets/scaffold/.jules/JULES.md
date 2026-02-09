@@ -14,6 +14,9 @@ This file defines the binding rules for Jules agents operating in this repositor
   - `.jules/roles/innovators/contracts_creation.yml`
   - `.jules/roles/innovators/contracts_refinement.yml`
 
+- **Role Definitions**: Defined in `.jlo/` (Control Plane).
+  - `.jlo/roles/<layer>/roles/<role>/role.yml`
+
 If a required contract file is missing or conflicts with another contract, execution stops and the
 conflict is reported.
 

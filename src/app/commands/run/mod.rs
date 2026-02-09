@@ -166,7 +166,8 @@ fn execute_single_role<W: WorkspaceStore + Clone + Send + Sync + 'static>(
 
 /// Validate that a role exists in the layer's roles directory.
 fn validate_role_exists(jules_path: &Path, layer: Layer, role: &str) -> Result<(), AppError> {
-    let role_dir = jules_path.join("roles").join(layer.dir_name()).join("roles").join(role);
+    let root = jules_path.parent().unwrap_or(Path::new("."));
+    let role_dir = root.join(".jlo").join("roles").join(layer.dir_name()).join("roles").join(role);
     let role_yml_path = role_dir.join("role.yml");
 
     if !role_yml_path.exists() {
@@ -229,8 +230,11 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader + Clone + Send + S
     println!("Workstream: {}", workstream);
     println!("Role: {}\n", role);
 
+    println!("Role: {}\n", role);
+
+    let root = jules_path.parent().unwrap_or(Path::new("."));
     let role_dir =
-        jules_path.join("roles").join(layer.dir_name()).join("roles").join(role.as_str());
+        root.join(".jlo").join("roles").join(layer.dir_name()).join("roles").join(role.as_str());
     let role_yml_path = role_dir.join("role.yml");
 
     if !role_yml_path.exists() {
@@ -249,6 +253,7 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader + Clone + Send + S
             }
         }
     } else {
+        // contracts.yml is a runtime artifact in .jules/
         let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
         if contracts_path.exists() {
             println!("  Contracts: {}", contracts_path.display());

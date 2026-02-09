@@ -57,16 +57,17 @@ fn init_creates_complete_layer_structure() {
 
     // Verify multi-role layers have role.yml under roles/ container and schemas/ directories
     let jules = ctx.jules_path();
-    assert!(jules.join("roles/observers/roles/taxonomy/role.yml").exists());
-    assert!(jules.join("roles/observers/roles/data_arch/role.yml").exists());
-    assert!(jules.join("roles/observers/roles/qa/role.yml").exists());
-    assert!(jules.join("roles/observers/roles/cov/role.yml").exists());
-    assert!(jules.join("roles/observers/roles/consistency/role.yml").exists());
+    let jlo = ctx.jlo_path();
+    assert!(jlo.join("roles/observers/roles/taxonomy/role.yml").exists());
+    assert!(jlo.join("roles/observers/roles/data_arch/role.yml").exists());
+    assert!(jlo.join("roles/observers/roles/qa/role.yml").exists());
+    assert!(jlo.join("roles/observers/roles/cov/role.yml").exists());
+    assert!(jlo.join("roles/observers/roles/consistency/role.yml").exists());
     assert!(jules.join("roles/observers/schemas").exists());
     assert!(jules.join("roles/observers/prompt_assembly.j2").exists());
 
-    // Deciders have role.yml under roles/ container
-    assert!(jules.join("roles/deciders/roles/triage_generic/role.yml").exists());
+    // Deciders have role.yml under roles/ container in .jlo
+    assert!(jlo.join("roles/deciders/roles/triage_generic/role.yml").exists());
     assert!(jules.join("roles/deciders/schemas").exists());
     assert!(jules.join("roles/deciders/prompt_assembly.j2").exists());
 
