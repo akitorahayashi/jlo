@@ -11,103 +11,25 @@ on:
 
 permissions:
   contents: write
-  actions: read
 
 jobs:
-  prepare-artifacts:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+  lint:
+    uses: ./.github/workflows/run-linters.yml
 
-      - name: Wait for CI workflow success
-        id: wait-for-ci
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          MAX_WAIT=900  # 15 minutes
-          POLL_INTERVAL=30
-          ELAPSED=0
+  test:
+    uses: ./.github/workflows/run-tests.yml
 
-          echo "Looking for CI workflow run for commit ${{ github.sha }}..."
-
-          while [ $ELAPSED -lt $MAX_WAIT ]; do
-            # Check for successful run
-            RUN_ID=$(gh run list --workflow ci-workflows.yml --commit ${{ github.sha }} --status success --json databaseId --jq '.[0].databaseId')
-
-            if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
-              echo "Found successful CI run: $RUN_ID"
-              # Export RUN_ID to next step
-              echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
-              break
-            fi
-
-            # Check if CI is still running
-            PENDING_ID=$(gh run list --workflow ci-workflows.yml --commit ${{ github.sha }} --json databaseId,status --jq '.[] | select(.status == "in_progress" or .status == "queued" or .status == "pending") | .databaseId' | head -1)
-
-            if [ -n "$PENDING_ID" ] && [ "$PENDING_ID" != "null" ]; then
-              echo "CI workflow $PENDING_ID is still running. Waiting ${POLL_INTERVAL}s... (${ELAPSED}s/${MAX_WAIT}s)"
-              sleep $POLL_INTERVAL
-              ELAPSED=$((ELAPSED + POLL_INTERVAL))
-              continue
-            fi
-
-            # No successful and no pending - check for failure
-            FAILED_ID=$(gh run list --workflow ci-workflows.yml --commit ${{ github.sha }} --status failure --json databaseId --jq '.[0].databaseId')
-            if [ -n "$FAILED_ID" ] && [ "$FAILED_ID" != "null" ]; then
-              echo "CI workflow failed. Cannot proceed with release."
-              exit 1
-            fi
-
-            # No run found at all yet
-            echo "No CI workflow run found yet. Waiting ${POLL_INTERVAL}s... (${ELAPSED}s/${MAX_WAIT}s)"
-            sleep $POLL_INTERVAL
-            ELAPSED=$((ELAPSED + POLL_INTERVAL))
-          done
-
-          if [ -z "$RUN_ID" ] || [ "$RUN_ID" == "null" ]; then
-            echo "Timeout: No successful CI workflow run found for commit ${{ github.sha }} after ${MAX_WAIT}s."
-            exit 1
-          fi
-
-      - name: Download artifacts from CI
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ steps.wait-for-ci.outputs.run_id }}
-        run: |
-          echo "Downloading artifacts from run $RUN_ID"
-
-          artifacts=("jlo-linux-x86_64" "jlo-linux-aarch64" "jlo-darwin-x86_64" "jlo-darwin-aarch64")
-
-          for artifact in "${artifacts[@]}"; do
-            echo "Downloading $artifact..."
-            gh run download "$RUN_ID" -n "$artifact"
-
-            if [ -d "$artifact" ]; then
-                mv "$artifact/$artifact" .
-                rmdir "$artifact"
-            fi
-
-            chmod +x "$artifact"
-          done
-
-      - name: Upload artifacts for release
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: binaries
-          path: |
-            jlo-linux-x86_64
-            jlo-linux-aarch64
-            jlo-darwin-x86_64
-            jlo-darwin-aarch64
+  build:
+    uses: ./.github/workflows/build.yml
 
   release:
-    needs: prepare-artifacts
+    needs: [lint, test, build]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: binaries
+          merge-multiple: true
 
       - name: Create release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
