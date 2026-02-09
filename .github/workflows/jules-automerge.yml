@@ -5,7 +5,7 @@
 # Validates Jules PRs with doctor check and enables auto-merge on success.
 # Only applies when:
 #   1. PR targets the worker branch
-#   2. Head branch matches a known branch_prefix from .jules/roles contracts
+#   2. Head branch matches a known layer branch prefix
 #   3. All changed files are within .jules/ directory
 #   4. Doctor validation passes
 #
@@ -56,48 +56,40 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Resolve branch prefixes
+      - name: Check branch prefix
         id: prefixes
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
           set -euo pipefail
-          git fetch origin "${JULES_WORKER_BRANCH}" --depth=1
 
-          contract_paths=$(git ls-tree -r --name-only "origin/${JULES_WORKER_BRANCH}:.jules/roles" | awk '/contracts.yml$/')
-          if [ -z "$contract_paths" ]; then
-            echo "::error::No contracts.yml found under .jules/roles on ${JULES_WORKER_BRANCH} branch."
-            exit 1
-          fi
-
-          prefixes=""
-          while IFS= read -r path; do
-            [ -z "$path" ] && continue
-            prefix=$(git show "origin/${JULES_WORKER_BRANCH}:.jules/roles/$path" | awk -F':' '/^branch_prefix:/ {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2); gsub(/["'\'']/, "", $2); print $2; exit}')
-            if [ -n "$prefix" ]; then
-              prefixes="${prefixes}${prefix}"$'\n'
-            fi
-          done <<< "$contract_paths"
-
-          prefix_count=$(printf '%s' "$prefixes" | awk 'NF{count++} END{print count+0}')
-          if [ "$prefix_count" -eq 0 ]; then
-            echo "::error::No branch_prefix entries found in contracts.yml on ${JULES_WORKER_BRANCH} branch."
-            exit 1
-          fi
+          # Static allowed prefixes derived from the Layer model.
+          # Updated when layers are added/removed (requires workflow regeneration).
+          allowed_prefixes=(
+            "jules-narrator-"
+            "jules-observer-"
+            "jules-decider-"
+            "jules-planner-"
+            "jules-implementer-"
+            "jules-innovator-"
+          )
 
           match=false
-          while IFS= read -r prefix; do
-            [ -z "$prefix" ] && continue
+          matched_prefix=""
+          for prefix in "${allowed_prefixes[@]}"; do
             if [[ "$HEAD_REF" == "$prefix"* ]]; then
               match=true
+              matched_prefix="$prefix"
               break
             fi
-          done <<< "$prefixes"
+          done
 
           echo "match=$match" >> "$GITHUB_OUTPUT"
 
-          if [ "$match" != "true" ]; then
-            echo "::notice::Branch $HEAD_REF does not match known branch prefixes; skipping auto-merge."
+          if [ "$match" = "true" ]; then
+            echo "Branch $HEAD_REF matches prefix: $matched_prefix"
+          else
+            echo "::notice::Branch $HEAD_REF does not match any allowed prefix (${allowed_prefixes[*]}). Skipping auto-merge."
           fi
 
       - name: Install jlo
