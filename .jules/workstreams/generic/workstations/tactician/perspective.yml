@@ -1,0 +1,17 @@
+schema_version: 2
+
+observer: "tactician"
+workstream: "generic"
+
+updated_at: "2026-02-08T20:25:00Z"
+
+goals:
+  - "Audit AGENTS.md scope and consistency"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-08T20:25:00Z"
+    summary: "Initialized tactician workstation"

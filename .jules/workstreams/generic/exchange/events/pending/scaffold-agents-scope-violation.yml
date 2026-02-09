@@ -1,0 +1,28 @@
+schema_version: 1
+
+id: "tct001"
+issue_id: ""
+created_at: "2026-02-08"
+author_role: "tactician"
+confidence: "high"
+
+title: "Scope Violation in Scaffold AGENTS.md"
+statement: |
+  The `src/assets/scaffold/AGENTS.md` file contains implementation details of the Setup Compiler and Component Catalog that duplicate `src/AGENTS.md`.
+  This violates the 'Responsibility-Driven Scope Contracts' principle by including implementation details in a file that should only describe the scaffold artifact.
+  The `src/AGENTS.md` file is the correct location for Rust implementation details.
+
+evidence:
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc:
+      - "174-210"
+    note: "Contains duplicated 'Setup Compiler' implementation details."
+
+  - path: "src/AGENTS.md"
+    loc:
+      - "135-200"
+    note: "Authoritative source for 'Setup Compiler' implementation details."
+
+tags:
+  - "scope-violation"
+  - "duplication"
