@@ -214,6 +214,14 @@ where
     for (persona, proposal_path, issue_title, issue_body) in &validated {
         let issue: IssueInfo = github.create_issue(issue_title, issue_body, &[])?;
 
+        // Apply innovator labels to the newly created issue
+        let base_label = "innovator";
+        let persona_label = format!("innovator/{}", persona);
+        github.ensure_label(base_label, None)?;
+        github.ensure_label(&persona_label, None)?;
+        github.add_label_to_issue(issue.number, base_label)?;
+        github.add_label_to_issue(issue.number, &persona_label)?;
+
         published.push(PublishedProposal {
             persona: persona.clone(),
             proposal_path: proposal_path.display().to_string(),
