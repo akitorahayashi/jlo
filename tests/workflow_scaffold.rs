@@ -434,7 +434,11 @@ fn validate_yaml_lint(mode: &str) {
     let output_dir = render_workflow_scaffold(&ctx, mode, "lint");
 
     let files = collect_yaml_files(&output_dir);
-    assert!(!files.is_empty(), "Rendered workflow scaffold produced no YAML files for {} mode", mode);
+    assert!(
+        !files.is_empty(),
+        "Rendered workflow scaffold produced no YAML files for {} mode",
+        mode
+    );
 
     let mut config = yamllint_rs::config::Config::new();
     config.set_rule_enabled("line-length", false);
@@ -477,13 +481,19 @@ fn validate_yaml_lint(mode: &str) {
 }
 
 fn render_workflow_scaffold(ctx: &TestContext, mode: &str, suffix: &str) -> PathBuf {
-    let output_dir =
-        ctx.work_dir().join(".tmp/workflow-scaffold-render/tests").join(format!("{}-{}", mode, suffix));
+    let output_dir = ctx
+        .work_dir()
+        .join(".tmp/workflow-scaffold-render/tests")
+        .join(format!("{}-{}", mode, suffix));
 
     ensure_jlo_config(ctx.work_dir());
 
     let mut command = ctx.cli();
-    command.args(["workflow", "generate", mode, "--output-dir"]).arg(&output_dir).assert().success();
+    command
+        .args(["workflow", "generate", mode, "--output-dir"])
+        .arg(&output_dir)
+        .assert()
+        .success();
 
     output_dir
 }

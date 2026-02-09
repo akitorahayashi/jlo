@@ -6,7 +6,9 @@ use std::path::Path;
 use serde::Deserialize;
 use serde_yaml::Value;
 
-use crate::adapters::assets::workflow_scaffold_assets::{WorkflowGenerateConfig, load_workflow_scaffold};
+use crate::adapters::assets::workflow_scaffold_assets::{
+    WorkflowGenerateConfig, load_workflow_scaffold,
+};
 use crate::app::AppContext;
 use crate::domain::workspace::manifest::{
     MANIFEST_FILENAME, hash_content, is_control_plane_entity_file,
@@ -110,7 +112,8 @@ pub fn detect_workflow_runner_mode(root: &Path) -> Result<WorkflowRunnerMode, Ap
     let workflow_path = root.join(WORKFLOW_MODE_DETECTION_FILE);
     if !workflow_path.exists() {
         return Err(AppError::Validation(
-            "Workflow scaffold not found. Run 'jlo init' to install workflows before updating.".into(),
+            "Workflow scaffold not found. Run 'jlo init' to install workflows before updating."
+                .into(),
         ));
     }
 
@@ -230,5 +233,10 @@ pub fn load_workflow_generate_config(root: &Path) -> Result<WorkflowGenerateConf
         AppError::Validation("Missing workflow.wait_minutes_default in .jlo/config.toml.".into())
     })?;
 
-    Ok(WorkflowGenerateConfig { target_branch, worker_branch, schedule_crons, wait_minutes_default })
+    Ok(WorkflowGenerateConfig {
+        target_branch,
+        worker_branch,
+        schedule_crons,
+        wait_minutes_default,
+    })
 }

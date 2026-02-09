@@ -149,8 +149,8 @@ mod tests {
     #[test]
     fn workflow_scaffold_assets_load() {
         let generate_config = WorkflowGenerateConfig::default();
-        let remote =
-            load_workflow_scaffold(WorkflowRunnerMode::Remote, &generate_config).expect("remote assets");
+        let remote = load_workflow_scaffold(WorkflowRunnerMode::Remote, &generate_config)
+            .expect("remote assets");
         assert!(!remote.files.is_empty(), "remote scaffold should have files");
 
         let self_hosted = load_workflow_scaffold(WorkflowRunnerMode::SelfHosted, &generate_config)
