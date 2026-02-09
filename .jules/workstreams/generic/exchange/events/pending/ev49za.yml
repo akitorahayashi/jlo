@@ -1,0 +1,25 @@
+schema_version: 1
+
+id: "ev49za"
+issue_id: ""
+created_at: "2026-02-08"
+author_role: "structural_arch"
+confidence: "high"
+
+title: "Inconsistent Dependency Injection and Port Bypassing in Commands"
+statement: |
+  Several commands instantiate concrete adapters directly or bypass ports entirely, violating the Dependency Inversion Principle and making testing difficult. `setup::generate` instantiates `EmbeddedComponentCatalog` directly, and `workflow::render` uses `std::fs` instead of `WorkspaceStore`.
+
+evidence:
+  - path: "src/app/commands/setup/generate.rs"
+    loc:
+      - "38-40"
+    note: "Directly instantiates `EmbeddedComponentCatalog` instead of accepting `impl ComponentCatalog`."
+  - path: "src/app/commands/workflow/render.rs"
+    loc:
+      - "70-120"
+    note: "Uses `std::fs` and `std::env` directly, bypassing the `WorkspaceStore` port."
+
+tags:
+  - "dependency-injection"
+  - "ports-adapters"

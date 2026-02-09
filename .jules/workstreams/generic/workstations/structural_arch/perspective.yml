@@ -2,7 +2,7 @@ schema_version: 2
 observer: "structural_arch"
 workstream: "generic"
 
-updated_at: "2026-02-08T16:05:00Z"
+updated_at: "2026-02-08T20:45:00Z"
 
 goals:
   - "Enforce strict dependency direction: App -> Ports <- Adapters."
@@ -14,5 +14,7 @@ rules: []
 ignore: []
 
 log:
+  - at: "2026-02-08T20:45:00Z"
+    summary: "Inspected workflow init and setup commands. Found misplaced domain logic and DI violations."
   - at: "2026-02-08T16:05:00Z"
     summary: "Initialized workstation perspective."
