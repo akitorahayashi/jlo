@@ -37,7 +37,7 @@ jlo init --remote
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
 | `jlo workflow matrix <cmd>` | | Generate GitHub Actions matrices |
-| `jlo workflow run <workstream> <layer> [--mock]` | | Run layer with JSON output |
+| `jlo workflow run <workstream> <layer> [--mock]` | | Run layer and return orchestration metadata |
 | `jlo workflow render <mode> [--output <dir>] [--overwrite]` | | Render workflow kit files to a deterministic output directory |
 | `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state for automation |
 | `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
@@ -92,7 +92,7 @@ Mock mode creates real branches and PRs with synthetic commit content, enabling 
 
 **Flags**:
 - `-w, --workstream <name>`: Target workstream (required for observers/deciders)
-- `-r, --role <name>`: Run specific role(s) (manual mode only)
+- `-r, --role <name>`: Run specific role (manual mode only)
 - `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)
 - `--branch <name>`: Override the default starting branch
