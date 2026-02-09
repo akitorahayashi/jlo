@@ -27,7 +27,9 @@ desired_outcome: |
   Commands accept injected dependencies via ports (`ComponentCatalog`, `GitPort`, `WorkspaceStore`) and use robust `Path` operations.
 
 constraints: []
-risks: []
+risks:
+  - "API Breaking Changes: Changing command signatures requires updates to all call sites, potentially breaking integration tests or other consumers if not careful."
+  - "Port Expansion: Adding `remove_dir_all` and `is_symlink` to `WorkspaceStore` might require careful implementation across different store backends (e.g., memory store)."
 
 # Specifics
 affected_areas:
@@ -37,6 +39,11 @@ affected_areas:
   - "src/app/commands/workflow/bootstrap.rs"
   - "src/app/commands/workflow/render.rs"
   - "src/app/commands/workflow/mod.rs"
+  - "src/ports/workspace_store.rs"
+  - "src/adapters/workspace_filesystem.rs"
+  - "src/adapters/memory_workspace_store.rs"
+  - "src/app/cli/setup.rs"
+  - "src/app/cli/workflow.rs"
 
 acceptance_criteria:
   - "Refactor `setup` commands to accept `impl ComponentCatalog`."
@@ -50,5 +57,14 @@ verification_commands:
   - "cargo clippy --all-targets --all-features -- -D warnings"
 
 # Analysis Flags
-requires_deep_analysis: true
-deep_analysis_reason: "Refactoring core commands and dependency injection requires careful architectural planning to avoid breaking changes and ensure all call sites are updated."
+requires_deep_analysis: false
+deep_analysis_reason: |
+  Refactoring core commands and dependency injection requires careful architectural planning to avoid breaking changes and ensure all call sites are updated.
+
+  Analysis completed. Technical plan:
+  1.  **Extend `WorkspaceStore`**: Add `remove_dir_all` and `is_symlink` to support recursive directory removal and symlink detection required by `bootstrap.rs`. Implement these in `FilesystemWorkspaceStore` and `MemoryWorkspaceStore`.
+  2.  **Refactor Setup Commands**: Update `generate.rs` and `list.rs` to accept `&impl ComponentCatalog` as an argument, removing internal `EmbeddedComponentCatalog::new()` calls.
+  3.  **Refactor Workflow Bootstrap**: Update `bootstrap.rs` to accept `&impl WorkspaceStore` and `&impl RoleTemplateStore`. Replace `std::fs` usage with `store` methods. Refactor `collect_files_recursive` to use `store` methods.
+  4.  **Refactor Workflow Render**: Update `render.rs` to accept `&impl WorkspaceStore`. Replace `std::fs` usage.
+  5.  **Refactor Workflow Facade**: Update `workflow/mod.rs` to expose `run`, `bootstrap`, `render` functions that take dependencies as arguments.
+  6.  **Update CLI Layer**: Update `cli/setup.rs` and `cli/workflow.rs` to act as the composition root, instantiating concrete adapters (`EmbeddedComponentCatalog`, `FilesystemWorkspaceStore`, `GitCommandAdapter`, etc.) and injecting them into the commands.

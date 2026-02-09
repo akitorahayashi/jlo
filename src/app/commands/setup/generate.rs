@@ -1,11 +1,10 @@
 //! Setup gen command - generates install.sh and env.toml.
 
-use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 use crate::app::config::SetupConfig;
 use crate::app::services::artifact_generator::ArtifactGenerator;
 use crate::app::services::dependency_resolver::DependencyResolver;
 use crate::domain::AppError;
-use crate::ports::WorkspaceStore;
+use crate::ports::{ComponentCatalog, WorkspaceStore};
 
 /// Execute the setup gen command.
 ///
@@ -14,7 +13,10 @@ use crate::ports::WorkspaceStore;
 /// - `.jules/setup/env.toml` - Environment variables
 ///
 /// Returns the list of resolved component names in installation order.
-pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
+pub fn execute(
+    store: &impl WorkspaceStore,
+    catalog: &impl ComponentCatalog,
+) -> Result<Vec<String>, AppError> {
     let setup_dir = ".jules/setup";
     let tools_yml = ".jules/setup/tools.yml";
 
@@ -37,11 +39,8 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
         ));
     }
 
-    // Initialize services
-    let catalog = EmbeddedComponentCatalog::new()?;
-
     // Resolve dependencies
-    let components = DependencyResolver::resolve(&config.tools, &catalog)?;
+    let components = DependencyResolver::resolve(&config.tools, catalog)?;
 
     // Generate install script
     let script_content = ArtifactGenerator::generate_install_script(&components);
@@ -65,14 +64,20 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
     use crate::adapters::memory_workspace_store::MemoryWorkspaceStore;
     use crate::ports::WorkspaceStore;
+
+    fn test_catalog() -> EmbeddedComponentCatalog {
+        EmbeddedComponentCatalog::new().unwrap()
+    }
 
     #[test]
     fn fails_if_not_initialized() {
         let store = MemoryWorkspaceStore::new();
+        let catalog = test_catalog();
 
-        let result = execute(&store);
+        let result = execute(&store, &catalog);
 
         assert!(matches!(result, Err(AppError::SetupNotInitialized)));
     }
@@ -80,9 +85,10 @@ mod tests {
     #[test]
     fn fails_if_tools_yml_missing() {
         let store = MemoryWorkspaceStore::new();
+        let catalog = test_catalog();
         store.write_file(".jules/setup/placeholder", "").unwrap();
 
-        let result = execute(&store);
+        let result = execute(&store, &catalog);
 
         assert!(matches!(result, Err(AppError::SetupConfigMissing)));
     }
@@ -90,9 +96,10 @@ mod tests {
     #[test]
     fn fails_if_no_tools_specified() {
         let store = MemoryWorkspaceStore::new();
+        let catalog = test_catalog();
         store.write_file(".jules/setup/tools.yml", "tools: []").unwrap();
 
-        let result = execute(&store);
+        let result = execute(&store, &catalog);
 
         assert!(result.is_err());
     }
@@ -100,9 +107,10 @@ mod tests {
     #[test]
     fn generates_install_script() {
         let store = MemoryWorkspaceStore::new();
+        let catalog = test_catalog();
         store.write_file(".jules/setup/tools.yml", "tools:\n  - just").unwrap();
 
-        let result = execute(&store).unwrap();
+        let result = execute(&store, &catalog).unwrap();
 
         assert!(result.contains(&"just".to_string()));
 

@@ -127,12 +127,18 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         let files = self.files.lock().unwrap();
         let path = PathBuf::from(path);
         let mut results = Vec::new();
+        let mut seen_dirs = std::collections::HashSet::new();
 
         for key in files.keys() {
-            if let Some(parent) = key.parent()
-                && parent == path
-            {
-                results.push(key.clone());
+            if key.starts_with(&path) && key != &path {
+                let Ok(stripped) = key.strip_prefix(&path) else { continue };
+                let Some(component) = stripped.components().next() else { continue };
+
+                let child_path = path.join(component.as_os_str());
+                if !seen_dirs.contains(&child_path) {
+                    seen_dirs.insert(child_path.clone());
+                    results.push(child_path);
+                }
             }
         }
         results.sort();
@@ -166,6 +172,25 @@ impl WorkspaceStore for MemoryWorkspaceStore {
 
     fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {
         Ok(())
+    }
+
+    fn remove_dir_all(&self, path: &str) -> Result<(), AppError> {
+        let mut files = self.files.lock().unwrap();
+        let path_buf = PathBuf::from(path);
+        // Remove all files that start with this path
+        let keys_to_remove: Vec<PathBuf> = files
+            .keys()
+            .filter(|k| k.starts_with(&path_buf))
+            .cloned()
+            .collect();
+        for key in keys_to_remove {
+            files.remove(&key);
+        }
+        Ok(())
+    }
+
+    fn is_symlink(&self, _path: &str) -> bool {
+        false // Memory store doesn't support symlinks yet
     }
 
     fn resolve_path(&self, path: &str) -> PathBuf {

@@ -28,11 +28,15 @@ pub use workstreams::{
 };
 
 use crate::domain::AppError;
-use crate::ports::WorkspaceStore;
+use crate::ports::{GitHubPort, GitPort, RoleTemplateStore, WorkspaceStore};
 
 /// Execute workflow bootstrap.
-pub fn bootstrap(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOutput, AppError> {
-    bootstrap::execute(options)
+pub fn bootstrap(
+    store: &impl WorkspaceStore,
+    templates: &impl RoleTemplateStore,
+    options: WorkflowBootstrapOptions,
+) -> Result<WorkflowBootstrapOutput, AppError> {
+    bootstrap::execute(store, templates, options)
 }
 
 /// Execute workflow doctor validation.
@@ -41,20 +45,21 @@ pub fn doctor(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, Ap
 }
 
 /// Execute workflow run command.
-pub fn run(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
-    let store = crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
-
-    let jules_path = store.jules_path();
-    let git_root = jules_path.parent().unwrap_or(&jules_path).to_path_buf();
-    let git = crate::adapters::git_command::GitCommandAdapter::new(git_root);
-    let github = crate::adapters::github_command::GitHubCommandAdapter::new();
-
-    run::execute(&store, options, &git, &github)
+pub fn run(
+    store: &impl WorkspaceStore,
+    git: &impl GitPort,
+    github: &impl GitHubPort,
+    options: WorkflowRunOptions,
+) -> Result<WorkflowRunOutput, AppError> {
+    run::execute(store, options, git, github)
 }
 
 /// Execute workflow render command.
-pub fn render(options: WorkflowRenderOptions) -> Result<WorkflowRenderOutput, AppError> {
-    render::execute(options)
+pub fn render(
+    store: &impl WorkspaceStore,
+    options: WorkflowRenderOptions,
+) -> Result<WorkflowRenderOutput, AppError> {
+    render::execute(store, options)
 }
 
 /// Execute workflow cleanup mock command.

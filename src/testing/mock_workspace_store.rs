@@ -193,6 +193,16 @@ impl WorkspaceStore for MockWorkspaceStore {
         Ok(())
     }
 
+    fn remove_dir_all(&self, path: &str) -> Result<(), AppError> {
+        let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
+        self.files.borrow_mut().retain(|k, _| !k.starts_with(&prefix));
+        Ok(())
+    }
+
+    fn is_symlink(&self, _path: &str) -> bool {
+        false
+    }
+
     fn resolve_path(&self, path: &str) -> PathBuf {
         PathBuf::from(path)
     }

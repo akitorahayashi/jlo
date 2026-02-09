@@ -4,7 +4,6 @@
 //! writes directly to the repository `.github/` directory, overwriting
 //! jlo-managed files. Use `-o, --output-dir` to redirect output elsewhere.
 
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
@@ -12,6 +11,7 @@ use serde::Serialize;
 use crate::adapters::assets::workflow_kit_assets::load_workflow_kit;
 use crate::app::commands::init::load_workflow_render_config;
 use crate::domain::{AppError, WorkflowRunnerMode};
+use crate::ports::WorkspaceStore;
 
 const SCHEMA_VERSION: u32 = 1;
 
@@ -38,15 +38,31 @@ pub struct WorkflowRenderOutput {
 }
 
 /// Execute workflow render command.
-pub fn execute(options: WorkflowRenderOptions) -> Result<WorkflowRenderOutput, AppError> {
-    let repo_root = find_repo_root(&std::env::current_dir()?)?;
-    let render_config = load_workflow_render_config(&repo_root)?;
-    let output_dir = resolve_output_dir(&options, &repo_root)?;
+pub fn execute(
+    store: &impl WorkspaceStore,
+    options: WorkflowRenderOptions,
+) -> Result<WorkflowRenderOutput, AppError> {
+    // We use the store's root as the base for resolution
+    let repo_root = store.resolve_path("");
 
-    prepare_output_dir(&output_dir)?;
+    // Load config (still using fs internally via helper, but scoped to repo root)
+    let render_config = load_workflow_render_config(&repo_root)?;
+
+    // Resolve output directory
+    let output_dir = if let Some(dir) = options.output_dir.as_ref() {
+        if dir.is_absolute() {
+            dir.clone()
+        } else {
+            store.resolve_path(dir.to_str().unwrap_or_default())
+        }
+    } else {
+        repo_root.clone()
+    };
+
+    prepare_output_dir(store, &output_dir)?;
 
     let kit = load_workflow_kit(options.mode, &render_config)?;
-    write_workflow_kit(&output_dir, &kit)?;
+    write_workflow_kit(store, &output_dir, &kit)?;
 
     Ok(WorkflowRenderOutput {
         schema_version: SCHEMA_VERSION,
@@ -56,63 +72,31 @@ pub fn execute(options: WorkflowRenderOptions) -> Result<WorkflowRenderOutput, A
     })
 }
 
-fn resolve_output_dir(
-    options: &WorkflowRenderOptions,
-    repo_root: &Path,
-) -> Result<PathBuf, AppError> {
-    if let Some(dir) = options.output_dir.as_ref() {
-        return normalize_output_dir(dir.clone());
-    }
-
-    // Default: render directly to repository root (kit paths already include .github/ prefix)
-    Ok(repo_root.to_path_buf())
-}
-
-fn normalize_output_dir(dir: PathBuf) -> Result<PathBuf, AppError> {
-    if dir.is_absolute() {
-        return Ok(dir);
-    }
-
-    let current_dir = std::env::current_dir()?;
-    Ok(current_dir.join(dir))
-}
-
-fn find_repo_root(start: &Path) -> Result<PathBuf, AppError> {
-    let mut current = Some(start);
-
-    while let Some(dir) = current {
-        if dir.join(".git").exists() {
-            return Ok(dir.to_path_buf());
-        }
-        current = dir.parent();
-    }
-
-    Err(AppError::RepositoryDetectionFailed)
-}
-
 /// Prepare output directory. Always overwrites jlo-managed content by default.
-fn prepare_output_dir(output_dir: &Path) -> Result<(), AppError> {
-    if output_dir.exists() && output_dir.is_file() {
+fn prepare_output_dir(store: &impl WorkspaceStore, output_dir: &Path) -> Result<(), AppError> {
+    let output_dir_str = output_dir.to_str().unwrap_or_default();
+
+    // Check if it exists and is a file
+    if store.file_exists(output_dir_str) && !store.is_dir(output_dir_str) {
         return Err(AppError::Validation(format!(
             "Output path '{}' is a file. Provide a directory path.",
             output_dir.display()
         )));
     }
 
-    fs::create_dir_all(output_dir)?;
+    store.create_dir_all(output_dir_str)?;
     Ok(())
 }
 
 fn write_workflow_kit(
+    store: &impl WorkspaceStore,
     output_dir: &Path,
     kit: &crate::adapters::assets::workflow_kit_assets::WorkflowKitAssets,
 ) -> Result<(), AppError> {
     for file in &kit.files {
         let destination = output_dir.join(&file.path);
-        if let Some(parent) = destination.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        fs::write(&destination, &file.content)?;
+        // store.write_file handles parent directory creation
+        store.write_file(destination.to_str().unwrap_or_default(), &file.content)?;
     }
 
     Ok(())

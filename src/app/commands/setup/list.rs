@@ -1,6 +1,5 @@
 //! Setup list command - lists available components.
 
-use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 use crate::domain::AppError;
 use crate::ports::ComponentCatalog;
 
@@ -32,8 +31,7 @@ pub struct EnvVarInfo {
 /// Execute the setup list command.
 ///
 /// Returns summaries of all available components.
-pub fn execute() -> Result<Vec<ComponentSummary>, AppError> {
-    let catalog = EmbeddedComponentCatalog::new()?;
+pub fn execute(catalog: &impl ComponentCatalog) -> Result<Vec<ComponentSummary>, AppError> {
     let components = catalog.list_all();
 
     Ok(components
@@ -45,9 +43,10 @@ pub fn execute() -> Result<Vec<ComponentSummary>, AppError> {
 /// Execute the setup list --detail command.
 ///
 /// Returns detailed information for a specific component.
-pub fn execute_detail(component_name: &str) -> Result<ComponentDetail, AppError> {
-    let catalog = EmbeddedComponentCatalog::new()?;
-
+pub fn execute_detail(
+    catalog: &impl ComponentCatalog,
+    component_name: &str,
+) -> Result<ComponentDetail, AppError> {
     let component = catalog.get(component_name).ok_or_else(|| AppError::ComponentNotFound {
         name: component_name.to_string(),
         available: catalog.names().iter().map(|s| s.to_string()).collect(),
@@ -73,10 +72,16 @@ pub fn execute_detail(component_name: &str) -> Result<ComponentDetail, AppError>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
+
+    fn test_catalog() -> EmbeddedComponentCatalog {
+        EmbeddedComponentCatalog::new().unwrap()
+    }
 
     #[test]
     fn list_returns_components() {
-        let result = execute().unwrap();
+        let catalog = test_catalog();
+        let result = execute(&catalog).unwrap();
 
         assert!(!result.is_empty());
         assert!(result.iter().any(|c| c.name == "just"));
@@ -86,7 +91,8 @@ mod tests {
 
     #[test]
     fn detail_returns_component_info() {
-        let result = execute_detail("just").unwrap();
+        let catalog = test_catalog();
+        let result = execute_detail(&catalog, "just").unwrap();
 
         assert_eq!(result.name, "just");
         assert!(!result.summary.is_empty());
@@ -95,7 +101,8 @@ mod tests {
 
     #[test]
     fn detail_not_found() {
-        let result = execute_detail("nonexistent");
+        let catalog = test_catalog();
+        let result = execute_detail(&catalog, "nonexistent");
 
         assert!(matches!(result, Err(AppError::ComponentNotFound { .. })));
     }

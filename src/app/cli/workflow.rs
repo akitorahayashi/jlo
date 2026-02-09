@@ -1,6 +1,11 @@
 //! Workflow command implementation.
 
+use crate::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
+use crate::adapters::git_command::GitCommandAdapter;
+use crate::adapters::github_command::GitHubCommandAdapter;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
+use crate::ports::WorkspaceStore;
 use clap::Subcommand;
 
 #[derive(Subcommand)]
@@ -150,8 +155,10 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let root = std::env::current_dir().map_err(|e| {
                 AppError::InternalError(format!("Failed to get current directory: {}", e))
             })?;
+            let store = FilesystemWorkspaceStore::new(root.clone());
+            let templates = EmbeddedRoleTemplateStore::new();
             let options = workflow::WorkflowBootstrapOptions { root };
-            let output = workflow::bootstrap(options)?;
+            let output = workflow::bootstrap(&store, &templates, options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowCommands::Doctor { workstream } => {
@@ -167,6 +174,12 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
                 s.split(',').map(str::trim).filter(|v| !v.is_empty()).map(String::from).collect()
             });
 
+            let store = FilesystemWorkspaceStore::current()?;
+            let jules_path = store.jules_path();
+            let git_root = jules_path.parent().unwrap_or(&jules_path).to_path_buf();
+            let git = GitCommandAdapter::new(git_root);
+            let github = GitHubCommandAdapter::new();
+
             let options = workflow::WorkflowRunOptions {
                 workstream,
                 layer,
@@ -175,13 +188,14 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
                 routing_labels,
                 phase,
             };
-            let output = workflow::run(options)?;
+            let output = workflow::run(&store, &git, &github, options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowCommands::Render { mode, output_dir } => {
             let output_dir = output_dir.map(std::path::PathBuf::from);
+            let store = FilesystemWorkspaceStore::current()?;
             let options = workflow::WorkflowRenderOptions { mode, output_dir };
-            let output = workflow::render(options)?;
+            let output = workflow::render(&store, options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowCommands::Cleanup { command } => run_workflow_cleanup(command),

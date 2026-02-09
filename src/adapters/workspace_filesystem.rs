@@ -243,6 +243,24 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         fs::create_dir_all(full_path).map_err(AppError::from)
     }
 
+    fn remove_dir_all(&self, path: &str) -> Result<(), AppError> {
+        let full_path = self.resolve_path(path);
+        self.validate_path_within_root(&full_path)?;
+        if full_path.exists() {
+            fs::remove_dir_all(full_path).map_err(AppError::from)?;
+        }
+        Ok(())
+    }
+
+    fn is_symlink(&self, path: &str) -> bool {
+        let full_path = self.resolve_path(path);
+        // For checks, allow traversal detection to fail silently
+        if self.validate_path_within_root(&full_path).is_err() {
+            return false;
+        }
+        full_path.is_symlink()
+    }
+
     fn resolve_path(&self, path: &str) -> PathBuf {
         self.root.join(path)
     }

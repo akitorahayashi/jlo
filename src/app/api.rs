@@ -5,6 +5,7 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 use crate::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
 use crate::adapters::git_command::GitCommandAdapter;
 use crate::adapters::github_command::GitHubCommandAdapter;
@@ -187,17 +188,20 @@ pub fn setup_gen(path: Option<&Path>) -> Result<Vec<String>, AppError> {
     } else {
         FilesystemWorkspaceStore::current()?
     };
-    setup::generate(&store)
+    let catalog = EmbeddedComponentCatalog::new()?;
+    setup::generate(&store, &catalog)
 }
 
 /// List all available components.
 pub fn setup_list() -> Result<Vec<ComponentSummary>, AppError> {
-    setup::list()
+    let catalog = EmbeddedComponentCatalog::new()?;
+    setup::list(&catalog)
 }
 
 /// Get detailed information for a specific component.
 pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
-    setup::list_detail(component)
+    let catalog = EmbeddedComponentCatalog::new()?;
+    setup::list_detail(&catalog, component)
 }
 
 // =============================================================================
@@ -249,6 +253,9 @@ pub fn doctor_at(
 pub fn workflow_bootstrap_at(
     path: impl Into<PathBuf>,
 ) -> Result<WorkflowBootstrapOutput, AppError> {
-    let options = WorkflowBootstrapOptions { root: path.into() };
-    crate::app::commands::workflow::bootstrap(options)
+    let root = path.into();
+    let store = FilesystemWorkspaceStore::new(root.clone());
+    let templates = EmbeddedRoleTemplateStore::new();
+    let options = WorkflowBootstrapOptions { root };
+    crate::app::commands::workflow::bootstrap(&store, &templates, options)
 }

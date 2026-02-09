@@ -14,13 +14,10 @@
 
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
-use crate::app::AppContext;
 use crate::domain::workspace::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};
 use crate::domain::workspace::workspace_layout::{JLO_DIR, JULES_DIR, VERSION_FILE};
 use crate::domain::{AppError, Layer, ScaffoldManifest};
@@ -30,7 +27,7 @@ use crate::ports::{RoleTemplateStore, WorkspaceStore};
 #[derive(Debug)]
 pub struct WorkflowBootstrapOptions {
     /// Root path of the workspace (on the `jules` branch).
-    pub root: std::path::PathBuf,
+    pub root: PathBuf,
 }
 
 /// Output of the bootstrap command.
@@ -47,31 +44,29 @@ pub struct WorkflowBootstrapOutput {
 /// Execute the workflow bootstrap.
 ///
 /// Deterministically projects `.jules/` from `.jlo/` control inputs and embedded scaffold.
-pub fn execute(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOutput, AppError> {
+pub fn execute(
+    store: &impl WorkspaceStore,
+    templates: &impl RoleTemplateStore,
+    _options: WorkflowBootstrapOptions,
+) -> Result<WorkflowBootstrapOutput, AppError> {
     let current_version = env!("CARGO_PKG_VERSION");
-    let root = &options.root;
-
-    let store = FilesystemWorkspaceStore::new(root.clone());
-    let templates = EmbeddedRoleTemplateStore::new();
 
     // --- Hard preconditions ---
-    let jlo_path = root.join(JLO_DIR);
-    if !jlo_path.exists() {
+    if !store.jlo_exists() {
         return Err(AppError::Validation(
             "Bootstrap requires .jlo/ control plane. Run 'jlo init' on your control branch first."
                 .to_string(),
         ));
     }
 
-    let jlo_version_path = jlo_path.join(VERSION_FILE);
-    if !jlo_version_path.exists() {
+    let version_file_path = format!("{}/{}", JLO_DIR, VERSION_FILE);
+    if !store.file_exists(&version_file_path) {
         return Err(AppError::WorkspaceIntegrity(
             "Missing .jlo/.jlo-version. Control plane is incomplete.".to_string(),
         ));
     }
 
-    let ctx = AppContext::new(store, templates);
-    let files_written = project_runtime(&ctx, root, current_version)?;
+    let files_written = project_runtime(store, templates, current_version)?;
 
     Ok(WorkflowBootstrapOutput {
         materialized: true,
@@ -81,33 +76,29 @@ pub fn execute(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOut
 }
 
 /// Full deterministic projection of `.jules/` from scaffold + `.jlo/` overlay.
-fn project_runtime<W, R>(
-    ctx: &AppContext<W, R>,
-    root: &Path,
+fn project_runtime(
+    store: &impl WorkspaceStore,
+    templates: &impl RoleTemplateStore,
     version: &str,
-) -> Result<usize, AppError>
-where
-    W: WorkspaceStore,
-    R: RoleTemplateStore,
-{
+) -> Result<usize, AppError> {
     // Counts write operations performed; overlay may overwrite scaffold files,
     // so this can exceed the unique file count in the final projection.
     let mut files_written: usize = 0;
 
     // 1. Materialize managed framework files from embedded scaffold
-    let scaffold_files = ctx.templates().scaffold_files();
-    ctx.workspace().create_structure(&scaffold_files)?;
-    ctx.workspace().write_version(version)?;
+    let scaffold_files = templates.scaffold_files();
+    store.create_structure(&scaffold_files)?;
+    store.write_version(version)?;
     files_written += scaffold_files.len() + 1; // +1 for version
 
     // 2. Overlay mutable control inputs from .jlo/ onto .jules/
-    files_written += overlay_control_inputs(ctx, root)?;
+    files_written += overlay_control_inputs(store)?;
 
     // 3. Delete projected workstreams absent from .jlo/
-    delete_absent_workstreams(root)?;
+    delete_absent_workstreams(store)?;
 
     // 4. Delete projected roles absent from .jlo/
-    delete_absent_roles(root)?;
+    delete_absent_roles(store)?;
 
     // 5. Write managed manifest
     let mut map = BTreeMap::new();
@@ -119,36 +110,26 @@ where
     let managed_manifest = ScaffoldManifest::from_map(map);
     let manifest_content = managed_manifest.to_yaml()?;
     let manifest_path = format!("{}/{}", JULES_DIR, MANIFEST_FILENAME);
-    ctx.workspace().write_file(&manifest_path, &manifest_content)?;
+    store.write_file(&manifest_path, &manifest_content)?;
     files_written += 1;
 
     Ok(files_written)
 }
 
 /// Copy mutable control inputs from `.jlo/` to their `.jules/` counterparts.
-///
-/// Handles:
-/// - `.jlo/roles/<layer>/roles/<role>/role.yml` → `.jules/roles/<layer>/roles/<role>/role.yml`
-/// - `.jlo/workstreams/<ws>/scheduled.toml` → `.jules/workstreams/<ws>/scheduled.toml`
-/// - `.jlo/config.toml` → `.jules/config.toml`
-/// - `.jlo/setup/**` → `.jules/setup/**`
-fn overlay_control_inputs<W, R>(ctx: &AppContext<W, R>, root: &Path) -> Result<usize, AppError>
-where
-    W: WorkspaceStore,
-    R: RoleTemplateStore,
-{
-    let jlo_path = root.join(JLO_DIR);
+fn overlay_control_inputs(store: &impl WorkspaceStore) -> Result<usize, AppError> {
+    let jlo_path = Path::new(JLO_DIR);
     let mut count = 0;
 
     // Collect all files under .jlo/ recursively and project only allowlisted inputs to .jules/
-    let files = collect_files_recursive(&jlo_path, &jlo_path)?;
+    let files = collect_files_recursive(store, jlo_path, jlo_path)?;
     for (rel_path, content) in files {
         if !should_project_control_file(&rel_path) {
             continue;
         }
 
         let jules_rel = format!("{}/{}", JULES_DIR, rel_path);
-        ctx.workspace().write_file(&jules_rel, &content)?;
+        store.write_file(&jules_rel, &content)?;
         count += 1;
     }
 
@@ -156,23 +137,17 @@ where
 }
 
 /// Delete workstreams in `.jules/workstreams/` that are absent from `.jlo/workstreams/`.
-fn delete_absent_workstreams(root: &Path) -> Result<(), AppError> {
-    let jlo_ws_dir = root.join(JLO_DIR).join("workstreams");
-    let jules_ws_dir = root.join(JULES_DIR).join("workstreams");
+fn delete_absent_workstreams(store: &impl WorkspaceStore) -> Result<(), AppError> {
+    let jlo_ws_rel = format!("{}/workstreams", JLO_DIR);
+    let jules_ws_rel = format!("{}/workstreams", JULES_DIR);
 
-    let jlo_workstreams = list_workstreams_with_schedule(&jlo_ws_dir);
-    let jules_workstreams = list_subdirs(&jules_ws_dir);
+    let jlo_workstreams = list_workstreams_with_schedule(store, Path::new(&jlo_ws_rel))?;
+    let jules_workstreams = list_subdirs(store, Path::new(&jules_ws_rel))?;
 
     for ws in &jules_workstreams {
         if !jlo_workstreams.contains(ws) {
-            let ws_path = jules_ws_dir.join(ws);
-            std::fs::remove_dir_all(&ws_path).map_err(|e| {
-                AppError::InternalError(format!(
-                    "Failed to remove projected workstream {}: {}",
-                    ws_path.display(),
-                    e
-                ))
-            })?;
+            let ws_path = format!("{}/{}", jules_ws_rel, ws);
+            store.remove_dir_all(&ws_path)?;
         }
     }
 
@@ -180,29 +155,22 @@ fn delete_absent_workstreams(root: &Path) -> Result<(), AppError> {
 }
 
 /// Delete roles in `.jules/roles/<layer>/roles/` that are absent from `.jlo/roles/<layer>/roles/`.
-fn delete_absent_roles(root: &Path) -> Result<(), AppError> {
+fn delete_absent_roles(store: &impl WorkspaceStore) -> Result<(), AppError> {
     for layer in Layer::ALL {
         if layer.is_single_role() {
             continue;
         }
 
-        let jlo_roles_dir = root.join(JLO_DIR).join("roles").join(layer.dir_name()).join("roles");
-        let jules_roles_dir =
-            root.join(JULES_DIR).join("roles").join(layer.dir_name()).join("roles");
+        let jlo_roles_rel = format!("{}/roles/{}/roles", JLO_DIR, layer.dir_name());
+        let jules_roles_rel = format!("{}/roles/{}/roles", JULES_DIR, layer.dir_name());
 
-        let jlo_roles = list_roles_with_definition(&jlo_roles_dir);
-        let jules_roles = list_subdirs(&jules_roles_dir);
+        let jlo_roles = list_roles_with_definition(store, Path::new(&jlo_roles_rel))?;
+        let jules_roles = list_subdirs(store, Path::new(&jules_roles_rel))?;
 
         for role in &jules_roles {
             if !jlo_roles.contains(role) {
-                let role_path = jules_roles_dir.join(role);
-                std::fs::remove_dir_all(&role_path).map_err(|e| {
-                    AppError::InternalError(format!(
-                        "Failed to remove projected role {}: {}",
-                        role_path.display(),
-                        e
-                    ))
-                })?;
+                let role_path = format!("{}/{}", jules_roles_rel, role);
+                store.remove_dir_all(&role_path)?;
             }
         }
     }
@@ -243,29 +211,48 @@ fn should_project_control_file(rel_path: &str) -> bool {
 }
 
 /// Recursively collect all files under a directory as (relative_path, content) pairs.
-fn collect_files_recursive(base: &Path, dir: &Path) -> Result<Vec<(String, String)>, AppError> {
+fn collect_files_recursive(
+    store: &impl WorkspaceStore,
+    base: &Path,
+    dir: &Path,
+) -> Result<Vec<(String, String)>, AppError> {
     let mut result = Vec::new();
-    if !dir.exists() {
+    let dir_str = dir.to_str().ok_or_else(|| {
+        AppError::InternalError(format!("Invalid path encoding: {}", dir.display()))
+    })?;
+
+    if !store.is_dir(dir_str) {
         return Ok(result);
     }
 
-    let mut entries: Vec<_> = std::fs::read_dir(dir)?.filter_map(|e| e.ok()).collect();
-    entries.sort_by_key(|e| e.file_name());
+    let entries = store.list_dir(dir_str)?;
+    // entries are full paths (or at least paths that store returns).
+    // We need to extract filename to append to current `dir` (which is relative to root).
 
-    for entry in entries {
-        let path = entry.path();
-        // Skip symlinks to prevent exfiltration of host files in CI environments
-        if path.is_symlink() {
+    let mut sorted_entries = entries;
+    sorted_entries.sort();
+
+    for entry_path in sorted_entries {
+        let file_name = entry_path.file_name().ok_or_else(|| {
+            AppError::InternalError("Failed to extract filename".to_string())
+        })?;
+        let rel_path = dir.join(file_name);
+        let rel_path_str = rel_path.to_str().ok_or_else(|| {
+            AppError::InternalError(format!("Invalid path encoding: {}", rel_path.display()))
+        })?;
+
+        if store.is_symlink(rel_path_str) {
             continue;
         }
-        if path.is_dir() {
-            result.extend(collect_files_recursive(base, &path)?);
-        } else if path.is_file() {
-            let rel = path
-                .strip_prefix(base)
-                .map_err(|e| AppError::InternalError(format!("Path strip failed: {}", e)))?;
-            let content = std::fs::read_to_string(&path)?;
-            result.push((rel.to_string_lossy().to_string(), content));
+
+        if store.is_dir(rel_path_str) {
+            result.extend(collect_files_recursive(store, base, &rel_path)?);
+        } else if store.file_exists(rel_path_str) {
+            let rel_to_base = rel_path.strip_prefix(base).map_err(|e| {
+                AppError::InternalError(format!("Path strip failed: {}", e))
+            })?;
+            let content = store.read_file(rel_path_str)?;
+            result.push((rel_to_base.to_string_lossy().to_string(), content));
         }
     }
 
@@ -273,48 +260,72 @@ fn collect_files_recursive(base: &Path, dir: &Path) -> Result<Vec<(String, Strin
 }
 
 /// List subdirectory names (not paths) for a directory.
-fn list_subdirs(dir: &Path) -> BTreeSet<String> {
+fn list_subdirs(store: &impl WorkspaceStore, dir: &Path) -> Result<BTreeSet<String>, AppError> {
     let mut names = BTreeSet::new();
-    if let Ok(entries) = std::fs::read_dir(dir) {
-        for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                names.insert(entry.file_name().to_string_lossy().to_string());
-            }
-        }
+    let dir_str = dir.to_str().unwrap_or_default();
+
+    if !store.is_dir(dir_str) {
+        return Ok(names);
     }
-    names
+
+    let entries = store.list_dir(dir_str)?;
+    for entry in entries {
+         let file_name = entry.file_name().unwrap();
+         // Construct path relative to root to check is_dir
+         let path = dir.join(file_name);
+         if store.is_dir(path.to_str().unwrap()) {
+             names.insert(file_name.to_string_lossy().to_string());
+         }
+    }
+    Ok(names)
 }
 
-fn list_workstreams_with_schedule(dir: &Path) -> BTreeSet<String> {
+fn list_workstreams_with_schedule(
+    store: &impl WorkspaceStore,
+    dir: &Path,
+) -> Result<BTreeSet<String>, AppError> {
     let mut names = BTreeSet::new();
-    if let Ok(entries) = std::fs::read_dir(dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if !path.is_dir() {
-                continue;
-            }
+    let dir_str = dir.to_str().unwrap_or_default();
+
+    if !store.is_dir(dir_str) {
+        return Ok(names);
+    }
+
+    let entries = store.list_dir(dir_str)?;
+    for entry in entries {
+        let file_name = entry.file_name().unwrap();
+        let path = dir.join(file_name);
+        if store.is_dir(path.to_str().unwrap()) {
             let schedule = path.join("scheduled.toml");
-            if schedule.exists() {
-                names.insert(entry.file_name().to_string_lossy().to_string());
+            if store.file_exists(schedule.to_str().unwrap()) {
+                names.insert(file_name.to_string_lossy().to_string());
             }
         }
     }
-    names
+    Ok(names)
 }
 
-fn list_roles_with_definition(dir: &Path) -> BTreeSet<String> {
+fn list_roles_with_definition(
+    store: &impl WorkspaceStore,
+    dir: &Path,
+) -> Result<BTreeSet<String>, AppError> {
     let mut names = BTreeSet::new();
-    if let Ok(entries) = std::fs::read_dir(dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if !path.is_dir() {
-                continue;
-            }
+    let dir_str = dir.to_str().unwrap_or_default();
+
+    if !store.is_dir(dir_str) {
+        return Ok(names);
+    }
+
+    let entries = store.list_dir(dir_str)?;
+    for entry in entries {
+        let file_name = entry.file_name().unwrap();
+        let path = dir.join(file_name);
+        if store.is_dir(path.to_str().unwrap()) {
             let role_file = path.join("role.yml");
-            if role_file.exists() {
-                names.insert(entry.file_name().to_string_lossy().to_string());
+            if store.file_exists(role_file.to_str().unwrap()) {
+                names.insert(file_name.to_string_lossy().to_string());
             }
         }
     }
-    names
+    Ok(names)
 }

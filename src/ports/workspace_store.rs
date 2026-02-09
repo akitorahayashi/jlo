@@ -71,6 +71,12 @@ pub trait WorkspaceStore: PromptAssetLoader {
     /// Create directory recursively.
     fn create_dir_all(&self, path: &str) -> Result<(), AppError>;
 
+    /// Remove a directory and all its contents.
+    fn remove_dir_all(&self, path: &str) -> Result<(), AppError>;
+
+    /// Check if a path is a symbolic link.
+    fn is_symlink(&self, path: &str) -> bool;
+
     /// Get the absolute path to a file within the workspace/root.
     fn resolve_path(&self, path: &str) -> PathBuf;
 

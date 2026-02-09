@@ -247,6 +247,14 @@ mod tests {
             panic!("mock narrator no-op must not call create_dir_all");
         }
 
+        fn remove_dir_all(&self, _path: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call remove_dir_all");
+        }
+
+        fn is_symlink(&self, _path: &str) -> bool {
+            panic!("mock narrator no-op must not call is_symlink");
+        }
+
         fn resolve_path(&self, _path: &str) -> PathBuf {
             panic!("mock narrator no-op must not call resolve_path");
         }
