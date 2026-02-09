@@ -88,7 +88,11 @@ Core domain logic located in `src/domain/`.
 | `jlo workflow matrix routing --workstreams-json <json> --routing-labels <csv>` | | Generate routing matrix for issues |
 | `jlo workflow run <workstream> <layer> [--mock]` | | Run layer and return wait-gating metadata |
 | `jlo workflow cleanup mock --mock-tag <tag> [--pr-numbers-json <json>] [--branches-json <json>]` | | Cleanup mock artifacts |
-| `jlo workflow pr label-from-branch [--branch <branch>]` | | Apply category label to implementer PR |
+| `jlo workflow pr comment-summary-request <pr_number>` | | Post or update summary-request comment on a Jules PR |
+| `jlo workflow pr sync-category-label <pr_number>` | | Sync implementer category label from branch to PR |
+| `jlo workflow pr enable-automerge <pr_number>` | | Enable auto-merge on an eligible PR |
+| `jlo workflow pr process <pr_number>` | | Run all event-level PR commands in order |
+| `jlo workflow issue label-innovator <issue_number> <persona>` | | Apply innovator labels to a proposal issue |
 | `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state |
 | `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
 | `jlo workflow workstreams publish-proposals <workstream>` | | Publish innovator proposals as GitHub issues |

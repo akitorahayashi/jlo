@@ -51,6 +51,11 @@ Workflow orchestration uses `jlo workflow` commands:
 - `jlo workflow matrix pending-workstreams` → Generate decider matrix
 - `jlo workflow matrix routing` → Generate planner/implementer routing
 - `jlo workflow run <layer>` → Execute layer with JSON output
+- `jlo workflow pr comment-summary-request <pr_number>` → Post/update summary-request comment
+- `jlo workflow pr sync-category-label <pr_number>` → Sync implementer category label from branch
+- `jlo workflow pr enable-automerge <pr_number>` → Enable auto-merge (policy gates in code)
+- `jlo workflow pr process <pr_number>` → Run all PR event commands in order
+- `jlo workflow issue label-innovator <issue_number> <persona>` → Apply innovator labels
 - `jlo workflow workstreams publish-proposals <workstream>` → Publish innovator proposals
 
 ## Workflow Execution Flow
@@ -77,6 +82,7 @@ Repository variables and secrets referenced by `.github/workflows/jules-*.yml`:
 | Name | Type | Purpose | Default |
 |------|------|----------|----------|
 | `JULES_API_KEY` | Secret | API key for Jules service | (required) |
+| `JULES_LINKED_GH_TOKEN` | Secret | GitHub token with PR comment access for summary requests | (required for summary-request workflow) |
 | `JLO_PAUSED` | Variable | Set to `true` to skip scheduled runs | `false` |
 
 Branch values (`target_branch`, `worker_branch`) are rendered at build time from `.jlo/config.toml` and baked into the workflow YAML. They are not read from repository variables at runtime.
