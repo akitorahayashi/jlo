@@ -722,9 +722,12 @@ fn verify_scaffold_integrity() {
     for file in root_files {
         assert!(ctx.jules_path().join(file).exists(), "{} should exist in .jules/ (Runtime)", file);
     }
-    
+
     // Config should be in .jlo/
-    assert!(ctx.jlo_path().join("config.toml").exists(), "config.toml should exist in .jlo/ (Control Plane)");
+    assert!(
+        ctx.jlo_path().join("config.toml").exists(),
+        "config.toml should exist in .jlo/ (Control Plane)"
+    );
 
     // Verify changes directory
     assert!(ctx.jules_path().join("changes/.gitkeep").exists(), "changes/.gitkeep should exist");
@@ -772,7 +775,11 @@ fn verify_scaffold_integrity() {
     }
     // env.toml and install.sh are generated later, so verify they are NOT there yet
     for file in ["env.toml", "install.sh"] {
-        assert!(!jules_setup_path.join(file).exists(), "setup/{} should NOT exist yet in .jules/", file);
+        assert!(
+            !jules_setup_path.join(file).exists(),
+            "setup/{} should NOT exist yet in .jules/",
+            file
+        );
     }
 
     // Verify workstreams structure

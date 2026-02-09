@@ -17,7 +17,6 @@ use crate::ports::WorkspaceStore;
 pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
     let jlo_setup = ".jlo/setup";
     let tools_yml = ".jlo/setup/tools.yml";
-    let jules_setup = ".jules/setup";
 
     if !store.file_exists(jlo_setup) {
         return Err(AppError::SetupNotInitialized);

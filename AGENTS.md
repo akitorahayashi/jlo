@@ -31,7 +31,7 @@ Prompts are constructed by `prompt_assembly.j2`, which renders prompt sections v
 Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules API; workflows control scheduling, branching, and merge policies.
 
 ## Verify Commands
-- **Format**: `cargo fmt --check`
+- **Check**: `cargo check`
 - **Lint**: `cargo clippy --all-targets --all-features -- -D warnings`
 - **Test**: `cargo test --all-targets --all-features`
 
