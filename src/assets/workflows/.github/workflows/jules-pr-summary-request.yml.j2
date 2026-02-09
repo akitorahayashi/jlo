@@ -1,0 +1,45 @@
+name: Jules PR Summary Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - '{{ worker_branch }}'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+env:
+  JULES_WORKER_BRANCH: '{{ worker_branch }}'
+
+jobs:
+  summary-request:
+    runs-on: {{ runner }}
+    steps:
+      - name: Validate secrets
+        run: |
+          set -euo pipefail
+          if [ -z "${JULES_LINKED_GH_TOKEN:-}" ]; then
+            echo "::error::JULES_LINKED_GH_TOKEN secret is required. Do not fall back to GITHUB_TOKEN."
+            exit 1
+          fi
+        env:
+          JULES_LINKED_GH_TOKEN: {{ gha_expr("secrets.JULES_LINKED_GH_TOKEN") }}
+
+      - uses: actions/checkout@v4
+        with:
+          ref: '{{ worker_branch }}'
+          fetch-depth: 1
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Post summary request comment
+        env:
+          GH_TOKEN: {{ gha_expr("secrets.JULES_LINKED_GH_TOKEN") }}
+        run: |
+          set -euo pipefail
+          PR_NUMBER={{ gha_expr("github.event.pull_request.number") }}
+          jlo workflow pr comment-summary-request "$PR_NUMBER"

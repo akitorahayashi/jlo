@@ -32,7 +32,7 @@ A layer-level change means one of the following:
 | Doctor validation | Structural/schema/semantic checks iterate layers and workstream data contracts | `src/app/commands/doctor/*.rs` |
 | Matrix/routing orchestration | Workflow matrix/run logic assumes current layer set | `src/app/commands/workflow/matrix/*.rs`, `src/app/commands/workflow/run/*.rs` |
 | Workflow orchestration | Layer sequence is defined in workflow templates | `src/assets/workflows/.github/workflows/jules-workflows.yml.j2` |
-| Auto-merge qualification | Branch prefixes are a static allowed list matching the Layer model | `src/assets/workflows/.github/workflows/jules-automerge.yml.j2` |
+| Auto-merge qualification | Branch prefix and scope policy gates are evaluated in `jlo workflow pr enable-automerge` | `src/app/commands/workflow/pr/events/enable_automerge.rs` |
 | Mock behavior | Per-layer mock behavior is implemented in dedicated modules | `src/app/commands/run/mock/*.rs` |
 | Failure recovery | Mock residue cleanup scope is explicit and code-defined | `src/app/commands/workflow/cleanup/mock.rs` |
 | Tests | Integration tests assert layer structure, workflow text, and mock behavior | `tests/cli_flow.rs`, `tests/cli_commands.rs`, `tests/workflow_kit.rs`, `tests/mock_mode.rs` |
@@ -103,8 +103,8 @@ A layer-level change means one of the following:
 
 ## Workflow Maintenance Invariants
 - Workflow kit source of truth is `src/assets/workflows/.github/`; generated `.github/` files are installation outputs.
-- Auto-merge branch matching is driven by a static `allowed_prefixes` array in the automerge workflow template, not by runtime contract scanning.
-- Adding or removing a layer requires updating the `allowed_prefixes` array in `jules-automerge.yml.j2` and regenerating workflows.
+- Auto-merge policy gates (branch prefix, `.jules/`-only scope, draft, already-enabled) are evaluated in `src/app/commands/workflow/pr/events/enable_automerge.rs`. The workflow template delegates to `jlo workflow pr enable-automerge`.
+- Adding or removing a layer requires updating the `ALLOWED_PREFIXES` constant in `enable_automerge.rs` and regenerating workflows.
 - `.jules/`-only scope remains the automerge safety boundary.
 - Control-plane files live under `.jlo/` on the control branch; `.jules/` is materialized by workflow bootstrap.
 - `install-jlo` reads the version pin from `JLO_TARGET_BRANCH` `.jlo/.jlo-version`, not from `origin/JULES_WORKER_BRANCH`.

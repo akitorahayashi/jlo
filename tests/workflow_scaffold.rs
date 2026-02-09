@@ -526,7 +526,7 @@ fn collect_yaml_files_into(root: &Path, files: &mut Vec<PathBuf>) {
 }
 
 #[test]
-fn automerge_uses_static_prefix_list() {
+fn automerge_delegates_to_jlo_command() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
@@ -534,32 +534,23 @@ fn automerge_uses_static_prefix_list() {
     let root = ctx.work_dir();
     let automerge = fs::read_to_string(root.join(".github/workflows/jules-automerge.yml")).unwrap();
 
-    // All layer branch prefixes must be present as static entries
-    for prefix in [
-        "jules-narrator-",
-        "jules-observer-",
-        "jules-decider-",
-        "jules-planner-",
-        "jules-innovator-",
-    ] {
-        assert!(
-            automerge.contains(prefix),
-            "Automerge workflow must contain static prefix '{}'",
-            prefix
-        );
-    }
-
-    // Must use a static allowed_prefixes array, not dynamic contract scanning
+    // Policy logic is delegated to jlo, not inline bash
     assert!(
-        automerge.contains("allowed_prefixes"),
-        "Automerge workflow must use allowed_prefixes array"
+        automerge.contains("jlo workflow pr enable-automerge"),
+        "Automerge workflow must delegate to `jlo workflow pr enable-automerge`"
+    );
+
+    // Must NOT contain inline bash policy logic
+    assert!(
+        !automerge.contains("allowed_prefixes"),
+        "Automerge workflow must not contain inline prefix matching (delegated to jlo)"
     );
     assert!(
         !automerge.contains("git ls-tree"),
         "Automerge workflow must not use dynamic contract scanning (git ls-tree)"
     );
     assert!(
-        !automerge.contains("contracts.yml"),
-        "Automerge workflow must not reference contracts.yml for prefix resolution"
+        !automerge.contains("in_scope"),
+        "Automerge workflow must not contain inline scope checking (delegated to jlo)"
     );
 }

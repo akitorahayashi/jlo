@@ -152,6 +152,40 @@ mod tests {
         ) -> Result<crate::ports::IssueInfo, AppError> {
             panic!("mock narrator no-op must not call create_issue");
         }
+
+        fn get_pr_detail(
+            &self,
+            _pr_number: u64,
+        ) -> Result<crate::ports::PullRequestDetail, AppError> {
+            panic!("mock narrator no-op must not call get_pr_detail");
+        }
+        fn list_pr_comments(
+            &self,
+            _pr_number: u64,
+        ) -> Result<Vec<crate::ports::PrComment>, AppError> {
+            panic!("mock narrator no-op must not call list_pr_comments");
+        }
+        fn create_pr_comment(&self, _pr_number: u64, _body: &str) -> Result<u64, AppError> {
+            panic!("mock narrator no-op must not call create_pr_comment");
+        }
+        fn update_pr_comment(&self, _comment_id: u64, _body: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call update_pr_comment");
+        }
+        fn ensure_label(&self, _label: &str, _color: Option<&str>) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call ensure_label");
+        }
+        fn add_label_to_pr(&self, _pr_number: u64, _label: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call add_label_to_pr");
+        }
+        fn add_label_to_issue(&self, _issue_number: u64, _label: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call add_label_to_issue");
+        }
+        fn enable_automerge(&self, _pr_number: u64) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call enable_automerge");
+        }
+        fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> {
+            panic!("mock narrator no-op must not call list_pr_files");
+        }
     }
 
     struct DummyWorkspace;

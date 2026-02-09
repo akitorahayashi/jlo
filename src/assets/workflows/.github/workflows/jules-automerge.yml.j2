@@ -4,19 +4,13 @@
 # Jules Auto-Merge
 #
 # Validates Jules PRs with doctor check and enables auto-merge on success.
-# Only applies when:
-#   1. PR targets the worker branch
-#   2. Head branch matches a known layer branch prefix
-#   3. All changed files are within .jules/ directory
-#   4. Doctor validation passes
-#
-# Does NOT apply to:
-#   - Any PR that modifies files outside .jules/
+# Policy gates (branch prefix, .jules/-only scope, draft, duplicates) are
+# evaluated by `jlo workflow pr enable-automerge`, not inline shell logic.
 #
 # Flow:
 #   1. Jules creates PR → doctor runs
 #   2. Doctor fails → Jules detects, fixes, pushes
-#   3. Doctor passes → auto-merge enabled → PR merges when status checks pass
+#   3. Doctor passes → enable-automerge evaluates gates → merges when checks pass
 #
 # Prerequisites:
 # - Repository Settings: Enable "Allow auto-merge"
@@ -57,47 +51,10 @@ jobs:
           ref: {{ gha_expr("github.head_ref") }}
           fetch-depth: 0
 
-      - name: Check branch prefix
-        id: prefixes
-        env:
-          HEAD_REF: {{ gha_expr("github.head_ref") }}
-        run: |
-          set -euo pipefail
-
-          # Static allowed prefixes derived from the Layer model.
-          # Updated when layers are added/removed (requires workflow regeneration).
-          allowed_prefixes=(
-            "jules-narrator-"
-            "jules-observer-"
-            "jules-decider-"
-            "jules-planner-"
-            "jules-innovator-"
-          )
-
-          match=false
-          matched_prefix=""
-          for prefix in "${allowed_prefixes[@]}"; do
-            if [[ "$HEAD_REF" == "$prefix"* ]]; then
-              match=true
-              matched_prefix="$prefix"
-              break
-            fi
-          done
-
-          echo "match=$match" >> "$GITHUB_OUTPUT"
-
-          if [ "$match" = "true" ]; then
-            echo "Branch $HEAD_REF matches prefix: $matched_prefix"
-          else
-            echo "::notice::Branch $HEAD_REF does not match any allowed prefix (${allowed_prefixes[*]}). Skipping auto-merge."
-          fi
-
       - name: Install jlo
-        if: steps.prefixes.outputs.match == 'true'
         uses: ./.github/actions/install-jlo
 
       - name: Validate with doctor
-        if: steps.prefixes.outputs.match == 'true'
         run: |
           # Extract workstream from changed files
           workstreams=$(git diff --name-only "origin/${JULES_WORKER_BRANCH}...HEAD" | grep '^\.jules/workstreams/' | cut -d'/' -f3 | sort -u)
@@ -119,57 +76,10 @@ jobs:
             done
           fi
 
-      # Skip/no-op: when a PR touches files outside .jules/, we require human
-      # review for control-plane changes and intentionally skip auto-merge.
-      - name: Check scope (files within .jules/ only)
-        id: scope
-        if: steps.prefixes.outputs.match == 'true'
-        env:
-          GH_TOKEN: {{ gha_expr("github.token") }}
-        run: |
-          changed=$(gh api --paginate "/repos/{{ gha_expr('github.repository') }}/pulls/{{ gha_expr('github.event.pull_request.number') }}/files" --jq '.[].filename')
-
-          non_jules=$(echo "$changed" | grep -v '^\.jules/' || true)
-
-          if [ -n "$non_jules" ]; then
-            echo "::warning::PR modifies files outside .jules/. Auto-merge skipped."
-            echo "$non_jules"
-            echo "in_scope=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "All changes are within .jules/"
-            echo "in_scope=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Enable auto-merge
-        if: steps.prefixes.outputs.match == 'true' && steps.scope.outputs.in_scope == 'true'
         env:
           GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
         run: |
+          set -euo pipefail
           PR_NUMBER={{ gha_expr("github.event.pull_request.number") }}
-          REPO={{ gha_expr("github.repository") }}
-
-          # Check if draft
-          IS_DRAFT=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json isDraft -q '.isDraft')
-          if [ "$IS_DRAFT" = "true" ]; then
-            echo "PR is a draft. Skipping auto-merge."
-            exit 0
-          fi
-
-          # Check if auto-merge already enabled
-          AUTO_MERGE=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json autoMergeRequest -q '.autoMergeRequest')
-          if [ "$AUTO_MERGE" != "null" ] && [ -n "$AUTO_MERGE" ]; then
-            echo "Auto-merge is already enabled."
-            exit 0
-          fi
-
-          echo "Enabling auto-merge..."
-          for i in {1..5}; do
-            if gh pr merge "$PR_NUMBER" --auto --squash --delete-branch --repo "$REPO"; then
-              echo "✅ Auto-merge enabled successfully."
-              exit 0
-            fi
-            echo "Attempt $i failed, retrying in 10s..."
-            sleep 10
-          done
-          echo "❌ Failed to enable auto-merge after retries."
-          exit 1
+          jlo workflow pr enable-automerge "$PR_NUMBER"

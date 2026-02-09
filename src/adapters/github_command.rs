@@ -1,7 +1,7 @@
 use std::process::Command;
 
 use crate::domain::AppError;
-use crate::ports::{GitHubPort, IssueInfo, PullRequestInfo};
+use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
 
 #[derive(Debug, Clone, Default)]
 pub struct GitHubCommandAdapter;
@@ -147,5 +147,119 @@ impl GitHubPort for GitHubCommandAdapter {
             })?;
 
         Ok(IssueInfo { number: issue_number, url: url.to_string() })
+    }
+
+    fn get_pr_detail(&self, pr_number: u64) -> Result<PullRequestDetail, AppError> {
+        let pr_num_str = pr_number.to_string();
+        let output = self.run_gh(&[
+            "pr",
+            "view",
+            &pr_num_str,
+            "--json",
+            "number,headRefName,baseRefName,isDraft,autoMergeRequest",
+        ])?;
+        let json: serde_json::Value =
+            serde_json::from_str(&output).map_err(|e| AppError::ParseError {
+                what: "PR detail JSON".into(),
+                details: format!("Failed to parse gh pr view output: {}", e),
+            })?;
+        Ok(PullRequestDetail {
+            number: json["number"].as_u64().unwrap_or(pr_number),
+            head: json["headRefName"].as_str().unwrap_or_default().to_string(),
+            base: json["baseRefName"].as_str().unwrap_or_default().to_string(),
+            is_draft: json["isDraft"].as_bool().unwrap_or(false),
+            auto_merge_enabled: !json["autoMergeRequest"].is_null(),
+        })
+    }
+
+    fn list_pr_comments(&self, pr_number: u64) -> Result<Vec<PrComment>, AppError> {
+        let pr_num_str = pr_number.to_string();
+        // Use gh api to list issue comments on a PR
+        let endpoint =
+            format!("repos/{{owner}}/{{repo}}/issues/{}/comments?per_page=100", pr_num_str);
+        let output = self.run_gh(&["api", "--paginate", &endpoint])?;
+        let json: Vec<serde_json::Value> =
+            serde_json::from_str(&output).map_err(|e| AppError::ParseError {
+                what: "PR comments JSON".into(),
+                details: format!("Failed to parse gh api comments: {}", e),
+            })?;
+        let comments = json
+            .into_iter()
+            .filter_map(|c| {
+                let id = c["id"].as_u64()?;
+                let body = c["body"].as_str()?.to_string();
+                Some(PrComment { id, body })
+            })
+            .collect();
+        Ok(comments)
+    }
+
+    fn create_pr_comment(&self, pr_number: u64, body: &str) -> Result<u64, AppError> {
+        let endpoint = format!("repos/{{owner}}/{{repo}}/issues/{}/comments", pr_number);
+        let output = self.run_gh(&[
+            "api",
+            "-X",
+            "POST",
+            &endpoint,
+            "--raw-field",
+            &format!("body={}", body),
+        ])?;
+        let json: serde_json::Value =
+            serde_json::from_str(&output).map_err(|e| AppError::ParseError {
+                what: "PR comment creation response".into(),
+                details: format!("Failed to parse gh api response: {}", e),
+            })?;
+        json["id"].as_u64().ok_or_else(|| {
+            AppError::InternalError("Created PR comment but response missing id field".into())
+        })
+    }
+
+    fn update_pr_comment(&self, comment_id: u64, body: &str) -> Result<(), AppError> {
+        let endpoint = format!("repos/{{owner}}/{{repo}}/issues/comments/{}", comment_id);
+        self.run_gh(&["api", "-X", "PATCH", &endpoint, "--raw-field", &format!("body={}", body)])?;
+        Ok(())
+    }
+
+    fn ensure_label(&self, label: &str, color: Option<&str>) -> Result<(), AppError> {
+        // Check if label exists
+        let list_output = self.run_gh(&["label", "list", "--json", "name", "-q", ".[].name"])?;
+        let label_exists = list_output.lines().any(|l| l == label);
+
+        if label_exists {
+            // Label already exists — nothing to do
+            Ok(())
+        } else if let Some(c) = color {
+            self.run_gh(&["label", "create", label, "--color", c, "--force"])?;
+            Ok(())
+        } else {
+            // Create without color → GitHub assigns random color
+            self.run_gh(&["label", "create", label, "--force"])?;
+            Ok(())
+        }
+    }
+
+    fn add_label_to_pr(&self, pr_number: u64, label: &str) -> Result<(), AppError> {
+        let pr_num_str = pr_number.to_string();
+        self.run_gh(&["pr", "edit", &pr_num_str, "--add-label", label])?;
+        Ok(())
+    }
+
+    fn add_label_to_issue(&self, issue_number: u64, label: &str) -> Result<(), AppError> {
+        let issue_num_str = issue_number.to_string();
+        self.run_gh(&["issue", "edit", &issue_num_str, "--add-label", label])?;
+        Ok(())
+    }
+
+    fn enable_automerge(&self, pr_number: u64) -> Result<(), AppError> {
+        let pr_num_str = pr_number.to_string();
+        self.run_gh(&["pr", "merge", &pr_num_str, "--auto", "--squash", "--delete-branch"])?;
+        Ok(())
+    }
+
+    fn list_pr_files(&self, pr_number: u64) -> Result<Vec<String>, AppError> {
+        let pr_num_str = pr_number.to_string();
+        let output = self.run_gh(&["pr", "diff", &pr_num_str, "--name-only"])?;
+        let files = output.lines().map(|l| l.to_string()).collect();
+        Ok(files)
     }
 }
