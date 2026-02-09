@@ -17,6 +17,7 @@ inputs:
   - .jules/workstreams/<workstream>/exchange/issues/**/*.yml (open issues for suppression)
   - .jules/workstreams/<workstream>/exchange/events/<state>/*.yml (recent events for deduplication)
   - .jules/roles/innovators/schemas/comment.yml (observer-to-innovator feedback schema)
+  - .jules/roles/observers/schemas/event.yml (Schema for findings/events)
 
 outputs:
   - .jules/workstreams/<workstream>/exchange/events/pending/*.yml

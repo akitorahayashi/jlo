@@ -4,6 +4,7 @@ branch_prefix: jules-decider-
 inputs:
   - .jules/workstreams/<workstream>/exchange/events/pending/*.yml
   - .jules/workstreams/<workstream>/exchange/issues/**/*.yml (existing issues)
+  - .jules/roles/deciders/schemas/issue.yml (Schema for new issue)
 
 constraints:
   - Verify observations events in codebase before accepting
