@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "ev2j9c"
+issue_id: ""
+created_at: "2026-02-08"
+author_role: "data_arch"
+confidence: "medium"
+
+# Content
+title: "RunConfig lacks explicit validation"
+statement: |
+  The `RunConfig` and `JulesApiConfig` structs rely on implicit type validation and panics in defaults (e.g., `expect` in `default_api_url`). They lack an explicit `validate()` method to ensure configuration integrity after loading, which is a pattern used elsewhere (e.g., `WorkstreamSchedule`).
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/configuration/run_config.rs"
+    loc:
+      - "38-41"
+    note: "default_api_url uses expect, panicking on invalid default."
+  - path: "src/domain/configuration/run_config.rs"
+    loc:
+      - "6-12"
+    note: "RunConfig struct definition lacks validation logic."
+
+tags:
+  - "validation"
+  - "robustness"
+  - "configuration"

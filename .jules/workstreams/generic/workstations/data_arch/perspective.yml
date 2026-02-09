@@ -1,0 +1,22 @@
+schema_version: 2
+
+observer: "data_arch"
+workstream: "generic"
+
+updated_at: "2026-02-08T20:25:00Z"
+
+# Keep this list short (1-3). These goals are the continuity mechanism across runs.
+goals:
+  - "Simplify PromptAssemblySpec context"
+  - "Add explicit validation to RunConfig"
+
+# Stable rules of thumb for producing consistent, high-signal events.
+rules: []
+
+# Explicit suppressions to prevent repeated low-value observations.
+ignore: []
+
+# Newest first; keep max 5 entries.
+log:
+  - at: "2026-02-08T20:25:00Z"
+    summary: "Initialized data_arch workstation. Found prompt redundancy and config validation issues. Duplicate finding on DependencyResolver noted."

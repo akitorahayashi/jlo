@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "ev9k2b"
+issue_id: ""
+created_at: "2026-02-08"
+author_role: "data_arch"
+confidence: "medium"
+
+# Content
+title: "Redundant runtime_context values in PromptAssemblySpec"
+statement: |
+  The `PromptAssemblySpec` defines `runtime_context` as a map where values are required but seemingly unused placeholders. The validation logic only checks for key presence in the runtime context, ignoring the value in the YAML file. This creates redundancy and confusion. The schema should either use a list of required keys or validate the values if they are templates.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/prompt/prompt_assembly.rs"
+    loc:
+      - "35-37"
+    note: "HashMap<String, String> used for runtime_context, implying values matter."
+  - path: "src/domain/prompt/prompt_assembly.rs"
+    loc:
+      - "247-251"
+    note: "Validation only checks for key presence, ignoring values."
+
+tags:
+  - "data-definition"
+  - "redundancy"
+  - "schema-design"
