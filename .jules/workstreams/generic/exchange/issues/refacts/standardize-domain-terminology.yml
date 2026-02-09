@@ -1,0 +1,42 @@
+schema_version: 2
+
+# Metadata
+id: "nam55v"
+source_events:
+  - "hd9i8d"
+  - "98zhuk"
+  - "s0cd0h"
+title: "Standardize Domain Terminology and Naming"
+label: "refacts"
+priority: "low"
+summary: "Rename misleading terms like 'Identities', 'Render', and 'Workflow Kit'."
+
+# Content
+problem: |
+  Inconsistent terminology ('Identities' for IDs, overloaded 'Render', unique 'Workflow Kit') increases cognitive load.
+
+impact: |
+  Confusion for developers and violation of Ubiquitous Language.
+
+desired_outcome: |
+  Clear, consistent terminology used throughout the codebase.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/identities/"
+  - "src/app/commands/workflow/render.rs"
+  - "src/adapters/assets/workflow_kit_assets/"
+
+acceptance_criteria:
+  - "Rename `src/domain/identities` to `identifiers`."
+  - "Rename `workflow render` to `workflow generate` (or similar)."
+  - "Rename `WorkflowKit` to `WorkflowScaffold`."
+
+verification_commands:
+  - "cargo check"
+  - "cargo test"
+
+requires_deep_analysis: false
