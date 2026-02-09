@@ -1,0 +1,28 @@
+schema_version: 1
+
+id: "runc1i"
+issue_id: ""
+created_at: "2026-02-08"
+author_role: "consistency"
+confidence: "high"
+
+title: "`jlo run` CLI Does Not Support Documented `--scheduled` Flag"
+statement: |
+  `README.md` documents `jlo run` with `--scheduled` to run multiple scheduled roles, but the CLI implementation (`src/app/cli/run.rs`) requires a single `--role` argument and lacks support for `--scheduled`.
+  The implementation strictly enforces manual single-role execution.
+
+evidence:
+  - path: "README.md"
+    loc:
+      - "63"
+      - "67-68"
+    note: "Documented usage of `jlo run observers --workstream generic --scheduled`."
+
+  - path: "src/app/cli/run.rs"
+    loc:
+      - "25-28"
+    note: "`RunLayer::Observers` struct requires `role` argument and lacks `scheduled` flag."
+
+tags:
+  - "documentation-drift"
+  - "cli-mismatch"

@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: "consistency"
+workstream: "generic"
+
+updated_at: "2026-02-08T20:35:00Z"
+
+goals:
+  - "Detect drift between documented commands and implementation"
+  - "Verify accuracy of file paths referenced in documentation"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-08T20:35:00Z"
+    summary: "Identified drift in `jlo run`, `jlo workflow`, and documentation paths."

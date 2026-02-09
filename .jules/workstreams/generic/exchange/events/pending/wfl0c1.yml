@@ -1,0 +1,28 @@
+schema_version: 1
+
+id: "wfl0c1"
+issue_id: ""
+created_at: "2026-02-08"
+author_role: "consistency"
+confidence: "high"
+
+title: "`jlo workflow` CLI Arguments Drift from Documentation"
+statement: |
+  `README.md` documents `jlo workflow run` without required `workstream` argument and with non-existent `--matrix-json` flag.
+  It also documents `jlo workflow render` with non-existent `--overwrite` flag.
+
+evidence:
+  - path: "README.md"
+    loc:
+      - "40-41"
+    note: "Incorrect `jlo workflow run` and `render` usage."
+
+  - path: "src/app/cli/workflow.rs"
+    loc:
+      - "22-31"
+      - "36-41"
+    note: "`Run` and `Render` struct definitions showing actual arguments."
+
+tags:
+  - "documentation-drift"
+  - "cli-mismatch"
