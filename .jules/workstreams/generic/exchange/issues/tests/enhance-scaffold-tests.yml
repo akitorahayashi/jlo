@@ -1,0 +1,37 @@
+schema_version: 2
+
+# Metadata
+id: "tst44u"
+source_events:
+  - "scaf01"
+title: "Enhance Scaffold Integration Test Coverage"
+label: "tests"
+priority: "medium"
+summary: "Expand integration tests to comprehensively verify scaffold structure."
+
+# Content
+problem: |
+  Current tests (`tests/cli_commands.rs`) check directory existence but lack deep content/structure validation against `AGENTS.md`.
+
+impact: |
+  Risk of silent scaffold drift and broken contracts.
+
+desired_outcome: |
+  Tests verify the exact structure and key content of the initialized scaffold.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "tests/cli_commands.rs"
+
+acceptance_criteria:
+  - "Expand `tests/cli_commands.rs` to traverse `.jules/`."
+  - "Verify presence of `prompt_assembly.yml` for all roles."
+  - "Verify `.jules/setup/` contents."
+
+verification_commands:
+  - "cargo test --test cli_commands"
+
+requires_deep_analysis: false

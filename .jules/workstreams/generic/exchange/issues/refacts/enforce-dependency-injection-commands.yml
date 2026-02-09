@@ -1,0 +1,54 @@
+schema_version: 2
+
+# Metadata
+id: "ref88y"
+source_events:
+  - "ev49za"
+  - "dep001"
+  - "work01"
+  - "2wq7mt"
+  - "1zpqgm"
+title: "Enforce Dependency Injection and Port Usage in Commands"
+label: "refacts"
+priority: "high"
+summary: "Refactor commands to use Dependency Injection and Ports/Adapters pattern."
+
+# Content
+problem: |
+  Several application commands violate the Dependency Inversion Principle and Hexagonal Architecture.
+  1. **Direct Instantiation**: Commands instantiate concrete adapters directly.
+  2. **Port Bypassing**: `bootstrap.rs` and `render.rs` use `std::fs` directly, bypassing `WorkspaceStore`.
+  3. **Fragility**: Fragile string path conversions.
+
+impact: |
+  Makes unit testing with mocks impossible (requires full filesystem), couples code to implementation details, and reduces robustness.
+
+desired_outcome: |
+  Commands accept injected dependencies via ports (`ComponentCatalog`, `GitPort`, `WorkspaceStore`) and use robust `Path` operations.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/app/commands/setup/generate.rs"
+  - "src/app/commands/setup/list.rs"
+  - "src/app/commands/workflow/run.rs"
+  - "src/app/commands/workflow/bootstrap.rs"
+  - "src/app/commands/workflow/render.rs"
+  - "src/app/commands/workflow/mod.rs"
+
+acceptance_criteria:
+  - "Refactor `setup` commands to accept `impl ComponentCatalog`."
+  - "Refactor `workflow::run` to accept `impl GitPort` and `impl GitHubPort`."
+  - "Refactor `workflow::bootstrap` and `workflow::render` to use `impl WorkspaceStore`."
+  - "Remove direct `std::fs` usage from commands."
+  - "Replace `to_string_lossy()` with `Path` methods in `bootstrap.rs`."
+
+verification_commands:
+  - "cargo test"
+  - "cargo clippy --all-targets --all-features -- -D warnings"
+
+# Analysis Flags
+requires_deep_analysis: true
+deep_analysis_reason: "Refactoring core commands and dependency injection requires careful architectural planning to avoid breaking changes and ensure all call sites are updated."

@@ -1,0 +1,52 @@
+schema_version: 2
+
+# Metadata
+id: "doc99x"
+source_events:
+  - "doc002"
+  - "doc001"
+  - "pthd0c"
+  - "runc1i"
+  - "wfl0c1"
+  - "tct001"
+title: "Rectify Documentation Drift and Inconsistencies"
+label: "docs"
+priority: "medium"
+summary: "Align documentation with actual implementation regarding structure, CLI commands, and domain models."
+
+# Content
+problem: |
+  There is significant drift between the documentation (`README.md`, `src/assets/scaffold/AGENTS.md`, `docs/`) and the actual implementation of the CLI and scaffold structure.
+  Key discrepancies include:
+  1. **Scaffold Structure**: Documentation claims a flat structure and omits `workstations`, while implementation uses `exchange/`.
+  2. **CLI Commands**: `jlo run` documentation mentions a non-existent `--scheduled` flag. `jlo workflow` commands have incorrect arguments.
+  3. **Domain Documentation**: New domain modules are undocumented.
+  4. **Scope Violations**: `src/assets/scaffold/AGENTS.md` contains implementation details.
+
+impact: |
+  This creates confusion for users and developers, leading to incorrect usage and difficulty in understanding the system architecture. It also violates the "Single Source of Truth" principle.
+
+desired_outcome: |
+  Documentation accurately reflects the codebase. `README.md` and `AGENTS.md` are consistent with the actual CLI behavior and directory structure.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "README.md"
+  - "src/assets/scaffold/AGENTS.md"
+  - "src/AGENTS.md"
+  - "docs/CONTROL_PLANE_OWNERSHIP.md"
+
+acceptance_criteria:
+  - "Update `src/assets/scaffold/AGENTS.md` to accurately reflect the `.jules/` directory structure."
+  - "Update `README.md` to correctly document `jlo run` and `jlo workflow` commands."
+  - "Update `README.md` and `docs/` to correctly reference issue paths."
+  - "Add documentation for `src/domain` modules in `src/AGENTS.md`."
+  - "Remove Setup Compiler implementation details from `src/assets/scaffold/AGENTS.md`."
+
+verification_commands:
+  - "cargo run --quiet -- doctor"
+
+requires_deep_analysis: false

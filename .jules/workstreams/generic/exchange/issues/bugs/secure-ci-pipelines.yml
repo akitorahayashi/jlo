@@ -1,0 +1,42 @@
+schema_version: 2
+
+# Metadata
+id: "bug66w"
+source_events:
+  - "b28803"
+  - "aea57c"
+title: "Secure and Stabilize CI/CD Pipelines"
+label: "bugs"
+priority: "high"
+summary: "Pin CI dependencies and improve release workflow reliability."
+
+# Content
+problem: |
+  CI/CD pipelines have security and stability issues:
+  1. Unpinned dependencies (`aqua`, `actionlint`, `cross`) pose supply-chain risks.
+  2. `release.yml` uses fragile polling to wait for CI.
+
+impact: |
+  High risk of supply-chain attacks and flaky release processes.
+
+desired_outcome: |
+  All CI dependencies are pinned to SHAs, and release workflow uses explicit dependencies.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - ".github/workflows/"
+  - "aqua.yaml"
+
+acceptance_criteria:
+  - "Pin all GitHub Action `uses` directives to SHAs."
+  - "Pin `aqua` tool versions to SHAs."
+  - "Configure `cross` to use pinned images."
+  - "Refactor `release.yml` to remove polling."
+
+verification_commands:
+  - "cargo test" # Placeholder for CI verification
+
+requires_deep_analysis: false

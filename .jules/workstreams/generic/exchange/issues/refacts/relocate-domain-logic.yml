@@ -1,0 +1,40 @@
+schema_version: 2
+
+# Metadata
+id: "ref77z"
+source_events:
+  - "ev32xs"
+  - "dom001"
+title: "Relocate Core Domain Logic from Services to Domain Layer"
+label: "refacts"
+priority: "medium"
+summary: "Move Kahn's algorithm and script generation logic to the domain layer."
+
+# Content
+problem: |
+  Application services (`DependencyResolver`, `ArtifactGenerator`) contain core domain logic (Kahn's algorithm, script rules) that should be in the `domain` layer.
+
+impact: |
+  Violates Clean Architecture (Separation of Concerns), making domain logic harder to reuse and test in isolation.
+
+desired_outcome: |
+  Domain logic resides in `src/domain` modules, and application services orchestrate them.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/app/services/dependency_resolver.rs"
+  - "src/app/services/artifact_generator.rs"
+  - "src/domain/"
+
+acceptance_criteria:
+  - "Move Kahn's algorithm to `src/domain/dependency_graph.rs`."
+  - "Move script generation logic to `src/domain/artifacts/`."
+  - "Update application services to use the new domain modules."
+
+verification_commands:
+  - "cargo test"
+
+requires_deep_analysis: false
