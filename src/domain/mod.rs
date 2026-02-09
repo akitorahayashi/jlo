@@ -6,6 +6,9 @@ pub mod issue;
 pub mod prompt;
 pub mod workspace;
 
+pub mod artifacts;
+pub mod dependency_graph;
+
 pub use configuration::{
     ExecutionConfig, JulesApiConfig, MockConfig, MockOutput, RunConfig, WorkflowRunnerMode,
     WorkstreamSchedule,
