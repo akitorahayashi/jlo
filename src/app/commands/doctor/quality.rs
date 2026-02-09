@@ -69,19 +69,19 @@ pub fn quality_checks(
                     }
                 }
 
-                if let Some(commands) =
-                    read_yaml_strings(&entry, "verification_commands", diagnostics)
+                if let Some(criteria) =
+                    read_yaml_strings(&entry, "verification_criteria", diagnostics)
                 {
-                    for command in commands {
-                        let lowered = command.to_lowercase();
-                        if command.contains('<')
-                            || command.contains('>')
+                    for criterion in criteria {
+                        let lowered = criterion.to_lowercase();
+                        if criterion.contains('<')
+                            || criterion.contains('>')
                             || lowered.contains("todo")
                             || lowered.contains("tbd")
                         {
                             diagnostics.push_warning(
                                 entry.display().to_string(),
-                                "verification_commands entry looks non-executable",
+                                "verification_criteria entry looks incomplete",
                             );
                             break;
                         }
