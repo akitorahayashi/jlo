@@ -11,7 +11,6 @@ pub mod issue;
 pub mod matrix;
 mod output;
 pub mod pr;
-mod pr_label;
 mod run;
 #[path = "workstreams/mod.rs"]
 pub mod workstreams;
@@ -21,7 +20,6 @@ pub use cleanup::{WorkflowCleanupMockOptions, WorkflowCleanupMockOutput};
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
 pub use generate::{WorkflowGenerateOptions, WorkflowGenerateOutput};
 pub use output::write_workflow_output;
-pub use pr_label::{WorkflowPrLabelOptions, WorkflowPrLabelOutput};
 pub use run::{WorkflowRunOptions, WorkflowRunOutput};
 pub use workstreams::{
     WorkflowWorkstreamsCleanIssueOptions, WorkflowWorkstreamsCleanIssueOutput,
@@ -85,11 +83,4 @@ pub fn workstreams_publish_proposals(
     options: WorkflowWorkstreamsPublishProposalsOptions,
 ) -> Result<WorkflowWorkstreamsPublishProposalsOutput, AppError> {
     workstreams::publish_proposals(options)
-}
-
-/// Execute workflow pr label-from-branch command.
-pub fn pr_label_from_branch(
-    options: WorkflowPrLabelOptions,
-) -> Result<WorkflowPrLabelOutput, AppError> {
-    pr_label::execute(options)
 }

@@ -81,12 +81,6 @@ pub enum WorkflowCleanupCommands {
 
 #[derive(Subcommand)]
 pub enum WorkflowPrCommands {
-    /// Apply category label to implementer PR from branch name
-    LabelFromBranch {
-        /// Branch name (defaults to GITHUB_REF_NAME)
-        #[arg(long)]
-        branch: Option<String>,
-    },
     /// Post or update the summary-request comment on a Jules PR
     CommentSummaryRequest {
         /// PR number
@@ -264,11 +258,6 @@ fn run_workflow_pr(command: WorkflowPrCommands) -> Result<(), AppError> {
     let github = crate::adapters::github_command::GitHubCommandAdapter::new();
 
     match command {
-        WorkflowPrCommands::LabelFromBranch { branch } => {
-            let options = workflow::WorkflowPrLabelOptions { branch };
-            let output = workflow::pr_label_from_branch(options)?;
-            workflow::write_workflow_output(&output)
-        }
         WorkflowPrCommands::CommentSummaryRequest { pr_number } => {
             let options = workflow::pr::CommentSummaryRequestOptions { pr_number };
             let output = workflow::pr::events::comment_summary_request::execute(&github, options)?;
