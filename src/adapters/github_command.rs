@@ -195,32 +195,28 @@ impl GitHubPort for GitHubCommandAdapter {
     }
 
     fn create_pr_comment(&self, pr_number: u64, body: &str) -> Result<u64, AppError> {
-        let pr_num_str = pr_number.to_string();
-        let output = self.run_gh(&["pr", "comment", &pr_num_str, "--body", body])?;
-        // gh pr comment prints the comment URL; extract ID from API instead
-        // Fallback: return 0 and rely on list_pr_comments for subsequent lookups
-        let _ = output;
-        // Re-fetch the latest comment to get its ID
-        let comments = self.list_pr_comments(pr_number)?;
-        comments.last().map(|c| c.id).ok_or_else(|| {
-            AppError::InternalError("Created PR comment but could not retrieve its ID".into())
+        let endpoint = format!("repos/{{owner}}/{{repo}}/issues/{}/comments", pr_number);
+        let output = self.run_gh(&[
+            "api",
+            "-X",
+            "POST",
+            &endpoint,
+            "--raw-field",
+            &format!("body={}", body),
+        ])?;
+        let json: serde_json::Value =
+            serde_json::from_str(&output).map_err(|e| AppError::ParseError {
+                what: "PR comment creation response".into(),
+                details: format!("Failed to parse gh api response: {}", e),
+            })?;
+        json["id"].as_u64().ok_or_else(|| {
+            AppError::InternalError("Created PR comment but response missing id field".into())
         })
     }
 
     fn update_pr_comment(&self, comment_id: u64, body: &str) -> Result<(), AppError> {
         let endpoint = format!("repos/{{owner}}/{{repo}}/issues/comments/{}", comment_id);
-        let body_json = serde_json::json!({ "body": body }).to_string();
-        self.run_gh(&[
-            "api",
-            "-X",
-            "PATCH",
-            &endpoint,
-            "--input",
-            "-",
-            "--raw-field",
-            &format!("body={}", body),
-        ])?;
-        let _ = body_json;
+        self.run_gh(&["api", "-X", "PATCH", &endpoint, "--raw-field", &format!("body={}", body)])?;
         Ok(())
     }
 
