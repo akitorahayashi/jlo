@@ -1,0 +1,27 @@
+schema_version: 1
+
+id: "98zhuk"
+issue_id: ""
+created_at: "2024-05-22"
+author_role: "taxonomy"
+confidence: "medium"
+
+title: "Ambiguous 'Render' Verb Overloading"
+statement: |
+  The verb 'Render' is overloaded for both file generation (materialization) and template processing.
+  The `workflow render` command writes files to disk (similar to `bootstrap` materialization), while `TemplateRenderer` processes string templates in memory.
+  This ambiguity confuses the boundary between I/O operations and pure logic.
+
+evidence:
+  - path: "src/app/commands/workflow/render.rs"
+    loc:
+      - "execute"
+    note: "The command executes file system writes, effectively materializing assets."
+  - path: "src/domain/prompt/mod.rs"
+    loc:
+      - "TemplateRenderer"
+    note: "The trait defines pure template rendering logic."
+
+tags:
+  - "naming"
+  - "ambiguity"

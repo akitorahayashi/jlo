@@ -1,0 +1,21 @@
+schema_version: 2
+
+observer: taxonomy
+workstream: generic
+
+updated_at: "2024-05-22T10:15:00Z"
+
+goals:
+  - "Resolve 'Workflow Kit' terminology inconsistency."
+  - "Clarify 'Render' verb usage."
+  - "Rename 'Identities' module to 'Identifiers' or similar."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2024-05-22T10:15:00Z"
+    summary: "Identified naming inconsistencies in workflow initialization and domain models."
+  - at: "2024-05-22T10:00:00Z"
+    summary: "Initialized taxonomy workstation."
