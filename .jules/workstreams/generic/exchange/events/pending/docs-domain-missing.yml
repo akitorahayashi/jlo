@@ -1,0 +1,28 @@
+schema_version: 1
+
+id: "doc002"
+issue_id: ""
+created_at: "2026-02-09"
+author_role: "librarian"
+confidence: "medium"
+
+title: "Missing Documentation: Domain Models"
+statement: |
+  The new domain models introduced in the recent refactor (`src/domain/configuration`, `identities`, `prompt`, `workspace`) are not documented in `src/AGENTS.md` or dedicated docs.
+  The `src/AGENTS.md` file only lists `domain/` as "Pure types" without explaining the responsibilities or usage of these new modules.
+  This makes it difficult to understand the new domain-driven architecture.
+
+evidence:
+  - path: "src/domain/mod.rs"
+    loc:
+      - "1-20"
+    note: "Exports of new domain modules."
+
+  - path: "src/AGENTS.md"
+    loc:
+      - "14"
+    note: "Brief mention of domain/ without detail."
+
+tags:
+  - "documentation"
+  - "domain"

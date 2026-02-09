@@ -1,0 +1,22 @@
+schema_version: 2
+
+observer: "librarian"
+workstream: "generic"
+
+updated_at: "2026-02-09T00:00:00Z"
+
+# Keep this list short (1-3). These goals are the continuity mechanism across runs.
+goals:
+  - "Verify documentation structure matches the implementation."
+  - "Check for missing documentation for new domain models."
+
+# Stable rules of thumb for producing consistent, high-signal events.
+rules: []
+
+# Explicit suppressions to prevent repeated low-value observations.
+ignore: []
+
+# Newest first; keep max 5 entries.
+log:
+  - at: "2026-02-09T00:00:00Z"
+    summary: "Initialized librarian perspective."
