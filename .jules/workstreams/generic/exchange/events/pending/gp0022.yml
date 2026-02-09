@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "gp0022"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-08"
+author_role: "cov" # e.g. taxonomy
+confidence: "high"
+
+# Content
+title: "Git Port Infrastructure Gap"
+statement: |
+  `GitCommandAdapter` in `src/adapters/git_command.rs` implements complex logic (diff parsing, commit counting) via shell commands but has zero unit tests. It relies entirely on (missing) integration tests. Logic like `get_diffstat` and `collect_commits` is fragile to git output changes and needs explicit testing.
+
+# Evidence supporting the observation
+# For multi-file events, add multiple list items.
+evidence:
+  - path: "src/adapters/git_command.rs"
+    loc:
+      - "1-180"
+    note: "Complex git shell interactions without unit tests."
+  - path: "tests/workflow_kit.rs"
+    loc:
+      - "1-450"
+    note: "Integration tests do not verify git diff parsing or commit counting."
+
+tags:
+  - "risk:high"
+  - "coverage:missing"
+  - "infrastructure:git"

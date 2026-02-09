@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "cf0033"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-08"
+author_role: "cov" # e.g. taxonomy
+confidence: "medium"
+
+# Content
+title: "Configuration Logic Gap"
+statement: |
+  `WorkflowRunOptions` validation logic in `src/app/commands/workflow/run/mod.rs` (specifically mock tag validation) is not fully tested. While `RunConfig` has basic defaults testing, the dynamic validation during execution lacks specific test cases.
+
+# Evidence supporting the observation
+# For multi-file events, add multiple list items.
+evidence:
+  - path: "src/app/commands/workflow/run/mod.rs"
+    loc:
+      - "35-47"
+    note: "Validation logic for mock_tag is embedded in execution flow without dedicated tests."
+  - path: "src/domain/configuration/run_config.rs"
+    loc:
+      - "90-97"
+    note: "Tests only verify default values, not validation logic."
+
+tags:
+  - "risk:medium"
+  - "coverage:missing"
+  - "domain:configuration"
