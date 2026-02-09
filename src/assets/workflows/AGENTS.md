@@ -1,18 +1,18 @@
-# Workflow Kit Template Pipeline
+# Workflow Scaffold Template Pipeline
 
 ## Scope
-This document describes how files under `src/assets/workflows/.github/` are transformed into the installed workflow kit under `.github/`.
+This document describes how files under `src/assets/workflows/.github/` are transformed into the installed workflow scaffold under `.github/`.
 
 ## Authoritative Sources
 - Source assets (templates and static files): `src/assets/workflows/.github/**`
-- Workflow kit loader: `src/adapters/assets/workflow_kit_assets/mod.rs`
-- Asset collection: `src/adapters/assets/workflow_kit_assets/asset_collect.rs`
-- Template engine (MiniJinja): `src/adapters/assets/workflow_kit_assets/template_engine.rs`
-- Render plan (partials exclusion): `src/adapters/assets/workflow_kit_assets/render_plan.rs`
+- Workflow scaffold loader: `src/adapters/assets/workflow_scaffold_assets/mod.rs`
+- Asset collection: `src/adapters/assets/workflow_scaffold_assets/asset_collect.rs`
+- Template engine (MiniJinja): `src/adapters/assets/workflow_scaffold_assets/template_engine.rs`
+- Render plan (partials exclusion): `src/adapters/assets/workflow_scaffold_assets/render_plan.rs`
 - Install/write to disk: `src/app/commands/init.rs`
 
 ## Transformation Rules
-- Every file under `src/assets/workflows/.github/` is loaded by `include_dir!` in `WorkflowKitAssets`.
+- Every file under `src/assets/workflows/.github/` is loaded by `include_dir!` in `WorkflowScaffoldAssets`.
 - Files with `.j2` are treated as templates; all other files are copied verbatim.
 - Template output paths strip the `.j2` suffix.
 - Output paths are prefixed with `.github/`.
@@ -37,5 +37,5 @@ This document describes how files under `src/assets/workflows/.github/` are tran
   → `.github/actions/install-jlo/action.yml`
 
 ## Installation Notes
-- `install_workflow_kit` writes the rendered kit to disk, overwriting jlo-managed outputs deterministically.
+- `install_workflow_scaffold` writes the rendered scaffold to disk, overwriting jlo-managed outputs deterministically.
 - Action directories are detected from rendered paths by `collect_action_dirs` and are cleaned before re-installation.

@@ -6,10 +6,10 @@
 pub mod bootstrap;
 pub mod cleanup;
 mod doctor;
+pub mod generate;
 pub mod matrix;
 mod output;
 mod pr_label;
-pub mod render;
 mod run;
 #[path = "workstreams/mod.rs"]
 pub mod workstreams;
@@ -17,9 +17,9 @@ pub mod workstreams;
 pub use bootstrap::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
 pub use cleanup::{WorkflowCleanupMockOptions, WorkflowCleanupMockOutput};
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
+pub use generate::{WorkflowGenerateOptions, WorkflowGenerateOutput};
 pub use output::write_workflow_output;
 pub use pr_label::{WorkflowPrLabelOptions, WorkflowPrLabelOutput};
-pub use render::{WorkflowRenderOptions, WorkflowRenderOutput};
 pub use run::{WorkflowRunOptions, WorkflowRunOutput};
 pub use workstreams::{
     WorkflowWorkstreamsCleanIssueOptions, WorkflowWorkstreamsCleanIssueOutput,
@@ -52,9 +52,9 @@ pub fn run(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
     run::execute(&store, options, &git, &github)
 }
 
-/// Execute workflow render command.
-pub fn render(options: WorkflowRenderOptions) -> Result<WorkflowRenderOutput, AppError> {
-    render::execute(options)
+/// Execute workflow generate command.
+pub fn generate(options: WorkflowGenerateOptions) -> Result<WorkflowGenerateOutput, AppError> {
+    generate::execute(options)
 }
 
 /// Execute workflow cleanup mock command.

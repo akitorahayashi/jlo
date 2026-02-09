@@ -5,7 +5,7 @@ source_events:
 title: "Mock issue for workflow validation"
 label: "bugs"
 priority: "medium"
-summary: "This is a mock issue created by jlo --mock for workflow-kit validation. Mock tag: test-tag"
+summary: "This is a mock issue created by jlo --mock for workflow-scaffold validation. Mock tag: test-tag"
 problem: "Mock problem description for validation"
 impact: "Mock impact description for validation"
 desired_outcome: "Mock desired outcome for validation"

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::domain::AppError;
 
-/// Runner mode for workflow kits.
+/// Runner mode for workflow scaffolds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorkflowRunnerMode {
     Remote,

@@ -27,7 +27,7 @@ pub struct UpdateResult {
     pub created: Vec<String>,
     /// Files that were updated (managed defaults refreshed).
     pub updated: Vec<String>,
-    /// Whether workflow kit was refreshed.
+    /// Whether workflow scaffold was refreshed.
     pub workflow_refreshed: bool,
     /// Whether this was a prompt preview.
     pub prompt_preview: bool,
@@ -197,7 +197,7 @@ where
         }
 
         if workflow_will_refresh {
-            println!("Workflow kit will be refreshed.");
+            println!("Workflow scaffold will be refreshed.");
         }
 
         if version_cmp > 0 {
@@ -226,12 +226,12 @@ where
         workspace.write_file(rel_path, content)?;
     }
 
-    // Refresh workflow kit
+    // Refresh workflow scaffold
     let mut workflow_refreshed = false;
     if let Some(mode) = workflow_mode {
         let root = workspace.resolve_path("");
-        let render_config = init::load_workflow_render_config(&root)?;
-        init::install_workflow_kit(&root, mode, &render_config)?;
+        let generate_config = init::load_workflow_generate_config(&root)?;
+        init::install_workflow_scaffold(&root, mode, &generate_config)?;
         workflow_refreshed = true;
     }
 
@@ -267,7 +267,7 @@ where
     match init::detect_workflow_runner_mode(&root) {
         Ok(mode) => Ok(Some(mode)),
         Err(_) => {
-            // Workflow kit not found; skip refresh. This is normal for fresh workspaces
+            // Workflow scaffold not found; skip refresh. This is normal for fresh workspaces
             // or in tests that don't set up a complete environment.
             Ok(None)
         }

@@ -24,10 +24,10 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Initialize .jlo/ control plane and install workflow kit
+    /// Initialize .jlo/ control plane and install workflow scaffold
     #[clap(visible_alias = "i")]
     Init {
-        /// Install the GitHub-hosted runner workflow kit
+        /// Install the GitHub-hosted runner workflow scaffold
         #[arg(
             short = 'r',
             long,
@@ -35,7 +35,7 @@ enum Commands {
             required_unless_present = "self_hosted"
         )]
         remote: bool,
-        /// Install the self-hosted runner workflow kit
+        /// Install the self-hosted runner workflow scaffold
         #[arg(short = 's', long, conflicts_with = "remote", required_unless_present = "remote")]
         self_hosted: bool,
     },
@@ -156,7 +156,7 @@ fn run_update(prompt_preview: bool) -> Result<(), AppError> {
                 println!("  Refreshed {} managed default file(s)", result.updated.len());
             }
             if result.workflow_refreshed {
-                println!("  Refreshed workflow kit");
+                println!("  Refreshed workflow scaffold");
             }
         }
     }

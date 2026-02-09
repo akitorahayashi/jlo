@@ -17,7 +17,7 @@ src/
 ├── assets/
 │   ├── scaffold/      # Embedded .jules/ structure
 │   ├── templates/     # Role templates by layer
-│   ├── workflows/     # Workflow kit assets
+│   ├── workflows/     # Workflow scaffold assets
 │   └── catalog/       # Setup component definitions
 └── testing/           # Mock implementations
 tests/
@@ -51,7 +51,7 @@ tests/
 | **Scaffold** | Embedded static files in `src/assets/scaffold/` that seed `.jlo/` on init and are reconciled on update. |
 | **Projection** | Deterministic materialization of `.jules/` from `.jlo/` + scaffold assets during workflow bootstrap. See `docs/CONTROL_PLANE_OWNERSHIP.md`. |
 | **Create** | CLI command to add new roles or workstreams to the `.jlo/` control plane. |
-| **Workflow kit** | `.github/` automation assets installed by `jlo init`. |
+| **Workflow scaffold** | `.github/` automation assets installed by `jlo init`. |
 | **Component** | Development tools managed by `jlo setup`, defined in `src/assets/catalog/`. |
 
 ## Domain Modules
@@ -71,7 +71,7 @@ Core domain logic located in `src/domain/`.
 
 | Command | Alias | Description |
 |---------|-------|-------------|
-| `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow kit |
+| `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow scaffold |
 | `jlo update [--prompt-preview]` | `u` | Advance `.jlo/` control-plane version pin |
 | `jlo create role <layer> <name>` | `c` | Create a custom role under `.jlo/` |
 | `jlo create workstream <name>` | `c` | Create a workstream under `.jlo/` |
@@ -116,7 +116,7 @@ cargo test <test_name>
 
 # By integration test file
 cargo test --test cli_commands    # CLI parsing & commands
-cargo test --test workflow_kit    # Workflow kit & YAML linting
+cargo test --test workflow_scaffold    # Workflow scaffold & YAML linting
 cargo test --test mock_mode       # Mock execution flow
 ```
 

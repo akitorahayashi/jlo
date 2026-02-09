@@ -1,7 +1,7 @@
 //! Create role under `.jlo/roles/<layer>/roles/<name>/`.
 
 use crate::app::AppContext;
-use crate::domain::identities::validation::validate_safe_path_component;
+use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::{AppError, Layer};
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
 

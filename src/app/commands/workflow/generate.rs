@@ -1,6 +1,6 @@
-//! Workflow kit render command.
+//! Workflow scaffold generate command.
 //!
-//! Renders the workflow kit with config-driven branch values. Default output
+//! Generates the workflow scaffold with config-driven branch values. Default output
 //! writes directly to the repository `.github/` directory, overwriting
 //! jlo-managed files. Use `-o, --output-dir` to redirect output elsewhere.
 
@@ -9,62 +9,62 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::adapters::assets::workflow_kit_assets::load_workflow_kit;
-use crate::app::commands::init::load_workflow_render_config;
+use crate::adapters::assets::workflow_scaffold_assets::load_workflow_scaffold;
+use crate::app::commands::init::load_workflow_generate_config;
 use crate::domain::{AppError, WorkflowRunnerMode};
 
 const SCHEMA_VERSION: u32 = 1;
 
-/// Options for workflow render command.
+/// Options for workflow generate command.
 #[derive(Debug, Clone)]
-pub struct WorkflowRenderOptions {
-    /// Runner mode for the workflow kit.
+pub struct WorkflowGenerateOptions {
+    /// Runner mode for the workflow scaffold.
     pub mode: WorkflowRunnerMode,
-    /// Output directory override. When absent, renders to repository root.
+    /// Output directory override. When absent, generates to repository root.
     pub output_dir: Option<PathBuf>,
 }
 
-/// Output of workflow render command.
+/// Output of workflow generate command.
 #[derive(Debug, Serialize)]
-pub struct WorkflowRenderOutput {
+pub struct WorkflowGenerateOutput {
     /// Schema version for output format stability.
     pub schema_version: u32,
     /// Runner mode label.
     pub mode: String,
-    /// Output directory for rendered files.
+    /// Output directory for generated files.
     pub output_dir: String,
     /// Number of files written.
     pub file_count: usize,
 }
 
-/// Execute workflow render command.
-pub fn execute(options: WorkflowRenderOptions) -> Result<WorkflowRenderOutput, AppError> {
+/// Execute workflow generate command.
+pub fn execute(options: WorkflowGenerateOptions) -> Result<WorkflowGenerateOutput, AppError> {
     let repo_root = find_repo_root(&std::env::current_dir()?)?;
-    let render_config = load_workflow_render_config(&repo_root)?;
+    let generate_config = load_workflow_generate_config(&repo_root)?;
     let output_dir = resolve_output_dir(&options, &repo_root)?;
 
     prepare_output_dir(&output_dir)?;
 
-    let kit = load_workflow_kit(options.mode, &render_config)?;
-    write_workflow_kit(&output_dir, &kit)?;
+    let scaffold = load_workflow_scaffold(options.mode, &generate_config)?;
+    write_workflow_scaffold(&output_dir, &scaffold)?;
 
-    Ok(WorkflowRenderOutput {
+    Ok(WorkflowGenerateOutput {
         schema_version: SCHEMA_VERSION,
         mode: options.mode.label().to_string(),
         output_dir: output_dir.to_string_lossy().to_string(),
-        file_count: kit.files.len(),
+        file_count: scaffold.files.len(),
     })
 }
 
 fn resolve_output_dir(
-    options: &WorkflowRenderOptions,
+    options: &WorkflowGenerateOptions,
     repo_root: &Path,
 ) -> Result<PathBuf, AppError> {
     if let Some(dir) = options.output_dir.as_ref() {
         return normalize_output_dir(dir.clone());
     }
 
-    // Default: render directly to repository root (kit paths already include .github/ prefix)
+    // Default: generate directly to repository root (scaffold paths already include .github/ prefix)
     Ok(repo_root.to_path_buf())
 }
 
@@ -103,11 +103,11 @@ fn prepare_output_dir(output_dir: &Path) -> Result<(), AppError> {
     Ok(())
 }
 
-fn write_workflow_kit(
+fn write_workflow_scaffold(
     output_dir: &Path,
-    kit: &crate::adapters::assets::workflow_kit_assets::WorkflowKitAssets,
+    scaffold: &crate::adapters::assets::workflow_scaffold_assets::WorkflowScaffoldAssets,
 ) -> Result<(), AppError> {
-    for file in &kit.files {
+    for file in &scaffold.files {
         let destination = output_dir.join(&file.path);
         if let Some(parent) = destination.parent() {
             fs::create_dir_all(parent)?;

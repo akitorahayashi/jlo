@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::domain::identities::validation::validate_safe_path_component;
+use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::{AppError, IoErrorKind, WorkstreamSchedule};
 use crate::ports::WorkspaceStore;
 

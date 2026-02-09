@@ -49,7 +49,7 @@ fn collect_entries(
             DirEntry::File(file) => {
                 let content = file.contents_utf8().ok_or_else(|| {
                     AppError::InternalError(format!(
-                        "Workflow kit file is not UTF-8: {}",
+                        "Workflow scaffold file is not UTF-8: {}",
                         file.path().to_string_lossy()
                     ))
                 })?;
@@ -57,7 +57,7 @@ fn collect_entries(
                 let file_path = file.path();
                 let relative_path = file_path.strip_prefix(base_path).map_err(|_| {
                     AppError::InternalError(format!(
-                        "Workflow kit file has unexpected path: {}",
+                        "Workflow scaffold file has unexpected path: {}",
                         file_path.to_string_lossy()
                     ))
                 })?;

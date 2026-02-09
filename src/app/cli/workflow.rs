@@ -31,9 +31,9 @@ pub enum WorkflowCommands {
         #[arg(long)]
         phase: Option<String>,
     },
-    /// Render workflow kit files to an output directory
-    #[clap(visible_alias = "r")]
-    Render {
+    /// Generate workflow scaffold files to an output directory
+    #[clap(visible_alias = "g")]
+    Generate {
         /// Runner mode (remote or self-hosted)
         mode: crate::domain::WorkflowRunnerMode,
         /// Output directory override (default: repository .github/)
@@ -178,10 +178,10 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let output = workflow::run(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowCommands::Render { mode, output_dir } => {
+        WorkflowCommands::Generate { mode, output_dir } => {
             let output_dir = output_dir.map(std::path::PathBuf::from);
-            let options = workflow::WorkflowRenderOptions { mode, output_dir };
-            let output = workflow::render(options)?;
+            let options = workflow::WorkflowGenerateOptions { mode, output_dir };
+            let output = workflow::generate(options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowCommands::Cleanup { command } => run_workflow_cleanup(command),

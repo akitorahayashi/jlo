@@ -39,7 +39,7 @@ fn ensure_jlo_config(root: &Path) {
 }
 
 #[test]
-fn init_workflows_installs_remote_kit() {
+fn init_workflows_installs_remote_scaffold() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
@@ -49,16 +49,16 @@ fn init_workflows_installs_remote_kit() {
     assert!(root.join(".github/actions/install-jlo/action.yml").exists());
     assert!(
         !root.join(".github/actions/wait/action.yml").exists(),
-        "Workflow kit should not include legacy wait action"
+        "Workflow scaffold should not include legacy wait action"
     );
     assert!(
         !root.join(".github/workflows/jules-workflows/components").exists(),
-        "Workflow kit should not include workflow template components"
+        "Workflow scaffold should not include workflow template components"
     );
-    // Scripts directory no longer ships with workflow kit
+    // Scripts directory no longer ships with workflow scaffold
     assert!(
         !root.join(".github/scripts").exists(),
-        "Workflow kit should not include .github/scripts"
+        "Workflow scaffold should not include .github/scripts"
     );
 
     let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
@@ -98,12 +98,12 @@ fn init_workflows_installs_remote_kit() {
     );
     assert!(
         !workflow.contains("{% include"),
-        "Rendered workflow should not contain template include directives"
+        "Generated workflow should not contain template include directives"
     );
 }
 
 #[test]
-fn init_workflows_installs_self_hosted_kit() {
+fn init_workflows_installs_self_hosted_scaffold() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--self-hosted"]).assert().success();
@@ -133,28 +133,28 @@ fn init_workflows_respects_unrelated_files() {
 
     write_jlo_config(root, &[DEFAULT_CRON], 30);
 
-    let kit_workflow = root.join(".github/workflows/jules-workflows.yml");
-    fs::create_dir_all(kit_workflow.parent().unwrap()).unwrap();
-    fs::write(&kit_workflow, "old workflow").unwrap();
+    let scaffold_workflow = root.join(".github/workflows/jules-workflows.yml");
+    fs::create_dir_all(scaffold_workflow.parent().unwrap()).unwrap();
+    fs::write(&scaffold_workflow, "old workflow").unwrap();
 
     let unrelated_workflow = root.join(".github/workflows/unrelated.yml");
     fs::write(&unrelated_workflow, "keep me").unwrap();
 
-    let kit_action = root.join(".github/actions/install-jlo/action.yml");
-    fs::create_dir_all(kit_action.parent().unwrap()).unwrap();
-    fs::write(&kit_action, "old action").unwrap();
+    let scaffold_action = root.join(".github/actions/install-jlo/action.yml");
+    fs::create_dir_all(scaffold_action.parent().unwrap()).unwrap();
+    fs::write(&scaffold_action, "old action").unwrap();
 
     let unrelated_action = root.join(".github/actions/custom/action.yml");
     fs::create_dir_all(unrelated_action.parent().unwrap()).unwrap();
     fs::write(&unrelated_action, "custom action").unwrap();
 
-    // Use API directly — testing workflow kit re-install over existing files
+    // Use API directly — testing workflow scaffold re-install over existing files
     init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote).unwrap();
 
-    let updated_workflow = fs::read_to_string(&kit_workflow).unwrap();
+    let updated_workflow = fs::read_to_string(&scaffold_workflow).unwrap();
     assert!(updated_workflow.contains("Jules Workflows"));
 
-    let updated_action = fs::read_to_string(&kit_action).unwrap();
+    let updated_action = fs::read_to_string(&scaffold_action).unwrap();
     assert!(updated_action.contains("Install jlo"));
 
     let unrelated_content = fs::read_to_string(&unrelated_workflow).unwrap();
@@ -165,7 +165,7 @@ fn init_workflows_respects_unrelated_files() {
 }
 
 #[test]
-fn init_workflows_renders_timing_from_config() {
+fn init_workflows_generates_timing_from_config() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
 
@@ -304,7 +304,7 @@ fn init_workflows_no_scripts_references() {
         "jules-workflows.yml should not reference .github/scripts/"
     );
 
-    // Verify all workflow files in the kit
+    // Verify all workflow files in the scaffold
     for entry in fs::read_dir(root.join(".github/workflows")).unwrap() {
         let entry = entry.unwrap();
         if entry.path().extension().is_some_and(|ext| ext == "yml") {
@@ -395,12 +395,12 @@ fn init_workflows_enforces_explicit_branch_contract() {
 fn workflow_templates_parse_with_serde_yaml() {
     for mode in ["remote", "self-hosted"] {
         let ctx = TestContext::new();
-        let output_dir = render_workflow_kit(&ctx, mode, "parse");
+        let output_dir = generate_workflow_scaffold(&ctx, mode, "parse");
 
         let files = collect_yaml_files(&output_dir);
         assert!(
             !files.is_empty(),
-            "Rendered workflow kit produced no YAML files for {} mode",
+            "Generated workflow scaffold produced no YAML files for {} mode",
             mode
         );
 
@@ -431,10 +431,14 @@ fn workflow_templates_pass_yaml_lint_self_hosted() {
 
 fn validate_yaml_lint(mode: &str) {
     let ctx = TestContext::new();
-    let output_dir = render_workflow_kit(&ctx, mode, "lint");
+    let output_dir = generate_workflow_scaffold(&ctx, mode, "lint");
 
     let files = collect_yaml_files(&output_dir);
-    assert!(!files.is_empty(), "Rendered workflow kit produced no YAML files for {} mode", mode);
+    assert!(
+        !files.is_empty(),
+        "Generated workflow scaffold produced no YAML files for {} mode",
+        mode
+    );
 
     let mut config = yamllint_rs::config::Config::new();
     config.set_rule_enabled("line-length", false);
@@ -476,14 +480,20 @@ fn validate_yaml_lint(mode: &str) {
     assert!(errors.is_empty(), "YAML lint errors for {} mode:{}", mode, errors.join(""));
 }
 
-fn render_workflow_kit(ctx: &TestContext, mode: &str, suffix: &str) -> PathBuf {
-    let output_dir =
-        ctx.work_dir().join(".tmp/workflow-kit-render/tests").join(format!("{}-{}", mode, suffix));
+fn generate_workflow_scaffold(ctx: &TestContext, mode: &str, suffix: &str) -> PathBuf {
+    let output_dir = ctx
+        .work_dir()
+        .join(".tmp/workflow-scaffold-generate/tests")
+        .join(format!("{}-{}", mode, suffix));
 
     ensure_jlo_config(ctx.work_dir());
 
     let mut command = ctx.cli();
-    command.args(["workflow", "render", mode, "--output-dir"]).arg(&output_dir).assert().success();
+    command
+        .args(["workflow", "generate", mode, "--output-dir"])
+        .arg(&output_dir)
+        .assert()
+        .success();
 
     output_dir
 }

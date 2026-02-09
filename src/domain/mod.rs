@@ -1,6 +1,6 @@
 pub mod configuration;
 pub mod error;
-pub mod identities;
+pub mod identifiers;
 pub mod issue;
 
 pub mod prompt;
@@ -11,7 +11,7 @@ pub use configuration::{
     WorkstreamSchedule,
 };
 pub use error::{AppError, IoErrorKind};
-pub use identities::{ComponentId, RoleId};
+pub use identifiers::{ComponentId, RoleId};
 pub use issue::IssueHeader;
 
 pub use prompt::{

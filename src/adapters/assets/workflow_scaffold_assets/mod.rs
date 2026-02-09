@@ -16,12 +16,12 @@ use self::template_engine::{build_template_environment, render_template_by_name}
 
 static WORKFLOWS_ASSET_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/workflows/.github");
 
-/// Workflow render configuration for template expansion.
+/// Workflow generate configuration for template expansion.
 ///
 /// Values are sourced from `.jlo/config.toml` and rendered
 /// as static literals in generated workflow YAML.
 #[derive(Debug, Clone)]
-pub struct WorkflowRenderConfig {
+pub struct WorkflowGenerateConfig {
     /// Target/control branch (e.g. `main`). Maps to `run.default_branch`.
     pub target_branch: String,
     /// Worker branch hosting `.jules/` runtime state. Maps to `run.jules_branch`.
@@ -32,7 +32,7 @@ pub struct WorkflowRenderConfig {
     pub wait_minutes_default: u32,
 }
 
-impl Default for WorkflowRenderConfig {
+impl Default for WorkflowGenerateConfig {
     fn default() -> Self {
         Self {
             target_branch: "main".to_string(),
@@ -44,19 +44,19 @@ impl Default for WorkflowRenderConfig {
 }
 
 #[derive(Debug)]
-pub struct WorkflowKitAssets {
+pub struct WorkflowScaffoldAssets {
     pub files: Vec<ScaffoldFile>,
     pub action_dirs: Vec<String>,
 }
 
-pub fn load_workflow_kit(
+pub fn load_workflow_scaffold(
     mode: WorkflowRunnerMode,
-    render_config: &WorkflowRenderConfig,
-) -> Result<WorkflowKitAssets, AppError> {
+    generate_config: &WorkflowGenerateConfig,
+) -> Result<WorkflowScaffoldAssets, AppError> {
     let sources = collect_asset_sources(&WORKFLOWS_ASSET_DIR)?;
     if sources.is_empty() {
         return Err(AppError::InternalError(format!(
-            "Workflow kit assets are empty for mode '{}'",
+            "Workflow scaffold assets are empty for mode '{}'",
             mode.label()
         )));
     }
@@ -69,10 +69,10 @@ pub fn load_workflow_kit(
     };
     let ctx = context! {
         runner => runner,
-        target_branch => &render_config.target_branch,
-        worker_branch => &render_config.worker_branch,
-        workflow_schedule_crons => &render_config.schedule_crons,
-        workflow_wait_minutes_default => render_config.wait_minutes_default,
+        target_branch => &generate_config.target_branch,
+        worker_branch => &generate_config.worker_branch,
+        workflow_schedule_crons => &generate_config.schedule_crons,
+        workflow_wait_minutes_default => generate_config.wait_minutes_default,
     };
 
     let mut files = render_scaffold_files(&sources, &env, &ctx)?;
@@ -86,13 +86,13 @@ pub fn load_workflow_kit(
 
     if files.is_empty() {
         return Err(AppError::InternalError(format!(
-            "No renderable workflow kit assets for mode '{}'",
+            "No renderable workflow scaffold assets for mode '{}'",
             mode.label()
         )));
     }
 
     let action_dirs = collect_action_dirs(&files);
-    Ok(WorkflowKitAssets { files, action_dirs })
+    Ok(WorkflowScaffoldAssets { files, action_dirs })
 }
 
 const GENERATED_NOTICE: &str =
@@ -147,14 +147,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn workflow_kit_assets_load() {
-        let render_config = WorkflowRenderConfig::default();
-        let remote =
-            load_workflow_kit(WorkflowRunnerMode::Remote, &render_config).expect("remote assets");
-        assert!(!remote.files.is_empty(), "remote kit should have files");
+    fn workflow_scaffold_assets_load() {
+        let generate_config = WorkflowGenerateConfig::default();
+        let remote = load_workflow_scaffold(WorkflowRunnerMode::Remote, &generate_config)
+            .expect("remote assets");
+        assert!(!remote.files.is_empty(), "remote scaffold should have files");
 
-        let self_hosted = load_workflow_kit(WorkflowRunnerMode::SelfHosted, &render_config)
+        let self_hosted = load_workflow_scaffold(WorkflowRunnerMode::SelfHosted, &generate_config)
             .expect("self-hosted assets");
-        assert!(!self_hosted.files.is_empty(), "self-hosted kit should have files");
+        assert!(!self_hosted.files.is_empty(), "self-hosted scaffold should have files");
     }
 }

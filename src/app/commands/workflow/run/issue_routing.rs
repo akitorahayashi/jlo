@@ -1,4 +1,4 @@
-use crate::domain::identities::validation::validate_safe_path_component;
+use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::{AppError, IssueHeader, Layer};
 use crate::ports::WorkspaceStore;
 use std::path::{Path, PathBuf};

@@ -31,16 +31,16 @@ jobs:
         run: aqua i
         shell: bash
 
-      - name: Render workflow kit
+      - name: Generate workflow scaffold
         run: |
-          jlo workflow render remote --output-dir .tmp/workflow-kit-render/remote
-          jlo workflow render self-hosted --output-dir .tmp/workflow-kit-render/self-hosted
+          jlo workflow generate remote --output-dir .tmp/workflow-scaffold-generate/remote
+          jlo workflow generate self-hosted --output-dir .tmp/workflow-scaffold-generate/self-hosted
         shell: bash
 
       - name: Run actionlint
         run: |
-          aqua exec -- actionlint .tmp/workflow-kit-render/remote/.github/workflows/*.yml
-          aqua exec -- actionlint .tmp/workflow-kit-render/self-hosted/.github/workflows/*.yml
+          aqua exec -- actionlint .tmp/workflow-scaffold-generate/remote/.github/workflows/*.yml
+          aqua exec -- actionlint .tmp/workflow-scaffold-generate/self-hosted/.github/workflows/*.yml
         shell: bash
 
       - name: Run Linters
