@@ -54,6 +54,19 @@ tests/
 | **Workflow kit** | `.github/` automation assets installed by `jlo init`. |
 | **Component** | Development tools managed by `jlo setup`, defined in `src/assets/catalog/`. |
 
+## Domain Modules
+
+Core domain logic located in `src/domain/`.
+
+| Module | Purpose |
+|--------|---------|
+| `configuration` | Global configuration models (`config.toml`, `scheduled.toml`). |
+| `identities` | Structural identifiers (`RoleId`, `Layer`, `WorkstreamId`). |
+| `prompt` | Prompt assembly and template rendering models. |
+| `workspace` | Filesystem abstraction and path management. |
+| `error` | `AppError` and error handling types. |
+| `issue` | Issue parsing and schema validation. |
+
 ## CLI Commands
 
 | Command | Alias | Description |
@@ -112,11 +125,11 @@ cargo test --test mock_mode       # Mock execution flow
 | Layer | Type | Invocation | Config |
 |-------|------|------------|--------|
 | Narrator | Single-role | `jlo run narrator` | None (git-based) |
-| Observers | Multi-role | `jlo run observers --workstream <name>` | `workstreams/<workstream>/scheduled.toml` |
-| Deciders | Multi-role | `jlo run deciders --workstream <name>` | `workstreams/<workstream>/scheduled.toml` |
+| Observers | Multi-role | `jlo workflow run <workstream> observers` | `workstreams/<workstream>/scheduled.toml` |
+| Deciders | Multi-role | `jlo workflow run <workstream> deciders` | `workstreams/<workstream>/scheduled.toml` |
 | Planners | Single-role | `jlo run planners <path>` | None (issue path) |
 | Implementers | Single-role | `jlo run implementers <path>` | None (issue path) |
-| Innovators | Multi-role | `jlo run innovators --workstream <name>` | `workstreams/<workstream>/scheduled.toml` |
+| Innovators | Multi-role | `jlo workflow run <workstream> innovators` | `workstreams/<workstream>/scheduled.toml` |
 
 **Single-role layers**: Narrator, Planners, Implementers have a fixed role with `prompt.yml` in the layer directory. Template creation not supported.
 

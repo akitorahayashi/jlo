@@ -37,7 +37,7 @@ jlo init --remote
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
 | `jlo workflow matrix <cmd>` | | Generate GitHub Actions matrices |
-| `jlo workflow run <layer> [--matrix-json <json>] [--mock]` | | Run layer with JSON output |
+| `jlo workflow run <workstream> <layer> [--mock]` | | Run layer with JSON output |
 | `jlo workflow render <mode> [--output <dir>] [--overwrite]` | | Render workflow kit files to a deterministic output directory |
 | `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state for automation |
 | `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
@@ -60,22 +60,21 @@ jlo create workstream my-stream        # Create workstream
 Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `o` (observers), `d` (deciders), `p` (planners), `i` (implementers), `x` (innovators) (e.g., `jlo r o ...`).
 
 ```bash
-jlo run observers --workstream generic --scheduled            # Run scheduled observer roles
-jlo run deciders --workstream generic --scheduled             # Run scheduled decider roles
+jlo workflow run generic observers                            # Run scheduled observer roles via workflow
+jlo workflow run generic deciders                             # Run scheduled decider roles via workflow
 jlo run observers --workstream generic --role <role>          # Run specific role (manual)
-jlo run observers --workstream generic --role <role1> --role <role2> # Run specific roles (manual)
-jlo run observers --workstream generic --scheduled --prompt-preview   # Show prompts without executing
-jlo run observers --workstream generic --scheduled --branch custom # Override starting branch
+jlo run observers --workstream generic --role <role> --prompt-preview   # Show prompts without executing
+jlo run observers --workstream generic --role <role> --branch custom # Override starting branch
 ```
 
 **Single-Role Layers** (Planners, Implementers) require an issue file:
 
 ```bash
 # Run planner for a specific issue
-jlo run planners .jules/workstreams/generic/issues/<label>/auth-inconsistency.yml
+jlo run planners .jules/workstreams/generic/exchange/issues/<label>/auth-inconsistency.yml
 
 # Run implementer for a specific issue
-jlo run implementers .jules/workstreams/generic/issues/<label>/auth-inconsistency.yml
+jlo run implementers .jules/workstreams/generic/exchange/issues/<label>/auth-inconsistency.yml
 ```
 
 Single-role layers are issue-driven and do not support the `--role` flag.
@@ -84,16 +83,15 @@ Single-role layers are issue-driven and do not support the `--role` flag.
 
 ```bash
 jlo run narrator --mock             # Mock narrator execution
-jlo run observers --mock            # Mock observer execution
-jlo run deciders --mock             # Mock decider execution
-jlo run innovators --mock           # Mock innovator execution (toggle idea.yml)
+jlo run observers --workstream generic --role <role> --mock  # Mock observer execution
+jlo run deciders --workstream generic --role <role> --mock   # Mock decider execution
+jlo run innovators --workstream generic --role <role> --mock # Mock innovator execution
 ```
 
 Mock mode creates real branches and PRs with synthetic commit content, enabling E2E workflow validation in CI. The mock tag is auto-generated from `JULES_MOCK_TAG` env var or a timestamp.
 
 **Flags**:
 - `-w, --workstream <name>`: Target workstream (required for observers/deciders)
-- `--scheduled`: Use roles from `scheduled.toml`
 - `-r, --role <name>`: Run specific role(s) (manual mode only)
 - `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)
@@ -185,7 +183,7 @@ Workflow expressions read these values from GitHub Actions variables (`vars.*`),
 
 **Flow**:
 1. **Sync**: `JULES_WORKER_BRANCH` syncs from `JLO_TARGET_BRANCH` periodically
-2. **Analysis**: Observers create event files under `.jules/workstreams/<workstream>/events/`
+2. **Analysis**: Observers create event files under `.jules/workstreams/<workstream>/exchange/events/`
 3. **Triage**: Deciders link and consolidate events into issue files
 4. **Expansion**: Planners expand issues that require deep analysis
 5. **Implementation**: Implementers are dispatched by workflow policy or manual dispatch with a local issue file

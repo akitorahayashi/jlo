@@ -75,22 +75,26 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │           └── .gitkeep
 ├── workstreams/
 │   └── <workstream>/
-│       ├── events/
-│       │   ├── pending/
+│       ├── exchange/
+│       │   ├── events/
+│       │   │   ├── pending/
+│       │   │   │   └── .gitkeep
+│       │   │   └── decided/
+│       │   │   │   └── .gitkeep
+│       │   ├── issues/
+│       │   │   ├── <label>/
+│       │   │   │   └── .gitkeep
 │       │   │   └── .gitkeep
-│       │   └── decided/
-│       │       └── .gitkeep
-│       └── issues/
-│           ├── <label>/
-│           │   └── .gitkeep
-│           └── .gitkeep
-│       └── innovators/
-│           └── <persona>/
-│               ├── perspective.yml
-│               ├── idea.yml       # Temporary (creation phase)
-│               ├── proposal.yml   # Temporary (refinement output)
-│               └── comments/
-│                   └── .gitkeep
+│       │   └── innovators/
+│       │       └── <persona>/
+│       │           ├── perspective.yml
+│       │           ├── idea.yml       # Temporary (creation phase)
+│       │           ├── proposal.yml   # Temporary (refinement output)
+│       │           └── comments/
+│       │               └── .gitkeep
+│       └── workstations/
+│           └── <role>/
+│               └── perspective.yml
 └── setup/
     ├── tools.yml         # Tool selection
     ├── env.toml          # Environment variables (generated/merged)
@@ -148,9 +152,10 @@ Workstreams isolate events and issues so that decider rules do not mix across un
 
 | Directory | Purpose |
 |-----------|---------|
-| `.jules/workstreams/<workstream>/events/<state>/` | Observer outputs, Decider inputs |
-| `.jules/workstreams/<workstream>/issues/<label>/` | Decider/Planner outputs, Implementer inputs |
+| `.jules/workstreams/<workstream>/exchange/events/<state>/` | Observer outputs, Decider inputs |
+| `.jules/workstreams/<workstream>/exchange/issues/<label>/` | Decider/Planner outputs, Implementer inputs |
 | `.jules/workstreams/<workstream>/exchange/innovators/<persona>/` | Innovator perspectives, ideas, proposals, comments |
+| `.jules/workstreams/<workstream>/workstations/<role>/` | Role perspectives (memory) |
 
 ## Data Flow
 
@@ -170,49 +175,3 @@ perspective -> idea -> comments -> proposal
 4. **Planners** expand issues with `requires_deep_analysis: true`.
 5. **Implementers** execute approved tasks and create PRs with code changes.
 6. **Innovators** run independently: each persona maintains a `perspective.yml`, drafts `idea.yml`, receives `comments/` from other personas, and produces `proposal.yml`.
-
-## Setup Compiler
-
-The setup compiler generates dependency-aware installation scripts for development tools.
-
-### Component Catalog Structure
-
-```
-src/assets/catalog/<component>/
-  meta.toml      # name, summary, dependencies, env specs
-  install.sh     # Installation script
-```
-
-### meta.toml Schema
-
-```toml
-name = "component-name"       # Optional; defaults to directory name
-summary = "Short description"
-dependencies = ["other-comp"] # Optional
-
-[[env]]
-name = "ENV_VAR"
-description = "What this variable does"
-default = "optional-default"  # Optional
-```
-
-### Services
-
-| Service | Responsibility |
-|---------|----------------|
-| CatalogService | Loads components from embedded assets |
-| ResolverService | Topological sort with cycle detection |
-| GeneratorService | Produces install.sh and merges env.toml |
-
-### Environment Contract
-
-Catalog installers assume the Jules environment baseline (Python 3.12+, Node.js 22+, common dev tools). The CI verify-installers workflow provisions that baseline in minimal containers.
-
-### Setup Directory Contents
-
-The `.jules/setup/` directory contains:
-
-- `tools.yml`: User-selected components
-- `env.toml`: Generated environment variables (gitignored)
-- `install.sh`: Generated installation script (dependency-sorted)
-- `.gitignore`: Excludes `env.toml`

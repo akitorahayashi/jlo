@@ -45,6 +45,7 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 | `.jules/workstreams/<ws>/exchange/events/**` | Agent | Agent execution | Observer outputs, decider inputs |
 | `.jules/workstreams/<ws>/exchange/issues/**` | Agent | Agent execution | Decider outputs, planner/implementer inputs |
 | `.jules/workstreams/<ws>/exchange/innovators/**` | Agent | Agent execution | Innovator artifacts |
+| `.jules/workstreams/<ws>/workstations/**` | Agent | Agent execution | Role perspectives (memory) |
 | `.jules/changes/latest.yml` | Agent | Narrator execution | Changes summary |
 | `.jules/setup/**` | Bootstrap | Workflow bootstrap | Materialized from `.jlo/setup/` + scaffold |
 | `.jules/.managed-defaults.yml` | Bootstrap | Workflow bootstrap | Materialized manifest |
