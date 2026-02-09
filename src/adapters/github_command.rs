@@ -222,11 +222,8 @@ impl GitHubPort for GitHubCommandAdapter {
 
     fn ensure_label(&self, label: &str, color: Option<&str>) -> Result<(), AppError> {
         // Check if label exists
-        let list_output = self.run_gh(&["label", "list", "--json", "name", "-q", ".[].name"]);
-        let label_exists = match &list_output {
-            Ok(names) => names.lines().any(|l| l == label),
-            Err(_) => false,
-        };
+        let list_output = self.run_gh(&["label", "list", "--json", "name", "-q", ".[].name"])?;
+        let label_exists = list_output.lines().any(|l| l == label);
 
         if label_exists {
             // Label already exists — nothing to do

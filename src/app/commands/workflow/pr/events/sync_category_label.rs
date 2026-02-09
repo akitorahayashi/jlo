@@ -79,7 +79,7 @@ pub fn execute(
 }
 
 /// Parse implementer branch name.
-/// Expected format: `jules-implementer-<label>-<issue_id>` where issue_id is 6 alphanumeric chars.
+/// Expected format: `jules-implementer-<label>-<issue_id>` where issue_id is 6 lowercase alphanumeric chars.
 fn parse_implementer_branch(branch: &str) -> Result<ParsedBranch, AppError> {
     if !branch.starts_with("jules-implementer-") {
         return Err(AppError::Validation(format!(

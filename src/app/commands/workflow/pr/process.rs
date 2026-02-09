@@ -200,6 +200,8 @@ mod tests {
         assert_eq!(out.steps[2].command, "enable-automerge");
         // comment-summary-request should apply on jules branch
         assert!(out.steps[0].applied);
+        // sync-category-label should fail due to missing .jules/github-labels.json in test env
+        assert!(!out.steps[1].applied);
         // enable-automerge should apply (all gates pass)
         assert!(out.steps[2].applied);
     }
