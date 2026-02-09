@@ -1,0 +1,14 @@
+schema_version: 1
+
+persona: "recruiter"
+workstream: "generic"
+
+bias_focus: "Increase proposal quality by identifying missing observer/innovator personas and contract boundaries."
+current_view: |
+  The repository is undergoing a major refactor with new domain models and extensive scaffolding. However, there is a clear gap in security auditing and application security oversight. No role currently owns the responsibility for identifying vulnerabilities, managing `cargo audit`, or reviewing unsafe code usage.
+historical_learnings: |
+  Previous focus was on structural and data architecture. Security has been handled implicitly by individual contributors, leading to gaps like the absence of `cargo audit` in CI.
+
+# Newest first; keep max 5 entries (FIFO).
+recent_proposals:
+  - "Establish 'Warden' Observer for Security & Vulnerability Auditing"
