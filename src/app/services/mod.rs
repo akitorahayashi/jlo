@@ -1,2 +1,2 @@
-pub mod artifact_generator;
-pub mod dependency_resolver;
+pub mod setup_component_resolver;
+pub mod setup_script_generator;

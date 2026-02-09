@@ -1,13 +1,13 @@
-//! Script and config generator service.
+//! Script and config generator domain logic.
 
 use std::collections::BTreeMap;
 
 use crate::domain::{AppError, Component};
 
-/// Service for generating setup scripts and configuration files.
-pub struct ArtifactGenerator;
+/// Domain logic for generating setup scripts and configuration files.
+pub struct ArtifactFactory;
 
-impl ArtifactGenerator {
+impl ArtifactFactory {
     const SCRIPT_HEADER: &'static str = r#"#!/usr/bin/env bash
 set -euo pipefail
 
@@ -152,7 +152,7 @@ mod tests {
     fn generate_script_with_header() {
         let components = vec![make_component("test", vec![])];
 
-        let script = ArtifactGenerator::generate_install_script(&components);
+        let script = ArtifactFactory::generate_install_script(&components);
 
         assert!(script.starts_with("#!/usr/bin/env bash"));
         assert!(script.contains("set -euo pipefail"));
@@ -163,7 +163,7 @@ mod tests {
     fn generate_script_with_sections() {
         let components = vec![make_component("alpha", vec![]), make_component("beta", vec![])];
 
-        let script = ArtifactGenerator::generate_install_script(&components);
+        let script = ArtifactFactory::generate_install_script(&components);
 
         assert!(script.contains("# alpha: alpha component"));
         assert!(script.contains("# beta: beta component"));
@@ -182,7 +182,7 @@ mod tests {
             }],
         )];
 
-        let result = ArtifactGenerator::merge_env_toml(&components, None).unwrap();
+        let result = ArtifactFactory::merge_env_toml(&components, None).unwrap();
 
         assert!(result.contains("[TEST_VAR]"));
         assert!(result.contains("value = \"default_value\""));
@@ -206,8 +206,7 @@ note = "Custom note"
             }],
         )];
 
-        let result =
-            ArtifactGenerator::merge_env_toml(&components, Some(existing_content)).unwrap();
+        let result = ArtifactFactory::merge_env_toml(&components, Some(existing_content)).unwrap();
 
         assert!(result.contains("value = \"custom_value\""), "should preserve existing value");
         assert!(result.contains("note = \"Custom note\""), "should preserve existing note");
