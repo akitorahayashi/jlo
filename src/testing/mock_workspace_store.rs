@@ -1,19 +1,31 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use crate::domain::{AppError, Layer, PromptAssetLoader, RoleId};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
 /// Mock workspace store for testing.
-#[derive(Default)]
+#[derive(Clone)]
 #[allow(dead_code)]
 pub struct MockWorkspaceStore {
-    pub exists: RefCell<bool>,
-    pub roles: RefCell<HashMap<(Layer, RoleId), bool>>,
-    pub version: RefCell<Option<String>>,
-    pub created_structure: RefCell<bool>,
-    pub files: RefCell<HashMap<String, String>>,
+    pub exists: Arc<Mutex<bool>>,
+    pub roles: Arc<Mutex<HashMap<(Layer, RoleId), bool>>>,
+    pub version: Arc<Mutex<Option<String>>>,
+    pub created_structure: Arc<Mutex<bool>>,
+    pub files: Arc<Mutex<HashMap<String, String>>>,
+}
+
+impl Default for MockWorkspaceStore {
+    fn default() -> Self {
+        Self {
+            exists: Arc::new(Mutex::new(false)),
+            roles: Arc::new(Mutex::new(HashMap::new())),
+            version: Arc::new(Mutex::new(None)),
+            created_structure: Arc::new(Mutex::new(false)),
+            files: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -23,17 +35,17 @@ impl MockWorkspaceStore {
     }
 
     pub fn with_exists(self, exists: bool) -> Self {
-        *self.exists.borrow_mut() = exists;
+        *self.exists.lock().unwrap() = exists;
         self
     }
 
     pub fn add_role(&self, layer: Layer, role_id: &str) {
         let id = RoleId::new(role_id).expect("Invalid role_id provided in test setup");
-        self.roles.borrow_mut().insert((layer, id), true);
+        self.roles.lock().unwrap().insert((layer, id), true);
     }
 
     pub fn with_file(self, path: &str, content: &str) -> Self {
-        self.files.borrow_mut().insert(path.to_string(), content.to_string());
+        self.files.lock().unwrap().insert(path.to_string(), content.to_string());
         self
     }
 }
@@ -42,7 +54,8 @@ impl PromptAssetLoader for MockWorkspaceStore {
     fn read_asset(&self, path: &Path) -> std::io::Result<String> {
         let path_str = path.to_string_lossy().to_string();
         self.files
-            .borrow()
+            .lock()
+            .unwrap()
             .get(&path_str)
             .cloned()
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Mock file not found"))
@@ -50,7 +63,7 @@ impl PromptAssetLoader for MockWorkspaceStore {
 
     fn asset_exists(&self, path: &Path) -> bool {
         let path_str = path.to_string_lossy().to_string();
-        self.files.borrow().contains_key(&path_str)
+        self.files.lock().unwrap().contains_key(&path_str)
     }
 
     fn ensure_asset_dir(&self, _path: &Path) -> std::io::Result<()> {
@@ -60,21 +73,22 @@ impl PromptAssetLoader for MockWorkspaceStore {
     fn copy_asset(&self, from: &Path, to: &Path) -> std::io::Result<u64> {
         let from_str = from.to_string_lossy().to_string();
         let to_str = to.to_string_lossy().to_string();
-        let content = self.files.borrow().get(&from_str).cloned().ok_or_else(|| {
+        let mut files = self.files.lock().unwrap();
+        let content = files.get(&from_str).cloned().ok_or_else(|| {
             std::io::Error::new(std::io::ErrorKind::NotFound, "Source file not found")
         })?;
-        self.files.borrow_mut().insert(to_str, content.clone());
+        files.insert(to_str, content.clone());
         Ok(content.len() as u64)
     }
 }
 
 impl WorkspaceStore for MockWorkspaceStore {
     fn exists(&self) -> bool {
-        *self.exists.borrow()
+        *self.exists.lock().unwrap()
     }
 
     fn jlo_exists(&self) -> bool {
-        *self.exists.borrow()
+        *self.exists.lock().unwrap()
     }
 
     fn jules_path(&self) -> PathBuf {
@@ -86,24 +100,25 @@ impl WorkspaceStore for MockWorkspaceStore {
     }
 
     fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
-        *self.created_structure.borrow_mut() = true;
-        *self.exists.borrow_mut() = true;
+        *self.created_structure.lock().unwrap() = true;
+        *self.exists.lock().unwrap() = true;
         Ok(())
     }
 
     fn write_version(&self, version: &str) -> Result<(), AppError> {
-        *self.version.borrow_mut() = Some(version.to_string());
+        *self.version.lock().unwrap() = Some(version.to_string());
         Ok(())
     }
 
     fn read_version(&self) -> Result<Option<String>, AppError> {
-        Ok(self.version.borrow().clone())
+        Ok(self.version.lock().unwrap().clone())
     }
 
     fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
         let roles: Vec<DiscoveredRole> = self
             .roles
-            .borrow()
+            .lock()
+            .unwrap()
             .keys()
             .map(|(layer, id)| DiscoveredRole { layer: *layer, id: id.clone() })
             .collect();
@@ -127,7 +142,7 @@ impl WorkspaceStore for MockWorkspaceStore {
     }
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        if self.roles.borrow().contains_key(&(role.layer, role.id.clone())) {
+        if self.roles.lock().unwrap().contains_key(&(role.layer, role.id.clone())) {
             Some(PathBuf::from(format!(".jules/roles/{}/{}", role.layer.dir_name(), role.id)))
         } else {
             None
@@ -135,18 +150,18 @@ impl WorkspaceStore for MockWorkspaceStore {
     }
 
     fn read_file(&self, path: &str) -> Result<String, AppError> {
-        self.files.borrow().get(path).cloned().ok_or_else(|| {
+        self.files.lock().unwrap().get(path).cloned().ok_or_else(|| {
             AppError::from(std::io::Error::new(std::io::ErrorKind::NotFound, "Mock file not found"))
         })
     }
 
     fn write_file(&self, path: &str, content: &str) -> Result<(), AppError> {
-        self.files.borrow_mut().insert(path.to_string(), content.to_string());
+        self.files.lock().unwrap().insert(path.to_string(), content.to_string());
         Ok(())
     }
 
     fn remove_file(&self, path: &str) -> Result<(), AppError> {
-        self.files.borrow_mut().remove(path);
+        self.files.lock().unwrap().remove(path);
         Ok(())
     }
 
@@ -156,7 +171,7 @@ impl WorkspaceStore for MockWorkspaceStore {
         let path_obj = Path::new(path);
         let mut results = std::collections::HashSet::new();
 
-        for key in self.files.borrow().keys() {
+        for key in self.files.lock().unwrap().keys() {
             if key.starts_with(&prefix) {
                 let suffix = &key[prefix.len()..];
                 if let Some(slash_idx) = suffix.find('/') {
@@ -180,13 +195,13 @@ impl WorkspaceStore for MockWorkspaceStore {
     }
 
     fn file_exists(&self, path: &str) -> bool {
-        self.files.borrow().contains_key(path)
+        self.files.lock().unwrap().contains_key(path)
     }
 
     fn is_dir(&self, path: &str) -> bool {
         // Check if it is a prefix of any file
         let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
-        self.files.borrow().keys().any(|k| k.starts_with(&prefix))
+        self.files.lock().unwrap().keys().any(|k| k.starts_with(&prefix))
     }
 
     fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {

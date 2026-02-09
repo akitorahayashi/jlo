@@ -1,16 +1,15 @@
 //! Domain model for prompt assembly configuration.
 //!
-//! Prompt assembly is asset-driven: each layer has a `prompt_assembly.yml` that
-//! declares runtime context variables and includes to be concatenated into the
-//! final prompt.
+//! Prompt assembly is asset-driven: each layer has a `prompt_assembly.j2` template
+//! that renders the final prompt using safe include helpers.
 
 use std::collections::HashMap;
-use std::path::{Component, Path};
+use std::path::{Component, Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
-use serde::{Deserialize, Serialize};
+use minijinja::{Environment, UndefinedBehavior};
 
 use crate::domain::Layer;
-use crate::domain::prompt::TemplateRenderer;
 
 /// Abstraction for prompt asset loading.
 pub trait PromptAssetLoader {
@@ -18,42 +17,6 @@ pub trait PromptAssetLoader {
     fn asset_exists(&self, path: &Path) -> bool;
     fn ensure_asset_dir(&self, path: &Path) -> std::io::Result<()>;
     fn copy_asset(&self, from: &Path, to: &Path) -> std::io::Result<u64>;
-}
-
-/// Schema for `prompt_assembly.yml` files.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PromptAssemblySpec {
-    /// Schema version for forward compatibility.
-    pub schema_version: u32,
-
-    /// Layer this assembly belongs to.
-    pub layer: String,
-
-    /// Runtime context variables that must be provided at execution time.
-    /// Keys are variable names (e.g., "workstream", "role"), values are
-    /// placeholder patterns (e.g., "{{workstream}}").
-    #[serde(default)]
-    pub runtime_context: HashMap<String, String>,
-
-    /// Ordered list of files to include in the assembled prompt.
-    pub includes: Vec<PromptInclude>,
-}
-
-/// A single include directive in the prompt assembly.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PromptInclude {
-    /// Human-readable title for this section (used as section header).
-    pub title: String,
-
-    /// Path to the file to include, relative to workspace root.
-    /// May contain `{{variable}}` placeholders to be substituted.
-    pub path: String,
-
-    /// Whether this include is optional (default: false).
-    /// Missing optional includes are silently omitted.
-    /// Missing required includes cause assembly to fail.
-    #[serde(default)]
-    pub optional: bool,
 }
 
 /// Runtime context for prompt assembly.
@@ -78,6 +41,7 @@ impl PromptContext {
     }
 
     /// Get a variable value.
+    #[allow(dead_code)]
     pub fn get(&self, name: &str) -> Option<&str> {
         self.variables.get(name).map(|s| s.as_str())
     }
@@ -100,14 +64,11 @@ pub struct AssembledPrompt {
 /// Error during prompt assembly.
 #[derive(Debug, Clone)]
 pub enum PromptAssemblyError {
-    /// The prompt_assembly.yml file was not found.
-    AssemblySpecNotFound(String),
+    /// The prompt_assembly.j2 file was not found.
+    AssemblyTemplateNotFound(String),
 
-    /// Failed to parse the prompt_assembly.yml file.
-    InvalidAssemblySpec { path: String, reason: String },
-
-    /// A required runtime context variable was not provided.
-    MissingContextVariable { variable: String, required_by: String },
+    /// Failed to read the prompt_assembly.j2 file.
+    TemplateReadError { path: String, reason: String },
 
     /// A required include file was not found.
     RequiredIncludeNotFound { path: String, title: String },
@@ -115,34 +76,24 @@ pub enum PromptAssemblyError {
     /// Failed to read an include file.
     IncludeReadError { path: String, reason: String },
 
-    /// Failed to read prompt.yml.
-    PromptReadError { path: String, reason: String },
-
-    /// Template syntax is not allowed in this context.
-    TemplateSyntaxNotAllowed { template: String, token: String },
-
     /// Failed to render a template with the provided context.
     TemplateRenderError { template: String, reason: String },
 
     /// Path traversal detected in include path.
     PathTraversalDetected { path: String },
+
+    /// Failed to seed a missing file from a schema template.
+    SchemaSeedError { path: String, reason: String },
 }
 
 impl std::fmt::Display for PromptAssemblyError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::AssemblySpecNotFound(path) => {
-                write!(f, "Prompt assembly spec not found: {}", path)
+            Self::AssemblyTemplateNotFound(path) => {
+                write!(f, "Prompt assembly template not found: {}", path)
             }
-            Self::InvalidAssemblySpec { path, reason } => {
-                write!(f, "Invalid prompt assembly spec at {}: {}", path, reason)
-            }
-            Self::MissingContextVariable { variable, required_by } => {
-                write!(
-                    f,
-                    "Missing required context variable '{}' (required by {})",
-                    variable, required_by
-                )
+            Self::TemplateReadError { path, reason } => {
+                write!(f, "Failed to read prompt assembly template {}: {}", path, reason)
             }
             Self::RequiredIncludeNotFound { path, title } => {
                 write!(f, "Required include '{}' not found: {}", title, path)
@@ -150,17 +101,14 @@ impl std::fmt::Display for PromptAssemblyError {
             Self::IncludeReadError { path, reason } => {
                 write!(f, "Failed to read include {}: {}", path, reason)
             }
-            Self::PromptReadError { path, reason } => {
-                write!(f, "Failed to read prompt {}: {}", path, reason)
-            }
-            Self::TemplateSyntaxNotAllowed { template, token } => {
-                write!(f, "Template syntax '{}' is not allowed in {}", token, template)
-            }
             Self::TemplateRenderError { template, reason } => {
                 write!(f, "Failed to render template {}: {}", template, reason)
             }
             Self::PathTraversalDetected { path } => {
                 write!(f, "Path traversal detected in include path: {}", path)
+            }
+            Self::SchemaSeedError { path, reason } => {
+                write!(f, "Failed to seed include {}: {}", path, reason)
             }
         }
     }
@@ -176,87 +124,87 @@ impl std::error::Error for PromptAssemblyError {}
 ///
 /// For issue-driven layers (planners, implementers), use `assemble_with_issue`
 /// to append issue content to the assembled prompt.
-pub fn assemble_prompt(
+pub fn assemble_prompt<L>(
     jules_path: &Path,
     layer: Layer,
     context: &PromptContext,
-    loader: &impl PromptAssetLoader,
-    renderer: &impl TemplateRenderer,
-) -> Result<AssembledPrompt, PromptAssemblyError> {
+    loader: &L,
+) -> Result<AssembledPrompt, PromptAssemblyError>
+where
+    L: PromptAssetLoader + Clone + Send + Sync + 'static,
+{
     let layer_dir = jules_path.join("roles").join(layer.dir_name());
     let root = jules_path.parent().unwrap_or(Path::new("."));
 
-    // Load prompt_assembly.yml
-    let assembly_path = layer_dir.join("prompt_assembly.yml");
-    let spec = load_assembly_spec(&assembly_path, loader)?;
-
-    // Validate required context variables
-    validate_context(&spec, context)?;
-
-    // Load base prompt.yml (optional — returns empty when absent)
-    let prompt_path = layer_dir.join("prompt.yml");
-    let base_prompt = load_prompt(&prompt_path, context, loader, renderer)?;
-
-    // Assemble includes
-    let mut parts = Vec::new();
-    let mut included_files = Vec::new();
-    let mut skipped_files = Vec::new();
-
-    if !base_prompt.is_empty() {
-        parts.push(base_prompt);
-        included_files.push(prompt_path.display().to_string());
+    // Load prompt_assembly.j2
+    let assembly_path = layer_dir.join("prompt_assembly.j2");
+    if !loader.asset_exists(&assembly_path) {
+        return Err(PromptAssemblyError::AssemblyTemplateNotFound(
+            assembly_path.display().to_string(),
+        ));
     }
 
-    for include in &spec.includes {
-        let resolved_path = renderer.render(
-            &include.path,
-            context,
-            &format!("prompt_assembly include path ({})", include.title),
-        )?;
-        validate_safe_path(&resolved_path)?;
-        let full_path = root.join(&resolved_path);
-
-        // Auto-initialize from schema if missing
-        if !loader.asset_exists(&full_path)
-            && let Some(file_name) = Path::new(&resolved_path).file_name()
-        {
-            let schema_path = layer_dir.join("schemas").join(file_name);
-            if loader.asset_exists(&schema_path) {
-                if let Some(parent) = full_path.parent() {
-                    let _ = loader.ensure_asset_dir(parent);
-                }
-                let _ = loader.copy_asset(&schema_path, &full_path);
-            }
+    let template = loader.read_asset(&assembly_path).map_err(|err| {
+        PromptAssemblyError::TemplateReadError {
+            path: assembly_path.display().to_string(),
+            reason: err.to_string(),
         }
+    })?;
 
-        if loader.asset_exists(&full_path) {
-            match loader.read_asset(&full_path) {
-                Ok(content) => {
-                    parts.push(format!("\n---\n# {}\n{}", include.title, content));
-                    included_files.push(resolved_path);
-                }
-                Err(err) => {
-                    if include.optional {
-                        skipped_files.push(format!("{} (read error: {})", resolved_path, err));
-                    } else {
-                        return Err(PromptAssemblyError::IncludeReadError {
-                            path: resolved_path,
-                            reason: err.to_string(),
-                        });
-                    }
-                }
-            }
-        } else if include.optional {
-            skipped_files.push(format!("{} (not found)", resolved_path));
-        } else {
-            return Err(PromptAssemblyError::RequiredIncludeNotFound {
-                path: resolved_path,
-                title: include.title.clone(),
-            });
-        }
+    let included_files = Arc::new(Mutex::new(Vec::new()));
+    let skipped_files = Arc::new(Mutex::new(Vec::new()));
+    let failure = Arc::new(Mutex::new(None));
+
+    let include_ctx = Arc::new(IncludeContext {
+        root: root.to_path_buf(),
+        layer_dir: layer_dir.clone(),
+        loader: Box::new(loader.clone()),
+        included_files: included_files.clone(),
+        skipped_files: skipped_files.clone(),
+        failure: failure.clone(),
+    });
+
+    let mut env = Environment::new();
+    env.set_keep_trailing_newline(true);
+    env.set_undefined_behavior(UndefinedBehavior::Strict);
+
+    {
+        let include_ctx = include_ctx.clone();
+        env.add_function("include_required", move |path: String| -> String {
+            include_ctx.include_file(&path, true).unwrap_or_default()
+        });
     }
 
-    Ok(AssembledPrompt { content: parts.join("\n"), included_files, skipped_files })
+    {
+        let include_ctx = include_ctx.clone();
+        env.add_function("include_optional", move |path: String| -> String {
+            include_ctx.include_file(&path, false).unwrap_or_default()
+        });
+    }
+
+    env.add_function("section", |title: String, content: String| -> String {
+        if content.trim().is_empty() {
+            return String::new();
+        }
+        format!("---\n# {}\n{}", title, content.trim_end())
+    });
+
+    let rendered = env.render_str(&template, &context.variables).map_err(|err| {
+        PromptAssemblyError::TemplateRenderError {
+            template: assembly_path.display().to_string(),
+            reason: err.to_string(),
+        }
+    })?;
+
+    if let Some(err) = failure.lock().unwrap().take() {
+        return Err(err);
+    }
+
+    Ok(AssembledPrompt {
+        content: rendered,
+        included_files: included_files.lock().unwrap().clone(),
+        skipped_files: skipped_files.lock().unwrap().clone(),
+    })
 }
 
 /// Validate that a path is safe and does not traverse outside the root.
@@ -282,14 +230,16 @@ fn validate_safe_path(path: &str) -> Result<(), PromptAssemblyError> {
 ///
 /// This appends the issue content to the base assembled prompt.
 #[allow(dead_code)]
-pub fn assemble_with_issue(
+pub fn assemble_with_issue<L>(
     jules_path: &Path,
     layer: Layer,
     issue_content: &str,
-    loader: &impl PromptAssetLoader,
-    renderer: &impl TemplateRenderer,
-) -> Result<AssembledPrompt, PromptAssemblyError> {
-    let mut result = assemble_prompt(jules_path, layer, &PromptContext::new(), loader, renderer)?;
+    loader: &L,
+) -> Result<AssembledPrompt, PromptAssemblyError>
+where
+    L: PromptAssetLoader + Clone + Send + Sync + 'static,
+{
+    let mut result = assemble_prompt(jules_path, layer, &PromptContext::new(), loader)?;
 
     result.content.push_str(&format!("\n---\n# Issue\n{}", issue_content));
     result.included_files.push("(issue content embedded)".to_string());
@@ -297,60 +247,105 @@ pub fn assemble_with_issue(
     Ok(result)
 }
 
-/// Load and parse the prompt assembly spec from a file.
-fn load_assembly_spec(
-    path: &Path,
-    loader: &impl PromptAssetLoader,
-) -> Result<PromptAssemblySpec, PromptAssemblyError> {
-    if !loader.asset_exists(path) {
-        return Err(PromptAssemblyError::AssemblySpecNotFound(path.display().to_string()));
-    }
-
-    let content =
-        loader.read_asset(path).map_err(|err| PromptAssemblyError::InvalidAssemblySpec {
-            path: path.display().to_string(),
-            reason: err.to_string(),
-        })?;
-
-    serde_yaml::from_str(&content).map_err(|err| PromptAssemblyError::InvalidAssemblySpec {
-        path: path.display().to_string(),
-        reason: err.to_string(),
-    })
+struct IncludeContext {
+    root: PathBuf,
+    layer_dir: PathBuf,
+    loader: Box<dyn PromptAssetLoader + Send + Sync>,
+    included_files: Arc<Mutex<Vec<String>>>,
+    skipped_files: Arc<Mutex<Vec<String>>>,
+    failure: Arc<Mutex<Option<PromptAssemblyError>>>,
 }
 
-/// Validate that all required context variables are present.
-fn validate_context(
-    spec: &PromptAssemblySpec,
-    context: &PromptContext,
-) -> Result<(), PromptAssemblyError> {
-    for var_name in spec.runtime_context.keys() {
-        if context.get(var_name).is_none() {
-            return Err(PromptAssemblyError::MissingContextVariable {
-                variable: var_name.clone(),
-                required_by: format!("prompt_assembly.yml (layer: {})", spec.layer),
+impl IncludeContext {
+    fn include_file(&self, path: &str, required: bool) -> Option<String> {
+        if self.failure.lock().unwrap().is_some() {
+            return None;
+        }
+
+        if let Err(err) = validate_safe_path(path) {
+            self.failure.lock().unwrap().replace(err);
+            return None;
+        }
+
+        let full_path = self.root.join(path);
+        self.seed_from_schema(path, &full_path, required);
+
+        if self.failure.lock().unwrap().is_some() {
+            return None;
+        }
+
+        if self.loader.asset_exists(&full_path) {
+            match self.loader.read_asset(&full_path) {
+                Ok(content) => {
+                    self.included_files.lock().unwrap().push(path.to_string());
+                    Some(content)
+                }
+                Err(err) => {
+                    if required {
+                        self.failure.lock().unwrap().replace(
+                            PromptAssemblyError::IncludeReadError {
+                                path: path.to_string(),
+                                reason: err.to_string(),
+                            },
+                        );
+                    } else {
+                        self.skipped_files
+                            .lock()
+                            .unwrap()
+                            .push(format!("{} (read error: {})", path, err));
+                    }
+                    None
+                }
+            }
+        } else if required {
+            self.failure.lock().unwrap().replace(PromptAssemblyError::RequiredIncludeNotFound {
+                path: path.to_string(),
+                title: path.to_string(),
             });
+            None
+        } else {
+            self.skipped_files.lock().unwrap().push(format!("{} (not found)", path));
+            None
         }
     }
-    Ok(())
-}
 
-/// Load the base prompt.yml if it exists. Returns empty string when absent.
-fn load_prompt(
-    path: &Path,
-    context: &PromptContext,
-    loader: &impl PromptAssetLoader,
-    renderer: &impl TemplateRenderer,
-) -> Result<String, PromptAssemblyError> {
-    if !loader.asset_exists(path) {
-        return Ok(String::new());
+    fn seed_from_schema(&self, path: &str, full_path: &Path, required: bool) {
+        if self.loader.asset_exists(full_path) {
+            return;
+        }
+
+        let Some(file_name) = Path::new(path).file_name() else {
+            return;
+        };
+
+        let schema_path = self.layer_dir.join("schemas").join(file_name);
+        if !self.loader.asset_exists(&schema_path) {
+            return;
+        }
+
+        if let Some(parent) = full_path.parent()
+            && let Err(err) = self.loader.ensure_asset_dir(parent)
+        {
+            if required {
+                self.failure.lock().unwrap().replace(PromptAssemblyError::SchemaSeedError {
+                    path: path.to_string(),
+                    reason: err.to_string(),
+                });
+            }
+            return;
+        }
+
+        if required {
+            if let Err(err) = self.loader.copy_asset(&schema_path, full_path) {
+                self.failure.lock().unwrap().replace(PromptAssemblyError::SchemaSeedError {
+                    path: path.to_string(),
+                    reason: err.to_string(),
+                });
+            }
+        } else {
+            let _ = self.loader.copy_asset(&schema_path, full_path);
+        }
     }
-
-    let content = loader.read_asset(path).map_err(|err| PromptAssemblyError::PromptReadError {
-        path: path.display().to_string(),
-        reason: err.to_string(),
-    })?;
-
-    renderer.render(&content, context, &path.display().to_string())
 }
 
 #[cfg(test)]
@@ -358,6 +353,7 @@ mod tests {
     use super::*;
     use std::sync::{Arc, Mutex};
 
+    #[derive(Clone)]
     struct MockPromptLoader {
         files: Arc<Mutex<HashMap<String, String>>>,
     }
@@ -406,18 +402,6 @@ mod tests {
         }
     }
 
-    struct MockRenderer;
-    impl TemplateRenderer for MockRenderer {
-        fn render(
-            &self,
-            template: &str,
-            _context: &PromptContext,
-            _template_name: &str,
-        ) -> Result<String, PromptAssemblyError> {
-            Ok(template.to_string()) // Simplistic mock pass-through
-        }
-    }
-
     #[test]
     fn prompt_context_with_var() {
         let ctx =
@@ -429,69 +413,77 @@ mod tests {
     }
 
     #[test]
-    fn prompt_assembly_spec_deserialize() {
-        let yaml = r#"
-schema_version: 1
-layer: observers
-
-runtime_context:
-  workstream: "{{workstream}}"
-  role: "{{role}}"
-
-includes:
-  - title: "Role"
-    path: ".jules/roles/observers/roles/{{role}}/role.yml"
-  - title: "Layer Contracts"
-    path: ".jules/roles/observers/contracts.yml"
-  - title: "Change Summary"
-    path: ".jules/changes/latest.yml"
-    optional: true
-"#;
-
-        let spec: PromptAssemblySpec = serde_yaml::from_str(yaml).unwrap();
-        assert_eq!(spec.schema_version, 1);
-        assert_eq!(spec.layer, "observers");
-        assert_eq!(spec.runtime_context.len(), 2);
-        assert_eq!(spec.includes.len(), 3);
-        assert!(!spec.includes[0].optional);
-        assert!(!spec.includes[1].optional);
-        assert!(spec.includes[2].optional);
-    }
-
-    #[test]
     fn test_assemble_prompt_mock_loader() {
         let mock_loader = MockPromptLoader::new();
-        let mock_renderer = MockRenderer;
         let jules_path = Path::new(".jules");
 
         // Setup mock files for Planners layer
         mock_loader.add_file(
-            ".jules/roles/planners/prompt_assembly.yml",
-            r#"
-schema_version: 1
-layer: planners
-runtime_context: {}
-includes:
-  - title: "Contracts"
-    path: ".jules/roles/planners/contracts.yml"
-"#,
+                        ".jules/roles/planners/prompt_assembly.j2",
+                        r#"{{ section("Contracts", include_required(".jules/roles/planners/contracts.yml")) }}"#,
         );
-        mock_loader.add_file(".jules/roles/planners/prompt.yml", "role: planners\nlayer: planners");
         mock_loader
             .add_file(".jules/roles/planners/contracts.yml", "layer: planners\nconstraints: []");
 
-        let result = assemble_prompt(
-            jules_path,
-            Layer::Planners,
-            &PromptContext::new(),
-            &mock_loader,
-            &mock_renderer,
-        );
+        let result =
+            assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_loader);
 
         assert!(result.is_ok());
         let assembled = result.unwrap();
-        assert!(assembled.content.contains("role: planners"));
         assert!(assembled.content.contains("# Contracts"));
         assert!(assembled.content.contains("layer: planners"));
+    }
+
+    #[test]
+    fn test_assemble_prompt_optional_include_skipped() {
+        let mock_loader = MockPromptLoader::new();
+        let jules_path = Path::new(".jules");
+
+        mock_loader.add_file(
+            ".jules/roles/observers/prompt_assembly.j2",
+            r#"{{ section("Optional", include_optional(".jules/changes/latest.yml")) }}"#,
+        );
+
+        let ctx = PromptContext::new().with_var("workstream", "generic").with_var("role", "qa");
+        let result = assemble_prompt(jules_path, Layer::Observers, &ctx, &mock_loader).unwrap();
+
+        assert!(!result.content.contains("# Optional"));
+        assert!(result.skipped_files.iter().any(|entry| entry.contains("latest.yml")));
+    }
+
+    #[test]
+    fn test_assemble_prompt_missing_required_include_fails() {
+        let mock_loader = MockPromptLoader::new();
+        let jules_path = Path::new(".jules");
+
+        mock_loader.add_file(
+            ".jules/roles/deciders/prompt_assembly.j2",
+            r#"{{ section("Role", include_required(".jules/roles/deciders/roles/taxonomy/role.yml")) }}"#,
+        );
+
+        let ctx = PromptContext::new().with_var("workstream", "generic").with_var("role", "qa");
+        let result = assemble_prompt(jules_path, Layer::Deciders, &ctx, &mock_loader);
+
+        assert!(matches!(result, Err(PromptAssemblyError::RequiredIncludeNotFound { .. })));
+    }
+
+    #[test]
+    fn test_assemble_prompt_schema_seed() {
+        let mock_loader = MockPromptLoader::new();
+        let jules_path = Path::new(".jules");
+
+        mock_loader.add_file(
+            ".jules/roles/observers/prompt_assembly.j2",
+            r#"{{ section("Perspective", include_required(".jules/workstreams/generic/workstations/taxonomy/perspective.yml")) }}"#,
+        );
+        mock_loader
+            .add_file(".jules/roles/observers/schemas/perspective.yml", "schema: perspective");
+
+        let ctx =
+            PromptContext::new().with_var("workstream", "generic").with_var("role", "taxonomy");
+        let result = assemble_prompt(jules_path, Layer::Observers, &ctx, &mock_loader).unwrap();
+
+        assert!(result.content.contains("schema: perspective"));
+        assert!(result.included_files.iter().any(|path| path.ends_with("perspective.yml")));
     }
 }

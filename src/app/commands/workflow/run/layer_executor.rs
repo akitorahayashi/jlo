@@ -9,7 +9,7 @@ use super::options::{RunResults, WorkflowRunOptions};
 
 /// Execute runs for a layer on a specific workstream.
 pub(crate) fn execute_layer<G, H>(
-    store: &impl WorkspaceStore,
+    store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
     options: &WorkflowRunOptions,
     git: &G,
     github: &H,
@@ -32,7 +32,7 @@ where
 
 /// Execute narrator (workstream-independent).
 fn execute_narrator<G, H>(
-    store: &impl WorkspaceStore,
+    store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
     options: &WorkflowRunOptions,
     jules_path: &Path,
     git: &G,
@@ -61,7 +61,7 @@ where
 
 /// Execute multi-role layer (observers, deciders) for a specific workstream.
 fn execute_multi_role<G, H>(
-    store: &impl WorkspaceStore,
+    store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
     options: &WorkflowRunOptions,
     jules_path: &Path,
     git: &G,
@@ -127,7 +127,7 @@ where
 
 /// Execute issue-based layers (planners, implementers) for a specific workstream.
 fn execute_issue_layer<G, H>(
-    store: &impl WorkspaceStore,
+    store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
     options: &WorkflowRunOptions,
     jules_path: &Path,
     git: &G,

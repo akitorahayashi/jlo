@@ -1,0 +1,5 @@
+{{ section("Role", include_required(".jules/roles/observers/roles/" ~ role ~ "/role.yml")) }}
+{{ section("Layer Contracts", include_required(".jules/roles/observers/contracts.yml")) }}
+{{ section("Innovator Comment Schema", include_required(".jules/roles/innovators/schemas/comment.yml")) }}
+{{ section("Change Summary", include_optional(".jules/changes/latest.yml")) }}
+{{ section("Workstation Perspective", include_required(".jules/workstreams/" ~ workstream ~ "/workstations/" ~ role ~ "/perspective.yml")) }}

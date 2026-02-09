@@ -82,14 +82,14 @@ Implementers modify source code and require human review.
 |
 +-- roles/              # Role definitions (global)
     +-- narrator/       # Single-role layer
-    |   +-- prompt_assembly.yml # Prompt construction rules
+    |   +-- prompt_assembly.j2 # Prompt construction rules
     |   +-- contracts.yml    # Layer contract
     |   +-- schemas/
     |       +-- change.yml   # Schema template for latest.yml
     |
     +-- observers/      # Multi-role layer
     |   +-- contracts.yml    # Shared observer contract
-    |   +-- prompt_assembly.yml # Prompt construction rules
+    |   +-- prompt_assembly.j2 # Prompt construction rules
     |   +-- schemas/
     |   |   +-- event.yml    # Event template
     |   +-- roles/
@@ -98,7 +98,7 @@ Implementers modify source code and require human review.
     |
     +-- deciders/       # Multi-role layer
     |   +-- contracts.yml    # Shared decider contract
-    |   +-- prompt_assembly.yml # Prompt construction rules
+    |   +-- prompt_assembly.j2 # Prompt construction rules
     |   +-- schemas/
     |   |   +-- issue.yml    # Issue template
     |   +-- roles/
@@ -106,15 +106,15 @@ Implementers modify source code and require human review.
     |           +-- role.yml
     |
     +-- planners/       # Single-role layer (issue-driven)
-    |   +-- prompt_assembly.yml # Prompt construction rules
+    |   +-- prompt_assembly.j2 # Prompt construction rules
     |   +-- contracts.yml    # Shared planner contract
     |
     +-- implementers/   # Single-role layer (issue-driven)
-    |   +-- prompt_assembly.yml # Prompt construction rules
+    |   +-- prompt_assembly.j2 # Prompt construction rules
     |   +-- contracts.yml    # Shared implementer contract
     |
     +-- innovators/     # Multi-role layer (phase-driven)
-        +-- prompt_assembly.yml      # Prompt construction (uses {{phase}})
+        +-- prompt_assembly.j2      # Prompt construction (uses {{phase}})
         +-- contracts_creation.yml   # Creation phase contract
         +-- contracts_refinement.yml # Refinement phase contract
         +-- schemas/
@@ -149,7 +149,7 @@ Implementers modify source code and require human review.
 
 **Single-role layers** (Planners, Implementers): Have a fixed role with `contracts.yml` directly in the layer directory. They are issue-driven and require an issue file path argument. Template creation is not supported.
 
-**Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated contracts file (`contracts_creation.yml` / `contracts_refinement.yml`) selected at runtime via the `{{phase}}` template variable in `prompt_assembly.yml`.
+**Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated contracts file (`contracts_creation.yml` / `contracts_refinement.yml`) selected at runtime via the `{{phase}}` template variable in `prompt_assembly.j2`.
 
 ## Workstreams
 
@@ -157,7 +157,7 @@ Workstreams isolate events and issues so that decider rules do not mix across un
 
 - A workstream may run observers only (no decider), leaving events for human review.
 - `roles/` remains global (not nested per workstream).
-- Observers and deciders declare their destination workstream via the `workstream` runtime context variable.
+- Observers and deciders declare their destination workstream via the `workstream` runtime context variable in `prompt_assembly.j2`.
 - If the workstream directory is missing, execution fails fast.
 - Event state directories are defined by the scaffold templates.
 
@@ -168,8 +168,8 @@ The default scaffold creates a `generic` workstream.
 ### contracts.yml
 Layer-level shared constraints and workflows. All roles in the layer reference this file. Innovators use phase-specific contracts (`contracts_creation.yml`, `contracts_refinement.yml`) instead.
 
-### prompt_assembly.yml
-Declares runtime context variables and includes for prompt construction. The orchestrator assembles all referenced files into a single prompt sent to the agent.
+### prompt_assembly.j2
+Defines a prompt template that assembles required and optional includes into a single prompt sent to the agent.
 
 ### role.yml
 Specialized focus for observers, deciders, and innovators. Continuity lives in the workstation perspective file.

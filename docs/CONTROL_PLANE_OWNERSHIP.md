@@ -38,7 +38,7 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 | `.jules/github-labels.json` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
 | `.jules/roles/<layer>/contracts.yml` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
 | `.jules/roles/<layer>/prompt.yml` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
-| `.jules/roles/<layer>/prompt_assembly.yml` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
+| `.jules/roles/<layer>/prompt_assembly.j2` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
 | `.jules/roles/<layer>/schemas/*.yml` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
 | `.jules/roles/<layer>/roles/<role>/role.yml` | Bootstrap | Workflow bootstrap | Materialized from `.jlo/` user overlay |
 | `.jules/workstreams/<ws>/scheduled.toml` | Bootstrap | Workflow bootstrap | Materialized from `.jlo/` user overlay |

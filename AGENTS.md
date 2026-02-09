@@ -19,19 +19,21 @@ All scaffold files, workflow kits, configurations, and prompts must exist as rea
 - **How**: Use `include_dir!` to load `src/assets/scaffold` and `src/assets/workflows` as authoritative sources of truth.
 
 ### 2. Prompt Hierarchy (No Duplication)
-Prompts are constructed by `prompt_assembly.yml` which declares includes concatenated into the final prompt.
+Prompts are constructed by `prompt_assembly.j2`, which renders prompt sections via explicit include helpers.
 
-```yaml
-contracts:
-  - .jules/JULES.md (global)
-  - .jules/roles/<layer>/contracts.yml (layer)
-  - .jules/roles/<layer>/<role>/role.yml (role-specific)
+```jinja
+{{ section("Layer Contracts", include_required(".jules/roles/<layer>/contracts.yml")) }}
 ```
 
 **Rule**: Never duplicate content across levels. Each level refines the constraints of the previous one.
 
 ### 3. Workflow-Driven Execution
 Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules API; workflows control scheduling, branching, and merge policies.
+
+## Verify Commands
+- **Format**: `cargo fmt --check`
+- **Lint**: `cargo clippy --all-targets --all-features -- -D warnings`
+- **Test**: `cargo test --all-targets --all-features`
 
 ## Context-Specific Documentation
 
@@ -40,8 +42,3 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 - [src/assets/scaffold/AGENTS.md](src/assets/scaffold/AGENTS.md) — `.jules/` scaffold design
 - [src/assets/templates/AGENTS.md](src/assets/templates/AGENTS.md) — Template system
 - [docs/CONTROL_PLANE_OWNERSHIP.md](docs/CONTROL_PLANE_OWNERSHIP.md) — `.jlo/` vs `.jules/` ownership model and projection rules
-
-## Verify Commands
-- **Format**: `cargo fmt --check`
-- **Lint**: `cargo clippy --all-targets --all-features -- -D warnings`
-- **Test**: `cargo test --all-targets --all-features`

@@ -63,12 +63,12 @@ fn init_creates_complete_layer_structure() {
     assert!(jules.join("roles/observers/roles/cov/role.yml").exists());
     assert!(jules.join("roles/observers/roles/consistency/role.yml").exists());
     assert!(jules.join("roles/observers/schemas").exists());
-    assert!(jules.join("roles/observers/prompt_assembly.yml").exists());
+    assert!(jules.join("roles/observers/prompt_assembly.j2").exists());
 
     // Deciders have role.yml under roles/ container
     assert!(jules.join("roles/deciders/roles/triage_generic/role.yml").exists());
     assert!(jules.join("roles/deciders/schemas").exists());
-    assert!(jules.join("roles/deciders/prompt_assembly.yml").exists());
+    assert!(jules.join("roles/deciders/prompt_assembly.j2").exists());
 
     // Single-role layers have flat structure (no roles subdirectory)
     assert!(jules.join("roles/narrator/contracts.yml").exists());

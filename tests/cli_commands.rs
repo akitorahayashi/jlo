@@ -735,8 +735,8 @@ fn verify_scaffold_integrity() {
         let layer_path = ctx.jules_path().join("roles").join(layer);
         assert!(layer_path.exists(), "Layer {} should exist", layer);
         assert!(
-            layer_path.join("prompt_assembly.yml").exists(),
-            "Layer {} prompt_assembly.yml should exist",
+            layer_path.join("prompt_assembly.j2").exists(),
+            "Layer {} prompt_assembly.j2 should exist",
             layer
         );
 
