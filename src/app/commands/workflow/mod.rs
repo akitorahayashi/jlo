@@ -7,8 +7,10 @@ pub mod bootstrap;
 pub mod cleanup;
 mod doctor;
 pub mod generate;
+pub mod issue;
 pub mod matrix;
 mod output;
+pub mod pr;
 mod pr_label;
 mod run;
 #[path = "workstreams/mod.rs"]
