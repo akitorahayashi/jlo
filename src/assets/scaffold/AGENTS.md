@@ -3,14 +3,12 @@
 ## Critical Design Principles
 
 ### 1. Prompt Hierarchy (No Duplication)
-Prompts are constructed by `prompt_assembly.yml` which declares includes concatenated into the final prompt sent to the agent. Each layer has a single `prompt_assembly.yml` that references contracts, role definitions, and exchange data.
+Prompts are constructed by `prompt_assembly.j2`, which renders prompt sections via explicit include helpers. Each layer has a single `prompt_assembly.j2` that references contracts, role definitions, and exchange data.
 
-```yaml
-# prompt_assembly.yml pattern
-includes:
-  - .jules/roles/<layer>/roles/{{role}}/role.yml
-  - .jules/roles/<layer>/contracts.yml
-  - .jules/changes/latest.yml (optional)
+```jinja
+{{ section("Role", include_required(".jules/roles/<layer>/roles/" ~ role ~ "/role.yml")) }}
+{{ section("Layer Contracts", include_required(".jules/roles/<layer>/contracts.yml")) }}
+{{ section("Change Summary", include_optional(".jules/changes/latest.yml")) }}
 ```
 
 **Rule**: Never duplicate content across levels. Each level refines the constraints of the previous one.
@@ -31,12 +29,12 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   └── .gitkeep          # Ensures directory exists in git
 ├── roles/
 │   ├── narrator/
-│   │   ├── prompt_assembly.yml # Prompt construction rules
+│   │   ├── prompt_assembly.j2 # Prompt construction rules
 │   │   ├── contracts.yml # Layer contract
 │   │   └── schemas/
 │   │       └── change.yml
 │   ├── observers/
-│   │   ├── prompt_assembly.yml # Prompt construction rules
+│   │   ├── prompt_assembly.j2 # Prompt construction rules
 │   │   ├── contracts.yml # Layer contract
 │   │   ├── schemas/
 │   │   │   ├── event.yml
@@ -46,7 +44,7 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   │       │   └── role.yml
 │   │       └── .gitkeep
 │   ├── deciders/
-│   │   ├── prompt_assembly.yml # Prompt construction rules
+│   │   ├── prompt_assembly.j2 # Prompt construction rules
 │   │   ├── contracts.yml # Layer contract
 │   │   ├── schemas/
 │   │   │   └── issue.yml
@@ -55,13 +53,13 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   │       │   └── role.yml
 │   │       └── .gitkeep
 │   ├── planners/
-│   │   ├── prompt_assembly.yml # Prompt construction rules
+│   │   ├── prompt_assembly.j2 # Prompt construction rules
 │   │   └── contracts.yml
 │   ├── implementers/
-│   │   ├── prompt_assembly.yml # Prompt construction rules
+│   │   ├── prompt_assembly.j2 # Prompt construction rules
 │   │   └── contracts.yml
 │   └── innovators/
-│       ├── prompt_assembly.yml      # Prompt construction (uses {{phase}})
+│       ├── prompt_assembly.j2      # Prompt construction (uses {{phase}})
 │       ├── contracts_creation.yml   # Creation phase contract
 │       ├── contracts_refinement.yml # Refinement phase contract
 │       ├── schemas/
@@ -117,7 +115,7 @@ See "Critical Design Principles" above for the contract structure.
 
 | File | Scope | Content |
 |------|-------|---------|
-| `prompt_assembly.yml` | Layer | Rules for constructing prompts from contracts and includes. |
+| `prompt_assembly.j2` | Layer | Prompt template that assembles contracts and includes. |
 | `role.yml` | Role | Specialized focus (observers/deciders/innovators). |
 | `contracts.yml` | Layer | Workflow, inputs, outputs, constraints shared within layer. |
 | `contracts_<phase>.yml` | Phase | Phase-specific contracts (innovators only: creation, refinement). |
@@ -144,7 +142,7 @@ Schemas define the structure for artifacts produced by agents.
 
 Workstreams isolate events and issues so that decider rules do not mix across unrelated operational areas.
 
-- Observers and deciders declare their destination workstream via the `workstream` runtime context variable in `prompt_assembly.yml`.
+- Observers and deciders declare their destination workstream via the `workstream` runtime context variable in `prompt_assembly.j2`.
 - If the workstream directory is missing, execution fails fast.
 - Planners and implementers do not declare a workstream; the issue file path is authoritative.
 

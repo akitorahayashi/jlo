@@ -113,11 +113,11 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             diagnostics.push_error(schemas_dir.display().to_string(), "Missing schemas/");
         }
 
-        // Check prompt_assembly.yml (all layers have this)
-        let prompt_assembly = layer_dir.join("prompt_assembly.yml");
+        // Check prompt_assembly.j2 (all layers have this)
+        let prompt_assembly = layer_dir.join("prompt_assembly.j2");
         if !prompt_assembly.exists() {
             diagnostics
-                .push_error(prompt_assembly.display().to_string(), "Missing prompt_assembly.yml");
+                .push_error(prompt_assembly.display().to_string(), "Missing prompt_assembly.j2");
         }
 
         if layer.is_single_role() {
@@ -424,7 +424,7 @@ mod tests {
             let layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
             layer_dir.create_dir_all().unwrap();
             layer_dir.child("schemas").create_dir_all().unwrap();
-            layer_dir.child("prompt_assembly.yml").touch().unwrap();
+            layer_dir.child("prompt_assembly.j2").touch().unwrap();
 
             // Innovators use phase-specific contracts; others use contracts.yml
             if layer == Layer::Innovators {

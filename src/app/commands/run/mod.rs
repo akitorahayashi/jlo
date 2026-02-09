@@ -64,7 +64,7 @@ pub fn execute<G, H, W>(
 where
     G: GitPort,
     H: GitHubPort,
-    W: WorkspaceStore + crate::domain::PromptAssetLoader,
+    W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     // Handle mock mode
     if options.mock {
@@ -109,7 +109,7 @@ where
 }
 
 /// Execute a single observer, decider, or innovator role.
-fn execute_single_role<W: WorkspaceStore + crate::domain::PromptAssetLoader>(
+fn execute_single_role<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
     options: &RunOptions,
     workspace: &W,
@@ -182,7 +182,10 @@ fn validate_role_exists(jules_path: &Path, layer: Layer, role: &str) -> Result<(
 
 /// Execute a single role with Jules API.
 #[allow(clippy::too_many_arguments)]
-fn execute_session<C: JulesClient, L: crate::domain::PromptAssetLoader>(
+fn execute_session<
+    C: JulesClient,
+    L: crate::domain::PromptAssetLoader + Clone + Send + Sync + 'static,
+>(
     jules_path: &Path,
     layer: Layer,
     role: &RoleId,
@@ -212,7 +215,7 @@ fn execute_session<C: JulesClient, L: crate::domain::PromptAssetLoader>(
 }
 
 /// Execute a prompt preview for a single role.
-fn execute_prompt_preview<L: crate::domain::PromptAssetLoader>(
+fn execute_prompt_preview<L: crate::domain::PromptAssetLoader + Clone + Send + Sync + 'static>(
     jules_path: &Path,
     layer: Layer,
     role: &RoleId,

@@ -5,7 +5,6 @@
 
 use std::path::Path;
 
-use crate::adapters::template::MinijinjaTemplateRenderer;
 use crate::domain::identifiers::validation::{validate_identifier, validate_safe_path_component};
 use crate::domain::{
     AppError, Layer, PromptAssetLoader, PromptContext, assemble_prompt as assemble_prompt_domain,
@@ -16,14 +15,17 @@ use crate::domain::{
 ///
 /// Multi-role layers (observers, deciders, innovators) require workstream and role context.
 /// Innovators additionally require a phase context variable.
-pub fn assemble_prompt(
+pub fn assemble_prompt<L>(
     jules_path: &Path,
     layer: Layer,
     role: &str,
     workstream: &str,
     phase: Option<&str>,
-    loader: &impl PromptAssetLoader,
-) -> Result<String, AppError> {
+    loader: &L,
+) -> Result<String, AppError>
+where
+    L: PromptAssetLoader + Clone + Send + Sync + 'static,
+{
     // Validate role and workstream to prevent prompt injection
     if !validate_identifier(role, false) {
         return Err(AppError::Validation(format!(
@@ -48,24 +50,24 @@ pub fn assemble_prompt(
         })?;
         context = context.with_var("phase", phase_val);
     }
-    let renderer = MinijinjaTemplateRenderer::new();
-
-    Ok(assemble_prompt_domain(jules_path, layer, &context, loader, &renderer)
+    Ok(assemble_prompt_domain(jules_path, layer, &context, loader)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
 }
 
 /// Assemble the prompt for a single-role layer (Narrator, Planners, Implementers).
 ///
-/// Single-role layers have prompt.yml directly in the layer directory,
-/// not in a role subdirectory. They do not require workstream/role context.
-pub fn assemble_single_role_prompt(
+/// Single-role layers use prompt_assembly.j2 directly in the layer directory
+/// and do not require workstream/role context.
+pub fn assemble_single_role_prompt<L>(
     jules_path: &Path,
     layer: Layer,
-    loader: &impl PromptAssetLoader,
-) -> Result<String, AppError> {
-    let renderer = MinijinjaTemplateRenderer::new();
-    Ok(assemble_prompt_domain(jules_path, layer, &PromptContext::new(), loader, &renderer)
+    loader: &L,
+) -> Result<String, AppError>
+where
+    L: PromptAssetLoader + Clone + Send + Sync + 'static,
+{
+    Ok(assemble_prompt_domain(jules_path, layer, &PromptContext::new(), loader)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
 }
@@ -75,14 +77,16 @@ pub fn assemble_single_role_prompt(
 /// This is used for planners and implementers where the issue content is
 /// appended to the base prompt.
 #[allow(dead_code)]
-pub fn assemble_issue_prompt(
+pub fn assemble_issue_prompt<L>(
     jules_path: &Path,
     layer: Layer,
     issue_content: &str,
-    loader: &impl PromptAssetLoader,
-) -> Result<String, AppError> {
-    let renderer = MinijinjaTemplateRenderer::new();
-    Ok(assemble_with_issue(jules_path, layer, issue_content, loader, &renderer)
+    loader: &L,
+) -> Result<String, AppError>
+where
+    L: PromptAssetLoader + Clone + Send + Sync + 'static,
+{
+    Ok(assemble_with_issue(jules_path, layer, issue_content, loader)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
 }

@@ -25,7 +25,7 @@ pub fn execute<G, W>(
 ) -> Result<RunResult, AppError>
 where
     G: GitPort,
-    W: WorkspaceStore,
+    W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     let config = load_config(jules_path)?;
 
@@ -93,7 +93,7 @@ fn collect_git_context<G, W>(
 ) -> Result<Option<GitContext>, AppError>
 where
     G: GitPort,
-    W: WorkspaceStore,
+    W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     // Construct path to latest.yml relative to workspace root or absolute
     let latest_path = jules_path.join("changes/latest.yml");
@@ -144,7 +144,7 @@ where
 }
 
 /// Build the full Narrator prompt with git context injected.
-fn build_narrator_prompt<W: WorkspaceStore>(
+fn build_narrator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
     ctx: &GitContext,
     workspace: &W,
@@ -190,7 +190,7 @@ fn build_narrator_prompt<W: WorkspaceStore>(
 }
 
 /// Execute a prompt preview, showing the assembled prompt and context.
-fn execute_prompt_preview<W: WorkspaceStore>(
+fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
     starting_branch: &str,
     ctx: &GitContext,

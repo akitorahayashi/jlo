@@ -17,7 +17,7 @@ pub use self::options::{WorkflowRunOptions, WorkflowRunOutput};
 
 /// Execute workflow run command.
 pub fn execute<G, H>(
-    store: &impl WorkspaceStore,
+    store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
     options: WorkflowRunOptions,
     git: &G,
     github: &H,

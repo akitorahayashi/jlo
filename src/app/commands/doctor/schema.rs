@@ -519,7 +519,7 @@ fn parse_role_file_data(
         );
     }
 
-    // Multi-role layers don't have contracts in role.yml (handled by prompt_assembly.yml)
+    // Multi-role layers don't have contracts in role.yml (handled by prompt_assembly.j2)
     Some(PromptEntry { path: path.to_path_buf(), contracts: vec![] })
 }
 

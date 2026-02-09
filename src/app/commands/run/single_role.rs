@@ -26,7 +26,7 @@ pub fn execute<H, W>(
 ) -> Result<RunResult, AppError>
 where
     H: GitHubPort,
-    W: WorkspaceStore,
+    W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     // Validate issue file requirement
     let path_str = issue_path
@@ -131,7 +131,7 @@ fn execute_local_dispatch<H, W>(
 ) -> Result<RunResult, AppError>
 where
     H: GitHubPort,
-    W: WorkspaceStore,
+    W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     let workflow_name = match layer {
         Layer::Planners => PLANNER_WORKFLOW_NAME,
@@ -176,7 +176,7 @@ where
 
 /// Execute a single role with the given Jules client.
 #[allow(clippy::too_many_arguments)]
-fn execute_session<C: JulesClient, W: WorkspaceStore>(
+fn execute_session<C: JulesClient, W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
     layer: Layer,
     starting_branch: &str,
@@ -212,7 +212,7 @@ fn execute_session<C: JulesClient, W: WorkspaceStore>(
 }
 
 /// Execute a prompt preview for a single-role layer.
-fn execute_prompt_preview<W: WorkspaceStore>(
+fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
     layer: Layer,
     starting_branch: &str,
