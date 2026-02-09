@@ -1,0 +1,35 @@
+schema_version: 1
+
+# Metadata
+id: "1zpqgm"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-09"
+author_role: "rustacean"
+confidence: "high"
+
+# Content
+title: "Fragile String-based Path Handling in bootstrap.rs"
+statement: |
+  The `bootstrap.rs` command relies on converting paths to strings (`to_string_lossy`) for manipulation and comparison. This is fragile and can lead to issues with non-UTF8 paths or platform-specific separators, rather than using robust `Path` methods.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/workflow/bootstrap.rs"
+    loc:
+      - "269"
+    note: "Conversion of path to string via `to_string_lossy`."
+
+  - path: "src/app/commands/workflow/bootstrap.rs"
+    loc:
+      - "283"
+    note: "Conversion of directory name to string via `to_string_lossy`."
+
+  - path: "src/app/commands/workflow/bootstrap.rs"
+    loc:
+      - "229"
+    note: "Manual component stringification instead of robust Path component inspection."
+
+tags:
+  - "robustness"
+  - "paths"
+  - "stringly-typed"
