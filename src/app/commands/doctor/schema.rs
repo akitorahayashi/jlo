@@ -401,22 +401,9 @@ pub fn validate_issue(
         diagnostics.push_error(path.display().to_string(), "acceptance_criteria must have entries");
     }
 
-    if get_sequence(data, "verification_commands").map(|seq| seq.is_empty()).unwrap_or(true) {
+    if get_sequence(data, "verification_criteria").map(|seq| seq.is_empty()).unwrap_or(true) {
         diagnostics
-            .push_error(path.display().to_string(), "verification_commands must have entries");
-    } else if let Some(seq) = get_sequence(data, "verification_commands") {
-        for command in seq {
-            if let serde_yaml::Value::String(value) = command {
-                let value_lower = value.to_lowercase();
-                if value_lower.contains("jules") || value_lower.contains("jlo run") {
-                    diagnostics.push_error(
-                        path.display().to_string(),
-                        "verification_commands must not invoke jules or jlo run",
-                    );
-                    break;
-                }
-            }
-        }
+            .push_error(path.display().to_string(), "verification_criteria must have entries");
     }
 
     let requires_deep = match get_bool(data, "requires_deep_analysis") {
@@ -969,7 +956,7 @@ impact: "Impact"
 desired_outcome: "Outcome"
 affected_areas: ["src/"]
 acceptance_criteria: ["Done"]
-verification_commands: ["cargo test"]
+verification_criteria: ["test commands"]
 "#;
         let data: Mapping = serde_yaml::from_str(yaml).unwrap();
         let path = PathBuf::from("test.yml");
@@ -996,7 +983,7 @@ impact: "Impact"
 desired_outcome: "Outcome"
 affected_areas: ["src/"]
 acceptance_criteria: ["Done"]
-verification_commands: ["cargo test"]
+verification_criteria: ["test commands"]
 "#;
         let data: Mapping = serde_yaml::from_str(yaml).unwrap();
         let path = PathBuf::from("test.yml");

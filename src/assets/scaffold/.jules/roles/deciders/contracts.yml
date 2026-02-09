@@ -4,6 +4,7 @@ branch_prefix: jules-decider-
 inputs:
   - .jules/workstreams/<workstream>/exchange/events/pending/*.yml
   - .jules/workstreams/<workstream>/exchange/issues/**/*.yml (existing issues)
+  - .jules/roles/deciders/schemas/issue.yml (Schema for new issue)
 
 constraints:
   - Verify observations events in codebase before accepting
@@ -13,7 +14,7 @@ constraints:
   - When requires_deep_analysis is true, deep_analysis_reason MUST be non-empty
   - Use randomly generated 6-char lowercase alphanumeric ID for issue IDs
   - Use kebab-case title as filename
-  - Ensure verification_commands are realistic and executable (e.g. `cargo test`, `npm test`); DO NOT use recursive/hypothetical commands (e.g. launching jules VM, launch simulators)
+  - Ensure verification_criteria are clear and actionable (e.g. format check, lint check, test commands); DO NOT specify executable commands
   - Never read or write outside your workstream directory
 
 workflow:

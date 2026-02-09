@@ -13,6 +13,6 @@ affected_areas:
   - "workflow"
 acceptance_criteria:
   - "Mock acceptance criterion"
-verification_commands:
-  - "echo 'mock verification'"
+verification_criteria:
+  - "mock verification check"
 requires_deep_analysis: false

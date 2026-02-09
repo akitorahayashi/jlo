@@ -30,10 +30,10 @@ acceptance_criteria:
   - "<condition 1>"
   - "<condition 2>"
 
-verification_commands:
-  - "<command 1 (e.g. format check)>"
-  - "<command 2 (e.g. lint check)>"
-  - "<command 3 (e.g. test commands)>"
+verification_criteria:
+  - "<criteria 1 (e.g. format check)>"
+  - "<criteria 2 (e.g. lint check)>"
+  - "<criteria 3 (e.g. test commands)>"
 
 # Analysis Flags
 requires_deep_analysis: false # true if deep impact analysis/dependency check is needed

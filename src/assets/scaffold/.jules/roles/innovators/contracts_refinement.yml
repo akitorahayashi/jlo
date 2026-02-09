@@ -23,6 +23,7 @@ inputs:
   - .jules/workstreams/<workstream>/exchange/innovators/<persona>/idea.yml (Current Idea)
   - .jules/roles/innovators/schemas/comment.yml (Observer feedback comment schema)
   - .jules/workstreams/<workstream>/exchange/innovators/<persona>/comments/*.yml (Observer Feedback)
+  - .jules/roles/innovators/schemas/proposal.yml (Schema for final proposal)
 
 outputs:
   - .jules/workstreams/<workstream>/exchange/innovators/<persona>/proposal.yml (Finished proposal)
