@@ -15,7 +15,7 @@ Their output value comes from precision, reproducibility, and consistency of jud
 
 A valid observer role file is located at:
 
-- `.jules/roles/observers/roles/<role>/role.yml`
+- `.jlo/roles/observers/roles/<role>/role.yml`
 
 Current schema shape:
 

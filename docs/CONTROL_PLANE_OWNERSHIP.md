@@ -34,14 +34,6 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 | `.jules/.jlo-version` | Bootstrap | Workflow bootstrap | Copied from `.jlo/.jlo-version` |
 | `.jules/JULES.md` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
 | `.jules/README.md` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
-| `.jules/config.toml` | Bootstrap | Workflow bootstrap | Materialized from `.jlo/config.toml` |
-| `.jules/github-labels.json` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
-| `.jules/roles/<layer>/contracts.yml` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
-| `.jules/roles/<layer>/prompt.yml` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
-| `.jules/roles/<layer>/prompt_assembly.j2` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
-| `.jules/roles/<layer>/schemas/*.yml` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
-| `.jules/roles/<layer>/roles/<role>/role.yml` | Bootstrap | Workflow bootstrap | Materialized from `.jlo/` user overlay |
-| `.jules/workstreams/<ws>/scheduled.toml` | Bootstrap | Workflow bootstrap | Materialized from `.jlo/` user overlay |
 | `.jules/workstreams/<ws>/exchange/events/**` | Agent | Agent execution | Observer outputs, decider inputs |
 | `.jules/workstreams/<ws>/exchange/issues/**` | Agent | Agent execution | Decider outputs, planner/implementer inputs |
 | `.jules/workstreams/<ws>/exchange/innovators/**` | Agent | Agent execution | Innovator artifacts |
@@ -78,10 +70,10 @@ Workflow bootstrap is the sole authority for producing `.jules/` on `JULES_WORKE
 2. Load embedded scaffold assets for the pinned version.
 3. Checkout `JULES_WORKER_BRANCH` (create from `JLO_TARGET_BRANCH` history if absent).
 4. Write all managed framework files from embedded scaffold to `.jules/`.
-5. Overlay user intent files from `.jlo/` (config, schedules, role customizations) into `.jules/`.
-6. Delete projected workstreams absent from `.jlo/workstreams/`.
-7. Delete projected roles absent from `.jlo/roles/<layer>/roles/`.
-8. Write managed manifest (`.jules/.managed-defaults.yml`).
+5. (Removed) User intent overlay is no longer projected to `.jules/`. Agents read directly from `.jlo/`.
+6. (Removed) Pruning of projected workstreams is no longer performed.
+7. (Removed) Pruning of projected roles is no longer performed.
+8. Write managed manifest (if applicable) and version file.
 9. Commit changes (if any) to `JULES_WORKER_BRANCH` with a deterministic message.
 
 ### Idempotency

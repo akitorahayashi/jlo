@@ -33,10 +33,10 @@ Narrator -> Observer -> Decider -> [Planner] -> Implementer
 | Role Type | Role(s) | Transformation |
 |-----------|---------|----------------|
 | Narrator | `.jules/roles/narrator/` | Git history -> Changes summary |
-| Observer | directories under `.jules/roles/observers/` | Source -> Events (domain-specialized observations) |
-| Decider | directories under `.jules/roles/deciders/` | Events -> Issues (validation + consolidation) |
-| Planner | directories under `.jules/roles/planners/` | Issues -> Expanded Issues (deep analysis, optional) |
-| Implementer | directories under `.jules/roles/implementers/` | Issues -> Code changes |
+| Observer | directories under `.jlo/roles/observers/` | Source -> Events (domain-specialized observations) |
+| Decider | directories under `.jlo/roles/deciders/` | Events -> Issues (validation + consolidation) |
+| Planner | (Single-role; no `.jlo/` role definitions) | Issues -> Expanded Issues (deep analysis, optional) |
+| Implementer | (Single-role; no `.jlo/` role definitions) | Issues -> Code changes |
 
 **Execution**: Roles are invoked by GitHub Actions using `jlo run` and workflow dispatch workflows.
 
@@ -62,7 +62,6 @@ Implementers modify source code and require human review.
 +-- README.md           # This file (jlo-managed)
 +-- JULES.md            # Agent contract (jlo-managed)
 +-- .jlo-version        # Version marker (jlo-managed)
-+-- config.toml         # Workspace configuration
 +-- github-labels.json  # GitHub labels definition
 |
 +-- changes/            # Narrator output
@@ -92,18 +91,12 @@ Implementers modify source code and require human review.
     |   +-- prompt_assembly.j2 # Prompt construction rules
     |   +-- schemas/
     |   |   +-- event.yml    # Event template
-    |   +-- roles/
-    |       +-- <role>/      # Role subdirectory
-    |           +-- role.yml # Dynamic: evolving focus
     |
     +-- deciders/       # Multi-role layer
     |   +-- contracts.yml    # Shared decider contract
     |   +-- prompt_assembly.j2 # Prompt construction rules
     |   +-- schemas/
     |   |   +-- issue.yml    # Issue template
-    |   +-- roles/
-    |       +-- <role>/      # Role subdirectory
-    |           +-- role.yml
     |
     +-- planners/       # Single-role layer (issue-driven)
     |   +-- prompt_assembly.j2 # Prompt construction rules
@@ -145,7 +138,7 @@ Implementers modify source code and require human review.
 
 **Narrator**: Produces `.jules/changes/latest.yml` summarizing recent codebase changes. Runs first, before observers.
 
-**Multi-role layers** (Observers, Deciders, Innovators): Roles are scoped to workstreams and scheduled via `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `role.yml`. Custom roles can be created with `jlo create role <layer> <name>`.
+**Multi-role layers** (Observers, Deciders, Innovators): Roles are scoped to workstreams and scheduled via `.jlo/workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `role.yml` in `.jlo/roles/`. Custom roles can be created with `jlo create role <layer> <name>`.
 
 **Single-role layers** (Planners, Implementers): Have a fixed role with `contracts.yml` directly in the layer directory. They are issue-driven and require an issue file path argument. Template creation is not supported.
 

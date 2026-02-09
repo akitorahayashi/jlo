@@ -11,8 +11,8 @@ constraints:
 inputs:
   - Source code and repository files
   - .jules/changes/latest.yml (recent codebase changes, if present)
-  - .jules/roles/observers/roles/<role>/role.yml (Specialized Role Definition)
-  - .jules/workstreams/<workstream>/scheduled.toml (scheduled innovator personas)
+  - .jlo/roles/observers/roles/<role>/role.yml (Specialized Role Definition)
+  - .jlo/workstreams/<workstream>/scheduled.toml (scheduled innovator personas)
   - .jules/workstreams/<workstream>/workstations/<role>/perspective.yml (Workstation Memory)
   - .jules/workstreams/<workstream>/exchange/issues/**/*.yml (open issues for suppression)
   - .jules/workstreams/<workstream>/exchange/events/<state>/*.yml (recent events for deduplication)

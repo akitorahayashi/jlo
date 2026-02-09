@@ -101,9 +101,9 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         let mut roles = Vec::new();
 
         for layer in Layer::ALL {
-            // Convention: .jules/roles/<layer>/roles/ (see also role_path)
+            // Convention: .jlo/roles/<layer>/roles/ (see also role_path)
             let roles_container =
-                self.jules_path().join("roles").join(layer.dir_name()).join("roles");
+                self.jlo_path().join("roles").join(layer.dir_name()).join("roles");
             if !roles_container.exists() {
                 continue;
             }
@@ -158,9 +158,9 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
     }
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        // Convention: .jules/roles/<layer>/roles/<id> (see also discover_roles)
+        // Convention: .jlo/roles/<layer>/roles/<id> (see also discover_roles)
         let path = self
-            .jules_path()
+            .jlo_path()
             .join("roles")
             .join(role.layer.dir_name())
             .join("roles")
@@ -378,11 +378,11 @@ mod tests {
         ws.create_structure(&[]).unwrap();
 
         // Create role directories directly (scaffold_role_in_layer removed with template retirement)
-        let obs_dir = ws.jules_path().join("roles/observers/roles/taxonomy");
+        let obs_dir = ws.jlo_path().join("roles/observers/roles/taxonomy");
         fs::create_dir_all(&obs_dir).unwrap();
         fs::write(obs_dir.join("role.yml"), "role: taxonomy\nlayer: observers").unwrap();
 
-        let dec_dir = ws.jules_path().join("roles/deciders/roles/screener");
+        let dec_dir = ws.jlo_path().join("roles/deciders/roles/screener");
         fs::create_dir_all(&dec_dir).unwrap();
         fs::write(dec_dir.join("role.yml"), "role: screener\nlayer: deciders").unwrap();
 
@@ -404,11 +404,11 @@ mod tests {
         let (_dir, ws) = test_workspace();
         ws.create_structure(&[]).unwrap();
 
-        let obs_dir = ws.jules_path().join("roles/observers/roles/taxonomy");
+        let obs_dir = ws.jlo_path().join("roles/observers/roles/taxonomy");
         fs::create_dir_all(&obs_dir).unwrap();
         fs::write(obs_dir.join("role.yml"), "role: taxonomy\nlayer: observers").unwrap();
 
-        let dec_dir = ws.jules_path().join("roles/deciders/roles/taxman");
+        let dec_dir = ws.jlo_path().join("roles/deciders/roles/taxman");
         fs::create_dir_all(&dec_dir).unwrap();
         fs::write(dec_dir.join("role.yml"), "role: taxman\nlayer: deciders").unwrap();
 

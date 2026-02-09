@@ -6,11 +6,8 @@ use crate::domain::{AppError, Layer, RunConfig};
 
 use super::diagnostics::Diagnostics;
 
-pub fn collect_workstreams(
-    jules_path: &Path,
-    filter: Option<&str>,
-) -> Result<Vec<String>, AppError> {
-    let workstreams_dir = jules_path.join("workstreams");
+pub fn collect_workstreams(root: &Path, filter: Option<&str>) -> Result<Vec<String>, AppError> {
+    let workstreams_dir = root.join(".jlo/workstreams");
     if !workstreams_dir.exists() {
         return Ok(Vec::new());
     }
@@ -35,13 +32,10 @@ pub fn collect_workstreams(
     Ok(workstreams)
 }
 
-pub fn read_run_config(
-    jules_path: &Path,
-    diagnostics: &mut Diagnostics,
-) -> Result<RunConfig, AppError> {
-    let config_path = jules_path.join("config.toml");
+pub fn read_run_config(root: &Path, diagnostics: &mut Diagnostics) -> Result<RunConfig, AppError> {
+    let config_path = root.join(".jlo/config.toml");
     if !config_path.exists() {
-        diagnostics.push_error(config_path.display().to_string(), "Missing .jules/config.toml");
+        diagnostics.push_error(config_path.display().to_string(), "Missing .jlo/config.toml");
         return Ok(RunConfig::default());
     }
 
@@ -73,10 +67,14 @@ pub struct StructuralInputs<'a> {
 pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnostics) {
     ensure_path_exists(inputs.root, ".jules/JULES.md", diagnostics);
     ensure_path_exists(inputs.root, ".jules/README.md", diagnostics);
-    ensure_path_exists(inputs.root, ".jules/config.toml", diagnostics);
+    ensure_path_exists(inputs.root, ".jlo/config.toml", diagnostics);
     ensure_path_exists(inputs.root, ".jules/.jlo-version", diagnostics);
     ensure_directory_exists(inputs.jules_path.join("roles"), diagnostics);
-    ensure_directory_exists(inputs.jules_path.join("workstreams"), diagnostics);
+    // Workstreams dir in .jules might not exist if no runtime artifacts yet?
+    // Actually bootstrap scaffold creates .jules/workstreams/generic...
+    // But we should probably check .jlo/workstreams too.
+    ensure_directory_exists(inputs.root.join(".jlo/roles"), diagnostics);
+    ensure_directory_exists(inputs.root.join(".jlo/workstreams"), diagnostics);
     // Narrator output directory
     ensure_directory_exists(inputs.jules_path.join("changes"), diagnostics);
 
@@ -130,13 +128,22 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
                 }
             }
         } else {
-            // Check roles/ container directory for multi-role layers
-            let roles_container = layer_dir.join("roles");
-            if !roles_container.exists() {
-                diagnostics
-                    .push_error(roles_container.display().to_string(), "Missing roles/ directory");
+            // Check roles/ container directory for multi-role layers in .jlo/
+            // The .jules/ structure for multi-role layers (roles/ container) might technically exist from scaffold
+            // but the actual role definitions are in .jlo/.
+            // structure_checks needs to verify that for every role in .jlo/, it exists.
+            let jlo_layer_dir = inputs.root.join(".jlo/roles").join(layer.dir_name());
+            let jlo_roles_container = jlo_layer_dir.join("roles");
+
+            if !jlo_roles_container.exists() {
+                // It's possible the user hasn't created any roles yet, but the directory should probably exist if init ran?
+                // Actually init scaffolds .jlo/roles/<layer>/roles/.
+                diagnostics.push_error(
+                    jlo_roles_container.display().to_string(),
+                    "Missing .jlo roles/ directory",
+                );
             } else {
-                for entry in list_subdirs(&roles_container, diagnostics) {
+                for entry in list_subdirs(&jlo_roles_container, diagnostics) {
                     let role_file = entry.join("role.yml");
                     if !role_file.exists() {
                         diagnostics.push_error(role_file.display().to_string(), "Missing role.yml");
@@ -147,17 +154,27 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
     }
 
     for workstream in inputs.workstreams {
-        let ws_dir = inputs.jules_path.join("workstreams").join(workstream);
-        if !ws_dir.exists() {
-            diagnostics.push_error(ws_dir.display().to_string(), "Missing workstream directory");
+        let jlo_ws_dir = inputs.root.join(".jlo/workstreams").join(workstream);
+        let jules_ws_dir = inputs.jules_path.join("workstreams").join(workstream);
+
+        if !jlo_ws_dir.exists() {
+            diagnostics
+                .push_error(jlo_ws_dir.display().to_string(), "Missing .jlo workstream definition");
+            // If it's missing in .jlo, we can't really check much else, but we should continue?
+            // But if collect_workstreams scanned .jlo, it should exist.
+        } else {
+            let scheduled_path = jlo_ws_dir.join("scheduled.toml");
+            ensure_workstream_template_exists(scheduled_path, "scheduled.toml", diagnostics);
+        }
+
+        // The runtime workstream directory in `.jules/` may not exist for a new
+        // workstream definition. We only check its structure if it's present.
+        if !jules_ws_dir.exists() {
             continue;
         }
 
-        let scheduled_path = ws_dir.join("scheduled.toml");
-        ensure_workstream_template_exists(scheduled_path, "scheduled.toml", diagnostics);
-
         // Exchange directory structure (events and issues)
-        let exchange_dir = ws_dir.join("exchange");
+        let exchange_dir = jules_ws_dir.join("exchange");
         ensure_directory_exists(exchange_dir.clone(), diagnostics);
 
         let events_dir = exchange_dir.join("events");
@@ -173,7 +190,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         }
 
         // Workstations directory
-        let workstations_dir = ws_dir.join("workstations");
+        let workstations_dir = jules_ws_dir.join("workstations");
         ensure_directory_exists(workstations_dir, diagnostics);
 
         // Innovator rooms directory
@@ -392,7 +409,7 @@ mod tests {
     #[test]
     fn test_collect_workstreams() {
         let temp = assert_fs::TempDir::new().unwrap();
-        let ws_dir = temp.child("workstreams");
+        let ws_dir = temp.child(".jlo/workstreams");
         ws_dir.create_dir_all().unwrap();
 
         ws_dir.child("ws1").create_dir_all().unwrap();
@@ -415,42 +432,50 @@ mod tests {
     fn create_valid_workspace(temp: &assert_fs::TempDir) {
         temp.child(".jules/JULES.md").touch().unwrap();
         temp.child(".jules/README.md").touch().unwrap();
-        temp.child(".jules/config.toml").touch().unwrap();
+        temp.child(".jlo/config.toml").touch().unwrap();
         temp.child(".jules/.jlo-version").write_str(env!("CARGO_PKG_VERSION")).unwrap();
         temp.child(".jules/changes").create_dir_all().unwrap();
 
         // Layers
         for layer in Layer::ALL {
-            let layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
-            layer_dir.create_dir_all().unwrap();
-            layer_dir.child("schemas").create_dir_all().unwrap();
-            layer_dir.child("prompt_assembly.j2").touch().unwrap();
+            // Runtime artifacts (contracts, schemas, prompts) in .jules/roles
+            let jules_layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
+            jules_layer_dir.create_dir_all().unwrap();
+            jules_layer_dir.child("schemas").create_dir_all().unwrap();
+            jules_layer_dir.child("prompt_assembly.j2").touch().unwrap();
 
             // Innovators use phase-specific contracts; others use contracts.yml
             if layer == Layer::Innovators {
-                layer_dir.child("contracts_creation.yml").touch().unwrap();
-                layer_dir.child("contracts_refinement.yml").touch().unwrap();
+                jules_layer_dir.child("contracts_creation.yml").touch().unwrap();
+                jules_layer_dir.child("contracts_refinement.yml").touch().unwrap();
             } else {
-                layer_dir.child("contracts.yml").touch().unwrap();
+                jules_layer_dir.child("contracts.yml").touch().unwrap();
             }
 
             if layer.is_single_role() {
                 if layer == Layer::Narrators {
-                    layer_dir.child("schemas/change.yml").touch().unwrap();
+                    jules_layer_dir.child("schemas/change.yml").touch().unwrap();
                 }
             } else {
-                let role_dir = layer_dir.child("roles/my-role");
-                role_dir.create_dir_all().unwrap();
-                role_dir.child("role.yml").touch().unwrap();
+                // Multi-role layers have role definitions in .jlo/roles
+                let jlo_role_dir =
+                    temp.child(format!(".jlo/roles/{}/roles/my-role", layer.dir_name()));
+                jlo_role_dir.create_dir_all().unwrap();
+                jlo_role_dir.child("role.yml").touch().unwrap();
             }
         }
 
-        // Workstream
-        let ws_dir = temp.child(".jules/workstreams/generic");
-        ws_dir.create_dir_all().unwrap();
-        ws_dir.child("scheduled.toml").touch().unwrap();
+        // Workstream: definition in .jlo
+        let jlo_ws_dir = temp.child(".jlo/workstreams/generic");
+        jlo_ws_dir.create_dir_all().unwrap();
+        jlo_ws_dir.child("scheduled.toml").touch().unwrap();
 
-        let exchange = ws_dir.child("exchange");
+        // Workstream: runtime in .jules
+        let jules_ws_dir = temp.child(".jules/workstreams/generic");
+        jules_ws_dir.create_dir_all().unwrap();
+
+        // Exchange structure in .jules
+        let exchange = jules_ws_dir.child("exchange");
         exchange.child("events").create_dir_all().unwrap();
         exchange.child("issues").create_dir_all().unwrap();
 
@@ -461,7 +486,7 @@ mod tests {
         // Innovator rooms directory
         exchange.child("innovators").create_dir_all().unwrap();
 
-        ws_dir.child("workstations").create_dir_all().unwrap();
+        jules_ws_dir.child("workstations").create_dir_all().unwrap();
     }
 
     #[test]
@@ -497,7 +522,7 @@ mod tests {
         create_valid_workspace(&temp);
 
         // Remove config.toml
-        std::fs::remove_file(temp.path().join(".jules/config.toml")).unwrap();
+        std::fs::remove_file(temp.path().join(".jlo/config.toml")).unwrap();
         // Remove JULES.md
         std::fs::remove_file(temp.path().join(".jules/JULES.md")).unwrap();
 

@@ -359,9 +359,10 @@ fn init_creates_setup_structure() {
 
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
-    assert!(ctx.work_dir().join(".jules/setup").exists());
-    assert!(ctx.work_dir().join(".jules/setup/tools.yml").exists());
-    assert!(ctx.work_dir().join(".jules/setup/.gitignore").exists());
+    // Verify setup config in .jlo
+    assert!(ctx.work_dir().join(".jlo/setup").exists());
+    assert!(ctx.work_dir().join(".jlo/setup/tools.yml").exists());
+    assert!(ctx.work_dir().join(".jlo/setup/.gitignore").exists());
 }
 
 #[test]
@@ -382,8 +383,8 @@ fn setup_gen_produces_script() {
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
-    // Write tools config
-    let tools_yml = ctx.work_dir().join(".jules/setup/tools.yml");
+    // Write tools config in .jlo
+    let tools_yml = ctx.work_dir().join(".jlo/setup/tools.yml");
     std::fs::write(&tools_yml, "tools:\n  - just\n").unwrap();
 
     ctx.cli()
@@ -716,11 +717,17 @@ fn verify_scaffold_integrity() {
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
-    // Verify root files
-    let root_files = ["JULES.md", "README.md", "config.toml", "github-labels.json"];
+    // Verify root files in .jules/
+    let root_files = ["JULES.md", "README.md", ".jlo-version", "github-labels.json"];
     for file in root_files {
-        assert!(ctx.jules_path().join(file).exists(), "{} should exist", file);
+        assert!(ctx.jules_path().join(file).exists(), "{} should exist in .jules/ (Runtime)", file);
     }
+
+    // Config should be in .jlo/
+    assert!(
+        ctx.jlo_path().join("config.toml").exists(),
+        "config.toml should exist in .jlo/ (Control Plane)"
+    );
 
     // Verify changes directory
     assert!(ctx.jules_path().join("changes/.gitkeep").exists(), "changes/.gitkeep should exist");
@@ -760,13 +767,19 @@ fn verify_scaffold_integrity() {
     }
 
     // Verify setup
-    let setup_path = ctx.jules_path().join("setup");
+    let jlo_setup_path = ctx.jlo_path().join("setup");
+    let jules_setup_path = ctx.jules_path().join("setup");
+
     for file in ["tools.yml", ".gitignore"] {
-        assert!(setup_path.join(file).exists(), "setup/{} should exist", file);
+        assert!(jlo_setup_path.join(file).exists(), "setup/{} should exist in .jlo/", file);
     }
     // env.toml and install.sh are generated later, so verify they are NOT there yet
     for file in ["env.toml", "install.sh"] {
-        assert!(!setup_path.join(file).exists(), "setup/{} should NOT exist yet", file);
+        assert!(
+            !jules_setup_path.join(file).exists(),
+            "setup/{} should NOT exist yet in .jules/",
+            file
+        );
     }
 
     // Verify workstreams structure

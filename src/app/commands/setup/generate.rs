@@ -15,10 +15,10 @@ use crate::ports::WorkspaceStore;
 ///
 /// Returns the list of resolved component names in installation order.
 pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
-    let setup_dir = ".jules/setup";
-    let tools_yml = ".jules/setup/tools.yml";
+    let jlo_setup = ".jlo/setup";
+    let tools_yml = ".jlo/setup/tools.yml";
 
-    if !store.file_exists(setup_dir) {
+    if !store.file_exists(jlo_setup) {
         return Err(AppError::SetupNotInitialized);
     }
 
@@ -45,6 +45,7 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
 
     // Generate install script
     let script_content = SetupScriptGenerator::generate_install_script(&components);
+
     let install_sh = ".jules/setup/install.sh";
     store.write_file(install_sh, &script_content)?;
 
@@ -81,7 +82,7 @@ mod tests {
     #[test]
     fn fails_if_tools_yml_missing() {
         let store = MemoryWorkspaceStore::new();
-        store.write_file(".jules/setup/placeholder", "").unwrap();
+        store.write_file(".jlo/setup/placeholder", "").unwrap();
 
         let result = execute(&store);
 
@@ -91,7 +92,7 @@ mod tests {
     #[test]
     fn fails_if_no_tools_specified() {
         let store = MemoryWorkspaceStore::new();
-        store.write_file(".jules/setup/tools.yml", "tools: []").unwrap();
+        store.write_file(".jlo/setup/tools.yml", "tools: []").unwrap();
 
         let result = execute(&store);
 
@@ -101,7 +102,7 @@ mod tests {
     #[test]
     fn generates_install_script() {
         let store = MemoryWorkspaceStore::new();
-        store.write_file(".jules/setup/tools.yml", "tools:\n  - just").unwrap();
+        store.write_file(".jlo/setup/tools.yml", "tools:\n  - just").unwrap();
 
         let result = execute(&store).unwrap();
 
