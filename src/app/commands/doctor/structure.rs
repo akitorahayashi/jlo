@@ -167,25 +167,8 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             ensure_workstream_template_exists(scheduled_path, "scheduled.toml", diagnostics);
         }
 
-        // We assume jules_ws_dir should exist?
-        // If it's a new workstream, it might not exist in .jules yet.
-        // But doctor checks structure.
-        // If the user wants to run it, it should exist?
-        // Actually, bootstrap NO LONGER projects it.
-        // So jules_ws_dir might NOT exist.
-        // But if it DOES exist, we should check its structure?
-        // Or should we mandate it exists?
-        // Events and issues are in .jules/workstreams/<ws>/...
-        // If the directory is missing, then no events/issues can exist.
-        // Getting "Missing directory" errors for a fresh workstream in .jules might be annoying if it's auto-created on first run.
-        // But previously bootstrap created it. Now it doesn't.
-        // So we should probably NOT error if jules_ws_dir doesn't exist?
-        // BUT, the test `test_api_coverage_full_flow` calls `workflow_bootstrap_at` and then asserts `.jules` exists.
-        // And then runs doctor.
-        // If doctor fails because jules_ws_dir is missing, that's what we see.
-        // Maybe ensure_directory_exists should be conditional?
-
-        // For now, let's skip checking .jules structure for the workstream if the workstream dir doesn't exist in .jules.
+        // The runtime workstream directory in `.jules/` may not exist for a new
+        // workstream definition. We only check its structure if it's present.
         if !jules_ws_dir.exists() {
             continue;
         }

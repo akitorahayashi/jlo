@@ -230,8 +230,6 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader + Clone + Send + S
     println!("Workstream: {}", workstream);
     println!("Role: {}\n", role);
 
-    println!("Role: {}\n", role);
-
     let root = jules_path.parent().unwrap_or(Path::new("."));
     let role_dir =
         root.join(".jlo").join("roles").join(layer.dir_name()).join("roles").join(role.as_str());

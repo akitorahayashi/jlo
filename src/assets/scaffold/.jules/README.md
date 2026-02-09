@@ -35,8 +35,8 @@ Narrator -> Observer -> Decider -> [Planner] -> Implementer
 | Narrator | `.jules/roles/narrator/` | Git history -> Changes summary |
 | Observer | directories under `.jlo/roles/observers/` | Source -> Events (domain-specialized observations) |
 | Decider | directories under `.jlo/roles/deciders/` | Events -> Issues (validation + consolidation) |
-| Planner | directories under `.jlo/roles/planners/` | Issues -> Expanded Issues (deep analysis, optional) |
-| Implementer | directories under `.jlo/roles/implementers/` | Issues -> Code changes |
+| Planner | (Single-role; no `.jlo/` role definitions) | Issues -> Expanded Issues (deep analysis, optional) |
+| Implementer | (Single-role; no `.jlo/` role definitions) | Issues -> Code changes |
 
 **Execution**: Roles are invoked by GitHub Actions using `jlo run` and workflow dispatch workflows.
 
