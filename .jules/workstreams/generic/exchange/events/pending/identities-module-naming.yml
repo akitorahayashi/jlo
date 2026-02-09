@@ -1,0 +1,22 @@
+schema_version: 1
+
+id: "hd9i8d"
+issue_id: ""
+created_at: "2024-05-22"
+author_role: "taxonomy"
+confidence: "high"
+
+title: "Misleading 'Identities' Module Name"
+statement: |
+  The 'Identities' module contains identifiers (`ComponentId`, `RoleId`), not identities (which typically implies authentication or user principals).
+  This naming convention is misleading and suggests functionality related to security or user management rather than structural identification.
+
+evidence:
+  - path: "src/domain/identities/mod.rs"
+    loc:
+      - "ComponentId"
+    note: "The module exports structural identifiers."
+
+tags:
+  - "naming"
+  - "clarity"
