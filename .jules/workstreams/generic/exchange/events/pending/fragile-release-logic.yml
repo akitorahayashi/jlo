@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "aea57c"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-09"
+author_role: "devops"
+confidence: "high"
+
+# Content
+title: "Release workflow uses fragile polling for CI artifacts"
+statement: |
+  The `release.yml` workflow polls for a successful CI run by SHA matching, which is brittle and decouples the release process from the build process. This complicates traceability and risks promoting artifacts from unrelated or outdated runs if SHAs collide or history is ambiguous.
+
+# Evidence supporting the observation
+evidence:
+  - path: ".github/workflows/release.yml"
+    loc:
+      - "22-68"
+    note: "Custom script polls `gh run list` for CI status instead of using explicit workflow dependencies."
+
+tags:
+  - "operational-readiness"
+  - "release"
+  - "fragility"
