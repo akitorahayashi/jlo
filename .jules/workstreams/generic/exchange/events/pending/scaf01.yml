@@ -1,0 +1,32 @@
+schema_version: 1
+
+id: "scaf01"
+issue_id: ""
+created_at: "2026-02-08"
+author_role: "qa"
+confidence: "high"
+
+title: "Scaffold integration tests lack comprehensive structure verification"
+statement: |
+  The `tests/cli_commands.rs` tests verify the existence of key directories but do not comprehensively validate the scaffold structure against `src/assets/scaffold/AGENTS.md`.
+  This risks drift between the documented scaffold and the actual implementation.
+  Specific missing checks include:
+  - Role-specific `prompt_assembly.yml` files.
+  - Schema file versions and content.
+  - Presence of all required files in `.jules/setup/`.
+
+evidence:
+  - path: "tests/cli_commands.rs"
+    loc:
+      - "32-52"
+    note: "Assertions check high-level existence but not detailed content or complete structure."
+
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc:
+      - "20-80"
+    note: "Defines the detailed directory structure and file expectations."
+
+tags:
+  - "test-coverage"
+  - "scaffold"
+  - "risk"
