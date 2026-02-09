@@ -51,6 +51,11 @@ pub enum WorkflowCommands {
         #[command(subcommand)]
         command: WorkflowPrCommands,
     },
+    /// Issue operations
+    Issue {
+        #[command(subcommand)]
+        command: WorkflowIssueCommands,
+    },
     /// Workstream inspection and cleanup
     Workstreams {
         #[command(subcommand)]
@@ -81,6 +86,37 @@ pub enum WorkflowPrCommands {
         /// Branch name (defaults to GITHUB_REF_NAME)
         #[arg(long)]
         branch: Option<String>,
+    },
+    /// Post or update the summary-request comment on a Jules PR
+    CommentSummaryRequest {
+        /// PR number
+        pr_number: u64,
+    },
+    /// Sync implementer category label from branch to PR
+    SyncCategoryLabel {
+        /// PR number
+        pr_number: u64,
+    },
+    /// Enable auto-merge on an eligible PR
+    EnableAutomerge {
+        /// PR number
+        pr_number: u64,
+    },
+    /// Run all event-level PR commands in order
+    Process {
+        /// PR number
+        pr_number: u64,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum WorkflowIssueCommands {
+    /// Apply innovator labels to a proposal issue
+    LabelInnovator {
+        /// Issue number
+        issue_number: u64,
+        /// Persona name (e.g., scout, architect)
+        persona: String,
     },
 }
 
@@ -186,6 +222,7 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
         }
         WorkflowCommands::Cleanup { command } => run_workflow_cleanup(command),
         WorkflowCommands::Pr { command } => run_workflow_pr(command),
+        WorkflowCommands::Issue { command } => run_workflow_issue(command),
         WorkflowCommands::Workstreams { command } => run_workflow_workstreams(command),
     }
 }
@@ -228,6 +265,43 @@ fn run_workflow_pr(command: WorkflowPrCommands) -> Result<(), AppError> {
         WorkflowPrCommands::LabelFromBranch { branch } => {
             let options = workflow::WorkflowPrLabelOptions { branch };
             let output = workflow::pr_label_from_branch(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowPrCommands::CommentSummaryRequest { pr_number } => {
+            let github = crate::adapters::github_command::GitHubCommandAdapter::new();
+            let options = workflow::pr::CommentSummaryRequestOptions { pr_number };
+            let output = workflow::pr::events::comment_summary_request::execute(&github, options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowPrCommands::SyncCategoryLabel { pr_number } => {
+            let github = crate::adapters::github_command::GitHubCommandAdapter::new();
+            let options = workflow::pr::SyncCategoryLabelOptions { pr_number };
+            let output = workflow::pr::events::sync_category_label::execute(&github, options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowPrCommands::EnableAutomerge { pr_number } => {
+            let github = crate::adapters::github_command::GitHubCommandAdapter::new();
+            let options = workflow::pr::EnableAutomergeOptions { pr_number };
+            let output = workflow::pr::events::enable_automerge::execute(&github, options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowPrCommands::Process { pr_number } => {
+            let github = crate::adapters::github_command::GitHubCommandAdapter::new();
+            let options = workflow::pr::ProcessOptions { pr_number };
+            let output = workflow::pr::process::execute(&github, options)?;
+            workflow::write_workflow_output(&output)
+        }
+    }
+}
+
+fn run_workflow_issue(command: WorkflowIssueCommands) -> Result<(), AppError> {
+    use crate::app::commands::workflow;
+
+    match command {
+        WorkflowIssueCommands::LabelInnovator { issue_number, persona } => {
+            let github = crate::adapters::github_command::GitHubCommandAdapter::new();
+            let options = workflow::issue::LabelInnovatorOptions { issue_number, persona };
+            let output = workflow::issue::label_innovator::execute(&github, options)?;
             workflow::write_workflow_output(&output)
         }
     }
