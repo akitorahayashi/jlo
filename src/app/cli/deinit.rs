@@ -18,10 +18,10 @@ pub fn run_deinit() -> Result<(), AppError> {
     }
 
     if outcome.deleted_files.is_empty() && outcome.deleted_action_dirs.is_empty() {
-        println!("ℹ️ No workflow kit files found to remove");
+        println!("ℹ️ No workflow scaffold files found to remove");
     } else {
         if !outcome.deleted_files.is_empty() {
-            println!("✅ Removed {} workflow kit file(s)", outcome.deleted_files.len());
+            println!("✅ Removed {} workflow scaffold file(s)", outcome.deleted_files.len());
         }
         if !outcome.deleted_action_dirs.is_empty() {
             println!(

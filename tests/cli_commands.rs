@@ -285,43 +285,43 @@ fn doctor_reports_schema_errors() {
 }
 
 #[test]
-fn workflow_render_writes_expected_files() {
+fn workflow_generate_writes_expected_files() {
     let ctx = TestContext::new();
 
     write_jlo_config(ctx.work_dir(), &[DEFAULT_CRON], 30);
 
     let output_dir = ctx.work_dir().join(".tmp/workflow-kit-render/remote");
     ctx.cli()
-        .args(["workflow", "render", "remote", "--output-dir"])
+        .args(["workflow", "generate", "remote", "--output-dir"])
         .arg(&output_dir)
         .assert()
         .success();
 
     assert!(
         output_dir.join(".github/workflows/jules-workflows.yml").exists(),
-        "Rendered workflow file should exist"
+        "Generated workflow file should exist"
     );
     assert!(
         output_dir.join(".github/actions/install-jlo/action.yml").exists(),
-        "Rendered action file should exist"
+        "Generated action file should exist"
     );
 }
 
 #[test]
-fn workflow_render_uses_default_output_dir() {
+fn workflow_generate_uses_default_output_dir() {
     let ctx = TestContext::new();
 
     write_jlo_config(ctx.work_dir(), &[DEFAULT_CRON], 30);
 
-    ctx.cli().args(["workflow", "render", "remote"]).assert().success();
+    ctx.cli().args(["workflow", "generate", "remote"]).assert().success();
 
     // Default output writes directly to repository .github/
     let default_path = ctx.work_dir().join(".github/workflows/jules-workflows.yml");
-    assert!(default_path.exists(), "Default render output should exist in .github/");
+    assert!(default_path.exists(), "Default generate output should exist in .github/");
 }
 
 #[test]
-fn workflow_render_overwrites_by_default() {
+fn workflow_generate_overwrites_by_default() {
     let ctx = TestContext::new();
 
     write_jlo_config(ctx.work_dir(), &[DEFAULT_CRON], 30);
@@ -330,16 +330,16 @@ fn workflow_render_overwrites_by_default() {
     fs::create_dir_all(&output_dir).unwrap();
     fs::write(output_dir.join("old.txt"), "old content").unwrap();
 
-    // Render overwrites by default (no --overwrite flag needed)
+    // Generate overwrites by default (no --overwrite flag needed)
     ctx.cli()
-        .args(["workflow", "render", "remote", "--output-dir"])
+        .args(["workflow", "generate", "remote", "--output-dir"])
         .arg(&output_dir)
         .assert()
         .success();
 
     assert!(
         output_dir.join(".github/workflows/jules-workflows.yml").exists(),
-        "Rendered workflow file should exist after overwrite"
+        "Generated workflow file should exist after overwrite"
     );
 }
 

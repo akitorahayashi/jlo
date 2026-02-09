@@ -6,7 +6,7 @@ use std::path::Path;
 use serde::Deserialize;
 use serde_yaml::Value;
 
-use crate::adapters::assets::workflow_kit_assets::{WorkflowRenderConfig, load_workflow_kit};
+use crate::adapters::assets::workflow_scaffold_assets::{WorkflowGenerateConfig, load_workflow_scaffold};
 use crate::app::AppContext;
 use crate::domain::workspace::manifest::{
     MANIFEST_FILENAME, hash_content, is_control_plane_entity_file,
@@ -20,7 +20,7 @@ const WORKFLOW_MODE_DETECTION_FILE: &str = ".github/workflows/jules-workflows.ym
 /// Execute the unified init command.
 ///
 /// Creates the `.jlo/` control plane, the `.jules/` runtime workspace, and
-/// installs the workflow kit into `.github/`.
+/// installs the workflow scaffold into `.github/`.
 pub fn execute<W, R, G>(
     ctx: &AppContext<W, R>,
     git: &G,
@@ -66,23 +66,23 @@ where
     let manifest_path = format!("{}/{}", JLO_DIR, MANIFEST_FILENAME);
     ctx.workspace().write_file(&manifest_path, &manifest_content)?;
 
-    // Install workflow kit
+    // Install workflow scaffold
     let root = ctx.workspace().resolve_path("");
-    let render_config = load_workflow_render_config(&root)?;
-    install_workflow_kit(&root, mode, &render_config)?;
+    let generate_config = load_workflow_generate_config(&root)?;
+    install_workflow_scaffold(&root, mode, &generate_config)?;
 
     Ok(())
 }
 
-/// Execute the workflow kit installation.
-pub fn install_workflow_kit(
+/// Execute the workflow scaffold installation.
+pub fn install_workflow_scaffold(
     root: &Path,
     mode: WorkflowRunnerMode,
-    render_config: &WorkflowRenderConfig,
+    generate_config: &WorkflowGenerateConfig,
 ) -> Result<(), AppError> {
-    let kit = load_workflow_kit(mode, render_config)?;
+    let scaffold = load_workflow_scaffold(mode, generate_config)?;
 
-    for action_dir in &kit.action_dirs {
+    for action_dir in &scaffold.action_dirs {
         let destination = root.join(action_dir);
         if destination.exists() {
             if destination.is_dir() {
@@ -93,7 +93,7 @@ pub fn install_workflow_kit(
         }
     }
 
-    for file in &kit.files {
+    for file in &scaffold.files {
         let destination = root.join(&file.path);
         if let Some(parent) = destination.parent() {
             fs::create_dir_all(parent)?;
@@ -105,12 +105,12 @@ pub fn install_workflow_kit(
     Ok(())
 }
 
-/// Detect the workflow runner mode from the existing workflow kit.
+/// Detect the workflow runner mode from the existing workflow scaffold.
 pub fn detect_workflow_runner_mode(root: &Path) -> Result<WorkflowRunnerMode, AppError> {
     let workflow_path = root.join(WORKFLOW_MODE_DETECTION_FILE);
     if !workflow_path.exists() {
         return Err(AppError::Validation(
-            "Workflow kit not found. Run 'jlo init' to install workflows before updating.".into(),
+            "Workflow scaffold not found. Run 'jlo init' to install workflows before updating.".into(),
         ));
     }
 
@@ -123,7 +123,7 @@ pub fn detect_workflow_runner_mode(root: &Path) -> Result<WorkflowRunnerMode, Ap
     let jobs = yaml
         .get("jobs")
         .and_then(|v| v.as_mapping())
-        .ok_or_else(|| AppError::Validation("Workflow kit is missing jobs section.".into()))?;
+        .ok_or_else(|| AppError::Validation("Workflow scaffold is missing jobs section.".into()))?;
 
     let labels: BTreeSet<&str> = jobs
         .values()
@@ -146,16 +146,16 @@ pub fn detect_workflow_runner_mode(root: &Path) -> Result<WorkflowRunnerMode, Ap
         (true, false) => Ok(WorkflowRunnerMode::SelfHosted),
         (false, true) => Ok(WorkflowRunnerMode::Remote),
         (false, false) => {
-            Err(AppError::Validation("Could not detect runner mode from workflow kit.".into()))
+            Err(AppError::Validation("Could not detect runner mode from workflow scaffold.".into()))
         }
         (true, true) => Err(AppError::Validation(
-            "Workflow kit uses mixed runner labels; runner mode is ambiguous.".into(),
+            "Workflow scaffold uses mixed runner labels; runner mode is ambiguous.".into(),
         )),
     }
 }
 
 #[derive(Deserialize)]
-struct WorkflowRenderConfigDto {
+struct WorkflowGenerateConfigDto {
     run: Option<WorkflowRunDto>,
     workflow: Option<WorkflowTimingDto>,
 }
@@ -177,10 +177,10 @@ struct WorkflowTimingDto {
     wait_minutes_default: Option<u32>,
 }
 
-/// Read workflow render configuration from `.jlo/config.toml` at the given repository root.
+/// Read workflow generate configuration from `.jlo/config.toml` at the given repository root.
 ///
 /// Errors on missing or invalid configuration to avoid silent fallbacks.
-pub fn load_workflow_render_config(root: &Path) -> Result<WorkflowRenderConfig, AppError> {
+pub fn load_workflow_generate_config(root: &Path) -> Result<WorkflowGenerateConfig, AppError> {
     let config_path = root.join(".jlo/config.toml");
     if !config_path.exists() {
         return Err(AppError::Validation(
@@ -189,7 +189,7 @@ pub fn load_workflow_render_config(root: &Path) -> Result<WorkflowRenderConfig, 
     }
 
     let content = fs::read_to_string(&config_path)?;
-    let dto: WorkflowRenderConfigDto = toml::from_str(&content)?;
+    let dto: WorkflowGenerateConfigDto = toml::from_str(&content)?;
 
     let run = dto
         .run
@@ -230,5 +230,5 @@ pub fn load_workflow_render_config(root: &Path) -> Result<WorkflowRenderConfig, 
         AppError::Validation("Missing workflow.wait_minutes_default in .jlo/config.toml.".into())
     })?;
 
-    Ok(WorkflowRenderConfig { target_branch, worker_branch, schedule_crons, wait_minutes_default })
+    Ok(WorkflowGenerateConfig { target_branch, worker_branch, schedule_crons, wait_minutes_default })
 }

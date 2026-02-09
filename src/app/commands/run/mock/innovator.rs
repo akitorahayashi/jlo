@@ -4,7 +4,7 @@ use chrono::Utc;
 
 use crate::app::commands::run::RunOptions;
 use crate::app::commands::run::mock::identity::generate_mock_id;
-use crate::domain::identities::validation::validate_safe_path_component;
+use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 

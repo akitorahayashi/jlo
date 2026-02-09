@@ -6,7 +6,7 @@
 use std::path::Path;
 
 use crate::adapters::template::MinijinjaTemplateRenderer;
-use crate::domain::identities::validation::{validate_identifier, validate_safe_path_component};
+use crate::domain::identifiers::validation::{validate_identifier, validate_safe_path_component};
 use crate::domain::{
     AppError, Layer, PromptAssetLoader, PromptContext, assemble_prompt as assemble_prompt_domain,
     assemble_with_issue,

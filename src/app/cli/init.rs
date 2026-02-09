@@ -13,6 +13,6 @@ pub fn run_init(remote: bool, self_hosted: bool) -> Result<(), AppError> {
         ));
     };
     crate::app::api::init(mode)?;
-    println!("✅ Initialized .jlo/ control plane and workflow kit ({})", mode.label());
+    println!("✅ Initialized .jlo/ control plane and workflow scaffold ({})", mode.label());
     Ok(())
 }

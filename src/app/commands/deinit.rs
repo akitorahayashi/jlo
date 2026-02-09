@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
-use crate::adapters::assets::workflow_kit_assets::{WorkflowRenderConfig, load_workflow_kit};
+use crate::adapters::assets::workflow_scaffold_assets::{WorkflowGenerateConfig, load_workflow_scaffold};
 use crate::domain::workspace::workspace_layout::JLO_DIR;
 use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::GitPort;
@@ -27,13 +27,13 @@ pub fn execute(root: &Path, git: &impl GitPort) -> Result<DeinitOutcome, AppErro
     let mut file_paths = BTreeSet::new();
     let mut action_dirs = BTreeSet::new();
 
-    let render_config = WorkflowRenderConfig::default();
+    let generate_config = WorkflowGenerateConfig::default();
     for mode in [WorkflowRunnerMode::Remote, WorkflowRunnerMode::SelfHosted] {
-        let kit = load_workflow_kit(mode, &render_config)?;
-        for file in kit.files {
+        let scaffold = load_workflow_scaffold(mode, &generate_config)?;
+        for file in scaffold.files {
             file_paths.insert(file.path);
         }
-        for action_dir in kit.action_dirs {
+        for action_dir in scaffold.action_dirs {
             action_dirs.insert(action_dir);
         }
     }

@@ -2,7 +2,7 @@
 //!
 //! This module provides mock implementations of agent execution that perform
 //! real git and GitHub operations without calling the Jules API. This enables
-//! end-to-end validation of the workflow kit.
+//! end-to-end validation of the workflow scaffold.
 
 pub mod config;
 pub mod decider;

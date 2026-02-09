@@ -2,7 +2,7 @@
 
 use crate::app::AppContext;
 use crate::domain::AppError;
-use crate::domain::identities::validation::validate_safe_path_component;
+use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
 
 use super::CreateOutcome;

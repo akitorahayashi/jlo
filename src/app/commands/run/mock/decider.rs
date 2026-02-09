@@ -109,7 +109,7 @@ where
         mapping.insert(
             "summary".into(),
             format!(
-                "This is a mock issue created by jlo --mock for workflow-kit validation. Mock tag: {}",
+                "This is a mock issue created by jlo --mock for workflow-scaffold validation. Mock tag: {}",
                 config.mock_tag
             )
             .into(),
@@ -152,7 +152,7 @@ where
         mapping.insert(
             "summary".into(),
             format!(
-                "This is a mock issue created by jlo --mock for workflow-kit validation. Mock tag: {}",
+                "This is a mock issue created by jlo --mock for workflow-scaffold validation. Mock tag: {}",
                 config.mock_tag
             )
             .into(),

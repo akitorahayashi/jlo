@@ -5,7 +5,7 @@ created_at: "2026-02-05"
 author_role: "mock"
 confidence: high
 title: "Mock observation for workflow validation"
-statement: "This is a mock observation event created by jlo --mock for workflow-kit validation. Mock tag: test-tag"
+statement: "This is a mock observation event created by jlo --mock for workflow-scaffold validation. Mock tag: test-tag"
 evidence:
   - path: "README.md"
     loc: [1, 5]
