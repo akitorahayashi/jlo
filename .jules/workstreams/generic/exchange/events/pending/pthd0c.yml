@@ -1,0 +1,28 @@
+schema_version: 1
+
+id: "pthd0c"
+issue_id: ""
+created_at: "2026-02-08"
+author_role: "consistency"
+confidence: "high"
+
+title: "Documentation Omits `exchange/` Directory in Issue Paths"
+statement: |
+  `README.md` references issue file paths as `.jules/workstreams/[workstream]/issues/...` but the actual implementation and `JULES.md` specify `.jules/workstreams/[workstream]/exchange/issues/...`.
+  All issue commands (planners, implementers) require the full correct path.
+
+evidence:
+  - path: "README.md"
+    loc:
+      - "75"
+      - "78"
+    note: "Examples omit `exchange` directory: `.jules/workstreams/generic/issues/...`"
+
+  - path: ".jules/JULES.md"
+    loc:
+      - "48"
+    note: "Authoritative definition includes `exchange`: `.jules/workstreams/[workstream]/exchange/issues/...`"
+
+tags:
+  - "documentation-drift"
+  - "path-mismatch"
