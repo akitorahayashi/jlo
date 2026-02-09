@@ -717,13 +717,10 @@ fn verify_scaffold_integrity() {
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     // Verify root files
-    assert!(ctx.jules_path().join("JULES.md").exists(), "JULES.md should exist");
-    assert!(ctx.jules_path().join("README.md").exists(), "README.md should exist");
-    assert!(ctx.jules_path().join("config.toml").exists(), "config.toml should exist");
-    assert!(
-        ctx.jules_path().join("github-labels.json").exists(),
-        "github-labels.json should exist"
-    );
+    let root_files = ["JULES.md", "README.md", "config.toml", "github-labels.json"];
+    for file in root_files {
+        assert!(ctx.jules_path().join(file).exists(), "{} should exist", file);
+    }
 
     // Verify changes directory
     assert!(ctx.jules_path().join("changes/.gitkeep").exists(), "changes/.gitkeep should exist");
@@ -764,12 +761,13 @@ fn verify_scaffold_integrity() {
 
     // Verify setup
     let setup_path = ctx.jules_path().join("setup");
-    assert!(setup_path.join("tools.yml").exists(), "setup/tools.yml should exist");
-    assert!(setup_path.join(".gitignore").exists(), "setup/.gitignore should exist");
-
+    for file in ["tools.yml", ".gitignore"] {
+        assert!(setup_path.join(file).exists(), "setup/{} should exist", file);
+    }
     // env.toml and install.sh are generated later, so verify they are NOT there yet
-    assert!(!setup_path.join("env.toml").exists(), "setup/env.toml should NOT exist yet");
-    assert!(!setup_path.join("install.sh").exists(), "setup/install.sh should NOT exist yet");
+    for file in ["env.toml", "install.sh"] {
+        assert!(!setup_path.join(file).exists(), "setup/{} should NOT exist yet", file);
+    }
 
     // Verify workstreams structure
     assert!(
