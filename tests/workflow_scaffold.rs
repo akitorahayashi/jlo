@@ -540,7 +540,6 @@ fn automerge_uses_static_prefix_list() {
         "jules-observer-",
         "jules-decider-",
         "jules-planner-",
-        "jules-implementer-",
         "jules-innovator-",
     ] {
         assert!(

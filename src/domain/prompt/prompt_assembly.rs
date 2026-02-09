@@ -270,6 +270,10 @@ impl IncludeContext {
         let full_path = self.root.join(path);
         self.seed_from_schema(path, &full_path, required);
 
+        if self.failure.lock().unwrap().is_some() {
+            return None;
+        }
+
         if self.loader.asset_exists(&full_path) {
             match self.loader.read_asset(&full_path) {
                 Ok(content) => {
