@@ -423,6 +423,45 @@ mod tests {
             self.created_issues.borrow_mut().push((title.to_string(), body.to_string()));
             Ok(IssueInfo { number: count, url: format!("https://example.com/issues/{}", count) })
         }
+        fn get_pr_detail(
+            &self,
+            _pr_number: u64,
+        ) -> Result<crate::ports::PullRequestDetail, AppError> {
+            Ok(crate::ports::PullRequestDetail {
+                number: 42,
+                head: String::new(),
+                base: String::new(),
+                is_draft: false,
+                auto_merge_enabled: false,
+            })
+        }
+        fn list_pr_comments(
+            &self,
+            _pr_number: u64,
+        ) -> Result<Vec<crate::ports::PrComment>, AppError> {
+            Ok(Vec::new())
+        }
+        fn create_pr_comment(&self, _pr_number: u64, _body: &str) -> Result<u64, AppError> {
+            Ok(1)
+        }
+        fn update_pr_comment(&self, _comment_id: u64, _body: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn ensure_label(&self, _label: &str, _color: Option<&str>) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn add_label_to_pr(&self, _pr_number: u64, _label: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn add_label_to_issue(&self, _issue_number: u64, _label: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn enable_automerge(&self, _pr_number: u64) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> {
+            Ok(Vec::new())
+        }
     }
 
     fn proposal_yaml() -> &'static str {
