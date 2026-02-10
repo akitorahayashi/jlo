@@ -182,6 +182,17 @@ where
         });
     }
 
+    {
+        let include_ctx = include_ctx.clone();
+        env.add_function("file_exists", move |path: String| -> bool {
+            if validate_safe_path(&path).is_err() {
+                return false;
+            }
+            let full_path = include_ctx.root.join(&path);
+            include_ctx.loader.asset_exists(&full_path)
+        });
+    }
+
     env.add_function("section", |title: String, content: String| -> String {
         if content.trim().is_empty() {
             return String::new();

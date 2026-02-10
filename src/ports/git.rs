@@ -1,19 +1,6 @@
 use crate::domain::AppError;
 use std::path::Path;
 
-#[derive(Debug, Default, Clone)]
-pub struct DiffStat {
-    pub files_changed: u32,
-    pub insertions: u32,
-    pub deletions: u32,
-}
-
-#[derive(Debug, Clone)]
-pub struct CommitInfo {
-    pub sha: String,
-    pub subject: String,
-}
-
 pub trait GitPort {
     /// Get the current HEAD SHA.
     fn get_head_sha(&self) -> Result<String, AppError>;
@@ -29,21 +16,6 @@ pub trait GitPort {
 
     /// Check if there are changes in the range matching the pathspec.
     fn has_changes(&self, from: &str, to: &str, pathspec: &[&str]) -> Result<bool, AppError>;
-
-    /// Count commits in the range matching the pathspec.
-    fn count_commits(&self, from: &str, to: &str, pathspec: &[&str]) -> Result<u32, AppError>;
-
-    /// Collect commits in the range matching the pathspec.
-    fn collect_commits(
-        &self,
-        from: &str,
-        to: &str,
-        pathspec: &[&str],
-        limit: usize,
-    ) -> Result<Vec<CommitInfo>, AppError>;
-
-    /// Collect diffstat for the range matching the pathspec.
-    fn get_diffstat(&self, from: &str, to: &str, pathspec: &[&str]) -> Result<DiffStat, AppError>;
 
     /// Execute an arbitrary git command (fallback).
     #[allow(dead_code)]

@@ -1,9 +1,6 @@
 use crate::domain::AppError;
-use crate::ports::{CommitInfo, DiffStat};
 use chrono::DateTime;
 
-/// Maximum number of commits to include in the bounded sample.
-pub const MAX_COMMITS: usize = 50;
 /// Number of commits to use for bootstrap when no prior summary exists.
 pub const BOOTSTRAP_COMMIT_COUNT: usize = 20;
 
@@ -20,49 +17,6 @@ pub struct RangeContext {
     pub selection_detail: String,
     /// RFC3339 timestamp used as incremental cursor, if present.
     pub changes_since: Option<String>,
-}
-
-#[derive(Debug, Default)]
-pub struct Stats {
-    pub commits_total: u32,
-    pub commits_included: u32,
-    pub files_changed: u32,
-    pub insertions: u32,
-    pub deletions: u32,
-}
-
-#[derive(Debug)]
-pub struct GitContext {
-    pub range: RangeContext,
-    pub stats: Stats,
-    pub commits: Vec<CommitInfo>,
-    pub truncation_note: String,
-}
-
-#[derive(Debug)]
-pub struct NarratorGitData {
-    pub range: RangeContext,
-    pub has_changes: bool,
-    pub commits_total: u32,
-    pub commits: Vec<CommitInfo>,
-    pub diffstat: DiffStat,
-}
-
-/// Analyze collected git data and build context if applicable.
-pub fn analyze_git_context(data: NarratorGitData) -> Option<GitContext> {
-    if !data.has_changes {
-        return None;
-    }
-
-    let stats = Stats {
-        commits_total: data.commits_total,
-        commits_included: data.commits.len() as u32,
-        files_changed: data.diffstat.files_changed,
-        insertions: data.diffstat.insertions,
-        deletions: data.diffstat.deletions,
-    };
-
-    Some(build_git_context(data.range, stats, data.commits))
 }
 
 /// Determine the commit range strategy based on inputs.
@@ -138,20 +92,6 @@ fn extract_created_at(content: &str) -> Result<String, AppError> {
     })?;
 
     Ok(created_at.to_string())
-}
-
-pub fn build_git_context(
-    range: RangeContext,
-    stats: Stats,
-    commits: Vec<CommitInfo>,
-) -> GitContext {
-    let truncation_note = if stats.commits_total > stats.commits_included {
-        format!("Commits truncated to {} of {} total", stats.commits_included, stats.commits_total)
-    } else {
-        String::new()
-    };
-
-    GitContext { range, stats, commits, truncation_note }
 }
 
 #[cfg(test)]
@@ -244,27 +184,5 @@ created_at: "2026-02-05 00:00:00"
 "#;
         let err = extract_created_at(content).unwrap_err();
         assert!(err.to_string().contains("RFC3339"));
-    }
-
-    #[test]
-    fn test_build_git_context_truncation() {
-        let range = RangeContext {
-            from_commit: "a".into(),
-            to_commit: "b".into(),
-            selection_mode: "mode".into(),
-            selection_detail: "".into(),
-            changes_since: Some("2026-02-05T00:00:00Z".into()),
-        };
-        let stats = Stats {
-            commits_total: 100,
-            commits_included: 50,
-            files_changed: 1,
-            insertions: 1,
-            deletions: 1,
-        };
-        let commits = vec![]; // Empty for test
-
-        let ctx = build_git_context(range, stats, commits);
-        assert!(ctx.truncation_note.contains("truncated to 50 of 100"));
     }
 }

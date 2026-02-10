@@ -100,13 +100,16 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             validate_contracts_file(&contracts_path, layer, diagnostics);
         }
 
-        // Validate phase-specific contracts for innovators
-        if layer == Layer::Innovators {
-            for phase in &["creation", "refinement"] {
-                let phase_contracts = layer_dir.join(format!("contracts_{}.yml", phase));
-                if phase_contracts.exists() {
-                    validate_contracts_file(&phase_contracts, layer, diagnostics);
-                }
+        // Validate phase-specific contracts
+        let phases: &[&str] = match layer {
+            Layer::Innovators => &["creation", "refinement"],
+            Layer::Narrators => &["bootstrap", "incremental"],
+            _ => &[],
+        };
+        for phase in phases {
+            let phase_contracts = layer_dir.join(format!("contracts_{}.yml", phase));
+            if phase_contracts.exists() {
+                validate_contracts_file(&phase_contracts, layer, diagnostics);
             }
         }
 
@@ -522,9 +525,8 @@ pub fn validate_contracts(
         diagnostics.push_error(path.display().to_string(), "branch_prefix is invalid");
     }
 
-    ensure_non_empty_sequence(data, path, "constraints", diagnostics);
+    // constraints is optional — some layers may not need explicit guardrails
     ensure_non_empty_sequence(data, path, "inputs", diagnostics);
-    ensure_non_empty_sequence(data, path, "outputs", diagnostics);
     ensure_non_empty_sequence(data, path, "workflow", diagnostics);
 }
 

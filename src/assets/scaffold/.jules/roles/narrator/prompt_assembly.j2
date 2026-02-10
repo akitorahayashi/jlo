@@ -1,2 +1,2 @@
-{{ section("Layer Contracts", include_required(".jules/roles/narrator/contracts.yml")) }}
-{{ section("Run Context", "run_mode: " ~ run_mode ~ "\nchanges_since: " ~ changes_since) }}
+{{ section("Layer Contracts", include_required(".jules/roles/narrator/contracts_" ~ run_mode ~ ".yml")) }}
+{{ section("Target Range", range_description) }}

@@ -30,7 +30,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::{CommitInfo, DiffStat, DiscoveredRole, PullRequestInfo, ScaffoldFile};
+    use crate::ports::{DiscoveredRole, PullRequestInfo, ScaffoldFile};
     use std::collections::HashMap;
     use std::path::PathBuf;
 
@@ -60,34 +60,6 @@ mod tests {
             _pathspec: &[&str],
         ) -> Result<bool, AppError> {
             panic!("mock narrator no-op must not call has_changes");
-        }
-
-        fn count_commits(
-            &self,
-            _from: &str,
-            _to: &str,
-            _pathspec: &[&str],
-        ) -> Result<u32, AppError> {
-            panic!("mock narrator no-op must not call count_commits");
-        }
-
-        fn collect_commits(
-            &self,
-            _from: &str,
-            _to: &str,
-            _pathspec: &[&str],
-            _limit: usize,
-        ) -> Result<Vec<CommitInfo>, AppError> {
-            panic!("mock narrator no-op must not call collect_commits");
-        }
-
-        fn get_diffstat(
-            &self,
-            _from: &str,
-            _to: &str,
-            _pathspec: &[&str],
-        ) -> Result<DiffStat, AppError> {
-            panic!("mock narrator no-op must not call get_diffstat");
         }
 
         fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
