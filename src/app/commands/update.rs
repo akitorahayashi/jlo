@@ -116,6 +116,19 @@ where
         }
     }
 
+    for entry in templates.builtin_role_catalog()? {
+        let path =
+            format!(".jlo/roles/{}/{}/role.yml", entry.layer.dir_name(), entry.name.as_str());
+        if entity_defaults.contains_key(&path) {
+            return Err(AppError::AssetError(format!(
+                "Duplicate builtin role path '{}' in control-plane defaults",
+                path
+            )));
+        }
+        let content = templates.builtin_role_content(&entry.path)?;
+        entity_defaults.insert(path, content);
+    }
+
     let manifest_path = format!(".jlo/{}", MANIFEST_FILENAME);
     let mut warnings = Vec::new();
     let mut manifest_map: BTreeMap<String, String> = if workspace.file_exists(&manifest_path) {
@@ -300,7 +313,7 @@ mod tests {
         assert_eq!(compare_versions(&[1, 0, 0], &[0, 9, 9]), 1);
     }
 
-    use crate::domain::Layer;
+    use crate::domain::{AppError, BuiltinRoleEntry, Layer};
     use crate::ports::ScaffoldFile;
     use assert_fs::TempDir;
 
@@ -344,6 +357,14 @@ wait_minutes_default = 30
 
         fn generate_role_yaml(&self, _role_id: &str, _layer: Layer) -> String {
             String::new()
+        }
+
+        fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError> {
+            Ok(vec![])
+        }
+
+        fn builtin_role_content(&self, path: &str) -> Result<String, AppError> {
+            Err(AppError::AssetError(format!("Missing builtin role asset in mock store: {}", path)))
         }
     }
 

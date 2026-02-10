@@ -1,4 +1,4 @@
-use crate::domain::Layer;
+use crate::domain::{AppError, BuiltinRoleEntry, Layer};
 
 /// A file embedded in the scaffold bundle.
 #[derive(Debug, Clone)]
@@ -32,4 +32,10 @@ pub trait RoleTemplateStore {
 
     /// Generate role.yml content for a new custom role.
     fn generate_role_yaml(&self, role_id: &str, layer: Layer) -> String;
+
+    /// Load the builtin role catalog.
+    fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError>;
+
+    /// Read builtin role file content by catalog path.
+    fn builtin_role_content(&self, path: &str) -> Result<String, AppError>;
 }

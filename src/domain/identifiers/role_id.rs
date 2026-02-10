@@ -1,6 +1,6 @@
 use crate::domain::AppError;
 use crate::impl_validated_id;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// A validated role identifier.
 ///
@@ -26,6 +26,15 @@ impl<'de> Deserialize<'de> for RoleId {
     {
         let s = String::deserialize(deserializer)?;
         RoleId::new(&s).map_err(serde::de::Error::custom)
+    }
+}
+
+impl Serialize for RoleId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.0)
     }
 }
 

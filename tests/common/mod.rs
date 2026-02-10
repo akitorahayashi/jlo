@@ -209,18 +209,16 @@ impl TestContext {
         assert!(roles_path.join("deciders/templates").exists(), "deciders/templates should exist");
     }
 
-    /// Assert that all built-in roles exist in their correct layers.
-    ///
-    /// Note: Narrator, Planners and Implementers are single-role layers with flat structure
-    /// Assert all builtin roles exist: multi-role layers have role subdirectories,
-    /// single-role layers have contracts.yml directly in the layer directory.
-    pub fn assert_all_builtin_roles_exist(&self) {
-        // Multi-role layers have role subdirectories
+    /// Assert that default scheduled roles exist in their correct layers.
+    pub fn assert_default_scheduled_roles_exist(&self) {
         self.assert_role_in_layer_exists("observers", "taxonomy");
         self.assert_role_in_layer_exists("observers", "data_arch");
+        self.assert_role_in_layer_exists("observers", "structural_arch");
         self.assert_role_in_layer_exists("observers", "qa");
         self.assert_role_in_layer_exists("observers", "cov");
+        self.assert_role_in_layer_exists("observers", "devops");
         self.assert_role_in_layer_exists("observers", "consistency");
+        self.assert_role_in_layer_exists("innovators", "recruiter");
 
         // Single-role layers have contracts.yml directly in layer directory
         self.assert_single_role_layer_exists("narrator");

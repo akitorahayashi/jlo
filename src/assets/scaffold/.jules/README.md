@@ -34,7 +34,7 @@ Narrator -> Observer -> Decider -> [Planner] -> Implementer
 |-----------|---------|----------------|
 | Narrator | `.jules/roles/narrator/` | Git history -> Changes summary |
 | Observer | directories under `.jlo/roles/observers/` | Source -> Events (domain-specialized observations) |
-| Decider | directories under `.jlo/roles/deciders/` | Events -> Issues (validation + consolidation) |
+| Decider | `.jlo/roles/deciders/role.yml` | Events -> Issues (validation + consolidation) |
 | Planner | (Single-role; no `.jlo/` role definitions) | Issues -> Expanded Issues (deep analysis, optional) |
 | Implementer | (Single-role; no `.jlo/` role definitions) | Issues -> Code changes |
 
@@ -134,16 +134,16 @@ Implementers modify source code and require human review.
 | Layer | Type | Invocation |
 |-------|------|------------|
 | Narrator | Single-role | `jlo run narrator` |
-| Observers | Multi-role | `jlo run observers --scheduled` |
-| Deciders | Multi-role | `jlo run deciders --scheduled` |
+| Observers | Multi-role | `jlo run observers --role <role>` |
+| Deciders | Single-role | `jlo run deciders` |
 | Planners | Single-role | `jlo run planners <path>` |
 | Implementers | Single-role | `jlo run implementers <path>` |
 
 **Narrator**: Produces `.jules/changes/latest.yml` summarizing recent codebase changes. Runs first, before observers.
 
-**Multi-role layers** (Observers, Deciders, Innovators): Roles are scheduled via `.jlo/scheduled.toml`. Each role has its own subdirectory with `role.yml` in `.jlo/roles/`. Custom roles can be created with `jlo create role <layer> <name>`.
+**Multi-role layers** (Observers, Innovators): Roles are scheduled via `.jlo/scheduled.toml`. Each role has its own subdirectory with `role.yml` in `.jlo/roles/`. Custom roles are authored with `jlo create <layer> <name>`, while built-in roles are installed with `jlo add <layer> <role>`.
 
-**Single-role layers** (Planners, Implementers): Have a fixed role with `contracts.yml` directly in the layer directory. They are issue-driven and require an issue file path argument. Template creation is not supported.
+**Single-role layers** (Deciders, Planners, Implementers): Have a fixed role with `contracts.yml` directly in the layer directory. Planners and Implementers are issue-driven and require an issue file path argument. Template creation is not supported.
 
 **Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated contracts file (`contracts_creation.yml` / `contracts_refinement.yml`) selected at runtime via the `{{phase}}` template variable in `prompt_assembly.j2`.
 

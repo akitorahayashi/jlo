@@ -31,8 +31,8 @@ fn user_can_use_command_aliases() {
     // Use 'i' alias for init
     ctx.cli().args(["i", "--remote"]).assert().success();
 
-    // Use 'c' alias for create
-    ctx.cli().args(["c", "observers", "my-observer"]).assert().success();
+    // Use 'cr' alias for create
+    ctx.cli().args(["cr", "observers", "my-observer"]).assert().success();
 
     let role_path = ctx.jlo_path().join("roles/observers/my-observer/role.yml");
     assert!(role_path.exists(), "Role created via alias should exist in .jlo/");
@@ -51,7 +51,7 @@ fn init_creates_complete_layer_structure() {
     ctx.assert_layer_structure_exists();
     ctx.assert_events_structure_exists();
     ctx.assert_issues_directory_exists();
-    ctx.assert_all_builtin_roles_exist();
+    ctx.assert_default_scheduled_roles_exist();
     ctx.assert_changes_directory_exists();
     ctx.assert_narrator_exists();
 
@@ -60,9 +60,12 @@ fn init_creates_complete_layer_structure() {
     let jlo = ctx.jlo_path();
     assert!(jlo.join("roles/observers/taxonomy/role.yml").exists());
     assert!(jlo.join("roles/observers/data_arch/role.yml").exists());
+    assert!(jlo.join("roles/observers/structural_arch/role.yml").exists());
     assert!(jlo.join("roles/observers/qa/role.yml").exists());
     assert!(jlo.join("roles/observers/cov/role.yml").exists());
+    assert!(jlo.join("roles/observers/devops/role.yml").exists());
     assert!(jlo.join("roles/observers/consistency/role.yml").exists());
+    assert!(jlo.join("roles/innovators/recruiter/role.yml").exists());
     assert!(jules.join("roles/observers/schemas").exists());
     assert!(jules.join("roles/observers/prompt_assembly.j2").exists());
 

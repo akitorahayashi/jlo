@@ -1,6 +1,9 @@
 use include_dir::{Dir, DirEntry, include_dir};
 
-use crate::domain::Layer;
+use crate::adapters::assets::builtin_role_assets::{
+    load_builtin_role_catalog, read_builtin_role_file,
+};
+use crate::domain::{AppError, BuiltinRoleEntry, Layer};
 use crate::ports::{RoleTemplateStore, ScaffoldFile};
 
 static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold");
@@ -60,6 +63,14 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
             Layer::Innovators => templates::INNOVATOR_ROLE.to_string(),
             Layer::Narrators | Layer::Planners | Layer::Implementers => String::new(),
         }
+    }
+
+    fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError> {
+        load_builtin_role_catalog()
+    }
+
+    fn builtin_role_content(&self, path: &str) -> Result<String, AppError> {
+        read_builtin_role_file(path)
     }
 }
 
@@ -130,14 +141,10 @@ mod tests {
     }
 
     #[test]
-    fn control_plane_files_include_role_customizations() {
+    fn control_plane_files_include_decider_role_customizations() {
         let store = EmbeddedRoleTemplateStore::new();
         let files = store.control_plane_files();
-        assert!(
-            files
-                .iter()
-                .any(|f| f.path.starts_with(".jlo/roles/") && f.path.ends_with("/role.yml"))
-        );
+        assert!(files.iter().any(|f| f.path == ".jlo/roles/deciders/role.yml"));
     }
 
     #[test]

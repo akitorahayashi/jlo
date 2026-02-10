@@ -11,10 +11,11 @@ use crate::adapters::github_command::GitHubCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::{
     AppContext,
-    commands::{cli_upgrade, create, deinit, doctor, init, run, setup, update},
+    commands::{add, cli_upgrade, create, deinit, doctor, init, run, setup, update},
 };
-use crate::ports::WorkspaceStore;
+use crate::ports::{RoleTemplateStore, WorkspaceStore};
 
+pub use crate::app::commands::add::AddOutcome;
 pub use crate::app::commands::cli_upgrade::CliUpgradeResult;
 pub use crate::app::commands::create::CreateOutcome;
 pub use crate::app::commands::deinit::DeinitOutcome;
@@ -24,8 +25,8 @@ pub use crate::app::commands::setup::list::{ComponentDetail, ComponentSummary, E
 pub use crate::app::commands::update::{UpdateOptions, UpdateResult};
 pub use crate::app::commands::workflow::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
 pub use crate::domain::AppError;
-pub use crate::domain::Layer;
 pub use crate::domain::WorkflowRunnerMode;
+pub use crate::domain::{BuiltinRoleEntry, Layer};
 
 /// Create an `AppContext` for a given path.
 fn create_context(
@@ -88,6 +89,31 @@ pub fn create_role_at(
 ) -> Result<CreateOutcome, AppError> {
     let ctx = create_context(root);
     create::create_role(&ctx, layer, name)
+}
+
+// =============================================================================
+// Add Command API
+// =============================================================================
+
+/// Install a built-in role under `.jlo/roles/<layer>/<name>/`.
+pub fn add_role(layer: &str, name: &str) -> Result<AddOutcome, AppError> {
+    add_role_at(layer, name, std::env::current_dir()?)
+}
+
+/// Install a built-in role at the specified path.
+pub fn add_role_at(
+    layer: &str,
+    name: &str,
+    root: std::path::PathBuf,
+) -> Result<AddOutcome, AppError> {
+    let ctx = create_context(root);
+    add::add_role(&ctx, layer, name)
+}
+
+/// List the built-in role catalog.
+pub fn builtin_role_catalog() -> Result<Vec<BuiltinRoleEntry>, AppError> {
+    let store = EmbeddedRoleTemplateStore::new();
+    store.builtin_role_catalog()
 }
 
 // =============================================================================
