@@ -27,9 +27,9 @@ A layer-level change means one of the following:
 | CLI command shape | `run` subcommands are explicit per layer | `src/app/cli/run.rs` |
 | Workflow command parsing | `workflow run <layer>` relies on `Layer::from_dir_name` | `src/app/cli/workflow.rs` |
 | Runtime execution branch | Main `run` path and workflow layer executor match on layer enum | `src/app/commands/run/mod.rs`, `src/app/commands/workflow/run/layer_executor.rs` |
-| Multi-role scheduling | `scheduled.toml` currently models observer/decider roles explicitly | `src/domain/configuration/schedule.rs`, `src/adapters/workstream_schedule_filesystem.rs` |
+| Multi-role scheduling | `scheduled.toml` models observer roles explicitly | `src/domain/configuration/schedule.rs` |
 | Prompt and contracts | Layer assets are file-based and embedded with `include_dir` | `src/assets/scaffold/.jules/roles/<layer>/**` |
-| Doctor validation | Structural/schema/semantic checks iterate layers and workstream data contracts | `src/app/commands/doctor/*.rs` |
+| Doctor validation | Structural/schema/semantic checks iterate layers and exchange data contracts | `src/app/commands/doctor/*.rs` |
 | Matrix/routing orchestration | Workflow matrix/run logic assumes current layer set | `src/app/commands/workflow/matrix/*.rs`, `src/app/commands/workflow/run/*.rs` |
 | Workflow orchestration | Layer sequence is defined in workflow templates | `src/assets/workflows/.github/workflows/jules-workflows.yml.j2` |
 | Auto-merge qualification | Branch prefix and scope policy gates are evaluated in `jlo workflow pr enable-automerge` | `src/app/commands/workflow/pr/events/enable_automerge.rs` |
@@ -63,12 +63,12 @@ A layer-level change means one of the following:
 - Wire execution in `src/app/commands/run/mod.rs` and `src/app/commands/workflow/run/layer_executor.rs`.
 
 4. Schedule and role selection (if multi-role)
-- Extend `WorkstreamSchedule` in `src/domain/configuration/schedule.rs`.
+- Extend `Schedule` in `src/domain/configuration/schedule.rs`.
 - Keep absent/empty schedule semantics explicit and deterministic.
 
 5. Doctor and workspace contracts
 - Extend structure/schema/semantic checks in `src/app/commands/doctor/*.rs`.
-- Ensure doctor validates new layer contracts and new workstream artifacts.
+- Ensure doctor validates new layer contracts and new exchange artifacts.
 
 6. Workflow templates
 - Integrate layer phase into `src/assets/workflows/.github/workflows/jules-workflows.yml.j2`.
@@ -89,7 +89,7 @@ A layer-level change means one of the following:
 
 2. Remove scaffold and template assets
 - Remove obsolete role directory under `src/assets/scaffold/.jules/roles/`.
-- Remove related workstream artifacts only when no other layer consumes them.
+- Remove related exchange artifacts only when no other layer consumes them.
 
 3. Remove workflow phases
 - Remove corresponding jobs and dependencies from workflow templates.

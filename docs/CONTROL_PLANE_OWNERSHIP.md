@@ -20,8 +20,8 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 |------|-------|-------------|
 | `.jlo/.jlo-version` | jlo | Pinned jlo binary version. Written by `init`, advanced by `update`. |
 | `.jlo/config.toml` | User | Workspace configuration. Created by `init`; never overwritten. |
-| `.jlo/roles/<layer>/roles/<role>/role.yml` | User | Role-specific customizations. Created by `create`; never overwritten. |
-| `.jlo/workstreams/<ws>/scheduled.toml` | User | Workstream schedule and role roster. Created by `create`; never overwritten. |
+| `.jlo/roles/<layer>/<role>/role.yml` | User | Role-specific customizations. Created by `create`; never overwritten. |
+| `.jlo/scheduled.toml` | User | Schedule and role roster. Created by `init`; never overwritten. |
 | `.jlo/setup/tools.yml` | User | Tool selection. Created by `init`; never overwritten. |
 | `.jlo/.jlo-managed.yml` | jlo | Managed-defaults manifest for role.yml and scheduled.toml. Used by `update` to refresh unchanged defaults safely. |
 
@@ -34,10 +34,10 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 | `.jules/.jlo-version` | Bootstrap | Workflow bootstrap | Copied from `.jlo/.jlo-version` |
 | `.jules/JULES.md` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
 | `.jules/README.md` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
-| `.jules/workstreams/<ws>/exchange/events/**` | Agent | Agent execution | Observer outputs, decider inputs |
-| `.jules/workstreams/<ws>/exchange/issues/**` | Agent | Agent execution | Decider outputs, planner/implementer inputs |
-| `.jules/workstreams/<ws>/exchange/innovators/**` | Agent | Agent execution | Innovator artifacts |
-| `.jules/workstreams/<ws>/workstations/**` | Agent | Agent execution | Role perspectives (memory) |
+| `.jules/exchange/events/<state>/**` | Agent | Agent execution | Observer outputs, decider inputs |
+| `.jules/exchange/issues/<label>/**` | Agent | Agent execution | Decider outputs, planner/implementer inputs |
+| `.jules/exchange/innovators/<persona>/**` | Agent | Agent execution | Innovator artifacts |
+| `.jules/workstations/<role>/**` | Agent | Agent execution | Role perspectives (memory) |
 | `.jules/changes/latest.yml` | Agent | Narrator execution | Changes summary |
 | `.jules/setup/**` | Bootstrap | Workflow bootstrap | Materialized from `.jlo/setup/` + scaffold |
 | `.jules/.managed-defaults.yml` | Bootstrap | Workflow bootstrap | Materialized manifest |
@@ -71,7 +71,7 @@ Workflow bootstrap is the sole authority for producing `.jules/` on `JULES_WORKE
 3. Checkout `JULES_WORKER_BRANCH` (create from `JLO_TARGET_BRANCH` history if absent).
 4. Write all managed framework files from embedded scaffold to `.jules/`.
 5. (Removed) User intent overlay is no longer projected to `.jules/`. Agents read directly from `.jlo/`.
-6. (Removed) Pruning of projected workstreams is no longer performed.
+6. (Removed) Pruning is no longer performed.
 7. (Removed) Pruning of projected roles is no longer performed.
 8. Write managed manifest (if applicable) and version file.
 9. Commit changes (if any) to `JULES_WORKER_BRANCH` with a deterministic message.
@@ -92,7 +92,7 @@ Running bootstrap twice with the same `.jlo/` inputs and jlo version produces no
 | Refresh workflow kit | Reinstall `.github/` workflows using the existing runner mode. |
 | **Not in scope** | Patching managed framework files (that is bootstrap's responsibility on `JULES_WORKER_BRANCH`). |
 | **Not in scope** | Reading or writing `.jules/` or any runtime artifacts. |
-| **Not in scope** | Reading or writing `.jules/workstreams/*/exchange/` (agent-generated). |
+| **Not in scope** | Reading or writing `.jules/exchange/` (agent-generated). |
 
 Runtime managed assets are expanded from the scaffold for the pinned version during the next workflow bootstrap run.
 
