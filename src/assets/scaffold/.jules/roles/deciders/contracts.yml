@@ -2,8 +2,8 @@ layer: deciders
 branch_prefix: jules-decider-
 
 inputs:
-  - .jules/workstreams/<workstream>/exchange/events/pending/*.yml
-  - .jules/workstreams/<workstream>/exchange/issues/**/*.yml (existing issues)
+  - .jules/exchange/events/pending/*.yml
+  - .jules/exchange/issues/**/*.yml (existing issues)
   - .jules/roles/deciders/schemas/issue.yml (Schema for new issue)
 
 constraints:
@@ -15,7 +15,7 @@ constraints:
   - Use randomly generated 6-char lowercase alphanumeric ID for issue IDs
   - Use kebab-case title as filename
   - Ensure verification_criteria are clear and actionable (e.g. format check, lint check, test commands); DO NOT specify executable commands
-  - Never read or write outside your workstream directory
+  - Never read or write outside your exchange directory
 
 workflow:
   - "1. Read events"
@@ -23,11 +23,11 @@ workflow:
   - "3. Verify observed events exist, check significance, identify related events"
   - "4. Rationalize disputes"
   - "5. For events related to an existing issue: merge into that issue (update content)"
-  - "6. For new problems: select an existing issue label from .jules/github-labels.json and cp issue.yml to .jules/workstreams/<workstream>/exchange/issues/<label>/<kebab-case-title>.yml"
+  - "6. For new problems: select an existing issue label from .jules/github-labels.json and cp issue.yml to .jules/exchange/issues/<label>/<kebab-case-title>.yml"
   - "7. Populate `source_events` in the new issue with IDs of events that triggered it"
   - "8. Reject invalid events: Create feedback based on feedback.yml at .jules/roles/observers/<author_role>/feedbacks/<kebab-case-topic>.yml (fill in critique and rejected_content)"
-  - "9. Update metadata of processed events (issue_id) AND move them to .jules/workstreams/<workstream>/exchange/events/decided/"
+  - "9. Update metadata of processed events (issue_id) AND move them to .jules/exchange/events/decided/"
 
 outputs:
-  - .jules/workstreams/<workstream>/exchange/issues/<label>/*.yml (created or updated)
-  - .jules/workstreams/<workstream>/exchange/events/decided/*.yml (moved and updated)
+  - .jules/exchange/issues/<label>/*.yml (created or updated)
+  - .jules/exchange/events/decided/*.yml (moved and updated)

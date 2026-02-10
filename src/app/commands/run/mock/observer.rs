@@ -171,7 +171,7 @@ where
     })
 }
 
-/// Resolve enabled innovator persona names for a workstream.
+/// Resolve enabled innovator persona names.
 ///
 /// Returns an empty vec if the schedule is missing, innovators are not
 /// configured, or an error occurs (silent fallback is acceptable here

@@ -1,6 +1,6 @@
 //! Publish innovator proposals as GitHub issues.
 //!
-//! Scans all innovator rooms in a workstream for merged `proposal.yml` files,
+//! Scans all innovator rooms for merged `proposal.yml` files,
 //! creates a GitHub issue from each proposal, and removes the proposal artifact
 //! to mark publication as complete.
 
@@ -471,7 +471,7 @@ mod tests {
         r#"schema_version: 1
 id: "abc123"
 persona: "alice"
-workstream: "generic"
+
 created_at: "2026-02-05"
 title: "Improve error messages"
 problem: |
@@ -496,7 +496,7 @@ verification_signals:
     fn publishes_proposal_and_removes_artifact() {
         let proposal_path = ".jules/exchange/innovators/alice/proposal.yml";
         let perspective_path = ".jules/exchange/innovators/alice/perspective.yml";
-        let perspective_yaml = "persona: alice\nworkstream: generic\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let perspective_yaml = "persona: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
         let workspace = MockWorkspaceStore::new()
             .with_exists(true)
             .with_file(proposal_path, proposal_yaml())

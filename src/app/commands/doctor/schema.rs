@@ -236,17 +236,6 @@ fn parse_prompt_data(
         diagnostics.push_error(path.display().to_string(), "Missing instructions list");
     }
 
-    // Single-role layers should not have workstream field
-    if layer.is_single_role() {
-        let workstream = get_string(data, "workstream");
-        if workstream.is_some() {
-            diagnostics.push_error(
-                path.display().to_string(),
-                "workstream not allowed in single-role layer",
-            );
-        }
-    }
-
     Some(PromptEntry { path: path.to_path_buf(), contracts })
 }
 
@@ -702,7 +691,6 @@ pub fn check_placeholders(content: &str, path: &Path, diagnostics: &mut Diagnost
     let placeholders = [
         "<6_random_lowercase_alphanumeric_chars>",
         "<role>",
-        "<workstream>",
         "<Descriptive Title>",
         "YYYY-MM-DD",
         "<path>",

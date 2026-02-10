@@ -22,7 +22,7 @@ pub trait RoleTemplateStore {
 
     /// Get control-plane skeleton files only (config, setup, infrastructure).
     ///
-    /// Excludes role definitions and workstream schedules. Used by `update`
+    /// Excludes role definitions and schedules. Used by `update`
     /// to fill missing infrastructure without recreating deleted entities.
     fn control_plane_skeleton_files(&self) -> Vec<ScaffoldFile>;
 

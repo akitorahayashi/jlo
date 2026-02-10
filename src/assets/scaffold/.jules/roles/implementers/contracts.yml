@@ -4,7 +4,7 @@ branch_prefix: jules-implementer-
 constraints:
   - Branch format: jules-implementer-<label>-<id>-<short_description>
   - <label> must match the issue label (issue.label and issue directory)
-  - Issue file path is authoritative (includes workstream and label)
+  - Issue file path is authoritative (includes exchange directory and label)
   - Map verification criteria to commands from a predefined allow-list of safe commands (e.g., `cargo check` for format check, `cargo test` for test commands); reject and report any unmappable criteria to prevent RCE
 
 inputs:

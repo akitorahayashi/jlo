@@ -1,7 +1,6 @@
 schema_version: 2
 
 observer: "<observer-id>"
-workstream: "<workstream>"
 
 updated_at: "YYYY-MM-DDTHH:MM:SSZ"
 

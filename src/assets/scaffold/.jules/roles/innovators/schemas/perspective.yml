@@ -1,7 +1,6 @@
 schema_version: 1
 
 persona: "<persona_id>"
-workstream: "<workstream>"
 
 bias_focus: "<primary analytical lens for this persona>"
 current_view: |
