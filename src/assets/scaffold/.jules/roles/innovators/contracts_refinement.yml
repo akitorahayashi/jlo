@@ -2,37 +2,32 @@ layer: innovators
 branch_prefix: jules-innovator-
 phase: refinement
 
-constraints:
-  - Do NOT modify source code or non-.jules/ files
-  - Do NOT create or modify events or issues directly
-  - Each innovator works only within their own room directory
-  - Proposals must address the repository's actual state, not hypothetical improvements
-  - Do NOT duplicate proposals already listed in perspective.yml recent_proposals
-  - Do NOT edit files outside of .jules/
-  - Proposals must define an introduction that changes boundaries, behavior, or decision quality
-  - Do NOT publish proposals that are only static-analysis-driven local refactoring findings
-  - Proposal quality is measured by decision value, not description volume
-  - Every proposal must satisfy role.yml profile.proposal_quality_bar
-  - Evidence in the proposal must meet role.yml profile.evidence_expectations
-  - perspective.yml recent_proposals MUST be updated with the new proposal title
-  - idea.yml and all comments/*.yml MUST be deleted after proposal creation
+purpose:
+  Refine the drafted idea into a finished proposal informed by observer feedback.
+  Evaluate feasibility, impact, and risks, then produce proposal.yml that meets
+  the quality bar defined in role.yml.
 
 inputs:
-  - .jlo/roles/innovators/<role>/role.yml (Innovator Persona Definition)
-  - .jules/exchange/innovators/<persona>/perspective.yml (Persona Memory)
-  - .jules/exchange/innovators/<persona>/idea.yml (Current Idea)
-  - .jules/roles/innovators/schemas/comment.yml (Observer feedback comment schema)
-  - .jules/exchange/innovators/<persona>/comments/*.yml (Observer Feedback)
-  - .jules/roles/innovators/schemas/proposal.yml (Schema for final proposal)
+  - .jlo/roles/innovators/<role>/role.yml (persona definition)
+  - .jules/exchange/innovators/<persona>/perspective.yml (persona memory)
+  - .jules/exchange/innovators/<persona>/idea.yml (current idea)
+  - .jules/exchange/innovators/<persona>/comments/*.yml (observer feedback)
+  - .jules/roles/innovators/schemas/proposal.yml (proposal schema)
+  - .jules/roles/innovators/schemas/comment.yml (comment schema reference)
 
 outputs:
-  - .jules/exchange/innovators/<persona>/proposal.yml (Finished proposal)
-  - .jules/exchange/innovators/<persona>/perspective.yml (Updated memory with proposal in recent_proposals)
+  - .jules/exchange/innovators/<persona>/proposal.yml
+  - .jules/exchange/innovators/<persona>/perspective.yml (updated with proposal in recent_proposals)
 
 workflow:
-  - "1. Read role.yml and perspective.yml to establish identity and context."
-  - "2. Read idea.yml and all comments/*.yml as structured feedback defined by schemas/comment.yml."
-  - "3. Create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals."
-  - "4. Update perspective.yml recent_proposals (FIFO, max 5, newest first) with the proposal title."
-  - "5. Delete idea.yml and all comments/*.yml."
-  - "6. Before final output, self-check against role.yml proposal_quality_bar and evidence_expectations."
+  - 1. Read role.yml and perspective.yml to establish identity and context
+  - 2. Read idea.yml and all comments/*.yml as structured feedback
+  - 3. Create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals
+  - 4. Self-check against role.yml proposal_quality_bar and evidence_expectations
+  - 5. Update perspective.yml recent_proposals (FIFO, max 5, newest first) with the proposal title
+  - 6. Delete idea.yml and all comments/*.yml
+
+constraints:
+  - Do not duplicate proposals already listed in perspective.yml recent_proposals
+  - Proposals must introduce boundary, behavior, or decision-quality changes — not local refactoring findings
+  - idea.yml and comments/*.yml must be deleted after proposal creation

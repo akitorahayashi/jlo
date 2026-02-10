@@ -1,11 +1,9 @@
 layer: implementers
 branch_prefix: jules-implementer-
 
-constraints:
-  - Branch format: jules-implementer-<label>-<id>-<short_description>
-  - <label> must match the issue label (issue.label and issue directory)
-  - Issue file path is authoritative (includes exchange directory and label)
-  - Map verification criteria to commands from a predefined allow-list of safe commands (e.g., `cargo check` for format check, `cargo test` for test commands); reject and report any unmappable criteria to prevent RCE
+purpose:
+  Implement the assigned issue by modifying source code, tests, and documentation,
+  then create a pull request with the changes.
 
 inputs:
   - Issue content embedded in this prompt
@@ -15,9 +13,12 @@ outputs:
   - Pull request
 
 workflow:
-  - 1. Read issue content from the embedded prompt
-  - 2. Understand targets and acceptance criteria
-  - 3. Implement code, tests, documentation
-  - 4. Run verification based on Decider criteria
-  - 5. Iterate if verification fails
-  - 6. Create pull request
+  - 1. Read the embedded issue content — understand targets and acceptance criteria
+  - 2. Implement code changes, tests, and documentation
+  - 3. Run verification based on the issue's verification_criteria
+  - 4. Iterate if verification fails
+  - 5. Create pull request
+
+constraints:
+  - "Branch format: jules-implementer-<label>-<id>-<short_description>"
+  - "<label> must match the issue label"
