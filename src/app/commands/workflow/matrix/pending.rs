@@ -1,4 +1,4 @@
-//! Matrix pending-workstreams command implementation.
+//! Matrix pending command implementation.
 //!
 //! Checks the flat exchange directory for pending events and exports a
 //! single-entry GitHub Actions matrix when pending events exist.
@@ -9,33 +9,33 @@ use std::fs;
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
 
-/// Options for matrix pending-workstreams command.
+/// Options for matrix pending command.
 #[derive(Debug, Clone)]
-pub struct MatrixPendingWorkstreamsOptions {
+pub struct MatrixPendingOptions {
     /// Mock mode - always report pending events.
     pub mock: bool,
 }
 
-/// Output of matrix pending-workstreams command.
+/// Output of matrix pending command.
 #[derive(Debug, Clone, Serialize)]
-pub struct MatrixPendingWorkstreamsOutput {
+pub struct MatrixPendingOutput {
     /// Schema version for output format stability.
     pub schema_version: u32,
     /// Whether pending events exist.
     pub has_pending: bool,
 }
 
-/// Execute matrix pending-workstreams command.
+/// Execute matrix pending command.
 pub fn execute(
     workspace: &impl WorkspaceStore,
-    options: MatrixPendingWorkstreamsOptions,
-) -> Result<MatrixPendingWorkstreamsOutput, AppError> {
+    options: MatrixPendingOptions,
+) -> Result<MatrixPendingOutput, AppError> {
     if !workspace.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 
     if options.mock {
-        return Ok(MatrixPendingWorkstreamsOutput { schema_version: 1, has_pending: true });
+        return Ok(MatrixPendingOutput { schema_version: 1, has_pending: true });
     }
 
     let jules_path = workspace.jules_path();
@@ -43,7 +43,7 @@ pub fn execute(
 
     let has_pending = pending_dir.exists() && has_yml_files(&pending_dir)?;
 
-    Ok(MatrixPendingWorkstreamsOutput { schema_version: 1, has_pending })
+    Ok(MatrixPendingOutput { schema_version: 1, has_pending })
 }
 
 /// Check if a directory contains any .yml files.
@@ -82,7 +82,7 @@ mod tests {
         fs::create_dir_all(&pending_dir).unwrap();
         fs::write(pending_dir.join("event1.yml"), "id: abc123\n").unwrap();
 
-        let output = execute(&store, MatrixPendingWorkstreamsOptions { mock: false }).unwrap();
+        let output = execute(&store, MatrixPendingOptions { mock: false }).unwrap();
 
         assert_eq!(output.schema_version, 1);
         assert!(output.has_pending);
@@ -98,7 +98,7 @@ mod tests {
         let pending_dir = root.join(".jules/exchange/events/pending");
         fs::create_dir_all(&pending_dir).unwrap();
 
-        let output = execute(&store, MatrixPendingWorkstreamsOptions { mock: false }).unwrap();
+        let output = execute(&store, MatrixPendingOptions { mock: false }).unwrap();
 
         assert_eq!(output.schema_version, 1);
         assert!(!output.has_pending);
@@ -111,7 +111,7 @@ mod tests {
         setup_workspace(root);
         let store = FilesystemWorkspaceStore::new(root.to_path_buf());
 
-        let output = execute(&store, MatrixPendingWorkstreamsOptions { mock: true }).unwrap();
+        let output = execute(&store, MatrixPendingOptions { mock: true }).unwrap();
 
         assert!(output.has_pending);
     }

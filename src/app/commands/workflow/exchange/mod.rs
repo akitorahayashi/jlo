@@ -1,4 +1,4 @@
-//! Workstream inspection and cleanup commands.
+//! Exchange inspection and cleanup commands.
 
 pub mod clean_issue;
 pub mod inspect;

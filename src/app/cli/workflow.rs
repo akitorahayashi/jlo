@@ -50,11 +50,15 @@ pub enum WorkflowCommands {
         #[command(subcommand)]
         command: WorkflowIssueCommands,
     },
-    /// Inspection and cleanup
-    Workstreams {
-        #[command(subcommand)]
-        command: WorkflowWorkstreamsCommands,
+    /// Inspect exchange and output JSON
+    Inspect,
+    /// Remove a processed issue and its source events
+    CleanIssue {
+        /// Path to the issue file
+        issue_file: String,
     },
+    /// Publish merged proposals as GitHub issues
+    PublishProposals,
 }
 
 #[derive(Subcommand)]
@@ -110,11 +114,8 @@ pub enum WorkflowIssueCommands {
 
 #[derive(Subcommand)]
 pub enum WorkflowMatrixCommands {
-    /// Export enabled workstreams as a GitHub Actions matrix
-    Workstreams,
-
     /// Check flat exchange for pending events
-    PendingWorkstreams {
+    Pending {
         /// Mock mode: always report pending events
         #[arg(long)]
         mock: bool,
@@ -124,28 +125,6 @@ pub enum WorkflowMatrixCommands {
         /// Routing labels as CSV (e.g., "bugs,feats,refacts,tests,docs")
         #[arg(long)]
         routing_labels: String,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum WorkflowWorkstreamsCommands {
-    /// Inspect exchange and output JSON
-    Inspect,
-    /// Cleanup operations for workstreams
-    Clean {
-        #[command(subcommand)]
-        command: WorkflowWorkstreamsCleanCommands,
-    },
-    /// Publish merged proposals as GitHub issues
-    PublishProposals,
-}
-
-#[derive(Subcommand)]
-pub enum WorkflowWorkstreamsCleanCommands {
-    /// Remove a processed issue and its source events
-    Issue {
-        /// Path to the issue file
-        issue_file: String,
     },
 }
 
@@ -193,7 +172,21 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
         WorkflowCommands::Cleanup { command } => run_workflow_cleanup(command),
         WorkflowCommands::Pr { command } => run_workflow_pr(command),
         WorkflowCommands::Issue { command } => run_workflow_issue(command),
-        WorkflowCommands::Workstreams { command } => run_workflow_workstreams(command),
+        WorkflowCommands::Inspect => {
+            let options = workflow::WorkflowWorkstreamsInspectOptions {};
+            let output = workflow::workstreams_inspect(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowCommands::CleanIssue { issue_file } => {
+            let options = workflow::WorkflowWorkstreamsCleanIssueOptions { issue_file };
+            let output = workflow::workstreams_clean_issue(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowCommands::PublishProposals => {
+            let options = workflow::WorkflowWorkstreamsPublishProposalsOptions {};
+            let output = workflow::workstreams_publish_proposals(options)?;
+            workflow::write_workflow_output(&output)
+        }
     }
 }
 
@@ -271,43 +264,13 @@ fn run_workflow_issue(command: WorkflowIssueCommands) -> Result<(), AppError> {
     }
 }
 
-fn run_workflow_workstreams(command: WorkflowWorkstreamsCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    match command {
-        WorkflowWorkstreamsCommands::Inspect => {
-            let options = workflow::WorkflowWorkstreamsInspectOptions {};
-            let output = workflow::workstreams_inspect(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowWorkstreamsCommands::Clean { command } => match command {
-            WorkflowWorkstreamsCleanCommands::Issue { issue_file } => {
-                let options = workflow::WorkflowWorkstreamsCleanIssueOptions { issue_file };
-                let output = workflow::workstreams_clean_issue(options)?;
-                workflow::write_workflow_output(&output)
-            }
-        },
-        WorkflowWorkstreamsCommands::PublishProposals => {
-            let options = workflow::WorkflowWorkstreamsPublishProposalsOptions {};
-            let output = workflow::workstreams_publish_proposals(options)?;
-            workflow::write_workflow_output(&output)
-        }
-    }
-}
-
 fn run_workflow_matrix(command: WorkflowMatrixCommands) -> Result<(), AppError> {
     use crate::app::commands::workflow::{self, matrix};
 
     match command {
-        WorkflowMatrixCommands::Workstreams => {
-            let options = matrix::MatrixWorkstreamsOptions {};
-            let output = matrix::workstreams(options)?;
-            workflow::write_workflow_output(&output)
-        }
-
-        WorkflowMatrixCommands::PendingWorkstreams { mock } => {
-            let options = matrix::MatrixPendingWorkstreamsOptions { mock };
-            let output = matrix::pending_workstreams(options)?;
+        WorkflowMatrixCommands::Pending { mock } => {
+            let options = matrix::MatrixPendingOptions { mock };
+            let output = matrix::pending(options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowMatrixCommands::Routing { routing_labels } => {
