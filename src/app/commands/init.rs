@@ -146,19 +146,82 @@ fn persist_workflow_runner_mode(
 ) -> Result<(), AppError> {
     let config_path = ".jlo/config.toml";
     let content = workspace.read_file(config_path)?;
-    let desired = format!("runner_mode = \"{}\"", mode.label());
+    let desired_value = mode.label();
 
-    let updated = if content.contains("runner_mode = \"remote\"") {
-        content.replacen("runner_mode = \"remote\"", &desired, 1)
-    } else if content.contains("runner_mode = \"self-hosted\"") {
-        content.replacen("runner_mode = \"self-hosted\"", &desired, 1)
-    } else {
+    let mut updated = String::with_capacity(content.len());
+    let mut in_workflow_table = false;
+    let mut saw_workflow_table = false;
+    let mut updated_runner_mode = false;
+
+    for line in content.split_inclusive('\n') {
+        let line_without_newline = line.trim_end_matches('\n');
+        let trimmed = line_without_newline.trim();
+
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            in_workflow_table = trimmed == "[workflow]";
+            if in_workflow_table {
+                saw_workflow_table = true;
+            }
+            updated.push_str(line);
+            continue;
+        }
+
+        if in_workflow_table
+            && !updated_runner_mode
+            && let Some(rewritten) = rewrite_runner_mode_line(line, desired_value)
+        {
+            updated.push_str(&rewritten);
+            updated_runner_mode = true;
+            continue;
+        }
+
+        updated.push_str(line);
+    }
+
+    if !saw_workflow_table {
+        return Err(AppError::Validation(
+            "Missing [workflow] section in scaffold .jlo/config.toml.".into(),
+        ));
+    }
+    if !updated_runner_mode {
         return Err(AppError::Validation(
             "Missing workflow.runner_mode in scaffold .jlo/config.toml.".into(),
         ));
-    };
+    }
 
     workspace.write_file(config_path, &updated)
+}
+
+fn rewrite_runner_mode_line(line: &str, desired_value: &str) -> Option<String> {
+    let (body, newline) =
+        line.strip_suffix('\n').map_or((line, ""), |line_without_nl| (line_without_nl, "\n"));
+
+    let trimmed_start = body.trim_start();
+    if !trimmed_start.starts_with("runner_mode") {
+        return None;
+    }
+
+    let remainder = &trimmed_start["runner_mode".len()..];
+    if !remainder.trim_start().starts_with('=') {
+        return None;
+    }
+
+    let indent_len = body.len() - trimmed_start.len();
+    let indent = &body[..indent_len];
+
+    let comment_suffix = body
+        .find('#')
+        .map(|idx| &body[idx..])
+        .filter(|comment| !comment.trim().is_empty())
+        .unwrap_or("");
+
+    let mut rewritten = format!("{indent}runner_mode = \"{desired_value}\"");
+    if !comment_suffix.is_empty() {
+        rewritten.push(' ');
+        rewritten.push_str(comment_suffix.trim_start());
+    }
+    rewritten.push_str(newline);
+    Some(rewritten)
 }
 
 fn load_workflow_config_dto(root: &Path) -> Result<WorkflowGenerateConfigDto, AppError> {
@@ -237,4 +300,54 @@ pub fn load_workflow_runner_mode(root: &Path) -> Result<WorkflowRunnerMode, AppE
         AppError::Validation("Missing [workflow] section in .jlo/config.toml.".into())
     })?;
     parse_workflow_runner_mode(workflow.runner_mode.as_deref())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+    use assert_fs::TempDir;
+    use std::fs;
+
+    #[test]
+    fn persist_workflow_runner_mode_updates_only_workflow_value() {
+        let temp = TempDir::new().unwrap();
+        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let config = r#"# heading
+[run]
+default_branch = "main"
+jules_branch = "jules"
+
+[workflow]
+runner_mode = "remote" # keep me
+cron = ["0 20 * * *"]
+wait_minutes_default = 30
+"#;
+        workspace.write_file(".jlo/config.toml", config).unwrap();
+
+        persist_workflow_runner_mode(&workspace, WorkflowRunnerMode::SelfHosted).unwrap();
+        let updated = fs::read_to_string(temp.path().join(".jlo/config.toml")).unwrap();
+
+        assert!(updated.contains("runner_mode = \"self-hosted\" # keep me"));
+        assert!(updated.contains("default_branch = \"main\""));
+        assert!(updated.contains("cron = [\"0 20 * * *\"]"));
+    }
+
+    #[test]
+    fn persist_workflow_runner_mode_fails_without_workflow_section() {
+        let temp = TempDir::new().unwrap();
+        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        workspace
+            .write_file(
+                ".jlo/config.toml",
+                r#"[run]
+default_branch = "main"
+jules_branch = "jules"
+"#,
+            )
+            .unwrap();
+
+        let err = persist_workflow_runner_mode(&workspace, WorkflowRunnerMode::Remote).unwrap_err();
+        assert!(err.to_string().contains("Missing [workflow] section"));
+    }
 }

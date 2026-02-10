@@ -5,7 +5,7 @@
 //! `cargo install --git ... --tag ... --force jlo`.
 
 use std::cmp::Ordering;
-use std::process::Command;
+use std::process::{Command, Output};
 
 use crate::domain::AppError;
 
@@ -101,23 +101,16 @@ fn extract_tag_ref(line: &str) -> Option<&str> {
 }
 
 fn run_command_capture(program: &str, args: &[&str], tool_name: &str) -> Result<String, AppError> {
-    let output = Command::new(program).args(args).output().map_err(|err| {
-        AppError::ExternalToolError { tool: tool_name.to_string(), error: err.to_string() }
-    })?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(AppError::ExternalToolError {
-            tool: tool_name.to_string(),
-            error: format!("command failed: {} {}", program, args.join(" ")).to_string()
-                + &format!("\nstderr:\n{}", stderr.trim()),
-        });
-    }
-
+    let output = run_command(program, args, tool_name)?;
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
 fn run_command_status(program: &str, args: &[&str], tool_name: &str) -> Result<(), AppError> {
+    run_command(program, args, tool_name)?;
+    Ok(())
+}
+
+fn run_command(program: &str, args: &[&str], tool_name: &str) -> Result<Output, AppError> {
     let output = Command::new(program).args(args).output().map_err(|err| {
         AppError::ExternalToolError { tool: tool_name.to_string(), error: err.to_string() }
     })?;
@@ -131,7 +124,7 @@ fn run_command_status(program: &str, args: &[&str], tool_name: &str) -> Result<(
         });
     }
 
-    Ok(())
+    Ok(output)
 }
 
 #[cfg(test)]
