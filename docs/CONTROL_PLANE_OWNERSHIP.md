@@ -14,13 +14,13 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 
 ### `.jlo/` — Intent Overlay (control branch)
 
-`.jlo/` is a minimal directory containing only the version pin and durable user intent inputs. Managed framework assets (contracts, schemas, prompts, global documents) are **not** stored in `.jlo/`; they are materialized by workflow bootstrap from the embedded scaffold for the pinned version.
+`.jlo/` is a minimal directory containing only the version pin and durable user intent inputs. Managed framework assets (contracts, schemas, prompts, global documents) are **not** stored in `.jlo/`; they are materialized by workflow bootstrap from the embedded scaffold for the pinned version. Built-in role definitions are embedded in the jlo binary under `src/assets/builtin_roles/` and installed into `.jlo/roles/` only when explicitly scheduled or added.
 
 | Path | Owner | Description |
 |------|-------|-------------|
 | `.jlo/.jlo-version` | jlo | Pinned jlo binary version. Written by `init`, advanced by `update`. |
 | `.jlo/config.toml` | User | Workspace configuration. Created by `init`; never overwritten. |
-| `.jlo/roles/<layer>/<role>/role.yml` | User | Role-specific customizations. Created by `create`; never overwritten. |
+| `.jlo/roles/<layer>/<role>/role.yml` | User | Role-specific customizations. Created by `create` or installed by `add`; never overwritten. |
 | `.jlo/scheduled.toml` | User | Schedule and role roster. Created by `init`; never overwritten. |
 | `.jlo/setup/tools.yml` | User | Tool selection. Created by `init`; never overwritten. |
 | `.jlo/.jlo-managed.yml` | jlo | Managed-defaults manifest for role.yml and scheduled.toml. Used by `update` to refresh unchanged defaults safely. |

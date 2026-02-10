@@ -8,6 +8,6 @@ current_view: |
 historical_learnings: |
   <accumulated insights from past analysis cycles>
 
-# Newest first; keep max 5 entries (FIFO).
+# Newest first; keep max 15 entries (FIFO).
 recent_proposals:
   - "<title of recent proposal>"

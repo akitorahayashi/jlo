@@ -12,8 +12,10 @@ use crate::domain::workspace::manifest::{
     MANIFEST_FILENAME, hash_content, is_control_plane_entity_file,
 };
 use crate::domain::workspace::{JLO_DIR, VERSION_FILE};
-use crate::domain::{AppError, ScaffoldManifest, WorkflowRunnerMode};
+use crate::domain::{AppError, Layer, ScaffoldManifest, Schedule, WorkflowRunnerMode};
+use crate::ports::ScaffoldFile;
 use crate::ports::{GitPort, RoleTemplateStore, WorkspaceStore};
+use std::collections::HashMap;
 
 /// Execute the unified init command.
 ///
@@ -49,13 +51,15 @@ where
     }
     persist_workflow_runner_mode(ctx.workspace(), mode)?;
 
+    let seeded_roles = seed_scheduled_roles(ctx)?;
+
     // Write version pin to .jlo/
     let jlo_version_path = format!("{}/{}", JLO_DIR, VERSION_FILE);
     ctx.workspace().write_file(&jlo_version_path, &format!("{}\n", env!("CARGO_PKG_VERSION")))?;
 
     // Create managed manifest for .jlo/ default entity files
     let mut map = BTreeMap::new();
-    for file in &control_plane_files {
+    for file in control_plane_files.iter().chain(seeded_roles.iter()) {
         if is_control_plane_entity_file(&file.path) {
             map.insert(file.path.clone(), hash_content(&file.content));
         }
@@ -71,6 +75,58 @@ where
     install_workflow_scaffold(&root, mode, &generate_config)?;
 
     Ok(())
+}
+
+fn seed_scheduled_roles<W, R>(ctx: &AppContext<W, R>) -> Result<Vec<ScaffoldFile>, AppError>
+where
+    W: WorkspaceStore,
+    R: RoleTemplateStore,
+{
+    let schedule_content = ctx.workspace().read_file(".jlo/scheduled.toml")?;
+    let schedule = Schedule::parse_toml(&schedule_content)?;
+
+    let catalog = ctx.templates().builtin_role_catalog()?;
+    let mut catalog_index: HashMap<(String, String), ScaffoldFile> = HashMap::new();
+
+    for entry in catalog {
+        let content = ctx.templates().builtin_role_content(&entry.path)?;
+        let path =
+            format!(".jlo/roles/{}/{}/role.yml", entry.layer.dir_name(), entry.name.as_str());
+        catalog_index.insert(
+            (entry.layer.dir_name().to_string(), entry.name.as_str().to_string()),
+            ScaffoldFile { path, content },
+        );
+    }
+
+    let mut seeded = Vec::new();
+
+    for role in &schedule.observers.roles {
+        let key = (Layer::Observers.dir_name().to_string(), role.name.as_str().to_string());
+        let file = catalog_index.get(&key).ok_or_else(|| {
+            AppError::Validation(format!(
+                "Scheduled observer role '{}' is missing from builtin catalog",
+                role.name.as_str()
+            ))
+        })?;
+        ctx.workspace().write_file(&file.path, &file.content)?;
+        seeded.push(file.clone());
+    }
+
+    if let Some(ref innovators) = schedule.innovators {
+        for role in &innovators.roles {
+            let key = (Layer::Innovators.dir_name().to_string(), role.name.as_str().to_string());
+            let file = catalog_index.get(&key).ok_or_else(|| {
+                AppError::Validation(format!(
+                    "Scheduled innovator role '{}' is missing from builtin catalog",
+                    role.name.as_str()
+                ))
+            })?;
+            ctx.workspace().write_file(&file.path, &file.content)?;
+            seeded.push(file.clone());
+        }
+    }
+
+    Ok(seeded)
 }
 
 /// Execute the workflow scaffold installation.

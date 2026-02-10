@@ -32,7 +32,8 @@ jlo init --remote
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow scaffold |
 | `jlo update [--prompt-preview]` | `u` | Advance version pin, refresh workflow scaffold, and refresh unchanged defaults |
 | `jlo deinit` | | Remove `.jlo/`, workflow scaffold, and local `jules` branch |
-| `jlo create <layer> <name>` | `c` | Create a custom role under `.jlo/` (observers, innovators) |
+| `jlo create [<layer> <name>]` | `cr` | Create a custom role under `.jlo/` (observers, innovators) |
+| `jlo add [<layer> <role>]` | `a, ad` | Install a built-in role under `.jlo/` (observers, innovators) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo doctor [--strict]` | | Validate `.jules/` structure and content |
 | `jlo workflow run <layer>` | | Run layer and return orchestration metadata |
@@ -46,11 +47,22 @@ jlo init --remote
 
 ### Create Command
 
-`jlo create` adds new roles to the `.jlo/` control plane for multi-role layers.
+`jlo create` authors new custom roles for multi-role layers. When no arguments are provided, it
+prompts for the layer and role name.
 
 ```bash
 jlo create observers taxonomy     # Create observer role
 jlo create innovators researcher  # Create innovator role
+```
+
+### Add Command
+
+`jlo add` installs built-in roles from the embedded catalog. When no arguments are provided, it
+guides you through layer, category, and role selection.
+
+```bash
+jlo add observers pythonista       # Install built-in observer role
+jlo add innovators recruiter       # Install built-in innovator role
 ```
 
 ### Run Command
@@ -138,6 +150,7 @@ jlo init --remote                           # Initialize control plane + workflo
 jlo init --self-hosted                      # Initialize control plane + workflow scaffold (self-hosted)
 jlo create observers security               # Create observer role
 jlo create innovators researcher            # Create innovator role
+jlo add observers pythonista                # Install built-in observer role
 
 # Setup compiler
 jlo setup list                              # List available components

@@ -1,4 +1,4 @@
-use crate::domain::Layer;
+use crate::domain::{AppError, BuiltinRoleEntry, Layer};
 use crate::ports::{RoleTemplateStore, ScaffoldFile};
 
 /// Mock role template store for testing.
@@ -43,5 +43,13 @@ impl RoleTemplateStore for MockRoleTemplateStore {
 
     fn generate_role_yaml(&self, role_id: &str, layer: Layer) -> String {
         format!("role: {}\nlayer: {}\n\nprofile:\n  focus: test\n", role_id, layer.dir_name())
+    }
+
+    fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError> {
+        Ok(vec![])
+    }
+
+    fn builtin_role_content(&self, path: &str) -> Result<String, AppError> {
+        Err(AppError::AssetError(format!("Missing builtin role asset in mock store: {}", path)))
     }
 }

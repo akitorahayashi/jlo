@@ -5,6 +5,7 @@ use predicates::prelude::*;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
+use toml::Value;
 
 const DEFAULT_CRON: &str = "0 20 * * *";
 
@@ -30,6 +31,25 @@ wait_minutes_default = {}
     fs::write(jlo_dir.join("config.toml"), content).unwrap();
 }
 
+fn read_scheduled_roles(root: &Path, layer: &str) -> Vec<String> {
+    let content = fs::read_to_string(root.join(".jlo/scheduled.toml")).unwrap();
+    let value: Value = toml::from_str(&content).unwrap();
+
+    let roles = value
+        .get(layer)
+        .and_then(|layer_value| layer_value.get("roles"))
+        .and_then(|roles_value| roles_value.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    roles
+        .into_iter()
+        .filter_map(|role_value| {
+            role_value.get("name").and_then(|name| name.as_str()).map(|name| name.to_string())
+        })
+        .collect()
+}
+
 #[test]
 fn init_creates_jules_directory() {
     let ctx = TestContext::new();
@@ -46,7 +66,7 @@ fn init_creates_jules_directory() {
     ctx.assert_jules_exists();
     assert!(ctx.read_version().is_some());
     ctx.assert_layer_structure_exists();
-    ctx.assert_all_builtin_roles_exist();
+    ctx.assert_default_scheduled_roles_exist();
     ctx.assert_exchange_structure_exists();
     ctx.assert_events_structure_exists();
     ctx.assert_issues_directory_exists();
@@ -161,6 +181,28 @@ fn create_role_succeeds() {
 
     let role_path = ctx.jlo_path().join("roles/observers/custom-role/role.yml");
     assert!(role_path.exists(), "Role should exist in .jlo/");
+
+    let roles = read_scheduled_roles(ctx.work_dir(), "observers");
+    assert!(roles.contains(&"custom-role".to_string()));
+}
+
+#[test]
+fn add_role_installs_and_updates_schedule() {
+    let ctx = TestContext::new();
+
+    ctx.cli().args(["init", "--remote"]).assert().success();
+
+    ctx.cli()
+        .args(["add", "observers", "pythonista"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Added new"));
+
+    let role_path = ctx.jlo_path().join("roles/observers/pythonista/role.yml");
+    assert!(role_path.exists(), "Role should exist in .jlo/");
+
+    let roles = read_scheduled_roles(ctx.work_dir(), "observers");
+    assert!(roles.contains(&"pythonista".to_string()));
 }
 
 #[test]
@@ -220,7 +262,7 @@ fn help_lists_visible_aliases() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("--help").assert().success().stdout(
-        predicate::str::contains("[aliases: i]").and(predicate::str::contains("[aliases: c]")),
+        predicate::str::contains("[aliases: i]").and(predicate::str::contains("[aliases: cr]")),
     );
 }
 

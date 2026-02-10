@@ -6,9 +6,11 @@ pub mod issue;
 pub mod prompt;
 pub mod workspace;
 
+pub mod builtin_role;
 pub mod component_graph;
 pub mod setup_artifacts;
 
+pub use builtin_role::BuiltinRoleEntry;
 pub use configuration::{
     ExecutionConfig, JulesApiConfig, MockConfig, MockOutput, RunConfig, Schedule,
     WorkflowRunnerMode,
