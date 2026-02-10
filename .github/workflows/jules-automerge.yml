@@ -55,25 +55,9 @@ jobs:
 
       - name: Validate with doctor
         run: |
-          # Extract workstream from changed files
-          workstreams=$(git diff --name-only "origin/${JULES_WORKER_BRANCH}...HEAD" | grep '^\.jules/workstreams/' | cut -d'/' -f3 | sort -u)
-
-          if [ -z "$workstreams" ]; then
-            echo "No workstream changes detected, running doctor for all workstreams"
-            shopt -s nullglob
-            for ws_dir in .jules/workstreams/*/; do
-              ws=$(basename "$ws_dir")
-              echo "::group::Doctor check for $ws"
-              jlo doctor --workstream "$ws"
-              echo "::endgroup::"
-            done
-          else
-            for ws in $workstreams; do
-              echo "::group::Doctor check for $ws"
-              jlo doctor --workstream "$ws"
-              echo "::endgroup::"
-            done
-          fi
+          echo "::group::Doctor check"
+          jlo doctor
+          echo "::endgroup::"
 
       - name: Enable auto-merge
         env:

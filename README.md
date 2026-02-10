@@ -32,67 +32,66 @@ jlo init --remote
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow scaffold |
 | `jlo update [--prompt-preview]` | `u` | Advance version pin, refresh workflow scaffold, and refresh unchanged defaults |
 | `jlo deinit` | | Remove `.jlo/`, workflow scaffold, and local `jules` branch |
-| `jlo create role <layer> <name>` | `c` | Create a custom role under `.jlo/` |
-| `jlo create workstream <name>` | `c` | Create a workstream under `.jlo/` |
+| `jlo create <layer> <name>` | `c` | Create a custom role under `.jlo/` (observers, innovators) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
-| `jlo workflow doctor [--workstream <name>]` | | Validate workspace for workflow use |
+| `jlo doctor [--strict]` | | Validate `.jules/` structure and content |
+| `jlo workflow run <layer>` | | Run layer and return orchestration metadata |
 | `jlo workflow matrix <cmd>` | | Generate GitHub Actions matrices |
-| `jlo workflow run <workstream> <layer> [--mock]` | | Run layer and return orchestration metadata |
+| `jlo workflow inspect` | | Inspect exchange state for automation |
+| `jlo workflow clean-issue <issue_file>` | | Remove a processed issue and its source events |
+| `jlo workflow publish-proposals` | | Publish innovator proposals as GitHub issues |
 | `jlo workflow generate <mode> [--output-dir <dir>]` | `g [-o]` | Generate workflow scaffold files to an output directory |
-| `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state for automation |
-| `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
-| `jlo workflow workstreams publish-proposals <workstream>` | | Publish innovator proposals as GitHub issues |
-| `jlo doctor [--strict] [--workstream <name>]` | | Validate `.jules/` structure and content |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` script and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
 
 ### Create Command
 
-`jlo create` adds new roles or workstreams to the `.jlo/` control plane.
+`jlo create` adds new roles to the `.jlo/` control plane for multi-role layers.
 
 ```bash
-jlo create role observers taxonomy     # Create observer role
-jlo create workstream my-stream        # Create workstream
+jlo create observers taxonomy     # Create observer role
+jlo create innovators researcher  # Create innovator role
 ```
 
 ### Run Command
 
-Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `o` (observers), `d` (deciders), `p` (planners), `i` (implementers), `x` (innovators) (e.g., `jlo r o ...`).
+Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (deciders), `p` (planners), `i` (implementers), `x` (innovators).
+
+**Multi-role layers** (Observers, Innovators) require `--role`:
 
 ```bash
-jlo workflow run generic observers                            # Run scheduled observer roles via workflow
-jlo workflow run generic deciders                             # Run scheduled decider roles via workflow
-jlo run observers --workstream generic --role <role>          # Run specific role (manual)
-jlo run observers --workstream generic --role <role> --prompt-preview   # Show prompts without executing
-jlo run observers --workstream generic --role <role> --branch custom # Override starting branch
+jlo run observers --role <role>                    # Run specific observer role
+jlo run observers --role <role> --prompt-preview    # Show prompts without executing
+jlo run observers --role <role> --branch custom     # Override starting branch
 ```
 
-**Single-Role Layers** (Planners, Implementers) require an issue file:
+**Single-role layers** (Narrator, Deciders, Planners, Implementers):
 
 ```bash
-# Run planner for a specific issue
-jlo run planners .jules/workstreams/generic/exchange/issues/<label>/auth-inconsistency.yml
-
-# Run implementer for a specific issue
-jlo run implementers .jules/workstreams/generic/exchange/issues/<label>/auth-inconsistency.yml
+jlo run narrator                     # Run narrator (no role flag needed)
+jlo run deciders                     # Run deciders (single role)
 ```
 
-Single-role layers are issue-driven and do not support the `--role` flag.
+**Issue-driven layers** (Planners, Implementers) require an issue file:
+
+```bash
+jlo run planners .jules/exchange/issues/<label>/auth-inconsistency.yml
+jlo run implementers .jules/exchange/issues/<label>/auth-inconsistency.yml
+```
 
 **Mock Mode**: Validate workflow orchestration without calling Jules API:
 
 ```bash
-jlo run narrator --mock             # Mock narrator execution
-jlo run observers --workstream generic --role <role> --mock  # Mock observer execution
-jlo run deciders --workstream generic --role <role> --mock   # Mock decider execution
-jlo run innovators --workstream generic --role <role> --mock # Mock innovator execution
+jlo run narrator --mock
+jlo run observers --role <role> --mock
+jlo run deciders --mock
+jlo run innovators --role <role> --mock
 ```
 
 Mock mode creates real branches and PRs with synthetic commit content, enabling E2E workflow validation in CI. The mock tag is auto-generated from `JULES_MOCK_TAG` env var or a timestamp.
 
 **Flags**:
-- `-w, --workstream <name>`: Target workstream (required for observers/deciders)
-- `-r, --role <name>`: Run specific role (manual mode only)
+- `-r, --role <name>`: Run specific role (required for observers/innovators)
 - `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)
 - `--branch <name>`: Override the default starting branch
@@ -118,7 +117,6 @@ Validate the `.jules/` workspace after agent execution:
 
 ```bash
 jlo doctor
-jlo doctor --workstream generic
 jlo doctor --strict
 ```
 
@@ -138,8 +136,8 @@ GitHub secrets (such as `JULES_API_KEY` and `JULES_API_SECRET`) remain configure
 ```bash
 jlo init --remote                           # Initialize control plane + workflow scaffold (GitHub-hosted)
 jlo init --self-hosted                      # Initialize control plane + workflow scaffold (self-hosted)
-jlo create role observers security                         # Create observer role
-jlo create workstream ops                                   # Create workstream
+jlo create observers security               # Create observer role
+jlo create innovators researcher            # Create innovator role
 
 # Setup compiler
 jlo setup list                              # List available components
@@ -183,7 +181,7 @@ Workflow expressions read these values from GitHub Actions variables (`vars.*`),
 
 **Flow**:
 1. **Sync**: `JULES_WORKER_BRANCH` syncs from `JLO_TARGET_BRANCH` periodically
-2. **Analysis**: Observers create event files under `.jules/workstreams/<workstream>/exchange/events/`
+2. **Analysis**: Observers create event files under `.jules/exchange/events/`
 3. **Triage**: Deciders link and consolidate events into issue files
 4. **Expansion**: Planners expand issues that require deep analysis
 5. **Implementation**: Implementers are dispatched by workflow policy or manual dispatch with a local issue file

@@ -5,7 +5,7 @@ files:
 - path: .jlo/roles/innovators/leverage_architect/role.yml
   sha256: b702567ece2ca5c5d2b517af85d20c4c24c8e8dd8392eca33c6d16137948a400
 - path: .jlo/roles/innovators/recruiter/role.yml
-  sha256: ac7f75086b1d3b67a8221f26af2add96b7a84384b9fe76377b312ae44d3d0116
+  sha256: d3143999bb1354664191f922500478a3c1214f8868b8e2fca1688089c2e4e8d4
 - path: .jlo/roles/observers/consistency/role.yml
   sha256: 6dfbcd1a3491fe3f43a98850cddba7e12c401cd0d2a690ece9ceaa6351939bad
 - path: .jlo/roles/observers/cov/role.yml
@@ -38,3 +38,5 @@ files:
   sha256: 68bdc09d10a96ff73fae1c8437d5f668bbfdf0d04772fb6e67616478d172ec02
 - path: .jlo/roles/observers/ui_designer/role.yml
   sha256: e96d57985a0e2cb8536892dde6656cc1f7896c83340147ee7a926b2720fe5238
+- path: .jlo/scheduled.toml
+  sha256: fcc7e37f5960a3b95441d3b308ed616447d7d34135166d6c7118e2cce031dc3f

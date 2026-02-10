@@ -3,7 +3,7 @@
 #
 #
 # Orchestrates sequential execution.
-# Each phase reads state, generates a matrix, then executes sequentially.
+# Each phase checks conditions, then executes the layer.
 # Role-layer runs stay inside a single job to avoid multiple runners.
 #
 # Narrator runs first to produce changes context, followed by doctor validation.
@@ -238,9 +238,9 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 3: Generate workstream matrix
+  # Phase 3: Check schedule
   # ============================================================
-  generate-workstream-matrix:
+  check-schedule:
     needs: wait-after-narrator
     if: |
       always() &&
@@ -250,20 +250,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
-      json: ${{ steps.matrix.outputs.json }}
+      json: ${{ steps.check.outputs.json }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: 'jules'
-          fetch-depth: 0
-          token: ${{ secrets.JLO_BOT_TOKEN }}
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Generate workstream matrix
-        id: matrix
-        run: jlo workflow matrix workstreams
+      - name: Check schedule
+        id: check
+        run: |
+          echo 'json={"should_run":true}' >> "$GITHUB_OUTPUT"
 
 
   # ============================================================
@@ -271,11 +263,11 @@ jobs:
   # ============================================================
 
   run-innovators-1:
-    needs: [generate-workstream-matrix]
+    needs: [check-schedule]
     if: |
       always() &&
-            needs.generate-workstream-matrix.result == 'success' &&
-            fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true
+            needs.check-schedule.result == 'success' &&
+            fromJSON(needs.check-schedule.outputs.json).should_run == true
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -297,27 +289,21 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run innovators (first pass) for each workstream
+      - name: Run innovators (first pass)
         id: run
-        env:
-          MATRIX_OUTPUT: ${{ needs.generate-workstream-matrix.outputs.json }}
         run: |
           set -euo pipefail
-          echo "$MATRIX_OUTPUT" | jq -r '.matrix.include[].workstream' | while read -r ws; do
-            [ -z "$ws" ] && continue
-            echo "Running innovators for workstream: $ws"
-            jlo workflow run "$ws" innovators ${{ env.JLO_RUN_FLAGS }} --phase creation
-          done
+          jlo workflow run innovators ${{ env.JLO_RUN_FLAGS }} --phase creation
   # ============================================================
   # Phase 5: Run observers
   # ============================================================
 
   run-observers:
-    needs: [generate-workstream-matrix]
+    needs: [check-schedule]
     if: |
       always() &&
-            needs.generate-workstream-matrix.result == 'success' &&
-            fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true
+            needs.check-schedule.result == 'success' &&
+            fromJSON(needs.check-schedule.outputs.json).should_run == true
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -339,17 +325,11 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run observers for each workstream
+      - name: Run observers
         id: run
-        env:
-          MATRIX_OUTPUT: ${{ needs.generate-workstream-matrix.outputs.json }}
         run: |
           set -euo pipefail
-          echo "$MATRIX_OUTPUT" | jq -r '.matrix.include[].workstream' | while read -r ws; do
-            [ -z "$ws" ] && continue
-            echo "Running observers for workstream: $ws"
-            jlo workflow run "$ws" observers ${{ env.JLO_RUN_FLAGS }}
-          done
+          jlo workflow run observers ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
   # Phase 6: Wait for observer processing
   # ============================================================
@@ -463,10 +443,10 @@ jobs:
   # ============================================================
 
   run-innovators-2:
-    needs: ["generate-workstream-matrix", "wait-after-observers", "wait-after-innovators-1"]
+    needs: ["check-schedule", "wait-after-observers", "wait-after-innovators-1"]
     if: |
       always() &&
-            fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
+            fromJSON(needs.check-schedule.outputs.json).should_run == true &&
             (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped') &&
             (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')
 
@@ -490,17 +470,11 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run innovators (second pass) for each workstream
+      - name: Run innovators (second pass)
         id: run
-        env:
-          MATRIX_OUTPUT: ${{ needs.generate-workstream-matrix.outputs.json }}
         run: |
           set -euo pipefail
-          echo "$MATRIX_OUTPUT" | jq -r '.matrix.include[].workstream' | while read -r ws; do
-            [ -z "$ws" ] && continue
-            echo "Running innovators for workstream: $ws"
-            jlo workflow run "$ws" innovators ${{ env.JLO_RUN_FLAGS }} --phase refinement
-          done
+          jlo workflow run innovators ${{ env.JLO_RUN_FLAGS }} --phase refinement
   # ============================================================
   # Phase 9: Wait for innovator processing (second pass)
   # ============================================================
@@ -559,10 +533,10 @@ jobs:
   # Phase 10: Publish innovator proposals as GitHub issues
   # ============================================================
   publish-proposals:
-    needs: [generate-workstream-matrix, wait-after-innovators-2]
+    needs: [check-schedule, wait-after-innovators-2]
     if: |
       always() &&
-      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
+      fromJSON(needs.check-schedule.outputs.json).should_run == true &&
       (needs.wait-after-innovators-2.result == 'success' || needs.wait-after-innovators-2.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -581,25 +555,18 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Publish proposals for each workstream
-        env:
-          WORKSTREAMS_OUTPUT: ${{ needs.generate-workstream-matrix.outputs.json }}
-        run: |
-          set -euo pipefail
-          echo "$WORKSTREAMS_OUTPUT" | jq -r '.matrix.include[].workstream' | while read -r ws; do
-            echo "Publishing proposals for workstream: $ws"
-            jlo workflow workstreams publish-proposals "$ws"
-          done
+      - name: Publish proposals
+        run: jlo workflow publish-proposals
 
 
   # ============================================================
-  # Phase 11: Generate decider matrix (pending events check)
+  # Phase 11: Check for pending events (decider gate)
   # ============================================================
   generate-decider-matrix:
-    needs: [generate-workstream-matrix, wait-after-observers]
+    needs: [check-schedule, wait-after-observers]
     if: |
       always() &&
-      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
+      fromJSON(needs.check-schedule.outputs.json).should_run == true &&
       (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -614,13 +581,9 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Generate decider matrix from pending events
+      - name: Check for pending events
         id: matrix
-        env:
-          WORKSTREAMS_OUTPUT: ${{ needs.generate-workstream-matrix.outputs.json }}
-        run: |
-          WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
-          jlo workflow matrix pending-workstreams --workstreams-json "$WORKSTREAMS_JSON"
+        run: jlo workflow matrix pending
 
 
   # ============================================================
@@ -654,17 +617,11 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run deciders for each pending workstream
+      - name: Run deciders
         id: run
-        env:
-          MATRIX_OUTPUT: ${{ needs.generate-decider-matrix.outputs.json }}
         run: |
           set -euo pipefail
-          echo "$MATRIX_OUTPUT" | jq -r '.matrix.include[].workstream' | while read -r ws; do
-            [ -z "$ws" ] && continue
-            echo "Running deciders for workstream: $ws"
-            jlo workflow run "$ws" deciders ${{ env.JLO_RUN_FLAGS }}
-          done
+          jlo workflow run deciders ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
   # Phase 13: Wait for decider processing
   # ============================================================
@@ -723,10 +680,10 @@ jobs:
   # Phase 14: Generate routing matrices (new issues)
   # ============================================================
   generate-planner-matrix:
-    needs: [generate-workstream-matrix, generate-decider-matrix, run-deciders, wait-after-deciders]
+    needs: [check-schedule, generate-decider-matrix, run-deciders, wait-after-deciders]
     if: |
       always() &&
-      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
+      fromJSON(needs.check-schedule.outputs.json).should_run == true &&
       (needs.generate-decider-matrix.result == 'success' || needs.generate-decider-matrix.result == 'skipped') &&
       (needs.run-deciders.result == 'success' || needs.run-deciders.result == 'skipped') &&
       (needs.wait-after-deciders.result == 'success' || needs.wait-after-deciders.result == 'skipped')
@@ -745,11 +702,7 @@ jobs:
 
       - name: Generate planner and implementer matrices
         id: matrix
-        env:
-          WORKSTREAMS_OUTPUT: ${{ needs.generate-workstream-matrix.outputs.json }}
-        run: |
-          WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
-          jlo workflow matrix routing --workstreams-json "$WORKSTREAMS_JSON" --routing-labels "$ROUTING_LABELS"
+        run: jlo workflow matrix routing --routing-labels "$ROUTING_LABELS"
 
 
   # ============================================================
@@ -783,17 +736,11 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run planners for each workstream
+      - name: Run planners
         id: run
-        env:
-          MATRIX_OUTPUT: ${{ needs.generate-planner-matrix.outputs.json }}
         run: |
           set -euo pipefail
-          echo "$MATRIX_OUTPUT" | jq -r '.planner_matrix.include[].workstream // empty' | sort -u | while read -r ws; do
-            [ -z "$ws" ] && continue
-            echo "Running planners for workstream: $ws"
-            jlo workflow run "$ws" planners ${{ env.JLO_RUN_FLAGS }}
-          done
+          jlo workflow run planners ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
   # Phase 16: Wait for planner PRs
   # ============================================================
@@ -880,17 +827,11 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run implementers for each workstream
+      - name: Run implementers
         id: run
-        env:
-          MATRIX_OUTPUT: ${{ needs.generate-planner-matrix.outputs.json }}
         run: |
           set -euo pipefail
-          echo "$MATRIX_OUTPUT" | jq -r '.implementer_matrix.include[].workstream // empty' | sort -u | while read -r ws; do
-            [ -z "$ws" ] && continue
-            echo "Running implementers for workstream: $ws"
-            jlo workflow run "$ws" implementers ${{ env.JLO_RUN_FLAGS }}
-          done
+          jlo workflow run implementers ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
   # Phase 18: Wait for implementer labels
   # ============================================================
