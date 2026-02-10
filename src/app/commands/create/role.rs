@@ -1,4 +1,4 @@
-//! Create role under `.jlo/roles/<layer>/roles/<name>/`.
+//! Create role under `.jlo/roles/<layer>/<name>/`.
 
 use crate::app::AppContext;
 use crate::domain::identifiers::validation::validate_safe_path_component;

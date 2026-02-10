@@ -101,14 +101,16 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         let mut roles = Vec::new();
 
         for layer in Layer::ALL {
-            // Convention: .jlo/roles/<layer>/roles/ (see also role_path)
-            let roles_container =
-                self.jlo_path().join("roles").join(layer.dir_name()).join("roles");
-            if !roles_container.exists() {
+            if layer.is_single_role() {
+                continue;
+            }
+            // Convention: .jlo/roles/<layer>/<role>/ (see also role_path)
+            let layer_dir = self.jlo_path().join("roles").join(layer.dir_name());
+            if !layer_dir.exists() {
                 continue;
             }
 
-            for entry in fs::read_dir(&roles_container)? {
+            for entry in fs::read_dir(&layer_dir)? {
                 let entry = entry?;
                 if !entry.path().is_dir() {
                     continue;
@@ -378,21 +380,21 @@ mod tests {
         ws.create_structure(&[]).unwrap();
 
         // Create role directories directly (scaffold_role_in_layer removed with template retirement)
-        let obs_dir = ws.jlo_path().join("roles/observers/roles/taxonomy");
+        let obs_dir = ws.jlo_path().join("roles/observers/taxonomy");
         fs::create_dir_all(&obs_dir).unwrap();
         fs::write(obs_dir.join("role.yml"), "role: taxonomy\nlayer: observers").unwrap();
 
-        let dec_dir = ws.jlo_path().join("roles/deciders/roles/screener");
-        fs::create_dir_all(&dec_dir).unwrap();
-        fs::write(dec_dir.join("role.yml"), "role: screener\nlayer: deciders").unwrap();
+        let inn_dir = ws.jlo_path().join("roles/innovators/screener");
+        fs::create_dir_all(&inn_dir).unwrap();
+        fs::write(inn_dir.join("role.yml"), "role: screener\nlayer: innovators").unwrap();
 
         // Note: Planners is a single-role layer, so we don't create roles in it
 
         let roles = ws.discover_roles().unwrap();
 
         assert_eq!(roles.len(), 2);
-        // Sort order is by dir_name: deciders, observers
-        assert_eq!(roles[0].layer, Layer::Deciders);
+        // Sort order is by dir_name: innovators, observers
+        assert_eq!(roles[0].layer, Layer::Innovators);
         assert_eq!(roles[0].id.as_str(), "screener");
 
         assert_eq!(roles[1].layer, Layer::Observers);
@@ -404,13 +406,13 @@ mod tests {
         let (_dir, ws) = test_workspace();
         ws.create_structure(&[]).unwrap();
 
-        let obs_dir = ws.jlo_path().join("roles/observers/roles/taxonomy");
+        let obs_dir = ws.jlo_path().join("roles/observers/taxonomy");
         fs::create_dir_all(&obs_dir).unwrap();
         fs::write(obs_dir.join("role.yml"), "role: taxonomy\nlayer: observers").unwrap();
 
-        let dec_dir = ws.jlo_path().join("roles/deciders/roles/taxman");
-        fs::create_dir_all(&dec_dir).unwrap();
-        fs::write(dec_dir.join("role.yml"), "role: taxman\nlayer: deciders").unwrap();
+        let inn_dir = ws.jlo_path().join("roles/innovators/taxman");
+        fs::create_dir_all(&inn_dir).unwrap();
+        fs::write(inn_dir.join("role.yml"), "role: taxman\nlayer: innovators").unwrap();
 
         // Exact match
         let found = ws.find_role_fuzzy("taxonomy").unwrap().unwrap();
@@ -418,8 +420,8 @@ mod tests {
         assert_eq!(found.id.as_str(), "taxonomy");
 
         // Layer/Role match
-        let found = ws.find_role_fuzzy("deciders/taxman").unwrap().unwrap();
-        assert_eq!(found.layer, Layer::Deciders);
+        let found = ws.find_role_fuzzy("innovators/taxman").unwrap().unwrap();
+        assert_eq!(found.layer, Layer::Innovators);
         assert_eq!(found.id.as_str(), "taxman");
 
         // Prefix match (unique)

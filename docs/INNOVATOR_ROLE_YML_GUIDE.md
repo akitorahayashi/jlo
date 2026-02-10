@@ -15,7 +15,7 @@ They are not static-analysis cleanup roles.
 
 A valid innovator role file is located at:
 
-- `.jlo/roles/innovators/roles/<role>/role.yml`
+- `.jlo/roles/innovators/<role>/role.yml`
 
 Current schema shape:
 

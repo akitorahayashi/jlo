@@ -488,7 +488,7 @@ wait_minutes_default = 30
                     content: sample_config_content(),
                 },
                 ScaffoldFile {
-                    path: ".jlo/roles/observers/roles/default/role.yml".to_string(),
+                    path: ".jlo/roles/observers/default/role.yml".to_string(),
                     content: "role: default".to_string(),
                 },
                 ScaffoldFile {
@@ -506,14 +506,12 @@ wait_minutes_default = 30
         assert!(result.created.contains(&".jlo/config.toml".to_string()));
 
         // Entity files should NOT be created — user may have intentionally deleted them
-        assert!(
-            !result.created.contains(&".jlo/roles/observers/roles/default/role.yml".to_string())
-        );
+        assert!(!result.created.contains(&".jlo/roles/observers/default/role.yml".to_string()));
         assert!(!result.created.contains(&".jlo/workstreams/generic/scheduled.toml".to_string()));
 
         // Verify files on disk
         assert!(temp.path().join(".jlo/config.toml").exists());
-        assert!(!temp.path().join(".jlo/roles/observers/roles/default/role.yml").exists());
+        assert!(!temp.path().join(".jlo/roles/observers/default/role.yml").exists());
         assert!(!temp.path().join(".jlo/workstreams/generic/scheduled.toml").exists());
     }
 }

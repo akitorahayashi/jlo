@@ -41,7 +41,7 @@ fn test_api_coverage_full_flow() {
     assert_eq!(outcome.entity_type(), "role");
 
     // Role should exist in .jlo/ control plane
-    let jlo_role_path = root.join(".jlo/roles/observers/roles/test-observer");
+    let jlo_role_path = root.join(".jlo/roles/observers/test-observer");
     assert!(jlo_role_path.exists(), "Role not found in .jlo/ at {:?}", jlo_role_path);
 }
 

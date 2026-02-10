@@ -74,7 +74,7 @@ pub fn init_workflows_at(
 // Create Command API
 // =============================================================================
 
-/// Create a new role under `.jlo/roles/<layer>/roles/<name>/`.
+/// Create a new role under `.jlo/roles/<layer>/<name>/`.
 pub fn create_role(layer: &str, name: &str) -> Result<CreateOutcome, AppError> {
     create_role_at(layer, name, std::env::current_dir()?)
 }

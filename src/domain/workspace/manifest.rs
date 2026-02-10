@@ -51,14 +51,13 @@ impl ScaffoldManifest {
 pub fn is_default_role_file(path: &str) -> bool {
     let parts: Vec<&str> = path.split('/').collect();
 
-    // .jules/roles/<layer>/roles/<role>/role.yml (multi-role layers: observers, innovators)
-    // Example: .jules/roles/observers/roles/taxonomy/role.yml
-    if parts.len() == 6
+    // .jules/roles/<layer>/<role>/role.yml (multi-role layers: observers, innovators)
+    // Example: .jules/roles/observers/taxonomy/role.yml
+    if parts.len() == 5
         && parts[0] == ".jules"
         && parts[1] == "roles"
         && matches!(parts[2], "observers" | "innovators")
-        && parts[3] == "roles"
-        && parts[5] == "role.yml"
+        && parts[4] == "role.yml"
     {
         return true;
     }
@@ -71,12 +70,11 @@ pub fn is_control_plane_entity_file(path: &str) -> bool {
     let components: Vec<_> =
         path_obj.components().map(|c| c.as_os_str().to_str().unwrap_or("")).collect();
 
-    // .jlo/roles/<layer>/roles/<role>/role.yml
-    if components.len() == 6
+    // .jlo/roles/<layer>/<role>/role.yml
+    if components.len() == 5
         && components[0] == ".jlo"
         && components[1] == "roles"
-        && components[3] == "roles"
-        && components[5] == "role.yml"
+        && components[4] == "role.yml"
     {
         return true;
     }
@@ -125,15 +123,16 @@ mod tests {
 
     #[test]
     fn test_is_default_role_file() {
-        // New structure: roles are under roles/ container
-        assert!(is_default_role_file(".jules/roles/observers/roles/taxonomy/role.yml"));
+        // Multi-role layers: .jules/roles/<layer>/<role>/role.yml
+        assert!(is_default_role_file(".jules/roles/observers/taxonomy/role.yml"));
+        assert!(is_default_role_file(".jules/roles/innovators/leverage_architect/role.yml"));
 
-        // Deciders is now single-role, no roles subdirectory
-        assert!(!is_default_role_file(".jules/roles/deciders/roles/triage_generic/role.yml"));
+        // Deciders is single-role — not a default role file in this sense
+        assert!(!is_default_role_file(".jules/roles/deciders/role.yml"));
 
         // Not default role files
-        assert!(!is_default_role_file(".jules/roles/planners/contracts.yml")); // contracts.yml is managed
+        assert!(!is_default_role_file(".jules/roles/planners/contracts.yml"));
         assert!(!is_default_role_file("src/main.rs"));
-        assert!(!is_default_role_file(".jules/roles/observers/roles/qa/other.yml"));
+        assert!(!is_default_role_file(".jules/roles/observers/qa/other.yml"));
     }
 }

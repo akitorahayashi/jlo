@@ -19,7 +19,7 @@ fn user_can_init_and_create_custom_role() {
         .success()
         .stdout(predicate::str::contains("Created new"));
 
-    let role_path = ctx.jlo_path().join("roles/observers/roles/security/role.yml");
+    let role_path = ctx.jlo_path().join("roles/observers/security/role.yml");
     assert!(role_path.exists(), "Custom role should exist in .jlo/ control plane");
 }
 
@@ -34,7 +34,7 @@ fn user_can_use_command_aliases() {
     // Use 'c' alias for create
     ctx.cli().args(["c", "observers", "my-observer"]).assert().success();
 
-    let role_path = ctx.jlo_path().join("roles/observers/roles/my-observer/role.yml");
+    let role_path = ctx.jlo_path().join("roles/observers/my-observer/role.yml");
     assert!(role_path.exists(), "Role created via alias should exist in .jlo/");
 }
 
@@ -58,11 +58,11 @@ fn init_creates_complete_layer_structure() {
     // Verify multi-role layers have role.yml under roles/ container and schemas/ directories
     let jules = ctx.jules_path();
     let jlo = ctx.jlo_path();
-    assert!(jlo.join("roles/observers/roles/taxonomy/role.yml").exists());
-    assert!(jlo.join("roles/observers/roles/data_arch/role.yml").exists());
-    assert!(jlo.join("roles/observers/roles/qa/role.yml").exists());
-    assert!(jlo.join("roles/observers/roles/cov/role.yml").exists());
-    assert!(jlo.join("roles/observers/roles/consistency/role.yml").exists());
+    assert!(jlo.join("roles/observers/taxonomy/role.yml").exists());
+    assert!(jlo.join("roles/observers/data_arch/role.yml").exists());
+    assert!(jlo.join("roles/observers/qa/role.yml").exists());
+    assert!(jlo.join("roles/observers/cov/role.yml").exists());
+    assert!(jlo.join("roles/observers/consistency/role.yml").exists());
     assert!(jules.join("roles/observers/schemas").exists());
     assert!(jules.join("roles/observers/prompt_assembly.j2").exists());
 
@@ -92,7 +92,7 @@ fn create_role_in_observers() {
     ctx.cli().args(["create", "observers", "custom-obs"]).assert().success();
 
     // Role should exist in .jlo/ control plane
-    let role_path = ctx.jlo_path().join("roles/observers/roles/custom-obs/role.yml");
+    let role_path = ctx.jlo_path().join("roles/observers/custom-obs/role.yml");
     assert!(role_path.exists(), "Observer role should have role.yml in .jlo/");
 }
 

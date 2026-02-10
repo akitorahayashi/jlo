@@ -60,7 +60,7 @@ fn bootstrap_does_not_project_roles() {
     init_workspace(&ctx);
 
     // Create a custom role in .jlo
-    let custom_role_jlo = ctx.jlo_path().join("roles/observers/roles/custom-obs");
+    let custom_role_jlo = ctx.jlo_path().join("roles/observers/custom-obs");
     fs::create_dir_all(&custom_role_jlo).expect("create custom role dir");
     fs::write(custom_role_jlo.join("role.yml"), "role: custom").expect("write role.yml");
 
@@ -68,7 +68,7 @@ fn bootstrap_does_not_project_roles() {
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     // Verify it is NOT in .jules/
-    let custom_role_jules = ctx.jules_path().join("roles/observers/roles/custom-obs");
+    let custom_role_jules = ctx.jules_path().join("roles/observers/custom-obs");
     assert!(
         !custom_role_jules.exists(),
         "Custom role from .jlo/ should NOT be projected to .jules/"

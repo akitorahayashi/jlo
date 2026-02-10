@@ -13,7 +13,7 @@ pub enum CreateOutcome {
 }
 
 pub(crate) fn role_relative_path(layer: &str, role: &str) -> std::path::PathBuf {
-    std::path::Path::new("roles").join(layer).join("roles").join(role)
+    std::path::Path::new("roles").join(layer).join(role)
 }
 
 impl CreateOutcome {
@@ -31,7 +31,7 @@ impl CreateOutcome {
     }
 }
 
-/// Create a new role under `.jlo/roles/<layer>/roles/<name>/`.
+/// Create a new role under `.jlo/roles/<layer>/<name>/`.
 pub fn create_role<W, R>(
     ctx: &AppContext<W, R>,
     layer: &str,

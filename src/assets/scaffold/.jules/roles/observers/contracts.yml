@@ -11,18 +11,18 @@ constraints:
 inputs:
   - Source code and repository files
   - .jules/changes/latest.yml (recent codebase changes, if present)
-  - .jlo/roles/observers/roles/<role>/role.yml (Specialized Role Definition)
-  - .jlo/workstreams/<workstream>/scheduled.toml (scheduled innovator personas)
-  - .jules/workstreams/<workstream>/workstations/<role>/perspective.yml (Workstation Memory)
-  - .jules/workstreams/<workstream>/exchange/issues/**/*.yml (open issues for suppression)
-  - .jules/workstreams/<workstream>/exchange/events/<state>/*.yml (recent events for deduplication)
+  - .jlo/roles/observers/<role>/role.yml (Specialized Role Definition)
+  - .jlo/scheduled.toml (scheduled roles)
+  - .jules/exchange/workstations/<role>/perspective.yml (Workstation Memory)
+  - .jules/exchange/issues/**/*.yml (open issues for suppression)
+  - .jules/exchange/events/<state>/*.yml (recent events for deduplication)
   - .jules/roles/innovators/schemas/comment.yml (observer-to-innovator feedback schema)
   - .jules/roles/observers/schemas/event.yml (Schema for findings/events)
 
 outputs:
-  - .jules/workstreams/<workstream>/exchange/events/pending/*.yml
-  - .jules/workstreams/<workstream>/workstations/<role>/perspective.yml
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/comments/*.yml (bridge, if innovators scheduled)
+  - .jules/exchange/events/pending/*.yml
+  - .jules/exchange/workstations/<role>/perspective.yml
+  - .jules/exchange/innovators/<persona>/comments/*.yml (bridge, if innovators scheduled)
 
 workflow:
   - "1. Read role.yml, latest.yml (if present), open issues, and recent events."
