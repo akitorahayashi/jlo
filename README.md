@@ -32,7 +32,7 @@ jlo init --remote
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow scaffold |
 | `jlo update [--prompt-preview]` | `u` | Advance version pin, refresh workflow scaffold, and refresh unchanged defaults |
 | `jlo deinit` | | Remove `.jlo/`, workflow scaffold, and local `jules` branch |
-| `jlo create <layer> <name>` | `c` | Create a custom role under `.jlo/` (observers, deciders, innovators) |
+| `jlo create <layer> <name>` | `c` | Create a custom role under `.jlo/` (observers, innovators) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo doctor [--strict]` | | Validate `.jules/` structure and content |
 | `jlo workflow run <layer>` | | Run layer and return orchestration metadata |
