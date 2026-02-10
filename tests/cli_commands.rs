@@ -159,7 +159,7 @@ fn create_role_succeeds() {
         .success()
         .stdout(predicate::str::contains("Created new"));
 
-    let role_path = ctx.jlo_path().join("roles/observers/roles/custom-role/role.yml");
+    let role_path = ctx.jlo_path().join("roles/observers/custom-role/role.yml");
     assert!(role_path.exists(), "Role should exist in .jlo/");
 }
 

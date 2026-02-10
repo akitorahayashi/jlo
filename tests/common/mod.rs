@@ -135,26 +135,16 @@ impl TestContext {
 
     /// Assert that a role exists within a specific layer in .jlo/ (Control Plane).
     pub fn assert_role_in_layer_exists(&self, layer: &str, role_id: &str) {
-        // Multi-role layers have roles under roles/ container in .jlo/
-        let role_path = self.jlo_path().join("roles").join(layer).join("roles").join(role_id);
+        let role_path = self.jlo_path().join("roles").join(layer).join(role_id);
         assert!(role_path.exists(), "Role directory should exist at {}", role_path.display());
-
-        // Multi-role layers have role.yml
         assert!(role_path.join("role.yml").exists(), "Role role.yml should exist");
     }
 
-    /// Assert that a role directory exists (legacy compatibility - searches all layers) in .jlo/.
+    /// Assert that a role directory exists (searches multi-role layers) in .jlo/.
     pub fn assert_role_exists(&self, role_id: &str) {
-        let layers = ["observers", "planners", "implementers"];
+        let layers = ["observers", "innovators"];
         let found = layers.iter().any(|layer| {
-            // Roles are under roles/ container in multi-role layers
-            self.jlo_path()
-                .join("roles")
-                .join(layer)
-                .join("roles")
-                .join(role_id)
-                .join("role.yml")
-                .exists()
+            self.jlo_path().join("roles").join(layer).join(role_id).join("role.yml").exists()
         });
         assert!(found, "Role {} should exist in some layer in .jlo/", role_id);
     }

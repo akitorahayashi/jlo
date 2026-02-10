@@ -14,12 +14,12 @@ constraints:
 inputs:
   - Source code and repository files
   - .jules/changes/latest.yml (recent codebase changes, if present)
-  - .jlo/roles/innovators/roles/<role>/role.yml (Innovator Persona Definition)
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/perspective.yml (Persona Memory)
+  - .jlo/roles/innovators/<role>/role.yml (Innovator Persona Definition)
+  - .jules/exchange/innovators/<persona>/perspective.yml (Persona Memory)
   - .jules/roles/innovators/schemas/idea.yml (Schema for new idea)
 
 outputs:
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/idea.yml (New idea)
+  - .jules/exchange/innovators/<persona>/idea.yml (New idea)
 
 workflow:
   - "1. Read role.yml and perspective.yml to establish identity and context."

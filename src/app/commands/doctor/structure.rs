@@ -107,17 +107,14 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             // but the actual role definitions are in .jlo/.
             // structure_checks needs to verify that for every role in .jlo/, it exists.
             let jlo_layer_dir = inputs.root.join(".jlo/roles").join(layer.dir_name());
-            let jlo_roles_container = jlo_layer_dir.join("roles");
 
-            if !jlo_roles_container.exists() {
-                // It's possible the user hasn't created any roles yet, but the directory should probably exist if init ran?
-                // Actually init scaffolds .jlo/roles/<layer>/roles/.
+            if !jlo_layer_dir.exists() {
                 diagnostics.push_error(
-                    jlo_roles_container.display().to_string(),
-                    "Missing .jlo roles/ directory",
+                    jlo_layer_dir.display().to_string(),
+                    "Missing .jlo roles directory",
                 );
             } else {
-                for entry in list_subdirs(&jlo_roles_container, diagnostics) {
+                for entry in list_subdirs(&jlo_layer_dir, diagnostics) {
                     let role_file = entry.join("role.yml");
                     if !role_file.exists() {
                         diagnostics.push_error(role_file.display().to_string(), "Missing role.yml");
@@ -379,8 +376,7 @@ mod tests {
                 }
             } else {
                 // Multi-role layers have role definitions in .jlo/roles
-                let jlo_role_dir =
-                    temp.child(format!(".jlo/roles/{}/roles/my-role", layer.dir_name()));
+                let jlo_role_dir = temp.child(format!(".jlo/roles/{}/my-role", layer.dir_name()));
                 jlo_role_dir.create_dir_all().unwrap();
                 jlo_role_dir.child("role.yml").touch().unwrap();
             }

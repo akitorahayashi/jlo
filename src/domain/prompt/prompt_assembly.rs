@@ -458,7 +458,7 @@ mod tests {
 
         mock_loader.add_file(
             ".jules/roles/deciders/prompt_assembly.j2",
-            r#"{{ section("Role", include_required(".jules/roles/deciders/roles/taxonomy/role.yml")) }}"#,
+            r#"{{ section("Role", include_required(".jules/roles/deciders/taxonomy/role.yml")) }}"#,
         );
 
         let ctx = PromptContext::new().with_var("workstream", "generic").with_var("role", "qa");

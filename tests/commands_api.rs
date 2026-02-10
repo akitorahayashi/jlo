@@ -30,6 +30,6 @@ fn create_role_via_cli() {
         .stdout(predicate::str::contains("observers"));
 
     // Role should exist in .jlo/ control plane
-    let role_path = ctx.jlo_path().join("roles/observers/roles/my-role/role.yml");
+    let role_path = ctx.jlo_path().join("roles/observers/my-role/role.yml");
     assert!(role_path.exists(), "Role should exist in .jlo/ at {}", role_path.display());
 }

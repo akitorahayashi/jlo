@@ -89,7 +89,7 @@ pub fn semantic_checks(
     // Roles are generic and assigned to workstreams via the schedule, not the role.yml
 
     // Collect existing roles from filesystem for each layer
-    // Roles are user-defined and live under .jlo/roles/<layer>/roles/<role>/
+    // Roles are user-defined and live under .jlo/roles/<layer>/<role>/
     let root = match jules_path.parent() {
         Some(p) => p,
         None => {
@@ -104,10 +104,10 @@ pub fn semantic_checks(
     let mut existing_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
     // Only validate multi-role layers that are scheduled (Observers, Innovators)
     for layer in [Layer::Observers, Layer::Innovators] {
-        let roles_container = roles_dir.join(layer.dir_name()).join("roles");
-        if roles_container.exists() {
+        let layer_dir = roles_dir.join(layer.dir_name());
+        if layer_dir.exists() {
             let mut role_set = HashSet::new();
-            match std::fs::read_dir(&roles_container) {
+            match std::fs::read_dir(&layer_dir) {
                 Ok(entries) => {
                     for entry in entries.flatten() {
                         let path = entry.path();
@@ -119,7 +119,7 @@ pub fn semantic_checks(
                 }
                 Err(err) => {
                     diagnostics.push_error(
-                        roles_container.display().to_string(),
+                        layer_dir.display().to_string(),
                         format!("Failed to read directory: {}", err),
                     );
                 }

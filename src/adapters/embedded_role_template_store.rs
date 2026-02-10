@@ -83,7 +83,8 @@ fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
 /// Returns true for user-authored entity files (role definitions and the root schedule).
 /// These are mutable intent files that should not be recreated by `update` if deleted.
 fn is_entity_file(path: &str) -> bool {
-    let is_role = path.ends_with("/role.yml") && path.contains("/roles/");
+    // Role file: .jlo/roles/<layer>/<role>/role.yml or .jlo/roles/<layer>/role.yml (single-role)
+    let is_role = path.ends_with("/role.yml") && path.starts_with(".jlo/roles/");
     let is_schedule = path == ".jlo/scheduled.toml";
     is_role || is_schedule
 }

@@ -18,16 +18,16 @@ constraints:
   - idea.yml and all comments/*.yml MUST be deleted after proposal creation
 
 inputs:
-  - .jules/roles/innovators/roles/<role>/role.yml (Innovator Persona Definition)
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/perspective.yml (Persona Memory)
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/idea.yml (Current Idea)
+  - .jlo/roles/innovators/<role>/role.yml (Innovator Persona Definition)
+  - .jules/exchange/innovators/<persona>/perspective.yml (Persona Memory)
+  - .jules/exchange/innovators/<persona>/idea.yml (Current Idea)
   - .jules/roles/innovators/schemas/comment.yml (Observer feedback comment schema)
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/comments/*.yml (Observer Feedback)
+  - .jules/exchange/innovators/<persona>/comments/*.yml (Observer Feedback)
   - .jules/roles/innovators/schemas/proposal.yml (Schema for final proposal)
 
 outputs:
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/proposal.yml (Finished proposal)
-  - .jules/workstreams/<workstream>/exchange/innovators/<persona>/perspective.yml (Updated memory with proposal in recent_proposals)
+  - .jules/exchange/innovators/<persona>/proposal.yml (Finished proposal)
+  - .jules/exchange/innovators/<persona>/perspective.yml (Updated memory with proposal in recent_proposals)
 
 workflow:
   - "1. Read role.yml and perspective.yml to establish identity and context."

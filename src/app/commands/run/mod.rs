@@ -213,12 +213,12 @@ fn execute_multi_role_run<W: WorkspaceStore + Clone + Send + Sync + 'static>(
 /// Validate that a role exists in the layer's roles directory.
 fn validate_role_exists(jules_path: &Path, layer: Layer, role: &str) -> Result<(), AppError> {
     let root = jules_path.parent().unwrap_or(Path::new("."));
-    let role_dir = root.join(".jlo").join("roles").join(layer.dir_name()).join("roles").join(role);
+    let role_dir = root.join(".jlo").join("roles").join(layer.dir_name()).join(role);
     let role_yml_path = role_dir.join("role.yml");
 
     if !role_yml_path.exists() {
         return Err(AppError::RoleNotFound(format!(
-            "{}/roles/{} (role.yml not found)",
+            "{}/{} (role.yml not found)",
             layer.dir_name(),
             role
         )));
@@ -274,8 +274,7 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader + Clone + Send + S
     println!("Role: {}\n", role);
 
     let root = jules_path.parent().unwrap_or(Path::new("."));
-    let role_dir =
-        root.join(".jlo").join("roles").join(layer.dir_name()).join("roles").join(role.as_str());
+    let role_dir = root.join(".jlo").join("roles").join(layer.dir_name()).join(role.as_str());
     let role_yml_path = role_dir.join("role.yml");
 
     if !role_yml_path.exists() {
