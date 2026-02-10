@@ -447,7 +447,7 @@ fn run_implementers_with_missing_issue_file() {
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     ctx.cli()
-        .args(["run", "implementers", ".jules/workstreams/generic/issues/nonexistent.yml"])
+        .args(["run", "implementers", ".jules/exchange/issues/nonexistent.yml"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Issue file not found"));

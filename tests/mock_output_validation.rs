@@ -157,7 +157,6 @@ recent_proposals: []
     let idea = mock_idea
         .replace("mock01", "abc123")
         .replace("mock-persona", "alice")
-        .replace("mock-workstream", "test-workstream")
         .replace("test-tag", "mock-local-20260205120000");
     fs::write(room_dir.join("idea.yml"), idea).expect("Failed to write idea");
 

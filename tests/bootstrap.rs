@@ -79,23 +79,23 @@ fn bootstrap_does_not_project_roles() {
 }
 
 #[test]
-fn bootstrap_does_not_project_workstreams() {
+fn bootstrap_does_not_project_control_plane_dirs() {
     let ctx = TestContext::new();
     init_workspace(&ctx);
 
-    // Create a custom workstream in .jlo
-    let custom_ws_jlo = ctx.jlo_path().join("workstreams/custom-project");
-    fs::create_dir_all(&custom_ws_jlo).expect("create custom workstream dir");
-    fs::write(custom_ws_jlo.join("scheduled.toml"), "").expect("write scheduled.toml");
+    // Create a custom directory in .jlo
+    let custom_dir_jlo = ctx.jlo_path().join("custom-project");
+    fs::create_dir_all(&custom_dir_jlo).expect("create custom dir");
+    fs::write(custom_dir_jlo.join("data.toml"), "").expect("write data.toml");
 
     // Run bootstrap
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     // Verify it is NOT in .jules/
-    let custom_ws_jules = ctx.jules_path().join("workstreams/custom-project");
+    let custom_dir_jules = ctx.jules_path().join("custom-project");
     assert!(
-        !custom_ws_jules.exists(),
-        "Custom workstream from .jlo/ should NOT be projected to .jules/"
+        !custom_dir_jules.exists(),
+        "Custom directory from .jlo/ should NOT be projected to .jules/"
     );
 }
 

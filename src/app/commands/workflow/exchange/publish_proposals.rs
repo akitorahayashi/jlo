@@ -496,7 +496,8 @@ verification_signals:
     fn publishes_proposal_and_removes_artifact() {
         let proposal_path = ".jules/exchange/innovators/alice/proposal.yml";
         let perspective_path = ".jules/exchange/innovators/alice/perspective.yml";
-        let perspective_yaml = "persona: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let perspective_yaml =
+            "persona: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
         let workspace = MockWorkspaceStore::new()
             .with_exists(true)
             .with_file(proposal_path, proposal_yaml())

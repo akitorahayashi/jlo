@@ -2,7 +2,7 @@
 #
 #
 # Orchestrates sequential execution.
-# Each phase reads state, generates a matrix, then executes sequentially.
+# Each phase checks conditions, then executes the layer.
 # Role-layer runs stay inside a single job to avoid multiple runners.
 #
 # Narrator runs first to produce changes context, followed by doctor validation.
@@ -91,20 +91,19 @@ jobs:
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-narrator', 'run-narrator', 'run-narrator', 'narrator') }}
   # ============================================================
-  # Phase 3: Generate workstream matrix
+  # Phase 3: Check schedule
   # ============================================================
-{% include "workflows/jules-workflows/components/generate-workstream-matrix.yml.j2" %}
+{% include "workflows/jules-workflows/components/check-schedule.yml.j2" %}
 
   # ============================================================
   # Phase 4: Run innovators (first pass - idea creation)
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-innovators-1',
-    'generate-workstream-matrix',
-    'has_workstreams',
+    'check-schedule',
+    'should_run',
     'innovators',
-    '.matrix.include[].workstream',
-    'Run innovators (first pass) for each workstream',
+    'Run innovators (first pass)',
     extra_run_args='--phase creation'
 ) }}
   # ============================================================
@@ -112,11 +111,10 @@ jobs:
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-observers',
-    'generate-workstream-matrix',
-    'has_workstreams',
+    'check-schedule',
+    'should_run',
     'observers',
-    '.matrix.include[].workstream',
-    'Run observers for each workstream'
+    'Run observers'
 ) }}
   # ============================================================
   # Phase 6: Wait for observer processing
@@ -131,16 +129,14 @@ jobs:
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-innovators-2',
-    'generate-workstream-matrix',
-    'has_workstreams',
+    'check-schedule',
+    'should_run',
     'innovators',
-    '.matrix.include[].workstream',
-    'Run innovators (second pass) for each workstream',
-    false,
+    'Run innovators (second pass)',
     {},
-    ['generate-workstream-matrix', 'wait-after-observers', 'wait-after-innovators-1'],
+    ['check-schedule', 'wait-after-observers', 'wait-after-innovators-1'],
     "always() &&
-      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
+      fromJSON(needs.check-schedule.outputs.json).should_run == true &&
       (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped') &&
       (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')",
     extra_run_args='--phase refinement'
@@ -155,7 +151,7 @@ jobs:
 {% include "workflows/jules-workflows/components/publish-proposals.yml.j2" %}
 
   # ============================================================
-  # Phase 11: Generate decider matrix (pending events check)
+  # Phase 11: Check for pending events (decider gate)
   # ============================================================
 {% include "workflows/jules-workflows/components/generate-decider-matrix.yml.j2" %}
 
@@ -167,8 +163,7 @@ jobs:
     'generate-decider-matrix',
     'has_pending',
     'deciders',
-    '.matrix.include[].workstream',
-    'Run deciders for each pending workstream'
+    'Run deciders'
 ) }}
   # ============================================================
   # Phase 13: Wait for decider processing
@@ -187,9 +182,7 @@ jobs:
     'generate-planner-matrix',
     'has_planners',
     'planners',
-    '.planner_matrix.include[].workstream // empty',
-    'Run planners for each workstream',
-    true
+    'Run planners'
 ) }}
   # ============================================================
   # Phase 16: Wait for planner PRs
@@ -203,9 +196,7 @@ jobs:
     'generate-planner-matrix',
     'has_implementers',
     'implementers',
-    '.implementer_matrix.include[].workstream // empty',
-    'Run implementers for each workstream',
-    true,
+    'Run implementers',
   {'TARGET_BRANCH': "'" ~ target_branch ~ "'"}
 ) }}
   # ============================================================

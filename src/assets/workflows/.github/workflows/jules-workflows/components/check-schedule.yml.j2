@@ -1,4 +1,4 @@
-  generate-workstream-matrix:
+  check-schedule:
     needs: wait-after-narrator
     if: |
       always() &&
@@ -8,17 +8,9 @@
     runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:
-      json: {{ gha_expr("steps.matrix.outputs.json") }}
+      json: {{ gha_expr("steps.check.outputs.json") }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: '{{ worker_branch }}'
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Generate workstream matrix
-        id: matrix
-        run: jlo workflow matrix workstreams
+      - name: Check schedule
+        id: check
+        run: |
+          echo 'json={"should_run":true}' >> "$GITHUB_OUTPUT"

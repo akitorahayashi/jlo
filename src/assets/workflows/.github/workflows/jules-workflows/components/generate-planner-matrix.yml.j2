@@ -1,8 +1,8 @@
   generate-planner-matrix:
-    needs: [generate-workstream-matrix, generate-decider-matrix, run-deciders, wait-after-deciders]
+    needs: [check-schedule, generate-decider-matrix, run-deciders, wait-after-deciders]
     if: |
       always() &&
-      fromJSON(needs.generate-workstream-matrix.outputs.json).has_workstreams == true &&
+      fromJSON(needs.check-schedule.outputs.json).should_run == true &&
       (needs.generate-decider-matrix.result == 'success' || needs.generate-decider-matrix.result == 'skipped') &&
       (needs.run-deciders.result == 'success' || needs.run-deciders.result == 'skipped') &&
       (needs.wait-after-deciders.result == 'success' || needs.wait-after-deciders.result == 'skipped')
@@ -21,8 +21,4 @@
 
       - name: Generate planner and implementer matrices
         id: matrix
-        env:
-          WORKSTREAMS_OUTPUT: {{ gha_expr("needs.generate-workstream-matrix.outputs.json") }}
-        run: |
-          WORKSTREAMS_JSON=$(echo "$WORKSTREAMS_OUTPUT" | jq -c '.matrix')
-          jlo workflow matrix routing --workstreams-json "$WORKSTREAMS_JSON" --routing-labels "$ROUTING_LABELS"
+        run: jlo workflow matrix routing --routing-labels "$ROUTING_LABELS"
