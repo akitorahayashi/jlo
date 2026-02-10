@@ -14,7 +14,7 @@ pub enum ScheduleError {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct WorkstreamSchedule {
+pub struct Schedule {
     pub version: u32,
     pub enabled: bool,
     pub observers: ScheduleLayer,
@@ -42,9 +42,9 @@ impl ScheduleLayer {
     }
 }
 
-impl WorkstreamSchedule {
+impl Schedule {
     pub fn parse_toml(content: &str) -> Result<Self, ScheduleError> {
-        let schedule: WorkstreamSchedule = toml::from_str(content)?;
+        let schedule: Schedule = toml::from_str(content)?;
         schedule.validate()?;
         Ok(schedule)
     }
@@ -110,7 +110,7 @@ roles = [
   { name = "triage_generic", enabled = true },
 ]
 "#;
-        let schedule = WorkstreamSchedule::parse_toml(content).unwrap();
+        let schedule = Schedule::parse_toml(content).unwrap();
         assert_eq!(schedule.version, 1);
         assert!(schedule.enabled);
         assert_eq!(schedule.observers.roles.len(), 2);
@@ -134,7 +134,7 @@ roles = [
 version = 1
 enabled = true
 "#;
-        let err = WorkstreamSchedule::parse_toml(content).unwrap_err();
+        let err = Schedule::parse_toml(content).unwrap_err();
         // toml error will complain about missing fields
         assert!(matches!(err, ScheduleError::Toml(_)));
     }
@@ -151,7 +151,7 @@ roles = []
 [deciders]
 roles = []
 "#;
-        let err = WorkstreamSchedule::parse_toml(content).unwrap_err();
+        let err = Schedule::parse_toml(content).unwrap_err();
         assert!(err.to_string().contains("requires at least one observer role"));
     }
 
@@ -169,7 +169,7 @@ roles = [
 [deciders]
 roles = []
 "#;
-        let err = WorkstreamSchedule::parse_toml(content).unwrap_err();
+        let err = Schedule::parse_toml(content).unwrap_err();
         // This will be a Toml error because deserialization of RoleId fails
         assert!(matches!(err, ScheduleError::Toml(_)));
         assert!(err.to_string().contains("Invalid role identifier"));

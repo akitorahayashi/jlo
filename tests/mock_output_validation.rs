@@ -8,51 +8,24 @@ mod common;
 use common::TestContext;
 use std::fs;
 
-/// Helper to initialize scaffold and create a workstream
-fn setup_scaffold_with_workstream(ctx: &TestContext, workstream: &str) {
+/// Helper to initialize scaffold with flat exchange structure
+fn setup_scaffold(ctx: &TestContext) {
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
-    // Create a workstream with scheduled.toml in .jlo/ (Control Plane)
-    let jlo_workstream_path = ctx.jlo_path().join("workstreams").join(workstream);
-    fs::create_dir_all(&jlo_workstream_path).expect("Failed to create jlo workstream dir");
-
-    let scheduled_toml = jlo_workstream_path.join("scheduled.toml");
-    fs::write(
-        scheduled_toml,
-        r#"version = 1
-enabled = false
-
-[observers]
-roles = []
-
-[deciders]
-roles = []
-
-[innovators]
-roles = []
-"#,
-    )
-    .expect("Failed to write scheduled.toml");
-
-    // Create expected directory structure in .jules/ (Runtime)
-    let workstream_path = ctx.jules_path().join("workstreams").join(workstream);
-    let exchange = workstream_path.join("exchange");
-    fs::create_dir_all(exchange.join("events").join("pending")).unwrap();
-    fs::create_dir_all(exchange.join("events").join("decided")).unwrap();
-    fs::create_dir_all(exchange.join("issues").join("bugs")).unwrap();
-    fs::create_dir_all(exchange.join("issues").join("docs")).unwrap();
-    fs::create_dir_all(exchange.join("issues").join("feats")).unwrap();
-    fs::create_dir_all(exchange.join("issues").join("refacts")).unwrap();
-    fs::create_dir_all(exchange.join("issues").join("tests")).unwrap();
-    fs::create_dir_all(exchange.join("innovators")).unwrap();
-    fs::create_dir_all(workstream_path.join("workstations")).unwrap();
+    // Ensure flat exchange subdirectories exist for issue labels used in tests
+    let exchange = ctx.jules_path().join("exchange");
+    fs::create_dir_all(exchange.join("issues/bugs")).unwrap();
+    fs::create_dir_all(exchange.join("issues/docs")).unwrap();
+    fs::create_dir_all(exchange.join("issues/feats")).unwrap();
+    fs::create_dir_all(exchange.join("issues/refacts")).unwrap();
+    fs::create_dir_all(exchange.join("issues/tests")).unwrap();
 }
 
 #[test]
 fn mock_narrator_change_file_passes_doctor() {
     let ctx = TestContext::new();
-    setup_scaffold_with_workstream(&ctx, "generic");
+    setup_scaffold(&ctx);
 
     // Copy mock change file to workspace
     let mock_change = include_str!("../src/assets/mock/narrator_change.yml");
@@ -69,17 +42,11 @@ fn mock_narrator_change_file_passes_doctor() {
 #[test]
 fn mock_observer_event_file_passes_doctor() {
     let ctx = TestContext::new();
-    setup_scaffold_with_workstream(&ctx, "test-workstream");
+    setup_scaffold(&ctx);
 
     // Copy mock event file to workspace
     let mock_event = include_str!("../src/assets/mock/observer_event.yml");
-    let events_dir = ctx
-        .jules_path()
-        .join("workstreams")
-        .join("test-workstream")
-        .join("exchange")
-        .join("events")
-        .join("pending");
+    let events_dir = ctx.jules_path().join("exchange").join("events").join("pending");
 
     fs::create_dir_all(&events_dir).expect("Failed to create events directory");
 
@@ -87,23 +54,17 @@ fn mock_observer_event_file_passes_doctor() {
     fs::write(&event_file, mock_event).expect("Failed to write event file");
 
     // Run doctor to validate
-    ctx.cli().args(["doctor", "--workstream", "test-workstream"]).assert().success();
+    ctx.cli().args(["doctor"]).assert().success();
 }
 
 #[test]
 fn mock_decider_issue_file_passes_doctor() {
     let ctx = TestContext::new();
-    setup_scaffold_with_workstream(&ctx, "test-workstream");
+    setup_scaffold(&ctx);
 
     // Create the referenced event in decided state (simulating what decider does)
     let mock_event = include_str!("../src/assets/mock/observer_event.yml");
-    let events_dir = ctx
-        .jules_path()
-        .join("workstreams")
-        .join("test-workstream")
-        .join("exchange")
-        .join("events")
-        .join("decided");
+    let events_dir = ctx.jules_path().join("exchange").join("events").join("decided");
     fs::create_dir_all(&events_dir).expect("Failed to create events directory");
 
     // Event must have issue_id set when in decided state
@@ -120,23 +81,14 @@ fn mock_decider_issue_file_passes_doctor() {
 
     // Copy mock issue file to workspace - apply the same transformations as mock decider
     let mock_issue = include_str!("../src/assets/mock/decider_issue.yml");
-    let issues_dir = ctx
-        .jules_path()
-        .join("workstreams")
-        .join("test-workstream")
-        .join("exchange")
-        .join("issues")
-        .join("bugs");
+    let issues_dir = ctx.jules_path().join("exchange").join("issues").join("bugs");
 
     fs::create_dir_all(&issues_dir).expect("Failed to create issues directory");
 
     // Test 1: Issue without deep analysis (implementer-ready)
     let impl_issue_file = issues_dir.join("impl-issue.yml");
-    fs::write(
-        &impl_issue_file,
-        mock_issue.replace("mock01", issue_id).replace("event1", event_id), // Replace source_events placeholder
-    )
-    .expect("Failed to write impl issue file");
+    fs::write(&impl_issue_file, mock_issue.replace("mock01", issue_id).replace("event1", event_id))
+        .expect("Failed to write impl issue file");
 
     // Test 2: Issue with deep analysis (planner-ready) - must include deep_analysis_reason
     let planner_issue_file = issues_dir.join("planner-issue.yml");
@@ -153,23 +105,17 @@ fn mock_decider_issue_file_passes_doctor() {
     .expect("Failed to write planner issue file");
 
     // Run doctor to validate
-    ctx.cli().args(["doctor", "--workstream", "test-workstream"]).assert().success();
+    ctx.cli().args(["doctor"]).assert().success();
 }
 
 #[test]
 fn mock_observer_comment_file_passes_doctor() {
     let ctx = TestContext::new();
-    setup_scaffold_with_workstream(&ctx, "test-workstream");
+    setup_scaffold(&ctx);
 
     // Create innovator persona directory with a comment
-    let comments_dir = ctx
-        .jules_path()
-        .join("workstreams")
-        .join("test-workstream")
-        .join("exchange")
-        .join("innovators")
-        .join("alice")
-        .join("comments");
+    let comments_dir =
+        ctx.jules_path().join("exchange").join("innovators").join("alice").join("comments");
 
     fs::create_dir_all(&comments_dir).expect("Failed to create comments directory");
 
@@ -183,28 +129,21 @@ fn mock_observer_comment_file_passes_doctor() {
     fs::write(&comment_file, comment_content).expect("Failed to write comment file");
 
     // Run doctor to validate
-    ctx.cli().args(["doctor", "--workstream", "test-workstream"]).assert().success();
+    ctx.cli().args(["doctor"]).assert().success();
 }
 
 #[test]
 fn mock_innovator_idea_file_passes_doctor() {
     let ctx = TestContext::new();
-    setup_scaffold_with_workstream(&ctx, "test-workstream");
+    setup_scaffold(&ctx);
 
-    let room_dir = ctx
-        .jules_path()
-        .join("workstreams")
-        .join("test-workstream")
-        .join("exchange")
-        .join("innovators")
-        .join("alice");
+    let room_dir = ctx.jules_path().join("exchange").join("innovators").join("alice");
     let comments_dir = room_dir.join("comments");
     fs::create_dir_all(&comments_dir).expect("Failed to create innovator comments directory");
 
     // Seed perspective so the room resembles real execution context.
     let perspective = r#"schema_version: 1
 persona: "alice"
-workstream: "test-workstream"
 bias_focus: "High-leverage improvements"
 current_view: |
   Current architecture has repetitive workflow logic.
@@ -222,5 +161,5 @@ recent_proposals: []
         .replace("test-tag", "mock-local-20260205120000");
     fs::write(room_dir.join("idea.yml"), idea).expect("Failed to write idea");
 
-    ctx.cli().args(["doctor", "--workstream", "test-workstream"]).assert().success();
+    ctx.cli().args(["doctor"]).assert().success();
 }

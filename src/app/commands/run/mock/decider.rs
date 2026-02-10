@@ -10,7 +10,7 @@ use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 /// Execute mock deciders.
 pub fn execute_mock_deciders<G, H, W>(
     jules_path: &Path,
-    options: &RunOptions,
+    _options: &RunOptions,
     config: &MockConfig,
     git: &G,
     github: &H,
@@ -21,10 +21,6 @@ where
     H: GitHubPort,
     W: WorkspaceStore,
 {
-    let workstream = options.workstream.as_deref().ok_or_else(|| {
-        AppError::MissingArgument("Workstream is required for deciders".to_string())
-    })?;
-
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Deciders, &timestamp)?;
 
@@ -35,7 +31,7 @@ where
     git.checkout_branch(&format!("origin/{}", config.jules_branch), false)?;
     git.checkout_branch(&branch_name, true)?;
 
-    let exchange_dir = jules_path.join("workstreams").join(workstream).join("exchange");
+    let exchange_dir = jules_path.join("exchange");
 
     // Find and process pending events
     let pending_dir = exchange_dir.join("events").join("pending");
@@ -256,8 +252,8 @@ where
         &branch_name,
         &config.jules_branch,
         &format!("[{}] Decider triage", config.mock_tag),
-        &format!("Mock decider run for workflow validation.\n\nMock tag: `{}`\nWorkstream: `{}`\n\nCreated issues:\n- `{}` (requires analysis)\n- `{}` (ready for impl)",
-            config.mock_tag, workstream, planner_issue_id, impl_issue_id),
+        &format!("Mock decider run for workflow validation.\n\nMock tag: `{}`\n\nCreated issues:\n- `{}` (requires analysis)\n- `{}` (ready for impl)",
+            config.mock_tag, planner_issue_id, impl_issue_id),
     )?;
 
     println!("Mock deciders: created PR #{} ({})", pr.number, pr.url);

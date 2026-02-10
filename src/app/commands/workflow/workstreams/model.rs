@@ -3,7 +3,6 @@ use serde::Serialize;
 #[derive(Debug, Serialize)]
 pub struct WorkflowWorkstreamsInspectOutput {
     pub schema_version: u32,
-    pub workstream: String,
     pub schedule: ScheduleSummary,
     pub events: EventSummary,
     pub issues: IssueSummary,

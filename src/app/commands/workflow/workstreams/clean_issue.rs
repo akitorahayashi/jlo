@@ -8,7 +8,7 @@ use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::{GitPort, WorkspaceStore};
 
-use super::inspect::{WorkflowWorkstreamsInspectOptions, inspect_at};
+use super::inspect::inspect_at;
 
 #[derive(Debug, Clone)]
 pub struct WorkflowWorkstreamsCleanIssueOptions {
@@ -50,13 +50,11 @@ pub fn execute(
         )));
     }
 
-    let (workstream, issue_rel) =
-        resolve_workstream_and_issue_path(&canonical_jules, &canonical_issue, &workspace)?;
+    let issue_rel = resolve_issue_path(&canonical_jules, &canonical_issue, &workspace)?;
 
     let canonical_root = canonical_jules.parent().unwrap_or(Path::new(".")).to_path_buf();
     let canonical_store = FilesystemWorkspaceStore::new(canonical_root);
-    let inspect_output =
-        inspect_at(&canonical_store, WorkflowWorkstreamsInspectOptions { workstream })?;
+    let inspect_output = inspect_at(&canonical_store)?;
 
     let issue_item =
         inspect_output.issues.items.iter().find(|item| item.path == issue_rel).ok_or_else(
@@ -124,11 +122,11 @@ pub fn execute(
     })
 }
 
-fn resolve_workstream_and_issue_path(
+fn resolve_issue_path(
     canonical_jules: &Path,
     canonical_issue: &Path,
     workspace: &FilesystemWorkspaceStore,
-) -> Result<(String, String), AppError> {
+) -> Result<String, AppError> {
     let rel_to_jules = canonical_issue
         .strip_prefix(canonical_jules)
         .map_err(|_| AppError::Validation("Issue file is not under .jules/".to_string()))?;
@@ -136,22 +134,17 @@ fn resolve_workstream_and_issue_path(
     let parts: Vec<String> =
         rel_to_jules.components().map(|c| c.as_os_str().to_string_lossy().to_string()).collect();
 
-    if parts.len() < 6
-        || parts[0] != "workstreams"
-        || parts[2] != "exchange"
-        || parts[3] != "issues"
-    {
+    if parts.len() < 4 || parts[0] != "exchange" || parts[1] != "issues" {
         return Err(AppError::Validation(format!(
-            "Issue file must be under .jules/workstreams/<name>/exchange/issues/: {}",
+            "Issue file must be under .jules/exchange/issues/: {}",
             canonical_issue.display()
         )));
     }
 
-    let workstream = parts[1].clone();
     let root = workspace_root(workspace)?;
     let issue_rel = to_repo_relative(&root, canonical_issue);
 
-    Ok((workstream, issue_rel))
+    Ok(issue_rel)
 }
 
 fn workspace_root(workspace: &FilesystemWorkspaceStore) -> Result<PathBuf, AppError> {
@@ -207,14 +200,15 @@ mod tests {
             .unwrap();
 
         let jules_path = repo_dir.join(".jules");
-        let ws_dir = jules_path.join("workstreams/alpha/exchange");
-        fs::create_dir_all(ws_dir.join("events/pending")).unwrap();
-        fs::create_dir_all(ws_dir.join("issues/bugs")).unwrap();
+        let jlo_path = repo_dir.join(".jlo");
+        let exchange_dir = jules_path.join("exchange");
+        fs::create_dir_all(exchange_dir.join("events/pending")).unwrap();
+        fs::create_dir_all(exchange_dir.join("issues/bugs")).unwrap();
 
-        fs::write(ws_dir.join("events/pending/event1.yml"), "id: abc123\n").unwrap();
-        fs::write(ws_dir.join("events/pending/event2.yml"), "id: def456\n").unwrap();
+        fs::write(exchange_dir.join("events/pending/event1.yml"), "id: abc123\n").unwrap();
+        fs::write(exchange_dir.join("events/pending/event2.yml"), "id: def456\n").unwrap();
         fs::write(
-            ws_dir.join("issues/bugs/issue.yml"),
+            exchange_dir.join("issues/bugs/issue.yml"),
             r#"
 id: abc123
 source_events:
@@ -225,8 +219,9 @@ requires_deep_analysis: false
         )
         .unwrap();
 
+        fs::create_dir_all(&jlo_path).unwrap();
         fs::write(
-            jules_path.join("workstreams/alpha/scheduled.toml"),
+            jlo_path.join("scheduled.toml"),
             r#"
 version = 1
 enabled = true
@@ -241,23 +236,24 @@ roles = []
         .unwrap();
 
         Command::new("git").args(["add", ".jules"]).current_dir(&repo_dir).output().unwrap();
+        Command::new("git").args(["add", ".jlo"]).current_dir(&repo_dir).output().unwrap();
         Command::new("git").args(["commit", "-m", "seed"]).current_dir(&repo_dir).output().unwrap();
 
         std::env::set_current_dir(&repo_dir).unwrap();
 
         let output = execute(WorkflowWorkstreamsCleanIssueOptions {
-            issue_file: ".jules/workstreams/alpha/exchange/issues/bugs/issue.yml".to_string(),
+            issue_file: ".jules/exchange/issues/bugs/issue.yml".to_string(),
         })
         .unwrap();
 
         assert_eq!(output.schema_version, 1);
         assert!(output.deleted_paths.iter().any(|p| p.contains("event1.yml")));
+        assert!(output.deleted_paths.iter().any(|p| p.contains("event2.yml")));
         assert!(output.deleted_paths.iter().any(|p| p.contains("issue.yml")));
 
-        assert!(
-            !repo_dir.join(".jules/workstreams/alpha/exchange/events/pending/event1.yml").exists()
-        );
-        assert!(!repo_dir.join(".jules/workstreams/alpha/exchange/issues/bugs/issue.yml").exists());
+        assert!(!repo_dir.join(".jules/exchange/events/pending/event1.yml").exists());
+        assert!(!repo_dir.join(".jules/exchange/events/pending/event2.yml").exists());
+        assert!(!repo_dir.join(".jules/exchange/issues/bugs/issue.yml").exists());
 
         let head = Command::new("git")
             .args(["rev-parse", "HEAD"])

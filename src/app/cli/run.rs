@@ -26,9 +26,6 @@ pub enum RunLayer {
         /// Role to run
         #[arg(short = 'r', long)]
         role: String,
-        /// Target workstream
-        #[arg(short = 'w', long)]
-        workstream: String,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
         prompt_preview: bool,
@@ -45,9 +42,6 @@ pub enum RunLayer {
         /// Role to run
         #[arg(short = 'r', long)]
         role: String,
-        /// Target workstream
-        #[arg(short = 'w', long)]
-        workstream: String,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
         prompt_preview: bool,
@@ -88,15 +82,12 @@ pub enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
-    /// Run innovator agent (single role, workstream-based)
+    /// Run innovator agent (single role)
     #[clap(visible_alias = "x")]
     Innovators {
         /// Role (persona) to run
         #[arg(short = 'r', long)]
         role: String,
-        /// Target workstream
-        #[arg(short = 'w', long)]
-        workstream: String,
         /// Execution phase (creation or refinement)
         #[arg(long)]
         phase: Option<String>,
@@ -115,58 +106,29 @@ pub enum RunLayer {
 pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     use crate::domain::Layer;
 
-    let (target_layer, role, workstream, prompt_preview, branch, issue, mock, phase) = match layer {
+    let (target_layer, role, prompt_preview, branch, issue, mock, phase) = match layer {
         RunLayer::Narrator { prompt_preview, branch, mock } => {
-            (Layer::Narrators, None, None, prompt_preview, branch, None, mock, None)
+            (Layer::Narrators, None, prompt_preview, branch, None, mock, None)
         }
-        RunLayer::Observers { role, prompt_preview, branch, workstream, mock } => (
-            Layer::Observers,
-            Some(role),
-            Some(workstream),
-            prompt_preview,
-            branch,
-            None,
-            mock,
-            None,
-        ),
-        RunLayer::Deciders { role, prompt_preview, branch, workstream, mock } => (
-            Layer::Deciders,
-            Some(role),
-            Some(workstream),
-            prompt_preview,
-            branch,
-            None,
-            mock,
-            None,
-        ),
+        RunLayer::Observers { role, prompt_preview, branch, mock } => {
+            (Layer::Observers, Some(role), prompt_preview, branch, None, mock, None)
+        }
+        RunLayer::Deciders { role, prompt_preview, branch, mock } => {
+            (Layer::Deciders, Some(role), prompt_preview, branch, None, mock, None)
+        }
         RunLayer::Planners { prompt_preview, branch, issue, mock } => {
-            (Layer::Planners, None, None, prompt_preview, branch, Some(issue), mock, None)
+            (Layer::Planners, None, prompt_preview, branch, Some(issue), mock, None)
         }
         RunLayer::Implementers { prompt_preview, branch, issue, mock } => {
-            (Layer::Implementers, None, None, prompt_preview, branch, Some(issue), mock, None)
+            (Layer::Implementers, None, prompt_preview, branch, Some(issue), mock, None)
         }
-        RunLayer::Innovators { role, workstream, phase, prompt_preview, branch, mock } => (
-            Layer::Innovators,
-            Some(role),
-            Some(workstream),
-            prompt_preview,
-            branch,
-            None,
-            mock,
-            phase,
-        ),
+        RunLayer::Innovators { role, phase, prompt_preview, branch, mock } => {
+            (Layer::Innovators, Some(role), prompt_preview, branch, None, mock, phase)
+        }
     };
 
-    let result = crate::app::api::run(
-        target_layer,
-        role,
-        workstream,
-        prompt_preview,
-        branch,
-        issue,
-        mock,
-        phase,
-    )?;
+    let result =
+        crate::app::api::run(target_layer, role, prompt_preview, branch, issue, mock, phase)?;
 
     if !result.prompt_preview && !result.roles.is_empty() && !result.sessions.is_empty() {
         println!("✅ Created {} Jules session(s)", result.sessions.len());

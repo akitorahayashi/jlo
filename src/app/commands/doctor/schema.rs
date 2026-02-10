@@ -22,7 +22,6 @@ pub(crate) struct PromptEntry {
 pub struct SchemaInputs<'a> {
     pub jules_path: &'a Path,
     pub root: &'a Path,
-    pub workstreams: &'a [String],
     pub issue_labels: &'a [String],
     pub event_states: &'a [String],
     pub event_confidence: &'a [String],
@@ -140,9 +139,9 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         }
     }
 
-    for workstream in inputs.workstreams {
-        let ws_dir = inputs.jules_path.join("workstreams").join(workstream);
-        let exchange_dir = ws_dir.join("exchange");
+    // Validate flat exchange directory
+    {
+        let exchange_dir = inputs.jules_path.join("exchange");
 
         let events_dir = exchange_dir.join("events");
         for state in inputs.event_states {

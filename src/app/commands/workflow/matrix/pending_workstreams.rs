@@ -1,8 +1,9 @@
 //! Matrix pending-workstreams command implementation.
 //!
-//! Exports workstreams with pending events as a GitHub Actions matrix.
+//! Checks the flat exchange directory for pending events and exports a
+//! single-entry GitHub Actions matrix when pending events exist.
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::fs;
 
 use crate::domain::AppError;
@@ -11,24 +12,8 @@ use crate::ports::WorkspaceStore;
 /// Options for matrix pending-workstreams command.
 #[derive(Debug, Clone)]
 pub struct MatrixPendingWorkstreamsOptions {
-    /// Workstreams JSON from `matrix workstreams` output.
-    pub workstreams_json: WorkstreamsMatrix,
-    /// Mock mode - treat all workstreams as having pending events.
+    /// Mock mode - always report pending events.
     pub mock: bool,
-}
-
-/// Input workstreams matrix (from matrix workstreams output).
-#[derive(Debug, Clone, Deserialize)]
-pub struct WorkstreamsMatrix {
-    /// Matrix include entries.
-    pub include: Vec<WorkstreamEntry>,
-}
-
-/// Single workstream entry from input matrix.
-#[derive(Debug, Clone, Deserialize)]
-pub struct WorkstreamEntry {
-    /// Workstream name.
-    pub workstream: String,
 }
 
 /// Output of matrix pending-workstreams command.
@@ -36,26 +21,8 @@ pub struct WorkstreamEntry {
 pub struct MatrixPendingWorkstreamsOutput {
     /// Schema version for output format stability.
     pub schema_version: u32,
-    /// GitHub Actions matrix object.
-    pub matrix: PendingWorkstreamsMatrix,
-    /// Number of workstreams with pending events.
-    pub count: usize,
-    /// Whether any workstreams have pending events.
+    /// Whether pending events exist.
     pub has_pending: bool,
-}
-
-/// GitHub Actions matrix structure for pending workstreams.
-#[derive(Debug, Clone, Serialize)]
-pub struct PendingWorkstreamsMatrix {
-    /// Matrix include entries.
-    pub include: Vec<PendingWorkstreamEntry>,
-}
-
-/// Single pending workstream matrix entry.
-#[derive(Debug, Clone, Serialize)]
-pub struct PendingWorkstreamEntry {
-    /// Workstream name.
-    pub workstream: String,
 }
 
 /// Execute matrix pending-workstreams command.
@@ -67,40 +34,16 @@ pub fn execute(
         return Err(AppError::WorkspaceNotFound);
     }
 
-    let mut include = Vec::new();
-
     if options.mock {
-        // In mock mode, treat all input workstreams as having pending events
-        for ws_entry in &options.workstreams_json.include {
-            include.push(PendingWorkstreamEntry { workstream: ws_entry.workstream.clone() });
-        }
-    } else {
-        let jules_path = workspace.jules_path();
-
-        for ws_entry in &options.workstreams_json.include {
-            let pending_dir = jules_path
-                .join("workstreams")
-                .join(&ws_entry.workstream)
-                .join("exchange/events/pending");
-
-            if pending_dir.exists() && has_yml_files(&pending_dir)? {
-                include.push(PendingWorkstreamEntry { workstream: ws_entry.workstream.clone() });
-            }
-        }
+        return Ok(MatrixPendingWorkstreamsOutput { schema_version: 1, has_pending: true });
     }
 
-    // Ensure deterministic ordering
-    include.sort_by(|a, b| a.workstream.cmp(&b.workstream));
+    let jules_path = workspace.jules_path();
+    let pending_dir = jules_path.join("exchange/events/pending");
 
-    let count = include.len();
-    let has_pending = !include.is_empty();
+    let has_pending = pending_dir.exists() && has_yml_files(&pending_dir)?;
 
-    Ok(MatrixPendingWorkstreamsOutput {
-        schema_version: 1,
-        matrix: PendingWorkstreamsMatrix { include },
-        count,
-        has_pending,
-    })
+    Ok(MatrixPendingWorkstreamsOutput { schema_version: 1, has_pending })
 }
 
 /// Check if a directory contains any .yml files.
@@ -128,73 +71,48 @@ mod tests {
         fs::write(root.join(".jules/version"), env!("CARGO_PKG_VERSION")).unwrap();
     }
 
-    fn create_pending_event(root: &std::path::Path, ws: &str, event_name: &str) {
-        let pending_dir = root.join(format!(".jules/workstreams/{}/exchange/events/pending", ws));
-        fs::create_dir_all(&pending_dir).unwrap();
-        fs::write(pending_dir.join(format!("{}.yml", event_name)), "id: abc123\n").unwrap();
-    }
-
-    fn create_empty_pending_dir(root: &std::path::Path, ws: &str) {
-        let pending_dir = root.join(format!(".jules/workstreams/{}/exchange/events/pending", ws));
-        fs::create_dir_all(&pending_dir).unwrap();
-    }
-
     #[test]
-    fn returns_workstreams_with_pending_events() {
+    fn returns_has_pending_when_events_exist() {
         let dir = tempdir().unwrap();
         let root = dir.path();
         setup_workspace(root);
         let store = FilesystemWorkspaceStore::new(root.to_path_buf());
 
-        // alpha has pending events
-        create_pending_event(root, "alpha", "event1");
+        let pending_dir = root.join(".jules/exchange/events/pending");
+        fs::create_dir_all(&pending_dir).unwrap();
+        fs::write(pending_dir.join("event1.yml"), "id: abc123\n").unwrap();
 
-        // beta has empty pending dir
-        create_empty_pending_dir(root, "beta");
-
-        // gamma has pending events
-        create_pending_event(root, "gamma", "event2");
-
-        let workstreams_json = WorkstreamsMatrix {
-            include: vec![
-                WorkstreamEntry { workstream: "alpha".into() },
-                WorkstreamEntry { workstream: "beta".into() },
-                WorkstreamEntry { workstream: "gamma".into() },
-            ],
-        };
-
-        let output =
-            execute(&store, MatrixPendingWorkstreamsOptions { workstreams_json, mock: false })
-                .unwrap();
+        let output = execute(&store, MatrixPendingWorkstreamsOptions { mock: false }).unwrap();
 
         assert_eq!(output.schema_version, 1);
-        assert_eq!(output.count, 2);
         assert!(output.has_pending);
-
-        let names: Vec<&str> =
-            output.matrix.include.iter().map(|e| e.workstream.as_str()).collect();
-        assert_eq!(names, vec!["alpha", "gamma"]);
     }
 
     #[test]
-    fn returns_empty_when_no_pending_events() {
+    fn returns_no_pending_when_dir_empty() {
         let dir = tempdir().unwrap();
         let root = dir.path();
         setup_workspace(root);
         let store = FilesystemWorkspaceStore::new(root.to_path_buf());
 
-        create_empty_pending_dir(root, "alpha");
+        let pending_dir = root.join(".jules/exchange/events/pending");
+        fs::create_dir_all(&pending_dir).unwrap();
 
-        let workstreams_json =
-            WorkstreamsMatrix { include: vec![WorkstreamEntry { workstream: "alpha".into() }] };
-
-        let output =
-            execute(&store, MatrixPendingWorkstreamsOptions { workstreams_json, mock: false })
-                .unwrap();
+        let output = execute(&store, MatrixPendingWorkstreamsOptions { mock: false }).unwrap();
 
         assert_eq!(output.schema_version, 1);
-        assert_eq!(output.count, 0);
         assert!(!output.has_pending);
-        assert!(output.matrix.include.is_empty());
+    }
+
+    #[test]
+    fn mock_mode_always_reports_pending() {
+        let dir = tempdir().unwrap();
+        let root = dir.path();
+        setup_workspace(root);
+        let store = FilesystemWorkspaceStore::new(root.to_path_buf());
+
+        let output = execute(&store, MatrixPendingWorkstreamsOptions { mock: true }).unwrap();
+
+        assert!(output.has_pending);
     }
 }

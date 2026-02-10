@@ -2,8 +2,8 @@ use std::path::{Path, PathBuf};
 
 use serde_yaml::{Mapping, Value};
 
+use crate::adapters::schedule_filesystem::{list_subdirectories, load_schedule};
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
-use crate::adapters::workstream_schedule_filesystem::{list_subdirectories, load_schedule};
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
 
@@ -13,12 +13,10 @@ use super::model::{
 };
 
 #[derive(Debug, Clone)]
-pub struct WorkflowWorkstreamsInspectOptions {
-    pub workstream: String,
-}
+pub struct WorkflowWorkstreamsInspectOptions {}
 
 pub fn execute(
-    options: WorkflowWorkstreamsInspectOptions,
+    _options: WorkflowWorkstreamsInspectOptions,
 ) -> Result<WorkflowWorkstreamsInspectOutput, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
 
@@ -26,20 +24,19 @@ pub fn execute(
         return Err(AppError::WorkspaceNotFound);
     }
 
-    inspect_at(&workspace, options)
+    inspect_at(&workspace)
 }
 
 pub(super) fn inspect_at(
     store: &impl WorkspaceStore,
-    options: WorkflowWorkstreamsInspectOptions,
 ) -> Result<WorkflowWorkstreamsInspectOutput, AppError> {
     let jules_path = store.jules_path();
-    let ws_dir = jules_path.join("workstreams").join(&options.workstream);
-    if !store.file_exists(ws_dir.to_str().unwrap()) {
-        return Err(AppError::WorkstreamNotFound(options.workstream.clone()));
+    let exchange_dir = jules_path.join("exchange");
+    if !store.file_exists(exchange_dir.to_str().unwrap()) {
+        return Err(AppError::WorkspaceNotFound);
     }
 
-    let schedule = load_schedule(store, &options.workstream)?;
+    let schedule = load_schedule(store)?;
     let schedule_summary = ScheduleSummary {
         version: schedule.version,
         enabled: schedule.enabled,
@@ -62,12 +59,11 @@ pub(super) fn inspect_at(
     };
 
     let root = jules_path.parent().unwrap_or(Path::new("."));
-    let events = summarize_events(store, root, &ws_dir)?;
-    let issues = summarize_issues(store, root, &ws_dir)?;
+    let events = summarize_events(store, root, &exchange_dir)?;
+    let issues = summarize_issues(store, root, &exchange_dir)?;
 
     Ok(WorkflowWorkstreamsInspectOutput {
         schema_version: 1,
-        workstream: options.workstream,
         schedule: schedule_summary,
         events,
         issues,
@@ -77,9 +73,9 @@ pub(super) fn inspect_at(
 fn summarize_events(
     store: &impl WorkspaceStore,
     root: &Path,
-    ws_dir: &Path,
+    exchange_dir: &Path,
 ) -> Result<EventSummary, AppError> {
-    let events_dir = ws_dir.join("exchange").join("events");
+    let events_dir = exchange_dir.join("events");
     if !store.file_exists(events_dir.to_str().unwrap()) {
         return Err(AppError::Validation(format!(
             "Missing events directory: {}",
@@ -120,9 +116,9 @@ fn summarize_events(
 fn summarize_issues(
     store: &impl WorkspaceStore,
     root: &Path,
-    ws_dir: &Path,
+    exchange_dir: &Path,
 ) -> Result<IssueSummary, AppError> {
-    let issues_dir = ws_dir.join("exchange").join("issues");
+    let issues_dir = exchange_dir.join("issues");
     if !store.file_exists(issues_dir.to_str().unwrap()) {
         return Err(AppError::Validation(format!(
             "Missing issues directory: {}",
@@ -342,8 +338,8 @@ mod tests {
         let dir = tempdir().unwrap();
         let root = dir.path();
         let jules_path = root.join(".jules");
-        let ws_dir = jules_path.join("workstreams").join("alpha");
-        let exchange_dir = ws_dir.join("exchange");
+        let jlo_path = root.join(".jlo");
+        let exchange_dir = jules_path.join("exchange");
         fs::create_dir_all(exchange_dir.join("events/pending")).unwrap();
         fs::create_dir_all(exchange_dir.join("events/decided")).unwrap();
         fs::create_dir_all(exchange_dir.join("issues/bugs")).unwrap();
@@ -362,8 +358,9 @@ requires_deep_analysis: false
         )
         .unwrap();
 
+        fs::create_dir_all(&jlo_path).unwrap();
         fs::write(
-            ws_dir.join("scheduled.toml"),
+            jlo_path.join("scheduled.toml"),
             r#"
 version = 1
 enabled = true
@@ -378,13 +375,8 @@ roles = []
         .unwrap();
 
         let store = FilesystemWorkspaceStore::new(root.to_path_buf());
-        let output = inspect_at(
-            &store,
-            WorkflowWorkstreamsInspectOptions { workstream: "alpha".to_string() },
-        )
-        .unwrap();
+        let output = inspect_at(&store).unwrap();
 
-        assert_eq!(output.workstream, "alpha");
         let pending = output.events.states.iter().find(|state| state.name == "pending").unwrap();
         assert_eq!(pending.count, 1);
         assert_eq!(output.events.pending_files.len(), 1);

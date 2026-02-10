@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use chrono::Utc;
 
-use crate::adapters::workstream_schedule_filesystem::load_schedule;
+use crate::adapters::schedule_filesystem::load_schedule;
 use crate::app::commands::run::RunOptions;
 use crate::app::commands::run::mock::identity::generate_mock_id;
 use crate::domain::identifiers::validation::validate_safe_path_component;
@@ -32,18 +32,6 @@ where
     H: GitHubPort,
     W: WorkspaceStore,
 {
-    let workstream = options.workstream.as_deref().ok_or_else(|| {
-        AppError::MissingArgument("Workstream is required for observers".to_string())
-    })?;
-
-    // Validate workstream name to prevent path traversal
-    if !validate_safe_path_component(workstream) {
-        return Err(AppError::Validation(format!(
-            "Invalid workstream name '{}': must be alphanumeric with hyphens or underscores only",
-            workstream
-        )));
-    }
-
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Observers, &timestamp)?;
 
@@ -55,12 +43,7 @@ where
     git.checkout_branch(&branch_name, true)?;
 
     // Create mock events
-    let events_dir = jules_path
-        .join("workstreams")
-        .join(workstream)
-        .join("exchange")
-        .join("events")
-        .join("pending");
+    let events_dir = jules_path.join("exchange").join("events").join("pending");
 
     let mock_event_template = super::MOCK_ASSETS
         .get_file("observer_event.yml")
@@ -117,7 +100,7 @@ where
     // without manual edits. The comment filename is deterministic to prevent
     // uncontrolled duplicates on re-runs.
     let mut comment_files: Vec<PathBuf> = Vec::new();
-    let innovator_personas = resolve_innovator_personas(workstream, workspace);
+    let innovator_personas = resolve_innovator_personas(workspace);
 
     if !innovator_personas.is_empty() {
         let mock_comment_template = super::MOCK_ASSETS
@@ -131,13 +114,8 @@ where
             })?;
 
         for persona in &innovator_personas {
-            let comments_dir = jules_path
-                .join("workstreams")
-                .join(workstream)
-                .join("exchange")
-                .join("innovators")
-                .join(persona)
-                .join("comments");
+            let comments_dir =
+                jules_path.join("exchange").join("innovators").join(persona).join("comments");
 
             let comments_dir_str = comments_dir
                 .to_str()
@@ -180,10 +158,7 @@ where
         &branch_name,
         &config.jules_branch,
         &format!("[{}] Observer findings", config.mock_tag),
-        &format!(
-            "Mock observer run for workflow validation.\n\nMock tag: `{}`\nWorkstream: `{}`",
-            config.mock_tag, workstream
-        ),
+        &format!("Mock observer run for workflow validation.\n\nMock tag: `{}`", config.mock_tag),
     )?;
 
     println!("Mock observers: created PR #{} ({})", pr.number, pr.url);
@@ -202,8 +177,8 @@ where
 /// configured, or an error occurs (silent fallback is acceptable here
 /// because the comment bridge is supplementary output, not a primary
 /// deliverable of the observer mock).
-fn resolve_innovator_personas<W: WorkspaceStore>(workstream: &str, workspace: &W) -> Vec<String> {
-    let schedule = match load_schedule(workspace, workstream) {
+fn resolve_innovator_personas<W: WorkspaceStore>(workspace: &W) -> Vec<String> {
+    let schedule = match load_schedule(workspace) {
         Ok(s) => s,
         Err(_) => return Vec::new(),
     };

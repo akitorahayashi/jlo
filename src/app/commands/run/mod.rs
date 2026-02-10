@@ -26,10 +26,8 @@ use crate::ports::{AutomationMode, JulesClient, SessionRequest};
 pub struct RunOptions {
     /// Target layer to run.
     pub layer: Layer,
-    /// Specific role to run (required for observers/deciders).
+    /// Specific role to run (required for observers/deciders/innovators).
     pub role: Option<String>,
-    /// Workstream (required for observers/deciders).
-    pub workstream: Option<String>,
     /// Show assembled prompts without executing.
     pub prompt_preview: bool,
     /// Override the starting branch.
@@ -119,9 +117,6 @@ fn execute_single_role<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         .role
         .as_ref()
         .ok_or_else(|| AppError::MissingArgument(format!("Role is required for {}", layer_name)))?;
-    let workstream = options.workstream.as_ref().ok_or_else(|| {
-        AppError::MissingArgument(format!("Workstream is required for {}", layer_name))
-    })?;
 
     // Validate role exists
     let role_id = RoleId::new(role)?;
@@ -136,7 +131,6 @@ fn execute_single_role<W: WorkspaceStore + Clone + Send + Sync + 'static>(
             jules_path,
             options.layer,
             &role_id,
-            workstream,
             &starting_branch,
             options.phase.as_deref(),
             workspace,
@@ -153,7 +147,6 @@ fn execute_single_role<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         jules_path,
         options.layer,
         &role_id,
-        workstream,
         &starting_branch,
         &source,
         options.phase.as_deref(),
@@ -190,7 +183,6 @@ fn execute_session<
     jules_path: &Path,
     layer: Layer,
     role: &RoleId,
-    workstream: &str,
     starting_branch: &str,
     source: &str,
     phase: Option<&str>,
@@ -199,7 +191,7 @@ fn execute_session<
 ) -> Result<String, AppError> {
     println!("Executing {} / {}...", layer.dir_name(), role);
 
-    let prompt = assemble_prompt(jules_path, layer, role.as_str(), workstream, phase, loader)?;
+    let prompt = assemble_prompt(jules_path, layer, role.as_str(), phase, loader)?;
 
     let request = SessionRequest {
         prompt,
@@ -220,14 +212,12 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader + Clone + Send + S
     jules_path: &Path,
     layer: Layer,
     role: &RoleId,
-    workstream: &str,
     starting_branch: &str,
     phase: Option<&str>,
     loader: &L,
 ) -> Result<(), AppError> {
     println!("=== Prompt Preview: {} ===", layer.display_name());
     println!("Starting branch: {}", starting_branch);
-    println!("Workstream: {}", workstream);
     println!("Role: {}\n", role);
 
     let root = jules_path.parent().unwrap_or(Path::new("."));
@@ -259,8 +249,7 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader + Clone + Send + S
     }
     println!("  Role config: {}", role_yml_path.display());
 
-    if let Ok(prompt) = assemble_prompt(jules_path, layer, role.as_str(), workstream, phase, loader)
-    {
+    if let Ok(prompt) = assemble_prompt(jules_path, layer, role.as_str(), phase, loader) {
         println!("  Assembled prompt: {} chars", prompt.len());
     }
 

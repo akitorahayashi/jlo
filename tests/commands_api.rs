@@ -24,7 +24,7 @@ fn create_role_via_cli() {
     ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
-        .args(["create", "role", "observers", "my-role"])
+        .args(["create", "observers", "my-role"])
         .assert()
         .success()
         .stdout(predicate::str::contains("observers"));

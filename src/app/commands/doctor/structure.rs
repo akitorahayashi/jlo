@@ -6,32 +6,6 @@ use crate::domain::{AppError, Layer, RunConfig};
 
 use super::diagnostics::Diagnostics;
 
-pub fn collect_workstreams(root: &Path, filter: Option<&str>) -> Result<Vec<String>, AppError> {
-    let workstreams_dir = root.join(".jlo/workstreams");
-    if !workstreams_dir.exists() {
-        return Ok(Vec::new());
-    }
-
-    let mut workstreams = Vec::new();
-    for entry in fs::read_dir(&workstreams_dir)? {
-        let entry = entry?;
-        if entry.path().is_dir() {
-            let name = entry.file_name().to_string_lossy().to_string();
-            workstreams.push(name);
-        }
-    }
-    workstreams.sort();
-
-    if let Some(target) = filter {
-        if !workstreams.contains(&target.to_string()) {
-            return Err(AppError::Validation(format!("Workstream '{}' not found", target)));
-        }
-        return Ok(vec![target.to_string()]);
-    }
-
-    Ok(workstreams)
-}
-
 pub fn read_run_config(root: &Path, diagnostics: &mut Diagnostics) -> Result<RunConfig, AppError> {
     let config_path = root.join(".jlo/config.toml");
     if !config_path.exists() {
@@ -59,7 +33,6 @@ pub fn read_run_config(root: &Path, diagnostics: &mut Diagnostics) -> Result<Run
 pub struct StructuralInputs<'a> {
     pub jules_path: &'a Path,
     pub root: &'a Path,
-    pub workstreams: &'a [String],
     pub issue_labels: &'a [String],
     pub event_states: &'a [String],
 }
@@ -74,7 +47,8 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
     // Actually bootstrap scaffold creates .jules/workstreams/generic...
     // But we should probably check .jlo/workstreams too.
     ensure_directory_exists(inputs.root.join(".jlo/roles"), diagnostics);
-    ensure_directory_exists(inputs.root.join(".jlo/workstreams"), diagnostics);
+    // Root schedule file
+    ensure_path_exists(inputs.root, ".jlo/scheduled.toml", diagnostics);
     // Narrator output directory
     ensure_directory_exists(inputs.jules_path.join("changes"), diagnostics);
 
@@ -153,28 +127,9 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         }
     }
 
-    for workstream in inputs.workstreams {
-        let jlo_ws_dir = inputs.root.join(".jlo/workstreams").join(workstream);
-        let jules_ws_dir = inputs.jules_path.join("workstreams").join(workstream);
-
-        if !jlo_ws_dir.exists() {
-            diagnostics
-                .push_error(jlo_ws_dir.display().to_string(), "Missing .jlo workstream definition");
-            // If it's missing in .jlo, we can't really check much else, but we should continue?
-            // But if collect_workstreams scanned .jlo, it should exist.
-        } else {
-            let scheduled_path = jlo_ws_dir.join("scheduled.toml");
-            ensure_workstream_template_exists(scheduled_path, "scheduled.toml", diagnostics);
-        }
-
-        // The runtime workstream directory in `.jules/` may not exist for a new
-        // workstream definition. We only check its structure if it's present.
-        if !jules_ws_dir.exists() {
-            continue;
-        }
-
-        // Exchange directory structure (events and issues)
-        let exchange_dir = jules_ws_dir.join("exchange");
+    // Flat exchange directory structure
+    {
+        let exchange_dir = inputs.jules_path.join("exchange");
         ensure_directory_exists(exchange_dir.clone(), diagnostics);
 
         let events_dir = exchange_dir.join("events");
@@ -190,7 +145,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         }
 
         // Workstations directory
-        let workstations_dir = jules_ws_dir.join("workstations");
+        let workstations_dir = inputs.jules_path.join("workstations");
         ensure_directory_exists(workstations_dir, diagnostics);
 
         // Innovator rooms directory
@@ -280,17 +235,6 @@ fn ensure_path_exists(root: &Path, rel_path: &str, diagnostics: &mut Diagnostics
     let full_path = root.join(rel_path);
     if !full_path.exists() {
         diagnostics.push_error(full_path.display().to_string(), "Missing required file");
-    }
-}
-
-fn ensure_workstream_template_exists(
-    full_path: PathBuf,
-    template_path: &str,
-    diagnostics: &mut Diagnostics,
-) {
-    if !full_path.exists() {
-        diagnostics
-            .push_error(full_path.display().to_string(), format!("Missing {}", template_path));
     }
 }
 
@@ -406,29 +350,6 @@ mod tests {
         assert!(diagnostics.errors()[0].message.contains("Invalid version format"));
     }
 
-    #[test]
-    fn test_collect_workstreams() {
-        let temp = assert_fs::TempDir::new().unwrap();
-        let ws_dir = temp.child(".jlo/workstreams");
-        ws_dir.create_dir_all().unwrap();
-
-        ws_dir.child("ws1").create_dir_all().unwrap();
-        ws_dir.child("ws2").create_dir_all().unwrap();
-        ws_dir.child("file.txt").touch().unwrap(); // Should be ignored
-
-        // Test listing all
-        let result = collect_workstreams(temp.path(), None).unwrap();
-        assert_eq!(result, vec!["ws1", "ws2"]);
-
-        // Test filter exists
-        let result = collect_workstreams(temp.path(), Some("ws1")).unwrap();
-        assert_eq!(result, vec!["ws1"]);
-
-        // Test filter missing
-        let result = collect_workstreams(temp.path(), Some("ws3"));
-        assert!(result.is_err());
-    }
-
     fn create_valid_workspace(temp: &assert_fs::TempDir) {
         temp.child(".jules/JULES.md").touch().unwrap();
         temp.child(".jules/README.md").touch().unwrap();
@@ -465,17 +386,11 @@ mod tests {
             }
         }
 
-        // Workstream: definition in .jlo
-        let jlo_ws_dir = temp.child(".jlo/workstreams/generic");
-        jlo_ws_dir.create_dir_all().unwrap();
-        jlo_ws_dir.child("scheduled.toml").touch().unwrap();
+        // Root schedule in .jlo/
+        temp.child(".jlo/scheduled.toml").touch().unwrap();
 
-        // Workstream: runtime in .jules
-        let jules_ws_dir = temp.child(".jules/workstreams/generic");
-        jules_ws_dir.create_dir_all().unwrap();
-
-        // Exchange structure in .jules
-        let exchange = jules_ws_dir.child("exchange");
+        // Flat exchange structure in .jules/
+        let exchange = temp.child(".jules/exchange");
         exchange.child("events").create_dir_all().unwrap();
         exchange.child("issues").create_dir_all().unwrap();
 
@@ -486,7 +401,7 @@ mod tests {
         // Innovator rooms directory
         exchange.child("innovators").create_dir_all().unwrap();
 
-        jules_ws_dir.child("workstations").create_dir_all().unwrap();
+        temp.child(".jules/workstations").create_dir_all().unwrap();
     }
 
     #[test]
@@ -495,14 +410,12 @@ mod tests {
         create_valid_workspace(&temp);
 
         let mut diagnostics = Diagnostics::default();
-        let workstreams = vec!["generic".to_string()];
         let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
             root: temp.path(),
-            workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
         };
@@ -527,14 +440,12 @@ mod tests {
         std::fs::remove_file(temp.path().join(".jules/JULES.md")).unwrap();
 
         let mut diagnostics = Diagnostics::default();
-        let workstreams = vec!["generic".to_string()];
         let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
             root: temp.path(),
-            workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
         };
@@ -557,14 +468,12 @@ mod tests {
         std::fs::remove_file(temp.path().join(".jules/roles/implementers/contracts.yml")).unwrap();
 
         let mut diagnostics = Diagnostics::default();
-        let workstreams = vec!["generic".to_string()];
         let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
             root: temp.path(),
-            workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
         };

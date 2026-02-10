@@ -4,7 +4,7 @@
 
 use serde::Serialize;
 
-use crate::adapters::workstream_schedule_filesystem::{list_subdirectories, load_schedule};
+use crate::adapters::schedule_filesystem::load_schedule;
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
 
@@ -40,6 +40,9 @@ pub struct WorkstreamMatrixEntry {
 }
 
 /// Execute matrix workstreams command.
+///
+/// With the flat schedule model, this returns a single-entry matrix
+/// if the root schedule is enabled.
 pub fn execute(
     workspace: &impl WorkspaceStore,
     _options: MatrixWorkstreamsOptions,
@@ -48,26 +51,20 @@ pub fn execute(
         return Err(AppError::WorkspaceNotFound);
     }
 
-    let jules_path = workspace.jules_path();
-    let workstreams_dir = jules_path.join("workstreams");
-
     let mut include = Vec::new();
 
-    for entry in list_subdirectories(workspace, &workstreams_dir)? {
-        let name =
-            entry.file_name().map(|value| value.to_string_lossy().to_string()).unwrap_or_default();
-        if name.is_empty() {
-            continue;
+    match load_schedule(workspace) {
+        Ok(schedule) if schedule.enabled => {
+            include.push(WorkstreamMatrixEntry { workstream: "default".to_string() });
         }
-
-        let schedule = load_schedule(workspace, &name)?;
-        if schedule.enabled {
-            include.push(WorkstreamMatrixEntry { workstream: name });
+        Ok(_) => {
+            // Schedule exists but is disabled
         }
+        Err(AppError::ScheduleConfigMissing(_)) => {
+            // No schedule configured
+        }
+        Err(e) => return Err(e),
     }
-
-    // Ensure deterministic ordering
-    include.sort_by(|a, b| a.workstream.cmp(&b.workstream));
 
     let count = include.len();
     let has_workstreams = !include.is_empty();
@@ -89,57 +86,27 @@ mod tests {
     use std::fs;
     use tempfile::tempdir;
 
-    fn write_schedule(root: &std::path::Path, ws: &str, content: &str) {
-        let dir = root.join(".jules/workstreams").join(ws);
-        fs::create_dir_all(&dir).unwrap();
-        fs::write(dir.join("scheduled.toml"), content).unwrap();
-    }
-
     fn setup_workspace(root: &std::path::Path) {
-        // Create minimal workspace structure
         fs::create_dir_all(root.join(".jules")).unwrap();
         fs::write(root.join(".jules/version"), env!("CARGO_PKG_VERSION")).unwrap();
     }
 
+    fn write_root_schedule(root: &std::path::Path, content: &str) {
+        let dir = root.join(".jlo");
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("scheduled.toml"), content).unwrap();
+    }
+
     #[test]
     #[serial]
-    fn returns_only_enabled_workstreams() {
+    fn returns_single_entry_when_schedule_enabled() {
         let dir = tempdir().unwrap();
         let root = dir.path();
         setup_workspace(root);
         let store = FilesystemWorkspaceStore::new(root.to_path_buf());
 
-        write_schedule(
+        write_root_schedule(
             root,
-            "alpha",
-            r#"
-version = 1
-enabled = true
-[observers]
-roles = [
-  { name = "taxonomy", enabled = true },
-]
-[deciders]
-roles = []
-"#,
-        );
-
-        write_schedule(
-            root,
-            "beta",
-            r#"
-version = 1
-enabled = false
-[observers]
-roles = []
-[deciders]
-roles = []
-"#,
-        );
-
-        write_schedule(
-            root,
-            "gamma",
             r#"
 version = 1
 enabled = true
@@ -155,26 +122,21 @@ roles = []
         let output = execute(&store, MatrixWorkstreamsOptions {}).unwrap();
 
         assert_eq!(output.schema_version, 1);
-        assert_eq!(output.count, 2);
+        assert_eq!(output.count, 1);
         assert!(output.has_workstreams);
-
-        let names: Vec<&str> =
-            output.matrix.include.iter().map(|e| e.workstream.as_str()).collect();
-        // Should be sorted alphabetically
-        assert_eq!(names, vec!["alpha", "gamma"]);
+        assert_eq!(output.matrix.include[0].workstream, "default");
     }
 
     #[test]
     #[serial]
-    fn empty_matrix_when_no_enabled_workstreams() {
+    fn empty_matrix_when_schedule_disabled() {
         let dir = tempdir().unwrap();
         let root = dir.path();
         setup_workspace(root);
         let store = FilesystemWorkspaceStore::new(root.to_path_buf());
 
-        write_schedule(
+        write_root_schedule(
             root,
-            "disabled",
             r#"
 version = 1
 enabled = false
