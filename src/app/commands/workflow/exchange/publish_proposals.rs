@@ -471,7 +471,6 @@ mod tests {
         r#"schema_version: 1
 id: "abc123"
 persona: "alice"
-
 created_at: "2026-02-05"
 title: "Improve error messages"
 problem: |

@@ -95,8 +95,6 @@ pub fn create_role_at(
 
 /// Execute Jules agents for a layer.
 ///
-/// Execute Jules agents for a layer.
-///
 /// # Arguments
 /// * `layer` - Target layer (observers, deciders, planners, implementers)
 /// * `role` - Specific role to run (required for observers/deciders/innovators)
