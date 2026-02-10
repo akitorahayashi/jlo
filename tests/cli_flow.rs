@@ -32,9 +32,9 @@ fn user_can_use_command_aliases() {
     ctx.cli().args(["i", "--remote"]).assert().success();
 
     // Use 'c' alias for create
-    ctx.cli().args(["c", "deciders", "my-decider"]).assert().success();
+    ctx.cli().args(["c", "observers", "my-observer"]).assert().success();
 
-    let role_path = ctx.jlo_path().join("roles/deciders/roles/my-decider/role.yml");
+    let role_path = ctx.jlo_path().join("roles/observers/roles/my-observer/role.yml");
     assert!(role_path.exists(), "Role created via alias should exist in .jlo/");
 }
 
@@ -66,8 +66,8 @@ fn init_creates_complete_layer_structure() {
     assert!(jules.join("roles/observers/schemas").exists());
     assert!(jules.join("roles/observers/prompt_assembly.j2").exists());
 
-    // Deciders have role.yml under roles/ container in .jlo
-    assert!(jlo.join("roles/deciders/roles/triage_generic/role.yml").exists());
+    // Deciders are single-role: flat role.yml directly in .jlo
+    assert!(jlo.join("roles/deciders/role.yml").exists());
     assert!(jules.join("roles/deciders/schemas").exists());
     assert!(jules.join("roles/deciders/prompt_assembly.j2").exists());
 

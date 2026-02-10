@@ -39,9 +39,6 @@ pub enum RunLayer {
     /// Run decider agent (single role)
     #[clap(visible_alias = "d")]
     Deciders {
-        /// Role to run
-        #[arg(short = 'r', long)]
-        role: String,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
         prompt_preview: bool,
@@ -113,8 +110,8 @@ pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
         RunLayer::Observers { role, prompt_preview, branch, mock } => {
             (Layer::Observers, Some(role), prompt_preview, branch, None, mock, None)
         }
-        RunLayer::Deciders { role, prompt_preview, branch, mock } => {
-            (Layer::Deciders, Some(role), prompt_preview, branch, None, mock, None)
+        RunLayer::Deciders { prompt_preview, branch, mock } => {
+            (Layer::Deciders, None, prompt_preview, branch, None, mock, None)
         }
         RunLayer::Planners { prompt_preview, branch, issue, mock } => {
             (Layer::Planners, None, prompt_preview, branch, Some(issue), mock, None)

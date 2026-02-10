@@ -12,11 +12,6 @@ roles = [
   { name = "consistency", enabled = true },
 ]
 
-[deciders]
-roles = [
-  { name = "triage_generic", enabled = true },
-]
-
 [innovators]
 roles = [
   { name = "recruiter", enabled = true },

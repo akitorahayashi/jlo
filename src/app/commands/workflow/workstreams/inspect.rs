@@ -48,14 +48,6 @@ pub(super) fn inspect_at(
                 .map(|r| RoleSummary { name: r.name.clone().into(), enabled: r.enabled })
                 .collect(),
         },
-        deciders: ScheduleLayerSummary {
-            roles: schedule
-                .deciders
-                .roles
-                .iter()
-                .map(|r| RoleSummary { name: r.name.clone().into(), enabled: r.enabled })
-                .collect(),
-        },
     };
 
     let root = jules_path.parent().unwrap_or(Path::new("."));
@@ -368,8 +360,6 @@ enabled = true
 roles = [
   { name = "taxonomy", enabled = true },
 ]
-[deciders]
-roles = []
 "#,
         )
         .unwrap();
