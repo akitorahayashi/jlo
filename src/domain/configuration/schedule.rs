@@ -18,7 +18,6 @@ pub struct Schedule {
     pub version: u32,
     pub enabled: bool,
     pub observers: ScheduleLayer,
-    pub deciders: ScheduleLayer,
     #[serde(default)]
     pub innovators: Option<ScheduleLayer>,
 }
@@ -64,7 +63,6 @@ impl Schedule {
         }
 
         Self::validate_roles("observers", &self.observers)?;
-        Self::validate_roles("deciders", &self.deciders)?;
         if let Some(ref innovators) = self.innovators {
             Self::validate_roles("innovators", innovators)?;
         }
@@ -104,11 +102,6 @@ roles = [
   { name = "taxonomy", enabled = true },
   { name = "qa", enabled = false },
 ]
-
-[deciders]
-roles = [
-  { name = "triage_generic", enabled = true },
-]
 "#;
         let schedule = Schedule::parse_toml(content).unwrap();
         assert_eq!(schedule.version, 1);
@@ -122,10 +115,6 @@ roles = [
         let obs_roles: Vec<String> =
             schedule.observers.enabled_roles().into_iter().map(|r| r.into()).collect();
         assert_eq!(obs_roles, vec!["taxonomy"]);
-
-        let dec_roles: Vec<String> =
-            schedule.deciders.enabled_roles().into_iter().map(|r| r.into()).collect();
-        assert_eq!(dec_roles, vec!["triage_generic"]);
     }
 
     #[test]
@@ -147,9 +136,6 @@ enabled = true
 
 [observers]
 roles = []
-
-[deciders]
-roles = []
 "#;
         let err = Schedule::parse_toml(content).unwrap_err();
         assert!(err.to_string().contains("requires at least one observer role"));
@@ -165,9 +151,6 @@ enabled = false
 roles = [
   { name = "bad role", enabled = true },
 ]
-
-[deciders]
-roles = []
 "#;
         let err = Schedule::parse_toml(content).unwrap_err();
         // This will be a Toml error because deserialization of RoleId fails

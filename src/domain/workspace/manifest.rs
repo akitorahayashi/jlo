@@ -51,11 +51,12 @@ impl ScaffoldManifest {
 pub fn is_default_role_file(path: &str) -> bool {
     let parts: Vec<&str> = path.split('/').collect();
 
-    // .jules/roles/<layer>/roles/<role>/role.yml (multi-role layers: observers, deciders)
+    // .jules/roles/<layer>/roles/<role>/role.yml (multi-role layers: observers, innovators)
     // Example: .jules/roles/observers/roles/taxonomy/role.yml
     if parts.len() == 6
         && parts[0] == ".jules"
         && parts[1] == "roles"
+        && matches!(parts[2], "observers" | "innovators")
         && parts[3] == "roles"
         && parts[5] == "role.yml"
     {
@@ -126,7 +127,9 @@ mod tests {
     fn test_is_default_role_file() {
         // New structure: roles are under roles/ container
         assert!(is_default_role_file(".jules/roles/observers/roles/taxonomy/role.yml"));
-        assert!(is_default_role_file(".jules/roles/deciders/roles/triage_generic/role.yml"));
+
+        // Deciders is now single-role, no roles subdirectory
+        assert!(!is_default_role_file(".jules/roles/deciders/roles/triage_generic/role.yml"));
 
         // Not default role files
         assert!(!is_default_role_file(".jules/roles/planners/contracts.yml")); // contracts.yml is managed

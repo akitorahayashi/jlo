@@ -229,8 +229,6 @@ enabled = true
 roles = [
     { name = "taxonomy", enabled = true },
 ]
-[deciders]
-roles = []
 "#,
         )
         .unwrap();

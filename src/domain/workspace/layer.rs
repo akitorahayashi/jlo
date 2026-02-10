@@ -7,7 +7,7 @@ pub enum Layer {
     Narrators,
     /// Observers: Read source and changes, emit events (taxonomy, data_arch, consistency, qa)
     Observers,
-    /// Deciders: Read events, emit issues, delete events (triage_generic)
+    /// Deciders: Read events, emit issues, delete events
     Deciders,
     /// Planners: Read issues requiring deep analysis, expand them in-place (specifier_global)
     Planners,
@@ -81,11 +81,11 @@ impl Layer {
 
     /// Whether this layer has a single, fixed role (no subdirectories).
     ///
-    /// Single-role layers (Narrators, Planners, Implementers) have contracts.yml
+    /// Single-role layers (Narrators, Deciders, Planners, Implementers) have contracts.yml
     /// directly in the layer directory rather than in role subdirectories. They do not
     /// support custom role creation or scheduled role lists.
     pub fn is_single_role(&self) -> bool {
-        matches!(self, Layer::Narrators | Layer::Planners | Layer::Implementers)
+        matches!(self, Layer::Narrators | Layer::Deciders | Layer::Planners | Layer::Implementers)
     }
 
     /// Whether this layer uses innovator room exchange structure.
@@ -141,7 +141,7 @@ mod tests {
     fn single_role_layers_include_narrator_planners_implementers() {
         assert!(Layer::Narrators.is_single_role());
         assert!(!Layer::Observers.is_single_role());
-        assert!(!Layer::Deciders.is_single_role());
+        assert!(Layer::Deciders.is_single_role());
         assert!(Layer::Planners.is_single_role());
         assert!(Layer::Implementers.is_single_role());
         assert!(!Layer::Innovators.is_single_role());

@@ -23,7 +23,7 @@ where
     match options.layer {
         Layer::Narrators => execute_narrator(store, options, &jules_path, git, github),
         Layer::Observers => execute_multi_role(store, options, &jules_path, git, github),
-        Layer::Deciders => execute_multi_role(store, options, &jules_path, git, github),
+        Layer::Deciders => execute_decider(store, options, &jules_path, git, github),
         Layer::Planners => execute_issue_layer(store, options, &jules_path, git, github),
         Layer::Implementers => execute_issue_layer(store, options, &jules_path, git, github),
         Layer::Innovators => execute_multi_role(store, options, &jules_path, git, github),
@@ -58,7 +58,35 @@ where
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
 }
 
-/// Execute multi-role layer (observers, deciders) for a specific workstream.
+/// Execute decider (single-role, no schedule lookup).
+fn execute_decider<G, H>(
+    store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
+    options: &WorkflowRunOptions,
+    jules_path: &Path,
+    git: &G,
+    github: &H,
+) -> Result<RunResults, AppError>
+where
+    G: GitPort,
+    H: GitHubPort,
+{
+    let run_options = RunOptions {
+        layer: Layer::Deciders,
+        role: None,
+        prompt_preview: false,
+        branch: None,
+        issue: None,
+        mock: options.mock,
+        phase: None,
+    };
+
+    eprintln!("Executing: deciders{}", if options.mock { " (mock)" } else { "" });
+    run::execute(jules_path, run_options, git, github, store)?;
+
+    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+}
+
+/// Execute multi-role layer (observers, innovators).
 fn execute_multi_role<G, H>(
     store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
     options: &WorkflowRunOptions,
@@ -83,7 +111,6 @@ where
     // Get enabled roles for the layer
     let roles = match options.layer {
         Layer::Observers => schedule.observers.enabled_roles(),
-        Layer::Deciders => schedule.deciders.enabled_roles(),
         Layer::Innovators => {
             schedule.innovators.as_ref().map(|l| l.enabled_roles()).unwrap_or_default()
         }

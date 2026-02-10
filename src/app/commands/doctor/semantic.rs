@@ -102,7 +102,8 @@ pub fn semantic_checks(
     };
     let roles_dir = root.join(".jlo").join("roles");
     let mut existing_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
-    for layer in [Layer::Observers, Layer::Deciders, Layer::Innovators] {
+    // Only validate multi-role layers that are scheduled (Observers, Innovators)
+    for layer in [Layer::Observers, Layer::Innovators] {
         let roles_container = roles_dir.join(layer.dir_name()).join("roles");
         if roles_container.exists() {
             let mut role_set = HashSet::new();
@@ -136,13 +137,6 @@ pub fn semantic_checks(
             validate_scheduled_layer(
                 Layer::Observers,
                 &schedule.observers,
-                &existing_roles,
-                &mut scheduled_roles,
-                diagnostics,
-            );
-            validate_scheduled_layer(
-                Layer::Deciders,
-                &schedule.deciders,
                 &existing_roles,
                 &mut scheduled_roles,
                 diagnostics,

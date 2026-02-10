@@ -145,7 +145,7 @@ impl TestContext {
 
     /// Assert that a role directory exists (legacy compatibility - searches all layers) in .jlo/.
     pub fn assert_role_exists(&self, role_id: &str) {
-        let layers = ["observers", "deciders", "planners", "implementers"];
+        let layers = ["observers", "planners", "implementers"];
         let found = layers.iter().any(|layer| {
             // Roles are under roles/ container in multi-role layers
             self.jlo_path()
@@ -231,10 +231,10 @@ impl TestContext {
         self.assert_role_in_layer_exists("observers", "qa");
         self.assert_role_in_layer_exists("observers", "cov");
         self.assert_role_in_layer_exists("observers", "consistency");
-        self.assert_role_in_layer_exists("deciders", "triage_generic");
 
         // Single-role layers have contracts.yml directly in layer directory
         self.assert_single_role_layer_exists("narrator");
+        self.assert_single_role_layer_exists("deciders");
         self.assert_single_role_layer_exists("planners");
         self.assert_single_role_layer_exists("implementers");
     }

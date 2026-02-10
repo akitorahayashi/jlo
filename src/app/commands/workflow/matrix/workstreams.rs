@@ -114,8 +114,6 @@ enabled = true
 roles = [
   { name = "taxonomy", enabled = true },
 ]
-[deciders]
-roles = []
 "#,
         );
 
@@ -141,8 +139,6 @@ roles = []
 version = 1
 enabled = false
 [observers]
-roles = []
-[deciders]
 roles = []
 "#,
         );

@@ -13,7 +13,6 @@ pub struct ScheduleSummary {
     pub version: u32,
     pub enabled: bool,
     pub observers: ScheduleLayerSummary,
-    pub deciders: ScheduleLayerSummary,
 }
 
 #[derive(Debug, Serialize)]
