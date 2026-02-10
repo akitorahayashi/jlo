@@ -11,7 +11,6 @@ use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 // Template placeholder constants (must match src/assets/mock/innovator_idea.yml)
 const TMPL_ID: &str = "mock01";
 const TMPL_PERSONA: &str = "mock-persona";
-const TMPL_WORKSTREAM: &str = "mock-workstream";
 const TMPL_DATE: &str = "2026-02-05";
 const TMPL_TAG: &str = "test-tag";
 
@@ -43,10 +42,6 @@ where
     H: GitHubPort,
     W: WorkspaceStore,
 {
-    let workstream = options.workstream.as_deref().ok_or_else(|| {
-        AppError::MissingArgument("Workstream is required for innovators".to_string())
-    })?;
-
     let role = options.role.as_deref().ok_or_else(|| {
         AppError::MissingArgument("Role (persona) is required for innovators".to_string())
     })?;
@@ -65,12 +60,6 @@ where
     }
 
     // Validate path components
-    if !validate_safe_path_component(workstream) {
-        return Err(AppError::Validation(format!(
-            "Invalid workstream name '{}': must be alphanumeric with hyphens or underscores only",
-            workstream
-        )));
-    }
     if !validate_safe_path_component(role) {
         return Err(AppError::Validation(format!(
             "Invalid role name '{}': must be alphanumeric with hyphens or underscores only",
@@ -78,12 +67,7 @@ where
         )));
     }
 
-    let room_dir = jules_path
-        .join("workstreams")
-        .join(workstream)
-        .join("exchange")
-        .join("innovators")
-        .join(role);
+    let room_dir = jules_path.join("exchange").join("innovators").join(role);
 
     let idea_path = room_dir.join("idea.yml");
     let idea_path_str = idea_path
@@ -105,7 +89,7 @@ where
 
     let is_creation = phase == "creation";
 
-    println!("Mock innovators: phase={} for {}/{}", phase, workstream, role);
+    println!("Mock innovators: phase={} for {}", phase, role);
 
     if is_creation {
         // Creation phase mock: create idea.yml from template
@@ -124,7 +108,6 @@ where
         let idea_content = mock_idea_template
             .replace(TMPL_ID, &idea_id)
             .replace(TMPL_PERSONA, role)
-            .replace(TMPL_WORKSTREAM, workstream)
             .replace(TMPL_DATE, &Utc::now().format("%Y-%m-%d").to_string())
             .replace(TMPL_TAG, &safe_tag);
 
@@ -155,8 +138,8 @@ where
         &format!("[{}] Innovator {} {}", config.mock_tag, role, phase),
         &format!(
             "Mock innovator run for workflow validation.\n\n\
-             Mock tag: `{}`\nWorkstream: `{}`\nPersona: `{}`\nPhase: {}",
-            config.mock_tag, workstream, role, phase
+             Mock tag: `{}`\nPersona: `{}`\nPhase: {}",
+            config.mock_tag, role, phase
         ),
     )?;
 
@@ -359,7 +342,6 @@ mod tests {
         let options = RunOptions {
             layer: Layer::Innovators,
             role: Some("alice".to_string()),
-            workstream: Some("generic".to_string()),
             prompt_preview: false,
             branch: None,
             issue: None,
@@ -375,7 +357,7 @@ mod tests {
         assert_eq!(output.mock_pr_number, 42);
 
         // idea.yml should now exist
-        let idea_path = jules_path.join("workstreams/generic/exchange/innovators/alice/idea.yml");
+        let idea_path = jules_path.join("exchange/innovators/alice/idea.yml");
         assert!(workspace.file_exists(idea_path.to_str().unwrap()));
     }
 
@@ -388,13 +370,12 @@ mod tests {
         let config = make_config();
 
         // Pre-populate idea.yml
-        let idea_path = jules_path.join("workstreams/generic/exchange/innovators/alice/idea.yml");
+        let idea_path = jules_path.join("exchange/innovators/alice/idea.yml");
         workspace.write_file(idea_path.to_str().unwrap(), "existing idea").unwrap();
 
         let options = RunOptions {
             layer: Layer::Innovators,
             role: Some("alice".to_string()),
-            workstream: Some("generic".to_string()),
             prompt_preview: false,
             branch: None,
             issue: None,
@@ -418,13 +399,12 @@ mod tests {
         let github = FakeGitHub;
         let config = make_config();
 
-        let idea_path = jules_path.join("workstreams/generic/exchange/innovators/alice/idea.yml");
+        let idea_path = jules_path.join("exchange/innovators/alice/idea.yml");
 
         // Creation phase: creates idea.yml
         let create_options = RunOptions {
             layer: Layer::Innovators,
             role: Some("alice".to_string()),
-            workstream: Some("generic".to_string()),
             prompt_preview: false,
             branch: None,
             issue: None,
@@ -446,7 +426,6 @@ mod tests {
         let refine_options = RunOptions {
             layer: Layer::Innovators,
             role: Some("alice".to_string()),
-            workstream: Some("generic".to_string()),
             prompt_preview: false,
             branch: None,
             issue: None,
@@ -476,7 +455,6 @@ mod tests {
         let options = RunOptions {
             layer: Layer::Innovators,
             role: Some("alice".to_string()),
-            workstream: Some("generic".to_string()),
             prompt_preview: false,
             branch: None,
             issue: None,
@@ -500,7 +478,6 @@ mod tests {
         let options = RunOptions {
             layer: Layer::Innovators,
             role: Some("alice".to_string()),
-            workstream: Some("generic".to_string()),
             prompt_preview: false,
             branch: None,
             issue: None,

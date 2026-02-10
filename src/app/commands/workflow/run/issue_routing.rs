@@ -1,12 +1,10 @@
-use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::{AppError, IssueHeader, Layer};
 use crate::ports::WorkspaceStore;
 use std::path::{Path, PathBuf};
 
-/// Find issues for a specific workstream and layer.
-pub(crate) fn find_issues_for_workstream(
+/// Find issues for a layer in the flat exchange directory.
+pub(crate) fn find_issues(
     store: &impl WorkspaceStore,
-    workstream: &str,
     layer: Layer,
     routing_labels: Option<&[String]>,
 ) -> Result<Vec<PathBuf>, AppError> {
@@ -14,16 +12,8 @@ pub(crate) fn find_issues_for_workstream(
         return Err(AppError::Validation("Invalid layer for issue discovery".to_string()));
     }
 
-    if !validate_safe_path_component(workstream) {
-        return Err(AppError::Validation(format!(
-            "Invalid workstream name '{}': must be alphanumeric with hyphens or underscores only",
-            workstream
-        )));
-    }
-
     let jules_path = store.jules_path();
-    let issues_root =
-        jules_path.join("workstreams").join(workstream).join("exchange").join("issues");
+    let issues_root = jules_path.join("exchange").join("issues");
 
     if !store.file_exists(issues_root.to_str().unwrap()) {
         return Ok(Vec::new());
@@ -122,7 +112,7 @@ mod tests {
         name: &str,
         requires_deep_analysis: bool,
     ) {
-        let issue_dir = format!(".jules/workstreams/alpha/exchange/issues/{}", label);
+        let issue_dir = format!(".jules/exchange/issues/{}", label);
         let content = format!(
             "id: test01\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n",
             requires_deep_analysis
@@ -142,9 +132,7 @@ mod tests {
         write_issue(&store, "docs", "ignored-by-routing", true);
 
         let routing_labels = vec!["bugs".to_string()];
-        let issues =
-            find_issues_for_workstream(&store, "alpha", Layer::Planners, Some(&routing_labels))
-                .unwrap();
+        let issues = find_issues(&store, Layer::Planners, Some(&routing_labels)).unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("requires-planning.yml"));
@@ -160,9 +148,7 @@ mod tests {
         write_issue(&store, "bugs", "ready-to-implement", false);
 
         let routing_labels = vec!["bugs".to_string()];
-        let issues =
-            find_issues_for_workstream(&store, "alpha", Layer::Implementers, Some(&routing_labels))
-                .unwrap();
+        let issues = find_issues(&store, Layer::Implementers, Some(&routing_labels)).unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("ready-to-implement.yml"));

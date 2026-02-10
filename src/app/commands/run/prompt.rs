@@ -5,7 +5,7 @@
 
 use std::path::Path;
 
-use crate::domain::identifiers::validation::{validate_identifier, validate_safe_path_component};
+use crate::domain::identifiers::validation::validate_identifier;
 use crate::domain::{
     AppError, Layer, PromptAssetLoader, PromptContext, assemble_prompt as assemble_prompt_domain,
     assemble_with_issue,
@@ -13,35 +13,27 @@ use crate::domain::{
 
 /// Assemble the full prompt for a role in a multi-role layer.
 ///
-/// Multi-role layers (observers, deciders, innovators) require workstream and role context.
+/// Multi-role layers (observers, deciders, innovators) require role context.
 /// Innovators additionally require a phase context variable.
 pub fn assemble_prompt<L>(
     jules_path: &Path,
     layer: Layer,
     role: &str,
-    workstream: &str,
     phase: Option<&str>,
     loader: &L,
 ) -> Result<String, AppError>
 where
     L: PromptAssetLoader + Clone + Send + Sync + 'static,
 {
-    // Validate role and workstream to prevent prompt injection
+    // Validate role to prevent prompt injection
     if !validate_identifier(role, false) {
         return Err(AppError::Validation(format!(
             "Invalid role '{}': must be alphanumeric with hyphens or underscores",
             role
         )));
     }
-    if !validate_safe_path_component(workstream) {
-        return Err(AppError::Validation(format!(
-            "Invalid workstream '{}': must be alphanumeric with hyphens or underscores",
-            workstream
-        )));
-    }
 
-    let mut context =
-        PromptContext::new().with_var("workstream", workstream).with_var("role", role);
+    let mut context = PromptContext::new().with_var("role", role);
     if layer == Layer::Innovators {
         let phase_val = phase.ok_or_else(|| {
             AppError::MissingArgument(

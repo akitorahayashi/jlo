@@ -159,54 +159,29 @@ impl TestContext {
         assert!(found, "Role {} should exist in some layer in .jlo/", role_id);
     }
 
-    /// Assert that the events directory structure exists (workstream-based).
+    /// Assert that the events directory structure exists (flat exchange).
     pub fn assert_events_structure_exists(&self) {
-        let events_path = self.jules_path().join("workstreams/generic/exchange/events");
-        assert!(events_path.exists(), "workstreams/generic/exchange/events should exist");
-        assert!(
-            events_path.join("pending").exists(),
-            "workstreams/generic/exchange/events/pending should exist"
-        );
-        assert!(
-            events_path.join("decided").exists(),
-            "workstreams/generic/exchange/events/decided should exist"
-        );
+        let events_path = self.jules_path().join("exchange/events");
+        assert!(events_path.exists(), "exchange/events should exist");
+        assert!(events_path.join("pending").exists(), "exchange/events/pending should exist");
+        assert!(events_path.join("decided").exists(), "exchange/events/decided should exist");
     }
 
-    /// Assert that the issues directory exists (workstream-based).
+    /// Assert that the issues directory exists (flat exchange).
     pub fn assert_issues_directory_exists(&self) {
-        let issues_path = self.jules_path().join("workstreams/generic/exchange/issues");
-        assert!(issues_path.exists(), "workstreams/generic/exchange/issues directory should exist");
+        let issues_path = self.jules_path().join("exchange/issues");
+        assert!(issues_path.exists(), "exchange/issues directory should exist");
     }
 
-    /// Assert that workstreams directory structure exists.
-    pub fn assert_workstreams_structure_exists(&self) {
-        let ws_path = self.jules_path().join("workstreams");
-        assert!(ws_path.exists(), "workstreams directory should exist");
-        assert!(ws_path.join("generic").exists(), "generic workstream should exist");
-        assert!(ws_path.join("generic/exchange").exists(), "generic/exchange should exist");
-        assert!(
-            ws_path.join("generic/exchange/events").exists(),
-            "generic/exchange/events should exist"
-        );
-        assert!(
-            ws_path.join("generic/exchange/events/pending").exists(),
-            "generic/exchange/events/pending should exist"
-        );
-        assert!(
-            ws_path.join("generic/exchange/events/decided").exists(),
-            "generic/exchange/events/decided should exist"
-        );
-        assert!(
-            ws_path.join("generic/exchange/issues").exists(),
-            "generic/exchange/issues should exist"
-        );
-        assert!(ws_path.join("generic/workstations").exists(), "generic/workstations should exist");
-    }
-
-    /// Assert that exchange directory structure exists (for backward compatibility, now checks workstreams).
+    /// Assert that flat exchange directory structure exists.
     pub fn assert_exchange_structure_exists(&self) {
-        self.assert_workstreams_structure_exists();
+        let exchange = self.jules_path().join("exchange");
+        assert!(exchange.exists(), "exchange directory should exist");
+        assert!(exchange.join("events").exists(), "exchange/events should exist");
+        assert!(exchange.join("events/pending").exists(), "exchange/events/pending should exist");
+        assert!(exchange.join("events/decided").exists(), "exchange/events/decided should exist");
+        assert!(exchange.join("issues").exists(), "exchange/issues should exist");
+        assert!(exchange.join("innovators").exists(), "exchange/innovators should exist");
     }
 
     /// Assert that contracts.yml exists in each layer directory.

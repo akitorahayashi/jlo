@@ -8,20 +8,14 @@ pub enum WorkflowCommands {
     /// Bootstrap the .jules/ runtime workspace on the current branch
     Bootstrap,
     /// Validation gate for .jules/ workspace
-    Doctor {
-        /// Limit checks to a specific workstream
-        #[arg(long)]
-        workstream: Option<String>,
-    },
+    Doctor,
     /// Export matrices for GitHub Actions
     Matrix {
         #[command(subcommand)]
         command: WorkflowMatrixCommands,
     },
-    /// Run a workstream layer and return wait-gating metadata
+    /// Run a layer and return wait-gating metadata
     Run {
-        /// Target workstream (e.g., generic, alpha)
-        workstream: String,
         /// Target layer (narrator, observers, deciders, planners, implementers, innovators)
         layer: String,
         /// Run in mock mode (requires JULES_MOCK_TAG)
@@ -56,7 +50,7 @@ pub enum WorkflowCommands {
         #[command(subcommand)]
         command: WorkflowIssueCommands,
     },
-    /// Workstream inspection and cleanup
+    /// Inspection and cleanup
     Workstreams {
         #[command(subcommand)]
         command: WorkflowWorkstreamsCommands,
@@ -119,20 +113,14 @@ pub enum WorkflowMatrixCommands {
     /// Export enabled workstreams as a GitHub Actions matrix
     Workstreams,
 
-    /// Export workstreams with pending events as a GitHub Actions matrix
+    /// Check flat exchange for pending events
     PendingWorkstreams {
-        /// Workstreams JSON from `matrix workstreams` output (the `matrix` field)
-        #[arg(long)]
-        workstreams_json: String,
-        /// Mock mode: treat all workstreams as having pending events
+        /// Mock mode: always report pending events
         #[arg(long)]
         mock: bool,
     },
-    /// Export planner/implementer issue matrices from workstream inspection
+    /// Export planner/implementer issue matrices from flat exchange
     Routing {
-        /// Workstreams JSON from `matrix workstreams` output (the `matrix` field)
-        #[arg(long)]
-        workstreams_json: String,
         /// Routing labels as CSV (e.g., "bugs,feats,refacts,tests,docs")
         #[arg(long)]
         routing_labels: String,
@@ -141,21 +129,15 @@ pub enum WorkflowMatrixCommands {
 
 #[derive(Subcommand)]
 pub enum WorkflowWorkstreamsCommands {
-    /// Inspect a workstream and output JSON
-    Inspect {
-        /// Workstream name
-        workstream: String,
-    },
+    /// Inspect exchange and output JSON
+    Inspect,
     /// Cleanup operations for workstreams
     Clean {
         #[command(subcommand)]
         command: WorkflowWorkstreamsCleanCommands,
     },
     /// Publish merged proposals as GitHub issues
-    PublishProposals {
-        /// Workstream name
-        workstream: String,
-    },
+    PublishProposals,
 }
 
 #[derive(Subcommand)]
@@ -184,27 +166,21 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let output = workflow::bootstrap(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowCommands::Doctor { workstream } => {
-            let options = workflow::WorkflowDoctorOptions { workstream };
+        WorkflowCommands::Doctor => {
+            let options = workflow::WorkflowDoctorOptions {};
             let output = workflow::doctor(options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowCommands::Matrix { command } => run_workflow_matrix(command),
-        WorkflowCommands::Run { workstream, layer, mock, phase } => {
+        WorkflowCommands::Run { layer, mock, phase } => {
             let layer = parse_layer(&layer)?;
             let mock_tag = std::env::var("JULES_MOCK_TAG").ok();
             let routing_labels = std::env::var("ROUTING_LABELS").ok().map(|s| {
                 s.split(',').map(str::trim).filter(|v| !v.is_empty()).map(String::from).collect()
             });
 
-            let options = workflow::WorkflowRunOptions {
-                workstream,
-                layer,
-                mock,
-                mock_tag,
-                routing_labels,
-                phase,
-            };
+            let options =
+                workflow::WorkflowRunOptions { layer, mock, mock_tag, routing_labels, phase };
             let output = workflow::run(options)?;
             workflow::write_workflow_output(&output)
         }
@@ -299,8 +275,8 @@ fn run_workflow_workstreams(command: WorkflowWorkstreamsCommands) -> Result<(), 
     use crate::app::commands::workflow;
 
     match command {
-        WorkflowWorkstreamsCommands::Inspect { workstream } => {
-            let options = workflow::WorkflowWorkstreamsInspectOptions { workstream };
+        WorkflowWorkstreamsCommands::Inspect => {
+            let options = workflow::WorkflowWorkstreamsInspectOptions {};
             let output = workflow::workstreams_inspect(options)?;
             workflow::write_workflow_output(&output)
         }
@@ -311,8 +287,8 @@ fn run_workflow_workstreams(command: WorkflowWorkstreamsCommands) -> Result<(), 
                 workflow::write_workflow_output(&output)
             }
         },
-        WorkflowWorkstreamsCommands::PublishProposals { workstream } => {
-            let options = workflow::WorkflowWorkstreamsPublishProposalsOptions { workstream };
+        WorkflowWorkstreamsCommands::PublishProposals => {
+            let options = workflow::WorkflowWorkstreamsPublishProposalsOptions {};
             let output = workflow::workstreams_publish_proposals(options)?;
             workflow::write_workflow_output(&output)
         }
@@ -329,21 +305,13 @@ fn run_workflow_matrix(command: WorkflowMatrixCommands) -> Result<(), AppError> 
             workflow::write_workflow_output(&output)
         }
 
-        WorkflowMatrixCommands::PendingWorkstreams { workstreams_json, mock } => {
-            let workstreams_json: matrix::PendingWorkstreamsInput =
-                serde_json::from_str(&workstreams_json).map_err(|e| {
-                    AppError::Validation(format!("Invalid workstreams-json: {}", e))
-                })?;
-            let options = matrix::MatrixPendingWorkstreamsOptions { workstreams_json, mock };
+        WorkflowMatrixCommands::PendingWorkstreams { mock } => {
+            let options = matrix::MatrixPendingWorkstreamsOptions { mock };
             let output = matrix::pending_workstreams(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowMatrixCommands::Routing { workstreams_json, routing_labels } => {
-            let workstreams_json: matrix::RoutingWorkstreamsInput =
-                serde_json::from_str(&workstreams_json).map_err(|e| {
-                    AppError::Validation(format!("Invalid workstreams-json: {}", e))
-                })?;
-            let options = matrix::MatrixRoutingOptions { workstreams_json, routing_labels };
+        WorkflowMatrixCommands::Routing { routing_labels } => {
+            let options = matrix::MatrixRoutingOptions { routing_labels };
             let output = matrix::routing(options)?;
             workflow::write_workflow_output(&output)
         }

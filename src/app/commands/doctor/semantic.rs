@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use chrono::{NaiveDate, Utc};
 
-use crate::adapters::workstream_schedule_filesystem::load_schedule;
+use crate::adapters::schedule_filesystem::load_schedule;
 use crate::domain::configuration::schedule::ScheduleLayer;
 use crate::domain::{AppError, Layer};
 
@@ -22,37 +22,32 @@ pub struct SemanticContext {
 
 pub fn semantic_context(
     jules_path: &Path,
-    workstreams: &[String],
     issue_labels: &[String],
     diagnostics: &mut Diagnostics,
 ) -> SemanticContext {
     let mut context = SemanticContext::default();
 
-    for workstream in workstreams {
-        let ws_dir = jules_path.join("workstreams").join(workstream);
-        let exchange_dir = ws_dir.join("exchange");
-        let decided_dir = exchange_dir.join("events/decided");
-        for entry in read_yaml_files(&decided_dir, diagnostics) {
-            if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
-                context.decided_events.insert(id.clone(), entry.clone());
-                if let Some(issue_id) = read_yaml_string(&entry, "issue_id", diagnostics)
-                    && !issue_id.is_empty()
-                {
-                    context.event_issue_map.insert(id, issue_id);
-                }
+    let exchange_dir = jules_path.join("exchange");
+    let decided_dir = exchange_dir.join("events/decided");
+    for entry in read_yaml_files(&decided_dir, diagnostics) {
+        if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
+            context.decided_events.insert(id.clone(), entry.clone());
+            if let Some(issue_id) = read_yaml_string(&entry, "issue_id", diagnostics)
+                && !issue_id.is_empty()
+            {
+                context.event_issue_map.insert(id, issue_id);
             }
         }
+    }
 
-        let issues_dir = exchange_dir.join("issues");
-        for label in issue_labels {
-            for entry in read_yaml_files(&issues_dir.join(label), diagnostics) {
-                if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
-                    context.issues.insert(id.clone(), entry.clone());
-                    if let Some(source_events) =
-                        read_yaml_strings(&entry, "source_events", diagnostics)
-                    {
-                        context.issue_sources.insert(id, source_events);
-                    }
+    let issues_dir = exchange_dir.join("issues");
+    for label in issue_labels {
+        for entry in read_yaml_files(&issues_dir.join(label), diagnostics) {
+            if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
+                context.issues.insert(id.clone(), entry.clone());
+                if let Some(source_events) = read_yaml_strings(&entry, "source_events", diagnostics)
+                {
+                    context.issue_sources.insert(id, source_events);
                 }
             }
         }
@@ -63,7 +58,6 @@ pub fn semantic_context(
 
 pub fn semantic_checks(
     jules_path: &Path,
-    workstreams: &[String],
     context: &SemanticContext,
     diagnostics: &mut Diagnostics,
 ) {
@@ -95,8 +89,9 @@ pub fn semantic_checks(
     // Roles are generic and assigned to workstreams via the schedule, not the role.yml
 
     // Collect existing roles from filesystem for each layer
-    // With the new scaffold structure, roles are under .jules/roles/<layer>/roles/<role>/
-    let roles_dir = jules_path.join("roles");
+    // Roles are user-defined and live under .jlo/roles/<layer>/roles/<role>/
+    let root = jules_path.parent().unwrap_or(Path::new("."));
+    let roles_dir = root.join(".jlo").join("roles");
     let mut existing_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
     for layer in [Layer::Observers, Layer::Deciders, Layer::Innovators] {
         let roles_container = roles_dir.join(layer.dir_name()).join("roles");
@@ -124,47 +119,46 @@ pub fn semantic_checks(
     }
 
     let mut scheduled_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
-    let root = jules_path.parent().unwrap_or(Path::new("."));
     let store =
         crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::new(root.to_path_buf());
 
-    for workstream in workstreams {
-        match load_schedule(&store, workstream) {
-            Ok(schedule) => {
+    match load_schedule(&store) {
+        Ok(schedule) => {
+            validate_scheduled_layer(
+                Layer::Observers,
+                &schedule.observers,
+                &existing_roles,
+                &mut scheduled_roles,
+                diagnostics,
+            );
+            validate_scheduled_layer(
+                Layer::Deciders,
+                &schedule.deciders,
+                &existing_roles,
+                &mut scheduled_roles,
+                diagnostics,
+            );
+            if let Some(ref innovators) = schedule.innovators {
                 validate_scheduled_layer(
-                    Layer::Observers,
-                    &schedule.observers,
+                    Layer::Innovators,
+                    innovators,
                     &existing_roles,
                     &mut scheduled_roles,
                     diagnostics,
                 );
-                validate_scheduled_layer(
-                    Layer::Deciders,
-                    &schedule.deciders,
-                    &existing_roles,
-                    &mut scheduled_roles,
-                    diagnostics,
-                );
-                if let Some(ref innovators) = schedule.innovators {
-                    validate_scheduled_layer(
-                        Layer::Innovators,
-                        innovators,
-                        &existing_roles,
-                        &mut scheduled_roles,
-                        diagnostics,
-                    );
-                }
             }
-            Err(AppError::ScheduleConfigMissing(_)) => {
-                // structural checks handle missing scheduled.toml
-            }
-            Err(AppError::Schedule(err)) => {
-                diagnostics
-                    .push_error(workstream.clone(), format!("Invalid scheduled.toml: {}", err));
-            }
-            Err(err) => {
-                diagnostics.push_error(workstream.clone(), err.to_string());
-            }
+        }
+        Err(AppError::ScheduleConfigMissing(_)) => {
+            // structural checks handle missing scheduled.toml
+        }
+        Err(AppError::Schedule(err)) => {
+            diagnostics.push_error(
+                "scheduled.toml".to_string(),
+                format!("Invalid scheduled.toml: {}", err),
+            );
+        }
+        Err(err) => {
+            diagnostics.push_error("scheduled.toml".to_string(), err.to_string());
         }
     }
 

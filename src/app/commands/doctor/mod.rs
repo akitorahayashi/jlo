@@ -19,7 +19,6 @@ pub use diagnostics::{Diagnostic, Diagnostics, Severity};
 #[derive(Debug, Clone, Default)]
 pub struct DoctorOptions {
     pub strict: bool,
-    pub workstream: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -43,15 +42,12 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
 
     let mut diagnostics = Diagnostics::default();
 
-    let workstreams = structure::collect_workstreams(&root, options.workstream.as_deref())?;
-
     let _run_config = structure::read_run_config(&root, &mut diagnostics)?;
 
     structure::structural_checks(
         structure::StructuralInputs {
             jules_path,
             root: &root,
-            workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
         },
@@ -64,7 +60,6 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         schema::SchemaInputs {
             jules_path,
             root: &root,
-            workstreams: &workstreams,
             issue_labels: &issue_labels,
             event_states: &event_states,
             event_confidence: &event_confidence,
@@ -74,19 +69,12 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         &mut diagnostics,
     );
 
-    naming::naming_checks(jules_path, &workstreams, &issue_labels, &event_states, &mut diagnostics);
+    naming::naming_checks(jules_path, &issue_labels, &event_states, &mut diagnostics);
 
-    let semantic_context =
-        semantic::semantic_context(jules_path, &workstreams, &issue_labels, &mut diagnostics);
-    semantic::semantic_checks(jules_path, &workstreams, &semantic_context, &mut diagnostics);
+    let semantic_context = semantic::semantic_context(jules_path, &issue_labels, &mut diagnostics);
+    semantic::semantic_checks(jules_path, &semantic_context, &mut diagnostics);
 
-    quality::quality_checks(
-        jules_path,
-        &workstreams,
-        &issue_labels,
-        &event_states,
-        &mut diagnostics,
-    );
+    quality::quality_checks(jules_path, &issue_labels, &event_states, &mut diagnostics);
 
     diagnostics.emit();
 

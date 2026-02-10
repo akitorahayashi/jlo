@@ -80,12 +80,8 @@ pub fn is_control_plane_entity_file(path: &str) -> bool {
         return true;
     }
 
-    // .jlo/workstreams/<workstream>/scheduled.toml
-    if components.len() == 4
-        && components[0] == ".jlo"
-        && components[1] == "workstreams"
-        && components[3] == "scheduled.toml"
-    {
+    // .jlo/scheduled.toml (root schedule)
+    if components.len() == 2 && components[0] == ".jlo" && components[1] == "scheduled.toml" {
         return true;
     }
 

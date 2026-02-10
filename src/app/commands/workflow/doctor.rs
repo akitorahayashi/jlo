@@ -10,10 +10,7 @@ use crate::ports::WorkspaceStore;
 
 /// Options for workflow doctor command.
 #[derive(Debug, Clone, Default)]
-pub struct WorkflowDoctorOptions {
-    /// Limit checks to a specific workstream.
-    pub workstream: Option<String>,
-}
+pub struct WorkflowDoctorOptions {}
 
 /// Output of workflow doctor command.
 #[derive(Debug, Clone, Serialize)]
@@ -27,7 +24,7 @@ pub struct WorkflowDoctorOutput {
 /// Execute workflow doctor validation.
 ///
 /// Returns a machine-readable output indicating workspace health.
-pub fn execute(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, AppError> {
+pub fn execute(_options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
 
     if !workspace.exists() {
@@ -37,7 +34,6 @@ pub fn execute(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, A
     // Delegate to existing doctor logic but translate to workflow output
     let doctor_options = crate::app::commands::doctor::DoctorOptions {
         strict: true, // Workflow mode is strict by default
-        workstream: options.workstream,
     };
 
     let outcome = crate::app::commands::doctor::execute(&workspace.jules_path(), doctor_options)?;

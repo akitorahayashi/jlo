@@ -1,8 +1,8 @@
 //! Matrix routing command implementation.
 //!
-//! Exports planner/implementer issue matrices from workstream inspection and routing labels.
+//! Exports planner/implementer issue matrices from flat exchange and routing labels.
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::path::{Path, PathBuf};
 
 use crate::domain::{AppError, IssueHeader};
@@ -11,24 +11,8 @@ use crate::ports::WorkspaceStore;
 /// Options for matrix routing command.
 #[derive(Debug, Clone)]
 pub struct MatrixRoutingOptions {
-    /// Workstreams JSON from `matrix workstreams` output.
-    pub workstreams_json: WorkstreamsMatrix,
     /// Routing labels as CSV (e.g., "bugs,feats,refacts,tests,docs").
     pub routing_labels: String,
-}
-
-/// Input workstreams matrix (from matrix workstreams output).
-#[derive(Debug, Clone, Deserialize)]
-pub struct WorkstreamsMatrix {
-    /// Matrix include entries.
-    pub include: Vec<WorkstreamEntry>,
-}
-
-/// Single workstream entry from input matrix.
-#[derive(Debug, Clone, Deserialize)]
-pub struct WorkstreamEntry {
-    /// Workstream name.
-    pub workstream: String,
 }
 
 /// Output of matrix routing command.
@@ -60,8 +44,6 @@ pub struct IssueMatrix {
 /// Single issue matrix entry.
 #[derive(Debug, Clone, Serialize)]
 pub struct IssueMatrixEntry {
-    /// Workstream name.
-    pub workstream: String,
     /// Issue file path (relative to repo root).
     pub issue: String,
 }
@@ -99,34 +81,16 @@ pub fn execute(
     let mut planner_issues = Vec::new();
     let mut implementer_issues = Vec::new();
 
-    for ws_entry in &options.workstreams_json.include {
-        if ws_entry.workstream.contains("..")
-            || ws_entry.workstream.contains('/')
-            || ws_entry.workstream.contains('\\')
-        {
-            return Err(AppError::Validation(format!(
-                "Invalid workstream name '{}': must not contain path separators or '..'",
-                ws_entry.workstream
-            )));
+    let issues_dir = jules_path.join("exchange/issues");
+
+    let issues_dir_str = match issues_dir.to_str() {
+        Some(s) => s,
+        None => {
+            return Err(AppError::Validation(format!("Invalid path: {}", issues_dir.display())));
         }
+    };
 
-        let issues_dir =
-            jules_path.join("workstreams").join(&ws_entry.workstream).join("exchange/issues");
-
-        let issues_dir_str = match issues_dir.to_str() {
-            Some(s) => s,
-            None => {
-                return Err(AppError::Validation(format!(
-                    "Invalid path: {}",
-                    issues_dir.display()
-                )));
-            }
-        };
-
-        if !store.file_exists(issues_dir_str) {
-            continue;
-        }
-
+    if store.file_exists(issues_dir_str) {
         // Only scan directories matching routing labels
         for label in &labels {
             let label_dir = issues_dir.join(label);
@@ -150,15 +114,9 @@ pub fn execute(
                 let rel_path = to_repo_relative(root, &file_path);
 
                 if requires_deep {
-                    planner_issues.push(IssueMatrixEntry {
-                        workstream: ws_entry.workstream.clone(),
-                        issue: rel_path,
-                    });
+                    planner_issues.push(IssueMatrixEntry { issue: rel_path });
                 } else {
-                    implementer_issues.push(IssueMatrixEntry {
-                        workstream: ws_entry.workstream.clone(),
-                        issue: rel_path,
-                    });
+                    implementer_issues.push(IssueMatrixEntry { issue: rel_path });
                 }
             }
         }
@@ -222,8 +180,8 @@ mod tests {
         store.write_version(env!("CARGO_PKG_VERSION")).unwrap();
     }
 
-    fn create_issue(store: &MemoryWorkspaceStore, ws: &str, label: &str, name: &str, deep: bool) {
-        let issues_dir = format!(".jules/workstreams/{}/exchange/issues/{}", ws, label);
+    fn create_issue(store: &MemoryWorkspaceStore, label: &str, name: &str, deep: bool) {
+        let issues_dir = format!(".jules/exchange/issues/{}", label);
         let content =
             format!("id: {}\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n", name, deep);
         let path = format!("{}/{}.yml", issues_dir, name);
@@ -235,20 +193,13 @@ mod tests {
         let store = MemoryWorkspaceStore::new();
         setup_workspace(&store);
 
-        // Create issues with different requires_deep_analysis values
-        create_issue(&store, "alpha", "bugs", "abc123", true); // planner
-        create_issue(&store, "alpha", "bugs", "def456", false); // implementer
-        create_issue(&store, "alpha", "feats", "ghi789", true); // planner
-        create_issue(&store, "alpha", "docs", "jkl012", false); // implementer (but not in routing)
+        create_issue(&store, "bugs", "abc123", true);
+        create_issue(&store, "bugs", "def456", false);
+        create_issue(&store, "feats", "ghi789", true);
+        create_issue(&store, "docs", "jkl012", false);
 
-        let workstreams_json =
-            WorkstreamsMatrix { include: vec![WorkstreamEntry { workstream: "alpha".into() }] };
-
-        let output = execute(
-            &store,
-            MatrixRoutingOptions { workstreams_json, routing_labels: "bugs,feats".into() },
-        )
-        .unwrap();
+        let output =
+            execute(&store, MatrixRoutingOptions { routing_labels: "bugs,feats".into() }).unwrap();
 
         assert_eq!(output.schema_version, 1);
         assert_eq!(output.planner_count, 2);
@@ -256,24 +207,15 @@ mod tests {
         assert_eq!(output.implementer_count, 1);
         assert!(output.has_implementers);
 
-        // Check planner issues (should be sorted)
         let planner_paths: Vec<&str> =
             output.planner_matrix.include.iter().map(|e| e.issue.as_str()).collect();
-        let planner_workstreams: Vec<&str> =
-            output.planner_matrix.include.iter().map(|e| e.workstream.as_str()).collect();
         assert!(planner_paths[0].contains("bugs/abc123.yml"));
         assert!(planner_paths[1].contains("feats/ghi789.yml"));
-        assert_eq!(planner_workstreams, vec!["alpha", "alpha"]);
 
-        // Check implementer issues
         let impl_paths: Vec<&str> =
             output.implementer_matrix.include.iter().map(|e| e.issue.as_str()).collect();
-        let impl_workstreams: Vec<&str> =
-            output.implementer_matrix.include.iter().map(|e| e.workstream.as_str()).collect();
         assert!(impl_paths[0].contains("bugs/def456.yml"));
-        assert_eq!(impl_workstreams, vec!["alpha"]);
 
-        // docs label not in routing_labels, so jkl012 should not appear
         assert!(
             !planner_paths.iter().any(|p| p.contains("docs")),
             "docs issues should not be in planner"
@@ -289,13 +231,7 @@ mod tests {
         let store = MemoryWorkspaceStore::new();
         setup_workspace(&store);
 
-        let result = execute(
-            &store,
-            MatrixRoutingOptions {
-                workstreams_json: WorkstreamsMatrix { include: vec![] },
-                routing_labels: "".into(),
-            },
-        );
+        let result = execute(&store, MatrixRoutingOptions { routing_labels: "".into() });
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("routing_labels must not be empty"));

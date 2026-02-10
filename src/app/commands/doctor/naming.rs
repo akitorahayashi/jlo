@@ -6,37 +6,33 @@ use super::yaml::is_kebab_case;
 
 pub fn naming_checks(
     jules_path: &Path,
-    workstreams: &[String],
     issue_labels: &[String],
     event_states: &[String],
     diagnostics: &mut Diagnostics,
 ) {
-    for workstream in workstreams {
-        let ws_dir = jules_path.join("workstreams").join(workstream);
-        let exchange_dir = ws_dir.join("exchange");
+    let exchange_dir = jules_path.join("exchange");
 
-        let events_dir = exchange_dir.join("events");
-        for state in event_states {
-            for entry in list_files(&events_dir.join(state), diagnostics) {
-                validate_filename(&entry, diagnostics, "event");
-            }
+    let events_dir = exchange_dir.join("events");
+    for state in event_states {
+        for entry in list_files(&events_dir.join(state), diagnostics) {
+            validate_filename(&entry, diagnostics, "event");
         }
+    }
 
-        let issues_dir = exchange_dir.join("issues");
-        for label in issue_labels {
-            for entry in list_files(&issues_dir.join(label), diagnostics) {
-                validate_filename(&entry, diagnostics, "issue");
-            }
+    let issues_dir = exchange_dir.join("issues");
+    for label in issue_labels {
+        for entry in list_files(&issues_dir.join(label), diagnostics) {
+            validate_filename(&entry, diagnostics, "issue");
         }
+    }
 
-        // Validate innovator comment filenames
-        let innovators_dir = exchange_dir.join("innovators");
-        if innovators_dir.exists() {
-            for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
-                let comments_dir = persona_dir.join("comments");
-                for entry in list_files(&comments_dir, diagnostics) {
-                    validate_filename(&entry, diagnostics, "innovator comment");
-                }
+    // Validate innovator comment filenames
+    let innovators_dir = exchange_dir.join("innovators");
+    if innovators_dir.exists() {
+        for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
+            let comments_dir = persona_dir.join("comments");
+            for entry in list_files(&comments_dir, diagnostics) {
+                validate_filename(&entry, diagnostics, "innovator comment");
             }
         }
     }

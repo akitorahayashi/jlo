@@ -74,20 +74,6 @@ pub fn init_workflows_at(
 // Create Command API
 // =============================================================================
 
-/// Create a new workstream under `.jlo/workstreams/<name>/`.
-pub fn create_workstream(name: &str) -> Result<CreateOutcome, AppError> {
-    create_workstream_at(name, std::env::current_dir()?)
-}
-
-/// Create a new workstream at the specified path.
-pub fn create_workstream_at(
-    name: &str,
-    root: std::path::PathBuf,
-) -> Result<CreateOutcome, AppError> {
-    let ctx = create_context(root);
-    create::create_workstream(&ctx, name)
-}
-
 /// Create a new role under `.jlo/roles/<layer>/roles/<name>/`.
 pub fn create_role(layer: &str, name: &str) -> Result<CreateOutcome, AppError> {
     create_role_at(layer, name, std::env::current_dir()?)
@@ -113,8 +99,7 @@ pub fn create_role_at(
 ///
 /// # Arguments
 /// * `layer` - Target layer (observers, deciders, planners, implementers)
-/// * `role` - Specific role to run (required for observers/deciders)
-/// * `workstream` - Target workstream (required for observers/deciders)
+/// * `role` - Specific role to run (required for observers/deciders/innovators)
 /// * `prompt_preview` - Show prompts without executing
 /// * `branch` - Override the starting branch
 /// * `issue` - Local issue file path (required for planners/implementers)
@@ -124,31 +109,19 @@ pub fn create_role_at(
 pub fn run(
     layer: Layer,
     role: Option<String>,
-    workstream: Option<String>,
     prompt_preview: bool,
     branch: Option<String>,
     issue: Option<std::path::PathBuf>,
     mock: bool,
     phase: Option<String>,
 ) -> Result<RunResult, AppError> {
-    run_at(
-        layer,
-        role,
-        workstream,
-        prompt_preview,
-        branch,
-        issue,
-        mock,
-        phase,
-        std::env::current_dir()?,
-    )
+    run_at(layer, role, prompt_preview, branch, issue, mock, phase, std::env::current_dir()?)
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_at(
     layer: Layer,
     role: Option<String>,
-    workstream: Option<String>,
     prompt_preview: bool,
     branch: Option<String>,
     issue: Option<std::path::PathBuf>,
@@ -165,8 +138,7 @@ pub fn run_at(
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
 
-    let options =
-        RunOptions { layer, role, workstream, prompt_preview, branch, issue, mock, phase };
+    let options = RunOptions { layer, role, prompt_preview, branch, issue, mock, phase };
     run::execute(&workspace.jules_path(), options, &git, &github, &workspace)
 }
 

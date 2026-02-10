@@ -154,29 +154,13 @@ fn create_role_succeeds() {
     ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
-        .args(["create", "role", "observers", "custom-role"])
+        .args(["create", "observers", "custom-role"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Created new role"));
+        .stdout(predicate::str::contains("Created new"));
 
     let role_path = ctx.jlo_path().join("roles/observers/roles/custom-role/role.yml");
     assert!(role_path.exists(), "Role should exist in .jlo/");
-}
-
-#[test]
-fn create_workstream_succeeds() {
-    let ctx = TestContext::new();
-
-    ctx.cli().args(["init", "--remote"]).assert().success();
-
-    ctx.cli()
-        .args(["create", "workstream", "my-stream"])
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("Created new workstream"));
-
-    let ws_path = ctx.jlo_path().join("workstreams/my-stream/scheduled.toml");
-    assert!(ws_path.exists(), "Workstream should exist in .jlo/");
 }
 
 #[test]
@@ -186,7 +170,7 @@ fn create_role_fails_for_invalid_layer() {
     ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli()
-        .args(["create", "role", "invalid", "test"])
+        .args(["create", "invalid", "test"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Invalid layer"));
@@ -199,11 +183,11 @@ fn create_role_fails_for_existing_role() {
     ctx.cli().args(["init", "--remote"]).assert().success();
 
     // Create a role first
-    ctx.cli().args(["create", "role", "observers", "my-obs"]).assert().success();
+    ctx.cli().args(["create", "observers", "my-obs"]).assert().success();
 
     // Attempt duplicate creation
     ctx.cli()
-        .args(["create", "role", "observers", "my-obs"])
+        .args(["create", "observers", "my-obs"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("already exists"));
@@ -214,18 +198,7 @@ fn create_role_fails_without_workspace() {
     let ctx = TestContext::new();
 
     ctx.cli()
-        .args(["create", "role", "observers", "test"])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("workspace"));
-}
-
-#[test]
-fn create_workstream_fails_without_workspace() {
-    let ctx = TestContext::new();
-
-    ctx.cli()
-        .args(["create", "workstream", "test"])
+        .args(["create", "observers", "test"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("workspace"));
@@ -268,7 +241,7 @@ fn doctor_reports_schema_errors() {
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
-    let event_dir = ctx.work_dir().join(".jules/workstreams/generic/exchange/events/pending");
+    let event_dir = ctx.work_dir().join(".jules/exchange/events/pending");
     std::fs::create_dir_all(&event_dir).unwrap();
     let event_path = event_dir.join("bad-event.yml");
     std::fs::write(
@@ -782,9 +755,9 @@ fn verify_scaffold_integrity() {
         );
     }
 
-    // Verify workstreams structure
+    // Verify flat exchange structure
     assert!(
-        ctx.jules_path().join("workstreams/generic/exchange/events/pending/.gitkeep").exists(),
-        "events/pending/.gitkeep should exist"
+        ctx.jules_path().join("exchange/events/pending/.gitkeep").exists(),
+        "exchange/events/pending/.gitkeep should exist"
     );
 }

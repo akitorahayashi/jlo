@@ -1,10 +1,10 @@
-use crate::adapters::workstream_schedule_filesystem::load_schedule;
+use crate::adapters::schedule_filesystem::load_schedule;
 use crate::app::commands::run::{self, RunOptions};
 use crate::domain::{AppError, Layer};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 use std::path::Path;
 
-use super::issue_routing::find_issues_for_workstream;
+use super::issue_routing::find_issues;
 use super::options::{RunResults, WorkflowRunOptions};
 
 /// Execute runs for a layer on a specific workstream.
@@ -45,7 +45,6 @@ where
     let run_options = RunOptions {
         layer: Layer::Narrators,
         role: None,
-        workstream: None,
         prompt_preview: false,
         branch: None,
         issue: None,
@@ -71,14 +70,13 @@ where
     G: GitPort,
     H: GitHubPort,
 {
-    let workstream = &options.workstream;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
-    // Load schedule for the workstream
-    let schedule = load_schedule(store, workstream)?;
+    // Load root schedule
+    let schedule = load_schedule(store)?;
 
     if !schedule.enabled {
-        eprintln!("Workstream '{}' is disabled, skipping", workstream);
+        eprintln!("Schedule is disabled, skipping");
         return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
     }
 
@@ -95,7 +93,7 @@ where
     };
 
     if roles.is_empty() {
-        eprintln!("No enabled {} roles for workstream '{}'", options.layer.dir_name(), workstream);
+        eprintln!("No enabled {} roles", options.layer.dir_name());
         return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
     }
 
@@ -104,7 +102,6 @@ where
         let run_options = RunOptions {
             layer: options.layer,
             role: Some(role.as_str().to_string()),
-            workstream: Some(workstream.clone()),
             prompt_preview: false,
             branch: None,
             issue: None,
@@ -112,13 +109,7 @@ where
             phase: options.phase.clone(),
         };
 
-        eprintln!(
-            "Executing: {} --workstream {} --role {}{}",
-            options.layer.dir_name(),
-            workstream,
-            role,
-            mock_suffix
-        );
+        eprintln!("Executing: {} --role {}{}", options.layer.dir_name(), role, mock_suffix);
         run::execute(jules_path, run_options, git, github, store)?;
     }
 
@@ -137,23 +128,13 @@ where
     G: GitPort,
     H: GitHubPort,
 {
-    let workstream = &options.workstream;
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
-    // Find issues for the layer in this workstream
-    let issues = find_issues_for_workstream(
-        store,
-        workstream,
-        options.layer,
-        options.routing_labels.as_deref(),
-    )?;
+    // Find issues for the layer
+    let issues = find_issues(store, options.layer, options.routing_labels.as_deref())?;
 
     if issues.is_empty() {
-        eprintln!(
-            "No issues found for {} in workstream '{}'",
-            options.layer.dir_name(),
-            workstream
-        );
+        eprintln!("No issues found for {}", options.layer.dir_name(),);
         return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
     }
 
@@ -161,7 +142,6 @@ where
         let run_options = RunOptions {
             layer: options.layer,
             role: None,
-            workstream: Some(workstream.clone()),
             prompt_preview: false,
             branch: None,
             issue: Some(issue_path.clone()),

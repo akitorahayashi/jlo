@@ -14,10 +14,10 @@ fn user_can_init_and_create_custom_role() {
 
     // Create a custom observer role via create command (writes to .jlo/)
     ctx.cli()
-        .args(["create", "role", "observers", "security"])
+        .args(["create", "observers", "security"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Created new role"));
+        .stdout(predicate::str::contains("Created new"));
 
     let role_path = ctx.jlo_path().join("roles/observers/roles/security/role.yml");
     assert!(role_path.exists(), "Custom role should exist in .jlo/ control plane");
@@ -32,7 +32,7 @@ fn user_can_use_command_aliases() {
     ctx.cli().args(["i", "--remote"]).assert().success();
 
     // Use 'c' alias for create
-    ctx.cli().args(["c", "role", "deciders", "my-decider"]).assert().success();
+    ctx.cli().args(["c", "deciders", "my-decider"]).assert().success();
 
     let role_path = ctx.jlo_path().join("roles/deciders/roles/my-decider/role.yml");
     assert!(role_path.exists(), "Role created via alias should exist in .jlo/");
@@ -89,7 +89,7 @@ fn create_role_in_observers() {
 
     ctx.cli().args(["init", "--remote"]).assert().success();
 
-    ctx.cli().args(["create", "role", "observers", "custom-obs"]).assert().success();
+    ctx.cli().args(["create", "observers", "custom-obs"]).assert().success();
 
     // Role should exist in .jlo/ control plane
     let role_path = ctx.jlo_path().join("roles/observers/roles/custom-obs/role.yml");
@@ -105,21 +105,21 @@ fn create_role_rejects_single_role_layers() {
 
     // Narrator is single-role and should not accept role creation
     ctx.cli()
-        .args(["create", "role", "narrator", "custom-narrator"])
+        .args(["create", "narrator", "custom-narrator"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("single-role"));
 
     // Planners are single-role and should not accept role creation
     ctx.cli()
-        .args(["create", "role", "planners", "custom-planner"])
+        .args(["create", "planners", "custom-planner"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("single-role"));
 
     // Implementers are single-role and should not accept role creation
     ctx.cli()
-        .args(["create", "role", "implementers", "custom-impl"])
+        .args(["create", "implementers", "custom-impl"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("single-role"));

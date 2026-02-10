@@ -14,9 +14,7 @@ use crate::domain::AppError;
 use crate::ports::{GitHubPort, GitPort, IssueInfo, WorkspaceStore};
 
 #[derive(Debug, Clone)]
-pub struct WorkflowWorkstreamsPublishProposalsOptions {
-    pub workstream: String,
-}
+pub struct WorkflowWorkstreamsPublishProposalsOptions {}
 
 #[derive(Debug, Serialize)]
 pub struct WorkflowWorkstreamsPublishProposalsOutput {
@@ -85,7 +83,7 @@ pub fn execute(
 /// Core logic, injectable for testing.
 fn execute_with<W, G, H>(
     workspace: &W,
-    options: &WorkflowWorkstreamsPublishProposalsOptions,
+    _options: &WorkflowWorkstreamsPublishProposalsOptions,
     git: &G,
     github: &H,
 ) -> Result<WorkflowWorkstreamsPublishProposalsOutput, AppError>
@@ -95,11 +93,7 @@ where
     H: GitHubPort,
 {
     let jules_path = workspace.jules_path();
-    let innovators_dir = jules_path
-        .join("workstreams")
-        .join(&options.workstream)
-        .join("exchange")
-        .join("innovators");
+    let innovators_dir = jules_path.join("exchange").join("innovators");
 
     let proposals = discover_proposals(&innovators_dir, workspace)?;
 
@@ -500,9 +494,8 @@ verification_signals:
 
     #[test]
     fn publishes_proposal_and_removes_artifact() {
-        let proposal_path = ".jules/workstreams/generic/exchange/innovators/alice/proposal.yml";
-        let perspective_path =
-            ".jules/workstreams/generic/exchange/innovators/alice/perspective.yml";
+        let proposal_path = ".jules/exchange/innovators/alice/proposal.yml";
+        let perspective_path = ".jules/exchange/innovators/alice/perspective.yml";
         let perspective_yaml = "persona: alice\nworkstream: generic\nrecent_proposals:\n  - \"Improve error messages\"\n";
         let workspace = MockWorkspaceStore::new()
             .with_exists(true)
@@ -512,8 +505,7 @@ verification_signals:
         let git = FakeGit;
         let github = FakeGitHub::new();
 
-        let options =
-            WorkflowWorkstreamsPublishProposalsOptions { workstream: "generic".to_string() };
+        let options = WorkflowWorkstreamsPublishProposalsOptions {};
 
         let output = execute_with(&workspace, &options, &git, &github).unwrap();
 
@@ -542,8 +534,7 @@ verification_signals:
         let git = FakeGit;
         let github = FakeGitHub::new();
 
-        let options =
-            WorkflowWorkstreamsPublishProposalsOptions { workstream: "generic".to_string() };
+        let options = WorkflowWorkstreamsPublishProposalsOptions {};
 
         let output = execute_with(&workspace, &options, &git, &github).unwrap();
 

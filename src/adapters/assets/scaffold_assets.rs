@@ -7,7 +7,7 @@ static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold
 
 pub fn list_issue_labels() -> Result<Vec<String>, AppError> {
     let issues_dir = SCAFFOLD_DIR
-        .get_dir(".jules/workstreams/generic/exchange/issues")
+        .get_dir(".jules/exchange/issues")
         .ok_or_else(|| AppError::InternalError("Missing scaffold issues directory".into()))?;
 
     let mut labels = Vec::new();
@@ -25,7 +25,7 @@ pub fn list_issue_labels() -> Result<Vec<String>, AppError> {
 
 pub fn list_event_states() -> Result<Vec<String>, AppError> {
     let events_dir = SCAFFOLD_DIR
-        .get_dir(".jules/workstreams/generic/exchange/events")
+        .get_dir(".jules/exchange/events")
         .ok_or_else(|| AppError::InternalError("Missing scaffold events directory".into()))?;
 
     let mut states = Vec::new();
