@@ -10,7 +10,7 @@ mod workflow;
 use crate::domain::{AppError, BuiltinRoleEntry, Layer};
 use clap::{Parser, Subcommand};
 use dialoguer::{Error as DialoguerError, Input, Select};
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::io::ErrorKind;
 
 #[derive(Parser)]
@@ -199,10 +199,16 @@ fn resolve_create_inputs(
     layer: Option<String>,
     name: Option<String>,
 ) -> Result<Option<(String, String)>, AppError> {
-    let layer_value = match layer {
-        Some(value) => value,
+    let layer_enum = match layer {
+        Some(value) => {
+            let l = Layer::from_dir_name(&value).ok_or(AppError::InvalidLayer { name: value })?;
+            if l.is_single_role() {
+                return Err(AppError::SingleRoleLayerTemplate(l.dir_name().to_string()));
+            }
+            l
+        }
         None => match prompt_multi_role_layer()? {
-            Some(value) => value,
+            Some(value) => Layer::from_dir_name(&value).unwrap(),
             None => return Ok(None),
         },
     };
@@ -215,26 +221,26 @@ fn resolve_create_inputs(
         },
     };
 
-    Ok(Some((layer_value, name_value)))
+    Ok(Some((layer_enum.dir_name().to_string(), name_value)))
 }
 
 fn resolve_add_inputs(
     layer: Option<String>,
     role: Option<String>,
 ) -> Result<Option<(String, String)>, AppError> {
-    let layer_value = match layer {
-        Some(value) => value,
+    let layer_enum = match layer {
+        Some(value) => {
+            let l = Layer::from_dir_name(&value).ok_or(AppError::InvalidLayer { name: value })?;
+            if l.is_single_role() {
+                return Err(AppError::SingleRoleLayerTemplate(l.dir_name().to_string()));
+            }
+            l
+        }
         None => match prompt_multi_role_layer()? {
-            Some(value) => value,
+            Some(value) => Layer::from_dir_name(&value).unwrap(),
             None => return Ok(None),
         },
     };
-
-    let layer_enum = Layer::from_dir_name(&layer_value)
-        .ok_or_else(|| AppError::InvalidLayer { name: layer_value.clone() })?;
-    if layer_enum.is_single_role() {
-        return Err(AppError::SingleRoleLayerTemplate(layer_value));
-    }
 
     let role_value = match role {
         Some(value) => value,
@@ -273,21 +279,22 @@ fn prompt_builtin_role(
     catalog: &[BuiltinRoleEntry],
     layer: Layer,
 ) -> Result<Option<String>, AppError> {
-    let entries: Vec<&BuiltinRoleEntry> =
-        catalog.iter().filter(|entry| entry.layer == layer).collect();
-    if entries.is_empty() {
+    let entries_by_category = catalog.iter().filter(|entry| entry.layer == layer).fold(
+        BTreeMap::<&str, Vec<&BuiltinRoleEntry>>::new(),
+        |mut map, entry| {
+            map.entry(entry.category.as_str()).or_default().push(entry);
+            map
+        },
+    );
+
+    if entries_by_category.is_empty() {
         return Err(AppError::Validation(format!(
             "No builtin roles available for layer '{}'",
             layer.dir_name()
         )));
     }
 
-    let mut categories = BTreeSet::new();
-    for entry in &entries {
-        categories.insert(entry.category.as_str());
-    }
-    let categories: Vec<&str> = categories.into_iter().collect();
-
+    let categories: Vec<&str> = entries_by_category.keys().copied().collect();
     let category_index = Select::new()
         .with_prompt("Select category")
         .items(&categories)
@@ -298,9 +305,9 @@ fn prompt_builtin_role(
     let Some(category_index) = category_index else {
         return Ok(None);
     };
+
     let selected_category = categories[category_index];
-    let roles: Vec<&BuiltinRoleEntry> =
-        entries.into_iter().filter(|entry| entry.category == selected_category).collect();
+    let roles = entries_by_category.get(selected_category).unwrap();
 
     let role_items: Vec<String> =
         roles.iter().map(|entry| format!("{}: {}", entry.name.as_str(), entry.summary)).collect();
