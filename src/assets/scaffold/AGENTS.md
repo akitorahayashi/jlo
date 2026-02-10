@@ -48,10 +48,6 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   │   ├── contracts.yml # Layer contract
 │   │   ├── schemas/
 │   │   │   └── issue.yml
-│   │   └── roles/
-│   │       ├── <role>/
-│   │       │   └── role.yml
-│   │       └── .gitkeep
 │   ├── planners/
 │   │   ├── prompt_assembly.j2 # Prompt construction rules
 │   │   └── contracts.yml
@@ -114,7 +110,7 @@ See "Critical Design Principles" above for the contract structure.
 | File | Scope | Content |
 |------|-------|---------|
 | `prompt_assembly.j2` | Layer | Prompt template that assembles contracts and includes. |
-| `role.yml` | Role | Specialized focus (observers/deciders/innovators). |
+| `role.yml` | Role | Specialized focus (observers/innovators). |
 | `contracts.yml` | Layer | Workflow, inputs, outputs, constraints shared within layer. |
 | `contracts_<phase>.yml` | Phase | Phase-specific contracts (innovators only: creation, refinement). |
 | `JULES.md` | Global | Rules applying to ALL layers (branch naming, system boundaries). |

@@ -13,7 +13,7 @@ use crate::domain::{
 
 /// Assemble the full prompt for a role in a multi-role layer.
 ///
-/// Multi-role layers (observers, deciders, innovators) require role context.
+/// Multi-role layers (observers, innovators) require role context.
 /// Innovators additionally require a phase context variable.
 pub fn assemble_prompt<L>(
     jules_path: &Path,

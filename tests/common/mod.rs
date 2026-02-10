@@ -206,7 +206,6 @@ impl TestContext {
             roles_path.join("observers/templates").exists(),
             "observers/templates should exist"
         );
-        assert!(roles_path.join("deciders/templates").exists(), "deciders/templates should exist");
     }
 
     /// Assert that default scheduled roles exist in their correct layers.

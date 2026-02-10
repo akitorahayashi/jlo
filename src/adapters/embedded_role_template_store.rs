@@ -141,10 +141,10 @@ mod tests {
     }
 
     #[test]
-    fn control_plane_files_include_decider_role_customizations() {
+    fn control_plane_files_exclude_decider_role_customizations() {
         let store = EmbeddedRoleTemplateStore::new();
         let files = store.control_plane_files();
-        assert!(files.iter().any(|f| f.path == ".jlo/roles/deciders/role.yml"));
+        assert!(files.iter().all(|f| f.path != ".jlo/roles/deciders/role.yml"));
     }
 
     #[test]
@@ -188,7 +188,6 @@ mod tests {
         assert!(yaml.contains("profile:"));
         assert!(yaml.contains("focus:"));
     }
-
 
     #[test]
     fn generate_role_yaml_for_innovators() {

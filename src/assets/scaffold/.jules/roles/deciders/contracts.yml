@@ -8,6 +8,7 @@ inputs:
 
 constraints:
   - Verify observations events in codebase before accepting
+  - Delete stale events that do not reflect current implementation state and treat them as no-op
   - Rationalize conflicting events (e.g. deletion overrides renaming)
   - Aggregate all valid events into issues
   - Move processed events to decided/ directory
@@ -20,13 +21,13 @@ constraints:
 workflow:
   - "1. Read events"
   - "2. Read existing issues"
-  - "3. Verify observed events exist, check significance, identify related events"
-  - "4. Rationalize disputes"
-  - "5. For events related to an existing issue: merge into that issue (update content)"
-  - "6. For new problems: select an existing issue label from .jules/github-labels.json and cp issue.yml to .jules/exchange/issues/<label>/<kebab-case-title>.yml"
-  - "7. Populate `source_events` in the new issue with IDs of events that triggered it"
-  - "8. Reject invalid events: Create feedback based on feedback.yml at .jules/roles/observers/<author_role>/feedbacks/<kebab-case-topic>.yml (fill in critique and rejected_content)"
-  - "9. Update metadata of processed events (issue_id) AND move them to .jules/exchange/events/decided/"
+  - "3. Verify observed events exist, check significance, and identify related events."
+  - "4. If an event is stale or no longer matches current implementation, delete that event file from pending and do not create/update any issue for it."
+  - "5. Rationalize disputes among remaining valid events."
+  - "6. For events related to an existing issue: merge into that issue (update content)."
+  - "7. For new problems: select an existing issue label from .jules/github-labels.json and cp issue.yml to .jules/exchange/issues/<label>/<kebab-case-title>.yml."
+  - "8. Populate `source_events` in each new issue with IDs of events that triggered it."
+  - "9. Update metadata of processed valid events (issue_id) AND move them to .jules/exchange/events/decided/."
 
 outputs:
   - .jules/exchange/issues/<label>/*.yml (created or updated)
