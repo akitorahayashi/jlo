@@ -89,7 +89,7 @@ Running bootstrap twice with the same `.jlo/` inputs and jlo version produces no
 | Advance `.jlo/.jlo-version` | Write the current binary version to the version pin. |
 | Reconcile control-plane skeleton | Create missing control-plane files from scaffold defaults without overwriting existing ones. |
 | Refresh managed defaults | Update role.yml and scheduled.toml only when they match the managed-defaults manifest. |
-| Refresh workflow kit | Reinstall `.github/` workflows using the existing runner mode. |
+| Refresh workflow kit | Reinstall `.github/` workflows using `.jlo/config.toml` `workflow.runner_mode`. |
 | **Not in scope** | Patching managed framework files (that is bootstrap's responsibility on `JULES_WORKER_BRANCH`). |
 | **Not in scope** | Reading or writing `.jules/` or any runtime artifacts. |
 | **Not in scope** | Reading or writing `.jules/exchange/` (agent-generated). |

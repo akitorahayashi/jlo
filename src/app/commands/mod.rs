@@ -1,3 +1,4 @@
+pub mod cli_upgrade;
 pub mod create;
 pub mod deinit;
 pub mod doctor;

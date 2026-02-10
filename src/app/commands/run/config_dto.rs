@@ -34,6 +34,7 @@ pub struct JulesApiConfigDto {
 #[serde(deny_unknown_fields)]
 #[allow(dead_code)]
 pub struct WorkflowTimingConfigDto {
+    pub runner_mode: Option<String>,
     pub cron: Option<Vec<String>>,
     pub wait_minutes_default: Option<u32>,
 }

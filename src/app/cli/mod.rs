@@ -43,8 +43,11 @@ enum Commands {
     #[clap(visible_alias = "u")]
     Update {
         /// Show planned changes without applying
-        #[arg(long)]
+        #[arg(long, conflicts_with = "cli")]
         prompt_preview: bool,
+        /// Update the jlo CLI binary from upstream releases
+        #[arg(short = 'c', long, conflicts_with = "prompt_preview")]
+        cli: bool,
     },
     /// Create a new role under .jlo/
     #[clap(visible_alias = "c")]
@@ -88,7 +91,7 @@ pub fn run() {
 
     let result: Result<i32, AppError> = match cli.command {
         Commands::Init { remote, self_hosted } => init::run_init(remote, self_hosted).map(|_| 0),
-        Commands::Update { prompt_preview } => run_update(prompt_preview).map(|_| 0),
+        Commands::Update { prompt_preview, cli } => run_update(prompt_preview, cli).map(|_| 0),
         Commands::Create { layer, name } => run_create(layer, name).map(|_| 0),
         Commands::Setup { command } => match command {
             setup::SetupCommands::Gen { path } => setup::run_setup_gen(path).map(|_| 0),
@@ -113,7 +116,20 @@ pub fn run() {
     }
 }
 
-fn run_update(prompt_preview: bool) -> Result<(), AppError> {
+fn run_update(prompt_preview: bool, cli: bool) -> Result<(), AppError> {
+    if cli {
+        let result = crate::app::api::update_cli()?;
+        if result.upgraded {
+            println!("✅ Updated jlo CLI from {} to {}", result.current_version, result.latest_tag);
+        } else {
+            println!(
+                "✅ jlo CLI is already up to date (current: {}, latest: {})",
+                result.current_version, result.latest_tag
+            );
+        }
+        return Ok(());
+    }
+
     let result = crate::app::api::update(prompt_preview)?;
 
     if !result.prompt_preview {
