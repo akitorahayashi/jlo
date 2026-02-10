@@ -248,9 +248,11 @@ roles = []
 
         assert_eq!(output.schema_version, 1);
         assert!(output.deleted_paths.iter().any(|p| p.contains("event1.yml")));
+        assert!(output.deleted_paths.iter().any(|p| p.contains("event2.yml")));
         assert!(output.deleted_paths.iter().any(|p| p.contains("issue.yml")));
 
         assert!(!repo_dir.join(".jules/exchange/events/pending/event1.yml").exists());
+        assert!(!repo_dir.join(".jules/exchange/events/pending/event2.yml").exists());
         assert!(!repo_dir.join(".jules/exchange/issues/bugs/issue.yml").exists());
 
         let head = Command::new("git")

@@ -90,7 +90,16 @@ pub fn semantic_checks(
 
     // Collect existing roles from filesystem for each layer
     // Roles are user-defined and live under .jlo/roles/<layer>/roles/<role>/
-    let root = jules_path.parent().unwrap_or(Path::new("."));
+    let root = match jules_path.parent() {
+        Some(p) => p,
+        None => {
+            diagnostics.push_error(
+                jules_path.display().to_string(),
+                "Could not determine parent directory of .jules path".to_string(),
+            );
+            return;
+        }
+    };
     let roles_dir = root.join(".jlo").join("roles");
     let mut existing_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
     for layer in [Layer::Observers, Layer::Deciders, Layer::Innovators] {

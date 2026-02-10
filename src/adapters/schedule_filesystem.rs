@@ -6,9 +6,9 @@ use crate::ports::WorkspaceStore;
 /// Load the root schedule from `.jlo/scheduled.toml`.
 pub fn load_schedule(store: &impl WorkspaceStore) -> Result<Schedule, AppError> {
     let path = store.jlo_path().join("scheduled.toml");
-    let path_str = path.to_str().unwrap();
+    let path_str = path.to_string_lossy();
 
-    let content = store.read_file(path_str).map_err(|err| {
+    let content = store.read_file(&path_str).map_err(|err| {
         if matches!(err, AppError::Io { kind: IoErrorKind::NotFound, .. }) {
             AppError::ScheduleConfigMissing(path.display().to_string())
         } else {
@@ -22,13 +22,10 @@ pub fn list_subdirectories(
     store: &impl WorkspaceStore,
     dir: &Path,
 ) -> Result<Vec<PathBuf>, AppError> {
-    let entries = store.list_dir(dir.to_str().unwrap())?;
-    let mut subdirs = Vec::new();
-    for entry in entries {
-        if store.is_dir(entry.to_str().unwrap()) {
-            subdirs.push(entry);
-        }
-    }
+    let entries = store.list_dir(&dir.to_string_lossy())?;
+    let subdirs: Vec<PathBuf> =
+        entries.into_iter().filter(|entry| store.is_dir(&entry.to_string_lossy())).collect();
+    let mut subdirs = subdirs;
     subdirs.sort();
     Ok(subdirs)
 }

@@ -5,7 +5,7 @@
 
 use std::path::Path;
 
-use crate::domain::identifiers::validation::validate_identifier;
+use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::{
     AppError, Layer, PromptAssetLoader, PromptContext, assemble_prompt as assemble_prompt_domain,
     assemble_with_issue,
@@ -25,8 +25,8 @@ pub fn assemble_prompt<L>(
 where
     L: PromptAssetLoader + Clone + Send + Sync + 'static,
 {
-    // Validate role to prevent prompt injection
-    if !validate_identifier(role, false) {
+    // Validate role to prevent prompt injection and path traversal
+    if !validate_safe_path_component(role) {
         return Err(AppError::Validation(format!(
             "Invalid role '{}': must be alphanumeric with hyphens or underscores",
             role
