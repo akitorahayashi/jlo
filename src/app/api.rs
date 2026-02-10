@@ -11,10 +11,11 @@ use crate::adapters::github_command::GitHubCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::{
     AppContext,
-    commands::{create, deinit, doctor, init, run, setup, update},
+    commands::{cli_upgrade, create, deinit, doctor, init, run, setup, update},
 };
 use crate::ports::WorkspaceStore;
 
+pub use crate::app::commands::cli_upgrade::CliUpgradeResult;
 pub use crate::app::commands::create::CreateOutcome;
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
@@ -191,6 +192,11 @@ pub fn update_at(path: std::path::PathBuf, prompt_preview: bool) -> Result<Updat
     let templates = EmbeddedRoleTemplateStore::new();
     let options = UpdateOptions { prompt_preview };
     update::execute(&workspace, options, &templates)
+}
+
+/// Update the installed jlo CLI binary from the upstream repository.
+pub fn update_cli() -> Result<CliUpgradeResult, AppError> {
+    cli_upgrade::execute()
 }
 
 // =============================================================================

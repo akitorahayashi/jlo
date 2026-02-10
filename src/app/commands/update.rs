@@ -169,7 +169,7 @@ where
         }
     }
 
-    let workflow_mode = detect_workflow_mode(workspace)?;
+    let workflow_mode = configured_workflow_mode(workspace)?;
     let workflow_will_refresh = workflow_mode.is_some();
 
     // Prompt preview
@@ -259,19 +259,16 @@ where
     })
 }
 
-fn detect_workflow_mode<W>(workspace: &W) -> Result<Option<WorkflowRunnerMode>, AppError>
+fn configured_workflow_mode<W>(workspace: &W) -> Result<Option<WorkflowRunnerMode>, AppError>
 where
     W: WorkspaceStore,
 {
-    let root = workspace.resolve_path("");
-    match init::detect_workflow_runner_mode(&root) {
-        Ok(mode) => Ok(Some(mode)),
-        Err(_) => {
-            // Workflow scaffold not found; skip refresh. This is normal for fresh workspaces
-            // or in tests that don't set up a complete environment.
-            Ok(None)
-        }
+    if !workspace.file_exists(".github/workflows/jules-workflows.yml") {
+        return Ok(None);
     }
+
+    let root = workspace.resolve_path("");
+    Ok(Some(init::load_workflow_runner_mode(&root)?))
 }
 
 /// Compare two version arrays. Returns -1, 0, or 1.
@@ -313,6 +310,7 @@ default_branch = "main"
 jules_branch = "jules"
 
 [workflow]
+runner_mode = "remote"
 cron = ["0 20 * * *"]
 wait_minutes_default = 30
 "#
@@ -355,17 +353,8 @@ wait_minutes_default = 30
         let jlo_path = temp.path().join(".jlo");
         fs::create_dir_all(&jlo_path).unwrap();
 
-        let workflow_path = temp.path().join(".github/workflows");
-        fs::create_dir_all(&workflow_path).unwrap();
-        fs::write(
-            workflow_path.join("jules-workflows.yml"),
-            "jobs:\n  bootstrap:\n    runs-on: ubuntu-latest\n",
-        )
-        .unwrap();
-
         // Write version file (must be older than current to trigger update)
         fs::write(jlo_path.join(".jlo-version"), "0.0.0").unwrap();
-
         let mock_store = MockRoleTemplateStore {
             control_files: vec![
                 ScaffoldFile {
@@ -396,14 +385,6 @@ wait_minutes_default = 30
         let jlo_path = temp.path().join(".jlo");
         fs::create_dir_all(&jlo_path).unwrap();
 
-        let workflow_path = temp.path().join(".github/workflows");
-        fs::create_dir_all(&workflow_path).unwrap();
-        fs::write(
-            workflow_path.join("jules-workflows.yml"),
-            "jobs:\n  bootstrap:\n    runs-on: ubuntu-latest\n",
-        )
-        .unwrap();
-
         fs::write(jlo_path.join(".jlo-version"), "0.0.0").unwrap();
         // User has customized config
         let custom_config = r#"[run]
@@ -411,6 +392,7 @@ wait_minutes_default = 30
     jules_branch = "custom-jules"
 
     [workflow]
+    runner_mode = "remote"
     cron = ["0 12 * * 1-5"]
     wait_minutes_default = 45
     "#;
@@ -432,6 +414,37 @@ wait_minutes_default = 30
 
         let config_path = temp.path().join(".jlo/config.toml");
         assert_eq!(fs::read_to_string(config_path).unwrap(), custom_config);
+    }
+
+    #[test]
+    fn update_fails_when_workflow_exists_but_runner_mode_missing() {
+        let temp = TempDir::new().unwrap();
+        let jlo_path = temp.path().join(".jlo");
+        fs::create_dir_all(&jlo_path).unwrap();
+
+        let workflow_path = temp.path().join(".github/workflows");
+        fs::create_dir_all(&workflow_path).unwrap();
+        fs::write(workflow_path.join("jules-workflows.yml"), "name: Jules Workflows\n").unwrap();
+
+        fs::write(jlo_path.join(".jlo-version"), "0.0.0").unwrap();
+        fs::write(
+            jlo_path.join("config.toml"),
+            r#"[run]
+default_branch = "main"
+jules_branch = "jules"
+
+[workflow]
+cron = ["0 20 * * *"]
+wait_minutes_default = 30
+"#,
+        )
+        .unwrap();
+
+        let mock_store = MockRoleTemplateStore { control_files: vec![] };
+        let options = UpdateOptions { prompt_preview: false };
+        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let err = execute(&workspace, options, &mock_store).unwrap_err();
+        assert!(err.to_string().contains("workflow.runner_mode"));
     }
 
     #[test]

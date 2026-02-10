@@ -91,6 +91,7 @@ Branch values (`target_branch`, `worker_branch`) are rendered at build time from
 
 Workflow timing is rendered from `.jlo/config.toml` and baked into the workflow kit at install time. The authoritative keys are:
 
+- `[workflow].runner_mode` (`remote` or `self-hosted`)
 - `[workflow].cron` (array of cron strings)
 - `[workflow].wait_minutes_default` (number)
 

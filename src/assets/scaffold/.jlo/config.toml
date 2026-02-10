@@ -7,6 +7,7 @@ parallel = true
 max_parallel = 3
 
 [workflow]
+runner_mode = "remote"
 cron = ["0 20 * * *"]
 wait_minutes_default = 30
 

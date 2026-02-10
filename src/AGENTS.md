@@ -72,7 +72,7 @@ Core domain logic located in `src/domain/`.
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow scaffold |
-| `jlo update [--prompt-preview]` | `u` | Advance `.jlo/` control-plane version pin |
+| `jlo update [--prompt-preview \| --cli]` | `u` | Advance control-plane version pin or update jlo CLI binary |
 | `jlo create <layer> <name>` | `c` | Create a custom role under `.jlo/` |
 | `jlo run narrator [--prompt-preview] [--branch <branch>] [--mock]` | `r n` | Run narrator (produces changes feed) |
 | `jlo run observers --role <role> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |
