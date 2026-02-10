@@ -10,9 +10,9 @@ use super::narrator_logic::{
     GitContext, MAX_COMMITS, NarratorGitData, RangeContext, analyze_git_context,
     determine_range_strategy,
 };
-use super::prompt::assemble_single_role_prompt;
+use super::prompt::assemble_single_role_prompt_with_context;
 use crate::adapters::jules_client_http::HttpJulesClient;
-use crate::domain::{AppError, Layer};
+use crate::domain::{AppError, Layer, PromptContext};
 use crate::ports::{AutomationMode, GitPort, JulesClient, SessionRequest, WorkspaceStore};
 
 /// Execute the Narrator layer.
@@ -28,6 +28,8 @@ where
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     let config = load_config(jules_path)?;
+    let latest_path = latest_summary_path(jules_path)?;
+    let had_previous_latest = workspace.file_exists(&latest_path);
 
     // Determine starting branch (Narrator always uses jules branch)
     let starting_branch =
@@ -54,6 +56,11 @@ where
             prompt_preview: true,
             sessions: vec![],
         });
+    }
+
+    if had_previous_latest {
+        workspace.remove_file(&latest_path)?;
+        println!("Removed previous .jules/changes/latest.yml after reading created_at cursor.");
     }
 
     // Create session with git context injected into prompt
@@ -96,12 +103,9 @@ where
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     // Construct path to latest.yml relative to workspace root or absolute
-    let latest_path = jules_path.join("changes/latest.yml");
-    let latest_path_str = latest_path
-        .to_str()
-        .ok_or_else(|| AppError::Validation("Jules path contains invalid unicode".to_string()))?;
+    let latest_path_str = latest_summary_path(jules_path)?;
 
-    let range = determine_range(latest_path_str, git, workspace)?;
+    let range = determine_range(&latest_path_str, git, workspace)?;
 
     // Check if there are any non-excluded changes in the range
     let pathspec = &[".", ":(exclude).jules"];
@@ -133,14 +137,40 @@ where
     W: WorkspaceStore,
 {
     let head_sha = git.get_head_sha()?;
-    let latest_content = workspace.read_file(latest_path).ok();
+    let latest_content = if workspace.file_exists(latest_path) {
+        Some(workspace.read_file(latest_path)?)
+    } else {
+        None
+    };
 
     determine_range_strategy(
         &head_sha,
         latest_content.as_deref(),
-        |sha| git.commit_exists(sha),
         |sha, n| git.get_nth_ancestor(sha, n),
+        |sha, timestamp| {
+            let commit = get_commit_before_timestamp(git, sha, timestamp)?;
+            if let Some(ref base) = commit
+                && !git.commit_exists(base)
+            {
+                return Err(AppError::Validation(format!(
+                    "Resolved base commit does not exist: {}",
+                    base
+                )));
+            }
+            Ok(commit)
+        },
     )
+}
+
+fn get_commit_before_timestamp<G: GitPort>(
+    git: &G,
+    head_sha: &str,
+    timestamp: &str,
+) -> Result<Option<String>, AppError> {
+    let before_arg = format!("--before={}", timestamp);
+    let output = git.run_command(&["rev-list", "-1", &before_arg, head_sha], None)?;
+    let commit = output.trim();
+    if commit.is_empty() { Ok(None) } else { Ok(Some(commit.to_string())) }
 }
 
 /// Build the full Narrator prompt with git context injected.
@@ -149,7 +179,15 @@ fn build_narrator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     ctx: &GitContext,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let base_prompt = assemble_single_role_prompt(jules_path, Layer::Narrators, workspace)?;
+    let prompt_context = PromptContext::new()
+        .with_var("run_mode", ctx.range.selection_mode.clone())
+        .with_var("changes_since", ctx.range.changes_since.clone().unwrap_or_default());
+    let base_prompt = assemble_single_role_prompt_with_context(
+        jules_path,
+        Layer::Narrators,
+        &prompt_context,
+        workspace,
+    )?;
 
     // Build the git context section
     let mut context_section = String::new();
@@ -159,6 +197,9 @@ fn build_narrator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     context_section.push_str(&format!("- from_commit: {}\n", ctx.range.from_commit));
     context_section.push_str(&format!("- to_commit: {}\n", ctx.range.to_commit));
     context_section.push_str(&format!("- selection_mode: {}\n", ctx.range.selection_mode));
+    if let Some(changes_since) = ctx.range.changes_since.as_deref() {
+        context_section.push_str(&format!("- changes_since: {}\n", changes_since));
+    }
     if !ctx.range.selection_detail.is_empty() {
         context_section.push_str(&format!("- selection_detail: {}\n", ctx.range.selection_detail));
     }
@@ -204,6 +245,9 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         "Range: {}..{} ({})",
         ctx.range.from_commit, ctx.range.to_commit, ctx.range.selection_mode
     );
+    if let Some(changes_since) = ctx.range.changes_since.as_deref() {
+        println!("Changes since: {}", changes_since);
+    }
     println!(
         "Stats: {} commits ({} included), {} files, +{} -{}",
         ctx.stats.commits_total,
@@ -217,8 +261,24 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     }
 
     println!("\n--- Prompt (base) ---");
-    let prompt = assemble_single_role_prompt(jules_path, Layer::Narrators, workspace)?;
+    let prompt_context = PromptContext::new()
+        .with_var("run_mode", ctx.range.selection_mode.clone())
+        .with_var("changes_since", ctx.range.changes_since.clone().unwrap_or_default());
+    let prompt = assemble_single_role_prompt_with_context(
+        jules_path,
+        Layer::Narrators,
+        &prompt_context,
+        workspace,
+    )?;
     println!("{}", prompt);
 
     Ok(())
+}
+
+fn latest_summary_path(jules_path: &Path) -> Result<String, AppError> {
+    jules_path
+        .join("changes/latest.yml")
+        .to_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| AppError::Validation("Jules path contains invalid unicode".to_string()))
 }

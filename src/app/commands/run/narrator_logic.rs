@@ -1,5 +1,6 @@
 use crate::domain::AppError;
 use crate::ports::{CommitInfo, DiffStat};
+use chrono::DateTime;
 
 /// Maximum number of commits to include in the bounded sample.
 pub const MAX_COMMITS: usize = 50;
@@ -17,6 +18,8 @@ pub struct RangeContext {
     pub selection_mode: String,
     /// Selection detail (non-empty when bootstrapping).
     pub selection_detail: String,
+    /// RFC3339 timestamp used as incremental cursor, if present.
+    pub changes_since: Option<String>,
 }
 
 #[derive(Debug, Default)]
@@ -66,21 +69,33 @@ pub fn analyze_git_context(data: NarratorGitData) -> Option<GitContext> {
 pub fn determine_range_strategy(
     head_sha: &str,
     latest_yml_content: Option<&str>,
-    check_commit_exists: impl Fn(&str) -> bool,
     get_bootstrap_commit: impl Fn(&str, usize) -> Result<String, AppError>,
+    get_commit_before_time: impl Fn(&str, &str) -> Result<Option<String>, AppError>,
 ) -> Result<RangeContext, AppError> {
-    if let Some(content) = latest_yml_content
-        && let Some(prev_to_commit) = extract_to_commit(content)
-    {
-        // Verify the commit exists
-        if check_commit_exists(&prev_to_commit) {
+    if let Some(content) = latest_yml_content {
+        let previous_created_at = extract_created_at(content)?;
+        if let Some(base_commit) = get_commit_before_time(head_sha, &previous_created_at)? {
             return Ok(RangeContext {
-                from_commit: prev_to_commit,
+                from_commit: base_commit,
                 to_commit: head_sha.to_string(),
                 selection_mode: "incremental".to_string(),
                 selection_detail: String::new(),
+                changes_since: Some(previous_created_at),
             });
         }
+
+        // Explicit fallback: no commit exists before the cursor time.
+        let bootstrap_from = get_bootstrap_commit(head_sha, BOOTSTRAP_COMMIT_COUNT)?;
+        return Ok(RangeContext {
+            from_commit: bootstrap_from,
+            to_commit: head_sha.to_string(),
+            selection_mode: "bootstrap".to_string(),
+            selection_detail: format!(
+                "Fallback bootstrap: no commit found before previous created_at ({})",
+                previous_created_at
+            ),
+            changes_since: Some(previous_created_at),
+        });
     }
 
     // Bootstrap: use recent commits
@@ -93,19 +108,36 @@ pub fn determine_range_strategy(
             "Last {} commits with non-.jules/ changes",
             BOOTSTRAP_COMMIT_COUNT
         ),
+        changes_since: None,
     })
 }
 
-/// Extract to_commit from latest.yml content using proper YAML parsing.
-fn extract_to_commit(content: &str) -> Option<String> {
-    serde_yaml::from_str::<serde_yaml::Value>(content)
-        .ok()
-        .as_ref()
-        .and_then(|data| data.get("range"))
-        .and_then(|range| range.get("to_commit"))
-        .and_then(|val| val.as_str())
-        .filter(|s| !s.is_empty() && s.len() >= 7)
-        .map(|s| s.to_string())
+/// Extract and validate created_at from latest.yml content.
+fn extract_created_at(content: &str) -> Result<String, AppError> {
+    let data =
+        serde_yaml::from_str::<serde_yaml::Value>(content).map_err(|err| AppError::ParseError {
+            what: ".jules/changes/latest.yml".to_string(),
+            details: err.to_string(),
+        })?;
+
+    let created_at =
+        data.get("created_at").and_then(|val| val.as_str()).filter(|s| !s.is_empty()).ok_or_else(
+            || {
+                AppError::Validation(
+                    "latest.yml must contain non-empty created_at for incremental narrator runs"
+                        .to_string(),
+                )
+            },
+        )?;
+
+    DateTime::parse_from_rfc3339(created_at).map_err(|err| {
+        AppError::Validation(format!(
+            "latest.yml created_at must be RFC3339: {} ({})",
+            created_at, err
+        ))
+    })?;
+
+    Ok(created_at.to_string())
 }
 
 pub fn build_git_context(
@@ -127,64 +159,91 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_extract_to_commit_valid() {
+    fn test_extract_created_at_valid() {
         let content = r#"
-range:
-  to_commit: "abcdef123456"
+created_at: "2026-02-05T00:00:00Z"
 "#;
-        let commit = extract_to_commit(content);
-        assert_eq!(commit, Some("abcdef123456".to_string()));
+        let created_at = extract_created_at(content).unwrap();
+        assert_eq!(created_at, "2026-02-05T00:00:00Z");
     }
 
     #[test]
     fn test_determine_range_strategy_incremental() {
         let head = "head_sha";
         let latest = r#"
-range:
-  to_commit: "prev_sha"
+created_at: "2026-02-05T00:00:00Z"
 "#;
         let result = determine_range_strategy(
             head,
             Some(latest),
-            |sha| sha == "prev_sha",
             |_, _| panic!("Should not bootstrap"),
+            |_, timestamp| {
+                assert_eq!(timestamp, "2026-02-05T00:00:00Z");
+                Ok(Some("base_sha".to_string()))
+            },
         )
         .unwrap();
 
         assert_eq!(result.selection_mode, "incremental");
-        assert_eq!(result.from_commit, "prev_sha");
+        assert_eq!(result.from_commit, "base_sha");
         assert_eq!(result.to_commit, head);
+        assert_eq!(result.changes_since.as_deref(), Some("2026-02-05T00:00:00Z"));
     }
 
     #[test]
     fn test_determine_range_strategy_bootstrap_no_file() {
         let head = "head_sha";
-        let result =
-            determine_range_strategy(head, None, |_| false, |_, _| Ok("bootstrap_sha".to_string()))
-                .unwrap();
-
-        assert_eq!(result.selection_mode, "bootstrap");
-        assert_eq!(result.from_commit, "bootstrap_sha");
-        assert_eq!(result.to_commit, head);
-    }
-
-    #[test]
-    fn test_determine_range_strategy_bootstrap_invalid_commit() {
-        let head = "head_sha";
-        let latest = r#"
-range:
-  to_commit: "prev_sha"
-"#;
         let result = determine_range_strategy(
             head,
-            Some(latest),
-            |_| false, // prev_sha does not exist
+            None,
             |_, _| Ok("bootstrap_sha".to_string()),
+            |_, _| panic!("Should not resolve incremental cursor"),
         )
         .unwrap();
 
         assert_eq!(result.selection_mode, "bootstrap");
         assert_eq!(result.from_commit, "bootstrap_sha");
+        assert_eq!(result.to_commit, head);
+        assert_eq!(result.changes_since, None);
+    }
+
+    #[test]
+    fn test_determine_range_strategy_bootstrap_when_no_commit_before_cursor() {
+        let head = "head_sha";
+        let latest = r#"
+created_at: "2026-02-05T00:00:00Z"
+"#;
+        let result = determine_range_strategy(
+            head,
+            Some(latest),
+            |_, _| Ok("bootstrap_sha".to_string()),
+            |_, _| Ok(None),
+        )
+        .unwrap();
+
+        assert_eq!(result.selection_mode, "bootstrap");
+        assert_eq!(result.from_commit, "bootstrap_sha");
+        assert!(result.selection_detail.contains("Fallback bootstrap"));
+        assert_eq!(result.changes_since.as_deref(), Some("2026-02-05T00:00:00Z"));
+    }
+
+    #[test]
+    fn test_extract_created_at_missing_is_error() {
+        let content = r#"
+range:
+  to_commit: "abcdef123456"
+"#;
+        let err = extract_created_at(content).unwrap_err();
+        assert!(err.to_string().contains("created_at"));
+    }
+
+    #[test]
+    fn test_extract_created_at_invalid_format_is_error() {
+        let content = r#"
+created_at: "2026-02-05 00:00:00"
+"#;
+        let err = extract_created_at(content).unwrap_err();
+        assert!(err.to_string().contains("RFC3339"));
     }
 
     #[test]
@@ -194,6 +253,7 @@ range:
             to_commit: "b".into(),
             selection_mode: "mode".into(),
             selection_detail: "".into(),
+            changes_since: Some("2026-02-05T00:00:00Z".into()),
         };
         let stats = Stats {
             commits_total: 100,

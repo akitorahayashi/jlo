@@ -59,7 +59,20 @@ pub fn assemble_single_role_prompt<L>(
 where
     L: PromptAssetLoader + Clone + Send + Sync + 'static,
 {
-    Ok(assemble_prompt_domain(jules_path, layer, &PromptContext::new(), loader)
+    assemble_single_role_prompt_with_context(jules_path, layer, &PromptContext::new(), loader)
+}
+
+/// Assemble the prompt for a single-role layer using an explicit context.
+pub fn assemble_single_role_prompt_with_context<L>(
+    jules_path: &Path,
+    layer: Layer,
+    context: &PromptContext,
+    loader: &L,
+) -> Result<String, AppError>
+where
+    L: PromptAssetLoader + Clone + Send + Sync + 'static,
+{
+    Ok(assemble_prompt_domain(jules_path, layer, context, loader)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
 }

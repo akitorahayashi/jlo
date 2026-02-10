@@ -1,4 +1,5 @@
 role: triage_generic
+description: Validate and consolidate observer events into actionable issues for the generic scope.
 layer: deciders
 
 profile:
