@@ -6,26 +6,25 @@
 pub mod bootstrap;
 pub mod cleanup;
 mod doctor;
+pub mod exchange;
 pub mod generate;
 pub mod issue;
 pub mod matrix;
 mod output;
 pub mod pr;
 mod run;
-#[path = "workstreams/mod.rs"]
-pub mod workstreams;
 
 pub use bootstrap::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
 pub use cleanup::{WorkflowCleanupMockOptions, WorkflowCleanupMockOutput};
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
+pub use exchange::{
+    WorkflowExchangeCleanIssueOptions, WorkflowExchangeCleanIssueOutput,
+    WorkflowExchangeInspectOptions, WorkflowExchangeInspectOutput,
+    WorkflowExchangePublishProposalsOptions, WorkflowExchangePublishProposalsOutput,
+};
 pub use generate::{WorkflowGenerateOptions, WorkflowGenerateOutput};
 pub use output::write_workflow_output;
 pub use run::{WorkflowRunOptions, WorkflowRunOutput};
-pub use workstreams::{
-    WorkflowWorkstreamsCleanIssueOptions, WorkflowWorkstreamsCleanIssueOutput,
-    WorkflowWorkstreamsInspectOptions, WorkflowWorkstreamsInspectOutput,
-    WorkflowWorkstreamsPublishProposalsOptions, WorkflowWorkstreamsPublishProposalsOutput,
-};
 
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
@@ -64,23 +63,23 @@ pub fn cleanup_mock(
     cleanup::cleanup_mock(options)
 }
 
-/// Execute workflow workstreams inspect command.
-pub fn workstreams_inspect(
-    options: WorkflowWorkstreamsInspectOptions,
-) -> Result<WorkflowWorkstreamsInspectOutput, AppError> {
-    workstreams::inspect(options)
+/// Execute workflow inspect command.
+pub fn inspect(
+    options: WorkflowExchangeInspectOptions,
+) -> Result<WorkflowExchangeInspectOutput, AppError> {
+    exchange::inspect(options)
 }
 
-/// Execute workflow workstreams clean issue command.
-pub fn workstreams_clean_issue(
-    options: WorkflowWorkstreamsCleanIssueOptions,
-) -> Result<WorkflowWorkstreamsCleanIssueOutput, AppError> {
-    workstreams::clean_issue(options)
+/// Execute workflow clean issue command.
+pub fn clean_issue(
+    options: WorkflowExchangeCleanIssueOptions,
+) -> Result<WorkflowExchangeCleanIssueOutput, AppError> {
+    exchange::clean_issue(options)
 }
 
-/// Execute workflow workstreams publish-proposals command.
-pub fn workstreams_publish_proposals(
-    options: WorkflowWorkstreamsPublishProposalsOptions,
-) -> Result<WorkflowWorkstreamsPublishProposalsOutput, AppError> {
-    workstreams::publish_proposals(options)
+/// Execute workflow publish-proposals command.
+pub fn publish_proposals(
+    options: WorkflowExchangePublishProposalsOptions,
+) -> Result<WorkflowExchangePublishProposalsOutput, AppError> {
+    exchange::publish_proposals(options)
 }

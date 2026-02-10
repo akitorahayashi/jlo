@@ -119,7 +119,7 @@ impl std::error::Error for PromptAssemblyError {}
 /// Assemble a prompt for the given layer using the prompt assembly spec.
 ///
 /// For multi-role layers (observers, deciders), the context must include
-/// `workstream` and `role` variables. For single-role layers, the context
+/// the `role` variable. For single-role layers, the context
 /// may be empty.
 ///
 /// For issue-driven layers (planners, implementers), use `assemble_with_issue`
@@ -404,10 +404,8 @@ mod tests {
 
     #[test]
     fn prompt_context_with_var() {
-        let ctx =
-            PromptContext::new().with_var("workstream", "generic").with_var("role", "taxonomy");
+        let ctx = PromptContext::new().with_var("role", "taxonomy");
 
-        assert_eq!(ctx.get("workstream"), Some("generic"));
         assert_eq!(ctx.get("role"), Some("taxonomy"));
         assert_eq!(ctx.get("missing"), None);
     }
@@ -444,7 +442,7 @@ mod tests {
             r#"{{ section("Optional", include_optional(".jules/changes/latest.yml")) }}"#,
         );
 
-        let ctx = PromptContext::new().with_var("workstream", "generic").with_var("role", "qa");
+        let ctx = PromptContext::new().with_var("role", "qa");
         let result = assemble_prompt(jules_path, Layer::Observers, &ctx, &mock_loader).unwrap();
 
         assert!(!result.content.contains("# Optional"));
@@ -461,7 +459,7 @@ mod tests {
             r#"{{ section("Role", include_required(".jules/roles/deciders/taxonomy/role.yml")) }}"#,
         );
 
-        let ctx = PromptContext::new().with_var("workstream", "generic").with_var("role", "qa");
+        let ctx = PromptContext::new().with_var("role", "qa");
         let result = assemble_prompt(jules_path, Layer::Deciders, &ctx, &mock_loader);
 
         assert!(matches!(result, Err(PromptAssemblyError::RequiredIncludeNotFound { .. })));
@@ -474,13 +472,12 @@ mod tests {
 
         mock_loader.add_file(
             ".jules/roles/observers/prompt_assembly.j2",
-            r#"{{ section("Perspective", include_required(".jules/workstreams/generic/workstations/taxonomy/perspective.yml")) }}"#,
+            r#"{{ section("Perspective", include_required(".jules/workstations/taxonomy/perspective.yml")) }}"#,
         );
         mock_loader
             .add_file(".jules/roles/observers/schemas/perspective.yml", "schema: perspective");
 
-        let ctx =
-            PromptContext::new().with_var("workstream", "generic").with_var("role", "taxonomy");
+        let ctx = PromptContext::new().with_var("role", "taxonomy");
         let result = assemble_prompt(jules_path, Layer::Observers, &ctx, &mock_loader).unwrap();
 
         assert!(result.content.contains("schema: perspective"));

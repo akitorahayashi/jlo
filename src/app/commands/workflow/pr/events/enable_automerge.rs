@@ -124,7 +124,7 @@ mod tests {
                     is_draft: false,
                     auto_merge_enabled: false,
                 },
-                files: vec![".jules/workstreams/generic/state.yml".to_string()],
+                files: vec![".jules/exchange/events/pending/state.yml".to_string()],
                 automerge_called: RefCell::new(false),
             }
         }

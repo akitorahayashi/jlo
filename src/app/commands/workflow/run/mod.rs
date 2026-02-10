@@ -1,6 +1,6 @@
 //! Workflow run command implementation.
 //!
-//! Executes a single workstream's layer by reading scheduled.toml and running enabled roles.
+//! Executes a layer by reading scheduled.toml and running enabled roles.
 //! This command provides orchestration for GitHub Actions workflows.
 
 pub mod issue_routing;
@@ -46,7 +46,7 @@ where
         None
     };
 
-    // Execute layer runs for the specified workstream
+    // Execute layer runs for all active roles
     let run_results = execute_layer(store, &options, git, github)?;
 
     Ok(WorkflowRunOutput {

@@ -1,32 +1,25 @@
 # Template System
 
-See [root AGENTS.md](../../../../AGENTS.md) for design principles.
+See [root AGENTS.md](../../../AGENTS.md) for design principles.
 
 ## Directory Structure
 
 ```
 src/assets/templates/
-├── layers/
-│   ├── observers/
-│   │   └── role.yml      # Observer role template
-│   └── deciders/
-│       └── role.yml      # Decider role template
-└── workstreams/
-    ├── exchange/
-    │   ├── events/       # Event state directories
-    │   └── issues/       # Issue label directories
-    ├── workstations/
-    │   ├── events/
-    │   └── issues/
-    └── scheduled.toml    # Workstream schedule template
+└── layers/
+    ├── observers/
+    │   └── role.yml      # Observer role template
+    ├── deciders/
+    │   └── role.yml      # Decider role template
+    └── innovators/
+        └── role.yml      # Innovator role template
 ```
 
 ## Template Types
 
 | Template Type | Location | Applied By | Result |
 |---------------|----------|------------|--------|
-| **Role** | `layers/<layer>/role.yml` | `jlo create role <layer> <name>` | Creates `.jlo/roles/<layer>/roles/<name>/role.yml` |
-| **Workstream** | `workstreams/<name>/` | `jlo create workstream <name>` | Creates `.jlo/workstreams/<name>/scheduled.toml` |
+| **Role** | `layers/<layer>/role.yml` | `jlo create <layer> <name>` | Creates `.jlo/roles/<layer>/roles/<name>/role.yml` |
 
 ## Role Templates
 
@@ -42,37 +35,15 @@ Single-role layers (Narrator, Planners, Implementers) have a fixed role with `co
 
 ```bash
 # Create a new observer role
-jlo create role observers taxonomy
+jlo create observers taxonomy
 
 # Create a new decider role
-jlo create role deciders triage
+jlo create deciders triage
 ```
 
 ### Result
 
 Creates `.jlo/roles/<layer>/roles/<name>/role.yml` populated from the template.
-
-## Workstream Templates
-
-Workstream templates define the directory structure for events and issues.
-
-### Available Templates
-
-| Template | Purpose |
-|----------|---------|
-| `exchange` | General-purpose workstream |
-| `workstations` | Development environment workstream |
-
-### Application
-
-```bash
-# Create a workstream
-jlo create workstream exchange
-```
-
-### Result
-
-Creates `.jlo/workstreams/<name>/scheduled.toml` seeded from the template.
 
 ## Relationship to jlo create Command
 

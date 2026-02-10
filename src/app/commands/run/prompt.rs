@@ -50,7 +50,7 @@ where
 /// Assemble the prompt for a single-role layer (Narrator, Planners, Implementers).
 ///
 /// Single-role layers use prompt_assembly.j2 directly in the layer directory
-/// and do not require workstream/role context.
+/// and do not require role context.
 pub fn assemble_single_role_prompt<L>(
     jules_path: &Path,
     layer: Layer,

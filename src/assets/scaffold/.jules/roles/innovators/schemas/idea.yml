@@ -2,7 +2,6 @@ schema_version: 1
 
 id: "<6_random_lowercase_alphanumeric_chars>"
 persona: "<persona_id>"
-workstream: "<workstream>"
 created_at: "YYYY-MM-DD"
 
 title: "<short descriptive title>"

@@ -9,15 +9,15 @@ use crate::ports::WorkspaceStore;
 
 use super::model::{
     EventItem, EventStateSummary, EventSummary, IssueItem, IssueLabelSummary, IssueSummary,
-    RoleSummary, ScheduleLayerSummary, ScheduleSummary, WorkflowWorkstreamsInspectOutput,
+    RoleSummary, ScheduleLayerSummary, ScheduleSummary, WorkflowExchangeInspectOutput,
 };
 
 #[derive(Debug, Clone)]
-pub struct WorkflowWorkstreamsInspectOptions {}
+pub struct WorkflowExchangeInspectOptions {}
 
 pub fn execute(
-    _options: WorkflowWorkstreamsInspectOptions,
-) -> Result<WorkflowWorkstreamsInspectOutput, AppError> {
+    _options: WorkflowExchangeInspectOptions,
+) -> Result<WorkflowExchangeInspectOutput, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
 
     if !workspace.exists() {
@@ -29,7 +29,7 @@ pub fn execute(
 
 pub(super) fn inspect_at(
     store: &impl WorkspaceStore,
-) -> Result<WorkflowWorkstreamsInspectOutput, AppError> {
+) -> Result<WorkflowExchangeInspectOutput, AppError> {
     let jules_path = store.jules_path();
     let exchange_dir = jules_path.join("exchange");
     if !store.file_exists(exchange_dir.to_str().unwrap()) {
@@ -54,7 +54,7 @@ pub(super) fn inspect_at(
     let events = summarize_events(store, root, &exchange_dir)?;
     let issues = summarize_issues(store, root, &exchange_dir)?;
 
-    Ok(WorkflowWorkstreamsInspectOutput {
+    Ok(WorkflowExchangeInspectOutput {
         schema_version: 1,
         schedule: schedule_summary,
         events,

@@ -71,28 +71,26 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │           ├── <persona>/
 │           │   └── role.yml
 │           └── .gitkeep
-├── workstreams/
-│   └── <workstream>/
-│       ├── exchange/
-│       │   ├── events/
-│       │   │   ├── pending/
-│       │   │   │   └── .gitkeep
-│       │   │   └── decided/
-│       │   │   │   └── .gitkeep
-│       │   ├── issues/
-│       │   │   ├── <label>/
-│       │   │   │   └── .gitkeep
-│       │   │   └── .gitkeep
-│       │   └── innovators/
-│       │       └── <persona>/
-│       │           ├── perspective.yml
-│       │           ├── idea.yml       # Temporary (creation phase)
-│       │           ├── proposal.yml   # Temporary (refinement output)
-│       │           └── comments/
-│       │               └── .gitkeep
-│       └── workstations/
-│           └── <role>/
-│               └── perspective.yml
+├── exchange/
+│   ├── events/
+│   │   ├── pending/
+│   │   │   └── .gitkeep
+│   │   └── decided/
+│   │       └── .gitkeep
+│   ├── issues/
+│   │   ├── <label>/
+│   │   │   └── .gitkeep
+│   │   └── .gitkeep
+│   └── innovators/
+│       └── <persona>/
+│           ├── perspective.yml
+│           ├── idea.yml       # Temporary (creation phase)
+│           ├── proposal.yml   # Temporary (refinement output)
+│           └── comments/
+│               └── .gitkeep
+├── workstations/
+│   └── <role>/
+│       └── perspective.yml
 └── setup/
     ├── tools.yml         # Tool selection
     ├── env.toml          # Environment variables (generated/merged)
@@ -138,22 +136,18 @@ Schemas define the structure for artifacts produced by agents.
 
 **Rule**: Agents copy the schema and fill its fields. Never invent structure.
 
-## Workstream Model
+## Exchange Model
 
-Workstreams isolate events and issues so that decider rules do not mix across unrelated operational areas.
+Jules uses a flat exchange model for handing off events and issues between layers. The exchange is located in `.jules/exchange/`.
 
-- Observers and deciders declare their destination workstream via the `workstream` runtime context variable in `prompt_assembly.j2`.
-- If the workstream directory is missing, execution fails fast.
-- Planners and implementers do not declare a workstream; the issue file path is authoritative.
-
-### Workstream Directories
+### Exchange Directories
 
 | Directory | Purpose |
 |-----------|---------|
-| `.jules/workstreams/<workstream>/exchange/events/<state>/` | Observer outputs, Decider inputs |
-| `.jules/workstreams/<workstream>/exchange/issues/<label>/` | Decider/Planner outputs, Implementer inputs |
-| `.jules/workstreams/<workstream>/exchange/innovators/<persona>/` | Innovator perspectives, ideas, proposals, comments |
-| `.jules/workstreams/<workstream>/workstations/<role>/` | Role perspectives (memory) |
+| `.jules/exchange/events/<state>/` | Observer outputs, Decider inputs |
+| `.jules/exchange/issues/<label>/` | Decider/Planner outputs, Implementer inputs |
+| `.jules/exchange/innovators/<persona>/` | Innovator perspectives, ideas, proposals, comments |
+| `.jules/workstations/<role>/` | Role perspectives (memory) |
 
 ## Data Flow
 
@@ -168,7 +162,7 @@ perspective -> idea -> comments -> proposal
 ```
 
 1. **Narrator** runs first, producing `.jules/changes/latest.yml` for observer context.
-2. **Observers** emit events to workstream event directories.
+2. **Observers** emit events to exchange event directories.
 3. **Deciders** read events, emit issues, and link related events via `source_events`.
 4. **Planners** expand issues with `requires_deep_analysis: true`.
 5. **Implementers** execute approved tasks and create PRs with code changes.

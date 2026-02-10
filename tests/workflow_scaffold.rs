@@ -63,34 +63,13 @@ fn init_workflows_installs_remote_scaffold() {
 
     let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
     assert!(!workflow.contains("strategy: matrix"), "Should not use matrix strategy");
-    assert!(
-        workflow.contains("Run observers for each workstream"),
-        "Should run observers for each workstream"
-    );
-    assert!(
-        workflow.contains("Run deciders for each pending workstream"),
-        "Should run deciders for each pending workstream"
-    );
-    assert!(
-        workflow.contains("Run planners for each workstream"),
-        "Should run planners for each workstream"
-    );
-    assert!(
-        workflow.contains("Run implementers for each workstream"),
-        "Should run implementers for each workstream"
-    );
-    assert!(
-        workflow.contains("Run innovators (first pass) for each workstream"),
-        "Should run innovators first pass for each workstream"
-    );
-    assert!(
-        workflow.contains("Run innovators (second pass) for each workstream"),
-        "Should run innovators second pass for each workstream"
-    );
-    assert!(
-        workflow.contains("Publish proposals for each workstream"),
-        "Should publish proposals for each workstream"
-    );
+    assert!(workflow.contains("Run observers"), "Should run observers");
+    assert!(workflow.contains("Run deciders"), "Should run deciders");
+    assert!(workflow.contains("Run planners"), "Should run planners");
+    assert!(workflow.contains("Run implementers"), "Should run implementers");
+    assert!(workflow.contains("Run innovators (first pass)"), "Should run innovators first pass");
+    assert!(workflow.contains("Run innovators (second pass)"), "Should run innovators second pass");
+    assert!(workflow.contains("Publish proposals"), "Should publish proposals");
     // Verify no script references
     assert!(
         !workflow.contains(".github/scripts/"),
@@ -113,10 +92,7 @@ fn init_workflows_installs_self_hosted_scaffold() {
 
     assert!(workflow.contains("runs-on: self-hosted"), "Should use self-hosted runner");
     assert!(!workflow.contains("strategy: matrix"), "Should not use matrix strategy");
-    assert!(
-        workflow.contains("Run observers for each workstream"),
-        "Should run observers for each workstream"
-    );
+    assert!(workflow.contains("Run observers"), "Should run observers");
 }
 
 #[test]

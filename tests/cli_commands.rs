@@ -447,7 +447,7 @@ fn run_implementers_with_missing_issue_file() {
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     ctx.cli()
-        .args(["run", "implementers", ".jules/workstreams/generic/issues/nonexistent.yml"])
+        .args(["run", "implementers", ".jules/exchange/issues/nonexistent.yml"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Issue file not found"));
@@ -460,8 +460,8 @@ fn run_implementers_prompt_preview_with_issue_file() {
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
-    // Create a test issue file in workstreams
-    let issue_dir = ctx.work_dir().join(".jules/workstreams/generic/issues/medium");
+    // Create a test issue file in flat exchange
+    let issue_dir = ctx.work_dir().join(".jules/exchange/issues/bugs");
     std::fs::create_dir_all(&issue_dir).unwrap();
     let issue_path = issue_dir.join("test_issue.yml");
     std::fs::write(
@@ -475,7 +475,7 @@ fn run_implementers_prompt_preview_with_issue_file() {
         .args([
             "run",
             "implementers",
-            ".jules/workstreams/generic/issues/medium/test_issue.yml",
+            ".jules/exchange/issues/bugs/test_issue.yml",
             "--prompt-preview",
         ])
         .assert()
@@ -491,8 +491,8 @@ fn run_planners_prompt_preview_with_issue_file() {
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
-    // Create a test issue file in workstreams
-    let issue_dir = ctx.work_dir().join(".jules/workstreams/generic/issues/medium");
+    // Create a test issue file in flat exchange
+    let issue_dir = ctx.work_dir().join(".jules/exchange/issues/bugs");
     std::fs::create_dir_all(&issue_dir).unwrap();
     let issue_path = issue_dir.join("test_issue.yml");
     std::fs::write(
@@ -503,12 +503,7 @@ fn run_planners_prompt_preview_with_issue_file() {
 
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
-        .args([
-            "run",
-            "planners",
-            ".jules/workstreams/generic/issues/medium/test_issue.yml",
-            "--prompt-preview",
-        ])
+        .args(["run", "planners", ".jules/exchange/issues/bugs/test_issue.yml", "--prompt-preview"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Prompt Preview: Local Dispatch"))

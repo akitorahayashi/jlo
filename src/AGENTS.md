@@ -50,7 +50,7 @@ tests/
 | **Runtime plane** | The `.jules/` directory on the `jules` branch. Materialized from `.jlo/` by workflow bootstrap; hosts agent exchange artifacts. |
 | **Scaffold** | Embedded static files in `src/assets/scaffold/` that seed `.jlo/` on init and are reconciled on update. |
 | **Projection** | Deterministic materialization of `.jules/` from `.jlo/` + scaffold assets during workflow bootstrap. See `docs/CONTROL_PLANE_OWNERSHIP.md`. |
-| **Create** | CLI command to add new roles or workstreams to the `.jlo/` control plane. |
+| **Exchange** | The flat handoff directory structure under `.jules/exchange/`. |
 | **Workflow scaffold** | `.github/` automation assets installed by `jlo init`. |
 | **Component** | Development tools managed by `jlo setup`, defined in `src/assets/catalog/`. |
 
@@ -61,7 +61,7 @@ Core domain logic located in `src/domain/`.
 | Module | Purpose |
 |--------|---------|
 | `configuration` | Global configuration models (`config.toml`, `scheduled.toml`). |
-| `identities` | Structural identifiers (`RoleId`, `Layer`, `WorkstreamId`). |
+| `identifiers` | Structural identifiers (`RoleId`, `Layer`). |
 | `prompt` | Prompt assembly and template rendering models. |
 | `workspace` | Filesystem abstraction and path management. |
 | `error` | `AppError` and error handling types. |
@@ -73,29 +73,27 @@ Core domain logic located in `src/domain/`.
 |---------|-------|-------------|
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow scaffold |
 | `jlo update [--prompt-preview]` | `u` | Advance `.jlo/` control-plane version pin |
-| `jlo create role <layer> <name>` | `c` | Create a custom role under `.jlo/` |
-| `jlo create workstream <name>` | `c` | Create a workstream under `.jlo/` |
+| `jlo create <layer> <name>` | `c` | Create a custom role under `.jlo/` |
 | `jlo run narrator [--prompt-preview] [--branch <branch>] [--mock]` | `r n` | Run narrator (produces changes feed) |
-| `jlo run observers --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |
-| `jlo run deciders --role <role> --workstream <workstream> [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
+| `jlo run observers --role <role> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |
+| `jlo run deciders [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
 | `jlo run planners <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (issue-driven) |
 | `jlo run implementers <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (issue-driven) |
-| `jlo run innovators --role <role> --workstream <workstream> --phase <creation\|refinement> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
-| `jlo doctor [--strict] [--workstream <name>]` | | Validate .jules/ structure and content |
-| `jlo workflow doctor [--workstream <name>]` | `wf` | Validate workspace for workflow use |
-| `jlo workflow matrix workstreams` | | Generate workstream matrix for GitHub Actions |
-| `jlo workflow matrix pending-workstreams --workstreams-json <json> [--mock]` | | Generate pending workstreams matrix |
-| `jlo workflow matrix routing --workstreams-json <json> --routing-labels <csv>` | | Generate routing matrix for issues |
-| `jlo workflow run <workstream> <layer> [--mock]` | | Run layer and return wait-gating metadata |
+| `jlo run innovators --role <role> --phase <creation\|refinement> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
+| `jlo doctor [--strict]` | | Validate .jules/ structure and content |
+| `jlo workflow doctor` | `wf` | Validate workspace for workflow use |
+| `jlo workflow matrix pending` | | Generate pending execution matrix for GitHub Actions |
+| `jlo workflow matrix routing --routing-labels <csv>` | | Generate routing matrix for issues |
+| `jlo workflow run <layer> [--mock]` | | Run layer and return wait-gating metadata |
 | `jlo workflow cleanup mock --mock-tag <tag> [--pr-numbers-json <json>] [--branches-json <json>]` | | Cleanup mock artifacts |
 | `jlo workflow pr comment-summary-request <pr_number>` | | Post or update summary-request comment on a Jules PR |
 | `jlo workflow pr sync-category-label <pr_number>` | | Sync implementer category label from branch to PR |
 | `jlo workflow pr enable-automerge <pr_number>` | | Enable auto-merge on an eligible PR |
 | `jlo workflow pr process <pr_number>` | | Run all event-level PR commands in order |
 | `jlo workflow issue label-innovator <issue_number> <persona>` | | Apply innovator labels to a proposal issue |
-| `jlo workflow workstreams inspect <workstream>` | | Inspect workstream state |
-| `jlo workflow workstreams clean issue <issue_file>` | | Remove a processed issue and its source events |
-| `jlo workflow workstreams publish-proposals <workstream>` | | Publish innovator proposals as GitHub issues |
+| `jlo workflow inspect` | | Inspect exchange state |
+| `jlo workflow clean-issue <issue_file>` | | Remove a processed issue and its source events |
+| `jlo workflow publish-proposals` | | Publish innovator proposals as GitHub issues |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list [--detail <component>]` | `s ls` | List available components |
 | `jlo deinit` | | Remove all jlo-managed assets (`.jlo/`, branch, workflows) |
@@ -129,15 +127,15 @@ cargo test --test mock_mode       # Mock execution flow
 | Layer | Type | Invocation | Config |
 |-------|------|------------|--------|
 | Narrator | Single-role | `jlo run narrator` | None (git-based) |
-| Observers | Multi-role | `jlo workflow run <workstream> observers` | `workstreams/<workstream>/scheduled.toml` |
-| Deciders | Multi-role | `jlo workflow run <workstream> deciders` | `workstreams/<workstream>/scheduled.toml` |
+| Observers | Multi-role | `jlo workflow run observers` | `.jlo/scheduled.toml` |
+| Deciders | Single-role | `jlo run deciders` | None |
 | Planners | Single-role | `jlo run planners <path>` | None (issue path) |
 | Implementers | Single-role | `jlo run implementers <path>` | None (issue path) |
-| Innovators | Multi-role | `jlo workflow run <workstream> innovators` | `workstreams/<workstream>/scheduled.toml` |
+| Innovators | Multi-role | `jlo workflow run innovators` | `.jlo/scheduled.toml` |
 
-**Single-role layers**: Narrator, Planners, Implementers have a fixed role with `prompt.yml` in the layer directory. Template creation not supported.
+**Single-role layers**: Narrator, Deciders, Planners, Implementers have a fixed role with `prompt.yml` in the layer directory. Template creation not supported.
 
-**Multi-role layers**: Observers, Deciders, and Innovators support multiple configurable roles listed in `workstreams/<workstream>/scheduled.toml`. Each role has its own subdirectory with `prompt.yml`.
+**Multi-role layers**: Observers and Innovators support multiple configurable roles listed in `.jlo/scheduled.toml`. Each role has its own subdirectory with `role.yml`.
 
 ## Mock Mode
 

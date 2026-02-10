@@ -7,14 +7,14 @@ constraints:
   - Set requires_deep_analysis to false after expansion
   - Preserve and expand deep_analysis_reason with detailed findings
   - Do NOT create task files
-  - Issue file path is authoritative (includes workstream)
+  - Issue file path is authoritative (includes exchange directory)
 
 inputs:
   - Local issue file path (provided as argument)
-  - .jules/workstreams/<workstream>/exchange/issues/<label>/<issue>.yml (where requires_deep_analysis: true)
+  - .jules/exchange/issues/<label>/<issue>.yml (where requires_deep_analysis: true)
 
 outputs:
-  - .jules/workstreams/<workstream>/exchange/issues/<label>/<issue>.yml (expanded, requires_deep_analysis: false)
+  - .jules/exchange/issues/<label>/<issue>.yml (expanded, requires_deep_analysis: false)
 
 workflow:
   - 1. Read target issue, verify requires_deep_analysis is true

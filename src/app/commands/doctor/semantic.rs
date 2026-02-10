@@ -85,8 +85,8 @@ pub fn semantic_checks(
         }
     }
 
-    // Workstream-prompt relationship is now managed through scheduled.toml
-    // Roles are generic and assigned to workstreams via the schedule, not the role.yml
+    // Exchange-prompt relationship is now managed through scheduled.toml
+    // Roles are generic and assigned to the exchange via the schedule, not the role.yml
 
     // Collect existing roles from filesystem for each layer
     // Roles are user-defined and live under .jlo/roles/<layer>/<role>/

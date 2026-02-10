@@ -43,9 +43,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
     ensure_path_exists(inputs.root, ".jlo/config.toml", diagnostics);
     ensure_path_exists(inputs.root, ".jules/.jlo-version", diagnostics);
     ensure_directory_exists(inputs.jules_path.join("roles"), diagnostics);
-    // Workstreams dir in .jules might not exist if no runtime artifacts yet?
-    // Actually bootstrap scaffold creates .jules/workstreams/generic...
-    // But we should probably check .jlo/workstreams too.
     ensure_directory_exists(inputs.root.join(".jlo/roles"), diagnostics);
     // Root schedule file
     ensure_path_exists(inputs.root, ".jlo/scheduled.toml", diagnostics);

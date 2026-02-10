@@ -66,4 +66,4 @@ runs:
       shell: bash
       env:
         ISSUE_FILE: ${{ inputs.issue_file }}
-      run: jlo workflow workstreams clean issue "$ISSUE_FILE"
+      run: jlo workflow clean-issue "$ISSUE_FILE"
