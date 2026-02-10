@@ -179,15 +179,7 @@ fn build_narrator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     ctx: &GitContext,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let prompt_context = PromptContext::new()
-        .with_var("run_mode", ctx.range.selection_mode.clone())
-        .with_var("changes_since", ctx.range.changes_since.clone().unwrap_or_default());
-    let base_prompt = assemble_single_role_prompt_with_context(
-        jules_path,
-        Layer::Narrators,
-        &prompt_context,
-        workspace,
-    )?;
+    let base_prompt = assemble_narrator_base_prompt(jules_path, ctx, workspace)?;
 
     // Build the git context section
     let mut context_section = String::new();
@@ -261,18 +253,26 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     }
 
     println!("\n--- Prompt (base) ---");
+    let prompt = assemble_narrator_base_prompt(jules_path, ctx, workspace)?;
+    println!("{}", prompt);
+
+    Ok(())
+}
+
+fn assemble_narrator_base_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+    jules_path: &Path,
+    ctx: &GitContext,
+    workspace: &W,
+) -> Result<String, AppError> {
     let prompt_context = PromptContext::new()
         .with_var("run_mode", ctx.range.selection_mode.clone())
         .with_var("changes_since", ctx.range.changes_since.clone().unwrap_or_default());
-    let prompt = assemble_single_role_prompt_with_context(
+    assemble_single_role_prompt_with_context(
         jules_path,
         Layer::Narrators,
         &prompt_context,
         workspace,
-    )?;
-    println!("{}", prompt);
-
-    Ok(())
+    )
 }
 
 fn latest_summary_path(jules_path: &Path) -> Result<String, AppError> {

@@ -13,7 +13,6 @@ inputs:
   - Source code and repository files
   - .jules/changes/latest.yml (recent codebase changes, if present)
   - .jlo/roles/observers/<role>/role.yml (Specialized Role Definition)
-  - .jlo/scheduled.toml (scheduled roles)
   - .jules/exchange/workstations/<role>/perspective.yml (Workstation Memory)
   - .jules/exchange/issues/**/*.yml (open issues for suppression)
   - .jules/exchange/events/<state>/*.yml (recent events for deduplication)

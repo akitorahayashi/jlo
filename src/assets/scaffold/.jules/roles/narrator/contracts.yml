@@ -3,8 +3,7 @@ branch_prefix: jules-narrator-
 
 constraints:
   - Modify only .jules/changes/latest.yml
-  - MUST exclude .jules/ from all diffs and path lists
-  - If no non-excluded changes exist, produce no output (no-op)
+  - MUST exclude .jules/ and .jlo/ from all diffs and path lists
   - Schema must match schemas/change.yml exactly
   - Truncation must be explicit in summary.truncation_note when commits_total > commits_included
   - NEVER embed raw git diff patches into latest.yml

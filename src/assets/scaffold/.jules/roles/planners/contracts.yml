@@ -5,12 +5,8 @@ constraints:
   - Only process issues where requires_deep_analysis is true
   - Expand analysis in-place (overwrite the issue file)
   - Set requires_deep_analysis to false after expansion
-  - Preserve and expand deep_analysis_reason with detailed findings
-  - Do NOT create task files
-  - Issue file path is authoritative (includes exchange directory)
 
 inputs:
-  - Local issue file path (provided as argument)
   - .jules/exchange/issues/<label>/<issue>.yml (where requires_deep_analysis: true)
 
 outputs:

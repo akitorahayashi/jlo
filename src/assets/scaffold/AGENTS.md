@@ -6,7 +6,7 @@
 Prompts are constructed by `prompt_assembly.j2`, which renders prompt sections via explicit include helpers. Each layer has a single `prompt_assembly.j2` that references contracts, role definitions, and exchange data.
 
 ```jinja
-{{ section("Role", include_required(".jules/roles/<layer>/roles/" ~ role ~ "/role.yml")) }}
+{{ section("Role", include_required(".jlo/roles/<layer>/roles/" ~ role ~ "/role.yml")) }}
 {{ section("Layer Contracts", include_required(".jules/roles/<layer>/contracts.yml")) }}
 {{ section("Change Summary", include_optional(".jules/changes/latest.yml")) }}
 ```
@@ -19,10 +19,23 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 ## Directory Structure
 
 ```
-.jules/
+.jlo/ (Configuration & Instance)
+├── config.toml           # Workspace configuration
+├── scheduled.toml        # Scheduled tasks
+├── roles/                # Role instance configurations
+│   ├── <layer>/
+│   │   ├── role.yml      # Role-specific configuration
+│   │   └── .gitkeep
+│   └── .gitkeep
+└── setup/
+    ├── tools.yml         # Tool selection
+    ├── env.toml          # Environment variables (generated/merged)
+    ├── install.sh        # Installation script (generated)
+    └── .gitignore        # Ignores env.toml
+
+.jules/ (System Definition)
 ├── JULES.md              # Agent contract (formal rules)
 ├── README.md             # Human guide (informal)
-├── config.toml           # Workspace configuration
 ├── github-labels.json    # GitHub labels definition
 ├── changes/
 │   ├── latest.yml        # Narrator output (bounded changes summary)
@@ -36,18 +49,14 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   ├── observers/
 │   │   ├── prompt_assembly.j2 # Prompt construction rules
 │   │   ├── contracts.yml # Layer contract
-│   │   ├── schemas/
-│   │   │   ├── event.yml
-│   │   │   └── perspective.yml
-│   │   └── roles/
-│   │       ├── <role>/
-│   │       │   └── role.yml
-│   │       └── .gitkeep
-│   ├── deciders/
+│   │   └── schemas/
+│   │       ├── event.yml
+│   │       └── perspective.yml
+│   ├── decider/
 │   │   ├── prompt_assembly.j2 # Prompt construction rules
 │   │   ├── contracts.yml # Layer contract
 │   │   ├── schemas/
-│   │   │   └── issue.yml
+│   │       └── issue.yml
 │   ├── planners/
 │   │   ├── prompt_assembly.j2 # Prompt construction rules
 │   │   └── contracts.yml
@@ -58,15 +67,11 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │       ├── prompt_assembly.j2      # Prompt construction (uses {{phase}})
 │       ├── contracts_creation.yml   # Creation phase contract
 │       ├── contracts_refinement.yml # Refinement phase contract
-│       ├── schemas/
-│       │   ├── perspective.yml
-│       │   ├── idea.yml
-│       │   ├── proposal.yml
-│       │   └── comment.yml
-│       └── roles/
-│           ├── <persona>/
-│           │   └── role.yml
-│           └── .gitkeep
+│       └── schemas/
+│           ├── perspective.yml
+│           ├── idea.yml
+│           ├── proposal.yml
+│           └── comment.yml
 ├── exchange/
 │   ├── events/
 │   │   ├── pending/
@@ -84,14 +89,9 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │           ├── proposal.yml   # Temporary (refinement output)
 │           └── comments/
 │               └── .gitkeep
-├── workstations/
-│   └── <role>/
-│       └── perspective.yml
-└── setup/
-    ├── tools.yml         # Tool selection
-    ├── env.toml          # Environment variables (generated/merged)
-    ├── install.sh        # Installation script (generated)
-    └── .gitignore        # Ignores env.toml
+└── workstations/
+    └── <role>/
+        └── perspective.yml
 ```
 
 ## Document Hierarchy
@@ -101,7 +101,7 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 | `JULES.md` | Jules agents | Formal contracts and schemas |
 | `README.md` | Humans | Informal guide |
 
-**Rule**: Jules-internal details stay in `.jules/`. Execution/orchestration belongs in `.github/`.
+**Rule**: Jules-internal definitions stay in `.jules/`. User configuration stays in `.jlo/`. Execution/orchestration belongs in `.github/`.
 
 ## Prompt Hierarchy
 
@@ -140,8 +140,8 @@ Jules uses a flat exchange model for handing off events and issues between layer
 
 | Directory | Purpose |
 |-----------|---------|
-| `.jules/exchange/events/<state>/` | Observer outputs, Decider inputs |
-| `.jules/exchange/issues/<label>/` | Decider/Planner outputs, Implementer inputs |
+| `.jules/exchange/events/<state>/` | Observer outputs |
+| `.jules/exchange/issues/<label>/` | Planner outputs, Implementer inputs |
 | `.jules/exchange/innovators/<persona>/` | Innovator perspectives, ideas, proposals, comments |
 | `.jules/workstations/<role>/` | Role perspectives (memory) |
 
@@ -150,7 +150,7 @@ Jules uses a flat exchange model for handing off events and issues between layer
 The pipeline is file-based and uses local issues as the handoff point:
 
 ```
-narrator -> observers -> deciders -> [planners] -> implementers
+narrator -> observers -> decider -> [planners] -> implementers
 (changes)   (events)    (issues)    (expand)      (code changes)
 
 innovators (independent cycle)
@@ -159,7 +159,7 @@ perspective -> idea -> comments -> proposal
 
 1. **Narrator** runs first, producing `.jules/changes/latest.yml` for observer context.
 2. **Observers** emit events to exchange event directories.
-3. **Deciders** read events, emit issues, and link related events via `source_events`.
+3. **Decider** read events, emit issues, and link related events via `source_events`.
 4. **Planners** expand issues with `requires_deep_analysis: true`.
 5. **Implementers** execute approved tasks and create PRs with code changes.
 6. **Innovators** run independently: each persona maintains a `perspective.yml`, drafts `idea.yml`, receives `comments/` from other personas, and produces `proposal.yml`.
