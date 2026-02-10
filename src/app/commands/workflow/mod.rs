@@ -18,9 +18,9 @@ pub use bootstrap::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
 pub use cleanup::{WorkflowCleanupMockOptions, WorkflowCleanupMockOutput};
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
 pub use exchange::{
-    WorkflowWorkstreamsCleanIssueOptions, WorkflowWorkstreamsCleanIssueOutput,
-    WorkflowWorkstreamsInspectOptions, WorkflowWorkstreamsInspectOutput,
-    WorkflowWorkstreamsPublishProposalsOptions, WorkflowWorkstreamsPublishProposalsOutput,
+    WorkflowExchangeCleanIssueOptions, WorkflowExchangeCleanIssueOutput,
+    WorkflowExchangeInspectOptions, WorkflowExchangeInspectOutput,
+    WorkflowExchangePublishProposalsOptions, WorkflowExchangePublishProposalsOutput,
 };
 pub use generate::{WorkflowGenerateOptions, WorkflowGenerateOutput};
 pub use output::write_workflow_output;
@@ -64,22 +64,22 @@ pub fn cleanup_mock(
 }
 
 /// Execute workflow inspect command.
-pub fn workstreams_inspect(
-    options: WorkflowWorkstreamsInspectOptions,
-) -> Result<WorkflowWorkstreamsInspectOutput, AppError> {
+pub fn inspect(
+    options: WorkflowExchangeInspectOptions,
+) -> Result<WorkflowExchangeInspectOutput, AppError> {
     exchange::inspect(options)
 }
 
 /// Execute workflow clean issue command.
-pub fn workstreams_clean_issue(
-    options: WorkflowWorkstreamsCleanIssueOptions,
-) -> Result<WorkflowWorkstreamsCleanIssueOutput, AppError> {
+pub fn clean_issue(
+    options: WorkflowExchangeCleanIssueOptions,
+) -> Result<WorkflowExchangeCleanIssueOutput, AppError> {
     exchange::clean_issue(options)
 }
 
 /// Execute workflow publish-proposals command.
-pub fn workstreams_publish_proposals(
-    options: WorkflowWorkstreamsPublishProposalsOptions,
-) -> Result<WorkflowWorkstreamsPublishProposalsOutput, AppError> {
+pub fn publish_proposals(
+    options: WorkflowExchangePublishProposalsOptions,
+) -> Result<WorkflowExchangePublishProposalsOutput, AppError> {
     exchange::publish_proposals(options)
 }

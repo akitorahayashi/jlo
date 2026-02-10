@@ -45,7 +45,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn workflow_run_options_with_workstream() {
+    fn workflow_run_options() {
         let options = WorkflowRunOptions {
             layer: Layer::Observers,
             mock: false,

@@ -35,20 +35,16 @@ The Narrator layer produces `.jules/changes/latest.yml`, summarizing recent code
 - Observers receive this context automatically when present.
 - Schema is defined by `.jules/roles/narrator/schemas/change.yml`.
 
-## Workstream Model
+## Exchange Model
 
-Workstreams isolate events and issues so that decider rules do not mix across unrelated operational areas.
+Jules uses a flat exchange model for handing off events and issues between layers. The exchange is located in `.jules/exchange/`.
 
-- Observers and deciders declare their destination workstream via the `workstream` runtime context variable.
-- If the workstream directory is missing, execution fails fast.
-- Planners and implementers do not declare a workstream; the issue file path is authoritative.
-
-Workstream directories:
-
-- Events (Observer output, Decider input):
-  - `.jules/workstreams/<workstream>/exchange/events/<state>/*.yml` (state directories defined by the scaffold)
-- Issues (Decider/Planner output, Implementer input):
-  - `.jules/workstreams/<workstream>/exchange/issues/<label>/*.yml`
+- **Events** (Observer output, Decider input):
+  - `.jules/exchange/events/<state>/*.yml` (states: `pending`, `decided`)
+- **Issues** (Decider/Planner output, Implementer input):
+  - `.jules/exchange/issues/<label>/*.yml` (labels: `bugs`, `feats`, `refacts`, `tests`, `docs`)
+- **Innovator Rooms**:
+  - `.jules/exchange/innovators/<persona>/` (contains proposals and comments)
 
 ## Workspace Data Flow
 
@@ -68,7 +64,7 @@ After decider output:
 - Issue filenames use stable kebab-case identifiers, not dates (e.g. `auth-inconsistency.yml`).
 - Observers check open issues before emitting events to avoid duplicates.
 - Deciders link related events to issues (populating `source_events` in the issue).
-- Events are preserved in the workstream until an implementation workflow removes them.
+- Events are preserved in the exchange until an implementation workflow removes them.
 
 ## Deep Analysis
 

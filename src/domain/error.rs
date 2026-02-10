@@ -47,17 +47,9 @@ pub enum AppError {
     #[error("Missing argument: {0}")]
     MissingArgument(String),
 
-    /// Workstream already exists (unlike WorkspaceExists which is for .jules).
-    #[error("Workstream '{0}' already exists")]
-    WorkstreamExists(String),
-
-    /// Workstream not found.
-    #[error("Workstream '{0}' not found")]
-    WorkstreamNotFound(String),
-
-    /// Workstreams directory not found.
-    #[error("Workstreams directory not found")]
-    WorkstreamsDirectoryNotFound,
+    /// Exchange directory not found.
+    #[error("Exchange directory not found")]
+    ExchangeDirectoryNotFound,
 
     /// Workspace integrity issue (e.g. missing version file).
     #[error("Workspace integrity error: {0}")]
@@ -153,11 +145,11 @@ pub enum AppError {
     #[error("Role '{role}' not found in config for layer '{layer}'")]
     RoleNotInConfig { role: String, layer: String },
 
-    /// Workstream schedule file missing.
+    /// Exchange schedule file missing.
     #[error("Schedule config not found: {0}")]
     ScheduleConfigMissing(String),
 
-    /// Workstream schedule error.
+    /// Exchange schedule error.
     #[error(transparent)]
     Schedule(#[from] crate::domain::configuration::schedule::ScheduleError),
 

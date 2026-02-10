@@ -21,7 +21,7 @@ pub fn validate_identifier(id: &str, allow_dots: bool) -> bool {
 /// Validates a path component for safe filesystem operations.
 ///
 /// This is stricter than validate_identifier - used for user-provided path components
-/// like workstream names to prevent path traversal attacks.
+/// like exchange labels or states to prevent path traversal attacks.
 ///
 /// Checks:
 /// - Non-empty

@@ -37,29 +37,29 @@ where
         return Err(AppError::IssueFileNotFound(path_str.to_string()));
     }
 
-    // Security Check: Ensure path is within .jules/workstreams/*/issues
+    // Security Check: Ensure path is within .jules/exchange/*/issues
     // We use workspace.canonicalize to resolve absolute path
     let canonical_path = workspace.canonicalize(path_str)?;
 
-    // We expect workstreams to be in .jules/workstreams relative to workspace root
+    // We expect exchange to be in .jules/exchange relative to workspace root
     // workspace.jules_path() returns the .jules directory path
-    let workstreams_dir = workspace.jules_path().join("workstreams");
-    // Canonicalize workstreams dir to compare apples to apples (resolve potential symlinks)
+    let exchange_dir = workspace.jules_path().join("exchange");
+    // Canonicalize exchange dir to compare apples to apples (resolve potential symlinks)
     // We use workspace.canonicalize on the string representation
-    let workstreams_dir_str = workstreams_dir.to_str().ok_or_else(|| {
-        AppError::Validation("Workstreams path contains invalid unicode".to_string())
+    let exchange_dir_str = exchange_dir.to_str().ok_or_else(|| {
+        AppError::Validation("Exchange path contains invalid unicode".to_string())
     })?;
 
     // Note: canonicalize might fail if dir doesn't exist, but it should exist if workspace is valid
-    let canonical_workstreams_dir = workspace
-        .canonicalize(workstreams_dir_str)
-        .map_err(|_| AppError::WorkstreamsDirectoryNotFound)?;
+    let canonical_exchange_dir = workspace
+        .canonicalize(exchange_dir_str)
+        .map_err(|_| AppError::ExchangeDirectoryNotFound)?;
 
     let has_issues_component = canonical_path.components().any(|c| c.as_os_str() == "issues");
-    if !canonical_path.starts_with(&canonical_workstreams_dir) || !has_issues_component {
+    if !canonical_path.starts_with(&canonical_exchange_dir) || !has_issues_component {
         return Err(AppError::Validation(format!(
             "Issue file must be within {}/*/issues/",
-            canonical_workstreams_dir.display()
+            canonical_exchange_dir.display()
         )));
     }
 

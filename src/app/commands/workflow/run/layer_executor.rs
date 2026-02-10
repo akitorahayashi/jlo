@@ -7,7 +7,7 @@ use std::path::Path;
 use super::issue_routing::find_issues;
 use super::options::{RunResults, WorkflowRunOptions};
 
-/// Execute runs for a layer on a specific workstream.
+/// Execute runs for a layer.
 pub(crate) fn execute_layer<G, H>(
     store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
     options: &WorkflowRunOptions,
@@ -30,7 +30,7 @@ where
     }
 }
 
-/// Execute narrator (workstream-independent).
+/// Execute narrator.
 fn execute_narrator<G, H>(
     store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
     options: &WorkflowRunOptions,
@@ -143,7 +143,7 @@ where
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
 }
 
-/// Execute issue-based layers (planners, implementers) for a specific workstream.
+/// Execute issue-based layers (planners, implementers).
 fn execute_issue_layer<G, H>(
     store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
     options: &WorkflowRunOptions,

@@ -5,29 +5,29 @@ pub mod inspect;
 mod model;
 pub mod publish_proposals;
 
-pub use clean_issue::{WorkflowWorkstreamsCleanIssueOptions, WorkflowWorkstreamsCleanIssueOutput};
-pub use inspect::WorkflowWorkstreamsInspectOptions;
-pub use model::WorkflowWorkstreamsInspectOutput;
+pub use clean_issue::{WorkflowExchangeCleanIssueOptions, WorkflowExchangeCleanIssueOutput};
+pub use inspect::WorkflowExchangeInspectOptions;
+pub use model::WorkflowExchangeInspectOutput;
 pub use publish_proposals::{
-    WorkflowWorkstreamsPublishProposalsOptions, WorkflowWorkstreamsPublishProposalsOutput,
+    WorkflowExchangePublishProposalsOptions, WorkflowExchangePublishProposalsOutput,
 };
 
 use crate::domain::AppError;
 
 pub fn inspect(
-    options: WorkflowWorkstreamsInspectOptions,
-) -> Result<WorkflowWorkstreamsInspectOutput, AppError> {
+    options: WorkflowExchangeInspectOptions,
+) -> Result<WorkflowExchangeInspectOutput, AppError> {
     inspect::execute(options)
 }
 
 pub fn clean_issue(
-    options: WorkflowWorkstreamsCleanIssueOptions,
-) -> Result<WorkflowWorkstreamsCleanIssueOutput, AppError> {
+    options: WorkflowExchangeCleanIssueOptions,
+) -> Result<WorkflowExchangeCleanIssueOutput, AppError> {
     clean_issue::execute(options)
 }
 
 pub fn publish_proposals(
-    options: WorkflowWorkstreamsPublishProposalsOptions,
-) -> Result<WorkflowWorkstreamsPublishProposalsOutput, AppError> {
+    options: WorkflowExchangePublishProposalsOptions,
+) -> Result<WorkflowExchangePublishProposalsOutput, AppError> {
     publish_proposals::execute(options)
 }

@@ -173,18 +173,18 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
         WorkflowCommands::Pr { command } => run_workflow_pr(command),
         WorkflowCommands::Issue { command } => run_workflow_issue(command),
         WorkflowCommands::Inspect => {
-            let options = workflow::WorkflowWorkstreamsInspectOptions {};
-            let output = workflow::workstreams_inspect(options)?;
+            let options = workflow::WorkflowExchangeInspectOptions {};
+            let output = workflow::inspect(options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowCommands::CleanIssue { issue_file } => {
-            let options = workflow::WorkflowWorkstreamsCleanIssueOptions { issue_file };
-            let output = workflow::workstreams_clean_issue(options)?;
+            let options = workflow::WorkflowExchangeCleanIssueOptions { issue_file };
+            let output = workflow::clean_issue(options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowCommands::PublishProposals => {
-            let options = workflow::WorkflowWorkstreamsPublishProposalsOptions {};
-            let output = workflow::workstreams_publish_proposals(options)?;
+            let options = workflow::WorkflowExchangePublishProposalsOptions {};
+            let output = workflow::publish_proposals(options)?;
             workflow::write_workflow_output(&output)
         }
     }

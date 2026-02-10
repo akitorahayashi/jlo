@@ -11,12 +11,12 @@ use crate::ports::{GitPort, WorkspaceStore};
 use super::inspect::inspect_at;
 
 #[derive(Debug, Clone)]
-pub struct WorkflowWorkstreamsCleanIssueOptions {
+pub struct WorkflowExchangeCleanIssueOptions {
     pub issue_file: String,
 }
 
 #[derive(Debug, Serialize)]
-pub struct WorkflowWorkstreamsCleanIssueOutput {
+pub struct WorkflowExchangeCleanIssueOutput {
     pub schema_version: u32,
     pub deleted_paths: Vec<String>,
     pub committed: bool,
@@ -25,8 +25,8 @@ pub struct WorkflowWorkstreamsCleanIssueOutput {
 }
 
 pub fn execute(
-    options: WorkflowWorkstreamsCleanIssueOptions,
-) -> Result<WorkflowWorkstreamsCleanIssueOutput, AppError> {
+    options: WorkflowExchangeCleanIssueOptions,
+) -> Result<WorkflowExchangeCleanIssueOutput, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
 
     if !workspace.exists() {
@@ -113,7 +113,7 @@ pub fn execute(
 
     git.push_branch(&branch, false)?;
 
-    Ok(WorkflowWorkstreamsCleanIssueOutput {
+    Ok(WorkflowExchangeCleanIssueOutput {
         schema_version: 1,
         deleted_paths,
         committed: true,
@@ -239,7 +239,7 @@ roles = [
 
         std::env::set_current_dir(&repo_dir).unwrap();
 
-        let output = execute(WorkflowWorkstreamsCleanIssueOptions {
+        let output = execute(WorkflowExchangeCleanIssueOptions {
             issue_file: ".jules/exchange/issues/bugs/issue.yml".to_string(),
         })
         .unwrap();

@@ -95,7 +95,7 @@ pub fn create_role_at(
 
 /// Execute Jules agents for a layer.
 ///
-/// Runs agents for the specified layer and workstream.
+/// Execute Jules agents for a layer.
 ///
 /// # Arguments
 /// * `layer` - Target layer (observers, deciders, planners, implementers)
