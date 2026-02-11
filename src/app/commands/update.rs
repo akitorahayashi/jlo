@@ -244,7 +244,7 @@ where
     if let Some(mode) = workflow_mode {
         let root = workspace.resolve_path("");
         let generate_config = init::load_workflow_generate_config(&root)?;
-        init::install_workflow_scaffold(&root, mode, &generate_config)?;
+        init::install_workflow_scaffold(&root, &mode, &generate_config)?;
         workflow_refreshed = true;
     }
 

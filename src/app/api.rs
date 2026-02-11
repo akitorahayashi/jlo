@@ -38,12 +38,12 @@ fn create_context(
 }
 
 /// Initialize a new `.jlo/` control plane and workflow scaffold in the current directory.
-pub fn init(mode: WorkflowRunnerMode) -> Result<(), AppError> {
+pub fn init(mode: &WorkflowRunnerMode) -> Result<(), AppError> {
     init_at(std::env::current_dir()?, mode)
 }
 
 /// Initialize a new `.jlo/` control plane and workflow scaffold at the specified path.
-pub fn init_at(path: impl Into<PathBuf>, mode: WorkflowRunnerMode) -> Result<(), AppError> {
+pub fn init_at(path: impl Into<PathBuf>, mode: &WorkflowRunnerMode) -> Result<(), AppError> {
     let path = path.into();
     let ctx = create_context(path.clone());
 
@@ -66,7 +66,7 @@ pub fn deinit_at(path: std::path::PathBuf) -> Result<DeinitOutcome, AppError> {
 /// Initialize a new workflow scaffold at the specified path (standalone operation).
 pub fn init_workflows_at(
     path: std::path::PathBuf,
-    mode: WorkflowRunnerMode,
+    mode: &WorkflowRunnerMode,
 ) -> Result<(), AppError> {
     let generate_config = init::load_workflow_generate_config(&path)?;
     init::install_workflow_scaffold(&path, mode, &generate_config)

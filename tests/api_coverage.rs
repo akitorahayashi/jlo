@@ -20,7 +20,7 @@ fn test_api_coverage_full_flow() {
     // Init requires a non-jules branch (control branch)
     // Default branch after git init is typically 'main' or 'master'; that's fine.
 
-    init_at(root.clone(), WorkflowRunnerMode::Remote).expect("init failed");
+    init_at(root.clone(), &WorkflowRunnerMode::remote()).expect("init failed");
     assert!(root.join(".jlo").exists(), ".jlo/ control plane should exist");
     workflow_bootstrap_at(root.clone()).expect("bootstrap failed");
     assert!(root.join(".jules").exists(), ".jules/ runtime workspace should exist");
