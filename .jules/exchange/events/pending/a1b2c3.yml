@@ -1,0 +1,18 @@
+schema_version: 1
+
+id: "a1b2c3"
+issue_id: ""
+created_at: "2026-02-11"
+author_role: "cov"
+confidence: "high"
+
+title: "Low CI Coverage Threshold (40%)"
+
+statement: |
+  The CI workflow sets a low bar for code coverage (40%), potentially allowing significant untested code into the codebase.
+
+evidence:
+  - path: ".github/workflows/run-tests.yml"
+    loc:
+      - "fail-under 40"
+    note: "Explicit configuration setting a low threshold."

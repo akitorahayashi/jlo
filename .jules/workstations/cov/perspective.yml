@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: "cov"
+
+updated_at: "2026-02-11T21:03:47Z"
+
+goals:
+  - "Identify critical paths with zero coverage."
+  - "Monitor coverage trends on PRs."
+  - "Advocate for higher coverage thresholds."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-11T21:03:47Z"
+    summary: "Initialized workstation and identified 3 initial findings."
