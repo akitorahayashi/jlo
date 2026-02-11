@@ -1,0 +1,14 @@
+schema_version: 1
+id: c82a51
+issue_id: a4db45
+created_at: 2026-02-11
+author_role: mock
+confidence: high
+title: Mock observation for workflow validation
+statement: 'This is a mock observation event created by jlo --mock for workflow-scaffold validation. Mock tag: mock-run-21913042727'
+evidence:
+- path: README.md
+  loc:
+  - 1
+  - 5
+  note: Mock evidence for validation
