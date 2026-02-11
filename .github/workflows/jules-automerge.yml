@@ -26,6 +26,9 @@ on:
 jobs:
   validate-and-automerge:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ format('jules-automerge-{0}', github.base_ref) }}
+      cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write

@@ -27,6 +27,9 @@ on:
 jobs:
   validate-and-automerge:
     runs-on: {{ runner }}
+    concurrency:
+      group: {{ gha_expr("format('jules-automerge-{0}', github.base_ref)") }}
+      cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write
