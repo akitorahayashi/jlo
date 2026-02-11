@@ -51,4 +51,4 @@ jobs:
 
       - name: Cleanup mock artifacts for completed run
         run: |
-          jlo workflow cleanup mock --mock-tag "$JULES_MOCK_TAG"
+          jlo workflow workspace clean mock --mock-tag "$JULES_MOCK_TAG"

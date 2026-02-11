@@ -21,7 +21,5 @@
         id: matrix
         run: |
           set -euo pipefail
-          INSPECT=$(jlo workflow workspace inspect)
-          PENDING_COUNT=$(echo "$INSPECT" | jq '.events.pending_files | length')
-          HAS_PENDING=$([ "$PENDING_COUNT" -gt 0 ] && echo true || echo false)
+          HAS_PENDING=$(jlo workflow workspace inspect | jq '(.events.pending_files | length) > 0')
           echo "json={\"has_pending\":$HAS_PENDING}" >> "$GITHUB_OUTPUT"

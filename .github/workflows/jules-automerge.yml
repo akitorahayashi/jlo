@@ -4,7 +4,7 @@
 #
 # Validates Jules PRs with doctor check and enables auto-merge on success.
 # Policy gates (branch prefix, .jules/-only scope, draft, duplicates) are
-# evaluated by `jlo workflow pr enable-automerge`, not inline shell logic.
+# evaluated by `jlo workflow gh pr enable-automerge`, not inline shell logic.
 #
 # Flow:
 #   1. Jules creates PR → doctor runs
@@ -65,4 +65,4 @@ jobs:
         run: |
           set -euo pipefail
           PR_NUMBER=${{ github.event.pull_request.number }}
-          jlo workflow pr enable-automerge "$PR_NUMBER"
+          jlo workflow gh pr enable-automerge "$PR_NUMBER"

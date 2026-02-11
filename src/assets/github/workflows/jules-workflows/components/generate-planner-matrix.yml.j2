@@ -23,10 +23,9 @@
         id: matrix
         run: |
           set -euo pipefail
-          INSPECT=$(jlo workflow workspace inspect)
-          REQ_COUNT=$(echo "$INSPECT" | jq '.requirements.count')
-          DEEP=$(echo "$INSPECT" | jq '[.requirements.items[] | select(.requires_deep_analysis == true)] | length')
-          SHALLOW=$(echo "$INSPECT" | jq '[.requirements.items[] | select(.requires_deep_analysis == false)] | length')
-          HAS_PLANNERS=$([ "$DEEP" -gt 0 ] && echo true || echo false)
-          HAS_IMPLEMENTERS=$([ "$SHALLOW" -gt 0 ] && echo true || echo false)
-          echo "json={\"has_planners\":$HAS_PLANNERS,\"has_implementers\":$HAS_IMPLEMENTERS,\"requirement_count\":$REQ_COUNT}" >> "$GITHUB_OUTPUT"
+          OUTPUT_JSON=$(jlo workflow workspace inspect | jq '{
+            has_planners: (([.requirements.items[] | select(.requires_deep_analysis == true)] | length) > 0),
+            has_implementers: (([.requirements.items[] | select(.requires_deep_analysis == false)] | length) > 0),
+            requirement_count: .requirements.count
+          }')
+          echo "json=$OUTPUT_JSON" >> "$GITHUB_OUTPUT"
