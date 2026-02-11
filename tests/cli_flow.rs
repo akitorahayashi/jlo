@@ -87,8 +87,12 @@ fn init_creates_complete_layer_structure() {
     assert!(jules.join("roles/innovators/tasks/create_idea.yml").exists());
     assert!(jules.join("roles/innovators/tasks/refine_proposal.yml").exists());
 
-    // Implementers have task files
-    assert!(jules.join("roles/implementers/tasks/implement.yml").exists());
+    // Implementers have label-specific task files
+    assert!(jules.join("roles/implementers/tasks/bugs.yml").exists());
+    assert!(jules.join("roles/implementers/tasks/feats.yml").exists());
+    assert!(jules.join("roles/implementers/tasks/refacts.yml").exists());
+    assert!(jules.join("roles/implementers/tasks/tests.yml").exists());
+    assert!(jules.join("roles/implementers/tasks/docs.yml").exists());
 
     // All layers have tasks/ directory
     for layer in ["narrator", "observers", "deciders", "planners", "implementers", "innovators"] {
