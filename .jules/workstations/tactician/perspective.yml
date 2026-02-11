@@ -1,0 +1,20 @@
+schema_version: 2
+
+observer: "tactician"
+
+updated_at: "2026-02-11T21:01:29Z"
+
+goals:
+  - "Monitor duplicate verification instructions and consolidate to src/AGENTS.md."
+  - "Establish tests/AGENTS.md for explicit testing contracts."
+  - "Establish src/domain/AGENTS.md for explicit domain logic contracts."
+
+rules:
+  - "Prefer consolidation over duplication."
+  - "Scoped contracts for distinct architectural boundaries."
+
+ignore: []
+
+log:
+  - at: "2026-02-11T21:01:29Z"
+    summary: "Initialized perspective and identified 3 findings."
