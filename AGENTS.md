@@ -30,15 +30,22 @@ Prompts are constructed by layer-specific `<layer>_prompt.j2` templates, which r
 ### 3. Workflow-Driven Execution
 Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules API; workflows control scheduling, branching, and merge policies.
 
-## Verify Commands
-- **Check**: `cargo check`
-- **Lint**: `cargo clippy --all-targets --all-features -- -D warnings`
-- **Test**: `cargo test --all-targets --all-features`
+## Development Context
 
-## Context-Specific Documentation
+See [src/AGENTS.md](src/AGENTS.md) for development verification commands and CLI architecture details.
 
-- [src/AGENTS.md](src/AGENTS.md) — Rust CLI development
-- [.github/AGENTS.md](.github/AGENTS.md) — GitHub Actions workflows
+## Documentation Index
+
+### Core Guides
+- [src/AGENTS.md](src/AGENTS.md) — Rust CLI development context (SSOT for verification)
+- [.github/AGENTS.md](.github/AGENTS.md) — GitHub Actions workflows design
 - [src/assets/scaffold/AGENTS.md](src/assets/scaffold/AGENTS.md) — `.jules/` scaffold design
 - [src/assets/templates/AGENTS.md](src/assets/templates/AGENTS.md) — Template system
-- [docs/CONTROL_PLANE_OWNERSHIP.md](docs/CONTROL_PLANE_OWNERSHIP.md) — `.jlo/` vs `.jules/` ownership model and projection rules
+
+### Operational Guides (docs/)
+- [Control Plane Ownership](docs/CONTROL_PLANE_OWNERSHIP.md) — `.jlo/` vs `.jules/` ownership model and projection rules
+- [Innovator Role Guide](docs/INNOVATOR_ROLE_YML_GUIDE.md) — Design standard for creating innovator personas
+- [Observer Role Guide](docs/OBSERVER_ROLE_YML_GUIDE.md) — Design standard for creating observer personas
+- [Reproduction Guide](docs/REPRODUCTION_GUIDE.md) — How to reproduce the Jules workflow in other projects
+- [Workflow Branch Impact Map](docs/WORKFLOW_BRANCH_IMPACT_MAP.md) — Operational index for branch-contract changes
+- [Workflow Layer Change Map](docs/WORKFLOW_LAYER_CHANGE_MAP.md) — Repository touch points for layer-level changes
