@@ -37,10 +37,10 @@ See [src/AGENTS.md](src/AGENTS.md) for development verification commands and CLI
 ## Documentation Index
 
 ### Core Guides
-- [jlo CLI Development Context](src/AGENTS.md) — Rust CLI development context (SSOT for verification)
-- [GitHub Actions Workflows Design](.github/AGENTS.md) — GitHub Actions workflows design
-- [Scaffold Design](src/assets/scaffold/AGENTS.md) — `.jules/` scaffold design
-- [Template System](src/assets/templates/AGENTS.md) — Template system
+- [src/AGENTS.md](src/AGENTS.md) — Rust CLI development context (SSOT for verification)
+- [.github/AGENTS.md](.github/AGENTS.md) — GitHub Actions workflows design
+- [src/assets/scaffold/AGENTS.md](src/assets/scaffold/AGENTS.md) — `.jules/` scaffold design
+- [src/assets/templates/AGENTS.md](src/assets/templates/AGENTS.md) — Template system
 
 ### Operational Guides (docs/)
 - [Control Plane Ownership](docs/CONTROL_PLANE_OWNERSHIP.md) — `.jlo/` vs `.jules/` ownership model and projection rules
