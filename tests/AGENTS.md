@@ -54,7 +54,7 @@ ctx.cli()
 
 Run all integration tests:
 ```bash
-cargo test --test '*'
+cargo test --tests
 ```
 
 Run a specific test file:
