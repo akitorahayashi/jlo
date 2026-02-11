@@ -1,0 +1,22 @@
+schema_version: 2
+
+observer: "rustacean"
+
+updated_at: "2024-05-23T12:00:00Z"
+
+# 1-3 goals. Validated and refreshed every run — replace stale or completed goals.
+goals:
+  - "Investigate and propose refactoring for `PromptAssetLoader` to reduce cloning."
+  - "Prototype structured `GitError` types to replace stringly-typed errors."
+  - "Audit other `impl Default` blocks for similar unsafe patterns."
+
+# Stable rules of thumb for producing consistent, high-signal events.
+rules: []
+
+# Explicit suppressions to prevent repeated low-value observations.
+ignore: []
+
+# Newest first; keep max 5 entries.
+log:
+  - at: "2024-05-23T12:00:00Z"
+    summary: "Initial observation run: Identified ownership issues in prompt assembly and error handling gaps."

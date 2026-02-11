@@ -1,0 +1,20 @@
+schema_version: 1
+
+# Metadata
+id: "885315"
+issue_id: ""
+created_at: "2024-05-23"
+author_role: "rustacean"
+confidence: "low"
+
+# Content
+title: "Unsafe Default Implementation for Embedded Catalog"
+statement: |
+  `EmbeddedComponentCatalog` implements `Default` by unwrapping `new()`, which can panic if embedded assets are corrupted or invalid. While embedded assets are usually safe, this violates the expectation that `Default::default()` is infallible or at least panics predictably.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/adapters/assets/component_catalog_embedded.rs"
+    loc:
+      - "104-108"
+    note: "`unwrap()` is used in `impl Default`, converting potential errors into runtime panics."
