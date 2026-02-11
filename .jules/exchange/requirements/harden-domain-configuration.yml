@@ -1,0 +1,52 @@
+schema_version: 2
+
+# Metadata
+id: "h8d9c0"
+source_events:
+  - "mft002"
+  - "rcfg01"
+  - "val003"
+title: "Harden Domain Configuration"
+label: "refacts"
+priority: "medium"
+summary: "Enforce type safety, remove duplication, and add validation to configuration handling."
+
+# Content
+goal: |
+  Ensure configuration is robust, type-safe, and free from duplication. Use the type system to enforce valid states where possible.
+
+problem: |
+  1. `manifest.rs` uses brittle string parsing logic instead of the type-safe path catalog in `paths/mod.rs`.
+  2. `RunConfig` is duplicated (DTO vs Domain), violating DRY and forcing manual mapping.
+  3. `RunConfig` lacks semantic validation, allowing invalid values (e.g., negative timeouts) to propagate.
+
+impact: |
+  1. Renaming directories in `paths/mod.rs` won't update `manifest.rs`, causing bugs.
+  2. Adding config fields requires changes in three places (DTO, Domain, Mapper).
+  3. Invalid config can crash the application at runtime instead of failing early.
+
+desired_outcome: |
+  - `manifest.rs` imports constants from `paths/mod.rs`.
+  - `RunConfig` is shared or derived automatically (e.g., `#[serde(flatten)]` or using the domain type as the DTO).
+  - `RunConfig` has a `validate()` method called during construction/deserialization.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/workspace/manifest.rs"
+  - "src/domain/configuration/run_config.rs"
+  - "src/app/commands/run/config_dto.rs"
+
+acceptance_criteria:
+  - "`manifest.rs` uses `paths::*` constants."
+  - "Only one definition of `RunConfig` (or fully automated mapping)."
+  - "`RunConfig::validate()` rejects invalid inputs."
+
+verification_criteria:
+  - "Code review."
+  - "Unit tests for `RunConfig` validation."
+
+requires_deep_analysis: false
+deep_analysis_reason: ""
