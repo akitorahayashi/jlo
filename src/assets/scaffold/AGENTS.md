@@ -62,13 +62,11 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   ├── planners/
 │   │   ├── planner_prompt.j2 # Prompt construction rules
 │   │   ├── contracts.yml      # Layer contract
-│   │   ├── tasks/             # Action units
-│   │   └── schemas/
+│   │   └── tasks/             # Action units
 │   ├── implementers/
 │   │   ├── implementer_prompt.j2 # Prompt construction rules
 │   │   ├── contracts.yml      # Layer contract
-│   │   ├── tasks/             # Action units
-│   │   └── schemas/
+│   │   └── tasks/             # Action units
 │   └── innovators/
 │       ├── innovators_prompt.j2      # Prompt construction (uses {{phase}})
 │       ├── contracts.yml             # Layer contract
@@ -119,8 +117,7 @@ See "Critical Design Principles" above for the contract structure.
 |------|-------|---------|
 | `<layer>_prompt.j2` | Layer | Prompt template that assembles contracts, tasks, and includes. |
 | `role.yml` | Role | Specialized focus (observers/innovators). |
-| `contracts.yml` | Layer | Scope, inputs, outputs, non-negotiable rules shared within layer. |
-| `contracts_<phase>.yml` | Phase | Phase-specific contracts (innovators only: creation, refinement). |
+| `contracts.yml` | Layer | Universal constraints shared within layer. |
 | `tasks/<task-id>.yml` | Layer | Independent action units with local limits and output expectations. |
 | `JULES.md` | Global | Rules applying to ALL layers (branch naming, system boundaries). |
 

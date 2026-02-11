@@ -193,15 +193,6 @@ impl TestContext {
         );
     }
 
-    /// Assert that templates directories exist for multi-role layers.
-    pub fn assert_layer_templates_exist(&self) {
-        let roles_path = self.jules_path().join("roles");
-        assert!(
-            roles_path.join("observers/templates").exists(),
-            "observers/templates should exist"
-        );
-    }
-
     /// Assert that default scheduled roles exist in their correct layers.
     pub fn assert_default_scheduled_roles_exist(&self) {
         self.assert_role_in_layer_exists("observers", "taxonomy");
