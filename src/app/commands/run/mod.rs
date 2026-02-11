@@ -197,7 +197,7 @@ fn execute_observer_run<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     let starting_branch = options.branch.clone().unwrap_or_else(|| config.run.jules_branch.clone());
 
     // Resolve observer-specific context: bridge_task
-    let bridge_task = resolve_observer_bridge_task(jules_path, workspace);
+    let bridge_task = resolve_observer_bridge_task(jules_path, workspace)?;
     let input =
         observers_asm::ObserverPromptInput { role: role_id.as_str(), bridge_task: &bridge_task };
 
@@ -298,8 +298,11 @@ fn print_role_preview(jules_path: &Path, layer: Layer, role: &RoleId, starting_b
 }
 
 /// Read bridge_comments.yml content if any innovator persona has an idea.yml.
-/// Returns empty string if no ideas exist.
-fn resolve_observer_bridge_task<W: WorkspaceStore>(jules_path: &Path, workspace: &W) -> String {
+/// Returns empty string if no ideas exist. Fails if ideas exist but bridge task file is missing.
+fn resolve_observer_bridge_task<W: WorkspaceStore>(
+    jules_path: &Path,
+    workspace: &W,
+) -> Result<String, AppError> {
     let innovators = jules::innovators_dir(jules_path);
     let innovators_str = innovators.to_string_lossy();
 
@@ -315,11 +318,16 @@ fn resolve_observer_bridge_task<W: WorkspaceStore>(jules_path: &Path, workspace:
         .unwrap_or(false);
 
     if !has_ideas {
-        return String::new();
+        return Ok(String::new());
     }
 
     let bridge_path = jules::tasks_dir(jules_path, Layer::Observers).join("bridge_comments.yml");
-    workspace.read_file(&bridge_path.to_string_lossy()).unwrap_or_default()
+    workspace.read_file(&bridge_path.to_string_lossy()).map_err(|_| {
+        AppError::Validation(format!(
+            "Innovator ideas exist, but observer bridge task file is missing: expected {}",
+            bridge_path.display()
+        ))
+    })
 }
 
 /// Read the task file content for the current innovator phase.
@@ -340,7 +348,13 @@ fn resolve_innovator_task<W: WorkspaceStore>(
         }
     };
     let task_path = jules::tasks_dir(jules_path, Layer::Innovators).join(filename);
-    Ok(workspace.read_file(&task_path.to_string_lossy()).unwrap_or_default())
+    workspace.read_file(&task_path.to_string_lossy()).map_err(|_| {
+        AppError::Validation(format!(
+            "No task file for innovator phase '{}': expected {}",
+            phase,
+            task_path.display()
+        ))
+    })
 }
 
 /// Validate that a role exists in the layer's roles directory.
