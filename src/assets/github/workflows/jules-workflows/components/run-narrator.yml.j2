@@ -30,7 +30,7 @@
 
       - name: Run narrator
         id: run
-        run: jlo workflow run global narrator {{ gha_raw("env.JLO_RUN_FLAGS") }}
+        run: jlo workflow run narrator {{ gha_raw("env.JLO_RUN_FLAGS") }}
 
       - name: Validate workspace (fail-fast)
         run: jlo doctor

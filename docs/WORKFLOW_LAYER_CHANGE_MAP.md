@@ -30,11 +30,11 @@ A layer-level change means one of the following:
 | Multi-role scheduling | `scheduled.toml` models observer and innovator roles explicitly | `src/domain/configuration/schedule.rs` |
 | Prompt and contracts | Layer assets are file-based and embedded with `include_dir` | `src/assets/scaffold/jules/roles/<layer>/**` |
 | Doctor validation | Structural/schema/semantic checks iterate layers and exchange data contracts | `src/app/commands/doctor/*.rs` |
-| Matrix/routing orchestration | Workflow matrix/run logic assumes current layer set | `src/app/commands/workflow/matrix/*.rs`, `src/app/commands/workflow/run/*.rs` |
+| Requirement routing | Workspace inspect provides requirement counts for planner/implementer gating | `src/app/commands/workflow/workspace/inspect.rs`, `src/app/commands/workflow/run/*.rs` |
 | Workflow orchestration | Layer sequence is defined in workflow templates | `src/assets/github/workflows/jules-workflows.yml.j2` |
-| Auto-merge qualification | Branch prefix and scope policy gates are evaluated in `jlo workflow pr enable-automerge` | `src/app/commands/workflow/pr/events/enable_automerge.rs` |
+| Auto-merge qualification | Branch prefix and scope policy gates are evaluated in `jlo workflow gh pr enable-automerge` | `src/app/commands/workflow/gh/pr/events/enable_automerge.rs` |
 | Mock behavior | Per-layer mock behavior is implemented in dedicated modules | `src/app/commands/run/mock/*.rs` |
-| Failure recovery | Mock residue cleanup scope is explicit and code-defined | `src/app/commands/workflow/cleanup/mock.rs` |
+| Failure recovery | Mock residue cleanup scope is explicit and code-defined | `src/app/commands/workflow/workspace/clean/mock.rs` |
 | Tests | Integration tests assert layer structure, workflow text, and mock behavior | `tests/cli_flow.rs`, `tests/cli_commands.rs`, `tests/workflow_kit.rs`, `tests/mock_mode.rs` |
 
 ## Layer Types and Downstream Effects

@@ -43,4 +43,4 @@ jobs:
         run: |
           set -euo pipefail
           PR_NUMBER=${{ github.event.pull_request.number }}
-          jlo workflow pr comment-summary-request "$PR_NUMBER"
+          jlo workflow gh pr comment-summary-request "$PR_NUMBER"

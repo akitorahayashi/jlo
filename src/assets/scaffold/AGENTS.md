@@ -84,9 +84,7 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   │   │   └── .gitkeep
 │   │   └── decided/
 │   │       └── .gitkeep
-│   ├── issues/
-│   │   ├── <label>/
-│   │   │   └── .gitkeep
+│   ├── requirements/
 │   │   └── .gitkeep
 │   └── innovators/
 │       └── <persona>/

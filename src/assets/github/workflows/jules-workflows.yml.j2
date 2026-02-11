@@ -32,10 +32,6 @@ on:
         description: 'Minutes to wait between layers (Jules async processing time)'
         type: number
         default: {{ workflow_wait_minutes_default }}
-      routing_labels:
-        description: 'Issue labels eligible for planner/implementer routing (comma-separated)'
-        type: string
-        default: 'bugs,feats,refacts,tests,docs'
       mock:
         description: 'Run in mock mode (creates branches/PRs without Jules API)'
         type: boolean
@@ -49,9 +45,6 @@ on:
       wait_minutes:
         type: number
         default: {{ workflow_wait_minutes_default }}
-      routing_labels:
-        type: string
-        default: 'bugs,feats,refacts,tests,docs'
       mock:
         type: boolean
         default: false
@@ -67,7 +60,6 @@ concurrency:
 
 env:
   WAIT_MINUTES: {{ gha_expr("inputs.wait_minutes || " ~ workflow_wait_minutes_default) }}
-  ROUTING_LABELS: {{ gha_expr("inputs.routing_labels || 'bugs,feats,refacts,tests,docs'") }}
   MOCK_MODE: {{ gha_expr("inputs.mock || false") }}
   JULES_MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.run_id)") }}
   JLO_RUN_FLAGS: {{ gha_expr("(inputs.mock || false) && '--mock' || ''") }}
@@ -170,7 +162,7 @@ jobs:
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-decider', 'run-decider', 'run-decider', 'decider') }}
   # ============================================================
-  # Phase 14: Generate routing matrices (new issues)
+  # Phase 14: Discover requirements for routing
   # ============================================================
 {% include "workflows/jules-workflows/components/generate-planner-matrix.yml.j2" %}
 

@@ -65,7 +65,7 @@ Core domain logic located in `src/domain/`.
 | `prompt` | Prompt assembly and template rendering models. |
 | `workspace` | Filesystem abstraction and path management. |
 | `error` | `AppError` and error handling types. |
-| `issue` | Issue parsing and schema validation. |
+| `issue` | Requirement parsing and schema validation. |
 
 ## CLI Commands
 
@@ -77,23 +77,21 @@ Core domain logic located in `src/domain/`.
 | `jlo run narrator [--prompt-preview] [--branch <branch>] [--mock]` | `r n` | Run narrator (produces changes feed) |
 | `jlo run observers --role <role> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |
 | `jlo run decider [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
-| `jlo run planner <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (issue-driven) |
-| `jlo run implementer <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (issue-driven) |
+| `jlo run planner <requirement> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (requirement-driven) |
+| `jlo run implementer <requirement> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (requirement-driven) |
 | `jlo run innovators --role <role> --phase <creation\|refinement> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
 | `jlo doctor [--strict]` | | Validate .jules/ structure and content |
 | `jlo workflow doctor` | `wf` | Validate workspace for workflow use |
-| `jlo workflow matrix pending` | | Generate pending execution matrix for GitHub Actions |
-| `jlo workflow matrix routing --routing-labels <csv>` | | Generate routing matrix for issues |
 | `jlo workflow run <layer> [--mock]` | | Run layer and return wait-gating metadata |
-| `jlo workflow cleanup mock --mock-tag <tag> [--pr-numbers-json <json>] [--branches-json <json>]` | | Cleanup mock artifacts |
-| `jlo workflow pr comment-summary-request <pr_number>` | | Post or update summary-request comment on a Jules PR |
-| `jlo workflow pr sync-category-label <pr_number>` | | Sync implementer category label from branch to PR |
-| `jlo workflow pr enable-automerge <pr_number>` | | Enable auto-merge on an eligible PR |
-| `jlo workflow pr process <pr_number>` | | Run all event-level PR commands in order |
-| `jlo workflow issue label-innovator <issue_number> <persona>` | | Apply innovator labels to a proposal issue |
-| `jlo workflow inspect` | | Inspect exchange state |
-| `jlo workflow clean-issue <issue_file>` | | Remove a processed issue and its source events |
-| `jlo workflow publish-proposals` | | Publish innovator proposals as GitHub issues |
+| `jlo workflow workspace inspect` | | Inspect exchange state |
+| `jlo workflow workspace publish-proposals` | | Publish innovator proposals as GitHub issues |
+| `jlo workflow workspace clean requirement <file>` | | Remove a processed requirement and its source events |
+| `jlo workflow workspace clean mock --mock-tag <tag> [--pr-numbers-json <json>] [--branches-json <json>]` | | Cleanup mock artifacts |
+| `jlo workflow gh pr comment-summary-request <pr_number>` | | Post or update summary-request comment on a Jules PR |
+| `jlo workflow gh pr sync-category-label <pr_number>` | | Sync implementer category label from branch to PR |
+| `jlo workflow gh pr enable-automerge <pr_number>` | | Enable auto-merge on an eligible PR |
+| `jlo workflow gh pr process <pr_number>` | | Run all event-level PR commands in order |
+| `jlo workflow gh issue label-innovator <issue_number> <persona>` | | Apply innovator labels to a proposal issue |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list [--detail <component>]` | `s ls` | List available components |
 | `jlo deinit` | | Remove all jlo-managed assets (`.jlo/`, branch, workflows) |
@@ -129,8 +127,8 @@ cargo test --test mock_mode       # Mock execution flow
 | Narrator | Single-role | `jlo run narrator` | None (git-based) |
 | Observers | Multi-role | `jlo workflow run observers` | `.jlo/scheduled.toml` |
 | Decider | Single-role | `jlo run decider` | None |
-| Planner | Single-role | `jlo run planner <path>` | None (issue path) |
-| Implementer | Single-role | `jlo run implementer <path>` | None (issue path) |
+| Planner | Single-role | `jlo run planner <path>` | None (requirement path) |
+| Implementer | Single-role | `jlo run implementer <path>` | None (requirement path) |
 | Innovators | Multi-role | `jlo workflow run innovators` | `.jlo/scheduled.toml` |
 
 **Single-role layers**: Narrator, Decider, Planner, Implementer have a fixed role with a `<layer>_prompt.j2` template in the layer directory. Template creation not supported.

@@ -46,18 +46,16 @@ Jules composite actions live under `.github/actions/` and are installed with the
 
 Workflow orchestration uses `jlo workflow` commands:
 
-- `jlo workflow matrix roles --layer <layer>` → Generate role matrix
-- `jlo workflow matrix pending` → Generate decider matrix
-- `jlo workflow matrix routing` → Generate planner/implementer routing
 - `jlo workflow run <layer>` → Execute layer with JSON output
-- `jlo workflow inspect` → Inspect exchange state as JSON
-- `jlo workflow clean-issue <issue_file>` → Remove processed issue and source events
-- `jlo workflow publish-proposals` → Publish innovator proposals as GitHub issues
-- `jlo workflow pr comment-summary-request <pr_number>` → Post/update summary-request comment
-- `jlo workflow pr sync-category-label <pr_number>` → Sync implementer category label from branch
-- `jlo workflow pr enable-automerge <pr_number>` → Enable auto-merge (policy gates in code)
-- `jlo workflow pr process <pr_number>` → Run all PR event commands in order
-- `jlo workflow issue label-innovator <issue_number> <persona>` → Apply innovator labels
+- `jlo workflow workspace inspect` → Inspect exchange state as JSON
+- `jlo workflow workspace publish-proposals` → Publish innovator proposals as GitHub issues
+- `jlo workflow workspace clean requirement <file>` → Remove processed requirement and source events
+- `jlo workflow workspace clean mock --mock-tag <tag>` → Cleanup mock artifacts
+- `jlo workflow gh pr comment-summary-request <pr_number>` → Post/update summary-request comment
+- `jlo workflow gh pr sync-category-label <pr_number>` → Sync implementer category label from branch
+- `jlo workflow gh pr enable-automerge <pr_number>` → Enable auto-merge (policy gates in code)
+- `jlo workflow gh pr process <pr_number>` → Run all PR event commands in order
+- `jlo workflow gh issue label-innovator <issue_number> <persona>` → Apply innovator labels
 
 ## Workflow Execution Flow
 
@@ -69,9 +67,9 @@ The primary orchestration workflow in `.github/workflows/jules-*.yml` orchestrat
 4. **Observer Execution** → Sequential execution (max-parallel=1)
 5. **Innovator Execution (refinement phase)** → `--phase refinement` (after observers + creation)
 6. **Proposal Publication** → Published as GitHub issues (validates perspective.yml)
-7. **Decider Matrix Generation** → Identifies pending events
+7. **Pending Events Check** → Uses workspace inspect to identify pending events
 8. **Decider Execution** → Sequential execution (max-parallel=1)
-9. **Routing Matrix Generation** → Identifies issues for planner/implementer
+9. **Requirement Discovery** → Uses workspace inspect for planner/implementer routing
 10. **Planner Execution** → Sequential execution for deep analysis
 11. **Implementer Execution** → Sequential execution for code changes
 

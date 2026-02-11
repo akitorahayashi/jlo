@@ -19,4 +19,7 @@
 
       - name: Check for pending events
         id: matrix
-        run: jlo workflow matrix pending
+        run: |
+          set -euo pipefail
+          HAS_PENDING=$(jlo workflow workspace inspect | jq '(.events.pending_files | length) > 0')
+          echo "json={\"has_pending\":$HAS_PENDING}" >> "$GITHUB_OUTPUT"

@@ -10,7 +10,7 @@ use crate::ports::GitHubPort;
 
 use super::events::{comment_summary_request, enable_automerge, sync_category_label};
 
-/// Options for `workflow pr process`.
+/// Options for `workflow gh pr process`.
 #[derive(Debug, Clone)]
 pub struct ProcessOptions {
     /// PR number to process.
@@ -26,7 +26,7 @@ pub struct ProcessStepResult {
     pub skipped_reason: Option<String>,
 }
 
-/// Output of `workflow pr process`.
+/// Output of `workflow gh pr process`.
 #[derive(Debug, Clone, Serialize)]
 pub struct ProcessOutput {
     pub schema_version: u32,

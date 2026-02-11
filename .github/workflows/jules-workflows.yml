@@ -33,10 +33,6 @@ on:
         description: 'Minutes to wait between layers (Jules async processing time)'
         type: number
         default: 30
-      routing_labels:
-        description: 'Issue labels eligible for planner/implementer routing (comma-separated)'
-        type: string
-        default: 'bugs,feats,refacts,tests,docs'
       mock:
         description: 'Run in mock mode (creates branches/PRs without Jules API)'
         type: boolean
@@ -50,9 +46,6 @@ on:
       wait_minutes:
         type: number
         default: 30
-      routing_labels:
-        type: string
-        default: 'bugs,feats,refacts,tests,docs'
       mock:
         type: boolean
         default: false
@@ -68,7 +61,6 @@ concurrency:
 
 env:
   WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
-  ROUTING_LABELS: ${{ inputs.routing_labels || 'bugs,feats,refacts,tests,docs' }}
   MOCK_MODE: ${{ inputs.mock || false }}
   JULES_MOCK_TAG: ${{ format('mock-run-{0}', github.run_id) }}
   JLO_RUN_FLAGS: ${{ (inputs.mock || false) && '--mock' || '' }}
@@ -177,7 +169,7 @@ jobs:
 
       - name: Run narrator
         id: run
-        run: jlo workflow run global narrator ${{ env.JLO_RUN_FLAGS }}
+        run: jlo workflow run narrator ${{ env.JLO_RUN_FLAGS }}
 
       - name: Validate workspace (fail-fast)
         run: jlo doctor
@@ -556,7 +548,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Publish proposals
-        run: jlo workflow publish-proposals
+        run: jlo workflow workspace publish-proposals
 
 
   # ============================================================
@@ -583,7 +575,10 @@ jobs:
 
       - name: Check for pending events
         id: matrix
-        run: jlo workflow matrix pending
+        run: |
+          set -euo pipefail
+          HAS_PENDING=$(jlo workflow workspace inspect | jq '(.events.pending_files | length) > 0')
+          echo "json={\"has_pending\":$HAS_PENDING}" >> "$GITHUB_OUTPUT"
 
 
   # ============================================================
@@ -677,7 +672,7 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 14: Generate routing matrices (new issues)
+  # Phase 14: Discover requirements for routing
   # ============================================================
   generate-planner-matrix:
     needs: [check-schedule, generate-decider-matrix, run-decider, wait-after-decider]
@@ -700,9 +695,16 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Generate planner and implementer matrices
+      - name: Discover requirements for routing
         id: matrix
-        run: jlo workflow matrix routing --routing-labels "$ROUTING_LABELS"
+        run: |
+          set -euo pipefail
+          OUTPUT_JSON=$(jlo workflow workspace inspect | jq '{
+            has_planners: (([.requirements.items[] | select(.requires_deep_analysis == true)] | length) > 0),
+            has_implementers: (([.requirements.items[] | select(.requires_deep_analysis == false)] | length) > 0),
+            requirement_count: .requirements.count
+          }')
+          echo "json=$OUTPUT_JSON" >> "$GITHUB_OUTPUT"
 
 
   # ============================================================

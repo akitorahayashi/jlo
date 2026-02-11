@@ -16,14 +16,14 @@ const MANAGED_COMMENT_MARKER: &str = "<!-- jlo:summary-request -->";
 const SUMMARY_REQUEST_BODY: &str =
     include_str!("../../../../../../assets/prompts/summary_request.md");
 
-/// Options for `workflow pr comment-summary-request`.
+/// Options for `workflow gh pr comment-summary-request`.
 #[derive(Debug, Clone)]
 pub struct CommentSummaryRequestOptions {
     /// PR number to comment on.
     pub pr_number: u64,
 }
 
-/// Output of `workflow pr comment-summary-request`.
+/// Output of `workflow gh pr comment-summary-request`.
 #[derive(Debug, Clone, Serialize)]
 pub struct CommentSummaryRequestOutput {
     pub schema_version: u32,

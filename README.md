@@ -37,10 +37,15 @@ jlo init --remote
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo doctor [--strict]` | | Validate `.jules/` structure and content |
 | `jlo workflow run <layer>` | | Run layer and return orchestration metadata |
-| `jlo workflow matrix <cmd>` | | Generate GitHub Actions matrices |
-| `jlo workflow inspect` | | Inspect exchange state for automation |
-| `jlo workflow clean-issue <issue_file>` | | Remove a processed issue and its source events |
-| `jlo workflow publish-proposals` | | Publish innovator proposals as GitHub issues |
+| `jlo workflow workspace inspect` | | Inspect exchange state for automation |
+| `jlo workflow workspace publish-proposals` | | Publish innovator proposals as GitHub issues |
+| `jlo workflow workspace clean requirement <file>` | | Remove a processed requirement and its source events |
+| `jlo workflow workspace clean mock --mock-tag <tag>` | | Clean up mock artifacts |
+| `jlo workflow gh pr process <pr_number>` | | Run all event-level PR commands in order |
+| `jlo workflow gh pr comment-summary-request <pr>` | | Post or update summary-request comment on a Jules PR |
+| `jlo workflow gh pr sync-category-label <pr>` | | Sync implementer category label from branch to PR |
+| `jlo workflow gh pr enable-automerge <pr>` | | Enable auto-merge on an eligible PR |
+| `jlo workflow gh issue label-innovator <issue> <persona>` | | Apply innovator labels to a proposal issue |
 | `jlo workflow generate <mode> [--output-dir <dir>]` | `g [-o]` | Generate workflow scaffold files to an output directory |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` script and `env.toml` |
 | `jlo setup list` | `s ls` | List available components |
@@ -84,11 +89,11 @@ jlo run narrator                     # Run narrator (no role flag needed)
 jlo run decider                      # Run decider (single role)
 ```
 
-**Issue-driven layers** (Planner, Implementer) require an issue file:
+**Requirement-driven layers** (Planner, Implementer) require a requirement file:
 
 ```bash
-jlo run planner .jules/exchange/issues/<label>/auth-inconsistency.yml
-jlo run implementer .jules/exchange/issues/<label>/auth-inconsistency.yml
+jlo run planner .jules/exchange/requirements/auth-inconsistency.yml
+jlo run implementer .jules/exchange/requirements/auth-inconsistency.yml
 ```
 
 **Mock Mode**: Validate workflow orchestration without calling Jules API:
@@ -107,7 +112,7 @@ Mock mode creates real branches and PRs with synthetic commit content, enabling 
 - `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)
 - `--branch <name>`: Override the default starting branch
-- `<path>`: Local issue file (required for planner and implementer)
+- `<path>`: Local requirement file (required for planner and implementer)
 
 **Configuration**: Execution settings are configured in `.jules/config.toml`:
 
@@ -195,9 +200,9 @@ Workflow expressions read these values from GitHub Actions variables (`vars.*`),
 **Flow**:
 1. **Sync**: `JULES_WORKER_BRANCH` syncs from `JLO_TARGET_BRANCH` periodically
 2. **Analysis**: Observers create event files under `.jules/exchange/events/`
-3. **Triage**: Decider links and consolidates events into issue files
-4. **Expansion**: Planner expands issues that require deep analysis
-5. **Implementation**: Implementer implements solutions for issues, either automatically via workflow or manually with a specified issue file
+3. **Triage**: Decider links and consolidates events into requirements
+4. **Expansion**: Planner expands requirements that require deep analysis
+5. **Implementation**: Implementer implements solutions for requirements, either automatically via workflow or manually with a specified requirement file
 6. **Innovation**: Innovators generate ideas and proposals, published as GitHub issues
 
 **Pause/Resume**: Set the repository pause variable referenced by the workflows to skip scheduled runs.

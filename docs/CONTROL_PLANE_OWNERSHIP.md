@@ -35,7 +35,7 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 | `.jules/JULES.md` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
 | `.jules/README.md` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
 | `.jules/exchange/events/<state>/**` | Agent | Agent execution | Observer outputs, decider inputs |
-| `.jules/exchange/issues/<label>/**` | Agent | Agent execution | Decider outputs, planner/implementer inputs |
+| `.jules/exchange/requirements/**` | Agent | Agent execution | Decider outputs, planner/implementer inputs |
 | `.jules/exchange/innovators/<persona>/**` | Agent | Agent execution | Innovator artifacts |
 | `.jules/workstations/<role>/**` | Agent | Agent execution | Role perspectives (memory) |
 | `.jules/exchange/changes.yml` | Agent | Narrator execution | Changes summary |

@@ -225,51 +225,54 @@ fn run_workflow_workspace_clean(command: WorkflowWorkspaceCleanCommands) -> Resu
 }
 
 fn run_workflow_gh(command: WorkflowGhCommands) -> Result<(), AppError> {
+    let github = crate::adapters::github_command::GitHubCommandAdapter::new();
     match command {
-        WorkflowGhCommands::Pr { command } => run_workflow_gh_pr(command),
-        WorkflowGhCommands::Issue { command } => run_workflow_gh_issue(command),
+        WorkflowGhCommands::Pr { command } => run_workflow_gh_pr(&github, command),
+        WorkflowGhCommands::Issue { command } => run_workflow_gh_issue(&github, command),
     }
 }
 
-fn run_workflow_gh_pr(command: WorkflowPrCommands) -> Result<(), AppError> {
+fn run_workflow_gh_pr(
+    github: &impl crate::ports::GitHubPort,
+    command: WorkflowPrCommands,
+) -> Result<(), AppError> {
     use crate::app::commands::workflow;
-
-    let github = crate::adapters::github_command::GitHubCommandAdapter::new();
 
     match command {
         WorkflowPrCommands::CommentSummaryRequest { pr_number } => {
             let options = workflow::gh::pr::CommentSummaryRequestOptions { pr_number };
             let output =
-                workflow::gh::pr::events::comment_summary_request::execute(&github, options)?;
+                workflow::gh::pr::events::comment_summary_request::execute(github, options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowPrCommands::SyncCategoryLabel { pr_number } => {
             let options = workflow::gh::pr::SyncCategoryLabelOptions { pr_number };
-            let output = workflow::gh::pr::events::sync_category_label::execute(&github, options)?;
+            let output = workflow::gh::pr::events::sync_category_label::execute(github, options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowPrCommands::EnableAutomerge { pr_number } => {
             let options = workflow::gh::pr::EnableAutomergeOptions { pr_number };
-            let output = workflow::gh::pr::events::enable_automerge::execute(&github, options)?;
+            let output = workflow::gh::pr::events::enable_automerge::execute(github, options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowPrCommands::Process { pr_number } => {
             let options = workflow::gh::pr::ProcessOptions { pr_number };
-            let output = workflow::gh::pr::process::execute(&github, options)?;
+            let output = workflow::gh::pr::process::execute(github, options)?;
             workflow::write_workflow_output(&output)
         }
     }
 }
 
-fn run_workflow_gh_issue(command: WorkflowIssueCommands) -> Result<(), AppError> {
+fn run_workflow_gh_issue(
+    github: &impl crate::ports::GitHubPort,
+    command: WorkflowIssueCommands,
+) -> Result<(), AppError> {
     use crate::app::commands::workflow;
-
-    let github = crate::adapters::github_command::GitHubCommandAdapter::new();
 
     match command {
         WorkflowIssueCommands::LabelInnovator { issue_number, persona } => {
             let options = workflow::gh::issue::LabelInnovatorOptions { issue_number, persona };
-            let output = workflow::gh::issue::label_innovator::execute(&github, options)?;
+            let output = workflow::gh::issue::label_innovator::execute(github, options)?;
             workflow::write_workflow_output(&output)
         }
     }

@@ -19,6 +19,13 @@
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Generate planner and implementer matrices
+      - name: Discover requirements for routing
         id: matrix
-        run: jlo workflow matrix routing --routing-labels "$ROUTING_LABELS"
+        run: |
+          set -euo pipefail
+          OUTPUT_JSON=$(jlo workflow workspace inspect | jq '{
+            has_planners: (([.requirements.items[] | select(.requires_deep_analysis == true)] | length) > 0),
+            has_implementers: (([.requirements.items[] | select(.requires_deep_analysis == false)] | length) > 0),
+            requirement_count: .requirements.count
+          }')
+          echo "json=$OUTPUT_JSON" >> "$GITHUB_OUTPUT"
