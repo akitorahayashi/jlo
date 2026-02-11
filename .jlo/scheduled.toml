@@ -12,6 +12,7 @@ roles = [
   { name = "qa", enabled = true },
   { name = "cov", enabled = true },
   { name = "rustacean", enabled = true },
+  { name = "devops", enabled = true },
 ]
 
 [innovators]

@@ -8,6 +8,8 @@ files:
   sha256: e95962c4191bc271767781f6d6d85fc0a9ed4fb8e67d57b65a49bcb140053c6e
 - path: .jlo/roles/observers/data_arch/role.yml
   sha256: bcb3969f59569c04e68a816b42c5dc942e5a76f207926f1a81871ae77e7b720d
+- path: .jlo/roles/observers/devops/role.yml
+  sha256: 90da09d668aca6c9f925ac19bf5524a8704a1c66c35cd87a3b2a9c15a8510b33
 - path: .jlo/roles/observers/librarian/role.yml
   sha256: 409e3b832e97cf803ee9b9cd49a562ebb42b5f65dbed3aa5fd131836c814bb43
 - path: .jlo/roles/observers/qa/role.yml
