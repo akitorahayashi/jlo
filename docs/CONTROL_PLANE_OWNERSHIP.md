@@ -14,7 +14,7 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 
 ### `.jlo/` — Intent Overlay (control branch)
 
-`.jlo/` is a minimal directory containing only the version pin and durable user intent inputs. Managed framework assets (contracts, schemas, prompts, global documents) are **not** stored in `.jlo/`; they are materialized by workflow bootstrap from the embedded scaffold for the pinned version. Built-in role definitions are embedded in the jlo binary under `src/assets/builtin_roles/` and installed into `.jlo/roles/` only when explicitly scheduled or added.
+`.jlo/` is a minimal directory containing only the version pin and durable user intent inputs. Managed framework assets (contracts, schemas, prompts, global documents) are **not** stored in `.jlo/`; they are materialized by workflow bootstrap from the embedded scaffold for the pinned version. Built-in role definitions are embedded in the jlo binary under `src/assets/roles/` and installed into `.jlo/roles/` only when explicitly scheduled or added.
 
 | Path | Owner | Description |
 |------|-------|-------------|
