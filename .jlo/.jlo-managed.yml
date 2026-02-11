@@ -1,9 +1,5 @@
 schema_version: 1
 files:
-- path: .jlo/roles/deciders/role.yml
-  sha256: e7631b8f330811b2587a82ae537dd4bca02ae7eaa32c6b6dc7f179cfaae662df
-- path: .jlo/roles/innovators/leverage_architect/role.yml
-  sha256: 55a8aee06f02d55bb30716ea64a87773d88ce443aa633e4f8bf67615d90f64d9
 - path: .jlo/roles/innovators/recruiter/role.yml
   sha256: e856c69c7d5351f02822624c98d7af067722b2e14988c4ef0e42412c4ad7640c
 - path: .jlo/roles/observers/consistency/role.yml
@@ -12,31 +8,11 @@ files:
   sha256: e95962c4191bc271767781f6d6d85fc0a9ed4fb8e67d57b65a49bcb140053c6e
 - path: .jlo/roles/observers/data_arch/role.yml
   sha256: bcb3969f59569c04e68a816b42c5dc942e5a76f207926f1a81871ae77e7b720d
-- path: .jlo/roles/observers/devops/role.yml
-  sha256: 18a6eb898f78549e21c6621b97eabc79171d913ab71797845dd74fc383dbb5e5
-- path: .jlo/roles/observers/gopher/role.yml
-  sha256: b4daef494e1c4b866365b16d8c0e0b903d95a92d8f2d40b25d9c597c0dfc3de0
-- path: .jlo/roles/observers/librarian/role.yml
-  sha256: 409e3b832e97cf803ee9b9cd49a562ebb42b5f65dbed3aa5fd131836c814bb43
-- path: .jlo/roles/observers/observability/role.yml
-  sha256: 6426d1ecd8965e8c6a57aafbb364b79c8831594979ca8eceaa773cd94c94158f
-- path: .jlo/roles/observers/pythonista/role.yml
-  sha256: e4ac97fcc2e93b0091929def4abc9cd309bfc356becdae35328d59b588513219
 - path: .jlo/roles/observers/qa/role.yml
   sha256: 61d23d8a638ac8edeadc82127af3a9b3ede44330f2c31c32b176b8abfa6d95a7
-- path: .jlo/roles/observers/rustacean/role.yml
-  sha256: aaef45705a22cccd500b017843d4c37af9275830587467904bcd9ee731a9cd03
 - path: .jlo/roles/observers/structural_arch/role.yml
   sha256: 21c93b08bd691231f80add4b3df3a5d7d5b2b849178735656e565a5ed5780040
-- path: .jlo/roles/observers/swifter/role.yml
-  sha256: db6812c5c01b2cb1c669613d869b9f9bb437e4d4f5888ea008f162ada8278330
-- path: .jlo/roles/observers/tactician/role.yml
-  sha256: 8d9cb231d8dc6840a82f28689f335b2760905d140e9cfcb29609fa8033f50359
 - path: .jlo/roles/observers/taxonomy/role.yml
   sha256: 6102e0f7db2f2f44dca6a8fee4f35795e4e08a9aa3d0bc6055da4b5f206fae99
-- path: .jlo/roles/observers/typescripter/role.yml
-  sha256: a2c6efb79e0450dfec84125b566939cb11095e33d0a7d3d9c104b9489a18ed9d
-- path: .jlo/roles/observers/ui_designer/role.yml
-  sha256: 84730072a419ce235547c09a2e2da63c2ba146a023d73b7c47cddf543ce92403
 - path: .jlo/scheduled.toml
   sha256: 383cd3d3f98f8907250c5daac665039fa02bd5aed571815007c9000fc6064ddd
