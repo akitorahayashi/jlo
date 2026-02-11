@@ -1,0 +1,28 @@
+schema_version: 1
+
+id: "tax001"
+issue_id: ""
+created_at: "2024-05-22"
+author_role: "taxonomy"
+confidence: "high"
+
+title: "Inconsistent Layer Naming (Singular vs Plural)"
+statement: |
+  The codebase exhibits inconsistent naming for layers, mixing singular and plural forms.
+  Specifically, `Layer::Observers` and `Layer::Innovators` are plural in the enum definition, directory structure (`observers`, `innovators`), and prompt templates (`observers_prompt.j2`).
+  However, `Layer::display_name` returns singular forms ("Observer", "Innovator"), and `Layer::from_dir_name` accepts both.
+  This creates confusion in user-facing CLI output and documentation, where terms might be used interchangeably without clear rationale.
+
+evidence:
+  - path: "src/domain/workspace/layer.rs"
+    loc:
+      - "pub enum Layer"
+    note: "Enum variants Observers and Innovators are plural."
+  - path: "src/domain/workspace/layer.rs"
+    loc:
+      - "fn display_name"
+    note: "Returns singular 'Observer' and 'Innovator' for plural enum variants."
+  - path: "src/domain/workspace/layer.rs"
+    loc:
+      - "fn dir_name"
+    note: "Returns plural 'observers' and 'innovators' directory names."

@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: "taxonomy"
+
+updated_at: "2024-05-22T10:00:00Z"
+
+goals:
+  - "Audit CLI error messages for vocabulary consistency."
+  - "Review remaining documentation for 'Workstream' and other deprecated terms."
+  - "Propose a canonical naming convention for Layers and Roles."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2024-05-22T10:00:00Z"
+    summary: "Initialized taxonomy observer workstation and performed initial scan."
