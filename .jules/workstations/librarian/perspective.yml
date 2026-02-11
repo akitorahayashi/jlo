@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: librarian
+
+updated_at: "2024-05-22T00:05:00Z"
+
+goals:
+  - "Inspect documentation structure for navigability and freshness"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2024-05-22T00:05:00Z"
+    summary: "Emitted 2 findings: missing docs/AGENTS.md and orphaned guides."
+  - at: "2024-05-22T00:00:00Z"
+    summary: "Initialized librarian workstation."
