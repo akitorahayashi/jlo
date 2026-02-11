@@ -521,7 +521,23 @@ fn automerge_delegates_to_jlo_command() {
     );
     assert!(
         automerge.contains("enablePullRequestAutoMerge"),
-        "Automerge workflow should retry only known branch-protection propagation failures"
+        "Automerge workflow should retry known GraphQL transient errors"
+    );
+    assert!(
+        automerge.contains("mergePullRequest"),
+        "Automerge workflow should retry base-branch race conditions"
+    );
+    assert!(
+        automerge.contains("concurrency:"),
+        "Automerge workflow must serialize auto-merge jobs with concurrency control"
+    );
+    assert!(
+        automerge.contains("jules-automerge-"),
+        "Automerge concurrency group should scope by PR base branch"
+    );
+    assert!(
+        automerge.contains("cancel-in-progress: false"),
+        "Automerge concurrency must queue runs instead of canceling in-progress jobs"
     );
 
     // Must NOT contain inline bash policy logic

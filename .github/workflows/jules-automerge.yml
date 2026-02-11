@@ -26,6 +26,9 @@ on:
 jobs:
   validate-and-automerge:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ format('jules-automerge-{0}', github.base_ref) }}
+      cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write
@@ -80,7 +83,7 @@ jobs:
               exit 0
             fi
 
-            if ! printf '%s' "$OUTPUT" | grep -q "enablePullRequestAutoMerge"; then
+            if ! printf '%s' "$OUTPUT" | grep -Eq "enablePullRequestAutoMerge|mergePullRequest"; then
               echo "::error::Auto-merge enable failed with a non-retriable error."
               exit "$STATUS"
             fi
@@ -90,6 +93,6 @@ jobs:
               exit "$STATUS"
             fi
 
-            echo "::warning::Auto-merge branch protection is not ready yet (attempt ${attempt}/${ATTEMPTS}); retrying in ${RETRY_DELAY_SECONDS}s."
+            echo "::warning::Auto-merge transient GitHub state detected (attempt ${attempt}/${ATTEMPTS}); retrying in ${RETRY_DELAY_SECONDS}s."
             sleep "$RETRY_DELAY_SECONDS"
           done
