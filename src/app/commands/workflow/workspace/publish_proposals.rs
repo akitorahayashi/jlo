@@ -210,9 +210,9 @@ where
         let issue: IssueInfo = github.create_issue(issue_title, issue_body, &[])?;
 
         // Apply innovator labels to the newly created issue
-        crate::app::commands::workflow::issue::label_innovator::execute(
+        crate::app::commands::workflow::gh::issue::label_innovator::execute(
             github,
-            crate::app::commands::workflow::issue::LabelInnovatorOptions {
+            crate::app::commands::workflow::gh::issue::LabelInnovatorOptions {
                 issue_number: issue.number,
                 persona: persona.clone(),
             },

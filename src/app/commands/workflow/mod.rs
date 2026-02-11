@@ -6,9 +6,8 @@
 pub mod bootstrap;
 mod doctor;
 pub mod generate;
-pub mod issue;
+pub mod gh;
 mod output;
-pub mod pr;
 mod run;
 pub mod workspace;
 
