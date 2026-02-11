@@ -144,33 +144,28 @@ mod tests {
 
     #[test]
     fn validate_execution_config_invalid_max_parallel() {
-        let mut config = ExecutionConfig::default();
-        config.max_parallel = 0;
+        let config = ExecutionConfig { max_parallel: 0, ..Default::default() };
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn validate_execution_config_empty_branches() {
-        let mut config = ExecutionConfig::default();
-        config.default_branch = "  ".to_string();
+        let config = ExecutionConfig { default_branch: "  ".to_string(), ..Default::default() };
         assert!(config.validate().is_err());
 
-        config.default_branch = "main".to_string();
-        config.jules_branch = "".to_string();
+        let config = ExecutionConfig { jules_branch: "".to_string(), ..Default::default() };
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn validate_jules_config_invalid_timeout() {
-        let mut config = JulesApiConfig::default();
-        config.timeout_secs = 0;
+        let config = JulesApiConfig { timeout_secs: 0, ..Default::default() };
         assert!(config.validate().is_err());
     }
 
     #[test]
     fn validate_jules_config_invalid_retry_delay() {
-        let mut config = JulesApiConfig::default();
-        config.retry_delay_ms = 0;
+        let config = JulesApiConfig { retry_delay_ms: 0, ..Default::default() };
         assert!(config.validate().is_err());
     }
 }

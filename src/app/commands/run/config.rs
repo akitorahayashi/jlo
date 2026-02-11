@@ -31,7 +31,7 @@ pub fn parse_config_content(content: &str) -> Result<RunConfig, AppError> {
 
     let config = RunConfig::from(dto);
 
-    config.validate().map_err(|e| AppError::Validation(e))?;
+    config.validate().map_err(AppError::Validation)?;
 
     Ok(config)
 }
