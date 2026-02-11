@@ -24,8 +24,16 @@ pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
 
 /// Parse configuration from string content.
 pub fn parse_config_content(content: &str) -> Result<RunConfig, AppError> {
-    let dto: RunConfigDto = toml::from_str(content)?;
-    Ok(RunConfig::from(dto))
+    let dto: RunConfigDto = toml::from_str(content).map_err(|e| AppError::ParseError {
+        what: "config.toml".to_string(),
+        details: e.to_string(),
+    })?;
+
+    let config = RunConfig::from(dto);
+
+    config.validate().map_err(|e| AppError::Validation(e))?;
+
+    Ok(config)
 }
 
 /// Detect the repository source from git remote.
@@ -119,5 +127,16 @@ retry_delay_ms = 250
 
         assert_eq!(config.run.default_branch, "main");
         assert!(config.run.parallel);
+    }
+
+    #[test]
+    fn run_config_validation_fails() {
+        let toml = r#"
+[run]
+max_parallel = 0
+"#;
+        let result = parse_config_content(toml);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(AppError::Validation(_))));
     }
 }

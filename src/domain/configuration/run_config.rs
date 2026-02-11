@@ -11,6 +11,15 @@ pub struct RunConfig {
     pub jules: JulesApiConfig,
 }
 
+impl RunConfig {
+    /// Validate the configuration, returning an error string if invalid.
+    pub fn validate(&self) -> Result<(), String> {
+        self.run.validate().map_err(|e| format!("Invalid execution config: {}", e))?;
+        self.jules.validate().map_err(|e| format!("Invalid jules api config: {}", e))?;
+        Ok(())
+    }
+}
+
 /// Jules API configuration.
 #[derive(Debug, Clone)]
 pub struct JulesApiConfig {
@@ -32,6 +41,18 @@ impl Default for JulesApiConfig {
             max_retries: default_max_retries(),
             retry_delay_ms: default_retry_delay_ms(),
         }
+    }
+}
+
+impl JulesApiConfig {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.timeout_secs == 0 {
+            return Err("timeout_secs must be greater than 0".to_string());
+        }
+        if self.retry_delay_ms == 0 {
+            return Err("retry_delay_ms must be greater than 0".to_string());
+        }
+        Ok(())
     }
 }
 
@@ -76,6 +97,21 @@ impl Default for ExecutionConfig {
     }
 }
 
+impl ExecutionConfig {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.max_parallel == 0 {
+            return Err("max_parallel must be greater than 0".to_string());
+        }
+        if self.default_branch.trim().is_empty() {
+            return Err("default_branch must not be empty".to_string());
+        }
+        if self.jules_branch.trim().is_empty() {
+            return Err("jules_branch must not be empty".to_string());
+        }
+        Ok(())
+    }
+}
+
 fn default_branch() -> String {
     "main".to_string()
 }
@@ -103,5 +139,38 @@ mod tests {
         assert_eq!(config.run.jules_branch, "jules");
         assert!(config.run.parallel);
         assert_eq!(config.run.max_parallel, 3);
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn validate_execution_config_invalid_max_parallel() {
+        let mut config = ExecutionConfig::default();
+        config.max_parallel = 0;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn validate_execution_config_empty_branches() {
+        let mut config = ExecutionConfig::default();
+        config.default_branch = "  ".to_string();
+        assert!(config.validate().is_err());
+
+        config.default_branch = "main".to_string();
+        config.jules_branch = "".to_string();
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn validate_jules_config_invalid_timeout() {
+        let mut config = JulesApiConfig::default();
+        config.timeout_secs = 0;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn validate_jules_config_invalid_retry_delay() {
+        let mut config = JulesApiConfig::default();
+        config.retry_delay_ms = 0;
+        assert!(config.validate().is_err());
     }
 }

@@ -405,6 +405,68 @@ fn workflow_templates_pass_yaml_lint_self_hosted() {
     validate_yaml_lint("self-hosted");
 }
 
+#[test]
+fn workflow_templates_validate_structure() {
+    let ctx = TestContext::new();
+    let output_dir = generate_workflow_scaffold(&ctx, "remote", "structure");
+
+    let workflow_path = output_dir.join(".github/workflows/jules-workflows.yml");
+    let content = fs::read_to_string(&workflow_path).expect("Failed to read workflow");
+    let workflow: serde_yaml::Value = serde_yaml::from_str(&content).expect("Failed to parse YAML");
+
+    // Validate root keys
+    let root = workflow.as_mapping().expect("Root should be a mapping");
+    assert!(
+        root.contains_key(&serde_yaml::Value::String("name".to_string())),
+        "Missing 'name'"
+    );
+    assert!(root.contains_key(&serde_yaml::Value::String("on".to_string())), "Missing 'on'");
+    assert!(root.contains_key(&serde_yaml::Value::String("jobs".to_string())), "Missing 'jobs'");
+    assert!(
+        root.contains_key(&serde_yaml::Value::String("permissions".to_string())),
+        "Missing 'permissions'"
+    );
+
+    // Validate 'on' triggers
+    let on = root
+        .get(&serde_yaml::Value::String("on".to_string()))
+        .unwrap()
+        .as_mapping()
+        .expect("'on' should be mapping");
+    assert!(
+        on.contains_key(&serde_yaml::Value::String("schedule".to_string())),
+        "Missing 'schedule' trigger"
+    );
+    assert!(
+        on.contains_key(&serde_yaml::Value::String("workflow_dispatch".to_string())),
+        "Missing 'workflow_dispatch' trigger"
+    );
+
+    // Validate 'jobs'
+    let jobs = root
+        .get(&serde_yaml::Value::String("jobs".to_string()))
+        .unwrap()
+        .as_mapping()
+        .expect("'jobs' should be mapping");
+    let required_jobs = [
+        "run-narrator",
+        "check-schedule",
+        "run-observers",
+        "run-innovators-1",
+        "run-innovators-2",
+        "run-decider",
+        "run-planner",
+        "run-implementer",
+    ];
+    for job in required_jobs {
+        assert!(
+            jobs.contains_key(&serde_yaml::Value::String(job.to_string())),
+            "Missing job '{}'",
+            job
+        );
+    }
+}
+
 fn validate_yaml_lint(mode: &str) {
     let ctx = TestContext::new();
     let output_dir = generate_workflow_scaffold(&ctx, mode, "lint");
