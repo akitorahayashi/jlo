@@ -467,6 +467,7 @@ created_at: "2026-02-05 00:00:00"
 
     // --- Tests from mock/narrator.rs ---
 
+    #[allow(dead_code)]
     struct MustNotTouchGit;
 
     impl GitPort for MustNotTouchGit {
@@ -528,6 +529,7 @@ created_at: "2026-02-05 00:00:00"
         }
     }
 
+    #[allow(dead_code)]
     struct MustNotTouchGitHub;
 
     impl GitHubPort for MustNotTouchGitHub {
@@ -593,6 +595,7 @@ created_at: "2026-02-05 00:00:00"
         }
     }
 
+    #[allow(dead_code)]
     struct DummyWorkspace;
 
     impl crate::domain::PromptAssetLoader for DummyWorkspace {
