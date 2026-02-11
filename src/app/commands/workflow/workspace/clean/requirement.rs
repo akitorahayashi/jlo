@@ -38,33 +38,39 @@ pub fn execute(
         .canonicalize()
         .map_err(|e| AppError::InternalError(format!("Failed to resolve .jules path: {}", e)))?;
 
-    let issue_path = Path::new(&options.requirement_file);
-    let canonical_issue = issue_path.canonicalize().map_err(|_| {
-        AppError::Validation(format!("Issue file does not exist: {}", options.requirement_file))
+    let requirement_path = Path::new(&options.requirement_file);
+    let canonical_requirement = requirement_path.canonicalize().map_err(|_| {
+        AppError::Validation(format!(
+            "Requirement file does not exist: {}",
+            options.requirement_file
+        ))
     })?;
 
-    if !canonical_issue.starts_with(&canonical_jules) {
+    if !canonical_requirement.starts_with(&canonical_jules) {
         return Err(AppError::Validation(format!(
-            "Issue file must be within .jules/ directory: {}",
+            "Requirement file must be within .jules/ directory: {}",
             options.requirement_file
         )));
     }
 
-    let issue_rel = resolve_issue_path(&canonical_jules, &canonical_issue, &workspace)?;
+    let requirement_rel =
+        resolve_requirement_path(&canonical_jules, &canonical_requirement, &workspace)?;
 
     let canonical_root = canonical_jules.parent().unwrap_or(Path::new(".")).to_path_buf();
     let canonical_store = FilesystemWorkspaceStore::new(canonical_root);
     let inspect_output = inspect_at(&canonical_store)?;
 
-    let requirement_item =
-        inspect_output.requirements.items.iter().find(|item| item.path == issue_rel).ok_or_else(
-            || {
-                AppError::Validation(format!(
-                    "Requirement file not found in inspection output: {}",
-                    issue_rel
-                ))
-            },
-        )?;
+    let requirement_item = inspect_output
+        .requirements
+        .items
+        .iter()
+        .find(|item| item.path == requirement_rel)
+        .ok_or_else(|| {
+            AppError::Validation(format!(
+                "Requirement file not found in inspection output: {}",
+                requirement_rel
+            ))
+        })?;
 
     let mut event_map: HashMap<&str, &str> = HashMap::new();
     for event in &inspect_output.events.items {
@@ -82,7 +88,7 @@ pub fn execute(
         deleted_paths.insert(event_path.to_string());
     }
 
-    deleted_paths.insert(issue_rel.clone());
+    deleted_paths.insert(requirement_rel.clone());
 
     let mut deleted_paths: Vec<String> = deleted_paths.into_iter().collect();
     deleted_paths.sort();
@@ -122,14 +128,14 @@ pub fn execute(
     })
 }
 
-fn resolve_issue_path(
+fn resolve_requirement_path(
     canonical_jules: &Path,
-    canonical_issue: &Path,
+    canonical_requirement: &Path,
     workspace: &FilesystemWorkspaceStore,
 ) -> Result<String, AppError> {
-    let rel_to_jules = canonical_issue
+    let rel_to_jules = canonical_requirement
         .strip_prefix(canonical_jules)
-        .map_err(|_| AppError::Validation("Issue file is not under .jules/".to_string()))?;
+        .map_err(|_| AppError::Validation("Requirement file is not under .jules/".to_string()))?;
 
     let parts: Vec<String> =
         rel_to_jules.components().map(|c| c.as_os_str().to_string_lossy().to_string()).collect();
@@ -137,14 +143,14 @@ fn resolve_issue_path(
     if parts.len() < 3 || parts[0] != "exchange" || parts[1] != "requirements" {
         return Err(AppError::Validation(format!(
             "Requirement file must be under .jules/exchange/requirements/: {}",
-            canonical_issue.display()
+            canonical_requirement.display()
         )));
     }
 
     let root = workspace_root(workspace)?;
-    let issue_rel = to_repo_relative(&root, canonical_issue);
+    let requirement_rel = to_repo_relative(&root, canonical_requirement);
 
-    Ok(issue_rel)
+    Ok(requirement_rel)
 }
 
 fn workspace_root(workspace: &FilesystemWorkspaceStore) -> Result<PathBuf, AppError> {
@@ -160,12 +166,14 @@ fn to_repo_relative(root: &Path, path: &Path) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
     use std::fs;
     use std::process::Command;
     use tempfile::tempdir;
 
     #[test]
-    fn clean_issue_deletes_files_and_pushes() {
+    #[serial]
+    fn clean_requirement_deletes_files_and_pushes() {
         let dir = tempdir().unwrap();
         let root = dir.path();
         let repo_dir = root.join("repo");
