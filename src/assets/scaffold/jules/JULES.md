@@ -5,14 +5,13 @@ This file defines the binding rules for Jules agents operating in this repositor
 ## Authority
 
 - This file is authoritative for global rules and shared conventions.
-- Each layer contract is authoritative for layer-specific workflows and schemas:
+- Each layer contract is authoritative for layer-specific rules and schemas:
   - `.jules/roles/narrator/contracts.yml`
   - `.jules/roles/observers/contracts.yml`
   - `.jules/roles/deciders/contracts.yml`
   - `.jules/roles/planners/contracts.yml`
   - `.jules/roles/implementers/contracts.yml`
-  - `.jules/roles/innovators/contracts_creation.yml`
-  - `.jules/roles/innovators/contracts_refinement.yml`
+  - `.jules/roles/innovators/contracts.yml`
 
 - **Role Definitions**: Defined in `.jlo/` (Control Plane).
   - `.jlo/roles/<layer>/roles/<role>/role.yml`
@@ -28,12 +27,12 @@ conflict is reported.
 
 ## Changes Feed
 
-The Narrator layer produces `.jules/changes/latest.yml`, summarizing recent codebase changes.
+The Narrator layer produces `.jules/exchange/changes.yml`, summarizing recent codebase changes.
 
-- `.jules/changes/latest.yml` is overwritten in-place (no time-series).
+- `.jules/exchange/changes.yml` is overwritten in-place (no time-series).
 - Narrator excludes `.jules/` from all diffs and path lists.
 - Observers receive this context automatically when present.
-- Schema is defined by `.jules/roles/narrator/schemas/change.yml`.
+- Schema is defined by `.jules/roles/narrator/schemas/changes.yml`.
 
 ## Exchange Model
 
@@ -52,7 +51,7 @@ The pipeline is file-based and uses local issues as the handoff point:
 
 `narrator -> observers -> deciders -> [planners] -> implementers`
 
-Narrator runs first, producing `.jules/changes/latest.yml` for observer context.
+Narrator runs first, producing `.jules/exchange/changes.yml` for observer context.
 
 After decider output:
 - Issues with `requires_deep_analysis: false` are ready for implementation.
@@ -77,7 +76,7 @@ When an issue requires deep analysis:
 
 - YAML only (`.yml`) and English only.
 - Artifacts are created by copying the corresponding schema and filling its fields:
-  - Changes: `.jules/roles/narrator/schemas/change.yml`
+  - Changes: `.jules/roles/narrator/schemas/changes.yml`
   - Events: `.jules/roles/observers/schemas/event.yml`
   - Issues: `.jules/roles/deciders/schemas/issue.yml`
 
@@ -99,7 +98,7 @@ Branch names:
 
 ## Safety Boundaries
 
-- Narrator modifies only `.jules/changes/latest.yml`.
+- Narrator modifies only `.jules/exchange/changes.yml`.
 - Observers, Deciders, and Planners modify only `.jules/`.
 - Implementers modify only what the issue specifies, run the verification command, then
   create a pull request for human review.

@@ -4,15 +4,3 @@ branch_prefix: jules-planner-
 purpose:
   Expand issues that require deep analysis with full system impact assessment,
   dependency analysis, risks, and implementation specifics.
-
-inputs:
-  - ".jules/exchange/issues/<label>/<issue>.yml (where requires_deep_analysis: true)"
-
-outputs:
-  - ".jules/exchange/issues/<label>/<issue>.yml (expanded in-place, requires_deep_analysis set to false)"
-
-workflow:
-  - 1. Read the target issue and its deep_analysis_reason
-  - 2. Analyze full system impact, dependency tree, affected areas, constraints, and risks
-  - 3. Expand the issue file with detailed analysis findings (append to deep_analysis_reason, preserving original rationale)
-  - 4. Set requires_deep_analysis to false and overwrite the issue file

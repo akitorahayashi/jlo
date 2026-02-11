@@ -1,0 +1,13 @@
+layer: innovators
+branch_prefix: jules-innovator-
+
+purpose:
+  Generate improvement proposals through persona-driven ideation and refinement.
+  Each persona inspects the codebase through its own lens, produces ideas, receives
+  observer feedback, and refines ideas into structured proposals.
+
+constraints:
+  - "Do not duplicate items already listed in perspective.yml recent_proposals"
+  - "All outputs must conform to the corresponding schema in schemas/"
+  - "Proposals must introduce boundary, behavior, or decision-quality changes — not local refactoring findings"
+  - "Self-check against role.yml proposal_quality_bar and evidence_expectations"

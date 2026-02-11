@@ -10,7 +10,7 @@ inputs:
   - Source code and repository files
   - .jlo/roles/observers/<role>/role.yml (role definition)
   - .jules/workstations/<role>/perspective.yml (workstation memory)
-  - .jules/changes/latest.yml (recent changes, if present — advisory, does not restrict scope)
+  - .jules/exchange/changes.yml (recent changes, if present — advisory, does not restrict scope)
   - .jules/exchange/issues/**/*.yml (open issues, for deduplication)
   - .jules/exchange/events/<state>/*.yml (recent events, for deduplication)
   - .jules/roles/observers/schemas/event.yml (event schema)
@@ -21,15 +21,8 @@ outputs:
   - .jules/workstations/<role>/perspective.yml
   - .jules/exchange/innovators/<persona>/comments/*.yml (if innovators scheduled and idea.yml exists)
 
-workflow:
-  - 1. Read role.yml, perspective.yml, open issues, and recent events
-  - 2. Inspect repository areas relevant to your role; latest.yml is optional context, not a scope restriction
-  - 3. If perspective.yml goals are empty, set 1-3 concrete goals informed by the inspection
-  - 4. Produce 0-3 findings — each evidence-backed and not already covered by open issues
-  - 5. Emit events for findings (copy schemas/event.yml and fill it)
-  - 6. If innovators are scheduled and idea.yml exists for a persona, create comments/*.yml using schemas/comment.yml
-  - 7. Update perspective.yml (updated_at, refine goals/rules/ignore, prepend a short log entry)
-
 constraints:
   - Do not duplicate findings already covered by open issues or recent events
   - Workstation memory is perspective.yml only; do not create per-run history files
+  - "changes.yml is advisory context — it does not restrict inspection scope"
+  - "Goals must be validated every run; replace stale or completed goals"

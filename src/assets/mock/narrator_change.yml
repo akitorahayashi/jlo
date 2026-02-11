@@ -1,27 +1,21 @@
 # Mock changes file for narrator testing
 schema_version: 1
-id: "mock01"
 created_at: "2026-02-05T00:00:00Z"
 mock: true
 
-range:
-  from_commit: "0000000000000000000000000000000000000000"
-  to_commit: "ffffffffffffffffffffffffffffffffffffffff"
-  selection_mode: bootstrap
-  selection_detail: "Mock bootstrap for workflow validation"
-  excluded_paths:
-    - .jules/
-
-stats:
-  commits_total: 0
-  commits_included: 0
-  files_changed: 0
-  insertions: 0
-  deletions: 0
-
-commits: []
-
-summary:
-  overview: "Mock narrator run for workflow validation"
-  notable_changes: []
-  truncation_note: ""
+summaries:
+  - title: "Scaffold initialization"
+    scope: "src/assets/scaffold/"
+    impact: "New .jules/ directory structure established for agent workflows"
+  - title: "Workflow bootstrap"
+    scope: ".github/workflows/"
+    impact: "GitHub Actions workflows added for automated agent execution"
+  - title: "CLI command updates"
+    scope: "src/app/cli/"
+    impact: "New init and setup subcommands available"
+  - title: "Domain model refinement"
+    scope: "src/domain/"
+    impact: "Layer and role types updated to support narrator execution"
+  - title: "Test coverage expansion"
+    scope: "tests/"
+    impact: "Integration tests added for scaffold and workflow validation"

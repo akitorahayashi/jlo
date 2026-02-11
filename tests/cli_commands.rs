@@ -749,11 +749,10 @@ fn verify_scaffold_integrity() {
         "config.toml should exist in .jlo/ (Control Plane)"
     );
 
-    // Verify changes directory
-    assert!(ctx.jules_path().join("changes/.gitkeep").exists(), "changes/.gitkeep should exist");
+    // Verify narrator output location is under exchange (no standalone changes/ directory)
     assert!(
-        !ctx.jules_path().join("changes/latest.yml").exists(),
-        "changes/latest.yml should NOT exist"
+        !ctx.jules_path().join("changes").exists(),
+        "legacy changes/ directory should not exist"
     );
 
     // Verify layers and prompt assemblies
@@ -761,38 +760,31 @@ fn verify_scaffold_integrity() {
     for layer in layers {
         let layer_path = ctx.jules_path().join("roles").join(layer);
         assert!(layer_path.exists(), "Layer {} should exist", layer);
+        let template_name = match layer {
+            "narrator" => "narrator_prompt.j2",
+            "observers" => "observers_prompt.j2",
+            "deciders" => "decider_prompt.j2",
+            "planners" => "planner_prompt.j2",
+            "implementers" => "implementer_prompt.j2",
+            "innovators" => "innovators_prompt.j2",
+            _ => unreachable!(),
+        };
         assert!(
-            layer_path.join("prompt_assembly.j2").exists(),
-            "Layer {} prompt_assembly.j2 should exist",
-            layer
+            layer_path.join(template_name).exists(),
+            "Layer {} {} should exist",
+            layer,
+            template_name,
         );
 
         // Check contracts
-        if layer == "innovators" {
-            assert!(
-                layer_path.join("contracts_creation.yml").exists(),
-                "contracts_creation.yml should exist in innovators"
-            );
-            assert!(
-                layer_path.join("contracts_refinement.yml").exists(),
-                "contracts_refinement.yml should exist in innovators"
-            );
-        } else if layer == "narrator" {
-            assert!(
-                layer_path.join("contracts_bootstrap.yml").exists(),
-                "contracts_bootstrap.yml should exist in narrator"
-            );
-            assert!(
-                layer_path.join("contracts_incremental.yml").exists(),
-                "contracts_incremental.yml should exist in narrator"
-            );
-        } else {
-            assert!(
-                layer_path.join("contracts.yml").exists(),
-                "Layer {} contracts.yml should exist",
-                layer
-            );
-        }
+        assert!(
+            layer_path.join("contracts.yml").exists(),
+            "Layer {} contracts.yml should exist",
+            layer
+        );
+
+        // All layers have tasks/ directory
+        assert!(layer_path.join("tasks").exists(), "Layer {} tasks/ directory should exist", layer);
     }
 
     // Verify setup

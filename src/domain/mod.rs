@@ -3,7 +3,7 @@ pub mod error;
 pub mod identifiers;
 pub mod issue;
 
-pub mod prompt;
+pub mod prompt_assembly;
 pub mod workspace;
 
 pub mod builtin_role;
@@ -19,7 +19,7 @@ pub use error::{AppError, IoErrorKind};
 pub use identifiers::{ComponentId, RoleId};
 pub use issue::IssueHeader;
 
-pub use prompt::{
+pub use prompt_assembly::{
     PromptAssemblyError, PromptAssetLoader, PromptContext, assemble_prompt, assemble_with_issue,
 };
 pub use workspace::{

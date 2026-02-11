@@ -63,7 +63,7 @@ Workflow orchestration uses `jlo workflow` commands:
 
 The primary orchestration workflow in `.github/workflows/jules-*.yml` orchestrates the layers in sequence:
 
-1. **Narrator** → Produces `.jules/changes/latest.yml`
+1. **Narrator** → Produces `.jules/exchange/changes.yml`
 2. **Schedule Check** → Validates schedule conditions
 3. **Innovator Execution (creation phase)** → `--phase creation` (parallel with observers)
 4. **Observer Execution** → Sequential execution (max-parallel=1)

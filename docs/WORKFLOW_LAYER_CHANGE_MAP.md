@@ -54,7 +54,7 @@ A layer-level change means one of the following:
 - Keep classification (`is_single_role`, `is_issue_driven`) coherent.
 
 2. Scaffold and contracts
-- Add `.jules/roles/<layer>/contracts.yml`, `prompt_assembly.j2`, and schemas under `src/assets/scaffold/jules/roles/<layer>/`.
+- Add `.jules/roles/<layer>/contracts.yml`, `<layer>_prompt.j2`, and schemas under `src/assets/scaffold/jules/roles/<layer>/`.
 - Keep assets file-based; do not move schema content into Rust string constants.
 
 3. CLI and runtime dispatch

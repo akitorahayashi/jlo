@@ -52,7 +52,6 @@ fn init_creates_complete_layer_structure() {
     ctx.assert_events_structure_exists();
     ctx.assert_issues_directory_exists();
     ctx.assert_default_scheduled_roles_exist();
-    ctx.assert_changes_directory_exists();
     ctx.assert_narrator_exists();
 
     // Verify multi-role layers have role.yml under roles/ container and schemas/ directories
@@ -66,23 +65,43 @@ fn init_creates_complete_layer_structure() {
     assert!(jlo.join("roles/observers/consistency/role.yml").exists());
     assert!(jlo.join("roles/innovators/recruiter/role.yml").exists());
     assert!(jules.join("roles/observers/schemas").exists());
-    assert!(jules.join("roles/observers/prompt_assembly.j2").exists());
+    assert!(jules.join("roles/observers/observers_prompt.j2").exists());
+    assert!(jules.join("roles/observers/tasks/observe.yml").exists());
+    assert!(jules.join("roles/observers/tasks/bridge_comments.yml").exists());
 
     // Decider is single-role and runtime-driven from contracts only (no .jlo role.yml)
     assert!(!jlo.join("roles/deciders/role.yml").exists());
     assert!(jules.join("roles/deciders/schemas").exists());
-    assert!(jules.join("roles/deciders/prompt_assembly.j2").exists());
+    assert!(jules.join("roles/deciders/decider_prompt.j2").exists());
 
     // Single-role layers have flat structure (no roles subdirectory)
-    assert!(jules.join("roles/narrator/contracts_bootstrap.yml").exists());
-    assert!(jules.join("roles/narrator/contracts_incremental.yml").exists());
-    assert!(jules.join("roles/narrator/schemas/change.yml").exists());
+    assert!(jules.join("roles/narrator/contracts.yml").exists());
+    assert!(jules.join("roles/narrator/schemas/changes.yml").exists());
+    assert!(jules.join("roles/narrator/tasks/bootstrap_summary.yml").exists());
+    assert!(jules.join("roles/narrator/tasks/overwrite_summary.yml").exists());
     assert!(jules.join("roles/planners/contracts.yml").exists());
     assert!(jules.join("roles/implementers/contracts.yml").exists());
+    assert!(jules.join("roles/innovators/contracts.yml").exists());
 
-    // Innovators use phase-specific contracts
-    assert!(jules.join("roles/innovators/contracts_creation.yml").exists());
-    assert!(jules.join("roles/innovators/contracts_refinement.yml").exists());
+    // Innovators have phase-based task files
+    assert!(jules.join("roles/innovators/tasks/create_idea.yml").exists());
+    assert!(jules.join("roles/innovators/tasks/refine_proposal.yml").exists());
+
+    // Implementers have label-specific task files
+    assert!(jules.join("roles/implementers/tasks/bugs.yml").exists());
+    assert!(jules.join("roles/implementers/tasks/feats.yml").exists());
+    assert!(jules.join("roles/implementers/tasks/refacts.yml").exists());
+    assert!(jules.join("roles/implementers/tasks/tests.yml").exists());
+    assert!(jules.join("roles/implementers/tasks/docs.yml").exists());
+
+    // All layers have tasks/ directory
+    for layer in ["narrator", "observers", "deciders", "planners", "implementers", "innovators"] {
+        assert!(
+            jules.join("roles").join(layer).join("tasks").exists(),
+            "Layer {} should have tasks/ directory",
+            layer
+        );
+    }
 }
 
 #[test]

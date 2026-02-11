@@ -29,10 +29,10 @@ fn mock_narrator_change_file_passes_doctor() {
 
     // Copy mock change file to workspace
     let mock_change = include_str!("../src/assets/mock/narrator_change.yml");
-    let changes_dir = ctx.jules_path().join("changes");
-    fs::create_dir_all(&changes_dir).expect("Failed to create changes directory");
+    let exchange_dir = ctx.jules_path().join("exchange");
+    fs::create_dir_all(&exchange_dir).expect("Failed to create exchange directory");
 
-    let changes_file = changes_dir.join("latest.yml");
+    let changes_file = exchange_dir.join("changes.yml");
     fs::write(&changes_file, mock_change).expect("Failed to write changes file");
 
     // Run doctor to validate

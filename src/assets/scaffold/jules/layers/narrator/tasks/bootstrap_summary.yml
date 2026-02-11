@@ -1,0 +1,14 @@
+id: bootstrap_summary
+title: Create First Change Summary
+
+description:
+  No prior changes.yml exists. This is the initial onboarding summary.
+  Establish a baseline by sampling recent history.
+
+steps:
+  - Read schemas/changes.yml for the output structure.
+  - "Use git to survey recent activity: `git log --oneline -20 --format='%H %ai %s'`
+    and `git diff --stat HEAD~20..HEAD -- . ':(exclude).jules' ':(exclude).jlo'`."
+  - Identify exactly 5 themes across the sampled commits.
+  - "For each theme: title (concise label), scope (affected paths/subsystem), impact (what changed and downstream effect)."
+  - "Write .jules/exchange/changes.yml with created_at set to the current UTC time."

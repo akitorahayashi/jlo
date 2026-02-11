@@ -70,7 +70,7 @@ pub fn determine_range_strategy(
 fn extract_created_at(content: &str) -> Result<String, AppError> {
     let data =
         serde_yaml::from_str::<serde_yaml::Value>(content).map_err(|err| AppError::ParseError {
-            what: ".jules/changes/latest.yml".to_string(),
+            what: ".jules/exchange/changes.yml".to_string(),
             details: err.to_string(),
         })?;
 
@@ -78,7 +78,7 @@ fn extract_created_at(content: &str) -> Result<String, AppError> {
         data.get("created_at").and_then(|val| val.as_str()).filter(|s| !s.is_empty()).ok_or_else(
             || {
                 AppError::Validation(
-                    "latest.yml must contain non-empty created_at for incremental narrator runs"
+                    "changes.yml must contain non-empty created_at for incremental narrator runs"
                         .to_string(),
                 )
             },
@@ -86,7 +86,7 @@ fn extract_created_at(content: &str) -> Result<String, AppError> {
 
     DateTime::parse_from_rfc3339(created_at).map_err(|err| {
         AppError::Validation(format!(
-            "latest.yml created_at must be RFC3339: {} ({})",
+            "changes.yml created_at must be RFC3339: {} ({})",
             created_at, err
         ))
     })?;

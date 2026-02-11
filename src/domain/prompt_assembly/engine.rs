@@ -1,6 +1,6 @@
 //! Domain model for prompt assembly configuration.
 //!
-//! Prompt assembly is asset-driven: each layer has a `prompt_assembly.j2` template
+//! Prompt assembly is asset-driven: each layer has a `<layer>_prompt.j2` template
 //! that renders the final prompt using safe include helpers.
 
 use std::collections::HashMap;
@@ -65,10 +65,10 @@ pub struct AssembledPrompt {
 /// Error during prompt assembly.
 #[derive(Debug, Clone)]
 pub enum PromptAssemblyError {
-    /// The prompt_assembly.j2 file was not found.
+    /// The prompt template file was not found.
     AssemblyTemplateNotFound(String),
 
-    /// Failed to read the prompt_assembly.j2 file.
+    /// Failed to read the prompt template file.
     TemplateReadError { path: String, reason: String },
 
     /// A required include file was not found.
@@ -137,8 +137,8 @@ where
     let layer_dir = jules::layer_dir(jules_path, layer);
     let root = jules_path.parent().unwrap_or(Path::new("."));
 
-    // Load prompt_assembly.j2
-    let assembly_path = jules::prompt_assembly(jules_path, layer);
+    // Load prompt template
+    let assembly_path = jules::prompt_template(jules_path, layer);
     if !loader.asset_exists(&assembly_path) {
         return Err(PromptAssemblyError::AssemblyTemplateNotFound(
             assembly_path.display().to_string(),
@@ -429,7 +429,7 @@ mod tests {
 
         // Setup mock files for Planners layer
         mock_loader.add_file(
-                        ".jules/roles/planners/prompt_assembly.j2",
+                        ".jules/roles/planners/planner_prompt.j2",
                         r#"{{ section("Contracts", include_required(".jules/roles/planners/contracts.yml")) }}"#,
         );
         mock_loader
@@ -450,15 +450,15 @@ mod tests {
         let jules_path = Path::new(".jules");
 
         mock_loader.add_file(
-            ".jules/roles/observers/prompt_assembly.j2",
-            r#"{{ section("Optional", include_optional(".jules/changes/latest.yml")) }}"#,
+            ".jules/roles/observers/observers_prompt.j2",
+            r#"{{ section("Optional", include_optional(".jules/exchange/changes.yml")) }}"#,
         );
 
         let ctx = PromptContext::new().with_var("role", "qa");
         let result = assemble_prompt(jules_path, Layer::Observers, &ctx, &mock_loader).unwrap();
 
         assert!(!result.content.contains("# Optional"));
-        assert!(result.skipped_files.iter().any(|entry| entry.contains("latest.yml")));
+        assert!(result.skipped_files.iter().any(|entry| entry.contains("changes.yml")));
     }
 
     #[test]
@@ -467,7 +467,7 @@ mod tests {
         let jules_path = Path::new(".jules");
 
         mock_loader.add_file(
-            ".jules/roles/planners/prompt_assembly.j2",
+            ".jules/roles/planners/planner_prompt.j2",
             r#"{{ section("Missing", include_required(".jules/roles/planners/contracts.yml")) }}"#,
         );
 
@@ -483,7 +483,7 @@ mod tests {
         let jules_path = Path::new(".jules");
 
         mock_loader.add_file(
-            ".jules/roles/observers/prompt_assembly.j2",
+            ".jules/roles/observers/observers_prompt.j2",
             r#"{{ section("Perspective", include_required(".jules/workstations/taxonomy/perspective.yml")) }}"#,
         );
         mock_loader

@@ -46,7 +46,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
     ensure_directory_exists(jules::roles_dir(inputs.jules_path), diagnostics);
     ensure_directory_exists(jlo::roles_dir(inputs.root), diagnostics);
     ensure_file_exists(&jlo::schedule(inputs.root), diagnostics);
-    ensure_directory_exists(jules::changes_dir(inputs.jules_path), diagnostics);
 
     check_version_file(inputs.jules_path, env!("CARGO_PKG_VERSION"), diagnostics);
 
@@ -58,48 +57,40 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         }
 
         // Phase-specific contracts for layers that use them; single contracts.yml for others
-        let phases: &[&str] = match layer {
-            Layer::Innovators => &["creation", "refinement"],
-            Layer::Narrators => &["bootstrap", "incremental"],
-            _ => &[],
-        };
-        if phases.is_empty() {
-            let contracts = jules::contracts(inputs.jules_path, layer);
-            if !contracts.exists() {
-                diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
-            }
-        } else {
-            for phase in phases {
-                let contract_file = jules::phase_contracts(inputs.jules_path, layer, phase);
-                if !contract_file.exists() {
-                    diagnostics.push_error(
-                        contract_file.display().to_string(),
-                        format!("Missing contracts_{}.yml", phase),
-                    );
-                }
-            }
+        let contracts = jules::contracts(inputs.jules_path, layer);
+        if !contracts.exists() {
+            diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
         }
 
-        // Check schemas/ directory (all layers have this)
+        // Check schemas/ directory (layers with output schemas)
         let schemas_dir = jules::schemas_dir(inputs.jules_path, layer);
-        if !schemas_dir.exists() {
+        let has_schemas = !matches!(layer, Layer::Implementers | Layer::Planners);
+        if has_schemas && !schemas_dir.exists() {
             diagnostics.push_error(schemas_dir.display().to_string(), "Missing schemas/");
         }
 
-        // Check prompt_assembly.j2 (all layers have this)
-        let prompt_assembly = jules::prompt_assembly(inputs.jules_path, layer);
-        if !prompt_assembly.exists() {
-            diagnostics
-                .push_error(prompt_assembly.display().to_string(), "Missing prompt_assembly.j2");
+        // Check tasks/ directory (all layers have this)
+        let tasks_dir = jules::tasks_dir(inputs.jules_path, layer);
+        if !tasks_dir.exists() {
+            diagnostics.push_error(tasks_dir.display().to_string(), "Missing tasks/");
+        }
+
+        // Check prompt template (all layers have one)
+        let prompt_template = jules::prompt_template(inputs.jules_path, layer);
+        if !prompt_template.exists() {
+            diagnostics.push_error(
+                prompt_template.display().to_string(),
+                format!("Missing {}", layer.prompt_template_name()),
+            );
         }
 
         if layer.is_single_role() {
-            // Narrator requires change.yml schema template
+            // Narrator requires changes.yml schema template
             if layer == Layer::Narrators {
                 let change_template = jules::narrator_change_schema(inputs.jules_path);
                 if !change_template.exists() {
                     diagnostics
-                        .push_error(change_template.display().to_string(), "Missing change.yml");
+                        .push_error(change_template.display().to_string(), "Missing changes.yml");
                 }
             }
         } else {
@@ -346,34 +337,23 @@ mod tests {
         temp.child(".jules/README.md").touch().unwrap();
         temp.child(".jlo/config.toml").touch().unwrap();
         temp.child(".jules/.jlo-version").write_str(env!("CARGO_PKG_VERSION")).unwrap();
-        temp.child(".jules/changes").create_dir_all().unwrap();
 
         // Layers
         for layer in Layer::ALL {
             // Runtime artifacts (contracts, schemas, prompts) in .jules/roles
             let jules_layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
             jules_layer_dir.create_dir_all().unwrap();
-            jules_layer_dir.child("schemas").create_dir_all().unwrap();
-            jules_layer_dir.child("prompt_assembly.j2").touch().unwrap();
-
-            // Phase-specific contracts for layers that use them
-            match layer {
-                Layer::Innovators => {
-                    jules_layer_dir.child("contracts_creation.yml").touch().unwrap();
-                    jules_layer_dir.child("contracts_refinement.yml").touch().unwrap();
-                }
-                Layer::Narrators => {
-                    jules_layer_dir.child("contracts_bootstrap.yml").touch().unwrap();
-                    jules_layer_dir.child("contracts_incremental.yml").touch().unwrap();
-                }
-                _ => {
-                    jules_layer_dir.child("contracts.yml").touch().unwrap();
-                }
+            if !matches!(layer, Layer::Implementers | Layer::Planners) {
+                jules_layer_dir.child("schemas").create_dir_all().unwrap();
             }
+            jules_layer_dir.child("tasks").create_dir_all().unwrap();
+            jules_layer_dir.child(layer.prompt_template_name()).touch().unwrap();
+
+            jules_layer_dir.child("contracts.yml").touch().unwrap();
 
             if layer.is_single_role() {
                 if layer == Layer::Narrators {
-                    jules_layer_dir.child("schemas/change.yml").touch().unwrap();
+                    jules_layer_dir.child("schemas/changes.yml").touch().unwrap();
                 }
             } else {
                 // Multi-role layers have role definitions in .jlo/roles

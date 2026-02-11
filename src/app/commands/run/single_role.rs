@@ -6,6 +6,7 @@ use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
 use crate::adapters::jules_client_http::HttpJulesClient;
+use crate::domain::prompt_assembly::implementer as implementer_asm;
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, GitHubPort, JulesClient, SessionRequest, WorkspaceStore};
@@ -189,7 +190,7 @@ fn execute_session<C: JulesClient, W: WorkspaceStore + Clone + Send + Sync + 'st
 ) -> Result<String, AppError> {
     println!("Executing {}...", layer.display_name());
 
-    let mut prompt = assemble_single_role_prompt(jules_path, layer, workspace)?;
+    let mut prompt = assemble_layer_prompt(jules_path, layer, issue_content, workspace)?;
 
     // Append issue content
     prompt.push_str("\n---\n# Issue Content\n");
@@ -212,6 +213,70 @@ fn execute_session<C: JulesClient, W: WorkspaceStore + Clone + Send + Sync + 'st
     Ok(response.session_id)
 }
 
+/// Assemble the prompt for a single-role layer, dispatching to the correct assembler.
+///
+/// Implementers use their label-specific assembler; planners use the generic
+/// single-role assembly.
+fn assemble_layer_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+    jules_path: &Path,
+    layer: Layer,
+    issue_content: &str,
+    workspace: &W,
+) -> Result<String, AppError> {
+    if layer == Layer::Implementers {
+        let label = extract_issue_label(issue_content)?;
+        let task_content = resolve_implementer_task(jules_path, &label, workspace)?;
+        let input = implementer_asm::ImplementerPromptInput { task: &task_content };
+        let assembled = implementer_asm::assemble(jules_path, &input, workspace)?;
+        return Ok(assembled.content);
+    }
+
+    assemble_single_role_prompt(jules_path, layer, workspace)
+}
+
+/// Extract the `label` field from issue YAML content.
+///
+/// Fails explicitly if the label is missing, empty, or unsafe — no silent fallback.
+fn extract_issue_label(issue_content: &str) -> Result<String, AppError> {
+    let value: serde_yaml::Value = serde_yaml::from_str(issue_content)
+        .map_err(|e| AppError::Validation(format!("Failed to parse issue YAML: {}", e)))?;
+
+    let label =
+        value.get("label").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).ok_or_else(|| {
+            AppError::Validation("Issue file must contain a non-empty 'label' field".to_string())
+        })?;
+
+    // Prevent path traversal via crafted label values
+    if !crate::domain::identifiers::validation::validate_safe_path_component(label) {
+        return Err(AppError::Validation(format!(
+            "Invalid label '{}': must be a safe path component",
+            label
+        )));
+    }
+
+    Ok(label.to_string())
+}
+
+/// Resolve the label-specific task file for implementers.
+///
+/// Maps label to `tasks/<label>.yml`. Fails if the task file does not exist.
+fn resolve_implementer_task<W: WorkspaceStore>(
+    jules_path: &Path,
+    label: &str,
+    workspace: &W,
+) -> Result<String, AppError> {
+    let task_path =
+        jules::tasks_dir(jules_path, Layer::Implementers).join(format!("{}.yml", label));
+
+    workspace.read_file(&task_path.to_string_lossy()).map_err(|_| {
+        AppError::Validation(format!(
+            "No task file for label '{}': expected {}",
+            label,
+            task_path.display()
+        ))
+    })
+}
+
 /// Execute a prompt preview for a single-role layer.
 fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
@@ -225,7 +290,7 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     println!("Starting branch: {}\n", starting_branch);
     println!("Issue content: {} chars\n", issue_content.len());
 
-    let prompt_path = jules::prompt_assembly(jules_path, layer);
+    let prompt_path = jules::prompt_template(jules_path, layer);
     let contracts_path = jules::contracts(jules_path, layer);
 
     println!("Prompt: {}", prompt_path.display());
@@ -233,7 +298,7 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         println!("Contracts: {}", contracts_path.display());
     }
 
-    if let Ok(mut prompt) = assemble_single_role_prompt(jules_path, layer, workspace) {
+    if let Ok(mut prompt) = assemble_layer_prompt(jules_path, layer, issue_content, workspace) {
         prompt.push_str("\n---\n# Issue Content\n");
         if layer == Layer::Planners {
             prompt.push_str(&format!("File: {}\n\n", issue_path.display()));
