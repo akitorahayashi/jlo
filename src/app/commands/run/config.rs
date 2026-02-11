@@ -4,6 +4,7 @@ use std::fs;
 use std::path::Path;
 
 use super::config_dto::RunConfigDto;
+use crate::domain::workspace::paths::jlo;
 use crate::domain::{AppError, RunConfig};
 
 /// Load and parse the run configuration.
@@ -11,7 +12,7 @@ pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
     // jules_path is typically .jules/
     // We need to look in .jlo/config.toml which is a sibling of .jules/
     let root = jules_path.parent().unwrap_or(Path::new("."));
-    let config_path = root.join(".jlo/config.toml");
+    let config_path = jlo::config(root);
 
     if !config_path.exists() {
         return Err(AppError::RunConfigMissing);

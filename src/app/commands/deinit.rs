@@ -5,7 +5,7 @@ use std::path::Path;
 use crate::adapters::assets::workflow_scaffold_assets::{
     WorkflowGenerateConfig, load_workflow_scaffold,
 };
-use crate::domain::workspace::workspace_layout::JLO_DIR;
+use crate::domain::workspace::paths::JLO_DIR;
 use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::GitPort;
 

@@ -2,12 +2,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::app::commands::run::parse_config_content;
+use crate::domain::workspace::paths::{self, jlo, jules};
 use crate::domain::{AppError, Layer, RunConfig};
 
 use super::diagnostics::Diagnostics;
 
 pub fn read_run_config(root: &Path, diagnostics: &mut Diagnostics) -> Result<RunConfig, AppError> {
-    let config_path = root.join(".jlo/config.toml");
+    let config_path = jlo::config(root);
     if !config_path.exists() {
         diagnostics.push_error(config_path.display().to_string(), "Missing .jlo/config.toml");
         return Ok(RunConfig::default());
@@ -38,21 +39,19 @@ pub struct StructuralInputs<'a> {
 }
 
 pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnostics) {
-    ensure_path_exists(inputs.root, ".jules/JULES.md", diagnostics);
-    ensure_path_exists(inputs.root, ".jules/README.md", diagnostics);
-    ensure_path_exists(inputs.root, ".jlo/config.toml", diagnostics);
-    ensure_path_exists(inputs.root, ".jules/.jlo-version", diagnostics);
-    ensure_directory_exists(inputs.jules_path.join("roles"), diagnostics);
-    ensure_directory_exists(inputs.root.join(".jlo/roles"), diagnostics);
-    // Root schedule file
-    ensure_path_exists(inputs.root, ".jlo/scheduled.toml", diagnostics);
-    // Narrator output directory
-    ensure_directory_exists(inputs.jules_path.join("changes"), diagnostics);
+    ensure_file_exists(&jules::readme(inputs.root), diagnostics);
+    ensure_file_exists(&jules::project_readme(inputs.root), diagnostics);
+    ensure_file_exists(&jlo::config(inputs.root), diagnostics);
+    ensure_file_exists(&jules::version_file(inputs.root), diagnostics);
+    ensure_directory_exists(jules::roles_dir(inputs.jules_path), diagnostics);
+    ensure_directory_exists(jlo::roles_dir(inputs.root), diagnostics);
+    ensure_file_exists(&jlo::schedule(inputs.root), diagnostics);
+    ensure_directory_exists(jules::changes_dir(inputs.jules_path), diagnostics);
 
     check_version_file(inputs.jules_path, env!("CARGO_PKG_VERSION"), diagnostics);
 
     for layer in Layer::ALL {
-        let layer_dir = inputs.jules_path.join("roles").join(layer.dir_name());
+        let layer_dir = jules::layer_dir(inputs.jules_path, layer);
         if !layer_dir.exists() {
             diagnostics.push_error(layer_dir.display().to_string(), "Missing layer directory");
             continue;
@@ -65,13 +64,13 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             _ => &[],
         };
         if phases.is_empty() {
-            let contracts = layer_dir.join("contracts.yml");
+            let contracts = jules::contracts(inputs.jules_path, layer);
             if !contracts.exists() {
                 diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
             }
         } else {
             for phase in phases {
-                let contract_file = layer_dir.join(format!("contracts_{}.yml", phase));
+                let contract_file = jules::phase_contracts(inputs.jules_path, layer, phase);
                 if !contract_file.exists() {
                     diagnostics.push_error(
                         contract_file.display().to_string(),
@@ -82,13 +81,13 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         }
 
         // Check schemas/ directory (all layers have this)
-        let schemas_dir = layer_dir.join("schemas");
+        let schemas_dir = jules::schemas_dir(inputs.jules_path, layer);
         if !schemas_dir.exists() {
             diagnostics.push_error(schemas_dir.display().to_string(), "Missing schemas/");
         }
 
         // Check prompt_assembly.j2 (all layers have this)
-        let prompt_assembly = layer_dir.join("prompt_assembly.j2");
+        let prompt_assembly = jules::prompt_assembly(inputs.jules_path, layer);
         if !prompt_assembly.exists() {
             diagnostics
                 .push_error(prompt_assembly.display().to_string(), "Missing prompt_assembly.j2");
@@ -97,7 +96,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         if layer.is_single_role() {
             // Narrator requires change.yml schema template
             if layer == Layer::Narrators {
-                let change_template = layer_dir.join("schemas").join("change.yml");
+                let change_template = jules::narrator_change_schema(inputs.jules_path);
                 if !change_template.exists() {
                     diagnostics
                         .push_error(change_template.display().to_string(), "Missing change.yml");
@@ -108,7 +107,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             // The .jules/ structure for multi-role layers (roles/ container) might technically exist from scaffold
             // but the actual role definitions are in .jlo/.
             // structure_checks needs to verify that for every role in .jlo/, it exists.
-            let jlo_layer_dir = inputs.root.join(".jlo/roles").join(layer.dir_name());
+            let jlo_layer_dir = jlo::layer_dir(inputs.root, layer);
 
             if !jlo_layer_dir.exists() {
                 diagnostics.push_error(
@@ -128,33 +127,27 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
 
     // Flat exchange directory structure
     {
-        let exchange_dir = inputs.jules_path.join("exchange");
-        ensure_directory_exists(exchange_dir.clone(), diagnostics);
+        ensure_directory_exists(jules::exchange_dir(inputs.jules_path), diagnostics);
 
-        let events_dir = exchange_dir.join("events");
-        ensure_directory_exists(events_dir.clone(), diagnostics);
+        ensure_directory_exists(jules::events_dir(inputs.jules_path), diagnostics);
         for state in inputs.event_states {
-            ensure_directory_exists(events_dir.join(state), diagnostics);
+            ensure_directory_exists(jules::events_state_dir(inputs.jules_path, state), diagnostics);
         }
 
-        let issues_dir = exchange_dir.join("issues");
-        ensure_directory_exists(issues_dir.clone(), diagnostics);
+        ensure_directory_exists(jules::issues_dir(inputs.jules_path), diagnostics);
         for label in inputs.issue_labels {
-            ensure_directory_exists(issues_dir.join(label), diagnostics);
+            ensure_directory_exists(jules::issues_label_dir(inputs.jules_path, label), diagnostics);
         }
 
-        // Workstations directory
-        let workstations_dir = inputs.jules_path.join("workstations");
-        ensure_directory_exists(workstations_dir, diagnostics);
+        ensure_directory_exists(jules::workstations_dir(inputs.jules_path), diagnostics);
 
-        // Innovator rooms directory
-        let innovators_dir = exchange_dir.join("innovators");
+        let innovators_dir = jules::innovators_dir(inputs.jules_path);
         ensure_directory_exists(innovators_dir.clone(), diagnostics);
 
-        // Validate each innovator room structure
         if innovators_dir.exists() {
             for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
-                let comments_dir = persona_dir.join("comments");
+                let persona = persona_dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                let comments_dir = jules::innovator_comments_dir(inputs.jules_path, persona);
                 if !comments_dir.exists() {
                     diagnostics.push_error(
                         comments_dir.display().to_string(),
@@ -167,7 +160,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
 }
 
 fn check_version_file(jules_path: &Path, current_version: &str, diagnostics: &mut Diagnostics) {
-    let version_path = jules_path.join(".jlo-version");
+    let version_path = jules_path.join(paths::VERSION_FILE);
     if !version_path.exists() {
         return;
     }
@@ -230,10 +223,9 @@ fn ensure_directory_exists(path: PathBuf, diagnostics: &mut Diagnostics) {
     }
 }
 
-fn ensure_path_exists(root: &Path, rel_path: &str, diagnostics: &mut Diagnostics) {
-    let full_path = root.join(rel_path);
-    if !full_path.exists() {
-        diagnostics.push_error(full_path.display().to_string(), "Missing required file");
+fn ensure_file_exists(path: &Path, diagnostics: &mut Diagnostics) {
+    if !path.exists() {
+        diagnostics.push_error(path.display().to_string(), "Missing required file");
     }
 }
 

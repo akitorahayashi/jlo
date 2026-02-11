@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 use crate::app::commands::run::RunOptions;
 use crate::app::commands::run::config::load_config;
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig};
 use crate::ports::WorkspaceStore;
 
@@ -46,11 +47,13 @@ fn load_branch_prefix_for_layer<W: WorkspaceStore>(
     layer: Layer,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let layer_dir = jules_path.join("roles").join(layer.dir_name());
     let contract_paths = if layer == Layer::Innovators {
-        vec![layer_dir.join("contracts_creation.yml"), layer_dir.join("contracts_refinement.yml")]
+        vec![
+            jules::phase_contracts(jules_path, layer, "creation"),
+            jules::phase_contracts(jules_path, layer, "refinement"),
+        ]
     } else {
-        vec![layer_dir.join("contracts.yml")]
+        vec![jules::contracts(jules_path, layer)]
     };
 
     let mut prefixes = Vec::new();
@@ -123,7 +126,7 @@ pub fn load_mock_config<W: WorkspaceStore>(
     }
 
     // Load issue labels from github-labels.json
-    let labels_path = jules_path.join("github-labels.json");
+    let labels_path = jules::github_labels(jules_path);
     let labels_path_str = labels_path
         .to_str()
         .ok_or_else(|| AppError::Validation("Invalid labels path".to_string()))?;

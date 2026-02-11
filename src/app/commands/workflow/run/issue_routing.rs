@@ -1,3 +1,4 @@
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, IssueHeader, Layer};
 use crate::ports::WorkspaceStore;
 use std::path::{Path, PathBuf};
@@ -13,7 +14,7 @@ pub(crate) fn find_issues(
     }
 
     let jules_path = store.jules_path();
-    let issues_root = jules_path.join("exchange").join("issues");
+    let issues_root = jules::issues_dir(&jules_path);
 
     if !store.file_exists(issues_root.to_str().unwrap()) {
         return Ok(Vec::new());

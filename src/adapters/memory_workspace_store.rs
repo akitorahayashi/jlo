@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, JLO_DIR, JULES_DIR, PromptAssetLoader, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
@@ -88,12 +89,8 @@ impl WorkspaceStore for MemoryWorkspaceStore {
     }
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        let path = self
-            .jules_path()
-            .join("roles")
-            .join(role.layer.dir_name())
-            .join("roles")
-            .join(role.id.as_str());
+        let path =
+            jules::layer_roles_container(&self.jules_path(), role.layer).join(role.id.as_str());
         Some(path)
     }
 

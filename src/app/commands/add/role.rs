@@ -1,6 +1,7 @@
 //! Add a builtin role under `.jlo/roles/<layer>/<name>/`.
 
 use crate::app::AppContext;
+use crate::domain::workspace::paths::jlo;
 use crate::domain::{AppError, Layer, RoleId};
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
 
@@ -46,8 +47,7 @@ where
             ))
         })?;
 
-    let role_dir =
-        ctx.workspace().jlo_path().join("roles").join(layer_enum.dir_name()).join(role_id.as_str());
+    let role_dir = jlo::role_dir(&ctx.workspace().resolve_path(""), layer_enum, role_id.as_str());
 
     if role_dir.exists() {
         return Err(AppError::RoleExists {

@@ -13,6 +13,8 @@ pub mod single_role;
 use std::path::Path;
 use std::path::PathBuf;
 
+use crate::domain::identifiers::validation::validate_safe_path_component;
+use crate::domain::workspace::paths::{jlo, jules};
 use crate::domain::{AppError, Layer, RoleId};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
@@ -67,6 +69,16 @@ where
     // Handle mock mode
     if options.mock {
         return mock::execute(jules_path, &options, git, github, workspace);
+    }
+
+    // Validate phase if provided (prevents path traversal)
+    if let Some(ref phase) = options.phase
+        && !validate_safe_path_component(phase)
+    {
+        return Err(AppError::Validation(format!(
+            "Invalid phase '{}': must be a safe path component (e.g. 'creation', 'refinement')",
+            phase,
+        )));
     }
 
     // Narrator is single-role but not issue-driven
@@ -213,8 +225,7 @@ fn execute_multi_role_run<W: WorkspaceStore + Clone + Send + Sync + 'static>(
 /// Validate that a role exists in the layer's roles directory.
 fn validate_role_exists(jules_path: &Path, layer: Layer, role: &str) -> Result<(), AppError> {
     let root = jules_path.parent().unwrap_or(Path::new("."));
-    let role_dir = root.join(".jlo").join("roles").join(layer.dir_name()).join(role);
-    let role_yml_path = role_dir.join("role.yml");
+    let role_yml_path = jlo::role_yml(root, layer, role);
 
     if !role_yml_path.exists() {
         return Err(AppError::RoleNotFound(format!(
@@ -274,8 +285,7 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader + Clone + Send + S
     println!("Role: {}\n", role);
 
     let root = jules_path.parent().unwrap_or(Path::new("."));
-    let role_dir = root.join(".jlo").join("roles").join(layer.dir_name()).join(role.as_str());
-    let role_yml_path = role_dir.join("role.yml");
+    let role_yml_path = jlo::role_yml(root, layer, role.as_str());
 
     if !role_yml_path.exists() {
         println!("  ⚠️  role.yml not found at {}\n", role_yml_path.display());
@@ -284,17 +294,13 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader + Clone + Send + S
 
     if layer == Layer::Innovators {
         if let Some(p) = phase {
-            let contracts_path = jules_path
-                .join("roles")
-                .join(layer.dir_name())
-                .join(format!("contracts_{}.yml", p));
+            let contracts_path = jules::phase_contracts(jules_path, layer, p);
             if contracts_path.exists() {
                 println!("  Contracts: {}", contracts_path.display());
             }
         }
     } else {
-        // contracts.yml is a runtime artifact in .jules/
-        let contracts_path = jules_path.join("roles").join(layer.dir_name()).join("contracts.yml");
+        let contracts_path = jules::contracts(jules_path, layer);
         if contracts_path.exists() {
             println!("  Contracts: {}", contracts_path.display());
         }

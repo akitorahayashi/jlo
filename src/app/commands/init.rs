@@ -8,9 +8,8 @@ use crate::adapters::assets::workflow_scaffold_assets::{
     WorkflowGenerateConfig, load_workflow_scaffold,
 };
 use crate::app::AppContext;
-use crate::domain::workspace::manifest::{
-    MANIFEST_FILENAME, hash_content, is_control_plane_entity_file,
-};
+use crate::domain::workspace::manifest::{hash_content, is_control_plane_entity_file};
+use crate::domain::workspace::paths::jlo;
 use crate::domain::workspace::{JLO_DIR, VERSION_FILE};
 use crate::domain::{AppError, Layer, ScaffoldManifest, Schedule, WorkflowRunnerMode};
 use crate::ports::ScaffoldFile;
@@ -66,7 +65,7 @@ where
     }
     let managed_manifest = ScaffoldManifest::from_map(map);
     let manifest_content = managed_manifest.to_yaml()?;
-    let manifest_path = format!("{}/{}", JLO_DIR, MANIFEST_FILENAME);
+    let manifest_path = jlo::manifest_relative();
     ctx.workspace().write_file(&manifest_path, &manifest_content)?;
 
     // Install workflow scaffold

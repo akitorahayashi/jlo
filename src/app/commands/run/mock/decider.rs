@@ -4,6 +4,7 @@ use chrono::Utc;
 
 use crate::app::commands::run::RunOptions;
 use crate::app::commands::run::mock::identity::generate_mock_id;
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
@@ -31,12 +32,10 @@ where
     git.checkout_branch(&format!("origin/{}", config.jules_branch), false)?;
     git.checkout_branch(&branch_name, true)?;
 
-    let exchange_dir = jules_path.join("exchange");
-
     // Find and process pending events
-    let pending_dir = exchange_dir.join("events").join("pending");
-    let decided_dir = exchange_dir.join("events").join("decided");
-    let issues_dir = exchange_dir.join("issues");
+    let pending_dir = jules::events_pending_dir(jules_path);
+    let decided_dir = jules::events_decided_dir(jules_path);
+    let issues_dir = jules::issues_dir(jules_path);
 
     // Ensure directories exist
     std::fs::create_dir_all(&decided_dir)?;
@@ -46,7 +45,7 @@ where
     let label = config.issue_labels.first().cloned().ok_or_else(|| {
         AppError::Validation("No issue labels available for mock decider".to_string())
     })?;
-    let label_dir = issues_dir.join(&label);
+    let label_dir = jules::issues_label_dir(jules_path, &label);
     std::fs::create_dir_all(&label_dir)?;
 
     let mock_issue_template = super::MOCK_ASSETS

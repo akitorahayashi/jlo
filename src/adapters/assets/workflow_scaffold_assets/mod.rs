@@ -14,7 +14,7 @@ use self::asset_collect::{AssetSourceFile, collect_asset_sources};
 use self::render_plan::should_render_asset;
 use self::template_engine::{build_template_environment, render_template_by_name};
 
-static WORKFLOWS_ASSET_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/workflows/.github");
+static WORKFLOWS_ASSET_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/github");
 
 /// Workflow generate configuration for template expansion.
 ///

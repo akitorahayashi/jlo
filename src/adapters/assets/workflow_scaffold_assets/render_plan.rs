@@ -1,11 +1,19 @@
+use std::path::Path;
+
 use super::asset_collect::AssetSourceFile;
 
 pub fn should_render_asset(source: &AssetSourceFile) -> bool {
+    // Exclude internal documentation from deployed scaffold
+    let path = source.relative_path();
+    if Path::new(path).file_name() == Some(std::ffi::OsStr::new("AGENTS.md")) {
+        return false;
+    }
+
     if !source.is_template() {
         return true;
     }
 
-    !is_partial_template(source.relative_path())
+    !is_partial_template(path)
 }
 
 fn is_partial_template(path: &str) -> bool {

@@ -16,7 +16,7 @@
 All scaffold files, workflow kits, configurations, and prompts must exist as real files within `src/assets/`.
 **Never** embed file contents (like `DEFAULT_CONFIG_TOML`, `tools.yml`, or default `.gitignore`) as string constants in Rust source code.
 - **Why**: Keeps the scaffold structure visible and maintainable without digging into implementation details.
-- **How**: Use `include_dir!` to load `src/assets/scaffold` and `src/assets/workflows` as authoritative sources of truth.
+- **How**: Use `include_dir!` to load `src/assets/scaffold` and `src/assets/github` as authoritative sources of truth.
 
 ### 2. Prompt Hierarchy (No Duplication)
 Prompts are constructed by `prompt_assembly.j2`, which renders prompt sections via explicit include helpers.

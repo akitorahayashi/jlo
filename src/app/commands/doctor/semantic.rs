@@ -5,6 +5,7 @@ use chrono::{NaiveDate, Utc};
 
 use crate::adapters::schedule_filesystem::load_schedule;
 use crate::domain::configuration::schedule::ScheduleLayer;
+use crate::domain::workspace::paths::{jlo, jules};
 use crate::domain::{AppError, Layer};
 
 use super::diagnostics::Diagnostics;
@@ -27,8 +28,7 @@ pub fn semantic_context(
 ) -> SemanticContext {
     let mut context = SemanticContext::default();
 
-    let exchange_dir = jules_path.join("exchange");
-    let decided_dir = exchange_dir.join("events/decided");
+    let decided_dir = jules::events_decided_dir(jules_path);
     for entry in read_yaml_files(&decided_dir, diagnostics) {
         if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
             context.decided_events.insert(id.clone(), entry.clone());
@@ -40,7 +40,7 @@ pub fn semantic_context(
         }
     }
 
-    let issues_dir = exchange_dir.join("issues");
+    let issues_dir = jules::issues_dir(jules_path);
     for label in issue_labels {
         for entry in read_yaml_files(&issues_dir.join(label), diagnostics) {
             if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
@@ -100,11 +100,10 @@ pub fn semantic_checks(
             return;
         }
     };
-    let roles_dir = root.join(".jlo").join("roles");
     let mut existing_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
     // Only validate multi-role layers that are scheduled (Observers, Innovators)
     for layer in [Layer::Observers, Layer::Innovators] {
-        let layer_dir = roles_dir.join(layer.dir_name());
+        let layer_dir = jlo::layer_dir(root, layer);
         if layer_dir.exists() {
             let mut role_set = HashSet::new();
             match std::fs::read_dir(&layer_dir) {

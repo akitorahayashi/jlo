@@ -5,6 +5,7 @@ use serde_yaml::{Mapping, Value};
 use crate::adapters::schedule_filesystem::{list_subdirectories, load_schedule};
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
+use crate::domain::workspace::paths::jules;
 use crate::ports::WorkspaceStore;
 
 use super::model::{
@@ -31,7 +32,7 @@ pub(super) fn inspect_at(
     store: &impl WorkspaceStore,
 ) -> Result<WorkflowExchangeInspectOutput, AppError> {
     let jules_path = store.jules_path();
-    let exchange_dir = jules_path.join("exchange");
+    let exchange_dir = jules::exchange_dir(&jules_path);
     if !store.file_exists(exchange_dir.to_str().unwrap()) {
         return Err(AppError::WorkspaceNotFound);
     }

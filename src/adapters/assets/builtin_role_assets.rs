@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::domain::{AppError, BuiltinRoleEntry, Layer, RoleId};
 
-static BUILTIN_ROLES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/builtin_roles");
+static BUILTIN_ROLES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/roles");
 
 #[derive(Debug, Deserialize)]
 struct RoleYaml {

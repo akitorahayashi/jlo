@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::domain::workspace::paths::{jlo, jules};
 use crate::domain::{AppError, JLO_DIR, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
@@ -76,7 +77,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
 
         // Create layer directories
         for layer in Layer::ALL {
-            let layer_dir = self.jules_path().join("roles").join(layer.dir_name());
+            let layer_dir = jules::layer_dir(&self.jules_path(), layer);
             fs::create_dir_all(&layer_dir)?;
         }
 
@@ -105,7 +106,7 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
                 continue;
             }
             // Convention: .jlo/roles/<layer>/<role>/ (see also role_path)
-            let layer_dir = self.jlo_path().join("roles").join(layer.dir_name());
+            let layer_dir = jlo::layer_dir(&self.root, layer);
             if !layer_dir.exists() {
                 continue;
             }
@@ -160,13 +161,8 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
     }
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        // Convention: .jlo/roles/<layer>/roles/<id> (see also discover_roles)
-        let path = self
-            .jlo_path()
-            .join("roles")
-            .join(role.layer.dir_name())
-            .join("roles")
-            .join(role.id.as_str());
+        // Convention: .jlo/roles/<layer>/<id> (see also discover_roles)
+        let path = jlo::role_dir(&self.root, role.layer, role.id.as_str());
         if path.exists() { Some(path) } else { None }
     }
 

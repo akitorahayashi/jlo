@@ -11,6 +11,7 @@ use super::config::{detect_repository_source, load_config};
 use super::narrator_logic::{RangeContext, determine_range_strategy};
 use super::prompt::assemble_single_role_prompt_with_context;
 use crate::adapters::jules_client_http::HttpJulesClient;
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, PromptContext};
 use crate::ports::{AutomationMode, GitPort, JulesClient, SessionRequest, WorkspaceStore};
 
@@ -184,8 +185,7 @@ fn get_commit_before_timestamp<G: GitPort>(
 }
 
 fn latest_summary_path(jules_path: &Path) -> Result<String, AppError> {
-    jules_path
-        .join("changes/latest.yml")
+    jules::changes_latest(jules_path)
         .to_str()
         .map(|s| s.to_string())
         .ok_or_else(|| AppError::Validation("Jules path contains invalid unicode".to_string()))
