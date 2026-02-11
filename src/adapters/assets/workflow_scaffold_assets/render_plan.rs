@@ -1,9 +1,11 @@
+use std::path::Path;
+
 use super::asset_collect::AssetSourceFile;
 
 pub fn should_render_asset(source: &AssetSourceFile) -> bool {
     // Exclude internal documentation from deployed scaffold
     let path = source.relative_path();
-    if path == "AGENTS.md" || path.ends_with("/AGENTS.md") || path.ends_with("\\AGENTS.md") {
+    if Path::new(path).file_name() == Some(std::ffi::OsStr::new("AGENTS.md")) {
         return false;
     }
 

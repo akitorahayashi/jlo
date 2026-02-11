@@ -13,6 +13,7 @@ pub mod single_role;
 use std::path::Path;
 use std::path::PathBuf;
 
+use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::workspace::paths::{jlo, jules};
 use crate::domain::{AppError, Layer, RoleId};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
@@ -68,6 +69,16 @@ where
     // Handle mock mode
     if options.mock {
         return mock::execute(jules_path, &options, git, github, workspace);
+    }
+
+    // Validate phase if provided (prevents path traversal)
+    if let Some(ref phase) = options.phase
+        && !validate_safe_path_component(phase)
+    {
+        return Err(AppError::Validation(format!(
+            "Invalid phase '{}': must be a safe path component (e.g. 'creation', 'refinement')",
+            phase,
+        )));
     }
 
     // Narrator is single-role but not issue-driven

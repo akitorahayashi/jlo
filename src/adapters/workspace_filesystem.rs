@@ -161,8 +161,8 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
     }
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        // Convention: .jlo/roles/<layer>/roles/<id> (see also discover_roles)
-        let path = jlo::layer_dir(&self.root, role.layer).join("roles").join(role.id.as_str());
+        // Convention: .jlo/roles/<layer>/<id> (see also discover_roles)
+        let path = jlo::role_dir(&self.root, role.layer, role.id.as_str());
         if path.exists() { Some(path) } else { None }
     }
 

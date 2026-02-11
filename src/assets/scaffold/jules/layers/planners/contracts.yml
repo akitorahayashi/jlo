@@ -9,7 +9,7 @@ inputs:
   - ".jules/exchange/issues/<label>/<issue>.yml (where requires_deep_analysis: true)"
 
 outputs:
-  - .jules/exchange/issues/<label>/<issue>.yml (expanded in-place, requires_deep_analysis set to false)
+  - ".jules/exchange/issues/<label>/<issue>.yml (expanded in-place, requires_deep_analysis set to false)"
 
 workflow:
   - 1. Read the target issue and its deep_analysis_reason

@@ -82,9 +82,8 @@ fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
                 if let Some(content) = file.contents_utf8() {
                     let raw_path = file.path().to_string_lossy().to_string();
                     // Don't include the internal documentation in the deployed scaffold
-                    if raw_path != INTERNAL_DOC_FILE
-                        && !raw_path.ends_with("/AGENTS.md")
-                        && !raw_path.ends_with("\\AGENTS.md")
+                    if std::path::Path::new(&raw_path).file_name()
+                        != Some(std::ffi::OsStr::new(INTERNAL_DOC_FILE))
                     {
                         let path = map_scaffold_path(&raw_path);
                         files.push(ScaffoldFile { path, content: content.to_string() });
