@@ -1,17 +1,11 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
+use crate::domain::AppError;
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer};
-use crate::ports::{GitHubPort, WorkspaceStore};
-
-use super::RunResult;
-
-const PLANNER_WORKFLOW_NAME: &str = "jules-run-planner.yml";
-const IMPLEMENTER_WORKFLOW_NAME: &str = "jules-run-implementer.yml";
+use crate::ports::WorkspaceStore;
 
 pub(crate) struct IssuePathInfo {
     pub(crate) issue_path_str: String,
-    pub(crate) canonical_path: PathBuf,
 }
 
 pub(crate) fn validate_issue_path<W: WorkspaceStore>(
@@ -45,48 +39,5 @@ pub(crate) fn validate_issue_path<W: WorkspaceStore>(
         )));
     }
 
-    Ok(IssuePathInfo { issue_path_str: path_str.to_string(), canonical_path })
-}
-
-pub(crate) fn execute_local_dispatch<H, W>(
-    canonical_path: &Path,
-    layer: Layer,
-    prompt_preview: bool,
-    github: &H,
-    workspace: &W,
-) -> Result<RunResult, AppError>
-where
-    H: GitHubPort,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
-{
-    let workflow_name = match layer {
-        Layer::Planner => PLANNER_WORKFLOW_NAME,
-        Layer::Implementer => IMPLEMENTER_WORKFLOW_NAME,
-        _ => unreachable!("Issue-driven check already done"),
-    };
-
-    if prompt_preview {
-        println!("=== Prompt Preview: Local Dispatch ===");
-        println!("Would dispatch workflow '{}' for: {}", workflow_name, canonical_path.display());
-        return Ok(RunResult { roles: vec![], prompt_preview: true, sessions: vec![] });
-    }
-
-    println!(
-        "Dispatching {} workflow for: {}",
-        layer.display_name().to_lowercase(),
-        canonical_path.display()
-    );
-
-    let root = workspace.resolve_path("");
-    let canonical_root = workspace.canonicalize("").unwrap_or(root);
-    let relative_path = canonical_path.strip_prefix(&canonical_root).unwrap_or(canonical_path);
-
-    let inputs = &[("issue_file", relative_path.to_str().unwrap_or(""))];
-
-    github.dispatch_workflow(workflow_name, inputs)?;
-
-    println!("✅ Workflow dispatched successfully.");
-
-    let role_name = format!("{}-dispatch", layer.dir_name());
-    Ok(RunResult { roles: vec![role_name], prompt_preview: false, sessions: vec![] })
+    Ok(IssuePathInfo { issue_path_str: path_str.to_string() })
 }

@@ -1,41 +1,28 @@
 use std::path::Path;
 
 use crate::adapters::jules_client_http::HttpJulesClient;
+use crate::app::commands::workflow::{WorkflowExchangeCleanIssueOptions, clean_issue};
 use crate::domain::prompt_assembly::implementer as implementer_asm;
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer};
-use crate::ports::{AutomationMode, GitHubPort, JulesClient, SessionRequest, WorkspaceStore};
+use crate::ports::{AutomationMode, JulesClient, SessionRequest, WorkspaceStore};
 
 use super::RunOptions;
 use super::RunResult;
 use super::config::{detect_repository_source, load_config};
-use super::issue_execution::{execute_local_dispatch, validate_issue_path};
+use super::issue_execution::validate_issue_path;
 
 /// Execute the implementer layer (single-role, issue-driven).
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn execute<H, W>(
+pub(crate) fn execute<W>(
     jules_path: &Path,
     options: &RunOptions,
     issue_path: &Path,
-    is_ci: bool,
-    github: &H,
     workspace: &W,
 ) -> Result<RunResult, AppError>
 where
-    H: GitHubPort,
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     let issue_info = validate_issue_path(issue_path, workspace)?;
-
-    if !is_ci {
-        return execute_local_dispatch(
-            &issue_info.canonical_path,
-            Layer::Implementer,
-            options.prompt_preview,
-            github,
-            workspace,
-        );
-    }
 
     let issue_content = workspace.read_file(&issue_info.issue_path_str)?;
     let config = load_config(jules_path)?;
@@ -56,6 +43,14 @@ where
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
     let session_id =
         execute_session(jules_path, &starting_branch, &source, &client, &issue_content, workspace)?;
+
+    let cleanup_output = clean_issue(WorkflowExchangeCleanIssueOptions {
+        issue_file: issue_info.issue_path_str.clone(),
+    })?;
+    println!(
+        "✅ Cleaned issue and source events ({} file(s) removed)",
+        cleanup_output.deleted_paths.len()
+    );
 
     Ok(RunResult {
         roles: vec![Layer::Implementer.dir_name().to_string()],

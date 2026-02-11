@@ -239,7 +239,7 @@ Specifier agent (runs only for `requires_deep_analysis: true`):
 
 ### 4. Implementation (Via Local Issue)
 
-Implementation is invoked via workflow dispatch with a local issue file path. Scheduled workflows may also dispatch implementer based on repository policy.
+Implementation is invoked by running `jlo run implementer` with a local issue file path. Scheduled workflows may also dispatch implementer based on repository policy.
 
 ```bash
 # Example: Run implementer with a specific issue
@@ -251,8 +251,8 @@ The issue file must exist; missing files fail fast before agent execution.
 
 **Issue Lifecycle**:
 1. An issue file is selected from `.jules/exchange/issues/<label>/` on the `jules` branch.
-2. The workflow validates the file exists and passes content to the implementer.
-3. Issue file retention or deletion is handled by the dispatching workflow policy.
+2. `jlo run implementer` validates the file exists and passes content to the implementer.
+3. `jlo run implementer` deletes the issue file and its source events after dispatching the session.
 4. The implementer works on the default code branch and creates a PR for human review.
 5. The `sync-jules.yml` workflow keeps `jules` in sync with the default branch after merges.
 

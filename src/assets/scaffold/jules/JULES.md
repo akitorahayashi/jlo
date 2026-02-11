@@ -56,7 +56,7 @@ Narrator runs first, producing `.jules/exchange/changes.yml` for observer contex
 After decider output:
 - Issues with `requires_deep_analysis: false` are ready for implementation.
 - Issues with `requires_deep_analysis: true` trigger deep analysis by planner.
-- Implementer is invoked via workflow dispatch with a local issue file. Scheduled workflows may dispatch implementer according to repository policy.
+- Implementer is invoked via `jlo run implementer` with a local issue file. Scheduled workflows may dispatch implementer according to repository policy.
 
 ## Issue Identity and Deduplication
 

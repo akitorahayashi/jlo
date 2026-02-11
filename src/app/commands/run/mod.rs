@@ -97,9 +97,6 @@ where
         return decider::execute(jules_path, &options, workspace);
     }
 
-    // Check if we are in CI environment (for issue-driven and single-role layers)
-    let is_ci = std::env::var("GITHUB_ACTIONS").is_ok();
-
     // Issue-driven layers (Planner, Implementer) require an issue path
     if options.layer.is_issue_driven() {
         let issue_path = options.issue.as_deref().ok_or_else(|| {
@@ -108,12 +105,8 @@ where
             )
         })?;
         return match options.layer {
-            Layer::Planner => {
-                planner::execute(jules_path, &options, issue_path, is_ci, github, workspace)
-            }
-            Layer::Implementer => {
-                implementer::execute(jules_path, &options, issue_path, is_ci, github, workspace)
-            }
+            Layer::Planner => planner::execute(jules_path, &options, issue_path, workspace),
+            Layer::Implementer => implementer::execute(jules_path, &options, issue_path, workspace),
             _ => Err(AppError::Validation(format!(
                 "Unexpected issue-driven layer '{}'",
                 options.layer.dir_name()

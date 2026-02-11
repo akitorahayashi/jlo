@@ -294,7 +294,7 @@ fn init_workflows_no_scripts_references() {
     }
 
     // Verify composite actions do not reference .github/scripts
-    for action_dir in ["install-jlo", "configure-git", "run-implementer"] {
+    for action_dir in ["install-jlo", "configure-git"] {
         let action_path = root.join(format!(".github/actions/{}/action.yml", action_dir));
         if action_path.exists() {
             let content = fs::read_to_string(&action_path).unwrap();
@@ -349,7 +349,7 @@ fn init_workflows_enforces_explicit_branch_contract() {
         }
     }
 
-    for action_dir in ["install-jlo", "configure-git", "run-implementer"] {
+    for action_dir in ["install-jlo", "configure-git"] {
         let action_path = root.join(format!(".github/actions/{}/action.yml", action_dir));
         if action_path.exists() {
             let content = fs::read_to_string(&action_path).unwrap();
