@@ -20,7 +20,7 @@ workflow:
   - 5. Fill every field in schemas/change.yml and write .jules/changes/latest.yml
 
 constraints:
-  - Output must match schemas/change.yml exactly
-  - Exclude .jules/ and .jlo/ from all diffs and path lists
-  - summary.notable_changes: at most 5 theme-level bullets
-  - summary.truncation_note: non-empty when commits_total > commits_included
+  - "Output must match schemas/change.yml exactly"
+  - "Exclude .jules/ and .jlo/ from all diffs and path lists"
+  - "summary.notable_changes: at most 5 theme-level bullets"
+  - "summary.truncation_note: non-empty when commits_total > commits_included"

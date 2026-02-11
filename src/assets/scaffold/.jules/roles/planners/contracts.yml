@@ -6,7 +6,7 @@ purpose:
   dependency analysis, risks, and implementation specifics.
 
 inputs:
-  - .jules/exchange/issues/<label>/<issue>.yml (where requires_deep_analysis: true)
+  - ".jules/exchange/issues/<label>/<issue>.yml (where requires_deep_analysis: true)"
 
 outputs:
   - .jules/exchange/issues/<label>/<issue>.yml (expanded in-place, requires_deep_analysis set to false)

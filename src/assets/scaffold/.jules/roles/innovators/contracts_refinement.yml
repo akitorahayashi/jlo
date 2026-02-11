@@ -28,6 +28,6 @@ workflow:
   - 6. Delete idea.yml and all comments/*.yml
 
 constraints:
-  - Do not duplicate proposals already listed in perspective.yml recent_proposals
-  - Proposals must introduce boundary, behavior, or decision-quality changes — not local refactoring findings
-  - idea.yml and comments/*.yml must be deleted after proposal creation
+  - "Do not duplicate proposals already listed in perspective.yml recent_proposals"
+  - "Proposals must introduce boundary, behavior, or decision-quality changes — not local refactoring findings"
+  - "idea.yml and comments/*.yml must be deleted after proposal creation"
