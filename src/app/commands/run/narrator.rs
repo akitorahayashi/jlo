@@ -1,6 +1,6 @@
 //! Narrator layer execution (single-role, not issue-driven).
 //!
-//! The Narrator produces `.jules/changes/latest.yml` summarizing recent codebase changes.
+//! The Narrator produces `.jules/exchange/changes.yml` summarizing recent codebase changes.
 //! Prompt structure is fully declared in `prompt_assembly.j2`; this module only
 //! computes the PromptContext variables the template needs.
 
@@ -28,15 +28,15 @@ where
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     let config = load_config(jules_path)?;
-    let latest_path = latest_summary_path(jules_path)?;
-    let had_previous_latest = workspace.file_exists(&latest_path);
+    let changes_path = exchange_changes_path(jules_path)?;
+    let had_previous_changes = workspace.file_exists(&changes_path);
 
     // Determine starting branch (Narrator always uses jules branch)
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
 
     // Determine commit range
-    let range = determine_range(&latest_path, git, workspace)?;
+    let range = determine_range(&changes_path, git, workspace)?;
 
     // Check if there are any non-excluded changes in the range
     let pathspec = &[".", ":(exclude).jules"];
@@ -51,7 +51,7 @@ where
         });
     }
 
-    let prompt = assemble_narrator_prompt(jules_path, &range, workspace)?;
+    let prompt = assemble_narrator_prompt(jules_path, &range, git, workspace)?;
 
     if prompt_preview {
         println!("=== Prompt Preview: Narrator ===");
@@ -64,9 +64,9 @@ where
         });
     }
 
-    if had_previous_latest {
-        workspace.remove_file(&latest_path)?;
-        println!("Removed previous .jules/changes/latest.yml after reading created_at cursor.");
+    if had_previous_changes {
+        workspace.remove_file(&changes_path)?;
+        println!("Removed previous .jules/exchange/changes.yml after reading created_at cursor.");
     }
 
     // Create session
@@ -97,20 +97,59 @@ where
 }
 
 /// Assemble the narrator prompt via .j2 template with PromptContext variables.
-fn assemble_narrator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+fn assemble_narrator_prompt<G: GitPort, W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
     range: &RangeContext,
+    git: &G,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let prompt_context = PromptContext::new()
-        .with_var("run_mode", range.selection_mode.clone())
+    let run_mode = match range.selection_mode.as_str() {
+        "incremental" => "overwrite",
+        other => other,
+    };
+
+    let mut prompt_context = PromptContext::new()
+        .with_var("run_mode", run_mode)
         .with_var("range_description", build_range_description(range));
+
+    // For overwrite: provide the commit list since cursor so narrator has them in-context
+    if run_mode == "overwrite" {
+        let commits_text = fetch_commits_since_cursor(git, range)?;
+        prompt_context = prompt_context.with_var("commits_since_cursor", commits_text);
+    }
+
     assemble_single_role_prompt_with_context(
         jules_path,
         Layer::Narrators,
         &prompt_context,
         workspace,
     )
+}
+
+/// Fetch commit SHA + message lines since the cursor timestamp.
+fn fetch_commits_since_cursor<G: GitPort>(
+    git: &G,
+    range: &RangeContext,
+) -> Result<String, AppError> {
+    let since = range.changes_since.as_deref().unwrap_or("");
+    if since.is_empty() {
+        return Ok(String::new());
+    }
+    let after_arg = format!("--after={}", since);
+    let output = git.run_command(
+        &[
+            "log",
+            "--oneline",
+            &after_arg,
+            "--format=%H %ai %s",
+            "--",
+            ".",
+            ":(exclude).jules",
+            ":(exclude).jlo",
+        ],
+        None,
+    )?;
+    Ok(output.trim().to_string())
 }
 
 /// Build a human-readable description of the commit range for the model.
@@ -139,7 +178,7 @@ fn build_range_description(range: &RangeContext) -> String {
 
 /// Determine the commit range for the summary.
 fn determine_range<G, W>(
-    latest_path: &str,
+    changes_path: &str,
     git: &G,
     workspace: &W,
 ) -> Result<RangeContext, AppError>
@@ -148,15 +187,15 @@ where
     W: WorkspaceStore,
 {
     let head_sha = git.get_head_sha()?;
-    let latest_content = if workspace.file_exists(latest_path) {
-        Some(workspace.read_file(latest_path)?)
+    let changes_content = if workspace.file_exists(changes_path) {
+        Some(workspace.read_file(changes_path)?)
     } else {
         None
     };
 
     determine_range_strategy(
         &head_sha,
-        latest_content.as_deref(),
+        changes_content.as_deref(),
         |sha, n| git.get_nth_ancestor(sha, n),
         |sha, timestamp| {
             let commit = get_commit_before_timestamp(git, sha, timestamp)?;
@@ -184,8 +223,8 @@ fn get_commit_before_timestamp<G: GitPort>(
     if commit.is_empty() { Ok(None) } else { Ok(Some(commit.to_string())) }
 }
 
-fn latest_summary_path(jules_path: &Path) -> Result<String, AppError> {
-    jules::changes_latest(jules_path)
+fn exchange_changes_path(jules_path: &Path) -> Result<String, AppError> {
+    jules::exchange_changes(jules_path)
         .to_str()
         .map(|s| s.to_string())
         .ok_or_else(|| AppError::Validation("Jules path contains invalid unicode".to_string()))

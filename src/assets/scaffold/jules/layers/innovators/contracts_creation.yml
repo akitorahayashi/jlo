@@ -11,7 +11,7 @@ inputs:
   - Source code and repository files
   - .jlo/roles/innovators/<role>/role.yml (persona definition)
   - .jules/exchange/innovators/<persona>/perspective.yml (persona memory)
-  - .jules/changes/latest.yml (recent changes, if present)
+  - .jules/exchange/changes.yml (recent changes, if present)
   - .jules/roles/innovators/schemas/idea.yml (idea schema)
 
 outputs:

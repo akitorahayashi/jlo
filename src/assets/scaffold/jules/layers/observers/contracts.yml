@@ -10,7 +10,7 @@ inputs:
   - Source code and repository files
   - .jlo/roles/observers/<role>/role.yml (role definition)
   - .jules/workstations/<role>/perspective.yml (workstation memory)
-  - .jules/changes/latest.yml (recent changes, if present — advisory, does not restrict scope)
+  - .jules/exchange/changes.yml (recent changes, if present — advisory, does not restrict scope)
   - .jules/exchange/issues/**/*.yml (open issues, for deduplication)
   - .jules/exchange/events/<state>/*.yml (recent events, for deduplication)
   - .jules/roles/observers/schemas/event.yml (event schema)

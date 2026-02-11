@@ -117,19 +117,13 @@ impl TestContext {
         assert!(roles_path.join("implementers").exists(), "implementers layer should exist");
     }
 
-    /// Assert that the changes directory exists.
-    pub fn assert_changes_directory_exists(&self) {
-        let changes_path = self.jules_path().join("changes");
-        assert!(changes_path.exists(), "changes directory should exist");
-    }
-
     /// Assert that the narrator layer exists with correct structure.
     pub fn assert_narrator_exists(&self) {
         self.assert_single_role_layer_exists("narrator");
         let narrator_path = self.jules_path().join("roles").join("narrator");
         assert!(
-            narrator_path.join("schemas").join("change.yml").exists(),
-            "narrator schemas/change.yml should exist"
+            narrator_path.join("schemas").join("changes.yml").exists(),
+            "narrator schemas/changes.yml should exist"
         );
     }
 
@@ -178,12 +172,8 @@ impl TestContext {
     pub fn assert_contracts_exist(&self) {
         let roles_path = self.jules_path().join("roles");
         assert!(
-            roles_path.join("narrator/contracts_bootstrap.yml").exists(),
-            "narrator/contracts_bootstrap.yml should exist"
-        );
-        assert!(
-            roles_path.join("narrator/contracts_incremental.yml").exists(),
-            "narrator/contracts_incremental.yml should exist"
+            roles_path.join("narrator/contracts.yml").exists(),
+            "narrator/contracts.yml should exist"
         );
         assert!(
             roles_path.join("observers/contracts.yml").exists(),
@@ -234,22 +224,11 @@ impl TestContext {
         let layer_path = self.jules_path().join("roles").join(layer);
         assert!(layer_path.exists(), "Layer directory should exist at {}", layer_path.display());
 
-        if layer == "narrator" {
-            assert!(
-                layer_path.join("contracts_bootstrap.yml").exists(),
-                "contracts_bootstrap.yml should exist"
-            );
-            assert!(
-                layer_path.join("contracts_incremental.yml").exists(),
-                "contracts_incremental.yml should exist"
-            );
-        } else {
-            assert!(
-                layer_path.join("contracts.yml").exists(),
-                "Layer contracts.yml should exist at {}",
-                layer_path.join("contracts.yml").display()
-            );
-        }
+        assert!(
+            layer_path.join("contracts.yml").exists(),
+            "Layer contracts.yml should exist at {}",
+            layer_path.join("contracts.yml").display()
+        );
 
         assert!(
             layer_path.join("tasks").exists(),

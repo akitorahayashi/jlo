@@ -1,2 +1,6 @@
-{{ section("Layer Contracts", include_required(".jules/roles/narrator/contracts_" ~ run_mode ~ ".yml")) }}
+{{ section("Layer Contracts", include_required(".jules/roles/narrator/contracts.yml")) }}
+{{ section("Task", include_required(".jules/roles/narrator/tasks/" ~ run_mode ~ "_summary.yml")) }}
 {{ section("Target Range", range_description) }}
+{% if commits_since_cursor is defined and commits_since_cursor %}
+{{ section("Commits Since Cursor", commits_since_cursor) }}
+{% endif %}

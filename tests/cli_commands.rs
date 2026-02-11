@@ -749,11 +749,10 @@ fn verify_scaffold_integrity() {
         "config.toml should exist in .jlo/ (Control Plane)"
     );
 
-    // Verify changes directory
-    assert!(ctx.jules_path().join("changes/.gitkeep").exists(), "changes/.gitkeep should exist");
+    // Verify narrator output location is under exchange (no standalone changes/ directory)
     assert!(
-        !ctx.jules_path().join("changes/latest.yml").exists(),
-        "changes/latest.yml should NOT exist"
+        !ctx.jules_path().join("changes").exists(),
+        "legacy changes/ directory should not exist"
     );
 
     // Verify layers and prompt assemblies
@@ -777,15 +776,6 @@ fn verify_scaffold_integrity() {
                 layer_path.join("contracts_refinement.yml").exists(),
                 "contracts_refinement.yml should exist in innovators"
             );
-        } else if layer == "narrator" {
-            assert!(
-                layer_path.join("contracts_bootstrap.yml").exists(),
-                "contracts_bootstrap.yml should exist in narrator"
-            );
-            assert!(
-                layer_path.join("contracts_incremental.yml").exists(),
-                "contracts_incremental.yml should exist in narrator"
-            );
         } else {
             assert!(
                 layer_path.join("contracts.yml").exists(),
@@ -795,11 +785,7 @@ fn verify_scaffold_integrity() {
         }
 
         // All layers have tasks/ directory
-        assert!(
-            layer_path.join("tasks").exists(),
-            "Layer {} tasks/ directory should exist",
-            layer
-        );
+        assert!(layer_path.join("tasks").exists(), "Layer {} tasks/ directory should exist", layer);
     }
 
     // Verify setup

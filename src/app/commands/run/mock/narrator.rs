@@ -17,7 +17,7 @@ where
     W: WorkspaceStore,
 {
     let _ = config.branch_prefix(Layer::Narrators)?;
-    println!("Mock narrator: no-op (preserving existing .jules/changes/latest.yml)");
+    println!("Mock narrator: no-op (preserving existing .jules/exchange/changes.yml)");
 
     Ok(MockOutput {
         mock_branch: String::new(),

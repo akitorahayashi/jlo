@@ -46,7 +46,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
     ensure_directory_exists(jules::roles_dir(inputs.jules_path), diagnostics);
     ensure_directory_exists(jlo::roles_dir(inputs.root), diagnostics);
     ensure_file_exists(&jlo::schedule(inputs.root), diagnostics);
-    ensure_directory_exists(jules::changes_dir(inputs.jules_path), diagnostics);
 
     check_version_file(inputs.jules_path, env!("CARGO_PKG_VERSION"), diagnostics);
 
@@ -60,7 +59,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         // Phase-specific contracts for layers that use them; single contracts.yml for others
         let phases: &[&str] = match layer {
             Layer::Innovators => &["creation", "refinement"],
-            Layer::Narrators => &["bootstrap", "incremental"],
             _ => &[],
         };
         if phases.is_empty() {
@@ -100,12 +98,12 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         }
 
         if layer.is_single_role() {
-            // Narrator requires change.yml schema template
+            // Narrator requires changes.yml schema template
             if layer == Layer::Narrators {
                 let change_template = jules::narrator_change_schema(inputs.jules_path);
                 if !change_template.exists() {
                     diagnostics
-                        .push_error(change_template.display().to_string(), "Missing change.yml");
+                        .push_error(change_template.display().to_string(), "Missing changes.yml");
                 }
             }
         } else {
@@ -352,7 +350,6 @@ mod tests {
         temp.child(".jules/README.md").touch().unwrap();
         temp.child(".jlo/config.toml").touch().unwrap();
         temp.child(".jules/.jlo-version").write_str(env!("CARGO_PKG_VERSION")).unwrap();
-        temp.child(".jules/changes").create_dir_all().unwrap();
 
         // Layers
         for layer in Layer::ALL {
@@ -369,10 +366,6 @@ mod tests {
                     jules_layer_dir.child("contracts_creation.yml").touch().unwrap();
                     jules_layer_dir.child("contracts_refinement.yml").touch().unwrap();
                 }
-                Layer::Narrators => {
-                    jules_layer_dir.child("contracts_bootstrap.yml").touch().unwrap();
-                    jules_layer_dir.child("contracts_incremental.yml").touch().unwrap();
-                }
                 _ => {
                     jules_layer_dir.child("contracts.yml").touch().unwrap();
                 }
@@ -380,7 +373,7 @@ mod tests {
 
             if layer.is_single_role() {
                 if layer == Layer::Narrators {
-                    jules_layer_dir.child("schemas/change.yml").touch().unwrap();
+                    jules_layer_dir.child("schemas/changes.yml").touch().unwrap();
                 }
             } else {
                 // Multi-role layers have role definitions in .jlo/roles

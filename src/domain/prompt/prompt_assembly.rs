@@ -451,14 +451,14 @@ mod tests {
 
         mock_loader.add_file(
             ".jules/roles/observers/prompt_assembly.j2",
-            r#"{{ section("Optional", include_optional(".jules/changes/latest.yml")) }}"#,
+            r#"{{ section("Optional", include_optional(".jules/exchange/changes.yml")) }}"#,
         );
 
         let ctx = PromptContext::new().with_var("role", "qa");
         let result = assemble_prompt(jules_path, Layer::Observers, &ctx, &mock_loader).unwrap();
 
         assert!(!result.content.contains("# Optional"));
-        assert!(result.skipped_files.iter().any(|entry| entry.contains("latest.yml")));
+        assert!(result.skipped_files.iter().any(|entry| entry.contains("changes.yml")));
     }
 
     #[test]

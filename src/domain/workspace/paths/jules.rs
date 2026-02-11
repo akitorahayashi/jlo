@@ -73,21 +73,16 @@ pub fn layer_roles_container(jules_path: &Path, layer: Layer) -> PathBuf {
     layer_dir(jules_path, layer).join("roles")
 }
 
-/// `.jules/roles/narrator/schemas/change.yml`
+/// `.jules/roles/narrator/schemas/changes.yml`
 pub fn narrator_change_schema(jules_path: &Path) -> PathBuf {
-    schema_file(jules_path, Layer::Narrators, "change.yml")
+    schema_file(jules_path, Layer::Narrators, "changes.yml")
 }
 
 // ── Narrator output ────────────────────────────────────────────────────
 
-/// `.jules/changes/`
-pub fn changes_dir(jules_path: &Path) -> PathBuf {
-    jules_path.join("changes")
-}
-
-/// `.jules/changes/latest.yml`
-pub fn changes_latest(jules_path: &Path) -> PathBuf {
-    jules_path.join("changes").join("latest.yml")
+/// `.jules/exchange/changes.yml`
+pub fn exchange_changes(jules_path: &Path) -> PathBuf {
+    exchange_dir(jules_path).join("changes.yml")
 }
 
 // ── Exchange ───────────────────────────────────────────────────────────
@@ -223,10 +218,10 @@ mod tests {
     #[test]
     fn narrator_paths() {
         let jp = Path::new("/ws/.jules");
-        assert_eq!(changes_latest(jp), PathBuf::from("/ws/.jules/changes/latest.yml"));
+        assert_eq!(exchange_changes(jp), PathBuf::from("/ws/.jules/exchange/changes.yml"));
         assert_eq!(
             narrator_change_schema(jp),
-            PathBuf::from("/ws/.jules/roles/narrator/schemas/change.yml")
+            PathBuf::from("/ws/.jules/roles/narrator/schemas/changes.yml")
         );
     }
 

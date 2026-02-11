@@ -76,10 +76,9 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         }
     }
 
-    let latest_path = jules::changes_latest(inputs.jules_path);
-    if latest_path.exists() {
-        let change_schema_path = jules::narrator_change_schema(inputs.jules_path);
-        validate_changes_latest(&latest_path, &change_schema_path, diagnostics);
+    let changes_path = jules::exchange_changes(inputs.jules_path);
+    if changes_path.exists() {
+        validate_exchange_changes(&changes_path, diagnostics);
     }
 
     for layer in Layer::ALL {
@@ -96,7 +95,6 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         // Validate phase-specific contracts
         let phases: &[&str] = match layer {
             Layer::Innovators => &["creation", "refinement"],
-            Layer::Narrators => &["bootstrap", "incremental"],
             _ => &[],
         };
         for phase in phases {
@@ -479,121 +477,25 @@ pub fn validate_contracts(
 
     // constraints is optional — some layers may not need explicit guardrails
     ensure_non_empty_sequence(data, path, "inputs", diagnostics);
-    ensure_non_empty_sequence(data, path, "workflow", diagnostics);
 }
 
-/// Validate .jules/changes/latest.yml schema.
-fn validate_changes_latest(path: &Path, template_path: &Path, diagnostics: &mut Diagnostics) {
+/// Validate .jules/exchange/changes.yml schema.
+fn validate_exchange_changes(path: &Path, diagnostics: &mut Diagnostics) {
     let data = match load_yaml_mapping(path, diagnostics) {
         Some(data) => data,
         None => return,
     };
 
-    let allowed_modes = extract_enum_from_template(template_path, "selection_mode");
-    validate_changes_latest_data(&data, path, &allowed_modes, diagnostics);
+    validate_exchange_changes_data(&data, path, diagnostics);
 }
 
-fn validate_changes_latest_data(
-    data: &Mapping,
-    path: &Path,
-    allowed_modes: &[String],
-    diagnostics: &mut Diagnostics,
-) {
+fn validate_exchange_changes_data(data: &Mapping, path: &Path, diagnostics: &mut Diagnostics) {
     // Required fields
     ensure_int(data, path, "schema_version", diagnostics, Some(1));
-    ensure_id(data, path, "id", diagnostics);
     ensure_non_empty_string(data, path, "created_at", diagnostics);
 
-    // Validate range mapping
-    if let Some(range) = data.get(serde_yaml::Value::String("range".to_string())) {
-        if let serde_yaml::Value::Mapping(range_map) = range {
-            ensure_non_empty_string(range_map, path, "from_commit", diagnostics);
-            ensure_non_empty_string(range_map, path, "to_commit", diagnostics);
-
-            // Validate selection_mode enum from template
-            if !allowed_modes.is_empty() {
-                let allowed_refs: Vec<&str> = allowed_modes.iter().map(|s| s.as_str()).collect();
-                ensure_enum(range_map, path, "selection_mode", &allowed_refs, diagnostics);
-            }
-
-            // Validate .jules/ is in excluded_paths
-            if let Some(excluded) = get_sequence(range_map, "excluded_paths") {
-                let has_jules = excluded.iter().any(|v| {
-                    if let serde_yaml::Value::String(s) = v {
-                        s == ".jules/" || s == ".jules"
-                    } else {
-                        false
-                    }
-                });
-                if !has_jules {
-                    diagnostics.push_error(
-                        path.display().to_string(),
-                        "range.excluded_paths must include .jules/",
-                    );
-                }
-            } else {
-                diagnostics.push_error(path.display().to_string(), "Missing range.excluded_paths");
-            }
-        } else {
-            diagnostics.push_error(path.display().to_string(), "range must be a mapping");
-        }
-    } else {
-        diagnostics.push_error(path.display().to_string(), "Missing range field");
-    }
-
-    // Validate stats mapping
-    if let Some(stats) = data.get(serde_yaml::Value::String("stats".to_string())) {
-        if let serde_yaml::Value::Mapping(stats_map) = stats {
-            ensure_int(stats_map, path, "commits_total", diagnostics, None);
-            ensure_int(stats_map, path, "commits_included", diagnostics, None);
-            ensure_int(stats_map, path, "files_changed", diagnostics, None);
-            ensure_int(stats_map, path, "insertions", diagnostics, None);
-            ensure_int(stats_map, path, "deletions", diagnostics, None);
-        } else {
-            diagnostics.push_error(path.display().to_string(), "stats must be a mapping");
-        }
-    } else {
-        diagnostics.push_error(path.display().to_string(), "Missing stats field");
-    }
-
-    // Validate commits list exists
-    if get_sequence(data, "commits").is_none() {
-        diagnostics.push_error(path.display().to_string(), "Missing commits list");
-    }
-
-    // Validate summary mapping
-    if let Some(summary) = data.get(serde_yaml::Value::String("summary".to_string())) {
-        if let serde_yaml::Value::Mapping(summary_map) = summary {
-            ensure_non_empty_string(summary_map, path, "overview", diagnostics);
-        } else {
-            diagnostics.push_error(path.display().to_string(), "summary must be a mapping");
-        }
-    } else {
-        diagnostics.push_error(path.display().to_string(), "Missing summary field");
-    }
-}
-
-/// Extract allowed enum values from the change.yml template by parsing comments.
-/// Looks for lines like: `selection_mode: value  # Allowed: value1, value2`
-fn extract_enum_from_template(template_path: &Path, field: &str) -> Vec<String> {
-    let content = match fs::read_to_string(template_path) {
-        Ok(c) => c,
-        Err(_) => return vec![],
-    };
-
-    for line in content.lines() {
-        let trimmed = line.trim();
-        // Look for the field name at the start of the line
-        if trimmed.starts_with(&format!("{}:", field)) {
-            // Look for "# Allowed:" comment in the same line
-            if let Some(comment_start) = line.find("# Allowed:") {
-                let allowed_part = &line[comment_start + "# Allowed:".len()..];
-                return allowed_part.split(',').map(|s| s.trim().to_string()).collect();
-            }
-        }
-    }
-
-    vec![]
+    // Validate summaries sequence
+    ensure_non_empty_sequence(data, path, "summaries", diagnostics);
 }
 
 fn check_placeholders_file(path: &Path, diagnostics: &mut Diagnostics) {

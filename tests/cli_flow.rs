@@ -52,7 +52,6 @@ fn init_creates_complete_layer_structure() {
     ctx.assert_events_structure_exists();
     ctx.assert_issues_directory_exists();
     ctx.assert_default_scheduled_roles_exist();
-    ctx.assert_changes_directory_exists();
     ctx.assert_narrator_exists();
 
     // Verify multi-role layers have role.yml under roles/ container and schemas/ directories
@@ -74,9 +73,10 @@ fn init_creates_complete_layer_structure() {
     assert!(jules.join("roles/deciders/prompt_assembly.j2").exists());
 
     // Single-role layers have flat structure (no roles subdirectory)
-    assert!(jules.join("roles/narrator/contracts_bootstrap.yml").exists());
-    assert!(jules.join("roles/narrator/contracts_incremental.yml").exists());
-    assert!(jules.join("roles/narrator/schemas/change.yml").exists());
+    assert!(jules.join("roles/narrator/contracts.yml").exists());
+    assert!(jules.join("roles/narrator/schemas/changes.yml").exists());
+    assert!(jules.join("roles/narrator/tasks/bootstrap_summary.yml").exists());
+    assert!(jules.join("roles/narrator/tasks/overwrite_summary.yml").exists());
     assert!(jules.join("roles/planners/contracts.yml").exists());
     assert!(jules.join("roles/implementers/contracts.yml").exists());
 
