@@ -97,10 +97,10 @@ pub fn execute(
         let files = list_yml_files(store, &requirements_dir)?;
         for file_path in files {
             let header = RequirementHeader::read(store, &file_path)?;
-            let label_str = header.label.as_deref().unwrap_or("");
+            let label_str = &header.label;
 
             // Only include requirements whose label is in routing_labels
-            if !labels.contains(&label_str) {
+            if !labels.contains(&label_str.as_str()) {
                 continue;
             }
 

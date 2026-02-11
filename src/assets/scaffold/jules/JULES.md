@@ -101,7 +101,7 @@ Branch names:
 - Narrator modifies only `.jules/exchange/changes.yml`.
 - Observers, Decider, and Planner modify only `.jules/`.
 - Implementer modifies only what the requirement specifies, runs the verification command, then
-  create a pull request for human review.
+  creates a pull request for human review.
 
 ## Forbidden By Default
 

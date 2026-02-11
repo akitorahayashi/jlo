@@ -8,7 +8,8 @@ use crate::ports::WorkspaceStore;
 #[derive(Debug, Clone, Deserialize)]
 pub struct RequirementHeader {
     /// Label for the requirement (e.g., bugs, feats, refacts).
-    pub label: Option<String>,
+    #[serde(default)]
+    pub label: String,
     /// Whether the requirement requires deep analysis (planner) or implementation (implementer).
     pub requires_deep_analysis: bool,
 }

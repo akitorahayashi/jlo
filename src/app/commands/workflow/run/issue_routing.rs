@@ -4,13 +4,12 @@ use crate::ports::WorkspaceStore;
 use std::path::PathBuf;
 
 /// Find requirements for a layer in the flat exchange directory.
-pub(crate) fn find_issues(
+pub(crate) fn find_requirements(
     store: &impl WorkspaceStore,
     layer: Layer,
-    _routing_labels: Option<&[String]>,
 ) -> Result<Vec<PathBuf>, AppError> {
     if layer != Layer::Planner && layer != Layer::Implementer {
-        return Err(AppError::Validation("Invalid layer for issue discovery".to_string()));
+        return Err(AppError::Validation("Invalid layer for requirement discovery".to_string()));
     }
 
     let jules_path = store.jules_path();
@@ -29,7 +28,7 @@ pub(crate) fn find_issues(
     let entries = store.list_dir(requirements_dir_str)?;
 
     for path in entries {
-        let is_yml = path.extension().is_some_and(|ext| ext == "yml" || ext == "yaml");
+        let is_yml = path.extension().is_some_and(|ext| ext == "yml");
         if !is_yml {
             continue;
         }
@@ -84,7 +83,7 @@ mod tests {
         write_requirement(&store, "ready-to-implement", "bugs", false);
         write_requirement(&store, "docs-planning", "docs", true);
 
-        let issues = find_issues(&store, Layer::Planner, None).unwrap();
+        let issues = find_requirements(&store, Layer::Planner).unwrap();
 
         assert_eq!(issues.len(), 2);
         assert!(issues[0].to_string_lossy().contains("docs-planning.yml"));
@@ -100,7 +99,7 @@ mod tests {
         write_requirement(&store, "requires-planning", "bugs", true);
         write_requirement(&store, "ready-to-implement", "bugs", false);
 
-        let issues = find_issues(&store, Layer::Implementer, None).unwrap();
+        let issues = find_requirements(&store, Layer::Implementer).unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("ready-to-implement.yml"));

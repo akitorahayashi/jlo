@@ -31,7 +31,7 @@ steps:
     requirement and add the event ID to source_events.
   - >-
     For genuinely new problems, create a new requirement file using
-    schemas/requirements.yml with a label from .jules/github-labels.json.
+    .jules/roles/decider/schemas/requirements.yml with a label from .jules/github-labels.json.
   - "Place requirement files in .jules/exchange/requirements/<kebab-case-title>.yml."
 
   # 4. Transition event state
