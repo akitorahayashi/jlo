@@ -23,7 +23,7 @@
         id: matrix
         run: |
           set -euo pipefail
-          OUTPUT_JSON=$(jlo workflow workspace inspect | jq '{
+          OUTPUT_JSON=$(jlo workflow workspace inspect | jq -c '{
             has_planners: (([.requirements.items[] | select(.requires_deep_analysis == true)] | length) > 0),
             has_implementers: (([.requirements.items[] | select(.requires_deep_analysis == false)] | length) > 0),
             requirement_count: .requirements.count

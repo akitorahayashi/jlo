@@ -13,6 +13,7 @@ permissions:
   issues: write
 
 env:
+  JLO_TARGET_BRANCH: 'main'
   JULES_WORKER_BRANCH: 'jules'
 
 jobs:
