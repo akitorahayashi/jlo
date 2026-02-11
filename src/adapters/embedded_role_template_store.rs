@@ -60,9 +60,7 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
         match layer {
             Layer::Observers => templates::OBSERVER_ROLE.to_string(),
             Layer::Innovators => templates::INNOVATOR_ROLE.to_string(),
-            Layer::Deciders | Layer::Narrators | Layer::Planners | Layer::Implementers => {
-                String::new()
-            }
+            Layer::Decider | Layer::Narrator | Layer::Planner | Layer::Implementer => String::new(),
         }
     }
 
@@ -169,7 +167,7 @@ mod tests {
     fn control_plane_files_exclude_decider_role_customizations() {
         let store = EmbeddedRoleTemplateStore::new();
         let files = store.control_plane_files();
-        assert!(files.iter().all(|f| f.path != ".jlo/roles/deciders/role.yml"));
+        assert!(files.iter().all(|f| f.path != ".jlo/roles/decider/role.yml"));
     }
 
     #[test]
@@ -229,9 +227,9 @@ mod tests {
     fn generate_role_yaml_empty_for_single_role_layers() {
         let store = EmbeddedRoleTemplateStore::new();
 
-        assert!(store.generate_role_yaml("custom", Layer::Deciders).is_empty());
-        assert!(store.generate_role_yaml("custom", Layer::Narrators).is_empty());
-        assert!(store.generate_role_yaml("custom", Layer::Planners).is_empty());
-        assert!(store.generate_role_yaml("custom", Layer::Implementers).is_empty());
+        assert!(store.generate_role_yaml("custom", Layer::Decider).is_empty());
+        assert!(store.generate_role_yaml("custom", Layer::Narrator).is_empty());
+        assert!(store.generate_role_yaml("custom", Layer::Planner).is_empty());
+        assert!(store.generate_role_yaml("custom", Layer::Implementer).is_empty());
     }
 }

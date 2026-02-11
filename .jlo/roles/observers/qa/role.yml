@@ -1,4 +1,5 @@
 role: qa
+description: Evaluate test structure and test quality.
 layer: observers
 
 profile:

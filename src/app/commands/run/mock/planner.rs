@@ -6,8 +6,8 @@ use crate::app::commands::run::RunOptions;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
-/// Execute mock planners.
-pub fn execute_mock_planners<G, H, W>(
+/// Execute mock planner.
+pub fn execute_mock_planner<G, H, W>(
     _jules_path: &Path,
     options: &RunOptions,
     config: &MockConfig,
@@ -21,13 +21,13 @@ where
     W: WorkspaceStore,
 {
     let issue_path = options.issue.as_ref().ok_or_else(|| {
-        AppError::MissingArgument("Issue path is required for planners".to_string())
+        AppError::MissingArgument("Issue path is required for planner".to_string())
     })?;
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-    let branch_name = config.branch_name(Layer::Planners, &timestamp)?;
+    let branch_name = config.branch_name(Layer::Planner, &timestamp)?;
 
-    println!("Mock planners: creating branch {}", branch_name);
+    println!("Mock planner: creating branch {}", branch_name);
 
     // Fetch and checkout from jules branch
     git.fetch("origin")?;
@@ -83,7 +83,7 @@ analysis_details: |
         ),
     )?;
 
-    println!("Mock planners: created PR #{} ({})", pr.number, pr.url);
+    println!("Mock planner: created PR #{} ({})", pr.number, pr.url);
 
     Ok(MockOutput {
         mock_branch: branch_name,

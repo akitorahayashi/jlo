@@ -27,7 +27,7 @@ env:
   JULES_WORKER_BRANCH: '{{ worker_branch }}'
 
 jobs:
-  planners:
+  planner:
     runs-on: {{ runner }}
     steps:
       - name: Validate branch variables
@@ -63,7 +63,7 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run planners
+      - name: Run planner
         env:
           JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
           ISSUE_FILE: {{ gha_expr("inputs.issue_file") }}
@@ -71,4 +71,4 @@ jobs:
         run: |
           args=("$ISSUE_FILE")
           [ "$PROMPT_PREVIEW" = "true" ] && args+=("--prompt-preview")
-          jlo run planners "${args[@]}"
+          jlo run planner "${args[@]}"

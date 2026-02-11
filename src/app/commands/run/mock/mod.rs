@@ -24,12 +24,12 @@ use crate::domain::{AppError, Layer, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 use self::config::{load_mock_config, validate_mock_prerequisites};
-use self::decider::execute_mock_deciders;
-use self::implementer::execute_mock_implementers;
+use self::decider::execute_mock_decider;
+use self::implementer::execute_mock_implementer;
 use self::innovator::execute_mock_innovators;
 use self::narrator::execute_mock_narrator;
 use self::observer::execute_mock_observers;
-use self::planner::execute_mock_planners;
+use self::planner::execute_mock_planner;
 
 /// Execute in mock mode.
 pub fn execute<G, H, W>(
@@ -52,18 +52,18 @@ where
 
     // Execute layer-specific mock behavior
     let output = match options.layer {
-        Layer::Narrators => execute_mock_narrator(jules_path, &mock_config, git, github, workspace),
+        Layer::Narrator => execute_mock_narrator(jules_path, &mock_config, git, github, workspace),
         Layer::Observers => {
             execute_mock_observers(jules_path, options, &mock_config, git, github, workspace)
         }
-        Layer::Deciders => {
-            execute_mock_deciders(jules_path, options, &mock_config, git, github, workspace)
+        Layer::Decider => {
+            execute_mock_decider(jules_path, options, &mock_config, git, github, workspace)
         }
-        Layer::Planners => {
-            execute_mock_planners(jules_path, options, &mock_config, git, github, workspace)
+        Layer::Planner => {
+            execute_mock_planner(jules_path, options, &mock_config, git, github, workspace)
         }
-        Layer::Implementers => {
-            execute_mock_implementers(jules_path, options, &mock_config, git, github, workspace)
+        Layer::Implementer => {
+            execute_mock_implementer(jules_path, options, &mock_config, git, github, workspace)
         }
         Layer::Innovators => {
             execute_mock_innovators(jules_path, options, &mock_config, git, github, workspace)

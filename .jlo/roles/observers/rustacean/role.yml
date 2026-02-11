@@ -1,4 +1,5 @@
 role: rustacean
+description: Improve Rust ownership, errors, and concurrency design.
 layer: observers
 
 profile:

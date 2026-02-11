@@ -1,4 +1,5 @@
 role: consistency
+description: Detect drift between documented and implemented behavior.
 layer: observers
 
 profile:

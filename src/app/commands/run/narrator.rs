@@ -122,7 +122,7 @@ fn assemble_narrator_prompt<G: GitPort, W: WorkspaceStore + Clone + Send + Sync 
 
     assemble_single_role_prompt_with_context(
         jules_path,
-        Layer::Narrators,
+        Layer::Narrator,
         &prompt_context,
         workspace,
     )

@@ -1,4 +1,5 @@
 role: devops
+description: Review CI/CD reliability, safety, and artifact flow.
 layer: observers
 
 profile:

@@ -1,4 +1,5 @@
 role: ui_designer
+description: Design UI hierarchy, clarity, and robust interaction.
 layer: observers
 
 profile:

@@ -28,7 +28,7 @@ env:
   JULES_WORKER_BRANCH: 'jules'
 
 jobs:
-  implementers:
+  implementer:
     runs-on: ubuntu-latest
     steps:
       - name: Validate branch variables

@@ -1,4 +1,5 @@
 role: observability
+description: Improve runtime diagnosability and signal design.
 layer: observers
 
 profile:

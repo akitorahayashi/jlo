@@ -36,7 +36,7 @@ impl MockConfig {
     /// Get base branch for a layer.
     #[allow(dead_code)]
     pub fn base_branch(&self, layer: Layer) -> &str {
-        if layer == Layer::Implementers { &self.default_branch } else { &self.jules_branch }
+        if layer == Layer::Implementer { &self.default_branch } else { &self.jules_branch }
     }
 }
 
@@ -61,7 +61,7 @@ mod tests {
     fn branch_name_with_tag() {
         let mut prefixes = HashMap::new();
         prefixes.insert(Layer::Observers, "jules-observer-".to_string());
-        prefixes.insert(Layer::Implementers, "jules-implementer-".to_string());
+        prefixes.insert(Layer::Implementer, "jules-implementer-".to_string());
 
         let config = MockConfig {
             mock_tag: "run123".to_string(),
@@ -76,7 +76,7 @@ mod tests {
             "jules-observer-run123-test"
         );
         assert_eq!(
-            config.branch_name(Layer::Implementers, "fix").unwrap(),
+            config.branch_name(Layer::Implementer, "fix").unwrap(),
             "jules-implementer-run123-fix"
         );
     }
@@ -92,8 +92,8 @@ mod tests {
         };
 
         assert_eq!(config.base_branch(Layer::Observers), "jules");
-        assert_eq!(config.base_branch(Layer::Deciders), "jules");
-        assert_eq!(config.base_branch(Layer::Planners), "jules");
-        assert_eq!(config.base_branch(Layer::Implementers), "main");
+        assert_eq!(config.base_branch(Layer::Decider), "jules");
+        assert_eq!(config.base_branch(Layer::Planner), "jules");
+        assert_eq!(config.base_branch(Layer::Implementer), "main");
     }
 }

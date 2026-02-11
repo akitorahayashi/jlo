@@ -1,6 +1,6 @@
 //! Prompt assembly for Jules agents.
 //!
-//! Single-role layers (narrator, deciders, planners, implementers) use the
+//! Single-role layers (narrator, decider, planner, implementer) use the
 //! generic functions below. Multi-role layers (observers, innovators) use
 //! their dedicated domain assemblers in `domain::prompt_assembly`.
 
@@ -11,7 +11,7 @@ use crate::domain::{
     assemble_with_issue,
 };
 
-/// Assemble the prompt for a single-role layer (Narrator, Planners, Implementers, Deciders).
+/// Assemble the prompt for a single-role layer (Narrator, Planner, Implementer, Decider).
 ///
 /// Single-role layers use the prompt template directly in the layer directory
 /// and do not require role context.
@@ -43,7 +43,7 @@ where
 
 /// Assemble the prompt for an issue-driven layer with embedded issue content.
 ///
-/// This is used for planners and implementers where the issue content is
+/// This is used for planner and implementer where the issue content is
 /// appended to the base prompt.
 #[allow(dead_code)]
 pub fn assemble_issue_prompt<L>(

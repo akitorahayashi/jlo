@@ -82,11 +82,11 @@ pub fn load_mock_config<W: WorkspaceStore>(
     // Load branch prefixes from layer contracts.
     let mut branch_prefixes = HashMap::new();
     for layer in [
-        Layer::Narrators,
+        Layer::Narrator,
         Layer::Observers,
-        Layer::Deciders,
-        Layer::Planners,
-        Layer::Implementers,
+        Layer::Decider,
+        Layer::Planner,
+        Layer::Implementer,
         Layer::Innovators,
     ] {
         let prefix = load_branch_prefix_for_layer(jules_path, layer, workspace)?;

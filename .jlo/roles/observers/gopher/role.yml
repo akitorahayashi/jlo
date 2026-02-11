@@ -1,4 +1,5 @@
 role: gopher
+description: Improve Go error handling, context, and concurrency.
 layer: observers
 
 profile:

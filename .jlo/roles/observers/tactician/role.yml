@@ -1,4 +1,5 @@
 role: tactician
+description: Maintain scoped AGENTS contracts and token efficiency.
 layer: observers
 
 profile:

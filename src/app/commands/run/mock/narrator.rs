@@ -16,7 +16,7 @@ where
     H: GitHubPort,
     W: WorkspaceStore,
 {
-    let _ = config.branch_prefix(Layer::Narrators)?;
+    let _ = config.branch_prefix(Layer::Narrator)?;
     println!("Mock narrator: no-op (preserving existing .jules/exchange/changes.yml)");
 
     Ok(MockOutput {
@@ -265,7 +265,7 @@ mod tests {
     #[test]
     fn narrator_mock_is_noop() {
         let mut prefixes = HashMap::new();
-        prefixes.insert(Layer::Narrators, "jules-narrator-".to_string());
+        prefixes.insert(Layer::Narrator, "jules-narrator-".to_string());
         let config = MockConfig {
             mock_tag: "mock-run-123".to_string(),
             branch_prefixes: prefixes,

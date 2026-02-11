@@ -1,4 +1,5 @@
 role: librarian
+description: Maintain a navigable, declarative documentation system.
 layer: observers
 
 profile:

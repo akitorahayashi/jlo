@@ -1,4 +1,5 @@
 role: swifter
+description: Improve Swift correctness, ownership, and isolation.
 layer: observers
 
 profile:

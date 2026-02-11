@@ -24,9 +24,9 @@ on:
         options:
           - narrator
           - observers
-          - deciders
-          - planners
-          - implementers
+          - decider
+          - planner
+          - implementer
           - innovators
         default: narrator
       wait_minutes:
@@ -587,10 +587,10 @@ jobs:
 
 
   # ============================================================
-  # Phase 12: Run deciders
+  # Phase 12: Run decider
   # ============================================================
 
-  run-deciders:
+  run-decider:
     needs: [generate-decider-matrix]
     if: |
       always() &&
@@ -617,20 +617,20 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run deciders
+      - name: Run decider
         id: run
         run: |
           set -euo pipefail
-          jlo workflow run deciders ${{ env.JLO_RUN_FLAGS }}
+          jlo workflow run decider ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
   # Phase 13: Wait for decider processing
   # ============================================================
 
-  wait-after-deciders:
-    needs: run-deciders
+  wait-after-decider:
+    needs: run-decider
     if: |
       always() &&
-      needs.run-deciders.result == 'success'
+      needs.run-decider.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -656,8 +656,8 @@ jobs:
             exit 0
           fi
 
-          if [ -n "deciders" ]; then
-            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process deciders..."
+          if [ -n "decider" ]; then
+            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process decider..."
           else
             echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process..."
           fi
@@ -680,13 +680,13 @@ jobs:
   # Phase 14: Generate routing matrices (new issues)
   # ============================================================
   generate-planner-matrix:
-    needs: [check-schedule, generate-decider-matrix, run-deciders, wait-after-deciders]
+    needs: [check-schedule, generate-decider-matrix, run-decider, wait-after-decider]
     if: |
       always() &&
       fromJSON(needs.check-schedule.outputs.json).should_run == true &&
       (needs.generate-decider-matrix.result == 'success' || needs.generate-decider-matrix.result == 'skipped') &&
-      (needs.run-deciders.result == 'success' || needs.run-deciders.result == 'skipped') &&
-      (needs.wait-after-deciders.result == 'success' || needs.wait-after-deciders.result == 'skipped')
+      (needs.run-decider.result == 'success' || needs.run-decider.result == 'skipped') &&
+      (needs.wait-after-decider.result == 'success' || needs.wait-after-decider.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -706,10 +706,10 @@ jobs:
 
 
   # ============================================================
-  # Phase 15: Run planners
+  # Phase 15: Run planner
   # ============================================================
 
-  run-planners:
+  run-planner:
     needs: [generate-planner-matrix]
     if: |
       always() &&
@@ -736,20 +736,20 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run planners
+      - name: Run planner
         id: run
         run: |
           set -euo pipefail
-          jlo workflow run planners ${{ env.JLO_RUN_FLAGS }}
+          jlo workflow run planner ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
   # Phase 16: Wait for planner PRs
   # ============================================================
 
-  wait-after-planners:
-    needs: run-planners
+  wait-after-planner:
+    needs: run-planner
     if: |
       always() &&
-      needs.run-planners.result == 'success'
+      needs.run-planner.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -775,8 +775,8 @@ jobs:
             exit 0
           fi
 
-          if [ -n "planners" ]; then
-            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process planners..."
+          if [ -n "planner" ]; then
+            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process planner..."
           else
             echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process..."
           fi
@@ -796,10 +796,10 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 17: Run implementers
+  # Phase 17: Run implementer
   # ============================================================
 
-  run-implementers:
+  run-implementer:
     needs: [generate-planner-matrix]
     if: |
       always() &&
@@ -827,20 +827,20 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run implementers
+      - name: Run implementer
         id: run
         run: |
           set -euo pipefail
-          jlo workflow run implementers ${{ env.JLO_RUN_FLAGS }}
+          jlo workflow run implementer ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
   # Phase 18: Wait for implementer labels
   # ============================================================
 
-  wait-after-implementers:
-    needs: run-implementers
+  wait-after-implementer:
+    needs: run-implementer
     if: |
       always() &&
-      needs.run-implementers.result == 'success'
+      needs.run-implementer.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -866,8 +866,8 @@ jobs:
             exit 0
           fi
 
-          if [ -n "implementers" ]; then
-            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process implementers..."
+          if [ -n "implementer" ]; then
+            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process implementer..."
           else
             echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process..."
           fi

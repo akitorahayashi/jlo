@@ -67,7 +67,7 @@ jlo add innovators recruiter       # Install built-in innovator role
 
 ### Run Command
 
-Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (deciders), `p` (planners), `i` (implementers), `x` (innovators).
+Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (decider), `p` (planner), `i` (implementer), `x` (innovators).
 
 **Multi-role layers** (Observers, Innovators) require `--role`:
 
@@ -81,14 +81,14 @@ jlo run observers --role <role> --branch custom     # Override starting branch
 
 ```bash
 jlo run narrator                     # Run narrator (no role flag needed)
-jlo run deciders                     # Run deciders (single role)
+jlo run decider                      # Run decider (single role)
 ```
 
 **Issue-driven layers** (Planners, Implementers) require an issue file:
 
 ```bash
-jlo run planners .jules/exchange/issues/<label>/auth-inconsistency.yml
-jlo run implementers .jules/exchange/issues/<label>/auth-inconsistency.yml
+jlo run planner .jules/exchange/issues/<label>/auth-inconsistency.yml
+jlo run implementer .jules/exchange/issues/<label>/auth-inconsistency.yml
 ```
 
 **Mock Mode**: Validate workflow orchestration without calling Jules API:
@@ -96,7 +96,7 @@ jlo run implementers .jules/exchange/issues/<label>/auth-inconsistency.yml
 ```bash
 jlo run narrator --mock
 jlo run observers --role <role> --mock
-jlo run deciders --mock
+jlo run decider --mock
 jlo run innovators --role <role> --mock
 ```
 
@@ -107,7 +107,7 @@ Mock mode creates real branches and PRs with synthetic commit content, enabling 
 - `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)
 - `--branch <name>`: Override the default starting branch
-- `<path>`: Local issue file (required for planners and implementers)
+- `<path>`: Local issue file (required for planner and implementer)
 
 **Configuration**: Execution settings are configured in `.jules/config.toml`:
 

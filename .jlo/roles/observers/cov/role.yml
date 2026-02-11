@@ -1,4 +1,5 @@
 role: cov
+description: Assess test coverage risk and critical gaps.
 layer: observers
 
 profile:

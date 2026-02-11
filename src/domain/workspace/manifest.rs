@@ -127,11 +127,11 @@ mod tests {
         assert!(is_default_role_file(".jules/roles/observers/taxonomy/role.yml"));
         assert!(is_default_role_file(".jules/roles/innovators/leverage_architect/role.yml"));
 
-        // Deciders is single-role — not a default role file in this sense
-        assert!(!is_default_role_file(".jules/roles/deciders/role.yml"));
+        // Decider is single-role — not a default role file in this sense
+        assert!(!is_default_role_file(".jules/roles/decider/role.yml"));
 
         // Not default role files
-        assert!(!is_default_role_file(".jules/roles/planners/contracts.yml"));
+        assert!(!is_default_role_file(".jules/roles/planner/contracts.yml"));
         assert!(!is_default_role_file("src/main.rs"));
         assert!(!is_default_role_file(".jules/roles/observers/qa/other.yml"));
     }

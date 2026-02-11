@@ -1,4 +1,5 @@
 role: pythonista
+description: Improve Python boundaries, exceptions, and performance.
 layer: observers
 
 profile:

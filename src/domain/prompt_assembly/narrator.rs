@@ -33,6 +33,6 @@ where
         .with_var("range_description", &input.range_description)
         .with_var("commits_since_cursor", &input.commits_since_cursor);
 
-    assemble_prompt(jules_path, Layer::Narrators, &context, loader)
+    assemble_prompt(jules_path, Layer::Narrator, &context, loader)
         .map_err(|e| AppError::InternalError(e.to_string()))
 }

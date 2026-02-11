@@ -112,9 +112,9 @@ impl TestContext {
         let roles_path = self.jules_path().join("roles");
         assert!(roles_path.join("narrator").exists(), "narrator layer should exist");
         assert!(roles_path.join("observers").exists(), "observers layer should exist");
-        assert!(roles_path.join("deciders").exists(), "deciders layer should exist");
-        assert!(roles_path.join("planners").exists(), "planners layer should exist");
-        assert!(roles_path.join("implementers").exists(), "implementers layer should exist");
+        assert!(roles_path.join("decider").exists(), "decider layer should exist");
+        assert!(roles_path.join("planner").exists(), "planner layer should exist");
+        assert!(roles_path.join("implementer").exists(), "implementer layer should exist");
     }
 
     /// Assert that the narrator layer exists with correct structure.
@@ -180,16 +180,16 @@ impl TestContext {
             "observers/contracts.yml should exist"
         );
         assert!(
-            roles_path.join("deciders/contracts.yml").exists(),
-            "deciders/contracts.yml should exist"
+            roles_path.join("decider/contracts.yml").exists(),
+            "decider/contracts.yml should exist"
         );
         assert!(
-            roles_path.join("planners/contracts.yml").exists(),
-            "planners/contracts.yml should exist"
+            roles_path.join("planner/contracts.yml").exists(),
+            "planner/contracts.yml should exist"
         );
         assert!(
-            roles_path.join("implementers/contracts.yml").exists(),
-            "implementers/contracts.yml should exist"
+            roles_path.join("implementer/contracts.yml").exists(),
+            "implementer/contracts.yml should exist"
         );
     }
 
@@ -205,9 +205,9 @@ impl TestContext {
 
         // Single-role layers have contracts.yml directly in layer directory
         self.assert_single_role_layer_exists("narrator");
-        self.assert_single_role_layer_exists("deciders");
-        self.assert_single_role_layer_exists("planners");
-        self.assert_single_role_layer_exists("implementers");
+        self.assert_single_role_layer_exists("decider");
+        self.assert_single_role_layer_exists("planner");
+        self.assert_single_role_layer_exists("implementer");
     }
 
     /// Assert that a single-role layer exists with the correct structure.

@@ -1,4 +1,5 @@
 role: typescripter
+description: Improve TypeScript boundaries, state modeling, and modules.
 layer: observers
 
 profile:

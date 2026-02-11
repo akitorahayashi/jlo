@@ -18,6 +18,6 @@ pub fn assemble<L>(jules_path: &Path, loader: &L) -> Result<AssembledPrompt, App
 where
     L: PromptAssetLoader + Clone + Send + Sync + 'static,
 {
-    assemble_prompt(jules_path, Layer::Deciders, &PromptContext::new(), loader)
+    assemble_prompt(jules_path, Layer::Decider, &PromptContext::new(), loader)
         .map_err(|e| AppError::InternalError(e.to_string()))
 }

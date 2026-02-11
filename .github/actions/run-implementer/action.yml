@@ -50,7 +50,7 @@ runs:
           fi
         fi
 
-    - name: Run implementers
+    - name: Run implementer
       shell: bash
       env:
         ISSUE_FILE: ${{ inputs.issue_file }}
@@ -59,7 +59,7 @@ runs:
       run: |
         args=("$ISSUE_FILE")
         [ "$PROMPT_PREVIEW" = "true" ] && args+=("--prompt-preview")
-        jlo run implementers "${args[@]}" --branch "$TARGET_BRANCH"
+        jlo run implementer "${args[@]}" --branch "$TARGET_BRANCH"
 
     - name: Delete processed issue and source events
       if: ${{ inputs.prompt_preview != 'true' }}

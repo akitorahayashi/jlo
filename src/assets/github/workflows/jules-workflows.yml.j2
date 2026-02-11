@@ -23,9 +23,9 @@ on:
         options:
           - narrator
           - observers
-          - deciders
-          - planners
-          - implementers
+          - decider
+          - planner
+          - implementer
           - innovators
         default: narrator
       wait_minutes:
@@ -156,50 +156,50 @@ jobs:
 {% include "workflows/jules-workflows/components/generate-decider-matrix.yml.j2" %}
 
   # ============================================================
-  # Phase 12: Run deciders
+  # Phase 12: Run decider
   # ============================================================
 {{ run_macro.run_agent_job(
-    'run-deciders',
+    'run-decider',
     'generate-decider-matrix',
     'has_pending',
-    'deciders',
-    'Run deciders'
+    'decider',
+    'Run decider'
 ) }}
   # ============================================================
   # Phase 13: Wait for decider processing
   # ============================================================
-{{ wait_macro.wait_for_processing('wait-after-deciders', 'run-deciders', 'run-deciders', 'deciders') }}
+{{ wait_macro.wait_for_processing('wait-after-decider', 'run-decider', 'run-decider', 'decider') }}
   # ============================================================
   # Phase 14: Generate routing matrices (new issues)
   # ============================================================
 {% include "workflows/jules-workflows/components/generate-planner-matrix.yml.j2" %}
 
   # ============================================================
-  # Phase 15: Run planners
+  # Phase 15: Run planner
   # ============================================================
 {{ run_macro.run_agent_job(
-    'run-planners',
+    'run-planner',
     'generate-planner-matrix',
     'has_planners',
-    'planners',
-    'Run planners'
+    'planner',
+    'Run planner'
 ) }}
   # ============================================================
   # Phase 16: Wait for planner PRs
   # ============================================================
-{{ wait_macro.wait_for_processing('wait-after-planners', 'run-planners', 'run-planners', 'planners') }}
+{{ wait_macro.wait_for_processing('wait-after-planner', 'run-planner', 'run-planner', 'planner') }}
   # ============================================================
-  # Phase 17: Run implementers
+  # Phase 17: Run implementer
   # ============================================================
 {{ run_macro.run_agent_job(
-    'run-implementers',
+    'run-implementer',
     'generate-planner-matrix',
     'has_implementers',
-    'implementers',
-    'Run implementers',
+    'implementer',
+    'Run implementer',
   {'TARGET_BRANCH': "'" ~ target_branch ~ "'"}
 ) }}
   # ============================================================
   # Phase 18: Wait for implementer labels
   # ============================================================
-{{ wait_macro.wait_for_processing('wait-after-implementers', 'run-implementers', 'run-implementers', 'implementers') }}
+{{ wait_macro.wait_for_processing('wait-after-implementer', 'run-implementer', 'run-implementer', 'implementer') }}
