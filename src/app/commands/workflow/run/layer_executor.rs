@@ -48,7 +48,7 @@ where
         role: None,
         prompt_preview: false,
         branch: None,
-        issue: None,
+        requirement: None,
         mock: options.mock,
         phase: None,
     };
@@ -82,7 +82,7 @@ where
         role: None,
         prompt_preview: false,
         branch: None,
-        issue: None,
+        requirement: None,
         mock: options.mock,
         phase: None,
     };
@@ -153,7 +153,7 @@ where
             role: Some(role.as_str().to_string()),
             prompt_preview: false,
             branch: None,
-            issue: None,
+            requirement: None,
             mock: options.mock,
             phase: options.phase.clone(),
         };
@@ -192,7 +192,7 @@ where
             role: None,
             prompt_preview: false,
             branch: None,
-            issue: Some(requirement_path.clone()),
+            requirement: Some(requirement_path.clone()),
             mock: options.mock,
             phase: None,
         };

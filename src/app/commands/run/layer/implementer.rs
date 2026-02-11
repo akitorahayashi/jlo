@@ -9,31 +9,31 @@ use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest, WorkspaceStore};
 
-use super::RunOptions;
-use super::RunResult;
-use super::config::{detect_repository_source, load_config};
-use super::issue_execution::validate_issue_path;
+use crate::app::commands::run::RunOptions;
+use crate::app::commands::run::RunResult;
+use crate::app::commands::run::config::{detect_repository_source, load_config};
+use crate::app::commands::run::requirement_execution::validate_requirement_path;
 
 /// Execute the implementer layer (single-role, issue-driven).
 pub(crate) fn execute<W>(
     jules_path: &Path,
     options: &RunOptions,
-    issue_path: &Path,
+    requirement_path: &Path,
     workspace: &W,
 ) -> Result<RunResult, AppError>
 where
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
-    let issue_info = validate_issue_path(issue_path, workspace)?;
+    let requirement_info = validate_requirement_path(requirement_path, workspace)?;
 
-    let issue_content = workspace.read_file(&issue_info.issue_path_str)?;
+    let requirement_content = workspace.read_file(&requirement_info.requirement_path_str)?;
     let config = load_config(jules_path)?;
 
     let starting_branch =
         options.branch.clone().unwrap_or_else(|| config.run.default_branch.clone());
 
     if options.prompt_preview {
-        execute_prompt_preview(jules_path, &starting_branch, &issue_content, workspace)?;
+        execute_prompt_preview(jules_path, &starting_branch, &requirement_content, workspace)?;
         return Ok(RunResult {
             roles: vec![Layer::Implementer.dir_name().to_string()],
             prompt_preview: true,
@@ -43,11 +43,17 @@ where
 
     let source = detect_repository_source()?;
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
-    let session_id =
-        execute_session(jules_path, &starting_branch, &source, &client, &issue_content, workspace)?;
+    let session_id = execute_session(
+        jules_path,
+        &starting_branch,
+        &source,
+        &client,
+        &requirement_content,
+        workspace,
+    )?;
 
     let cleanup_output = clean_requirement(WorkspaceCleanRequirementOptions {
-        requirement_file: issue_info.issue_path_str.clone(),
+        requirement_file: requirement_info.requirement_path_str.clone(),
     })?;
     println!(
         "✅ Cleaned requirement and source events ({} file(s) removed)",
@@ -67,15 +73,15 @@ fn execute_session<C: JulesClient, W: WorkspaceStore + Clone + Send + Sync + 'st
     starting_branch: &str,
     source: &str,
     client: &C,
-    issue_content: &str,
+    requirement_content: &str,
     workspace: &W,
 ) -> Result<String, AppError> {
     println!("Executing {}...", Layer::Implementer.display_name());
 
-    let mut prompt = assemble_implementer_prompt(jules_path, issue_content, workspace)?;
+    let mut prompt = assemble_implementer_prompt(jules_path, requirement_content, workspace)?;
 
-    prompt.push_str("\n---\n# Issue Content\n");
-    prompt.push_str(issue_content);
+    prompt.push_str("\n---\n# Requirement Content\n");
+    prompt.push_str(requirement_content);
 
     let request = SessionRequest {
         prompt,
@@ -93,26 +99,28 @@ fn execute_session<C: JulesClient, W: WorkspaceStore + Clone + Send + Sync + 'st
 
 fn assemble_implementer_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
-    issue_content: &str,
+    requirement_content: &str,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let label = extract_issue_label(issue_content)?;
+    let label = extract_requirement_label(requirement_content)?;
     let task_content = resolve_implementer_task(jules_path, &label, workspace)?;
     let input = implementer_asm::ImplementerPromptInput { task: &task_content };
     let assembled = implementer_asm::assemble(jules_path, &input, workspace)?;
     Ok(assembled.content)
 }
 
-/// Extract the `label` field from issue YAML content.
+/// Extract the `label` field from requirement YAML content.
 ///
 /// Fails explicitly if the label is missing, empty, or unsafe — no silent fallback.
-fn extract_issue_label(issue_content: &str) -> Result<String, AppError> {
-    let value: serde_yaml::Value = serde_yaml::from_str(issue_content)
+fn extract_requirement_label(requirement_content: &str) -> Result<String, AppError> {
+    let value: serde_yaml::Value = serde_yaml::from_str(requirement_content)
         .map_err(|e| AppError::Validation(format!("Failed to parse issue YAML: {}", e)))?;
 
     let label =
         value.get("label").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).ok_or_else(|| {
-            AppError::Validation("Issue file must contain a non-empty 'label' field".to_string())
+            AppError::Validation(
+                "Requirement file must contain a non-empty 'label' field".to_string(),
+            )
         })?;
 
     if !crate::domain::identifiers::validation::validate_safe_path_component(label) {
@@ -147,12 +155,12 @@ fn resolve_implementer_task<W: WorkspaceStore>(
 fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
     starting_branch: &str,
-    issue_content: &str,
+    requirement_content: &str,
     workspace: &W,
 ) -> Result<(), AppError> {
     println!("=== Prompt Preview: {} ===", Layer::Implementer.display_name());
     println!("Starting branch: {}\n", starting_branch);
-    println!("Issue content: {} chars\n", issue_content.len());
+    println!("Requirement content: {} chars\n", requirement_content.len());
 
     let prompt_path = jules::prompt_template(jules_path, Layer::Implementer);
     let contracts_path = jules::contracts(jules_path, Layer::Implementer);
@@ -162,11 +170,11 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         println!("Contracts: {}", contracts_path.display());
     }
 
-    let mut prompt = assemble_implementer_prompt(jules_path, issue_content, workspace)?;
-    prompt.push_str("\n---\n# Issue Content\n");
-    prompt.push_str(issue_content);
+    let mut prompt = assemble_implementer_prompt(jules_path, requirement_content, workspace)?;
+    prompt.push_str("\n---\n# Requirement Content\n");
+    prompt.push_str(requirement_content);
 
-    println!("Assembled prompt: {} chars (Prompt + No Path + Issue Content)", prompt.len());
+    println!("Assembled prompt: {} chars (Prompt + No Path + Requirement Content)", prompt.len());
 
     println!("\nWould execute 1 session");
     Ok(())

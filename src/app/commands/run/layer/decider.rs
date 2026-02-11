@@ -4,10 +4,10 @@ use crate::adapters::jules_client_http::HttpJulesClient;
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest, WorkspaceStore};
 
-use super::RunOptions;
-use super::RunResult;
-use super::config::{detect_repository_source, load_config};
-use super::prompt::assemble_single_role_prompt;
+use crate::app::commands::run::RunOptions;
+use crate::app::commands::run::RunResult;
+use crate::app::commands::run::config::{detect_repository_source, load_config};
+use crate::app::commands::run::prompt::assemble_single_role_prompt;
 
 /// Execute the decider layer (single-role, no `--role` required).
 pub(crate) fn execute<W: WorkspaceStore + Clone + Send + Sync + 'static>(

@@ -5,24 +5,24 @@ use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, JulesClient, SessionRequest, WorkspaceStore};
 
-use super::RunOptions;
-use super::RunResult;
-use super::config::{detect_repository_source, load_config};
-use super::issue_execution::validate_issue_path;
-use super::prompt::assemble_single_role_prompt;
+use crate::app::commands::run::RunOptions;
+use crate::app::commands::run::RunResult;
+use crate::app::commands::run::config::{detect_repository_source, load_config};
+use crate::app::commands::run::prompt::assemble_single_role_prompt;
+use crate::app::commands::run::requirement_execution::validate_requirement_path;
 
 /// Execute the planner layer (single-role, issue-driven).
 pub(crate) fn execute<W>(
     jules_path: &Path,
     options: &RunOptions,
-    issue_path: &Path,
+    requirement_path: &Path,
     workspace: &W,
 ) -> Result<RunResult, AppError>
 where
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
-    let issue_info = validate_issue_path(issue_path, workspace)?;
-    let issue_content = workspace.read_file(&issue_info.issue_path_str)?;
+    let requirement_info = validate_requirement_path(requirement_path, workspace)?;
+    let requirement_content = workspace.read_file(&requirement_info.requirement_path_str)?;
     let config = load_config(jules_path)?;
 
     let starting_branch = options.branch.clone().unwrap_or_else(|| config.run.jules_branch.clone());
@@ -31,8 +31,8 @@ where
         execute_prompt_preview(
             jules_path,
             &starting_branch,
-            &issue_content,
-            issue_path,
+            &requirement_content,
+            requirement_path,
             workspace,
         )?;
         return Ok(RunResult {
@@ -49,8 +49,8 @@ where
         &starting_branch,
         &source,
         &client,
-        &issue_content,
-        issue_path,
+        &requirement_content,
+        requirement_path,
         workspace,
     )?;
 
@@ -67,17 +67,17 @@ fn execute_session<C: JulesClient, W: WorkspaceStore + Clone + Send + Sync + 'st
     starting_branch: &str,
     source: &str,
     client: &C,
-    issue_content: &str,
-    issue_path: &Path,
+    requirement_content: &str,
+    requirement_path: &Path,
     workspace: &W,
 ) -> Result<String, AppError> {
     println!("Executing {}...", Layer::Planner.display_name());
 
     let mut prompt = assemble_planner_prompt(jules_path, workspace)?;
 
-    prompt.push_str("\n---\n# Issue Content\n");
-    prompt.push_str(&format!("File: {}\n\n", issue_path.display()));
-    prompt.push_str(issue_content);
+    prompt.push_str("\n---\n# Requirement Content\n");
+    prompt.push_str(&format!("File: {}\n\n", requirement_path.display()));
+    prompt.push_str(requirement_content);
 
     let request = SessionRequest {
         prompt,
@@ -103,13 +103,13 @@ fn assemble_planner_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
 fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
     starting_branch: &str,
-    issue_content: &str,
-    issue_path: &Path,
+    requirement_content: &str,
+    requirement_path: &Path,
     workspace: &W,
 ) -> Result<(), AppError> {
     println!("=== Prompt Preview: {} ===", Layer::Planner.display_name());
     println!("Starting branch: {}\n", starting_branch);
-    println!("Issue content: {} chars\n", issue_content.len());
+    println!("Requirement content: {} chars\n", requirement_content.len());
 
     let prompt_path = jules::prompt_template(jules_path, Layer::Planner);
     let contracts_path = jules::contracts(jules_path, Layer::Planner);
@@ -120,11 +120,14 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     }
 
     if let Ok(mut prompt) = assemble_planner_prompt(jules_path, workspace) {
-        prompt.push_str("\n---\n# Issue Content\n");
-        prompt.push_str(&format!("File: {}\n\n", issue_path.display()));
-        prompt.push_str(issue_content);
+        prompt.push_str("\n---\n# Requirement Content\n");
+        prompt.push_str(&format!("File: {}\n\n", requirement_path.display()));
+        prompt.push_str(requirement_content);
 
-        println!("Assembled prompt: {} chars (Prompt + Issue Path + Issue Content)", prompt.len());
+        println!(
+            "Assembled prompt: {} chars (Prompt + Requirement Path + Requirement Content)",
+            prompt.len()
+        );
     }
 
     println!("\nWould execute 1 session");

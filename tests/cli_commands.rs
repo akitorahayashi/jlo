@@ -454,7 +454,7 @@ fn setup_list_detail_not_found() {
 // =============================================================================
 
 #[test]
-fn run_implementer_requires_issue_file() {
+fn run_implementer_requires_requirement_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
@@ -468,7 +468,7 @@ fn run_implementer_requires_issue_file() {
 }
 
 #[test]
-fn run_planner_requires_issue_file() {
+fn run_planner_requires_requirement_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
@@ -482,33 +482,38 @@ fn run_planner_requires_issue_file() {
 }
 
 #[test]
-fn run_implementer_with_missing_issue_file() {
+fn run_implementer_with_missing_requirement_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     ctx.cli()
-        .args(["run", "implementer", ".jules/exchange/requirements/nonexistent.yml"])
+        .args([
+            "run",
+            "implementer",
+            "--requirement",
+            ".jules/exchange/requirements/nonexistent.yml",
+        ])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Issue file not found"));
+        .stderr(predicate::str::contains("Requirement file not found"));
 }
 
 #[test]
-fn run_implementer_prompt_preview_with_issue_file() {
+fn run_implementer_prompt_preview_with_requirement_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
-    // Create a test issue file in flat exchange
-    let issue_dir = ctx.work_dir().join(".jules/exchange/requirements");
-    std::fs::create_dir_all(&issue_dir).unwrap();
-    let issue_path = issue_dir.join("test_issue.yml");
+    // Create a test requirement file in flat exchange
+    let requirement_dir = ctx.work_dir().join(".jules/exchange/requirements");
+    std::fs::create_dir_all(&requirement_dir).unwrap();
+    let requirement_path = requirement_dir.join("test_requirement.yml");
     std::fs::write(
-        &issue_path,
-        "fingerprint: test_issue\nid: test_issue\ntitle: Test Issue\nlabel: bugs\nstatus: open\n",
+        &requirement_path,
+        "fingerprint: test_requirement\nid: test_requirement\ntitle: Test Requirement\nlabel: bugs\nstatus: open\n",
     )
     .unwrap();
 
@@ -517,7 +522,8 @@ fn run_implementer_prompt_preview_with_issue_file() {
         .args([
             "run",
             "implementer",
-            ".jules/exchange/requirements/test_issue.yml",
+            "--requirement",
+            ".jules/exchange/requirements/test_requirement.yml",
             "--prompt-preview",
         ])
         .assert()
@@ -527,25 +533,31 @@ fn run_implementer_prompt_preview_with_issue_file() {
 }
 
 #[test]
-fn run_planner_prompt_preview_with_issue_file() {
+fn run_planner_prompt_preview_with_requirement_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
-    // Create a test issue file in flat exchange
-    let issue_dir = ctx.work_dir().join(".jules/exchange/requirements");
-    std::fs::create_dir_all(&issue_dir).unwrap();
-    let issue_path = issue_dir.join("test_issue.yml");
+    // Create a test requirement file in flat exchange
+    let requirement_dir = ctx.work_dir().join(".jules/exchange/requirements");
+    std::fs::create_dir_all(&requirement_dir).unwrap();
+    let requirement_path = requirement_dir.join("test_requirement.yml");
     std::fs::write(
-        &issue_path,
-        "fingerprint: test_issue\nid: test_issue\ntitle: Test Issue\nstatus: open\nrequires_deep_analysis: true\n",
+        &requirement_path,
+        "fingerprint: test_requirement\nid: test_requirement\ntitle: Test Requirement\nstatus: open\nrequires_deep_analysis: true\n",
     )
     .unwrap();
 
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
-        .args(["run", "planner", ".jules/exchange/requirements/test_issue.yml", "--prompt-preview"])
+        .args([
+            "run",
+            "planner",
+            "--requirement",
+            ".jules/exchange/requirements/test_requirement.yml",
+            "--prompt-preview",
+        ])
         .assert()
         .success()
         .stdout(predicate::str::contains("Prompt Preview: Planner"))

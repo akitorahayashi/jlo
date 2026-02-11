@@ -127,7 +127,7 @@ pub fn builtin_role_catalog() -> Result<Vec<BuiltinRoleEntry>, AppError> {
 /// * `role` - Specific role to run (required for observers/decider/innovators)
 /// * `prompt_preview` - Show prompts without executing
 /// * `branch` - Override the starting branch
-/// * `issue` - Local issue file path (required for planner/implementer)
+/// * `requirement` - Local requirement file path (required for planner/implementer)
 /// * `mock` - Run in mock mode (no Jules API, tag from JULES_MOCK_TAG env)
 /// * `phase` - Execution phase for innovators (creation or refinement)
 #[allow(clippy::too_many_arguments)]
@@ -136,11 +136,11 @@ pub fn run(
     role: Option<String>,
     prompt_preview: bool,
     branch: Option<String>,
-    issue: Option<std::path::PathBuf>,
+    requirement: Option<std::path::PathBuf>,
     mock: bool,
     phase: Option<String>,
 ) -> Result<RunResult, AppError> {
-    run_at(layer, role, prompt_preview, branch, issue, mock, phase, std::env::current_dir()?)
+    run_at(layer, role, prompt_preview, branch, requirement, mock, phase, std::env::current_dir()?)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -149,7 +149,7 @@ pub fn run_at(
     role: Option<String>,
     prompt_preview: bool,
     branch: Option<String>,
-    issue: Option<std::path::PathBuf>,
+    requirement: Option<std::path::PathBuf>,
     mock: bool,
     phase: Option<String>,
     root: impl Into<PathBuf>,
@@ -163,7 +163,7 @@ pub fn run_at(
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
 
-    let options = RunOptions { layer, role, prompt_preview, branch, issue, mock, phase };
+    let options = RunOptions { layer, role, prompt_preview, branch, requirement, mock, phase };
     run::execute(&workspace.jules_path(), options, &git, &github, &workspace)
 }
 

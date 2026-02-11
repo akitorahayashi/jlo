@@ -6,11 +6,11 @@
 
 use std::path::Path;
 
-use super::RunResult;
-use super::config::{detect_repository_source, load_config};
-use super::narrator_logic::{RangeContext, determine_range_strategy};
-use super::prompt::assemble_single_role_prompt_with_context;
 use crate::adapters::jules_client_http::HttpJulesClient;
+use crate::app::commands::run::RunResult;
+use crate::app::commands::run::config::{detect_repository_source, load_config};
+use crate::app::commands::run::narrator_logic::{RangeContext, determine_range_strategy};
+use crate::app::commands::run::prompt::assemble_single_role_prompt_with_context;
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, PromptContext};
 use crate::ports::{AutomationMode, GitPort, JulesClient, SessionRequest, WorkspaceStore};

@@ -153,9 +153,9 @@ pub enum AppError {
     #[error(transparent)]
     Schedule(#[from] crate::domain::configuration::schedule::ScheduleError),
 
-    /// Issue file not found at path.
-    #[error("Issue file not found: {0}")]
-    IssueFileNotFound(String),
+    /// Requirement file not found at path.
+    #[error("Requirement file not found: {0}")]
+    RequirementFileNotFound(String),
 
     /// Template creation not supported for single-role layers.
     #[error("Layer '{0}' is single-role and does not support custom roles. Use the built-in role.")]
