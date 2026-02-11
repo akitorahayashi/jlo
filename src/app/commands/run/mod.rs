@@ -1,53 +1,29 @@
 //! Run command implementation for executing Jules agents.
 
-mod config;
-pub mod layer;
-pub mod mock;
-mod multi_role_execution;
-pub(crate) mod narrator_logic;
-mod prompt;
-mod requirement_execution;
-
-pub use self::layer::narrator;
-use self::layer::{decider, implementer, innovators, observers, planner};
-
-pub use config::parse_config_content;
-
 use std::path::Path;
-use std::path::PathBuf;
 
+use crate::adapters::jules_client_http::HttpJulesClient;
+use crate::app::commands::workflow::workspace::{
+    WorkspaceCleanRequirementOptions, clean_requirement,
+};
+use crate::domain::configuration::{load_config, validate_mock_prerequisites};
+pub use crate::domain::configuration::parse_config_content;
 use crate::domain::identifiers::validation::validate_safe_path_component;
-use crate::domain::{AppError, Layer};
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::domain::layers::get_layer_strategy;
+use crate::domain::layers::strategy::JulesClientFactory;
+use crate::domain::{AppError, JulesApiConfig};
+pub use crate::domain::{RunOptions, RunResult};
+use crate::ports::{GitHubPort, GitPort, JulesClient, WorkspaceStore};
 
-/// Options for the run command.
-#[derive(Debug, Clone)]
-pub struct RunOptions {
-    /// Target layer to run.
-    pub layer: Layer,
-    /// Specific role to run (required for observers/innovators).
-    pub role: Option<String>,
-    /// Show assembled prompts without executing.
-    pub prompt_preview: bool,
-    /// Override the starting branch.
-    pub branch: Option<String>,
-    /// Local requirement file path (required for requirement-driven layers: planner, implementer).
-    pub requirement: Option<PathBuf>,
-    /// Run in mock mode (no Jules API, real git/GitHub operations).
-    pub mock: bool,
-    /// Execution phase for innovators (creation or refinement).
-    pub phase: Option<String>,
+struct LazyClientFactory {
+    config: JulesApiConfig,
 }
 
-/// Result of a run execution.
-#[derive(Debug)]
-pub struct RunResult {
-    /// Role that was processed.
-    pub roles: Vec<String>,
-    /// Whether this was a prompt preview.
-    pub prompt_preview: bool,
-    /// Session IDs from Jules (empty if prompt_preview or mock).
-    pub sessions: Vec<String>,
+impl JulesClientFactory for LazyClientFactory {
+    fn create(&self) -> Result<Box<dyn JulesClient>, AppError> {
+        let client = HttpJulesClient::from_env_with_config(&self.config)?;
+        Ok(Box::new(client))
+    }
 }
 
 /// Execute the run command.
@@ -63,11 +39,6 @@ where
     H: GitHubPort,
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
-    // Handle mock mode
-    if options.mock {
-        return mock::execute(jules_path, &options, git, github, workspace);
-    }
-
     // Validate phase if provided (prevents path traversal)
     if let Some(ref phase) = options.phase
         && !validate_safe_path_component(phase)
@@ -78,49 +49,48 @@ where
         )));
     }
 
-    // Narrator is single-role but not requirement-driven
-    if options.layer == Layer::Narrator {
-        return narrator::execute(
-            jules_path,
-            options.prompt_preview,
-            options.branch.as_deref(),
-            git,
-            workspace,
-        );
+    // Load configuration
+    let config = load_config(jules_path, workspace)?;
+
+    if options.mock {
+        validate_mock_prerequisites(&options)?;
     }
 
-    // Decider is single-role (no --role required, prompt resolves without role variable)
-    if options.layer == Layer::Decider {
-        return decider::execute(jules_path, &options, workspace);
-    }
+    // Create client factory
+    let client_factory = LazyClientFactory { config: config.jules.clone() };
 
-    // Requirement-driven layers (Planner, Implementer) require a requirement path
-    if options.layer.is_issue_driven() {
-        let requirement_path = options.requirement.as_deref().ok_or_else(|| {
-            AppError::MissingArgument(
-                "Requirement path is required for requirement-driven layers but was not provided."
-                    .to_string(),
-            )
-        })?;
-        return match options.layer {
-            Layer::Planner => planner::execute(jules_path, &options, requirement_path, workspace),
-            Layer::Implementer => {
-                implementer::execute(jules_path, &options, requirement_path, workspace)
+    // Get layer strategy
+    let strategy = get_layer_strategy(options.layer);
+
+    // Execute strategy
+    let result = strategy.execute(
+        jules_path,
+        &options,
+        &config,
+        git,
+        github,
+        workspace,
+        &client_factory,
+    )?;
+
+    // Handle post-execution cleanup (e.g. Implementer requirement)
+    if let Some(path) = result.cleanup_requirement.as_ref() {
+        // Note: clean_requirement re-initializes workspace/git adapters internally.
+        // This assumes we are running in a context where that is valid (filesystem).
+        let path_str = path.to_string_lossy().to_string();
+        match clean_requirement(WorkspaceCleanRequirementOptions { requirement_file: path_str }) {
+            Ok(cleanup_res) => {
+                println!(
+                    "✅ Cleaned requirement and source events ({} file(s) removed)",
+                    cleanup_res.deleted_paths.len()
+                );
             }
-            _ => Err(AppError::Validation(format!(
-                "Unexpected requirement-driven layer '{}'",
-                options.layer.dir_name()
-            ))),
-        };
+            Err(e) => {
+                // Log warning but don't fail the run result, as the main task succeeded
+                println!("⚠️ Failed to clean up requirement: {}", e);
+            }
+        }
     }
 
-    // Layer-specific multi-role execution
-    match options.layer {
-        Layer::Observers => observers::execute(jules_path, &options, workspace),
-        Layer::Innovators => innovators::execute(jules_path, &options, workspace),
-        _ => Err(AppError::Validation(format!(
-            "Unexpected layer '{}' reached multi-role dispatch",
-            options.layer.dir_name()
-        ))),
-    }
+    Ok(result)
 }

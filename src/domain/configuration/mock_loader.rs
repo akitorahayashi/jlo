@@ -4,11 +4,15 @@ use std::path::Path;
 use chrono::Utc;
 use serde::Deserialize;
 
-use crate::app::commands::run::RunOptions;
-use crate::app::commands::run::config::load_config;
+use crate::domain::configuration::loader::load_config;
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig};
+use crate::domain::{AppError, Layer, MockConfig, RunOptions};
 use crate::ports::WorkspaceStore;
+
+#[derive(Deserialize)]
+struct ContractConfig {
+    branch_prefix: String,
+}
 
 /// Validate prerequisites for mock mode.
 pub fn validate_mock_prerequisites(_options: &RunOptions) -> Result<(), AppError> {
@@ -35,11 +39,6 @@ pub fn validate_mock_prerequisites(_options: &RunOptions) -> Result<(), AppError
     }
 
     Ok(())
-}
-
-#[derive(Deserialize)]
-struct ContractConfig {
-    branch_prefix: String,
 }
 
 fn load_branch_prefix_for_layer<W: WorkspaceStore>(
@@ -77,7 +76,7 @@ pub fn load_mock_config<W: WorkspaceStore>(
     workspace: &W,
 ) -> Result<MockConfig, AppError> {
     // Load run config for branch settings
-    let run_config = load_config(jules_path)?;
+    let run_config = load_config(jules_path, workspace)?;
 
     // Load branch prefixes from layer contracts.
     let mut branch_prefixes = HashMap::new();

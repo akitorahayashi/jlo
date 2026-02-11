@@ -2,13 +2,173 @@ use std::path::{Path, PathBuf};
 
 use chrono::Utc;
 
-use crate::adapters::schedule_filesystem::load_schedule;
-use crate::app::commands::run::RunOptions;
-use crate::app::commands::run::mock::identity::generate_mock_id;
+use crate::domain::configuration::loader::{detect_repository_source, load_schedule};
+use crate::domain::configuration::mock_loader::load_mock_config;
 use crate::domain::identifiers::validation::validate_safe_path_component;
+use crate::domain::layers::mock_utils::{generate_mock_id, MOCK_ASSETS};
+use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput};
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions};
+use crate::ports::{GitHubPort, GitPort, JulesClient, WorkspaceStore};
+
+use super::multi_role::{dispatch_session, print_role_preview, validate_role_exists};
+use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
+
+pub struct ObserversLayer;
+
+impl<W> LayerStrategy<W> for ObserversLayer
+where
+    W: WorkspaceStore + Clone + Send + Sync + 'static,
+{
+    fn execute(
+        &self,
+        jules_path: &Path,
+        options: &RunOptions,
+        config: &RunConfig,
+        git: &dyn GitPort,
+        github: &dyn GitHubPort,
+        workspace: &W,
+        client_factory: &dyn JulesClientFactory,
+    ) -> Result<RunResult, AppError> {
+        if options.mock {
+            let mock_config = load_mock_config(jules_path, options, workspace)?;
+            let output =
+                execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            // Write mock output
+            if std::env::var("GITHUB_OUTPUT").is_ok() {
+                super::mock_utils::write_github_output(&output).map_err(|e| {
+                    AppError::InternalError(format!("Failed to write GITHUB_OUTPUT: {}", e))
+                })?;
+            } else {
+                super::mock_utils::print_local(&output);
+            }
+            return Ok(RunResult {
+                roles: vec![options.role.clone().unwrap_or_else(|| "mock".to_string())],
+                prompt_preview: false,
+                sessions: vec![],
+                cleanup_requirement: None,
+            });
+        }
+
+        execute_real(
+            jules_path,
+            options.prompt_preview,
+            options.branch.as_deref(),
+            options.role.as_deref(),
+            config,
+            workspace,
+            client_factory,
+        )
+    }
+}
+
+fn execute_real<W>(
+    jules_path: &Path,
+    prompt_preview: bool,
+    branch: Option<&str>,
+    role: Option<&str>,
+    config: &RunConfig,
+    workspace: &W,
+    client_factory: &dyn JulesClientFactory,
+) -> Result<RunResult, AppError>
+where
+    W: WorkspaceStore + Clone + Send + Sync + 'static,
+{
+    let role = role
+        .ok_or_else(|| AppError::MissingArgument("Role is required for observers".to_string()))?;
+
+    let role_id = RoleId::new(role)?;
+    validate_role_exists(jules_path, Layer::Observers, role_id.as_str(), workspace)?;
+
+    let starting_branch =
+        branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
+
+    let bridge_task = resolve_observer_bridge_task(jules_path, workspace)?;
+
+    if prompt_preview {
+        print_role_preview(jules_path, Layer::Observers, &role_id, &starting_branch, workspace);
+        let assembled = assemble_observer_prompt(
+            jules_path,
+            role_id.as_str(),
+            &bridge_task,
+            workspace,
+        )?;
+        println!("  Assembled prompt: {} chars", assembled.len());
+        println!("\nWould execute 1 session");
+        return Ok(RunResult {
+            roles: vec![role.to_string()],
+            prompt_preview: true,
+            sessions: vec![],
+            cleanup_requirement: None,
+        });
+    }
+
+    let source = detect_repository_source()?;
+    let assembled = assemble_observer_prompt(jules_path, role_id.as_str(), &bridge_task, workspace)?;
+    let client = client_factory.create()?;
+
+    let session_id = dispatch_session(
+        Layer::Observers,
+        &role_id,
+        assembled,
+        &source,
+        &starting_branch,
+        client.as_ref(),
+    )?;
+
+    Ok(RunResult {
+        roles: vec![role.to_string()],
+        prompt_preview: false,
+        sessions: vec![session_id],
+        cleanup_requirement: None,
+    })
+}
+
+fn assemble_observer_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+    jules_path: &Path,
+    role: &str,
+    bridge_task: &str,
+    workspace: &W,
+) -> Result<String, AppError> {
+    let context = PromptContext::new()
+        .with_var("role", role)
+        .with_var("bridge_task", bridge_task);
+
+    assemble_prompt(jules_path, Layer::Observers, &context, workspace)
+        .map(|p: AssembledPrompt| p.content)
+        .map_err(|e| AppError::InternalError(e.to_string()))
+}
+
+fn resolve_observer_bridge_task<W: WorkspaceStore>(
+    jules_path: &Path,
+    workspace: &W,
+) -> Result<String, AppError> {
+    let innovators = jules::innovators_dir(jules_path);
+    let innovators_str = innovators.to_string_lossy();
+
+    let has_ideas = workspace
+        .list_dir(&innovators_str)
+        .ok()
+        .map(|entries| {
+            entries.iter().any(|entry| {
+                workspace.is_dir(&entry.to_string_lossy())
+                    && workspace.file_exists(&entry.join("idea.yml").to_string_lossy())
+            })
+        })
+        .unwrap_or(false);
+
+    if !has_ideas {
+        return Ok(String::new());
+    }
+
+    let bridge_path = jules::tasks_dir(jules_path, Layer::Observers).join("bridge_comments.yml");
+    workspace.read_file(&bridge_path.to_string_lossy()).map_err(|_| {
+        AppError::Validation(format!(
+            "Innovator ideas exist, but observer bridge task file is missing: expected {}",
+            bridge_path.display()
+        ))
+    })
+}
 
 // Template placeholder constants (must match src/assets/mock/observer_event.yml)
 const TMPL_ID: &str = "mock01";
@@ -19,8 +179,7 @@ const TMPL_TAG: &str = "test-tag";
 const COMMENT_TMPL_AUTHOR: &str = "mock-author";
 const COMMENT_TMPL_TAG: &str = "test-tag";
 
-/// Execute mock observers.
-pub fn execute_mock_observers<G, H, W>(
+fn execute_mock<G, H, W>(
     jules_path: &Path,
     options: &RunOptions,
     config: &MockConfig,
@@ -29,8 +188,8 @@ pub fn execute_mock_observers<G, H, W>(
     workspace: &W,
 ) -> Result<MockOutput, AppError>
 where
-    G: GitPort,
-    H: GitHubPort,
+    G: GitPort + ?Sized,
+    H: GitHubPort + ?Sized,
     W: WorkspaceStore,
 {
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
@@ -46,7 +205,7 @@ where
     // Create mock events
     let events_dir = jules::events_pending_dir(jules_path);
 
-    let mock_event_template = super::MOCK_ASSETS
+    let mock_event_template = MOCK_ASSETS
         .get_file("observer_event.yml")
         .ok_or_else(|| {
             AppError::InternalError("Mock asset missing: observer_event.yml".to_string())
@@ -97,14 +256,11 @@ where
     )?;
 
     // Bridge: generate comment artifacts for each scheduled innovator persona.
-    // This enables the innovator refinement stage to consume observer feedback
-    // without manual edits. The comment filename is deterministic to prevent
-    // uncontrolled duplicates on re-runs.
     let mut comment_files: Vec<PathBuf> = Vec::new();
     let innovator_personas = resolve_innovator_personas(workspace);
 
     if !innovator_personas.is_empty() {
-        let mock_comment_template = super::MOCK_ASSETS
+        let mock_comment_template = MOCK_ASSETS
             .get_file("observer_comment.yml")
             .ok_or_else(|| {
                 AppError::InternalError("Mock asset missing: observer_comment.yml".to_string())
@@ -122,8 +278,6 @@ where
                 .ok_or_else(|| AppError::Validation("Invalid comments path".to_string()))?;
             workspace.create_dir_all(comments_dir_str)?;
 
-            // Deterministic filename: observer-{observer_role}-{mock_tag}.yml
-            // Uses mock_tag (not event_id) to ensure idempotency per run.
             let comment_file =
                 comments_dir.join(format!("observer-{}-{}.yml", observer_role, config.mock_tag));
             let comment_content = mock_comment_template
@@ -171,12 +325,6 @@ where
     })
 }
 
-/// Resolve enabled innovator persona names.
-///
-/// Returns an empty vec if the schedule is missing, innovators are not
-/// configured, or an error occurs (silent fallback is acceptable here
-/// because the comment bridge is supplementary output, not a primary
-/// deliverable of the observer mock).
 fn resolve_innovator_personas<W: WorkspaceStore>(workspace: &W) -> Vec<String> {
     let schedule = match load_schedule(workspace) {
         Ok(s) => s,

@@ -2,13 +2,14 @@ use std::path::Path;
 
 use crate::domain::workspace::paths::{jlo, jules};
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{AutomationMode, JulesClient, SessionRequest};
+use crate::ports::{AutomationMode, JulesClient, SessionRequest, WorkspaceStore};
 
-pub(crate) fn print_role_preview(
+pub fn print_role_preview<W: WorkspaceStore + ?Sized>(
     jules_path: &Path,
     layer: Layer,
     role: &RoleId,
     starting_branch: &str,
+    workspace: &W,
 ) {
     println!("=== Prompt Preview: {} ===", layer.display_name());
     println!("Starting branch: {}", starting_branch);
@@ -17,27 +18,28 @@ pub(crate) fn print_role_preview(
     let root = jules_path.parent().unwrap_or(Path::new("."));
     let role_yml_path = jlo::role_yml(root, layer, role.as_str());
 
-    if !role_yml_path.exists() {
+    if !workspace.file_exists(&role_yml_path.to_string_lossy()) {
         println!("  ⚠️  role.yml not found at {}\n", role_yml_path.display());
         return;
     }
 
     let contracts_path = jules::contracts(jules_path, layer);
-    if contracts_path.exists() {
+    if workspace.file_exists(&contracts_path.to_string_lossy()) {
         println!("  Contracts: {}", contracts_path.display());
     }
     println!("  Role config: {}", role_yml_path.display());
 }
 
-pub(crate) fn validate_role_exists(
+pub fn validate_role_exists<W: WorkspaceStore + ?Sized>(
     jules_path: &Path,
     layer: Layer,
     role: &str,
+    workspace: &W,
 ) -> Result<(), AppError> {
     let root = jules_path.parent().unwrap_or(Path::new("."));
     let role_yml_path = jlo::role_yml(root, layer, role);
 
-    if !role_yml_path.exists() {
+    if !workspace.file_exists(&role_yml_path.to_string_lossy()) {
         return Err(AppError::RoleNotFound(format!(
             "{}/{} (role.yml not found)",
             layer.dir_name(),
@@ -48,7 +50,7 @@ pub(crate) fn validate_role_exists(
     Ok(())
 }
 
-pub(crate) fn dispatch_session<C: JulesClient>(
+pub fn dispatch_session<C: JulesClient + ?Sized>(
     layer: Layer,
     role: &RoleId,
     prompt: String,

@@ -2,14 +2,130 @@ use std::path::{Path, PathBuf};
 
 use chrono::Utc;
 
-use crate::app::commands::run::RunOptions;
-use crate::app::commands::run::mock::identity::generate_mock_id;
+use crate::domain::configuration::loader::detect_repository_source;
+use crate::domain::configuration::mock_loader::load_mock_config;
+use crate::domain::layers::mock_utils::{MOCK_ASSETS, generate_mock_id};
+use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput};
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
+use crate::ports::{
+    AutomationMode, GitHubPort, GitPort, JulesClient, SessionRequest, WorkspaceStore,
+};
 
-/// Execute mock decider.
-pub fn execute_mock_decider<G, H, W>(
+use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
+
+pub struct DeciderLayer;
+
+impl<W> LayerStrategy<W> for DeciderLayer
+where
+    W: WorkspaceStore + Clone + Send + Sync + 'static,
+{
+    fn execute(
+        &self,
+        jules_path: &Path,
+        options: &RunOptions,
+        config: &RunConfig,
+        git: &dyn GitPort,
+        github: &dyn GitHubPort,
+        workspace: &W,
+        client_factory: &dyn JulesClientFactory,
+    ) -> Result<RunResult, AppError> {
+        if options.mock {
+            let mock_config = load_mock_config(jules_path, options, workspace)?;
+            let output =
+                execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            // Write mock output
+            if std::env::var("GITHUB_OUTPUT").is_ok() {
+                super::mock_utils::write_github_output(&output).map_err(|e| {
+                    AppError::InternalError(format!("Failed to write GITHUB_OUTPUT: {}", e))
+                })?;
+            } else {
+                super::mock_utils::print_local(&output);
+            }
+            return Ok(RunResult {
+                roles: vec!["decider".to_string()],
+                prompt_preview: false,
+                sessions: vec![],
+                cleanup_requirement: None,
+            });
+        }
+
+        execute_real(
+            jules_path,
+            options.prompt_preview,
+            options.branch.as_deref(),
+            config,
+            workspace,
+            client_factory,
+        )
+    }
+}
+
+fn execute_real<W>(
+    jules_path: &Path,
+    prompt_preview: bool,
+    branch: Option<&str>,
+    config: &RunConfig,
+    workspace: &W,
+    client_factory: &dyn JulesClientFactory,
+) -> Result<RunResult, AppError>
+where
+    W: WorkspaceStore + Clone + Send + Sync + 'static,
+{
+    let starting_branch =
+        branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
+
+    if prompt_preview {
+        println!("=== Prompt Preview: Decider ===");
+        println!("Starting branch: {}\n", starting_branch);
+
+        let prompt = assemble_decider_prompt(jules_path, workspace)?;
+        println!("  Assembled prompt: {} chars", prompt.len());
+
+        println!("\nWould dispatch workflow");
+        return Ok(RunResult {
+            roles: vec!["decider".to_string()],
+            prompt_preview: true,
+            sessions: vec![],
+            cleanup_requirement: None,
+        });
+    }
+
+    let source = detect_repository_source()?;
+    let client = client_factory.create()?;
+
+    let prompt = assemble_decider_prompt(jules_path, workspace)?;
+
+    let request = SessionRequest {
+        prompt,
+        source: source.to_string(),
+        starting_branch: starting_branch.to_string(),
+        require_plan_approval: false,
+        automation_mode: AutomationMode::AutoCreatePr,
+    };
+
+    println!("Executing: decider...");
+    let response = client.create_session(request)?;
+    println!("  ✅ Session created: {}", response.session_id);
+
+    Ok(RunResult {
+        roles: vec!["decider".to_string()],
+        prompt_preview: false,
+        sessions: vec![response.session_id],
+        cleanup_requirement: None,
+    })
+}
+
+fn assemble_decider_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+    jules_path: &Path,
+    workspace: &W,
+) -> Result<String, AppError> {
+    assemble_prompt(jules_path, Layer::Decider, &PromptContext::new(), workspace)
+        .map(|p: AssembledPrompt| p.content)
+        .map_err(|e| AppError::InternalError(e.to_string()))
+}
+
+fn execute_mock<G, H, W>(
     jules_path: &Path,
     _options: &RunOptions,
     config: &MockConfig,
@@ -18,8 +134,8 @@ pub fn execute_mock_decider<G, H, W>(
     workspace: &W,
 ) -> Result<MockOutput, AppError>
 where
-    G: GitPort,
-    H: GitHubPort,
+    G: GitPort + ?Sized,
+    H: GitHubPort + ?Sized,
     W: WorkspaceStore,
 {
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
@@ -38,6 +154,8 @@ where
     let requirements_dir = jules::requirements_dir(jules_path);
 
     // Ensure directories exist
+    // Using workspace for directory creation if possible, but pending_dir is usually created by observers
+    // Use fs for now as in original mock implementation
     std::fs::create_dir_all(&decided_dir)?;
     std::fs::create_dir_all(&requirements_dir)?;
 
@@ -45,7 +163,7 @@ where
     let label = config.issue_labels.first().cloned().ok_or_else(|| {
         AppError::Validation("No issue labels available for mock decider".to_string())
     })?;
-    let mock_issue_template = super::MOCK_ASSETS
+    let mock_issue_template = MOCK_ASSETS
         .get_file("decider_requirement.yml")
         .expect("Mock asset missing: decider_requirement.yml")
         .contents_utf8()
@@ -89,7 +207,8 @@ where
 
     // Requirement 1: requires deep analysis (for planner)
     let planner_issue_id = generate_mock_id();
-    let planner_issue_file = requirements_dir.join(format!("mock-planner-{}.yml", config.mock_tag));
+    let planner_issue_file =
+        requirements_dir.join(format!("mock-planner-{}.yml", config.mock_tag));
 
     let mut planner_issue_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
         .map_err(|e| {
