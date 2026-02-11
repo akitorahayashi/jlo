@@ -1,0 +1,11 @@
+schema_version: 2
+observer: qa
+updated_at: "2026-02-11T21:02:47Z"
+goals:
+  - "Identify redundant test coverage across integration suites."
+  - "Highlight opportunities to move logic verification to unit tests."
+rules: []
+ignore: []
+log:
+  - at: "2026-02-11T21:02:47Z"
+    summary: "Initialized QA perspective and performed initial assessment."
