@@ -27,11 +27,7 @@ impl WorkflowRunnerMode {
     ///
     /// `"remote"` becomes `ubuntu-latest`; everything else is passed through verbatim.
     pub fn runner_label(&self) -> &str {
-        if self.0 == Self::REMOTE {
-            "ubuntu-latest"
-        } else {
-            &self.0
-        }
+        if self.0 == Self::REMOTE { "ubuntu-latest" } else { &self.0 }
     }
 
     pub fn remote() -> Self {
@@ -49,9 +45,7 @@ impl FromStr for WorkflowRunnerMode {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let trimmed = s.trim();
         if trimmed.is_empty() {
-            return Err(AppError::Validation(
-                "Runner mode must not be empty.".into(),
-            ));
+            return Err(AppError::Validation("Runner mode must not be empty.".into()));
         }
         Ok(Self(trimmed.to_string()))
     }

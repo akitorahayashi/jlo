@@ -45,7 +45,7 @@ pub fn execute(options: WorkflowGenerateOptions) -> Result<WorkflowGenerateOutpu
 
     prepare_output_dir(&output_dir)?;
 
-    let scaffold = load_workflow_scaffold(options.mode, &generate_config)?;
+    let scaffold = load_workflow_scaffold(&options.mode, &generate_config)?;
     write_workflow_scaffold(&output_dir, &scaffold)?;
 
     Ok(WorkflowGenerateOutput {

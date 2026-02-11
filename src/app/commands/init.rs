@@ -48,7 +48,7 @@ where
     for entry in &control_plane_files {
         ctx.workspace().write_file(&entry.path, &entry.content)?;
     }
-    persist_workflow_runner_mode(ctx.workspace(), mode)?;
+    persist_workflow_runner_mode(ctx.workspace(), &mode)?;
 
     let seeded_roles = seed_scheduled_roles(ctx)?;
 
@@ -71,7 +71,7 @@ where
     // Install workflow scaffold
     let root = ctx.workspace().resolve_path("");
     let generate_config = load_workflow_generate_config(&root)?;
-    install_workflow_scaffold(&root, mode, &generate_config)?;
+    install_workflow_scaffold(&root, &mode, &generate_config)?;
 
     Ok(())
 }
@@ -131,7 +131,7 @@ where
 /// Execute the workflow scaffold installation.
 pub fn install_workflow_scaffold(
     root: &Path,
-    mode: WorkflowRunnerMode,
+    mode: &WorkflowRunnerMode,
     generate_config: &WorkflowGenerateConfig,
 ) -> Result<(), AppError> {
     let scaffold = load_workflow_scaffold(mode, generate_config)?;
@@ -192,7 +192,7 @@ fn parse_workflow_runner_mode(raw: Option<&str>) -> Result<WorkflowRunnerMode, A
 
 fn persist_workflow_runner_mode(
     workspace: &impl WorkspaceStore,
-    mode: WorkflowRunnerMode,
+    mode: &WorkflowRunnerMode,
 ) -> Result<(), AppError> {
     let config_path = ".jlo/config.toml";
     let content = workspace.read_file(config_path)?;
@@ -375,7 +375,7 @@ wait_minutes_default = 30
 "#;
         workspace.write_file(".jlo/config.toml", config).unwrap();
 
-        persist_workflow_runner_mode(&workspace, WorkflowRunnerMode::self_hosted()).unwrap();
+        persist_workflow_runner_mode(&workspace, &WorkflowRunnerMode::self_hosted()).unwrap();
         let updated = fs::read_to_string(temp.path().join(".jlo/config.toml")).unwrap();
 
         assert!(updated.contains("runner_mode = \"self-hosted\" # keep me"));
@@ -397,7 +397,8 @@ jules_branch = "jules"
             )
             .unwrap();
 
-        let err = persist_workflow_runner_mode(&workspace, WorkflowRunnerMode::remote()).unwrap_err();
+        let err =
+            persist_workflow_runner_mode(&workspace, &WorkflowRunnerMode::remote()).unwrap_err();
         assert!(err.to_string().contains("Missing [workflow] section"));
     }
 }

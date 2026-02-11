@@ -69,7 +69,7 @@ pub fn init_workflows_at(
     mode: WorkflowRunnerMode,
 ) -> Result<(), AppError> {
     let generate_config = init::load_workflow_generate_config(&path)?;
-    init::install_workflow_scaffold(&path, mode, &generate_config)
+    init::install_workflow_scaffold(&path, &mode, &generate_config)
 }
 
 // =============================================================================

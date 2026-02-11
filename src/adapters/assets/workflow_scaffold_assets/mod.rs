@@ -50,7 +50,7 @@ pub struct WorkflowScaffoldAssets {
 }
 
 pub fn load_workflow_scaffold(
-    mode: WorkflowRunnerMode,
+    mode: &WorkflowRunnerMode,
     generate_config: &WorkflowGenerateConfig,
 ) -> Result<WorkflowScaffoldAssets, AppError> {
     let sources = collect_asset_sources(&WORKFLOWS_ASSET_DIR)?;
@@ -146,12 +146,13 @@ mod tests {
     #[test]
     fn workflow_scaffold_assets_load() {
         let generate_config = WorkflowGenerateConfig::default();
-        let remote = load_workflow_scaffold(WorkflowRunnerMode::remote(), &generate_config)
+        let remote = load_workflow_scaffold(&WorkflowRunnerMode::remote(), &generate_config)
             .expect("remote assets");
         assert!(!remote.files.is_empty(), "remote scaffold should have files");
 
-        let self_hosted = load_workflow_scaffold(WorkflowRunnerMode::self_hosted(), &generate_config)
-            .expect("self-hosted assets");
+        let self_hosted =
+            load_workflow_scaffold(&WorkflowRunnerMode::self_hosted(), &generate_config)
+                .expect("self-hosted assets");
         assert!(!self_hosted.files.is_empty(), "self-hosted scaffold should have files");
     }
 }
