@@ -40,7 +40,7 @@ jobs:
       - name: Verify workflow drift
         run: |
           diff_found=0
-          for file in $(find .tmp/workflow-scaffold-generate/remote/.github/workflows -type f); do
+          find .tmp/workflow-scaffold-generate/remote/.github/workflows -type f -print0 | while IFS= read -r -d '' file; do
             rel_path="${file#.tmp/workflow-scaffold-generate/remote/}"
             if ! diff -u "$file" "$rel_path"; then
               echo "Error: drift detected in $rel_path"
