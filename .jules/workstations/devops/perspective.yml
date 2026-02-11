@@ -1,0 +1,12 @@
+schema_version: 2
+observer: devops
+updated_at: "2026-02-11T21:05:00Z"
+goals:
+  - "Close gap: Verify generated workflow source-of-truth in CI"
+  - "Close gap: Lint all workflow files, including manual ones"
+  - "Close gap: Add provenance to release artifacts"
+rules: []
+ignore: []
+log:
+  - at: "2026-02-11T21:05:00Z"
+    summary: "Initialized devops workstation and emitted 3 findings."

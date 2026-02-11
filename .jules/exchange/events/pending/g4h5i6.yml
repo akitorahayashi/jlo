@@ -1,0 +1,14 @@
+schema_version: 1
+id: "g4h5i6"
+issue_id: ""
+created_at: "2026-02-11"
+author_role: "devops"
+confidence: "medium"
+title: "Missing Release Provenance"
+statement: |
+  Release artifacts are built and uploaded without SLSA provenance or signing. This makes it impossible for consumers to verify the build integrity and source of the binaries.
+evidence:
+  - path: ".github/workflows/release.yml"
+    loc:
+      - "25-36"
+    note: "Artifacts are downloaded and released without provenance generation or signing steps."

@@ -1,0 +1,14 @@
+schema_version: 1
+id: "d1e2f3"
+issue_id: ""
+created_at: "2026-02-11"
+author_role: "devops"
+confidence: "high"
+title: "Manual Workflows Excluded from Linting"
+statement: |
+  The `run-linters` workflow explicitly targets only the generated workflows in `.tmp/`, leaving manual workflows (build.yml, release.yml, etc.) unlinted. This creates a risk of syntax errors and security issues in critical manual workflows.
+evidence:
+  - path: ".github/workflows/run-linters.yml"
+    loc:
+      - "44-46"
+    note: "actionlint command restricted to .tmp/workflow-scaffold-generate/..."
