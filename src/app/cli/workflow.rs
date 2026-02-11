@@ -30,15 +30,10 @@ pub enum WorkflowCommands {
         output_dir: Option<String>,
     },
 
-    /// PR operations
-    Pr {
+    /// GitHub entity operations (pr, issue)
+    Gh {
         #[command(subcommand)]
-        command: WorkflowPrCommands,
-    },
-    /// Issue operations
-    Issue {
-        #[command(subcommand)]
-        command: WorkflowIssueCommands,
+        command: WorkflowGhCommands,
     },
     /// Workspace observation and cleanup operations
     Workspace {
@@ -78,6 +73,20 @@ pub enum WorkflowWorkspaceCleanCommands {
         /// Branches JSON array to delete
         #[arg(long)]
         branches_json: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum WorkflowGhCommands {
+    /// PR operations
+    Pr {
+        #[command(subcommand)]
+        command: WorkflowPrCommands,
+    },
+    /// Issue operations
+    Issue {
+        #[command(subcommand)]
+        command: WorkflowIssueCommands,
     },
 }
 
@@ -152,8 +161,7 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let output = workflow::generate(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowCommands::Pr { command } => run_workflow_pr(command),
-        WorkflowCommands::Issue { command } => run_workflow_issue(command),
+        WorkflowCommands::Gh { command } => run_workflow_gh(command),
         WorkflowCommands::Workspace { command } => run_workflow_workspace(command),
     }
 }
@@ -216,44 +224,52 @@ fn run_workflow_workspace_clean(command: WorkflowWorkspaceCleanCommands) -> Resu
     }
 }
 
-fn run_workflow_pr(command: WorkflowPrCommands) -> Result<(), AppError> {
+fn run_workflow_gh(command: WorkflowGhCommands) -> Result<(), AppError> {
+    match command {
+        WorkflowGhCommands::Pr { command } => run_workflow_gh_pr(command),
+        WorkflowGhCommands::Issue { command } => run_workflow_gh_issue(command),
+    }
+}
+
+fn run_workflow_gh_pr(command: WorkflowPrCommands) -> Result<(), AppError> {
     use crate::app::commands::workflow;
 
     let github = crate::adapters::github_command::GitHubCommandAdapter::new();
 
     match command {
         WorkflowPrCommands::CommentSummaryRequest { pr_number } => {
-            let options = workflow::pr::CommentSummaryRequestOptions { pr_number };
-            let output = workflow::pr::events::comment_summary_request::execute(&github, options)?;
+            let options = workflow::gh::pr::CommentSummaryRequestOptions { pr_number };
+            let output =
+                workflow::gh::pr::events::comment_summary_request::execute(&github, options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowPrCommands::SyncCategoryLabel { pr_number } => {
-            let options = workflow::pr::SyncCategoryLabelOptions { pr_number };
-            let output = workflow::pr::events::sync_category_label::execute(&github, options)?;
+            let options = workflow::gh::pr::SyncCategoryLabelOptions { pr_number };
+            let output = workflow::gh::pr::events::sync_category_label::execute(&github, options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowPrCommands::EnableAutomerge { pr_number } => {
-            let options = workflow::pr::EnableAutomergeOptions { pr_number };
-            let output = workflow::pr::events::enable_automerge::execute(&github, options)?;
+            let options = workflow::gh::pr::EnableAutomergeOptions { pr_number };
+            let output = workflow::gh::pr::events::enable_automerge::execute(&github, options)?;
             workflow::write_workflow_output(&output)
         }
         WorkflowPrCommands::Process { pr_number } => {
-            let options = workflow::pr::ProcessOptions { pr_number };
-            let output = workflow::pr::process::execute(&github, options)?;
+            let options = workflow::gh::pr::ProcessOptions { pr_number };
+            let output = workflow::gh::pr::process::execute(&github, options)?;
             workflow::write_workflow_output(&output)
         }
     }
 }
 
-fn run_workflow_issue(command: WorkflowIssueCommands) -> Result<(), AppError> {
+fn run_workflow_gh_issue(command: WorkflowIssueCommands) -> Result<(), AppError> {
     use crate::app::commands::workflow;
 
     let github = crate::adapters::github_command::GitHubCommandAdapter::new();
 
     match command {
         WorkflowIssueCommands::LabelInnovator { issue_number, persona } => {
-            let options = workflow::issue::LabelInnovatorOptions { issue_number, persona };
-            let output = workflow::issue::label_innovator::execute(&github, options)?;
+            let options = workflow::gh::issue::LabelInnovatorOptions { issue_number, persona };
+            let output = workflow::gh::issue::label_innovator::execute(&github, options)?;
             workflow::write_workflow_output(&output)
         }
     }

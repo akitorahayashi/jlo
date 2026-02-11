@@ -13,7 +13,8 @@ use crate::ports::GitHubPort;
 const MANAGED_COMMENT_MARKER: &str = "<!-- jlo:summary-request -->";
 
 /// Fixed summary request comment body per spec.
-const SUMMARY_REQUEST_BODY: &str = include_str!("../../../../../assets/prompts/summary_request.md");
+const SUMMARY_REQUEST_BODY: &str =
+    include_str!("../../../../../../assets/prompts/summary_request.md");
 
 /// Options for `workflow pr comment-summary-request`.
 #[derive(Debug, Clone)]

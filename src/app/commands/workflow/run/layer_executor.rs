@@ -72,7 +72,7 @@ where
     H: GitHubPort,
 {
     // Gate: only proceed if pending events exist (or mock mode)
-    if !options.mock && !has_pending_events(jules_path) {
+    if !options.mock && !has_pending_events(jules_path)? {
         eprintln!("No pending events, skipping decider");
         return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
     }
@@ -94,18 +94,19 @@ where
 }
 
 /// Check if the pending events directory contains any .yml files.
-fn has_pending_events(jules_path: &Path) -> bool {
+fn has_pending_events(jules_path: &Path) -> Result<bool, AppError> {
     let pending_dir = jules::exchange_dir(jules_path).join("events/pending");
     if !pending_dir.exists() {
-        return false;
+        return Ok(false);
     }
-    std::fs::read_dir(&pending_dir)
-        .map(|entries| {
-            entries
-                .flatten()
-                .any(|e| e.path().is_file() && e.path().extension().is_some_and(|ext| ext == "yml"))
-        })
-        .unwrap_or(false)
+    let entries = std::fs::read_dir(&pending_dir)?;
+    for entry in entries {
+        let entry = entry?;
+        if entry.path().is_file() && entry.path().extension().is_some_and(|ext| ext == "yml") {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 /// Execute multi-role layer (observers, innovators).
