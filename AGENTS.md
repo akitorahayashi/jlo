@@ -19,7 +19,7 @@ All scaffold files, workflow kits, configurations, and prompts must exist as rea
 - **How**: Use `include_dir!` to load `src/assets/scaffold` and `src/assets/github` as authoritative sources of truth.
 
 ### 2. Prompt Hierarchy (No Duplication)
-Prompts are constructed by `prompt_assembly.j2`, which renders prompt sections via explicit include helpers.
+Prompts are constructed by layer-specific `<layer>_prompt.j2` templates, which render prompt sections via explicit include helpers.
 
 ```jinja
 {{ section("Layer Contracts", include_required(".jules/roles/<layer>/contracts.yml")) }}

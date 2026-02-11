@@ -90,11 +90,13 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             diagnostics.push_error(tasks_dir.display().to_string(), "Missing tasks/");
         }
 
-        // Check prompt_assembly.j2 (all layers have this)
-        let prompt_assembly = jules::prompt_assembly(inputs.jules_path, layer);
-        if !prompt_assembly.exists() {
-            diagnostics
-                .push_error(prompt_assembly.display().to_string(), "Missing prompt_assembly.j2");
+        // Check prompt template (all layers have one)
+        let prompt_template = jules::prompt_template(inputs.jules_path, layer);
+        if !prompt_template.exists() {
+            diagnostics.push_error(
+                prompt_template.display().to_string(),
+                format!("Missing {}", layer.prompt_template_name()),
+            );
         }
 
         if layer.is_single_role() {
@@ -358,7 +360,7 @@ mod tests {
             jules_layer_dir.create_dir_all().unwrap();
             jules_layer_dir.child("schemas").create_dir_all().unwrap();
             jules_layer_dir.child("tasks").create_dir_all().unwrap();
-            jules_layer_dir.child("prompt_assembly.j2").touch().unwrap();
+            jules_layer_dir.child(layer.prompt_template_name()).touch().unwrap();
 
             // Phase-specific contracts for layers that use them
             match layer {

@@ -133,7 +133,7 @@ cargo test --test mock_mode       # Mock execution flow
 | Implementers | Single-role | `jlo run implementers <path>` | None (issue path) |
 | Innovators | Multi-role | `jlo workflow run innovators` | `.jlo/scheduled.toml` |
 
-**Single-role layers**: Narrator, Deciders, Planners, Implementers have a fixed role with `prompt_assembly.j2` in the layer directory. Template creation not supported.
+**Single-role layers**: Narrator, Deciders, Planners, Implementers have a fixed role with a `<layer>_prompt.j2` template in the layer directory. Template creation not supported.
 
 **Multi-role layers**: Observers and Innovators support multiple configurable roles listed in `.jlo/scheduled.toml`. Each role has its own subdirectory with `role.yml`.
 

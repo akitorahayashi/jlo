@@ -1,0 +1,17 @@
+id: observe
+title: Inspect, Emit Events, and Update Memory
+
+description:
+  Core observer cycle. Inspect the codebase within your role's domain, emit
+  event files for findings, and refresh workstation memory.
+
+steps:
+  - "Inspect the repository within your role's domain. changes.yml (if present)
+    is advisory context, not a scope boundary."
+  - Cross-reference findings against open issues and recent events to avoid duplication.
+  - "For each finding (0-3): create .jules/exchange/events/pending/<id>.yml per
+    schemas/event.yml. Each must have concrete file-level evidence."
+  - "Review goals in perspective.yml against current repository state. Replace
+    stale or completed goals — maintain 1-3 actionable goals at all times."
+  - "Update perspective.yml: set updated_at, refine rules/ignore, prepend a
+    one-line log entry (newest first, max 5)."

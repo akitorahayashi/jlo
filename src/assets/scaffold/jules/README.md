@@ -82,7 +82,7 @@ Implementers modify source code and require human review.
 |
 +-- roles/              # Role definitions (global)
     +-- narrator/       # Single-role layer
-    |   +-- prompt_assembly.j2 # Prompt construction rules
+    |   +-- narrator_prompt.j2 # Prompt construction rules
     |   +-- contracts.yml    # Layer contract
     |   +-- tasks/
     |   |   +-- bootstrap_summary.yml
@@ -92,26 +92,26 @@ Implementers modify source code and require human review.
     |
     +-- observers/      # Multi-role layer
     |   +-- contracts.yml    # Shared observer contract
-    |   +-- prompt_assembly.j2 # Prompt construction rules
+    |   +-- observers_prompt.j2 # Prompt construction rules
     |   +-- schemas/
     |   |   +-- event.yml    # Event template
     |
     +-- deciders/       # Multi-role layer
     |   +-- contracts.yml    # Shared decider contract
-    |   +-- prompt_assembly.j2 # Prompt construction rules
+    |   +-- decider_prompt.j2 # Prompt construction rules
     |   +-- schemas/
     |   |   +-- issue.yml    # Issue template
     |
     +-- planners/       # Single-role layer (issue-driven)
-    |   +-- prompt_assembly.j2 # Prompt construction rules
+    |   +-- planner_prompt.j2 # Prompt construction rules
     |   +-- contracts.yml    # Shared planner contract
     |
     +-- implementers/   # Single-role layer (issue-driven)
-    |   +-- prompt_assembly.j2 # Prompt construction rules
+    |   +-- implementer_prompt.j2 # Prompt construction rules
     |   +-- contracts.yml    # Shared implementer contract
     |
     +-- innovators/     # Multi-role layer (phase-driven)
-        +-- prompt_assembly.j2      # Prompt construction (uses {{phase}})
+        +-- innovators_prompt.j2      # Prompt construction (uses {{phase}})
         +-- contracts_creation.yml   # Creation phase contract
         +-- contracts_refinement.yml # Refinement phase contract
         +-- schemas/
@@ -146,7 +146,7 @@ Implementers modify source code and require human review.
 
 **Single-role layers** (Deciders, Planners, Implementers): Have a fixed role with `contracts.yml` directly in the layer directory. Planners and Implementers are issue-driven and require an issue file path argument. Template creation is not supported.
 
-**Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated contracts file (`contracts_creation.yml` / `contracts_refinement.yml`) selected at runtime via the `{{phase}}` template variable in `prompt_assembly.j2`.
+**Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated contracts file (`contracts_creation.yml` / `contracts_refinement.yml`) selected at runtime via the `{{phase}}` template variable in `innovators_prompt.j2`.
 
 ## Exchange
  
@@ -162,7 +162,7 @@ Implementers modify source code and require human review.
 ### contracts.yml
 Layer-level shared constraints and workflows. All roles in the layer reference this file. Innovators use phase-specific contracts (`contracts_creation.yml`, `contracts_refinement.yml`) instead.
 
-### prompt_assembly.j2
+### <layer>_prompt.j2
 Defines a prompt template that assembles required and optional includes into a single prompt sent to the agent.
 
 ### role.yml

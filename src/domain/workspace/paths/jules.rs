@@ -38,9 +38,9 @@ pub fn layer_dir(jules_path: &Path, layer: Layer) -> PathBuf {
     jules_path.join("roles").join(layer.dir_name())
 }
 
-/// `.jules/roles/<layer>/prompt_assembly.j2`
-pub fn prompt_assembly(jules_path: &Path, layer: Layer) -> PathBuf {
-    layer_dir(jules_path, layer).join("prompt_assembly.j2")
+/// `.jules/roles/<layer>/<layer>_prompt.j2`
+pub fn prompt_template(jules_path: &Path, layer: Layer) -> PathBuf {
+    layer_dir(jules_path, layer).join(layer.prompt_template_name())
 }
 
 /// `.jules/roles/<layer>/contracts.yml`
@@ -176,8 +176,8 @@ mod tests {
         let jp = Path::new("/ws/.jules");
         assert_eq!(layer_dir(jp, Layer::Narrators), PathBuf::from("/ws/.jules/roles/narrator"));
         assert_eq!(
-            prompt_assembly(jp, Layer::Observers),
-            PathBuf::from("/ws/.jules/roles/observers/prompt_assembly.j2")
+            prompt_template(jp, Layer::Observers),
+            PathBuf::from("/ws/.jules/roles/observers/observers_prompt.j2")
         );
         assert_eq!(
             phase_contracts(jp, Layer::Innovators, "creation"),

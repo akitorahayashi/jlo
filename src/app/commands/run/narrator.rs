@@ -1,7 +1,7 @@
 //! Narrator layer execution (single-role, not issue-driven).
 //!
 //! The Narrator produces `.jules/exchange/changes.yml` summarizing recent codebase changes.
-//! Prompt structure is fully declared in `prompt_assembly.j2`; this module only
+//! Prompt structure is fully declared in `narrator_prompt.j2`; this module only
 //! computes the PromptContext variables the template needs.
 
 use std::path::Path;
@@ -112,11 +112,13 @@ fn assemble_narrator_prompt<G: GitPort, W: WorkspaceStore + Clone + Send + Sync 
         .with_var("run_mode", run_mode)
         .with_var("range_description", build_range_description(range));
 
-    // For overwrite: provide the commit list since cursor so narrator has them in-context
-    if run_mode == "overwrite" {
-        let commits_text = fetch_commits_since_cursor(git, range)?;
-        prompt_context = prompt_context.with_var("commits_since_cursor", commits_text);
-    }
+    // Provide commit list since cursor (non-empty only for overwrite mode)
+    let commits_text = if run_mode == "overwrite" {
+        fetch_commits_since_cursor(git, range)?
+    } else {
+        String::new()
+    };
+    prompt_context = prompt_context.with_var("commits_since_cursor", commits_text);
 
     assemble_single_role_prompt_with_context(
         jules_path,

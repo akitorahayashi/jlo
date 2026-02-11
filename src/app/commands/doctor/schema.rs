@@ -43,7 +43,7 @@ pub fn collect_prompt_entries(
         }
 
         if layer.is_single_role() {
-            // Single-role layers use prompt_assembly.j2 (Jinja2 template),
+            // Single-role layers use <layer>_prompt.j2 (Jinja2 template),
             // not the legacy prompt.yml (YAML) format. No prompt entry to parse.
         } else {
             let roles_container = jules::layer_roles_container(jules_path, layer);
@@ -443,7 +443,7 @@ fn parse_role_file_data(
         );
     }
 
-    // Multi-role layers don't have contracts in role.yml (handled by prompt_assembly.j2)
+    // Multi-role layers don't have contracts in role.yml (handled by prompt template)
     Some(PromptEntry { path: path.to_path_buf(), contracts: vec![] })
 }
 

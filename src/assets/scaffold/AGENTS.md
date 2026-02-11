@@ -1,13 +1,13 @@
-# .jules/ Scaffold Design
+# Scaffold Design
 
 ## Critical Design Principles
 
 ### 1. Prompt Hierarchy (No Duplication)
-Prompts are constructed by `prompt_assembly.j2`, which renders prompt sections via explicit include helpers. Each layer has a single `prompt_assembly.j2` that references contracts, role definitions, and exchange data.
+Prompts are constructed by layer-specific `<layer>_prompt.j2` templates, which render prompt sections via explicit include helpers. Each layer has a single prompt template that references contracts, role definitions, and exchange data.
 
 ```jinja
-{{ section("Role", include_required(".jlo/roles/<layer>/roles/" ~ role ~ "/role.yml")) }}
 {{ section("Layer Contracts", include_required(".jules/roles/<layer>/contracts.yml")) }}
+{{ section("Role", include_required(".jlo/roles/<layer>/roles/" ~ role ~ "/role.yml")) }}
 {{ section("Change Summary", include_optional(".jules/exchange/changes.yml")) }}
 ```
 
@@ -39,7 +39,7 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 ├── github-labels.json    # GitHub labels definition
 ├── roles/
 │   ├── narrator/
-│   │   ├── prompt_assembly.j2       # Prompt construction rules
+│   │   ├── narrator_prompt.j2       # Prompt construction rules
 │   │   ├── contracts.yml            # Layer contract
 │   │   ├── tasks/                   # Action units
 │   │   │   ├── bootstrap_summary.yml
@@ -47,30 +47,30 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   │   └── schemas/
 │   │       └── changes.yml
 │   ├── observers/
-│   │   ├── prompt_assembly.j2 # Prompt construction rules
+│   │   ├── observers_prompt.j2 # Prompt construction rules
 │   │   ├── contracts.yml      # Layer contract
 │   │   ├── tasks/             # Action units
 │   │   └── schemas/
 │   │       ├── event.yml
 │   │       └── perspective.yml
 │   ├── deciders/
-│   │   ├── prompt_assembly.j2 # Prompt construction rules
+│   │   ├── decider_prompt.j2 # Prompt construction rules
 │   │   ├── contracts.yml      # Layer contract
 │   │   ├── tasks/             # Action units
 │   │   └── schemas/
 │   │       └── issue.yml
 │   ├── planners/
-│   │   ├── prompt_assembly.j2 # Prompt construction rules
+│   │   ├── planner_prompt.j2 # Prompt construction rules
 │   │   ├── contracts.yml      # Layer contract
 │   │   ├── tasks/             # Action units
 │   │   └── schemas/
 │   ├── implementers/
-│   │   ├── prompt_assembly.j2 # Prompt construction rules
+│   │   ├── implementer_prompt.j2 # Prompt construction rules
 │   │   ├── contracts.yml      # Layer contract
 │   │   ├── tasks/             # Action units
 │   │   └── schemas/
 │   └── innovators/
-│       ├── prompt_assembly.j2      # Prompt construction (uses {{phase}})
+│       ├── innovators_prompt.j2      # Prompt construction (uses {{phase}})
 │       ├── contracts_creation.yml   # Creation phase contract
 │       ├── contracts_refinement.yml # Refinement phase contract
 │       ├── tasks/                   # Action units
@@ -116,7 +116,7 @@ See "Critical Design Principles" above for the contract structure.
 
 | File | Scope | Content |
 |------|-------|---------|
-| `prompt_assembly.j2` | Layer | Prompt template that assembles contracts, tasks, and includes. |
+| `<layer>_prompt.j2` | Layer | Prompt template that assembles contracts, tasks, and includes. |
 | `role.yml` | Role | Specialized focus (observers/innovators). |
 | `contracts.yml` | Layer | Scope, inputs, outputs, non-negotiable rules shared within layer. |
 | `contracts_<phase>.yml` | Phase | Phase-specific contracts (innovators only: creation, refinement). |

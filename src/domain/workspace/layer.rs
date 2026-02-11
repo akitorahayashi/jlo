@@ -40,6 +40,21 @@ impl Layer {
         }
     }
 
+    /// Filename of the Jinja2 prompt template for this layer.
+    ///
+    /// Observers and Innovators use plural forms (multi-role layers).
+    /// All other layers use singular.
+    pub fn prompt_template_name(&self) -> &'static str {
+        match self {
+            Layer::Narrators => "narrator_prompt.j2",
+            Layer::Observers => "observers_prompt.j2",
+            Layer::Deciders => "decider_prompt.j2",
+            Layer::Planners => "planner_prompt.j2",
+            Layer::Implementers => "implementer_prompt.j2",
+            Layer::Innovators => "innovators_prompt.j2",
+        }
+    }
+
     /// Human-readable display name.
     pub fn display_name(&self) -> &'static str {
         match self {

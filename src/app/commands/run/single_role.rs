@@ -225,7 +225,7 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     println!("Starting branch: {}\n", starting_branch);
     println!("Issue content: {} chars\n", issue_content.len());
 
-    let prompt_path = jules::prompt_assembly(jules_path, layer);
+    let prompt_path = jules::prompt_template(jules_path, layer);
     let contracts_path = jules::contracts(jules_path, layer);
 
     println!("Prompt: {}", prompt_path.display());

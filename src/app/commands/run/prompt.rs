@@ -15,11 +15,13 @@ use crate::domain::{
 ///
 /// Multi-role layers (observers, innovators) require role context.
 /// Innovators additionally require a phase context variable.
+/// Extra context variables (e.g. observer bridge_task) can be provided.
 pub fn assemble_prompt<L>(
     jules_path: &Path,
     layer: Layer,
     role: &str,
     phase: Option<&str>,
+    extra_context: &PromptContext,
     loader: &L,
 ) -> Result<String, AppError>
 where
@@ -42,6 +44,7 @@ where
         })?;
         context = context.with_var("phase", phase_val);
     }
+    context = context.merge(extra_context);
     Ok(assemble_prompt_domain(jules_path, layer, &context, loader)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
@@ -49,7 +52,7 @@ where
 
 /// Assemble the prompt for a single-role layer (Narrator, Planners, Implementers).
 ///
-/// Single-role layers use prompt_assembly.j2 directly in the layer directory
+/// Single-role layers use the prompt template directly in the layer directory
 /// and do not require role context.
 pub fn assemble_single_role_prompt<L>(
     jules_path: &Path,

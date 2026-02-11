@@ -760,10 +760,20 @@ fn verify_scaffold_integrity() {
     for layer in layers {
         let layer_path = ctx.jules_path().join("roles").join(layer);
         assert!(layer_path.exists(), "Layer {} should exist", layer);
+        let template_name = match layer {
+            "narrator" => "narrator_prompt.j2",
+            "observers" => "observers_prompt.j2",
+            "deciders" => "decider_prompt.j2",
+            "planners" => "planner_prompt.j2",
+            "implementers" => "implementer_prompt.j2",
+            "innovators" => "innovators_prompt.j2",
+            _ => unreachable!(),
+        };
         assert!(
-            layer_path.join("prompt_assembly.j2").exists(),
-            "Layer {} prompt_assembly.j2 should exist",
-            layer
+            layer_path.join(template_name).exists(),
+            "Layer {} {} should exist",
+            layer,
+            template_name,
         );
 
         // Check contracts

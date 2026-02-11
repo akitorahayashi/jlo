@@ -65,12 +65,14 @@ fn init_creates_complete_layer_structure() {
     assert!(jlo.join("roles/observers/consistency/role.yml").exists());
     assert!(jlo.join("roles/innovators/recruiter/role.yml").exists());
     assert!(jules.join("roles/observers/schemas").exists());
-    assert!(jules.join("roles/observers/prompt_assembly.j2").exists());
+    assert!(jules.join("roles/observers/observers_prompt.j2").exists());
+    assert!(jules.join("roles/observers/tasks/observe.yml").exists());
+    assert!(jules.join("roles/observers/tasks/bridge_comments.yml").exists());
 
     // Decider is single-role and runtime-driven from contracts only (no .jlo role.yml)
     assert!(!jlo.join("roles/deciders/role.yml").exists());
     assert!(jules.join("roles/deciders/schemas").exists());
-    assert!(jules.join("roles/deciders/prompt_assembly.j2").exists());
+    assert!(jules.join("roles/deciders/decider_prompt.j2").exists());
 
     // Single-role layers have flat structure (no roles subdirectory)
     assert!(jules.join("roles/narrator/contracts.yml").exists());

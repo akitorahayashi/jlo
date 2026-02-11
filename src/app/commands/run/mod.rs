@@ -15,7 +15,7 @@ use std::path::PathBuf;
 
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::workspace::paths::{jlo, jules};
-use crate::domain::{AppError, Layer, RoleId};
+use crate::domain::{AppError, Layer, PromptContext, RoleId};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 use self::config::{detect_repository_source, load_config};
@@ -206,6 +206,9 @@ fn execute_multi_role_run<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     // Determine repository source from git
     let source = detect_repository_source()?;
 
+    // Build layer-specific extra context
+    let extra_context = build_extra_context(jules_path, options.layer, workspace);
+
     // Execute with Jules API
     let client = HttpJulesClient::from_env_with_config(&config.jules)?;
     let session_id = execute_session(
@@ -215,11 +218,55 @@ fn execute_multi_role_run<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         &starting_branch,
         &source,
         options.phase.as_deref(),
+        &extra_context,
         &client,
         workspace,
     )?;
 
     Ok(RunResult { roles: vec![role.clone()], prompt_preview: false, sessions: vec![session_id] })
+}
+
+/// Build layer-specific extra context variables for prompt assembly.
+///
+/// For observers: includes bridge_task content when innovator ideas exist.
+fn build_extra_context<W: WorkspaceStore>(
+    jules_path: &Path,
+    layer: Layer,
+    workspace: &W,
+) -> PromptContext {
+    let mut ctx = PromptContext::new();
+
+    if layer == Layer::Observers {
+        let bridge_content = resolve_observer_bridge_task(jules_path, workspace);
+        ctx = ctx.with_var("bridge_task", bridge_content);
+    }
+
+    ctx
+}
+
+/// Read bridge_comments.yml content if any innovator persona has an idea.yml.
+/// Returns empty string if no ideas exist.
+fn resolve_observer_bridge_task<W: WorkspaceStore>(jules_path: &Path, workspace: &W) -> String {
+    let innovators = jules::innovators_dir(jules_path);
+
+    // Check if any persona has an idea.yml
+    let has_ideas = std::fs::read_dir(&innovators)
+        .ok()
+        .map(|entries| {
+            entries.filter_map(|e| e.ok()).any(|entry| {
+                entry.file_type().ok().is_some_and(|ft| ft.is_dir())
+                    && entry.path().join("idea.yml").exists()
+            })
+        })
+        .unwrap_or(false);
+
+    if !has_ideas {
+        return String::new();
+    }
+
+    // Read the bridge_comments task file
+    let bridge_path = jules::tasks_dir(jules_path, Layer::Observers).join("bridge_comments.yml");
+    workspace.read_file(&bridge_path.to_string_lossy()).unwrap_or_default()
 }
 
 /// Validate that a role exists in the layer's roles directory.
@@ -250,12 +297,13 @@ fn execute_session<
     starting_branch: &str,
     source: &str,
     phase: Option<&str>,
+    extra_context: &PromptContext,
     client: &C,
     loader: &L,
 ) -> Result<String, AppError> {
     println!("Executing {} / {}...", layer.dir_name(), role);
 
-    let prompt = assemble_prompt(jules_path, layer, role.as_str(), phase, loader)?;
+    let prompt = assemble_prompt(jules_path, layer, role.as_str(), phase, extra_context, loader)?;
 
     let request = SessionRequest {
         prompt,
@@ -307,7 +355,9 @@ fn execute_prompt_preview<L: crate::domain::PromptAssetLoader + Clone + Send + S
     }
     println!("  Role config: {}", role_yml_path.display());
 
-    if let Ok(prompt) = assemble_prompt(jules_path, layer, role.as_str(), phase, loader) {
+    if let Ok(prompt) =
+        assemble_prompt(jules_path, layer, role.as_str(), phase, &PromptContext::new(), loader)
+    {
         println!("  Assembled prompt: {} chars", prompt.len());
     }
 
