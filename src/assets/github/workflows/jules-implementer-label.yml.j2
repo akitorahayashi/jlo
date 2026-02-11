@@ -71,4 +71,4 @@ jobs:
           GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
         run: |
           set -euo pipefail
-          jlo workflow pr sync-category-label {{ gha_expr("steps.discover.outputs.pr_number") }}
+          jlo workflow gh pr sync-category-label {{ gha_expr("steps.discover.outputs.pr_number") }}

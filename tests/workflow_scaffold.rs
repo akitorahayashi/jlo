@@ -512,8 +512,8 @@ fn automerge_delegates_to_jlo_command() {
 
     // Policy logic is delegated to jlo, not inline bash
     assert!(
-        automerge.contains("jlo workflow pr enable-automerge"),
-        "Automerge workflow must delegate to `jlo workflow pr enable-automerge`"
+        automerge.contains("jlo workflow gh pr enable-automerge"),
+        "Automerge workflow must delegate to `jlo workflow gh pr enable-automerge`"
     );
 
     // Must NOT contain inline bash policy logic

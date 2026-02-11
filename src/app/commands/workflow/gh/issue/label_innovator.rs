@@ -10,7 +10,7 @@ use serde::Serialize;
 use crate::domain::AppError;
 use crate::ports::GitHubPort;
 
-/// Options for `workflow issue label-innovator`.
+/// Options for `workflow gh issue label-innovator`.
 #[derive(Debug, Clone)]
 pub struct LabelInnovatorOptions {
     /// Issue number to label.
@@ -19,7 +19,7 @@ pub struct LabelInnovatorOptions {
     pub persona: String,
 }
 
-/// Output of `workflow issue label-innovator`.
+/// Output of `workflow gh issue label-innovator`.
 #[derive(Debug, Clone, Serialize)]
 pub struct LabelInnovatorOutput {
     pub schema_version: u32,

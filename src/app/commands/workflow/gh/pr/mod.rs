@@ -1,4 +1,4 @@
-//! Workflow PR commands.
+//! Workflow gh pr commands.
 //!
 //! Event-level commands live under `events/`; `process` is the pipeline orchestrator.
 

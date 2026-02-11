@@ -16,14 +16,14 @@ use crate::ports::GitHubPort;
 const ALLOWED_PREFIXES: &[&str] =
     &["jules-narrator-", "jules-observer-", "jules-decider-", "jules-planner-", "jules-innovator-"];
 
-/// Options for `workflow pr enable-automerge`.
+/// Options for `workflow gh pr enable-automerge`.
 #[derive(Debug, Clone)]
 pub struct EnableAutomergeOptions {
     /// PR number to enable auto-merge on.
     pub pr_number: u64,
 }
 
-/// Output of `workflow pr enable-automerge`.
+/// Output of `workflow gh pr enable-automerge`.
 #[derive(Debug, Clone, Serialize)]
 pub struct EnableAutomergeOutput {
     pub schema_version: u32,

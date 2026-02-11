@@ -11,14 +11,14 @@ use serde::Serialize;
 use crate::domain::AppError;
 use crate::ports::GitHubPort;
 
-/// Options for `workflow pr sync-category-label`.
+/// Options for `workflow gh pr sync-category-label`.
 #[derive(Debug, Clone)]
 pub struct SyncCategoryLabelOptions {
     /// PR number to label.
     pub pr_number: u64,
 }
 
-/// Output of `workflow pr sync-category-label`.
+/// Output of `workflow gh pr sync-category-label`.
 #[derive(Debug, Clone, Serialize)]
 pub struct SyncCategoryLabelOutput {
     pub schema_version: u32,
