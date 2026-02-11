@@ -47,7 +47,12 @@ impl FromStr for WorkflowRunnerMode {
         if trimmed.is_empty() {
             return Err(AppError::Validation("Runner mode must not be empty.".into()));
         }
-        Ok(Self(trimmed.to_string()))
+        // Normalize well-known aliases to lowercase; pass everything else through verbatim.
+        let normalized = match trimmed.to_lowercase().as_str() {
+            v @ (Self::REMOTE | Self::SELF_HOSTED) => v.to_string(),
+            _ => trimmed.to_string(),
+        };
+        Ok(Self(normalized))
     }
 }
 

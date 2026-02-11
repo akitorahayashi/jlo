@@ -12,8 +12,7 @@ pub fn run_init(remote: bool, self_hosted: bool) -> Result<(), AppError> {
             "Runner mode is required. Use --remote or --self-hosted.".into(),
         ));
     };
-    let label = mode.label().to_string();
-    crate::app::api::init(mode)?;
-    println!("✅ Initialized .jlo/ control plane and workflow scaffold ({})", label);
+    crate::app::api::init(&mode)?;
+    println!("✅ Initialized .jlo/ control plane and workflow scaffold ({})", mode.label());
     Ok(())
 }

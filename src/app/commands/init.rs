@@ -23,7 +23,7 @@ use std::collections::HashMap;
 pub fn execute<W, R, G>(
     ctx: &AppContext<W, R>,
     git: &G,
-    mode: WorkflowRunnerMode,
+    mode: &WorkflowRunnerMode,
 ) -> Result<(), AppError>
 where
     W: WorkspaceStore,
@@ -48,7 +48,7 @@ where
     for entry in &control_plane_files {
         ctx.workspace().write_file(&entry.path, &entry.content)?;
     }
-    persist_workflow_runner_mode(ctx.workspace(), &mode)?;
+    persist_workflow_runner_mode(ctx.workspace(), mode)?;
 
     let seeded_roles = seed_scheduled_roles(ctx)?;
 
@@ -71,7 +71,7 @@ where
     // Install workflow scaffold
     let root = ctx.workspace().resolve_path("");
     let generate_config = load_workflow_generate_config(&root)?;
-    install_workflow_scaffold(&root, &mode, &generate_config)?;
+    install_workflow_scaffold(&root, mode, &generate_config)?;
 
     Ok(())
 }
