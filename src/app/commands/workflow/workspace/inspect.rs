@@ -10,15 +10,13 @@ use crate::ports::WorkspaceStore;
 
 use super::model::{
     EventItem, EventStateSummary, EventSummary, RequirementItem, RequirementSummary, RoleSummary,
-    ScheduleLayerSummary, ScheduleSummary, WorkflowExchangeInspectOutput,
+    ScheduleLayerSummary, ScheduleSummary, WorkspaceInspectOutput,
 };
 
 #[derive(Debug, Clone)]
-pub struct WorkflowExchangeInspectOptions {}
+pub struct WorkspaceInspectOptions {}
 
-pub fn execute(
-    _options: WorkflowExchangeInspectOptions,
-) -> Result<WorkflowExchangeInspectOutput, AppError> {
+pub fn execute(_options: WorkspaceInspectOptions) -> Result<WorkspaceInspectOutput, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
 
     if !workspace.exists() {
@@ -28,9 +26,7 @@ pub fn execute(
     inspect_at(&workspace)
 }
 
-pub(super) fn inspect_at(
-    store: &impl WorkspaceStore,
-) -> Result<WorkflowExchangeInspectOutput, AppError> {
+pub(super) fn inspect_at(store: &impl WorkspaceStore) -> Result<WorkspaceInspectOutput, AppError> {
     let jules_path = store.jules_path();
     let exchange_dir = jules::exchange_dir(&jules_path);
     if !store.file_exists(exchange_dir.to_str().unwrap()) {
@@ -55,7 +51,7 @@ pub(super) fn inspect_at(
     let events = summarize_events(store, root, &exchange_dir)?;
     let requirements = summarize_requirements(store, root, &exchange_dir)?;
 
-    Ok(WorkflowExchangeInspectOutput {
+    Ok(WorkspaceInspectOutput {
         schema_version: 1,
         schedule: schedule_summary,
         events,

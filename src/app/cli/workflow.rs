@@ -35,11 +35,6 @@ pub enum WorkflowCommands {
         output_dir: Option<String>,
     },
 
-    /// Cleanup operations
-    Cleanup {
-        #[command(subcommand)]
-        command: WorkflowCleanupCommands,
-    },
     /// PR operations
     Pr {
         #[command(subcommand)]
@@ -50,19 +45,33 @@ pub enum WorkflowCommands {
         #[command(subcommand)]
         command: WorkflowIssueCommands,
     },
-    /// Inspect exchange and output JSON
-    Inspect,
-    /// Remove a processed issue and its source events
-    CleanIssue {
-        /// Path to the issue file
-        issue_file: String,
+    /// Workspace observation and cleanup operations
+    Workspace {
+        #[command(subcommand)]
+        command: WorkflowWorkspaceCommands,
     },
-    /// Publish merged proposals as GitHub issues
-    PublishProposals,
 }
 
 #[derive(Subcommand)]
-pub enum WorkflowCleanupCommands {
+pub enum WorkflowWorkspaceCommands {
+    /// Inspect exchange and output JSON
+    Inspect,
+    /// Publish merged proposals as GitHub issues
+    PublishProposals,
+    /// Clean workspace artifacts
+    Clean {
+        #[command(subcommand)]
+        command: WorkflowWorkspaceCleanCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum WorkflowWorkspaceCleanCommands {
+    /// Remove a processed requirement and its source events
+    Requirement {
+        /// Path to the requirement file
+        requirement_file: String,
+    },
     /// Clean up mock artifacts
     Mock {
         /// Mock tag to identify artifacts
@@ -165,32 +174,41 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let output = workflow::generate(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowCommands::Cleanup { command } => run_workflow_cleanup(command),
         WorkflowCommands::Pr { command } => run_workflow_pr(command),
         WorkflowCommands::Issue { command } => run_workflow_issue(command),
-        WorkflowCommands::Inspect => {
-            let options = workflow::WorkflowExchangeInspectOptions {};
-            let output = workflow::inspect(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowCommands::CleanIssue { issue_file } => {
-            let options = workflow::WorkflowExchangeCleanIssueOptions { issue_file };
-            let output = workflow::clean_issue(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowCommands::PublishProposals => {
-            let options = workflow::WorkflowExchangePublishProposalsOptions {};
-            let output = workflow::publish_proposals(options)?;
-            workflow::write_workflow_output(&output)
-        }
+        WorkflowCommands::Workspace { command } => run_workflow_workspace(command),
     }
 }
 
-fn run_workflow_cleanup(command: WorkflowCleanupCommands) -> Result<(), AppError> {
+fn run_workflow_workspace(command: WorkflowWorkspaceCommands) -> Result<(), AppError> {
     use crate::app::commands::workflow;
 
     match command {
-        WorkflowCleanupCommands::Mock { mock_tag, pr_numbers_json, branches_json } => {
+        WorkflowWorkspaceCommands::Inspect => {
+            let options = workflow::workspace::WorkspaceInspectOptions {};
+            let output = workflow::workspace::inspect(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowWorkspaceCommands::PublishProposals => {
+            let options = workflow::workspace::WorkspacePublishProposalsOptions {};
+            let output = workflow::workspace::publish_proposals(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowWorkspaceCommands::Clean { command } => run_workflow_workspace_clean(command),
+    }
+}
+
+fn run_workflow_workspace_clean(command: WorkflowWorkspaceCleanCommands) -> Result<(), AppError> {
+    use crate::app::commands::workflow;
+
+    match command {
+        WorkflowWorkspaceCleanCommands::Requirement { requirement_file } => {
+            let options =
+                workflow::workspace::WorkspaceCleanRequirementOptions { requirement_file };
+            let output = workflow::workspace::clean_requirement(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowWorkspaceCleanCommands::Mock { mock_tag, pr_numbers_json, branches_json } => {
             let pr_numbers_json = match pr_numbers_json {
                 Some(json_str) => {
                     let parsed: Vec<u64> = serde_json::from_str(&json_str).map_err(|e| {
@@ -209,9 +227,12 @@ fn run_workflow_cleanup(command: WorkflowCleanupCommands) -> Result<(), AppError
                 }
                 None => None,
             };
-            let options =
-                workflow::WorkflowCleanupMockOptions { mock_tag, pr_numbers_json, branches_json };
-            let output = workflow::cleanup_mock(options)?;
+            let options = workflow::workspace::WorkspaceCleanMockOptions {
+                mock_tag,
+                pr_numbers_json,
+                branches_json,
+            };
+            let output = workflow::workspace::clean_mock(options)?;
             workflow::write_workflow_output(&output)
         }
     }

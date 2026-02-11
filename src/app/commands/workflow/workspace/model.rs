@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
-pub struct WorkflowExchangeInspectOutput {
+pub struct WorkspaceInspectOutput {
     pub schema_version: u32,
     pub schedule: ScheduleSummary,
     pub events: EventSummary,

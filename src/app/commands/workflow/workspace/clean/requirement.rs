@@ -8,15 +8,15 @@ use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::{GitPort, WorkspaceStore};
 
-use super::inspect::inspect_at;
+use crate::app::commands::workflow::workspace::inspect::inspect_at;
 
 #[derive(Debug, Clone)]
-pub struct WorkflowExchangeCleanIssueOptions {
-    pub issue_file: String,
+pub struct WorkspaceCleanRequirementOptions {
+    pub requirement_file: String,
 }
 
 #[derive(Debug, Serialize)]
-pub struct WorkflowExchangeCleanIssueOutput {
+pub struct WorkspaceCleanRequirementOutput {
     pub schema_version: u32,
     pub deleted_paths: Vec<String>,
     pub committed: bool,
@@ -25,8 +25,8 @@ pub struct WorkflowExchangeCleanIssueOutput {
 }
 
 pub fn execute(
-    options: WorkflowExchangeCleanIssueOptions,
-) -> Result<WorkflowExchangeCleanIssueOutput, AppError> {
+    options: WorkspaceCleanRequirementOptions,
+) -> Result<WorkspaceCleanRequirementOutput, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
 
     if !workspace.exists() {
@@ -38,15 +38,15 @@ pub fn execute(
         .canonicalize()
         .map_err(|e| AppError::InternalError(format!("Failed to resolve .jules path: {}", e)))?;
 
-    let issue_path = Path::new(&options.issue_file);
+    let issue_path = Path::new(&options.requirement_file);
     let canonical_issue = issue_path.canonicalize().map_err(|_| {
-        AppError::Validation(format!("Issue file does not exist: {}", options.issue_file))
+        AppError::Validation(format!("Issue file does not exist: {}", options.requirement_file))
     })?;
 
     if !canonical_issue.starts_with(&canonical_jules) {
         return Err(AppError::Validation(format!(
             "Issue file must be within .jules/ directory: {}",
-            options.issue_file
+            options.requirement_file
         )));
     }
 
@@ -113,7 +113,7 @@ pub fn execute(
 
     git.push_branch(&branch, false)?;
 
-    Ok(WorkflowExchangeCleanIssueOutput {
+    Ok(WorkspaceCleanRequirementOutput {
         schema_version: 1,
         deleted_paths,
         committed: true,
@@ -240,8 +240,8 @@ roles = [
 
         std::env::set_current_dir(&repo_dir).unwrap();
 
-        let output = execute(WorkflowExchangeCleanIssueOptions {
-            issue_file: ".jules/exchange/requirements/issue.yml".to_string(),
+        let output = execute(WorkspaceCleanRequirementOptions {
+            requirement_file: ".jules/exchange/requirements/issue.yml".to_string(),
         })
         .unwrap();
 
