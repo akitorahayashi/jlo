@@ -13,7 +13,7 @@ pub mod setup_artifacts;
 pub use builtin_role::BuiltinRoleEntry;
 pub use configuration::{
     ExecutionConfig, JulesApiConfig, MockConfig, MockOutput, RunConfig, Schedule,
-    WorkflowRunnerMode,
+    WorkflowTimingConfig, WorkflowRunnerMode,
 };
 pub use error::{AppError, IoErrorKind};
 pub use identifiers::{ComponentId, RoleId};

@@ -3,7 +3,6 @@
 use std::fs;
 use std::path::Path;
 
-use super::config_dto::RunConfigDto;
 use crate::domain::workspace::paths::jlo;
 use crate::domain::{AppError, RunConfig};
 
@@ -24,8 +23,9 @@ pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
 
 /// Parse configuration from string content.
 pub fn parse_config_content(content: &str) -> Result<RunConfig, AppError> {
-    let dto: RunConfigDto = toml::from_str(content)?;
-    Ok(RunConfig::from(dto))
+    let config: RunConfig = toml::from_str(content)?;
+    config.validate()?;
+    Ok(config)
 }
 
 /// Detect the repository source from git remote.

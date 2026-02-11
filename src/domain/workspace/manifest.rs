@@ -6,6 +6,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::domain::workspace::paths;
 use crate::domain::AppError;
 
 const MANIFEST_SCHEMA_VERSION: u32 = 1;
@@ -54,7 +55,7 @@ pub fn is_default_role_file(path: &str) -> bool {
     // .jules/roles/<layer>/<role>/role.yml (multi-role layers: observers, innovators)
     // Example: .jules/roles/observers/taxonomy/role.yml
     if parts.len() == 5
-        && parts[0] == ".jules"
+        && parts[0] == paths::JULES_DIR
         && parts[1] == "roles"
         && matches!(parts[2], "observers" | "innovators")
         && parts[4] == "role.yml"
@@ -72,7 +73,7 @@ pub fn is_control_plane_entity_file(path: &str) -> bool {
 
     // .jlo/roles/<layer>/<role>/role.yml
     if components.len() == 5
-        && components[0] == ".jlo"
+        && components[0] == paths::JLO_DIR
         && components[1] == "roles"
         && components[4] == "role.yml"
     {
@@ -80,7 +81,8 @@ pub fn is_control_plane_entity_file(path: &str) -> bool {
     }
 
     // .jlo/scheduled.toml (root schedule)
-    if components.len() == 2 && components[0] == ".jlo" && components[1] == "scheduled.toml" {
+    if components.len() == 2 && components[0] == paths::JLO_DIR && components[1] == "scheduled.toml"
+    {
         return true;
     }
 
