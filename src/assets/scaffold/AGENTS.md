@@ -7,7 +7,7 @@ Prompts are constructed by layer-specific `<layer>_prompt.j2` templates, which r
 
 ```jinja
 {{ section("Layer Contracts", include_required(".jules/roles/<layer>/contracts.yml")) }}
-{{ section("Role", include_required(".jlo/roles/<layer>/roles/" ~ role ~ "/role.yml")) }}
+{{ section("Role", include_required(".jlo/roles/<layer>/" ~ role ~ "/role.yml")) }}
 {{ section("Change Summary", include_optional(".jules/exchange/changes.yml")) }}
 ```
 

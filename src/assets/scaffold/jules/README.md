@@ -93,22 +93,32 @@ Implementers modify source code and require human review.
     +-- observers/      # Multi-role layer
     |   +-- contracts.yml    # Shared observer contract
     |   +-- observers_prompt.j2 # Prompt construction rules
+    |   +-- tasks/
+    |   |   +-- bridge_comments.yml
     |   +-- schemas/
     |   |   +-- event.yml    # Event template
     |
     +-- deciders/       # Multi-role layer
     |   +-- contracts.yml    # Shared decider contract
     |   +-- decider_prompt.j2 # Prompt construction rules
+    |   +-- tasks/
     |   +-- schemas/
     |   |   +-- issue.yml    # Issue template
     |
     +-- planners/       # Single-role layer (issue-driven)
     |   +-- planner_prompt.j2 # Prompt construction rules
     |   +-- contracts.yml    # Shared planner contract
+    |   +-- tasks/
     |
     +-- implementers/   # Single-role layer (issue-driven)
     |   +-- implementer_prompt.j2 # Prompt construction rules
     |   +-- contracts.yml    # Shared implementer contract
+    |   +-- tasks/
+    |   |   +-- bugs.yml
+    |   |   +-- docs.yml
+    |   |   +-- feats.yml
+    |   |   +-- refacts.yml
+    |   |   +-- tests.yml
     |
     +-- innovators/     # Multi-role layer (phase-driven)
         +-- innovators_prompt.j2      # Prompt construction (uses {{phase}})

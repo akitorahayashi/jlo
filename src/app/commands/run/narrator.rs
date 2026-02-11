@@ -139,16 +139,7 @@ fn fetch_commits_since_cursor<G: GitPort>(
     }
     let after_arg = format!("--after={}", since);
     let output = git.run_command(
-        &[
-            "log",
-            "--oneline",
-            &after_arg,
-            "--format=%H %ai %s",
-            "--",
-            ".",
-            ":(exclude).jules",
-            ":(exclude).jlo",
-        ],
+        &["log", &after_arg, "--format=%H %ai %s", "--", ".", ":(exclude).jules", ":(exclude).jlo"],
         None,
     )?;
     Ok(output.trim().to_string())

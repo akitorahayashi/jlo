@@ -248,7 +248,7 @@ fn execute_innovator_run<W: WorkspaceStore + Clone + Send + Sync + 'static>(
             "--phase is required for innovators (creation or refinement)".to_string(),
         )
     })?;
-    let task_content = resolve_innovator_task(jules_path, phase, workspace);
+    let task_content = resolve_innovator_task(jules_path, phase, workspace)?;
     let input =
         innovators_asm::InnovatorPromptInput { role: role_id.as_str(), phase, task: &task_content };
 
@@ -301,13 +301,15 @@ fn print_role_preview(jules_path: &Path, layer: Layer, role: &RoleId, starting_b
 /// Returns empty string if no ideas exist.
 fn resolve_observer_bridge_task<W: WorkspaceStore>(jules_path: &Path, workspace: &W) -> String {
     let innovators = jules::innovators_dir(jules_path);
+    let innovators_str = innovators.to_string_lossy();
 
-    let has_ideas = std::fs::read_dir(&innovators)
+    let has_ideas = workspace
+        .list_dir(&innovators_str)
         .ok()
         .map(|entries| {
-            entries.filter_map(|e| e.ok()).any(|entry| {
-                entry.file_type().ok().is_some_and(|ft| ft.is_dir())
-                    && entry.path().join("idea.yml").exists()
+            entries.iter().any(|entry| {
+                workspace.is_dir(&entry.to_string_lossy())
+                    && workspace.file_exists(&entry.join("idea.yml").to_string_lossy())
             })
         })
         .unwrap_or(false);
@@ -326,14 +328,19 @@ fn resolve_innovator_task<W: WorkspaceStore>(
     jules_path: &Path,
     phase: &str,
     workspace: &W,
-) -> String {
+) -> Result<String, AppError> {
     let filename = match phase {
         "creation" => "create_idea.yml",
         "refinement" => "refine_proposal.yml",
-        _ => return String::new(),
+        _ => {
+            return Err(AppError::Validation(format!(
+                "Unknown innovator phase '{}': must be 'creation' or 'refinement'",
+                phase
+            )));
+        }
     };
     let task_path = jules::tasks_dir(jules_path, Layer::Innovators).join(filename);
-    workspace.read_file(&task_path.to_string_lossy()).unwrap_or_default()
+    Ok(workspace.read_file(&task_path.to_string_lossy()).unwrap_or_default())
 }
 
 /// Validate that a role exists in the layer's roles directory.

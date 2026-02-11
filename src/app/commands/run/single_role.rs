@@ -236,7 +236,7 @@ fn assemble_layer_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
 
 /// Extract the `label` field from issue YAML content.
 ///
-/// Fails explicitly if the label is missing or empty — no silent fallback.
+/// Fails explicitly if the label is missing, empty, or unsafe — no silent fallback.
 fn extract_issue_label(issue_content: &str) -> Result<String, AppError> {
     let value: serde_yaml::Value = serde_yaml::from_str(issue_content)
         .map_err(|e| AppError::Validation(format!("Failed to parse issue YAML: {}", e)))?;
@@ -245,6 +245,14 @@ fn extract_issue_label(issue_content: &str) -> Result<String, AppError> {
         value.get("label").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).ok_or_else(|| {
             AppError::Validation("Issue file must contain a non-empty 'label' field".to_string())
         })?;
+
+    // Prevent path traversal via crafted label values
+    if !crate::domain::identifiers::validation::validate_safe_path_component(label) {
+        return Err(AppError::Validation(format!(
+            "Invalid label '{}': must be a safe path component",
+            label
+        )));
+    }
 
     Ok(label.to_string())
 }
