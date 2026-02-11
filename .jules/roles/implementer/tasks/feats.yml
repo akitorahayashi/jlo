@@ -1,0 +1,22 @@
+task: implement-feat
+
+objective:
+  Implement the new feature described in the requirement. Deliver working, tested code
+  that integrates cleanly with the existing codebase.
+
+steps:
+  - Understand the feature specification and acceptance criteria in the requirement.
+  - Design the implementation approach before writing code.
+  - Implement the feature with appropriate abstractions.
+  - Add comprehensive tests covering the new behaviour.
+  - Update documentation if the feature changes public APIs or user-facing behaviour.
+  - Run the project's verification suite (tests, linting, type checks).
+  - Create a pull request referencing the requirement.
+
+constraints:
+  - "New public interfaces must have documentation."
+  - "Feature flags or configuration should be used when the feature is non-trivial and incremental delivery is preferable."
+  - "All development-related documentation must be written in English."
+  - "Keep documentation for LLM (AGENTS.md, CLAUDE.md, etc.) concise for token efficiency. Focus on essential information only."
+  - "Documentation is written in a declarative style describing the current state. Imperative or changelog-style descriptions are avoided."
+  - "Declarative updates preserve existing, correct content and integrate new content where appropriate, without duplication. Avoid ripping and replacing everything."

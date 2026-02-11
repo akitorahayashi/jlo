@@ -1,0 +1,12 @@
+layer: decider
+branch_prefix: jules-decider-
+
+purpose:
+  Triage observer events into actionable requirements. Verify each event against the
+  current codebase, discard stale observations, rationalize conflicts, and
+  aggregate valid events into requirements for downstream processing.
+
+constraints:
+  - Requirement filenames use kebab-case title; IDs are 6-char random lowercase alphanumeric
+  - When requires_deep_analysis is true, deep_analysis_reason must be non-empty
+  - verification_criteria must be clear and actionable; do not specify executable commands
