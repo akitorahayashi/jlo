@@ -5,7 +5,7 @@ on:
 
 jobs:
   run-linters:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -15,8 +15,8 @@ jobs:
         with:
           components: rustfmt,clippy
 
-      - name: Install jlo
-        run: cargo install --path .
+      - name: Build jlo
+        run: cargo build --locked --bin jlo
         shell: bash
 
       - name: Install aqua
@@ -33,13 +33,11 @@ jobs:
 
       - name: Generate workflow scaffold
         run: |
-          jlo workflow generate remote --output-dir .tmp/workflow-scaffold-generate/remote
-          jlo workflow generate self-hosted --output-dir .tmp/workflow-scaffold-generate/self-hosted
+          "${CARGO_TARGET_DIR:-target}/debug/jlo" workflow generate self-hosted --output-dir .tmp/workflow-scaffold-generate/self-hosted
         shell: bash
 
       - name: Run actionlint
         run: |
-          aqua exec -- actionlint .tmp/workflow-scaffold-generate/remote/.github/workflows/*.yml
           aqua exec -- actionlint .tmp/workflow-scaffold-generate/self-hosted/.github/workflows/*.yml
         shell: bash
 

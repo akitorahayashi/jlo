@@ -14,29 +14,38 @@ on:
 
 jobs:
   verify-install:
-    runs-on: ubuntu-latest
-    container:
-      image: ubuntu:24.04
+    runs-on: self-hosted
     strategy:
       matrix:
         component: [swift, uv, just]
       fail-fast: false
 
     steps:
-      - name: Install base packages
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends \
-            bash ca-certificates curl git tar xz-utils \
-            binutils gnupg libcurl4-openssl-dev libc6-dev libedit2 libgcc-13-dev \
-            libncurses-dev libpython3-dev libstdc++-13-dev libxml2-dev libz3-dev \
-            pkg-config tzdata unzip zlib1g-dev
-
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - name: Install component
+      - name: Ensure Docker is available
         shell: bash
         run: |
           set -euo pipefail
-          bash "src/assets/catalog/${{ matrix.component }}/install.sh"
+          docker --version
+
+      - name: Install component in Linux container
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/work" \
+            -w /work \
+            ubuntu:24.04 \
+            bash -lc '
+              set -euo pipefail
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                bash ca-certificates curl git tar xz-utils \
+                binutils gnupg libcurl4-openssl-dev libc6-dev libedit2 libgcc-13-dev \
+                libncurses-dev libpython3-dev libstdc++-13-dev libxml2-dev libz3-dev \
+                pkg-config tzdata unzip zlib1g-dev
+              bash "src/assets/catalog/${{ matrix.component }}/install.sh"
+            '

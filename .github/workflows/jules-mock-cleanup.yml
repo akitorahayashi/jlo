@@ -18,7 +18,7 @@ env:
 
 jobs:
   cleanup-mock-artifacts:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 10
     env:
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}

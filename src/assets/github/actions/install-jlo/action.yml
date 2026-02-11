@@ -1,5 +1,5 @@
 name: 'Install jlo'
-description: 'Installs the jlo CLI binary pinned to .jlo/.jlo-version on the control branch'
+description: 'Installs the jlo CLI binary pinned to .jlo/.jlo-version on the control branch with bounded local cache'
 
 runs:
   using: 'composite'
@@ -32,7 +32,6 @@ runs:
         fi
 
         CONTROL_REF="origin/${JLO_TARGET_BRANCH}"
-
         VERSION_RAW="$(git show "${CONTROL_REF}:.jlo/.jlo-version" 2>/dev/null | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
         if [ -z "$VERSION_RAW" ]; then
           echo "::error::.jlo/.jlo-version is missing or empty on '${CONTROL_REF}'."
@@ -42,21 +41,8 @@ runs:
         VERSION="${VERSION_RAW#v}"
         TAG_VERSION="v${VERSION}"
 
-        if command -v jlo >/dev/null 2>&1; then
-          INSTALLED_VERSION="$(jlo --version 2>/dev/null | tr -d '\r' | grep -o -E '[0-9]+\\.[0-9]+\\.[0-9]+' | head -n 1 || true)"
-          if [ -n "$INSTALLED_VERSION" ] && [ "$INSTALLED_VERSION" = "$VERSION" ]; then
-            echo "✅ jlo ${VERSION} already installed; skipping download."
-            exit 0
-          fi
-          if [ -n "$INSTALLED_VERSION" ]; then
-            echo "Existing jlo ${INSTALLED_VERSION} does not match expected ${VERSION}; reinstalling."
-          else
-            echo "Existing jlo found but version could not be determined; reinstalling expected ${VERSION}."
-          fi
-        fi
-
-        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-        ARCH=$(uname -m)
+        OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+        ARCH="$(uname -m)"
 
         case "$OS" in
           linux) OS="linux" ;;
@@ -76,22 +62,56 @@ runs:
             ;;
         esac
 
-        ASSET="jlo-${OS}-${ARCH}"
-        URL="https://github.com/akitorahayashi/jlo/releases/download/${TAG_VERSION}/${ASSET}"
+        DEFAULT_CACHE_ROOT="${RUNNER_TOOL_CACHE:-$HOME/.cache}/jlo-bin-cache"
+        if [ "${RUNNER_ENVIRONMENT:-}" = "github-hosted" ]; then
+          DEFAULT_CACHE_ROOT="${RUNNER_TEMP:-/tmp}/jlo-bin-cache"
+        fi
 
-        echo "Installing jlo ${VERSION} from: $URL"
-        curl --fail --silent --show-error --location \
-          --connect-timeout 10 \
-          --max-time 60 \
-          --retry 3 \
-          --retry-delay 2 \
-          --retry-all-errors \
-          "$URL" -o jlo
-        chmod +x jlo
+        CACHE_ROOT="${JLO_CACHE_ROOT:-${DEFAULT_CACHE_ROOT}}"
+        if ! mkdir -p "${CACHE_ROOT}" >/dev/null 2>&1; then
+          CACHE_ROOT="${RUNNER_TEMP:-/tmp}/jlo-bin-cache"
+          mkdir -p "${CACHE_ROOT}"
+        fi
 
-        INSTALL_DIR="${RUNNER_TEMP:-/tmp}/jlo-bin"
-        mkdir -p "$INSTALL_DIR"
-        mv jlo "$INSTALL_DIR/jlo"
+        PLATFORM_DIR="${CACHE_ROOT}/${OS}-${ARCH}"
+        INSTALL_DIR="${PLATFORM_DIR}/${TAG_VERSION}"
+        BIN_PATH="${INSTALL_DIR}/jlo"
 
-        echo "$INSTALL_DIR" >> "$GITHUB_PATH"
-        echo "✅ jlo installed: $($INSTALL_DIR/jlo --version 2>/dev/null || echo 'version unknown')"
+        mkdir -p "${INSTALL_DIR}"
+
+        if [ -x "${BIN_PATH}" ]; then
+          CACHED_VERSION="$("${BIN_PATH}" --version 2>/dev/null | tr -d '\r' | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 || true)"
+          if [ -n "${CACHED_VERSION}" ] && [ "${CACHED_VERSION}" = "${VERSION}" ]; then
+            echo "✅ jlo ${VERSION} already cached; skipping download."
+          else
+            rm -f "${BIN_PATH}"
+          fi
+        fi
+
+        if [ ! -x "${BIN_PATH}" ]; then
+          ASSET="jlo-${OS}-${ARCH}"
+          URL="https://github.com/akitorahayashi/jlo/releases/download/${TAG_VERSION}/${ASSET}"
+
+          echo "Installing jlo ${VERSION} from: ${URL}"
+          TMP_BIN="$(mktemp "${RUNNER_TEMP:-/tmp}/jlo-download.XXXXXX")"
+          trap 'rm -f "${TMP_BIN}"' EXIT
+
+          curl --fail --silent --show-error --location \
+            --connect-timeout 10 \
+            --max-time 60 \
+            --retry 3 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            "${URL}" -o "${TMP_BIN}"
+          chmod +x "${TMP_BIN}"
+          mv "${TMP_BIN}" "${BIN_PATH}"
+          trap - EXIT
+        fi
+
+        # Keep only the pinned version for this OS/arch to prevent accumulation.
+        if [ -d "${PLATFORM_DIR}"; then
+          find "${PLATFORM_DIR}" -mindepth 1 -maxdepth 1 -type d ! -name "${TAG_VERSION}" -exec rm -rf {} +
+        fi
+
+        echo "${INSTALL_DIR}" >> "${GITHUB_PATH}"
+        echo "✅ jlo installed: $("${BIN_PATH}" --version 2>/dev/null || echo 'version unknown')"

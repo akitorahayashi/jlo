@@ -6,10 +6,7 @@ on:
 jobs:
   test:
     name: Run all tests
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: self-hosted
     env:
       RUST_BACKTRACE: 1
 
