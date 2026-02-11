@@ -8,9 +8,7 @@ use crate::domain::layers::mock_utils::{MOCK_ASSETS, generate_mock_id};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
-use crate::ports::{
-    AutomationMode, GitHubPort, GitPort, JulesClient, SessionRequest, WorkspaceStore,
-};
+use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
 
 use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
@@ -32,8 +30,7 @@ where
     ) -> Result<RunResult, AppError> {
         if options.mock {
             let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let output =
-                execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::mock_utils::write_github_output(&output).map_err(|e| {
@@ -207,8 +204,7 @@ where
 
     // Requirement 1: requires deep analysis (for planner)
     let planner_issue_id = generate_mock_id();
-    let planner_issue_file =
-        requirements_dir.join(format!("mock-planner-{}.yml", config.mock_tag));
+    let planner_issue_file = requirements_dir.join(format!("mock-planner-{}.yml", config.mock_tag));
 
     let mut planner_issue_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
         .map_err(|e| {

@@ -6,8 +6,8 @@ use crate::adapters::jules_client_http::HttpJulesClient;
 use crate::app::commands::workflow::workspace::{
     WorkspaceCleanRequirementOptions, clean_requirement,
 };
-use crate::domain::configuration::{load_config, validate_mock_prerequisites};
 pub use crate::domain::configuration::parse_config_content;
+use crate::domain::configuration::{load_config, validate_mock_prerequisites};
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::layers::get_layer_strategy;
 use crate::domain::layers::strategy::JulesClientFactory;
@@ -63,15 +63,8 @@ where
     let strategy = get_layer_strategy(options.layer);
 
     // Execute strategy
-    let result = strategy.execute(
-        jules_path,
-        &options,
-        &config,
-        git,
-        github,
-        workspace,
-        &client_factory,
-    )?;
+    let result =
+        strategy.execute(jules_path, &options, &config, git, github, workspace, &client_factory)?;
 
     // Handle post-execution cleanup (e.g. Implementer requirement)
     if let Some(path) = result.cleanup_requirement.as_ref() {

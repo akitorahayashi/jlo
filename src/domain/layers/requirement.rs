@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use crate::domain::workspace::paths::jules;
 use crate::domain::AppError;
+use crate::domain::workspace::paths::jules;
 use crate::ports::WorkspaceStore;
 
 pub struct RequirementPathInfo {

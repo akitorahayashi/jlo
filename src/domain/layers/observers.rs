@@ -5,11 +5,11 @@ use chrono::Utc;
 use crate::domain::configuration::loader::{detect_repository_source, load_schedule};
 use crate::domain::configuration::mock_loader::load_mock_config;
 use crate::domain::identifiers::validation::validate_safe_path_component;
-use crate::domain::layers::mock_utils::{generate_mock_id, MOCK_ASSETS};
+use crate::domain::layers::mock_utils::{MOCK_ASSETS, generate_mock_id};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions};
-use crate::ports::{GitHubPort, GitPort, JulesClient, WorkspaceStore};
+use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 use super::multi_role::{dispatch_session, print_role_preview, validate_role_exists};
 use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -32,8 +32,7 @@ where
     ) -> Result<RunResult, AppError> {
         if options.mock {
             let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let output =
-                execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::mock_utils::write_github_output(&output).map_err(|e| {
@@ -87,12 +86,8 @@ where
 
     if prompt_preview {
         print_role_preview(jules_path, Layer::Observers, &role_id, &starting_branch, workspace);
-        let assembled = assemble_observer_prompt(
-            jules_path,
-            role_id.as_str(),
-            &bridge_task,
-            workspace,
-        )?;
+        let assembled =
+            assemble_observer_prompt(jules_path, role_id.as_str(), &bridge_task, workspace)?;
         println!("  Assembled prompt: {} chars", assembled.len());
         println!("\nWould execute 1 session");
         return Ok(RunResult {
@@ -104,7 +99,8 @@ where
     }
 
     let source = detect_repository_source()?;
-    let assembled = assemble_observer_prompt(jules_path, role_id.as_str(), &bridge_task, workspace)?;
+    let assembled =
+        assemble_observer_prompt(jules_path, role_id.as_str(), &bridge_task, workspace)?;
     let client = client_factory.create()?;
 
     let session_id = dispatch_session(
@@ -130,9 +126,7 @@ fn assemble_observer_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     bridge_task: &str,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let context = PromptContext::new()
-        .with_var("role", role)
-        .with_var("bridge_task", bridge_task);
+    let context = PromptContext::new().with_var("role", role).with_var("bridge_task", bridge_task);
 
     assemble_prompt(jules_path, Layer::Observers, &context, workspace)
         .map(|p: AssembledPrompt| p.content)

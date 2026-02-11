@@ -7,9 +7,7 @@ use crate::domain::configuration::mock_loader::load_mock_config;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
-use crate::ports::{
-    AutomationMode, GitHubPort, GitPort, JulesClient, SessionRequest, WorkspaceStore,
-};
+use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
 
 use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
@@ -25,13 +23,13 @@ where
         options: &RunOptions,
         config: &RunConfig,
         git: &dyn GitPort,
-        github: &dyn GitHubPort,
+        _github: &dyn GitHubPort,
         workspace: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
         if options.mock {
             let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let output = execute_mock(jules_path, &mock_config)?;
+            let output = execute_mock(&mock_config)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::mock_utils::write_github_output(&output).map_err(|e| {
@@ -146,10 +144,7 @@ where
     }
 }
 
-fn execute_mock(
-    _jules_path: &Path,
-    config: &MockConfig,
-) -> Result<MockOutput, AppError> {
+fn execute_mock(config: &MockConfig) -> Result<MockOutput, AppError> {
     let _ = config.branch_prefix(Layer::Narrator)?;
     println!("Mock narrator: no-op (preserving existing .jules/exchange/changes.yml)");
 
@@ -163,7 +158,10 @@ fn execute_mock(
 
 // --- Prompt Assembly Logic ---
 
-fn assemble_narrator_prompt<G: GitPort + ?Sized, W: WorkspaceStore + Clone + Send + Sync + 'static>(
+fn assemble_narrator_prompt<
+    G: GitPort + ?Sized,
+    W: WorkspaceStore + Clone + Send + Sync + 'static,
+>(
     jules_path: &Path,
     range: &RangeContext,
     git: &G,
@@ -497,7 +495,11 @@ created_at: "2026-02-05 00:00:00"
             panic!("mock narrator no-op must not call has_changes");
         }
 
-        fn run_command(&self, _args: &[&str], _cwd: Option<&std::path::Path>) -> Result<String, AppError> {
+        fn run_command(
+            &self,
+            _args: &[&str],
+            _cwd: Option<&std::path::Path>,
+        ) -> Result<String, AppError> {
             panic!("mock narrator no-op must not call run_command");
         }
 
@@ -509,7 +511,11 @@ created_at: "2026-02-05 00:00:00"
             panic!("mock narrator no-op must not call push_branch");
         }
 
-        fn commit_files(&self, _message: &str, _files: &[&std::path::Path]) -> Result<String, AppError> {
+        fn commit_files(
+            &self,
+            _message: &str,
+            _files: &[&std::path::Path],
+        ) -> Result<String, AppError> {
             panic!("mock narrator no-op must not call commit_files");
         }
 
@@ -602,7 +608,11 @@ created_at: "2026-02-05 00:00:00"
             panic!("mock narrator no-op must not call ensure_asset_dir");
         }
 
-        fn copy_asset(&self, _from: &std::path::Path, _to: &std::path::Path) -> std::io::Result<u64> {
+        fn copy_asset(
+            &self,
+            _from: &std::path::Path,
+            _to: &std::path::Path,
+        ) -> std::io::Result<u64> {
             panic!("mock narrator no-op must not call copy_asset");
         }
     }
@@ -701,11 +711,7 @@ created_at: "2026-02-05 00:00:00"
             issue_labels: vec!["bugs".to_string()],
         };
 
-        let output = execute_mock(
-            Path::new(".jules"),
-            &config,
-        )
-        .expect("mock narrator should succeed as no-op");
+        let output = execute_mock(&config).expect("mock narrator should succeed as no-op");
 
         assert_eq!(output.mock_branch, "");
         assert_eq!(output.mock_pr_number, 0);

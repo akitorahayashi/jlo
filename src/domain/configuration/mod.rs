@@ -6,7 +6,9 @@ pub mod run_options;
 pub mod schedule;
 pub mod workflow_runner_mode;
 
-pub use loader::{detect_repository_source, load_config, load_schedule, parse_config_content};
+#[allow(unused_imports)]
+pub use loader::{detect_repository_source, load_schedule};
+pub use loader::{load_config, parse_config_content};
 pub use mock_config::{MockConfig, MockOutput};
 pub use mock_loader::{load_mock_config, validate_mock_prerequisites};
 pub use run_config::{ExecutionConfig, JulesApiConfig, RunConfig, WorkflowTimingConfig};

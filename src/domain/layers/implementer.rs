@@ -32,8 +32,7 @@ where
     ) -> Result<RunResult, AppError> {
         if options.mock {
             let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let output =
-                execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::mock_utils::write_github_output(&output).map_err(|e| {
@@ -85,12 +84,7 @@ where
         branch.map(String::from).unwrap_or_else(|| config.run.default_branch.clone());
 
     if prompt_preview {
-        execute_prompt_preview(
-            jules_path,
-            &starting_branch,
-            &requirement_content,
-            workspace,
-        )?;
+        execute_prompt_preview(jules_path, &starting_branch, &requirement_content, workspace)?;
         return Ok(RunResult {
             roles: vec!["implementer".to_string()],
             prompt_preview: true,

@@ -1,15 +1,15 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use chrono::Utc;
 
 use crate::domain::configuration::loader::detect_repository_source;
 use crate::domain::configuration::mock_loader::load_mock_config;
 use crate::domain::identifiers::validation::validate_safe_path_component;
-use crate::domain::layers::mock_utils::{generate_mock_id, MOCK_ASSETS};
+use crate::domain::layers::mock_utils::{MOCK_ASSETS, generate_mock_id};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions};
-use crate::ports::{GitHubPort, GitPort, JulesClient, WorkspaceStore};
+use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 use super::multi_role::{dispatch_session, print_role_preview, validate_role_exists};
 use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -32,8 +32,7 @@ where
     ) -> Result<RunResult, AppError> {
         if options.mock {
             let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let output =
-                execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::mock_utils::write_github_output(&output).map_err(|e| {
@@ -63,6 +62,7 @@ where
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn execute_real<W>(
     jules_path: &Path,
     prompt_preview: bool,
@@ -94,8 +94,13 @@ where
 
     if prompt_preview {
         print_role_preview(jules_path, Layer::Innovators, &role_id, &starting_branch, workspace);
-        let assembled =
-            assemble_innovator_prompt(jules_path, role_id.as_str(), phase, &task_content, workspace)?;
+        let assembled = assemble_innovator_prompt(
+            jules_path,
+            role_id.as_str(),
+            phase,
+            &task_content,
+            workspace,
+        )?;
         println!("  Assembled prompt: {} chars", assembled.len());
         println!("\nWould execute 1 session");
         return Ok(RunResult {
@@ -135,10 +140,8 @@ fn assemble_innovator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     task: &str,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let context = PromptContext::new()
-        .with_var("role", role)
-        .with_var("phase", phase)
-        .with_var("task", task);
+    let context =
+        PromptContext::new().with_var("role", role).with_var("phase", phase).with_var("task", task);
 
     assemble_prompt(jules_path, Layer::Innovators, &context, workspace)
         .map(|p: AssembledPrompt| p.content)
@@ -267,15 +270,13 @@ where
             &format!("[{}] innovator: mock creation (create idea)", config.mock_tag),
             &files,
         )?;
-    } else {
-        if workspace.file_exists(idea_path_str) {
-            workspace.remove_file(idea_path_str)?;
-            let files: Vec<&Path> = vec![idea_path.as_path()];
-            git.commit_files(
-                &format!("[{}] innovator: mock refinement (remove idea)", config.mock_tag),
-                &files,
-            )?;
-        }
+    } else if workspace.file_exists(idea_path_str) {
+        workspace.remove_file(idea_path_str)?;
+        let files: Vec<&Path> = vec![idea_path.as_path()];
+        git.commit_files(
+            &format!("[{}] innovator: mock refinement (remove idea)", config.mock_tag),
+            &files,
+        )?;
     }
 
     git.push_branch(&branch_name, false)?;
@@ -465,8 +466,7 @@ mod tests {
             phase: Some("creation".to_string()),
         };
 
-        let result =
-            execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
         assert!(result.is_ok());
         let output = result.unwrap();
         assert!(output.mock_branch.starts_with("jules-innovator-"));
@@ -499,8 +499,7 @@ mod tests {
             phase: Some("refinement".to_string()),
         };
 
-        let result =
-            execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
         assert!(result.is_ok());
 
         // idea.yml should be removed
@@ -527,15 +526,8 @@ mod tests {
             mock: true,
             phase: Some("creation".to_string()),
         };
-        let _ = execute_mock(
-            &jules_path,
-            &create_options,
-            &config,
-            &git,
-            &github,
-            &workspace,
-        )
-        .unwrap();
+        let _ =
+            execute_mock(&jules_path, &create_options, &config, &git, &github, &workspace).unwrap();
         assert!(workspace.file_exists(idea_path.to_str().unwrap()));
 
         // Refinement phase: removes idea.yml
@@ -548,15 +540,8 @@ mod tests {
             mock: true,
             phase: Some("refinement".to_string()),
         };
-        let _ = execute_mock(
-            &jules_path,
-            &refine_options,
-            &config,
-            &git,
-            &github,
-            &workspace,
-        )
-        .unwrap();
+        let _ =
+            execute_mock(&jules_path, &refine_options, &config, &git, &github, &workspace).unwrap();
         assert!(!workspace.file_exists(idea_path.to_str().unwrap()));
     }
 
@@ -578,8 +563,7 @@ mod tests {
             phase: None,
         };
 
-        let result =
-            execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
         assert!(result.is_err());
     }
 
@@ -601,8 +585,7 @@ mod tests {
             phase: Some("invalid".to_string()),
         };
 
-        let result =
-            execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
         assert!(result.is_err());
     }
 }
