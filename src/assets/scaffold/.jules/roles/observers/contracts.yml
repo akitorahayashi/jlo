@@ -9,7 +9,7 @@ purpose:
 inputs:
   - Source code and repository files
   - .jlo/roles/observers/<role>/role.yml (role definition)
-  - .jules/exchange/workstations/<role>/perspective.yml (workstation memory)
+  - .jules/workstations/<role>/perspective.yml (workstation memory)
   - .jules/changes/latest.yml (recent changes, if present — advisory, does not restrict scope)
   - .jules/exchange/issues/**/*.yml (open issues, for deduplication)
   - .jules/exchange/events/<state>/*.yml (recent events, for deduplication)
@@ -18,7 +18,7 @@ inputs:
 
 outputs:
   - .jules/exchange/events/pending/*.yml
-  - .jules/exchange/workstations/<role>/perspective.yml
+  - .jules/workstations/<role>/perspective.yml
   - .jules/exchange/innovators/<persona>/comments/*.yml (if innovators scheduled and idea.yml exists)
 
 workflow:
