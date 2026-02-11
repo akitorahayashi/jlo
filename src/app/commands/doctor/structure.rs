@@ -58,9 +58,19 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             continue;
         }
 
-        // Innovators use phase-specific contracts; all other layers use contracts.yml
-        if layer == Layer::Innovators {
-            for phase in ["creation", "refinement"] {
+        // Phase-specific contracts for layers that use them; single contracts.yml for others
+        let phases: &[&str] = match layer {
+            Layer::Innovators => &["creation", "refinement"],
+            Layer::Narrators => &["bootstrap", "incremental"],
+            _ => &[],
+        };
+        if phases.is_empty() {
+            let contracts = layer_dir.join("contracts.yml");
+            if !contracts.exists() {
+                diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
+            }
+        } else {
+            for phase in phases {
                 let contract_file = layer_dir.join(format!("contracts_{}.yml", phase));
                 if !contract_file.exists() {
                     diagnostics.push_error(
@@ -68,11 +78,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
                         format!("Missing contracts_{}.yml", phase),
                     );
                 }
-            }
-        } else {
-            let contracts = layer_dir.join("contracts.yml");
-            if !contracts.exists() {
-                diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
             }
         }
 
@@ -359,12 +364,19 @@ mod tests {
             jules_layer_dir.child("schemas").create_dir_all().unwrap();
             jules_layer_dir.child("prompt_assembly.j2").touch().unwrap();
 
-            // Innovators use phase-specific contracts; others use contracts.yml
-            if layer == Layer::Innovators {
-                jules_layer_dir.child("contracts_creation.yml").touch().unwrap();
-                jules_layer_dir.child("contracts_refinement.yml").touch().unwrap();
-            } else {
-                jules_layer_dir.child("contracts.yml").touch().unwrap();
+            // Phase-specific contracts for layers that use them
+            match layer {
+                Layer::Innovators => {
+                    jules_layer_dir.child("contracts_creation.yml").touch().unwrap();
+                    jules_layer_dir.child("contracts_refinement.yml").touch().unwrap();
+                }
+                Layer::Narrators => {
+                    jules_layer_dir.child("contracts_bootstrap.yml").touch().unwrap();
+                    jules_layer_dir.child("contracts_incremental.yml").touch().unwrap();
+                }
+                _ => {
+                    jules_layer_dir.child("contracts.yml").touch().unwrap();
+                }
             }
 
             if layer.is_single_role() {

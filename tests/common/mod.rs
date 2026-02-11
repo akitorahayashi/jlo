@@ -178,8 +178,12 @@ impl TestContext {
     pub fn assert_contracts_exist(&self) {
         let roles_path = self.jules_path().join("roles");
         assert!(
-            roles_path.join("narrator/contracts.yml").exists(),
-            "narrator/contracts.yml should exist"
+            roles_path.join("narrator/contracts_bootstrap.yml").exists(),
+            "narrator/contracts_bootstrap.yml should exist"
+        );
+        assert!(
+            roles_path.join("narrator/contracts_incremental.yml").exists(),
+            "narrator/contracts_incremental.yml should exist"
         );
         assert!(
             roles_path.join("observers/contracts.yml").exists(),
@@ -206,7 +210,6 @@ impl TestContext {
             roles_path.join("observers/templates").exists(),
             "observers/templates should exist"
         );
-        assert!(roles_path.join("deciders/templates").exists(), "deciders/templates should exist");
     }
 
     /// Assert that default scheduled roles exist in their correct layers.
@@ -216,7 +219,6 @@ impl TestContext {
         self.assert_role_in_layer_exists("observers", "structural_arch");
         self.assert_role_in_layer_exists("observers", "qa");
         self.assert_role_in_layer_exists("observers", "cov");
-        self.assert_role_in_layer_exists("observers", "devops");
         self.assert_role_in_layer_exists("observers", "consistency");
         self.assert_role_in_layer_exists("innovators", "recruiter");
 
@@ -231,11 +233,23 @@ impl TestContext {
     pub fn assert_single_role_layer_exists(&self, layer: &str) {
         let layer_path = self.jules_path().join("roles").join(layer);
         assert!(layer_path.exists(), "Layer directory should exist at {}", layer_path.display());
-        assert!(
-            layer_path.join("contracts.yml").exists(),
-            "Layer contracts.yml should exist at {}",
-            layer_path.join("contracts.yml").display()
-        );
+
+        if layer == "narrator" {
+            assert!(
+                layer_path.join("contracts_bootstrap.yml").exists(),
+                "contracts_bootstrap.yml should exist"
+            );
+            assert!(
+                layer_path.join("contracts_incremental.yml").exists(),
+                "contracts_incremental.yml should exist"
+            );
+        } else {
+            assert!(
+                layer_path.join("contracts.yml").exists(),
+                "Layer contracts.yml should exist at {}",
+                layer_path.join("contracts.yml").display()
+            );
+        }
     }
 
     /// Read the .jlo-version file from the .jlo/ control plane.

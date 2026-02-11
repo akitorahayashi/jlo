@@ -2,27 +2,27 @@ layer: innovators
 branch_prefix: jules-innovator-
 phase: creation
 
-constraints:
-  - Do NOT modify source code or non-.jules/ files
-  - Do NOT create or modify events or issues directly
-  - Each innovator works only within their own room directory
-  - Do NOT duplicate ideas already listed in perspective.yml recent_proposals
-  - Do NOT edit files outside of .jules/
-  - Do NOT create proposal.yml during creation phase
-  - Do NOT modify perspective.yml during creation phase
+purpose:
+  Draft one new idea (idea.yml) informed by codebase inspection and persona
+  identity. The idea is a hypothesis, not a finished proposal — refinement
+  and feedback happen in a later phase.
 
 inputs:
   - Source code and repository files
-  - .jules/changes/latest.yml (recent codebase changes, if present)
-  - .jlo/roles/innovators/<role>/role.yml (Innovator Persona Definition)
-  - .jules/exchange/innovators/<persona>/perspective.yml (Persona Memory)
-  - .jules/roles/innovators/schemas/idea.yml (Schema for new idea)
+  - .jlo/roles/innovators/<role>/role.yml (persona definition)
+  - .jules/exchange/innovators/<persona>/perspective.yml (persona memory)
+  - .jules/changes/latest.yml (recent changes, if present)
+  - .jules/roles/innovators/schemas/idea.yml (idea schema)
 
 outputs:
-  - .jules/exchange/innovators/<persona>/idea.yml (New idea)
+  - .jules/exchange/innovators/<persona>/idea.yml
 
 workflow:
-  - "1. Read role.yml and perspective.yml to establish identity and context."
-  - "2. Inspect the codebase and recent changes, consider recent_proposals to avoid duplicates."
-  - "3. Create idea.yml conforming to schemas/idea.yml."
-  - "4. Before final output, self-check against role.yml proposal_quality_bar and evidence_expectations."
+  - "1. Read role.yml and perspective.yml to establish identity and context"
+  - "2. Inspect the codebase and recent changes; check recent_proposals in perspective.yml to avoid duplicates"
+  - "3. Create idea.yml conforming to schemas/idea.yml"
+  - "4. Self-check against role.yml proposal_quality_bar and evidence_expectations"
+
+constraints:
+  - "Do not duplicate ideas already listed in perspective.yml recent_proposals"
+  - "Do not create proposal.yml or modify perspective.yml during this phase"

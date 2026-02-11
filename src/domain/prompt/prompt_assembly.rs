@@ -118,7 +118,7 @@ impl std::error::Error for PromptAssemblyError {}
 
 /// Assemble a prompt for the given layer using the prompt assembly spec.
 ///
-/// For multi-role layers (observers, deciders), the context must include
+/// For multi-role layers (observers, innovators), the context must include
 /// the `role` variable. For single-role layers, the context
 /// may be empty.
 ///
@@ -179,6 +179,17 @@ where
         let include_ctx = include_ctx.clone();
         env.add_function("include_optional", move |path: String| -> String {
             include_ctx.include_file(&path, false).unwrap_or_default()
+        });
+    }
+
+    {
+        let include_ctx = include_ctx.clone();
+        env.add_function("file_exists", move |path: String| -> bool {
+            if validate_safe_path(&path).is_err() {
+                return false;
+            }
+            let full_path = include_ctx.root.join(&path);
+            include_ctx.loader.asset_exists(&full_path)
         });
     }
 
@@ -455,12 +466,12 @@ mod tests {
         let jules_path = Path::new(".jules");
 
         mock_loader.add_file(
-            ".jules/roles/deciders/prompt_assembly.j2",
-            r#"{{ section("Role", include_required(".jules/roles/deciders/taxonomy/role.yml")) }}"#,
+            ".jules/roles/planners/prompt_assembly.j2",
+            r#"{{ section("Missing", include_required(".jules/roles/planners/contracts.yml")) }}"#,
         );
 
-        let ctx = PromptContext::new().with_var("role", "qa");
-        let result = assemble_prompt(jules_path, Layer::Deciders, &ctx, &mock_loader);
+        let result =
+            assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_loader);
 
         assert!(matches!(result, Err(PromptAssemblyError::RequiredIncludeNotFound { .. })));
     }

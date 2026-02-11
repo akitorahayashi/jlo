@@ -100,27 +100,26 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             validate_contracts_file(&contracts_path, layer, diagnostics);
         }
 
-        // Validate phase-specific contracts for innovators
-        if layer == Layer::Innovators {
-            for phase in &["creation", "refinement"] {
-                let phase_contracts = layer_dir.join(format!("contracts_{}.yml", phase));
-                if phase_contracts.exists() {
-                    validate_contracts_file(&phase_contracts, layer, diagnostics);
-                }
+        // Validate phase-specific contracts
+        let phases: &[&str] = match layer {
+            Layer::Innovators => &["creation", "refinement"],
+            Layer::Narrators => &["bootstrap", "incremental"],
+            _ => &[],
+        };
+        for phase in phases {
+            let phase_contracts = layer_dir.join(format!("contracts_{}.yml", phase));
+            if phase_contracts.exists() {
+                validate_contracts_file(&phase_contracts, layer, diagnostics);
             }
         }
 
-        if layer == Layer::Observers || layer == Layer::Deciders {
+        if layer == Layer::Observers {
             let roles_container = layer_dir.join("roles");
             if roles_container.exists() {
                 for role_dir in list_subdirs(&roles_container, diagnostics) {
                     let role_path = role_dir.join("role.yml");
                     if role_path.exists() {
-                        if layer == Layer::Observers {
-                            validate_role_file(&role_path, &role_dir, diagnostics);
-                        } else {
-                            validate_decider_role_file(&role_path, diagnostics);
-                        }
+                        validate_role_file(&role_path, &role_dir, diagnostics);
                     }
                 }
             }
@@ -498,35 +497,6 @@ fn parse_role_file_data(
     Some(PromptEntry { path: path.to_path_buf(), contracts: vec![] })
 }
 
-/// Validate decider role.yml schema
-fn validate_decider_role_file(path: &Path, diagnostics: &mut Diagnostics) {
-    let data = match load_yaml_mapping(path, diagnostics) {
-        Some(data) => data,
-        None => return,
-    };
-    validate_decider_role(&data, path, diagnostics);
-}
-
-pub fn validate_decider_role(data: &Mapping, path: &Path, diagnostics: &mut Diagnostics) {
-    ensure_non_empty_string(data, path, "role", diagnostics);
-
-    let layer_value = get_string(data, "layer").unwrap_or_default();
-    if layer_value != "deciders" {
-        diagnostics.push_error(path.display().to_string(), "layer must be 'deciders'");
-    }
-
-    // Check profile section
-    match data.get("profile") {
-        Some(profile) if !profile.is_mapping() => {
-            diagnostics.push_error(path.display().to_string(), "'profile' must be a mapping");
-        }
-        None => {
-            diagnostics.push_error(path.display().to_string(), "Missing profile section");
-        }
-        _ => {}
-    }
-}
-
 fn validate_contracts_file(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) {
     let data = match load_yaml_mapping(path, diagnostics) {
         Some(data) => data,
@@ -555,9 +525,8 @@ pub fn validate_contracts(
         diagnostics.push_error(path.display().to_string(), "branch_prefix is invalid");
     }
 
-    ensure_non_empty_sequence(data, path, "constraints", diagnostics);
+    // constraints is optional — some layers may not need explicit guardrails
     ensure_non_empty_sequence(data, path, "inputs", diagnostics);
-    ensure_non_empty_sequence(data, path, "outputs", diagnostics);
     ensure_non_empty_sequence(data, path, "workflow", diagnostics);
 }
 

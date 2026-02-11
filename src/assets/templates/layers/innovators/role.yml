@@ -1,4 +1,5 @@
 role: ROLE_NAME
+description: "# TODO: One-line summary of role mandate"
 layer: innovators
 
 profile:

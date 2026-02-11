@@ -192,31 +192,6 @@ mod tests {
         ) -> Result<bool, AppError> {
             Ok(false)
         }
-        fn count_commits(
-            &self,
-            _from: &str,
-            _to: &str,
-            _pathspec: &[&str],
-        ) -> Result<u32, AppError> {
-            Ok(0)
-        }
-        fn collect_commits(
-            &self,
-            _from: &str,
-            _to: &str,
-            _pathspec: &[&str],
-            _limit: usize,
-        ) -> Result<Vec<crate::ports::CommitInfo>, AppError> {
-            Ok(vec![])
-        }
-        fn get_diffstat(
-            &self,
-            _from: &str,
-            _to: &str,
-            _pathspec: &[&str],
-        ) -> Result<crate::ports::DiffStat, AppError> {
-            Ok(Default::default())
-        }
         fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
             Ok(String::new())
         }

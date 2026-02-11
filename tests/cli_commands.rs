@@ -621,7 +621,7 @@ fn run_narrator_prompt_preview() {
         .assert()
         .success()
         .stdout(predicate::str::contains("Prompt Preview: Narrator"))
-        .stdout(predicate::str::contains("Git Context"));
+        .stdout(predicate::str::contains("Target Range"));
 }
 
 #[test]
@@ -776,6 +776,15 @@ fn verify_scaffold_integrity() {
             assert!(
                 layer_path.join("contracts_refinement.yml").exists(),
                 "contracts_refinement.yml should exist in innovators"
+            );
+        } else if layer == "narrator" {
+            assert!(
+                layer_path.join("contracts_bootstrap.yml").exists(),
+                "contracts_bootstrap.yml should exist in narrator"
+            );
+            assert!(
+                layer_path.join("contracts_incremental.yml").exists(),
+                "contracts_incremental.yml should exist in narrator"
             );
         } else {
             assert!(

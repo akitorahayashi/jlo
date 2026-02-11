@@ -1,5 +1,5 @@
 use crate::domain::AppError;
-use crate::ports::{CommitInfo, DiffStat, GitPort};
+use crate::ports::GitPort;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -69,68 +69,6 @@ impl GitPort for GitCommandAdapter {
         args.extend(pathspec);
         let output = self.run(&args, None)?;
         Ok(!output.trim().is_empty())
-    }
-
-    fn count_commits(&self, from: &str, to: &str, pathspec: &[&str]) -> Result<u32, AppError> {
-        let range = format!("{}..{}", from, to);
-        let mut args = vec!["rev-list", "--count", &range, "--"];
-        args.extend(pathspec);
-
-        let output = self.run(&args, None)?;
-        output.trim().parse().map_err(|e| AppError::ParseError {
-            what: "commit count".to_string(),
-            details: format!("Value: '{}', Error: {}", output, e),
-        })
-    }
-
-    fn collect_commits(
-        &self,
-        from: &str,
-        to: &str,
-        pathspec: &[&str],
-        limit: usize,
-    ) -> Result<Vec<CommitInfo>, AppError> {
-        let range = format!("{}..{}", from, to);
-        let limit_arg = format!("-{}", limit);
-        let mut args = vec!["log", &limit_arg, "--pretty=format:%H|%s", &range, "--"];
-        args.extend(pathspec);
-
-        let output = self.run(&args, None)?;
-
-        let mut commits = Vec::new();
-        for line in output.lines() {
-            let parts: Vec<&str> = line.splitn(2, '|').collect();
-            if parts.len() == 2 {
-                commits
-                    .push(CommitInfo { sha: parts[0].to_string(), subject: parts[1].to_string() });
-            }
-        }
-
-        Ok(commits)
-    }
-
-    fn get_diffstat(&self, from: &str, to: &str, pathspec: &[&str]) -> Result<DiffStat, AppError> {
-        let range = format!("{}..{}", from, to);
-        let mut args = vec!["diff", "--numstat", &range, "--"];
-        args.extend(pathspec);
-
-        let output = self.run(&args, None)?;
-        let mut stat = DiffStat::default();
-
-        for line in output.lines() {
-            let parts: Vec<&str> = line.split('\t').collect();
-            if parts.len() >= 2 {
-                if parts[0] != "-" {
-                    stat.insertions += parts[0].parse::<u32>().unwrap_or(0);
-                }
-                if parts[1] != "-" {
-                    stat.deletions += parts[1].parse::<u32>().unwrap_or(0);
-                }
-                stat.files_changed += 1;
-            }
-        }
-
-        Ok(stat)
     }
 
     fn checkout_branch(&self, branch: &str, create: bool) -> Result<(), AppError> {

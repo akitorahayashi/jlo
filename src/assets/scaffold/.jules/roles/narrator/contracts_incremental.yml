@@ -1,0 +1,26 @@
+layer: narrator
+branch_prefix: jules-narrator-
+
+purpose:
+  Update .jules/changes/latest.yml with a summary of changes that occurred
+  since the previous summary was created.
+
+inputs:
+  - .jules/roles/narrator/schemas/change.yml (authoritative output schema)
+  - Git history within the commit range described in Run Context
+
+output:
+  - .jules/changes/latest.yml (overwritten in-place)
+
+workflow:
+  - 1. Read schemas/change.yml to understand the output structure
+  - 2. Inspect the commit range from Run Context using git (log, diff --stat, show --stat) to gather stats and understand change scope
+  - 3. Synthesize a high-level English summary organized by change themes (not per-commit)
+  - 4. Set selection_mode to "incremental" in the output
+  - 5. Fill every field in schemas/change.yml and write .jules/changes/latest.yml
+
+constraints:
+  - Output must match schemas/change.yml exactly
+  - Exclude .jules/ and .jlo/ from all diffs and path lists
+  - summary.notable_changes: at most 5 theme-level bullets
+  - summary.truncation_note: non-empty when commits_total > commits_included

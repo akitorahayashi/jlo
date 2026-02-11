@@ -1,26 +1,18 @@
 layer: planners
 branch_prefix: jules-planner-
 
-constraints:
-  - Only process issues where requires_deep_analysis is true
-  - Expand analysis in-place (overwrite the issue file)
-  - Set requires_deep_analysis to false after expansion
-  - Preserve and expand deep_analysis_reason with detailed findings
-  - Do NOT create task files
-  - Issue file path is authoritative (includes exchange directory)
+purpose:
+  Expand issues that require deep analysis with full system impact assessment,
+  dependency analysis, risks, and implementation specifics.
 
 inputs:
-  - Local issue file path (provided as argument)
   - .jules/exchange/issues/<label>/<issue>.yml (where requires_deep_analysis: true)
 
 outputs:
-  - .jules/exchange/issues/<label>/<issue>.yml (expanded, requires_deep_analysis: false)
+  - .jules/exchange/issues/<label>/<issue>.yml (expanded in-place, requires_deep_analysis set to false)
 
 workflow:
-  - 1. Read target issue, verify requires_deep_analysis is true
-  - 2. Review deep_analysis_reason to understand the scope of analysis needed
-  - 3. Analyze full system impact and dependency tree
-  - 4. Expand issue with detailed analysis (affected_areas, constraints, risks, specifics)
-  - "5. Set requires_deep_analysis to false (This marks the analysis as complete)"
-  - 6. Append analysis findings to deep_analysis_reason (preserve original rationale)
-  - 7. Overwrite the issue file with expanded content
+  - 1. Read the target issue and its deep_analysis_reason
+  - 2. Analyze full system impact, dependency tree, affected areas, constraints, and risks
+  - 3. Expand the issue file with detailed analysis findings (append to deep_analysis_reason, preserving original rationale)
+  - 4. Set requires_deep_analysis to false and overwrite the issue file

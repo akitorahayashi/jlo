@@ -14,7 +14,6 @@ const INTERNAL_DOC_FILE: &str = "AGENTS.md";
 /// Role templates for multi-role layers
 mod templates {
     pub static OBSERVER_ROLE: &str = include_str!("../assets/templates/layers/observers/role.yml");
-    pub static DECIDER_ROLE: &str = include_str!("../assets/templates/layers/deciders/role.yml");
     pub static INNOVATOR_ROLE: &str =
         include_str!("../assets/templates/layers/innovators/role.yml");
 }
@@ -59,9 +58,10 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
     fn generate_role_yaml(&self, _role_id: &str, layer: Layer) -> String {
         match layer {
             Layer::Observers => templates::OBSERVER_ROLE.to_string(),
-            Layer::Deciders => templates::DECIDER_ROLE.to_string(),
             Layer::Innovators => templates::INNOVATOR_ROLE.to_string(),
-            Layer::Narrators | Layer::Planners | Layer::Implementers => String::new(),
+            Layer::Deciders | Layer::Narrators | Layer::Planners | Layer::Implementers => {
+                String::new()
+            }
         }
     }
 
@@ -141,10 +141,10 @@ mod tests {
     }
 
     #[test]
-    fn control_plane_files_include_decider_role_customizations() {
+    fn control_plane_files_exclude_decider_role_customizations() {
         let store = EmbeddedRoleTemplateStore::new();
         let files = store.control_plane_files();
-        assert!(files.iter().any(|f| f.path == ".jlo/roles/deciders/role.yml"));
+        assert!(files.iter().all(|f| f.path != ".jlo/roles/deciders/role.yml"));
     }
 
     #[test]
@@ -190,16 +190,6 @@ mod tests {
     }
 
     #[test]
-    fn generate_role_yaml_for_deciders() {
-        let store = EmbeddedRoleTemplateStore::new();
-        let yaml = store.generate_role_yaml("custom", Layer::Deciders);
-
-        assert!(yaml.contains("role: ROLE_NAME"));
-        assert!(yaml.contains("layer: deciders"));
-        assert!(yaml.contains("profile:"));
-    }
-
-    #[test]
     fn generate_role_yaml_for_innovators() {
         let store = EmbeddedRoleTemplateStore::new();
         let yaml = store.generate_role_yaml("custom", Layer::Innovators);
@@ -214,6 +204,7 @@ mod tests {
     fn generate_role_yaml_empty_for_single_role_layers() {
         let store = EmbeddedRoleTemplateStore::new();
 
+        assert!(store.generate_role_yaml("custom", Layer::Deciders).is_empty());
         assert!(store.generate_role_yaml("custom", Layer::Narrators).is_empty());
         assert!(store.generate_role_yaml("custom", Layer::Planners).is_empty());
         assert!(store.generate_role_yaml("custom", Layer::Implementers).is_empty());

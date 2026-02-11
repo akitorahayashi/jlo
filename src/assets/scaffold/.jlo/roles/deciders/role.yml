@@ -1,5 +1,0 @@
-role: triage_generic
-layer: deciders
-
-profile:
-  responsibility: Validate and consolidate observer events into actionable issues for the generic scope.

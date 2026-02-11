@@ -13,7 +13,7 @@ use crate::domain::{
 
 /// Assemble the full prompt for a role in a multi-role layer.
 ///
-/// Multi-role layers (observers, deciders, innovators) require role context.
+/// Multi-role layers (observers, innovators) require role context.
 /// Innovators additionally require a phase context variable.
 pub fn assemble_prompt<L>(
     jules_path: &Path,
@@ -59,7 +59,20 @@ pub fn assemble_single_role_prompt<L>(
 where
     L: PromptAssetLoader + Clone + Send + Sync + 'static,
 {
-    Ok(assemble_prompt_domain(jules_path, layer, &PromptContext::new(), loader)
+    assemble_single_role_prompt_with_context(jules_path, layer, &PromptContext::new(), loader)
+}
+
+/// Assemble the prompt for a single-role layer using an explicit context.
+pub fn assemble_single_role_prompt_with_context<L>(
+    jules_path: &Path,
+    layer: Layer,
+    context: &PromptContext,
+    loader: &L,
+) -> Result<String, AppError>
+where
+    L: PromptAssetLoader + Clone + Send + Sync + 'static,
+{
+    Ok(assemble_prompt_domain(jules_path, layer, context, loader)
         .map_err(|e| AppError::InternalError(e.to_string()))?
         .content)
 }
