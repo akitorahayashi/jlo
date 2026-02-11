@@ -1,11 +1,14 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 use crate::domain::AppError;
 use crate::ports::WorkspaceStore;
 
 /// Header fields for a requirement.
-#[derive(Debug, Clone, Deserialize)]
+///
+/// This struct represents the YAML schema for requirement files. All fields are
+/// retained for schema fidelity even if not directly consumed by current callers.
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RequirementHeader {
     /// Label for the requirement (e.g., bugs, feats, refacts).
     #[serde(default)]

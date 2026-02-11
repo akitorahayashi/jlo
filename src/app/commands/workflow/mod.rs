@@ -7,7 +7,6 @@ pub mod bootstrap;
 mod doctor;
 pub mod generate;
 pub mod issue;
-pub mod matrix;
 mod output;
 pub mod pr;
 mod run;
