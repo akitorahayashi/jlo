@@ -34,7 +34,7 @@ impl GitHubCommandAdapter {
 
     fn run_gh_with_input(&self, args: &[&str], input: &str) -> Result<String, AppError> {
         let mut cmd = Command::new("gh");
-        cmd.args(args).stdin(Stdio::piped());
+        cmd.args(args).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
 
         let mut child = cmd.spawn().map_err(|e| AppError::ExternalToolError {
             tool: "gh".into(),

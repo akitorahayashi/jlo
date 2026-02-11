@@ -77,7 +77,7 @@ jlo run observers --role <role> --prompt-preview    # Show prompts without execu
 jlo run observers --role <role> --branch custom     # Override starting branch
 ```
 
-**Single-role layers** (Narrator, Deciders, Planners, Implementers):
+**Single-role layers** (Narrator, Decider, Planner, Implementer):
 
 ```bash
 jlo run narrator                     # Run narrator (no role flag needed)
@@ -187,17 +187,17 @@ Workflow expressions read these values from GitHub Actions variables (`vars.*`),
 |----------------|------------|-------------|----------------|
 | `JULES_WORKER_BRANCH` | N/A | `JLO_TARGET_BRANCH` | Synced from target |
 | `jules-observer-*` | Observers | `JULES_WORKER_BRANCH` | Auto-merged |
-| `jules-decider-*` | Deciders | `JULES_WORKER_BRANCH` | Auto-merged |
-| `jules-planner-*` | Planners | `JULES_WORKER_BRANCH` | Auto-merged |
-| `jules-implementer-*` | Implementers | `JLO_TARGET_BRANCH` | Human review |
+| `jules-decider-*` | Decider | `JULES_WORKER_BRANCH` | Auto-merged |
+| `jules-planner-*` | Planner | `JULES_WORKER_BRANCH` | Auto-merged |
+| `jules-implementer-*` | Implementer | `JLO_TARGET_BRANCH` | Human review |
 | `jules-innovator-*` | Innovators | `JULES_WORKER_BRANCH` | Auto-merged |
 
 **Flow**:
 1. **Sync**: `JULES_WORKER_BRANCH` syncs from `JLO_TARGET_BRANCH` periodically
 2. **Analysis**: Observers create event files under `.jules/exchange/events/`
-3. **Triage**: Deciders link and consolidate events into issue files
-4. **Expansion**: Planners expand issues that require deep analysis
-5. **Implementation**: Implementers are dispatched by workflow policy or manual dispatch with a local issue file
+3. **Triage**: Decider links and consolidates events into issue files
+4. **Expansion**: Planner expands issues that require deep analysis
+5. **Implementation**: Implementer implements solutions for issues, either automatically via workflow or manually with a specified issue file
 6. **Innovation**: Innovators generate ideas and proposals, published as GitHub issues
 
 **Pause/Resume**: Set the repository pause variable referenced by the workflows to skip scheduled runs.
