@@ -4,13 +4,14 @@ use std::path::{Path, PathBuf};
 use chrono::NaiveDate;
 use serde_yaml::Mapping;
 
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer};
 
 use super::diagnostics::Diagnostics;
 use super::structure::list_subdirs;
 use super::yaml::{
     ensure_enum, ensure_id, ensure_int, ensure_non_empty_sequence, ensure_non_empty_string,
-    get_bool, get_sequence, get_sequence_strings, get_string, load_yaml_mapping, read_yaml_files,
+    get_bool, get_sequence, get_string, load_yaml_mapping, read_yaml_files,
 };
 
 #[derive(Debug, Clone)]
@@ -36,22 +37,16 @@ pub fn collect_prompt_entries(
     let mut entries = Vec::new();
 
     for layer in Layer::ALL {
-        let layer_dir = jules_path.join("roles").join(layer.dir_name());
+        let layer_dir = jules::layer_dir(jules_path, layer);
         if !layer_dir.exists() {
             continue;
         }
 
         if layer.is_single_role() {
-            // Single-role layers have prompt.yml directly in layer directory
-            let prompt_path = layer_dir.join("prompt.yml");
-            if prompt_path.exists()
-                && let Some(entry) = parse_prompt(&prompt_path, layer, diagnostics)
-            {
-                entries.push(entry);
-            }
+            // Single-role layers use prompt_assembly.j2 (Jinja2 template),
+            // not the legacy prompt.yml (YAML) format. No prompt entry to parse.
         } else {
-            // Multi-role layers have role.yml in each role subdirectory under roles/
-            let roles_container = layer_dir.join("roles");
+            let roles_container = jules::layer_roles_container(jules_path, layer);
             if roles_container.exists() {
                 for role_dir in list_subdirs(&roles_container, diagnostics) {
                     let role_path = role_dir.join("role.yml");
@@ -81,21 +76,19 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         }
     }
 
-    // Validate changes/latest.yml if present
-    let latest_path = inputs.jules_path.join("changes").join("latest.yml");
+    let latest_path = jules::changes_latest(inputs.jules_path);
     if latest_path.exists() {
-        let change_schema_path =
-            inputs.jules_path.join("roles").join("narrator").join("schemas").join("change.yml");
+        let change_schema_path = jules::narrator_change_schema(inputs.jules_path);
         validate_changes_latest(&latest_path, &change_schema_path, diagnostics);
     }
 
     for layer in Layer::ALL {
-        let layer_dir = inputs.jules_path.join("roles").join(layer.dir_name());
+        let layer_dir = jules::layer_dir(inputs.jules_path, layer);
         if !layer_dir.exists() {
             continue;
         }
 
-        let contracts_path = layer_dir.join("contracts.yml");
+        let contracts_path = jules::contracts(inputs.jules_path, layer);
         if contracts_path.exists() {
             validate_contracts_file(&contracts_path, layer, diagnostics);
         }
@@ -107,14 +100,14 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             _ => &[],
         };
         for phase in phases {
-            let phase_contracts = layer_dir.join(format!("contracts_{}.yml", phase));
+            let phase_contracts = jules::phase_contracts(inputs.jules_path, layer, phase);
             if phase_contracts.exists() {
                 validate_contracts_file(&phase_contracts, layer, diagnostics);
             }
         }
 
         if layer == Layer::Observers {
-            let roles_container = layer_dir.join("roles");
+            let roles_container = jules::layer_roles_container(inputs.jules_path, layer);
             if roles_container.exists() {
                 for role_dir in list_subdirs(&roles_container, diagnostics) {
                     let role_path = role_dir.join("role.yml");
@@ -126,7 +119,7 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         }
 
         if layer == Layer::Innovators {
-            let roles_container = layer_dir.join("roles");
+            let roles_container = jules::layer_roles_container(inputs.jules_path, layer);
             if roles_container.exists() {
                 for role_dir in list_subdirs(&roles_container, diagnostics) {
                     let role_path = role_dir.join("role.yml");
@@ -140,20 +133,16 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
 
     // Validate flat exchange directory
     {
-        let exchange_dir = inputs.jules_path.join("exchange");
-
-        let events_dir = exchange_dir.join("events");
         for state in inputs.event_states {
-            let state_dir = events_dir.join(state);
+            let state_dir = jules::events_state_dir(inputs.jules_path, state);
             for entry in read_yaml_files(&state_dir, diagnostics) {
                 validate_event_file(&entry, state, inputs.event_confidence, diagnostics);
                 check_placeholders_file(&entry, diagnostics);
             }
         }
 
-        let issues_dir = exchange_dir.join("issues");
         for label in inputs.issue_labels {
-            let label_dir = issues_dir.join(label);
+            let label_dir = jules::issues_label_dir(inputs.jules_path, label);
             for entry in read_yaml_files(&label_dir, diagnostics) {
                 validate_issue_file(
                     &entry,
@@ -166,31 +155,31 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             }
         }
 
-        // Validate innovator room files
-        let innovators_dir = exchange_dir.join("innovators");
+        let innovators_dir = jules::innovators_dir(inputs.jules_path);
         if innovators_dir.exists() {
             for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
                 let persona_name =
                     persona_dir.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
 
-                let perspective_path = persona_dir.join("perspective.yml");
+                let perspective_path =
+                    jules::innovator_perspective(inputs.jules_path, &persona_name);
                 if perspective_path.exists() {
                     validate_innovator_perspective(&perspective_path, &persona_name, diagnostics);
                 }
 
-                let idea_path = persona_dir.join("idea.yml");
+                let idea_path = jules::innovator_idea(inputs.jules_path, &persona_name);
                 if idea_path.exists() {
                     validate_innovator_idea(&idea_path, diagnostics);
                     check_placeholders_file(&idea_path, diagnostics);
                 }
 
-                let proposal_path = persona_dir.join("proposal.yml");
+                let proposal_path = jules::innovator_proposal(inputs.jules_path, &persona_name);
                 if proposal_path.exists() {
                     validate_innovator_proposal(&proposal_path, diagnostics);
                     check_placeholders_file(&proposal_path, diagnostics);
                 }
 
-                let comments_dir = persona_dir.join("comments");
+                let comments_dir = jules::innovator_comments_dir(inputs.jules_path, &persona_name);
                 if comments_dir.exists() {
                     for entry in read_yaml_files(&comments_dir, diagnostics) {
                         validate_innovator_comment(&entry, diagnostics);
@@ -199,43 +188,6 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             }
         }
     }
-}
-
-fn parse_prompt(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) -> Option<PromptEntry> {
-    let data = load_yaml_mapping(path, diagnostics)?;
-    parse_prompt_data(&data, path, layer, diagnostics)
-}
-
-fn parse_prompt_data(
-    data: &Mapping,
-    path: &Path,
-    layer: Layer,
-    diagnostics: &mut Diagnostics,
-) -> Option<PromptEntry> {
-    let role = get_string(data, "role");
-    if role.as_deref().unwrap_or("").is_empty() {
-        diagnostics.push_error(path.display().to_string(), "Missing role field");
-    }
-
-    let layer_field = get_string(data, "layer").unwrap_or_default();
-    if layer_field != layer.dir_name() {
-        diagnostics.push_error(
-            path.display().to_string(),
-            format!("Layer field '{}' does not match {}", layer_field, layer.dir_name()),
-        );
-    }
-
-    let contracts = get_sequence_strings(data, "contracts");
-    if contracts.is_empty() {
-        diagnostics.push_error(path.display().to_string(), "Missing contracts list");
-    }
-
-    let instructions = get_sequence_strings(data, "instructions");
-    if instructions.is_empty() {
-        diagnostics.push_error(path.display().to_string(), "Missing instructions list");
-    }
-
-    Some(PromptEntry { path: path.to_path_buf(), contracts })
 }
 
 fn validate_event_file(

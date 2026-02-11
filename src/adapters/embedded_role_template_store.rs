@@ -3,6 +3,7 @@ use include_dir::{Dir, DirEntry, include_dir};
 use crate::adapters::assets::builtin_role_assets::{
     load_builtin_role_catalog, read_builtin_role_file,
 };
+use crate::domain::workspace::paths::jlo;
 use crate::domain::{AppError, BuiltinRoleEntry, Layer};
 use crate::ports::{RoleTemplateStore, ScaffoldFile};
 
@@ -79,9 +80,13 @@ fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
         match entry {
             DirEntry::File(file) => {
                 if let Some(content) = file.contents_utf8() {
-                    let path = file.path().to_string_lossy().to_string();
+                    let raw_path = file.path().to_string_lossy().to_string();
                     // Don't include the internal documentation in the deployed scaffold
-                    if path != INTERNAL_DOC_FILE {
+                    if raw_path != INTERNAL_DOC_FILE
+                        && !raw_path.ends_with("/AGENTS.md")
+                        && !raw_path.ends_with("\\AGENTS.md")
+                    {
+                        let path = map_scaffold_path(&raw_path);
                         files.push(ScaffoldFile { path, content: content.to_string() });
                     }
                 }
@@ -91,12 +96,27 @@ fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
     }
 }
 
+/// Map embedded scaffold paths to deployment paths.
+///
+/// Source directories use plain names (`jlo/`, `jules/`) so they are visible
+/// to search tools like ripgrep and ag which skip hidden directories by default.
+/// Deployment targets use dot-prefixed names (`.jlo/`, `.jules/`).
+fn map_scaffold_path(path: &str) -> String {
+    if let Some(rest) = path.strip_prefix("jlo/") {
+        format!(".jlo/{}", rest)
+    } else if let Some(rest) = path.strip_prefix("jules/") {
+        format!(".jules/{}", rest)
+    } else {
+        path.to_string()
+    }
+}
+
 /// Returns true for user-authored entity files (role definitions and the root schedule).
 /// These are mutable intent files that should not be recreated by `update` if deleted.
 fn is_entity_file(path: &str) -> bool {
     // Role file: .jlo/roles/<layer>/<role>/role.yml or .jlo/roles/<layer>/role.yml (single-role)
     let is_role = path.ends_with("/role.yml") && path.starts_with(".jlo/roles/");
-    let is_schedule = path == ".jlo/scheduled.toml";
+    let is_schedule = path == jlo::schedule_relative();
     is_role || is_schedule
 }
 

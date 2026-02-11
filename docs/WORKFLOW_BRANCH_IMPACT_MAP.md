@@ -27,11 +27,11 @@ Out of scope:
 
 | Symptom | Probable contract break | First files to inspect |
 |---|---|---|
-| `Can't find 'action.yml' ... .github/actions/install-jlo` | Action resolution path does not exist in current checkout | `src/assets/workflows/.github/workflows/jules-workflows/components/bootstrap.yml.j2`, `src/assets/workflows/.github/workflows/jules-run-implementer.yml.j2`, `src/assets/workflows/.github/workflows/jules-sync.yml.j2` |
-| `.jlo/.jlo-version is missing or empty` | Wrong source branch for version pin lookup | `src/assets/workflows/.github/actions/install-jlo/action.yml` |
-| Worker branch bootstrap never converges | Worker creation/sync path mis-specified | `src/assets/workflows/.github/workflows/jules-workflows/components/bootstrap.yml.j2`, `src/assets/workflows/.github/workflows/jules-sync.yml.j2` |
-| Implementer writes to unexpected branch | Target-branch variable wiring drifted | `src/assets/workflows/.github/workflows/jules-workflows.yml.j2`, `src/assets/workflows/.github/workflows/jules-run-implementer.yml.j2`, `src/assets/workflows/.github/actions/run-implementer/action.yml` |
-| Sync workflow reports success but no effective sync | Skip gating or branch match logic is wrong | `src/assets/workflows/.github/workflows/jules-sync.yml.j2` |
+| `Can't find 'action.yml' ... .github/actions/install-jlo` | Action resolution path does not exist in current checkout | `src/assets/github/workflows/jules-workflows/components/bootstrap.yml.j2`, `src/assets/github/workflows/jules-run-implementer.yml.j2`, `src/assets/github/workflows/jules-sync.yml.j2` |
+| `.jlo/.jlo-version is missing or empty` | Wrong source branch for version pin lookup | `src/assets/github/actions/install-jlo/action.yml` |
+| Worker branch bootstrap never converges | Worker creation/sync path mis-specified | `src/assets/github/workflows/jules-workflows/components/bootstrap.yml.j2`, `src/assets/github/workflows/jules-sync.yml.j2` |
+| Implementer writes to unexpected branch | Target-branch variable wiring drifted | `src/assets/github/workflows/jules-workflows.yml.j2`, `src/assets/github/workflows/jules-run-implementer.yml.j2`, `src/assets/github/actions/run-implementer/action.yml` |
+| Sync workflow reports success but no effective sync | Skip gating or branch match logic is wrong | `src/assets/github/workflows/jules-sync.yml.j2` |
 
 ## Change-to-Impact Matrix
 
@@ -73,5 +73,5 @@ cargo test workflow_templates_pass_yaml_lint_remote
 Optional focused grep guard:
 
 ```bash
-rg -n "default_branch|\\.jlo-control" src/assets/workflows/.github -S
+rg -n "default_branch|\.jlo-control" src/assets/github -S
 ```

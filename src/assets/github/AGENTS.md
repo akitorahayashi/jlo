@@ -1,10 +1,10 @@
 # Workflow Scaffold Template Pipeline
 
 ## Scope
-This document describes how files under `src/assets/workflows/.github/` are transformed into the installed workflow scaffold under `.github/`.
+This document describes how files under `src/assets/github/` are transformed into the installed workflow scaffold under `.github/`.
 
 ## Authoritative Sources
-- Source assets (templates and static files): `src/assets/workflows/.github/**`
+- Source assets (templates and static files): `src/assets/github/**`
 - Workflow scaffold loader: `src/adapters/assets/workflow_scaffold_assets/mod.rs`
 - Asset collection: `src/adapters/assets/workflow_scaffold_assets/asset_collect.rs`
 - Template engine (MiniJinja): `src/adapters/assets/workflow_scaffold_assets/template_engine.rs`
@@ -12,7 +12,7 @@ This document describes how files under `src/assets/workflows/.github/` are tran
 - Install/write to disk: `src/app/commands/init.rs`
 
 ## Transformation Rules
-- Every file under `src/assets/workflows/.github/` is loaded by `include_dir!` in `WorkflowScaffoldAssets`.
+- Every file under `src/assets/github/` is loaded by `include_dir!` in `WorkflowScaffoldAssets`.
 - Files with `.j2` are treated as templates; all other files are copied verbatim.
 - Template output paths strip the `.j2` suffix.
 - Output paths are prefixed with `.github/`.
@@ -29,11 +29,11 @@ This document describes how files under `src/assets/workflows/.github/` are tran
   - `workflow_wait_minutes_default`: wait default from `.jlo/config.toml` (`workflow.wait_minutes_default`).
 
 ## Installed Output Examples
-- `src/assets/workflows/.github/workflows/jules-workflows.yml.j2`
+- `src/assets/github/workflows/jules-workflows.yml.j2`
   → `.github/workflows/jules-workflows.yml`
-- `src/assets/workflows/.github/workflows/jules-sync.yml.j2`
+- `src/assets/github/workflows/jules-sync.yml.j2`
   → `.github/workflows/jules-sync.yml`
-- `src/assets/workflows/.github/actions/install-jlo/action.yml`
+- `src/assets/github/actions/install-jlo/action.yml`
   → `.github/actions/install-jlo/action.yml`
 
 ## Installation Notes

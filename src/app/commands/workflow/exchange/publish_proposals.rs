@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::adapters::git_command::GitCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
+use crate::domain::workspace::paths::jules;
 use crate::ports::{GitHubPort, GitPort, IssueInfo, WorkspaceStore};
 
 #[derive(Debug, Clone)]
@@ -93,7 +94,7 @@ where
     H: GitHubPort,
 {
     let jules_path = workspace.jules_path();
-    let innovators_dir = jules_path.join("exchange").join("innovators");
+    let innovators_dir = jules::innovators_dir(&jules_path);
 
     let proposals = discover_proposals(&innovators_dir, workspace)?;
 

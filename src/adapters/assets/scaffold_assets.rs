@@ -7,7 +7,7 @@ static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold
 
 pub fn list_issue_labels() -> Result<Vec<String>, AppError> {
     let issues_dir = SCAFFOLD_DIR
-        .get_dir(".jules/exchange/issues")
+        .get_dir("jules/exchange/issues")
         .ok_or_else(|| AppError::InternalError("Missing scaffold issues directory".into()))?;
 
     let mut labels = Vec::new();
@@ -25,7 +25,7 @@ pub fn list_issue_labels() -> Result<Vec<String>, AppError> {
 
 pub fn list_event_states() -> Result<Vec<String>, AppError> {
     let events_dir = SCAFFOLD_DIR
-        .get_dir(".jules/exchange/events")
+        .get_dir("jules/exchange/events")
         .ok_or_else(|| AppError::InternalError("Missing scaffold events directory".into()))?;
 
     let mut states = Vec::new();
@@ -42,7 +42,23 @@ pub fn list_event_states() -> Result<Vec<String>, AppError> {
 }
 
 pub fn scaffold_file_content(path: &str) -> Option<String> {
-    SCAFFOLD_DIR.get_file(path).and_then(|file| file.contents_utf8()).map(|s| s.to_string())
+    let embedded_path = unmap_scaffold_path(path);
+    SCAFFOLD_DIR
+        .get_file(&embedded_path)
+        .and_then(|file| file.contents_utf8())
+        .map(|s| s.to_string())
+}
+
+/// Convert a deployment path (`.jules/...`, `.jlo/...`) back to the embedded
+/// source path (`jules/...`, `jlo/...`) for `include_dir!` lookups.
+fn unmap_scaffold_path(path: &str) -> String {
+    if let Some(rest) = path.strip_prefix(".jlo/") {
+        format!("jlo/{}", rest)
+    } else if let Some(rest) = path.strip_prefix(".jules/") {
+        format!("jules/{}", rest)
+    } else {
+        path.to_string()
+    }
 }
 
 pub fn read_enum_values(path: &str, key: &str) -> Result<Vec<String>, AppError> {

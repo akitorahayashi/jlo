@@ -6,6 +6,7 @@ use super::RunResult;
 use super::config::{detect_repository_source, load_config};
 use super::prompt::assemble_single_role_prompt;
 use crate::adapters::jules_client_http::HttpJulesClient;
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer};
 use crate::ports::{AutomationMode, GitHubPort, JulesClient, SessionRequest, WorkspaceStore};
 
@@ -43,7 +44,7 @@ where
 
     // We expect exchange to be in .jules/exchange relative to workspace root
     // workspace.jules_path() returns the .jules directory path
-    let exchange_dir = workspace.jules_path().join("exchange");
+    let exchange_dir = jules::exchange_dir(&workspace.jules_path());
     // Canonicalize exchange dir to compare apples to apples (resolve potential symlinks)
     // We use workspace.canonicalize on the string representation
     let exchange_dir_str = exchange_dir.to_str().ok_or_else(|| {
@@ -224,9 +225,8 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     println!("Starting branch: {}\n", starting_branch);
     println!("Issue content: {} chars\n", issue_content.len());
 
-    let layer_dir = jules_path.join("roles").join(layer.dir_name());
-    let prompt_path = layer_dir.join("prompt.yml");
-    let contracts_path = layer_dir.join("contracts.yml");
+    let prompt_path = jules::prompt_assembly(jules_path, layer);
+    let contracts_path = jules::contracts(jules_path, layer);
 
     println!("Prompt: {}", prompt_path.display());
     if contracts_path.exists() {

@@ -34,9 +34,9 @@ Jules workflows are installed via `jlo init --remote` (or `--self-hosted`) and f
 
 Non-Jules CI workflows remain in `.github/workflows/` alongside the kit.
 
-The workflow kit is generated from `src/assets/workflows/.github/`. Edit that source directory, not `.github/`, and re-run `jlo init` to apply changes.
+The workflow kit is generated from `src/assets/github/`. Edit that source directory, not `.github/`, and re-run `jlo init` to apply changes.
 
-The `jules-*.yml` files under `.github/` are jlo’s dogfooding artifacts. Direct edits are not recommended; workflow changes are made in `src/assets/workflows/.github/` and the related rendering pipeline. See `src/assets/workflows/AGENTS.md` for the template pipeline summary.
+The `jules-*.yml` files under `.github/` are jlo's dogfooding artifacts. Direct edits are not recommended; workflow changes are made in `src/assets/github/` and the related rendering pipeline. See `src/assets/github/AGENTS.md` for the template pipeline summary.
 
 ## Composite Actions
 
@@ -109,7 +109,7 @@ The `validate-workflow-kit.yml` workflow tests the workflow kit without Jules AP
 Mock mode (`--mock`) creates real branches/PRs with synthetic content. Mock tag is auto-generated from `JULES_MOCK_TAG` env var. The kit scripts pass `JLO_RUN_FLAGS` to jlo commands, enabling mock flags via environment variable.
 
 Triggers:
-- Pull requests modifying `src/assets/workflows/**`, `src/app/commands/run/**`, or `src/domain/mock_config.rs`
+- Pull requests modifying `src/assets/github/**`, `src/app/commands/run/**`, or `src/domain/mock_config.rs`
 - Manual dispatch
 
 ## Repository Requirements

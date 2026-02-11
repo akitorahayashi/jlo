@@ -1,11 +1,17 @@
 use super::asset_collect::AssetSourceFile;
 
 pub fn should_render_asset(source: &AssetSourceFile) -> bool {
+    // Exclude internal documentation from deployed scaffold
+    let path = source.relative_path();
+    if path == "AGENTS.md" || path.ends_with("/AGENTS.md") || path.ends_with("\\AGENTS.md") {
+        return false;
+    }
+
     if !source.is_template() {
         return true;
     }
 
-    !is_partial_template(source.relative_path())
+    !is_partial_template(path)
 }
 
 fn is_partial_template(path: &str) -> bool {

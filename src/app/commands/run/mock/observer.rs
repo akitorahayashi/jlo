@@ -6,6 +6,7 @@ use crate::adapters::schedule_filesystem::load_schedule;
 use crate::app::commands::run::RunOptions;
 use crate::app::commands::run::mock::identity::generate_mock_id;
 use crate::domain::identifiers::validation::validate_safe_path_component;
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
@@ -43,7 +44,7 @@ where
     git.checkout_branch(&branch_name, true)?;
 
     // Create mock events
-    let events_dir = jules_path.join("exchange").join("events").join("pending");
+    let events_dir = jules::events_pending_dir(jules_path);
 
     let mock_event_template = super::MOCK_ASSETS
         .get_file("observer_event.yml")
@@ -114,8 +115,7 @@ where
             })?;
 
         for persona in &innovator_personas {
-            let comments_dir =
-                jules_path.join("exchange").join("innovators").join(persona).join("comments");
+            let comments_dir = jules::innovator_comments_dir(jules_path, persona);
 
             let comments_dir_str = comments_dir
                 .to_str()

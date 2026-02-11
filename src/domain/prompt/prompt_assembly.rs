@@ -10,6 +10,7 @@ use std::sync::{Arc, Mutex};
 use minijinja::{Environment, UndefinedBehavior};
 
 use crate::domain::Layer;
+use crate::domain::workspace::paths::jules;
 
 /// Abstraction for prompt asset loading.
 pub trait PromptAssetLoader {
@@ -133,11 +134,11 @@ pub fn assemble_prompt<L>(
 where
     L: PromptAssetLoader + Clone + Send + Sync + 'static,
 {
-    let layer_dir = jules_path.join("roles").join(layer.dir_name());
+    let layer_dir = jules::layer_dir(jules_path, layer);
     let root = jules_path.parent().unwrap_or(Path::new("."));
 
     // Load prompt_assembly.j2
-    let assembly_path = layer_dir.join("prompt_assembly.j2");
+    let assembly_path = jules::prompt_assembly(jules_path, layer);
     if !loader.asset_exists(&assembly_path) {
         return Err(PromptAssemblyError::AssemblyTemplateNotFound(
             assembly_path.display().to_string(),

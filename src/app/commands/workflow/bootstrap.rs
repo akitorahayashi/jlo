@@ -17,7 +17,7 @@ use crate::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::AppContext;
 use crate::domain::workspace::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};
-use crate::domain::workspace::workspace_layout::{JLO_DIR, JULES_DIR, VERSION_FILE};
+use crate::domain::workspace::paths::{JLO_DIR, JULES_DIR, VERSION_FILE};
 use crate::domain::{AppError, ScaffoldManifest};
 use crate::ports::{RoleTemplateStore, WorkspaceStore};
 

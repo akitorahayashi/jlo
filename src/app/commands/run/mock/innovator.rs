@@ -5,6 +5,7 @@ use chrono::Utc;
 use crate::app::commands::run::RunOptions;
 use crate::app::commands::run::mock::identity::generate_mock_id;
 use crate::domain::identifiers::validation::validate_safe_path_component;
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
@@ -67,7 +68,7 @@ where
         )));
     }
 
-    let room_dir = jules_path.join("exchange").join("innovators").join(role);
+    let room_dir = jules::innovator_persona_dir(jules_path, role);
 
     let idea_path = room_dir.join("idea.yml");
     let idea_path_str = idea_path
