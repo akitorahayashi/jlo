@@ -1,5 +1,6 @@
 use crate::adapters::schedule_filesystem::load_schedule;
 use crate::app::commands::run::{self, RunOptions};
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 use std::path::Path;
@@ -24,8 +25,8 @@ where
         Layer::Narrator => execute_narrator(store, options, &jules_path, git, github),
         Layer::Observers => execute_multi_role(store, options, &jules_path, git, github),
         Layer::Decider => execute_decider(store, options, &jules_path, git, github),
-        Layer::Planner => execute_issue_layer(store, options, &jules_path, git, github),
-        Layer::Implementer => execute_issue_layer(store, options, &jules_path, git, github),
+        Layer::Planner => execute_requirement_layer(store, options, &jules_path, git, github),
+        Layer::Implementer => execute_requirement_layer(store, options, &jules_path, git, github),
         Layer::Innovators => execute_multi_role(store, options, &jules_path, git, github),
     }
 }
@@ -47,7 +48,7 @@ where
         role: None,
         prompt_preview: false,
         branch: None,
-        issue: None,
+        requirement: None,
         mock: options.mock,
         phase: None,
     };
@@ -58,7 +59,7 @@ where
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
 }
 
-/// Execute decider (single-role, no schedule lookup).
+/// Execute decider (single-role, gated by pending events).
 fn execute_decider<G, H>(
     store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
     options: &WorkflowRunOptions,
@@ -70,12 +71,18 @@ where
     G: GitPort,
     H: GitHubPort,
 {
+    // Gate: only proceed if pending events exist (or mock mode)
+    if !options.mock && !has_pending_events(jules_path) {
+        eprintln!("No pending events, skipping decider");
+        return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
+    }
+
     let run_options = RunOptions {
         layer: Layer::Decider,
         role: None,
         prompt_preview: false,
         branch: None,
-        issue: None,
+        requirement: None,
         mock: options.mock,
         phase: None,
     };
@@ -84,6 +91,21 @@ where
     run::execute(jules_path, run_options, git, github, store)?;
 
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+}
+
+/// Check if the pending events directory contains any .yml files.
+fn has_pending_events(jules_path: &Path) -> bool {
+    let pending_dir = jules::exchange_dir(jules_path).join("events/pending");
+    if !pending_dir.exists() {
+        return false;
+    }
+    std::fs::read_dir(&pending_dir)
+        .map(|entries| {
+            entries
+                .flatten()
+                .any(|e| e.path().is_file() && e.path().extension().is_some_and(|ext| ext == "yml"))
+        })
+        .unwrap_or(false)
 }
 
 /// Execute multi-role layer (observers, innovators).
@@ -131,7 +153,7 @@ where
             role: Some(role.as_str().to_string()),
             prompt_preview: false,
             branch: None,
-            issue: None,
+            requirement: None,
             mock: options.mock,
             phase: options.phase.clone(),
         };
@@ -143,8 +165,8 @@ where
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
 }
 
-/// Execute issue-based layers (planner, implementer).
-fn execute_issue_layer<G, H>(
+/// Execute requirement-based layers (planner, implementer).
+fn execute_requirement_layer<G, H>(
     store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
     options: &WorkflowRunOptions,
     jules_path: &Path,
@@ -157,21 +179,20 @@ where
 {
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
-    // Find issues for the layer
-    let issues = find_requirements(store, options.layer)?;
+    let requirements = find_requirements(store, options.layer)?;
 
-    if issues.is_empty() {
-        eprintln!("No issues found for {}", options.layer.dir_name(),);
+    if requirements.is_empty() {
+        eprintln!("No requirements found for {}", options.layer.dir_name());
         return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
     }
 
-    for issue_path in issues {
+    for requirement_path in requirements {
         let run_options = RunOptions {
             layer: options.layer,
             role: None,
             prompt_preview: false,
             branch: None,
-            issue: Some(issue_path.clone()),
+            requirement: Some(requirement_path.clone()),
             mock: options.mock,
             phase: None,
         };
@@ -179,7 +200,7 @@ where
         eprintln!(
             "Executing: {} {}{}",
             options.layer.dir_name(),
-            issue_path.display(),
+            requirement_path.display(),
             mock_suffix
         );
         run::execute(jules_path, run_options, git, github, store)?;

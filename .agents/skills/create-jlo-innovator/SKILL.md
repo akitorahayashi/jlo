@@ -1,13 +1,13 @@
 ---
 name: create-jlo-innovator
-description: Create or review `.jlo/roles/innovators/<role>/role.yml` with strong strategic-lens quality, explicit evidence contract, and proposal quality bar. Use when asked to design a new innovator persona, refine innovator role definitions, or validate innovator role.yml quality.
+description: Create or review `.jlo/roles/innovators/<role>/role.yml` with a strategic intervention lens, explicit evidence standards, and a clear proposal quality bar.
 ---
 
 # Create JLO Innovator
 
 ## Core Objective
 
-Produce an innovator `role.yml` that defines a reusable strategic introduction lens, not an observer-like analysis lens.
+Define an innovator `role.yml` that generates high-leverage intervention proposals from repository reality.
 
 ## Output Contract
 
@@ -29,35 +29,42 @@ profile:
   proposal_quality_bar: <non-empty sequence>
 ```
 
+Validator-critical fields:
+- `role`
+- `layer` (must be `innovators`)
+- `profile.focus`
+- `profile.analysis_points`
+- `profile.proposal_quality_bar`
+
 ## Design Workflow
 
-1. Define a role name that is domain-specific and non-ambiguous.
-2. Set `focus` as a strategic direction of intervention.
-3. Write `analysis_points` as recurring leverage classes, not local fix categories.
-4. Write `first_principles` as introduction-level decision logic.
-5. Write `guiding_questions` to discriminate proposal quality.
-6. Write `evidence_expectations` as explicit claim-proof standards.
-7. Write `proposal_quality_bar` as publication threshold criteria.
-8. Verify strict separation from observer duties.
+1. Set `focus` as one stable intervention boundary.
+2. Write `analysis_points` as recurring leverage classes, not patch-level fix categories.
+3. Write `first_principles` as decision logic for selecting interventions.
+4. Write `guiding_questions` that force comparative judgment between alternatives.
+5. Write `evidence_expectations` as minimum proof required before accepting strategic claims.
+6. Write `proposal_quality_bar` as explicit publish/no-publish criteria.
+7. Confirm strict separation from observer duties.
 
 ## Boundary Rules
 
-- Innovator proposes mechanisms that change outcomes, boundaries, or decision quality.
-- Innovator does not collapse into quality auditing, issue triage, or patch-level refactoring.
-- Innovator optimizes for introduction impact, not output volume.
+- Do not collapse into observer work (quality auditing, issue triage, patch diagnosis).
+- Do not define the role by one tool, one file, or one temporary incident.
+- Do not encode layer-level task procedure into role.yml.
+- Keep wording narrow enough to reject low-leverage proposal classes.
 
 ## Anti-Pattern Checks
 
-- The role only rephrases observer findings.
-- The role is defined by one tool preference instead of outcome class.
-- The role proposes only local refactoring with no new mechanism.
-- The role lacks evidence contract for proposal claims.
-- The role lacks clear proposal readiness criteria.
+- `focus` is broad enough to absorb unrelated domains.
+- `analysis_points` are local refactoring categories with no mechanism shift.
+- The role is defined by one tool preference instead of intervention outcome class.
+- `evidence_expectations` are weak, missing, or unfalsifiable.
+- `proposal_quality_bar` cannot reject low-quality proposals.
 
 ## Review Mode
 
-When reviewing an existing innovator role:
-1. Validate required fields and layer value.
-2. Flag any observer-duty overlap.
-3. Flag weak abstraction (local patch class wording).
-4. Return specific rewrite suggestions for `focus`, `analysis_points`, and `proposal_quality_bar`.
+When reviewing an existing innovator role, return only:
+1. Schema violations.
+2. Observer-duty overlap.
+3. Weak abstraction in `analysis_points`.
+4. Concrete rewrites for `focus`, `analysis_points`, and `proposal_quality_bar`.

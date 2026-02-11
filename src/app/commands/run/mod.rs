@@ -2,17 +2,15 @@
 
 mod config;
 mod config_dto;
-mod decider;
-mod implementer;
-mod innovators;
-mod issue_execution;
+pub mod layer;
 pub mod mock;
 mod multi_role_execution;
-pub mod narrator;
 pub(crate) mod narrator_logic;
-mod observers;
-mod planner;
 mod prompt;
+mod requirement_execution;
+
+pub use self::layer::narrator;
+use self::layer::{decider, implementer, innovators, observers, planner};
 
 pub use config::parse_config_content;
 
@@ -34,8 +32,8 @@ pub struct RunOptions {
     pub prompt_preview: bool,
     /// Override the starting branch.
     pub branch: Option<String>,
-    /// Local issue file path (required for issue-driven layers: planner, implementer).
-    pub issue: Option<PathBuf>,
+    /// Local requirement file path (required for requirement-driven layers: planner, implementer).
+    pub requirement: Option<PathBuf>,
     /// Run in mock mode (no Jules API, real git/GitHub operations).
     pub mock: bool,
     /// Execution phase for innovators (creation or refinement).
@@ -81,7 +79,7 @@ where
         )));
     }
 
-    // Narrator is single-role but not issue-driven
+    // Narrator is single-role but not requirement-driven
     if options.layer == Layer::Narrator {
         return narrator::execute(
             jules_path,
@@ -97,18 +95,21 @@ where
         return decider::execute(jules_path, &options, workspace);
     }
 
-    // Issue-driven layers (Planner, Implementer) require an issue path
+    // Requirement-driven layers (Planner, Implementer) require a requirement path
     if options.layer.is_issue_driven() {
-        let issue_path = options.issue.as_deref().ok_or_else(|| {
+        let requirement_path = options.requirement.as_deref().ok_or_else(|| {
             AppError::MissingArgument(
-                "Issue path is required for issue-driven layers but was not provided.".to_string(),
+                "Requirement path is required for requirement-driven layers but was not provided."
+                    .to_string(),
             )
         })?;
         return match options.layer {
-            Layer::Planner => planner::execute(jules_path, &options, issue_path, workspace),
-            Layer::Implementer => implementer::execute(jules_path, &options, issue_path, workspace),
+            Layer::Planner => planner::execute(jules_path, &options, requirement_path, workspace),
+            Layer::Implementer => {
+                implementer::execute(jules_path, &options, requirement_path, workspace)
+            }
             _ => Err(AppError::Validation(format!(
-                "Unexpected issue-driven layer '{}'",
+                "Unexpected requirement-driven layer '{}'",
                 options.layer.dir_name()
             ))),
         };

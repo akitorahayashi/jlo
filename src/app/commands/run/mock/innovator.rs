@@ -313,7 +313,7 @@ mod tests {
             role: Some("alice".to_string()),
             prompt_preview: false,
             branch: None,
-            issue: None,
+            requirement: None,
             mock: true,
             phase: Some("creation".to_string()),
         };
@@ -347,7 +347,7 @@ mod tests {
             role: Some("alice".to_string()),
             prompt_preview: false,
             branch: None,
-            issue: None,
+            requirement: None,
             mock: true,
             phase: Some("refinement".to_string()),
         };
@@ -376,7 +376,7 @@ mod tests {
             role: Some("alice".to_string()),
             prompt_preview: false,
             branch: None,
-            issue: None,
+            requirement: None,
             mock: true,
             phase: Some("creation".to_string()),
         };
@@ -397,7 +397,7 @@ mod tests {
             role: Some("alice".to_string()),
             prompt_preview: false,
             branch: None,
-            issue: None,
+            requirement: None,
             mock: true,
             phase: Some("refinement".to_string()),
         };
@@ -426,7 +426,7 @@ mod tests {
             role: Some("alice".to_string()),
             prompt_preview: false,
             branch: None,
-            issue: None,
+            requirement: None,
             mock: true,
             phase: None,
         };
@@ -449,7 +449,7 @@ mod tests {
             role: Some("alice".to_string()),
             prompt_preview: false,
             branch: None,
-            issue: None,
+            requirement: None,
             mock: true,
             phase: Some("invalid".to_string()),
         };

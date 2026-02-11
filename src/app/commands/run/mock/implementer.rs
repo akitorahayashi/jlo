@@ -20,17 +20,17 @@ where
     H: GitHubPort,
     W: WorkspaceStore,
 {
-    let issue_path = options.issue.as_ref().ok_or_else(|| {
-        AppError::MissingArgument("Issue path is required for implementer".to_string())
+    let requirement_path = options.requirement.as_ref().ok_or_else(|| {
+        AppError::MissingArgument("Requirement path is required for implementer".to_string())
     })?;
 
-    // Parse issue to get label and id
-    let issue_path_str = issue_path
+    // Parse requirement to get label and id
+    let requirement_path_str = requirement_path
         .to_str()
-        .ok_or_else(|| AppError::Validation("Invalid issue path".to_string()))?;
+        .ok_or_else(|| AppError::Validation("Invalid requirement path".to_string()))?;
 
-    let issue_content = workspace.read_file(issue_path_str)?;
-    let (label, issue_id) = parse_issue_for_branch(&issue_content, issue_path)?;
+    let requirement_content = workspace.read_file(requirement_path_str)?;
+    let (label, issue_id) = parse_requirement_for_branch(&requirement_content, requirement_path)?;
     if !config.issue_labels.contains(&label) {
         return Err(AppError::Validation(format!(
             "Issue label '{}' is not defined in github-labels.json",
@@ -93,8 +93,8 @@ where
     })
 }
 
-/// Parse issue content to extract label and ID for branch naming.
-fn parse_issue_for_branch(content: &str, path: &Path) -> Result<(String, String), AppError> {
+/// Parse requirement content to extract label and ID for branch naming.
+fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, String), AppError> {
     let mut label = None;
     let mut id = None;
 
@@ -115,10 +115,10 @@ fn parse_issue_for_branch(content: &str, path: &Path) -> Result<(String, String)
     }
 
     let label = label.ok_or_else(|| {
-        AppError::Validation(format!("Issue file missing label field: {}", path.display()))
+        AppError::Validation(format!("Requirement file missing label field: {}", path.display()))
     })?;
     let id = id.ok_or_else(|| {
-        AppError::Validation(format!("Issue file missing id field: {}", path.display()))
+        AppError::Validation(format!("Requirement file missing id field: {}", path.display()))
     })?;
 
     if id.len() != 6 || !id.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit()) {
@@ -136,14 +136,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_issue_for_branch() {
+    fn test_parse_requirement_for_branch() {
         let content = r#"
 id: "abc123"
 label: "bugs"
 title: "Test issue"
 "#;
         let path = Path::new(".jules/exchange/requirements/test.yml");
-        let (label, id) = parse_issue_for_branch(content, path).unwrap();
+        let (label, id) = parse_requirement_for_branch(content, path).unwrap();
         assert_eq!(label, "bugs");
         assert_eq!(id, "abc123");
     }

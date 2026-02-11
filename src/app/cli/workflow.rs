@@ -9,11 +9,6 @@ pub enum WorkflowCommands {
     Bootstrap,
     /// Validation gate for .jules/ workspace
     Doctor,
-    /// Export matrices for GitHub Actions
-    Matrix {
-        #[command(subcommand)]
-        command: WorkflowMatrixCommands,
-    },
     /// Run a layer and return wait-gating metadata
     Run {
         /// Target layer (narrator, observers, decider, planner, implementer, innovators)
@@ -121,22 +116,6 @@ pub enum WorkflowIssueCommands {
     },
 }
 
-#[derive(Subcommand)]
-pub enum WorkflowMatrixCommands {
-    /// Check flat exchange for pending events
-    Pending {
-        /// Mock mode: always report pending events
-        #[arg(long)]
-        mock: bool,
-    },
-    /// Export planner/implementer issue matrices from flat exchange
-    Routing {
-        /// Routing labels as CSV (e.g., "bugs,feats,refacts,tests,docs")
-        #[arg(long)]
-        routing_labels: String,
-    },
-}
-
 pub fn parse_layer(value: &str) -> Result<crate::domain::Layer, AppError> {
     crate::domain::Layer::from_dir_name(value)
         .ok_or_else(|| AppError::InvalidLayer { name: value.to_string() })
@@ -159,7 +138,6 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let output = workflow::doctor(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowCommands::Matrix { command } => run_workflow_matrix(command),
         WorkflowCommands::Run { layer, mock, phase } => {
             let layer = parse_layer(&layer)?;
             let mock_tag = std::env::var("JULES_MOCK_TAG").ok();
@@ -276,23 +254,6 @@ fn run_workflow_issue(command: WorkflowIssueCommands) -> Result<(), AppError> {
         WorkflowIssueCommands::LabelInnovator { issue_number, persona } => {
             let options = workflow::issue::LabelInnovatorOptions { issue_number, persona };
             let output = workflow::issue::label_innovator::execute(&github, options)?;
-            workflow::write_workflow_output(&output)
-        }
-    }
-}
-
-fn run_workflow_matrix(command: WorkflowMatrixCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow::{self, matrix};
-
-    match command {
-        WorkflowMatrixCommands::Pending { mock } => {
-            let options = matrix::MatrixPendingOptions { mock };
-            let output = matrix::pending(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowMatrixCommands::Routing { routing_labels } => {
-            let options = matrix::MatrixRoutingOptions { routing_labels };
-            let output = matrix::routing(options)?;
             workflow::write_workflow_output(&output)
         }
     }

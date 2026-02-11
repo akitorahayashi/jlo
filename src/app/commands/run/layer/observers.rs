@@ -6,10 +6,12 @@ use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, RoleId};
 use crate::ports::WorkspaceStore;
 
-use super::RunOptions;
-use super::RunResult;
-use super::config::{detect_repository_source, load_config};
-use super::multi_role_execution::{dispatch_session, print_role_preview, validate_role_exists};
+use crate::app::commands::run::RunOptions;
+use crate::app::commands::run::RunResult;
+use crate::app::commands::run::config::{detect_repository_source, load_config};
+use crate::app::commands::run::multi_role_execution::{
+    dispatch_session, print_role_preview, validate_role_exists,
+};
 
 /// Execute a single observer role.
 pub(crate) fn execute<W: WorkspaceStore + Clone + Send + Sync + 'static>(

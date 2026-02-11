@@ -4,20 +4,20 @@ use crate::domain::AppError;
 use crate::domain::workspace::paths::jules;
 use crate::ports::WorkspaceStore;
 
-pub(crate) struct IssuePathInfo {
-    pub(crate) issue_path_str: String,
+pub(crate) struct RequirementPathInfo {
+    pub(crate) requirement_path_str: String,
 }
 
-pub(crate) fn validate_issue_path<W: WorkspaceStore>(
-    issue_path: &Path,
+pub(crate) fn validate_requirement_path<W: WorkspaceStore>(
+    requirement_path: &Path,
     workspace: &W,
-) -> Result<IssuePathInfo, AppError> {
-    let path_str = issue_path
-        .to_str()
-        .ok_or_else(|| AppError::Validation("Issue path contains invalid unicode".to_string()))?;
+) -> Result<RequirementPathInfo, AppError> {
+    let path_str = requirement_path.to_str().ok_or_else(|| {
+        AppError::Validation("Requirement path contains invalid unicode".to_string())
+    })?;
 
     if !workspace.file_exists(path_str) {
-        return Err(AppError::IssueFileNotFound(path_str.to_string()));
+        return Err(AppError::RequirementFileNotFound(path_str.to_string()));
     }
 
     let canonical_path = workspace.canonicalize(path_str)?;
@@ -35,10 +35,10 @@ pub(crate) fn validate_issue_path<W: WorkspaceStore>(
         canonical_path.components().any(|c| c.as_os_str() == "requirements");
     if !canonical_path.starts_with(&canonical_exchange_dir) || !has_requirements_component {
         return Err(AppError::Validation(format!(
-            "Issue file must be within {}/requirements/",
+            "Requirement file must be within {}/requirements/",
             canonical_exchange_dir.display()
         )));
     }
 
-    Ok(IssuePathInfo { issue_path_str: path_str.to_string() })
+    Ok(RequirementPathInfo { requirement_path_str: path_str.to_string() })
 }

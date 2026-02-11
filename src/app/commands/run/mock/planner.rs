@@ -20,8 +20,8 @@ where
     H: GitHubPort,
     W: WorkspaceStore,
 {
-    let issue_path = options.issue.as_ref().ok_or_else(|| {
-        AppError::MissingArgument("Issue path is required for planner".to_string())
+    let requirement_path = options.requirement.as_ref().ok_or_else(|| {
+        AppError::MissingArgument("Requirement path is required for planner".to_string())
     })?;
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
@@ -34,15 +34,15 @@ where
     git.checkout_branch(&format!("origin/{}", config.jules_branch), false)?;
     git.checkout_branch(&branch_name, true)?;
 
-    // Read and modify issue file
-    let issue_path_str = issue_path
+    // Read and modify requirement file
+    let requirement_path_str = requirement_path
         .to_str()
-        .ok_or_else(|| AppError::Validation("Invalid issue path".to_string()))?;
+        .ok_or_else(|| AppError::Validation("Invalid requirement path".to_string()))?;
 
-    let issue_content = workspace.read_file(issue_path_str)?;
+    let requirement_content = workspace.read_file(requirement_path_str)?;
 
-    // Update issue: expand analysis and set requires_deep_analysis to false
-    let updated_content = issue_content
+    // Update requirement: expand analysis and set requires_deep_analysis to false
+    let updated_content = requirement_content
         .replace("requires_deep_analysis: true", "requires_deep_analysis: false")
         + &format!(
             r#"
@@ -64,10 +64,10 @@ analysis_details: |
             config.mock_tag
         );
 
-    workspace.write_file(issue_path_str, &updated_content)?;
+    workspace.write_file(requirement_path_str, &updated_content)?;
 
     // Commit and push
-    let files: Vec<&Path> = vec![issue_path.as_path()];
+    let files: Vec<&Path> = vec![requirement_path.as_path()];
     git.commit_files(&format!("[{}] planner: analysis complete", config.mock_tag), &files)?;
     git.push_branch(&branch_name, false)?;
 
@@ -77,9 +77,9 @@ analysis_details: |
         &config.jules_branch,
         &format!("[{}] Planner analysis", config.mock_tag),
         &format!(
-            "Mock planner run for workflow validation.\n\nMock tag: `{}`\nIssue: `{}`",
+            "Mock planner run for workflow validation.\n\nMock tag: `{}`\nRequirement: `{}`",
             config.mock_tag,
-            issue_path.display()
+            requirement_path.display()
         ),
     )?;
 
