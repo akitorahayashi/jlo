@@ -26,9 +26,6 @@ on:
 jobs:
   validate-and-automerge:
     runs-on: ubuntu-latest
-    concurrency:
-      group: ${{ format('jules-automerge-{0}', github.base_ref) }}
-      cancel-in-progress: false
     permissions:
       contents: write
       pull-requests: write
@@ -68,7 +65,7 @@ jobs:
         run: |
           set -euo pipefail
           PR_NUMBER=${{ github.event.pull_request.number }}
-          ATTEMPTS=6
+          ATTEMPTS=12
           RETRY_DELAY_SECONDS=10
 
           for attempt in $(seq 1 "$ATTEMPTS"); do
@@ -83,7 +80,7 @@ jobs:
               exit 0
             fi
 
-            if ! printf '%s' "$OUTPUT" | grep -Eq "enablePullRequestAutoMerge|mergePullRequest"; then
+            if ! printf '%s' "$OUTPUT" | grep -Eq "enablePullRequestAutoMerge|mergePullRequest|Base branch was modified|Protected branch rules not configured"; then
               echo "::error::Auto-merge enable failed with a non-retriable error."
               exit "$STATUS"
             fi

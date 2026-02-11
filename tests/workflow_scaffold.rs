@@ -516,7 +516,7 @@ fn automerge_delegates_to_jlo_command() {
         "Automerge workflow must delegate to `jlo workflow gh pr enable-automerge`"
     );
     assert!(
-        automerge.contains("ATTEMPTS=6"),
+        automerge.contains("ATTEMPTS=12"),
         "Automerge workflow should retry transient auto-merge enable failures"
     );
     assert!(
@@ -528,16 +528,8 @@ fn automerge_delegates_to_jlo_command() {
         "Automerge workflow should retry base-branch race conditions"
     );
     assert!(
-        automerge.contains("concurrency:"),
-        "Automerge workflow must serialize auto-merge jobs with concurrency control"
-    );
-    assert!(
-        automerge.contains("jules-automerge-"),
-        "Automerge concurrency group should scope by PR base branch"
-    );
-    assert!(
-        automerge.contains("cancel-in-progress: false"),
-        "Automerge concurrency must queue runs instead of canceling in-progress jobs"
+        !automerge.contains("\n    concurrency:\n"),
+        "Automerge workflow should not use global concurrency because it drops queued PR jobs"
     );
 
     // Must NOT contain inline bash policy logic
