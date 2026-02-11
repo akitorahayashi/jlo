@@ -6,18 +6,20 @@ use crate::domain::AppError;
 static SCAFFOLD_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/scaffold");
 
 pub fn list_issue_labels() -> Result<Vec<String>, AppError> {
-    let issues_dir = SCAFFOLD_DIR
-        .get_dir("jules/exchange/issues")
-        .ok_or_else(|| AppError::InternalError("Missing scaffold issues directory".into()))?;
+    let content = SCAFFOLD_DIR
+        .get_file("jules/github-labels.json")
+        .and_then(|f| f.contents_utf8())
+        .ok_or_else(|| AppError::InternalError("Missing scaffold github-labels.json".into()))?;
 
-    let mut labels = Vec::new();
-    for entry in issues_dir.entries() {
-        if let DirEntry::Dir(subdir) = entry
-            && let Some(name) = subdir.path().file_name()
-        {
-            labels.push(name.to_string_lossy().to_string());
-        }
-    }
+    let json: serde_json::Value = serde_json::from_str(content).map_err(|e| {
+        AppError::InternalError(format!("Failed to parse github-labels.json: {}", e))
+    })?;
+
+    let mut labels: Vec<String> = json
+        .get("issue_labels")
+        .and_then(|v| v.as_object())
+        .map(|obj| obj.keys().cloned().collect())
+        .unwrap_or_default();
 
     labels.sort();
     Ok(labels)

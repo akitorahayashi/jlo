@@ -2,11 +2,36 @@ schema_version: 1
 
 persona: "<persona_id>"
 
-bias_focus: "<primary analytical lens for this persona>"
-current_view: |
-  <current assessment of the codebase through this persona's lens>
-historical_learnings: |
-  <accumulated insights from past analysis cycles>
+focus: "<primary analytical lens for this persona>"
+
+# Structured repository understanding updated every cycle.
+repository_observations:
+  codebase_state:
+    - "<current structural or behavioral observation>"
+  startup_and_runtime_contracts:
+    - "<assumption or constraint from startup/runtime/workflow contracts>"
+  decision_quality_gaps:
+    - "<where current decisions lose clarity, consistency, or leverage>"
+  leverage_candidates:
+    - "<candidate high-leverage intervention direction>"
+
+# Thought process and hypothesis evolution.
+thinking_notes:
+  hypotheses:
+    - "<hypothesis to test in next ideation/refinement cycle>"
+  tradeoff_assessment:
+    - "<tradeoff shaping current proposal direction>"
+  rejected_paths:
+    - "<rejected idea and reason>"
+
+# Observer feedback assimilation and next-cycle planning.
+feedback_assimilation:
+  observer_inputs:
+    - from: "<observer_role>"
+      signal: "<key feedback signal>"
+      impact_on_direction: "<how direction changed>"
+  next_focus:
+    - "<specific next-cycle investigation angle>"
 
 # Newest first; keep max 15 entries (FIFO).
 recent_proposals:

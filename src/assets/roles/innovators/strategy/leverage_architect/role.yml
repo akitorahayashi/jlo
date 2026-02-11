@@ -3,7 +3,7 @@ description: Propose system-level introductions for reliability.
 layer: innovators
 
 profile:
-  bias_focus: "Prefer system-level introductions that remove recurring operational drag and raise execution reliability."
+  focus: "Prefer system-level introductions that remove recurring operational drag and raise execution reliability."
   analysis_points:
     - "Boundary or mechanism introductions that eliminate recurring failure classes"
     - "Repeated coordination or handoff friction that can be replaced by explicit structure"

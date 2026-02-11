@@ -1,99 +1,52 @@
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, IssueHeader, Layer};
+use crate::domain::{AppError, Layer, RequirementHeader};
 use crate::ports::WorkspaceStore;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-/// Find issues for a layer in the flat exchange directory.
+/// Find requirements for a layer in the flat exchange directory.
 pub(crate) fn find_issues(
     store: &impl WorkspaceStore,
     layer: Layer,
-    routing_labels: Option<&[String]>,
+    _routing_labels: Option<&[String]>,
 ) -> Result<Vec<PathBuf>, AppError> {
     if layer != Layer::Planner && layer != Layer::Implementer {
         return Err(AppError::Validation("Invalid layer for issue discovery".to_string()));
     }
 
     let jules_path = store.jules_path();
-    let issues_root = jules::issues_dir(&jules_path);
+    let requirements_dir = jules::requirements_dir(&jules_path);
 
-    if !store.file_exists(issues_root.to_str().unwrap()) {
+    let requirements_dir_str = match requirements_dir.to_str() {
+        Some(s) => s,
+        None => return Ok(Vec::new()),
+    };
+
+    if !store.file_exists(requirements_dir_str) {
         return Ok(Vec::new());
     }
 
     let mut issues = Vec::new();
-    let routing_labels = resolve_routing_labels(store, &issues_root, routing_labels)?;
+    let entries = store.list_dir(requirements_dir_str)?;
 
-    for label in routing_labels {
-        let label_dir = issues_root.join(&label);
-        if !store.file_exists(label_dir.to_str().unwrap()) {
+    for path in entries {
+        let is_yml = path.extension().is_some_and(|ext| ext == "yml" || ext == "yaml");
+        if !is_yml {
             continue;
         }
 
-        let entries = store.list_dir(label_dir.to_str().unwrap())?;
-        for path in entries {
-            let is_issue_file = path.extension().is_some_and(|ext| ext == "yml" || ext == "yaml");
-            if !is_issue_file {
-                continue;
-            }
-
-            let requires_deep_analysis = IssueHeader::read(store, &path)?.requires_deep_analysis;
-            let belongs_to_layer = match layer {
-                Layer::Planner => requires_deep_analysis,
-                Layer::Implementer => !requires_deep_analysis,
-                _ => false,
-            };
-            if belongs_to_layer {
-                issues.push(path);
-            }
+        let requires_deep_analysis = RequirementHeader::read(store, &path)?.requires_deep_analysis;
+        let belongs_to_layer = match layer {
+            Layer::Planner => requires_deep_analysis,
+            Layer::Implementer => !requires_deep_analysis,
+            _ => false,
+        };
+        if belongs_to_layer {
+            issues.push(path);
         }
     }
 
     issues.sort();
     Ok(issues)
-}
-
-fn resolve_routing_labels(
-    store: &impl WorkspaceStore,
-    issues_root: &Path,
-    routing_labels: Option<&[String]>,
-) -> Result<Vec<String>, AppError> {
-    if let Some(labels) = routing_labels {
-        let labels: Vec<String> = labels.to_vec();
-
-        if labels.is_empty() {
-            return Err(AppError::Validation("Provided routing_labels is empty".to_string()));
-        }
-
-        for label in &labels {
-            if label.contains("..") || label.contains('/') || label.contains('\\') {
-                return Err(AppError::Validation(format!(
-                    "Invalid routing label '{}': must not contain path separators or '..'",
-                    label
-                )));
-            }
-        }
-
-        return Ok(labels);
-    }
-
-    eprintln!("ROUTING_LABELS is not set; discovering labels from {}", issues_root.display());
-    let mut discovered = Vec::new();
-    let entries = store.list_dir(issues_root.to_str().unwrap())?;
-    for path in entries {
-        if store.is_dir(path.to_str().unwrap()) {
-            discovered.push(path.file_name().unwrap().to_string_lossy().to_string());
-        }
-    }
-
-    discovered.sort();
-    if discovered.is_empty() {
-        return Err(AppError::Validation(format!(
-            "No issue label directories found under {}",
-            issues_root.display()
-        )));
-    }
-
-    Ok(discovered)
 }
 
 #[cfg(test)]
@@ -107,18 +60,17 @@ mod tests {
         store.write_version(env!("CARGO_PKG_VERSION")).unwrap();
     }
 
-    fn write_issue(
+    fn write_requirement(
         store: &MemoryWorkspaceStore,
-        label: &str,
         name: &str,
+        label: &str,
         requires_deep_analysis: bool,
     ) {
-        let issue_dir = format!(".jules/exchange/issues/{}", label);
         let content = format!(
-            "id: test01\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n",
-            requires_deep_analysis
+            "id: test01\nlabel: {}\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n",
+            label, requires_deep_analysis
         );
-        let path = format!("{}/{}.yml", issue_dir, name);
+        let path = format!(".jules/exchange/requirements/{}.yml", name);
         store.write_file(&path, &content).unwrap();
     }
 
@@ -128,15 +80,15 @@ mod tests {
         let store = MemoryWorkspaceStore::new();
         setup_workspace(&store);
 
-        write_issue(&store, "bugs", "requires-planning", true);
-        write_issue(&store, "bugs", "ready-to-implement", false);
-        write_issue(&store, "docs", "ignored-by-routing", true);
+        write_requirement(&store, "requires-planning", "bugs", true);
+        write_requirement(&store, "ready-to-implement", "bugs", false);
+        write_requirement(&store, "docs-planning", "docs", true);
 
-        let routing_labels = vec!["bugs".to_string()];
-        let issues = find_issues(&store, Layer::Planner, Some(&routing_labels)).unwrap();
+        let issues = find_issues(&store, Layer::Planner, None).unwrap();
 
-        assert_eq!(issues.len(), 1);
-        assert!(issues[0].to_string_lossy().contains("requires-planning.yml"));
+        assert_eq!(issues.len(), 2);
+        assert!(issues[0].to_string_lossy().contains("docs-planning.yml"));
+        assert!(issues[1].to_string_lossy().contains("requires-planning.yml"));
     }
 
     #[test]
@@ -145,11 +97,10 @@ mod tests {
         let store = MemoryWorkspaceStore::new();
         setup_workspace(&store);
 
-        write_issue(&store, "bugs", "requires-planning", true);
-        write_issue(&store, "bugs", "ready-to-implement", false);
+        write_requirement(&store, "requires-planning", "bugs", true);
+        write_requirement(&store, "ready-to-implement", "bugs", false);
 
-        let routing_labels = vec!["bugs".to_string()];
-        let issues = find_issues(&store, Layer::Implementer, Some(&routing_labels)).unwrap();
+        let issues = find_issues(&store, Layer::Implementer, None).unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("ready-to-implement.yml"));

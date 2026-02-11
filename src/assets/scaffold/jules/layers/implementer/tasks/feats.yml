@@ -1,17 +1,17 @@
 task: implement-feat
 
 objective:
-  Implement the new feature described in the issue. Deliver working, tested code
+  Implement the new feature described in the requirement. Deliver working, tested code
   that integrates cleanly with the existing codebase.
 
 steps:
-  - Understand the feature specification and acceptance criteria in the issue.
+  - Understand the feature specification and acceptance criteria in the requirement.
   - Design the implementation approach before writing code.
   - Implement the feature with appropriate abstractions.
   - Add comprehensive tests covering the new behaviour.
   - Update documentation if the feature changes public APIs or user-facing behaviour.
   - Run the project's verification suite (tests, linting, type checks).
-  - Create a pull request referencing the issue.
+  - Create a pull request referencing the requirement.
 
 constraints:
   - New public interfaces must have documentation.

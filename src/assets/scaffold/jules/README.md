@@ -1,13 +1,13 @@
 # .jules/
 
 The `.jules/` directory is a structured workspace for scheduled agents and human execution.
-It captures **observations as events** and **actionable work as issues** within the exchange.
+It captures **observations as events** and **actionable work as requirements** within the exchange.
 
 This file is human-oriented. Agents must read `.jules/JULES.md` for the formal contract.
 
 ## Scope (What this README defines)
 
-- `.jules/` defines **artifacts and contracts** (events/issues, role state, schemas).
+- `.jules/` defines **artifacts and contracts** (events/requirements, role state, schemas).
 - **Execution + git + PR operations are out of scope here.**
   When you are reading this inside the VM, you already have the execution environment;
   follow the role contract and produce the required artifacts/changes.
@@ -27,16 +27,16 @@ This file is human-oriented. Agents must read `.jules/JULES.md` for the formal c
 
 ```
 Narrator -> Observer -> Decider -> [Planner] -> Implementer
-(changes)   (events)    (issues)   (expand)     (code changes)
+(changes)   (events)    (requirements) (expand)  (code changes)
 ```
 
 | Role Type | Role(s) | Transformation |
 |-----------|---------|----------------|
 | Narrator | `.jules/roles/narrator/` | Git history -> Changes summary |
 | Observer | directories under `.jlo/roles/observers/` | Source -> Events (domain-specialized observations) |
-| Decider | `.jules/roles/decider/` | Events -> Issues (validation + consolidation) |
-| Planner | (Single-role; no `.jlo/` role definitions) | Issues -> Expanded Issues (deep analysis, optional) |
-| Implementer | (Single-role; no `.jlo/` role definitions) | Issues -> Code changes |
+| Decider | `.jules/roles/decider/` | Events -> Requirements (validation + consolidation) |
+| Planner | (Single-role; no `.jlo/` role definitions) | Requirements -> Expanded Requirements (deep analysis, optional) |
+| Implementer | (Single-role; no `.jlo/` role definitions) | Requirements -> Code changes |
 
 **Execution**: Roles are invoked by GitHub Actions using `jlo run` and workflow dispatch workflows.
 
@@ -69,8 +69,8 @@ Implementer modifies source code and requires human review.
 |   +-- events/         # Raw observations
 |   |   +-- <state>/
 |   |       +-- *.yml
-|   +-- issues/         # Consolidated problems
-|   |   +-- <label>/
+|   +-- requirements/   # Actionable requirements (flat)
+|   |   +-- *.yml
 |   +-- innovators/     # Innovator state persistence
 |       +-- <persona>/  # Persona-specific workstation
 |           +-- perspective.yml   # Innovator continuity
@@ -103,14 +103,14 @@ Implementer modifies source code and requires human review.
     |   +-- decider_prompt.j2 # Prompt construction rules
     |   +-- tasks/
     |   +-- schemas/
-    |   |   +-- issue.yml    # Issue template
+    |   |   +-- requirements.yml    # Requirement template
     |
-    +-- planner/       # Single-role layer (issue-driven)
+    +-- planner/       # Single-role layer (requirement-driven)
     |   +-- planner_prompt.j2 # Prompt construction rules
     |   +-- contracts.yml    # Shared planner contract
     |   +-- tasks/
     |
-    +-- implementer/   # Single-role layer (issue-driven)
+    +-- implementer/   # Single-role layer (requirement-driven)
     |   +-- implementer_prompt.j2 # Prompt construction rules
     |   +-- contracts.yml    # Shared implementer contract
     |   +-- tasks/
@@ -152,19 +152,19 @@ Implementer modifies source code and requires human review.
 | Planner | Single-role | `jlo run planner <path>` |
 | Implementer | Single-role | `jlo run implementer <path>` |
 
-**Narrator**: Produces `.jules/exchange/changes.yml` summarizing recent codebase changes. Runs first, before observers.
+**Narrator**: Produces `.jules/exchange/changes.yml` summarizing recent codebase changes. Runs first, before observers. Observers treat this as a secondary hint, not as a scope driver.
 
 **Multi-role layers** (Observers, Innovators): Roles are scheduled via `.jlo/scheduled.toml`. Each role has its own subdirectory with `role.yml` in `.jlo/roles/`. Custom roles are authored with `jlo create <layer> <name>`, while built-in roles are installed with `jlo add <layer> <role>`.
 
-**Single-role layers** (Decider, Planner, Implementer): Have a fixed role with `contracts.yml` directly in the layer directory. Planner and Implementer are issue-driven and require an issue file path argument. Template creation is not supported.
+**Single-role layers** (Decider, Planner, Implementer): Have a fixed role with `contracts.yml` directly in the layer directory. Planner and Implementer are requirement-driven and require a requirement file path argument. Template creation is not supported.
 
 **Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated task file (`tasks/create_idea.yml` / `tasks/refine_proposal.yml`) injected at runtime via the `task` context variable. Universal constraints are in `contracts.yml`.
 
 ## Exchange
  
- The exchange is a flat directory structure for events and issues.
+ The exchange is a flat directory structure for events and requirements.
  
- - Events and issues are global to the repository.
+ - Events and requirements are global to the repository.
  - `roles/` remains global.
  - Observers and Decider operate on the single `exchange/` directory.
  - Event state directories are defined by the scaffold templates.
@@ -181,14 +181,14 @@ Defines a prompt template that assembles required and optional includes into a s
 Specialized focus for observers and innovators. Continuity lives in the workstation perspective file.
 
 ### Templates (*.yml)
-Copyable templates (changes.yml, event.yml, issue.yml) defining the structure of artifacts.
+Copyable templates (changes.yml, event.yml, requirements.yml) defining the structure of artifacts.
 Agents `cp` these files and fill them out.
 
 ## Workflow
 
 ### 0. Narrator Agent (Scheduled, runs first)
 
-Narrator summarizes codebase changes for observer context:
+Narrator summarizes codebase changes as secondary hint context for observer triage:
 1. Reads `.jules/roles/narrator/schemas/changes.yml` for schema
 2. Determines commit range (previous `to_commit` or bootstrap)
 3. Collects commits and changed paths (excluding `.jules/`)
@@ -200,10 +200,10 @@ If no non-excluded changes exist, Narrator exits without creating a session.
 
 Each observer:
 1. Reads contracts.yml (layer behavior)
-2. Reads `.jules/exchange/changes.yml` for recent changes context (if present)
+2. Uses `.jules/exchange/changes.yml` as a secondary hint only after baseline repository understanding is established
 3. Reads role.yml (specialized focus)
 4. Reads `.jules/workstations/<role>/perspective.yml`
-5. **Skips observations already covered by open issues (deduplication)**
+5. **Skips observations already covered by open requirements (deduplication)**
 6. Writes event files under exchange/events/ in the incoming state directory
 7. Updates perspective.yml (goals/rules/ignore/log)
 8. Publishes changes as a PR (branch naming follows the convention below)
@@ -216,43 +216,43 @@ Triage agent:
 2. Reads all event files in the incoming state directory
 3. Validates observations (do they exist in codebase?)
 4. Merges related events sharing root cause
-5. **Merges events into existing issues when related (updates content)**
-6. Creates new issues for genuinely new problems (using id as filename, placing in label directory)
+5. **Merges events into existing requirements when related (updates content)**
+6. Creates new requirements for genuinely new problems (placing in requirements directory)
 7. **When deep analysis is needed, provides clear rationale in deep_analysis_reason**
 8. Moves processed events to the processed state directory defined by the scaffold
 
-**Decider answers**: "Is this real? Should these events merge into one issue?"
+**Decider answers**: "Is this real? Should these events merge into one requirement?"
 
 ### 3. Planner Agent (On-Demand)
 
 Specifier agent (runs only for `requires_deep_analysis: true`):
 1. Reads contracts.yml (layer behavior)
-2. Reads target issue from exchange/issues/<label>/
+2. Reads target requirement from exchange/requirements/
 3. **Reviews deep_analysis_reason to understand scope**
 4. Analyzes full system impact and dependency tree
-5. Expands issue with detailed analysis (affected_areas, constraints, risks)
+5. Expands requirement with detailed analysis (affected_areas, constraints, risks)
 6. Sets requires_deep_analysis to false
 7. **Preserves and expands the original rationale with findings**
-8. Overwrites the issue file
+8. Overwrites the requirement file
 
-**Planner answers**: "What is the full scope of this issue?"
+**Planner answers**: "What is the full scope of this requirement?"
 
-### 4. Implementation (Via Local Issue)
+### 4. Implementation (Via Local Requirement)
 
-Implementation is invoked by running `jlo run implementer` with a local issue file path. Scheduled workflows may also dispatch implementer based on repository policy.
+Implementation is invoked by running `jlo run implementer` with a local requirement file path. Scheduled workflows may also dispatch implementer based on repository policy.
 
 ```bash
-# Example: Run implementer with a specific issue
-jlo run implementer .jules/exchange/issues/<label>/auth-inconsistency.yml
+# Example: Run implementer with a specific requirement
+jlo run implementer .jules/exchange/requirements/auth-inconsistency.yml
 ```
 
-The implementer reads the issue content (embedded in prompt) and produces code changes.
-The issue file must exist; missing files fail fast before agent execution.
+The implementer reads the requirement content (embedded in prompt) and produces code changes.
+The requirement file must exist; missing files fail fast before agent execution.
 
-**Issue Lifecycle**:
-1. An issue file is selected from `.jules/exchange/issues/<label>/` on the `jules` branch.
+**Requirement Lifecycle**:
+1. A requirement file is selected from `.jules/exchange/requirements/` on the `jules` branch.
 2. `jlo run implementer` validates the file exists and passes content to the implementer.
-3. `jlo run implementer` deletes the issue file and its source events after dispatching the session.
+3. `jlo run implementer` deletes the requirement file and its source events after dispatching the session.
 4. The implementer works on the default code branch and creates a PR for human review.
 5. The `sync-jules.yml` workflow keeps `jules` in sync with the default branch after merges.
 
@@ -265,12 +265,12 @@ Observer creates events in exchange/events/<state>/
 Observer updates perspective.yml (goals/rules/ignore/log)
 ```
 
-## Issue Lifecycle
+## Requirement Lifecycle
 
-- Issues are organized by label directories defined by the scaffold.
-- Open issues suppress duplicate observations from observers.
-- Issue filenames use stable kebab-case identifiers (for example, `auth-inconsistency.yml`).
-- Related events are merged into existing issues, not duplicated.
+- Requirements are stored in a flat directory.
+- Open requirements suppress duplicate observations from observers.
+- Requirement filenames use stable kebab-case identifiers (for example, `auth-inconsistency.yml`).
+- Related events are merged into existing requirements, not duplicated.
 
 ## Branch Naming Convention
 

@@ -2,10 +2,11 @@ schema_version: 2
 id: "mock01"
 source_events:
   - "event1"
-title: "Mock issue for workflow validation"
+title: "Mock requirement for workflow validation"
 label: "bugs"
 priority: "medium"
-summary: "This is a mock issue created by jlo --mock for workflow-scaffold validation. Mock tag: test-tag"
+summary: "This is a mock requirement created by jlo --mock for workflow-scaffold validation. Mock tag: test-tag"
+goal: "Mock goal description for validation"
 problem: "Mock problem description for validation"
 impact: "Mock impact description for validation"
 desired_outcome: "Mock desired outcome for validation"

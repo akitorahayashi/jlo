@@ -10,7 +10,7 @@ steps:
   - Implement the fix with minimal scope — avoid unrelated changes.
   - Add or update tests that cover the fixed behaviour.
   - Run the project's verification suite (tests, linting, type checks).
-  - Create a pull request referencing the issue.
+  - Create a pull request referencing the requirement.
 
 constraints:
   - Regression tests are mandatory — the fix must prove the bug is resolved.

@@ -69,7 +69,7 @@ fn init_creates_jules_directory() {
     ctx.assert_default_scheduled_roles_exist();
     ctx.assert_exchange_structure_exists();
     ctx.assert_events_structure_exists();
-    ctx.assert_issues_directory_exists();
+    ctx.assert_requirements_directory_exists();
     ctx.assert_contracts_exist();
 }
 
@@ -489,7 +489,7 @@ fn run_implementer_with_missing_issue_file() {
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     ctx.cli()
-        .args(["run", "implementer", ".jules/exchange/issues/nonexistent.yml"])
+        .args(["run", "implementer", ".jules/exchange/requirements/nonexistent.yml"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Issue file not found"));
@@ -503,7 +503,7 @@ fn run_implementer_prompt_preview_with_issue_file() {
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     // Create a test issue file in flat exchange
-    let issue_dir = ctx.work_dir().join(".jules/exchange/issues/bugs");
+    let issue_dir = ctx.work_dir().join(".jules/exchange/requirements");
     std::fs::create_dir_all(&issue_dir).unwrap();
     let issue_path = issue_dir.join("test_issue.yml");
     std::fs::write(
@@ -517,7 +517,7 @@ fn run_implementer_prompt_preview_with_issue_file() {
         .args([
             "run",
             "implementer",
-            ".jules/exchange/issues/bugs/test_issue.yml",
+            ".jules/exchange/requirements/test_issue.yml",
             "--prompt-preview",
         ])
         .assert()
@@ -534,7 +534,7 @@ fn run_planner_prompt_preview_with_issue_file() {
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     // Create a test issue file in flat exchange
-    let issue_dir = ctx.work_dir().join(".jules/exchange/issues/bugs");
+    let issue_dir = ctx.work_dir().join(".jules/exchange/requirements");
     std::fs::create_dir_all(&issue_dir).unwrap();
     let issue_path = issue_dir.join("test_issue.yml");
     std::fs::write(
@@ -545,7 +545,7 @@ fn run_planner_prompt_preview_with_issue_file() {
 
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
-        .args(["run", "planner", ".jules/exchange/issues/bugs/test_issue.yml", "--prompt-preview"])
+        .args(["run", "planner", ".jules/exchange/requirements/test_issue.yml", "--prompt-preview"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Prompt Preview: Planner"))

@@ -220,7 +220,7 @@ mod tests {
         assert!(yaml.contains("role: ROLE_NAME"));
         assert!(yaml.contains("layer: innovators"));
         assert!(yaml.contains("profile:"));
-        assert!(yaml.contains("bias_focus:"));
+        assert!(yaml.contains("focus:"));
     }
 
     #[test]

@@ -34,7 +34,6 @@ pub fn read_run_config(root: &Path, diagnostics: &mut Diagnostics) -> Result<Run
 pub struct StructuralInputs<'a> {
     pub jules_path: &'a Path,
     pub root: &'a Path,
-    pub issue_labels: &'a [String],
     pub event_states: &'a [String],
 }
 
@@ -125,10 +124,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             ensure_directory_exists(jules::events_state_dir(inputs.jules_path, state), diagnostics);
         }
 
-        ensure_directory_exists(jules::issues_dir(inputs.jules_path), diagnostics);
-        for label in inputs.issue_labels {
-            ensure_directory_exists(jules::issues_label_dir(inputs.jules_path, label), diagnostics);
-        }
+        ensure_directory_exists(jules::requirements_dir(inputs.jules_path), diagnostics);
 
         ensure_directory_exists(jules::workstations_dir(inputs.jules_path), diagnostics);
 
@@ -369,11 +365,10 @@ mod tests {
         // Flat exchange structure in .jules/
         let exchange = temp.child(".jules/exchange");
         exchange.child("events").create_dir_all().unwrap();
-        exchange.child("issues").create_dir_all().unwrap();
+        exchange.child("requirements").create_dir_all().unwrap();
 
-        // We need to match inputs for event states and issue labels
+        // We need to match inputs for event states
         exchange.child("events/pending").create_dir_all().unwrap();
-        exchange.child("issues/tests").create_dir_all().unwrap();
 
         // Innovator rooms directory
         exchange.child("innovators").create_dir_all().unwrap();
@@ -387,13 +382,11 @@ mod tests {
         create_valid_workspace(&temp);
 
         let mut diagnostics = Diagnostics::default();
-        let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
             root: temp.path(),
-            issue_labels: &issue_labels,
             event_states: &event_states,
         };
 
@@ -417,13 +410,11 @@ mod tests {
         std::fs::remove_file(temp.path().join(".jules/JULES.md")).unwrap();
 
         let mut diagnostics = Diagnostics::default();
-        let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
             root: temp.path(),
-            issue_labels: &issue_labels,
             event_states: &event_states,
         };
 
@@ -445,13 +436,11 @@ mod tests {
         std::fs::remove_file(temp.path().join(".jules/roles/implementer/contracts.yml")).unwrap();
 
         let mut diagnostics = Diagnostics::default();
-        let issue_labels = vec!["tests".to_string()];
         let event_states = vec!["pending".to_string()];
 
         let inputs = StructuralInputs {
             jules_path: &temp.path().join(".jules"),
             root: temp.path(),
-            issue_labels: &issue_labels,
             event_states: &event_states,
         };
 

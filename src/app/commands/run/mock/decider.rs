@@ -35,24 +35,21 @@ where
     // Find and process pending events
     let pending_dir = jules::events_pending_dir(jules_path);
     let decided_dir = jules::events_decided_dir(jules_path);
-    let issues_dir = jules::issues_dir(jules_path);
+    let requirements_dir = jules::requirements_dir(jules_path);
 
     // Ensure directories exist
     std::fs::create_dir_all(&decided_dir)?;
-    std::fs::create_dir_all(&issues_dir)?;
+    std::fs::create_dir_all(&requirements_dir)?;
 
-    // Create two mock issues: one for planner, one for implementer
+    // Create two mock requirements: one for planner, one for implementer
     let label = config.issue_labels.first().cloned().ok_or_else(|| {
         AppError::Validation("No issue labels available for mock decider".to_string())
     })?;
-    let label_dir = jules::issues_label_dir(jules_path, &label);
-    std::fs::create_dir_all(&label_dir)?;
-
     let mock_issue_template = super::MOCK_ASSETS
-        .get_file("decider_issue.yml")
-        .expect("Mock asset missing: decider_issue.yml")
+        .get_file("decider_requirement.yml")
+        .expect("Mock asset missing: decider_requirement.yml")
         .contents_utf8()
-        .expect("Invalid UTF-8 in decider_issue.yml");
+        .expect("Invalid UTF-8 in decider_requirement.yml");
 
     // Move any mock pending events to decided first
     let mut moved_src_files: Vec<PathBuf> = Vec::new();
@@ -90,9 +87,9 @@ where
     let planner_event_id = source_event_ids[0].clone();
     let impl_event_id = source_event_ids[1].clone();
 
-    // Issue 1: requires deep analysis (for planner)
+    // Requirement 1: requires deep analysis (for planner)
     let planner_issue_id = generate_mock_id();
-    let planner_issue_file = label_dir.join(format!("mock-planner-{}.yml", config.mock_tag));
+    let planner_issue_file = requirements_dir.join(format!("mock-planner-{}.yml", config.mock_tag));
 
     let mut planner_issue_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
         .map_err(|e| {
@@ -101,10 +98,11 @@ where
 
     if let Some(mapping) = planner_issue_yaml.as_mapping_mut() {
         mapping.insert("id".into(), planner_issue_id.clone().into());
+        mapping.insert("label".into(), label.clone().into());
         mapping.insert(
             "summary".into(),
             format!(
-                "This is a mock issue created by jlo --mock for workflow-scaffold validation. Mock tag: {}",
+                "This is a mock requirement created by jlo --mock for workflow-scaffold validation. Mock tag: {}",
                 config.mock_tag
             )
             .into(),
@@ -117,12 +115,12 @@ where
             seq.push(planner_event_id.clone().into());
         }
 
-        mapping.insert("title".into(), "Mock issue requiring deep analysis".into());
+        mapping.insert("title".into(), "Mock requirement requiring deep analysis".into());
         mapping.insert("priority".into(), "high".into());
         mapping.insert("requires_deep_analysis".into(), true.into());
         mapping.insert(
             "deep_analysis_reason".into(),
-            "Mock issue requires architectural analysis-for-workflow-validation".into(),
+            "Mock requirement requires architectural analysis-for-workflow-validation".into(),
         );
     }
 
@@ -133,9 +131,9 @@ where
         &serde_yaml::to_string(&planner_issue_yaml).unwrap(),
     )?;
 
-    // Issue 2: ready for implementer
+    // Requirement 2: ready for implementer
     let impl_issue_id = generate_mock_id();
-    let impl_issue_file = label_dir.join(format!("mock-impl-{}.yml", config.mock_tag));
+    let impl_issue_file = requirements_dir.join(format!("mock-impl-{}.yml", config.mock_tag));
 
     let mut impl_issue_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
         .map_err(|e| {
@@ -144,10 +142,11 @@ where
 
     if let Some(mapping) = impl_issue_yaml.as_mapping_mut() {
         mapping.insert("id".into(), impl_issue_id.clone().into());
+        mapping.insert("label".into(), label.clone().into());
         mapping.insert(
             "summary".into(),
             format!(
-                "This is a mock issue created by jlo --mock for workflow-scaffold validation. Mock tag: {}",
+                "This is a mock requirement created by jlo --mock for workflow-scaffold validation. Mock tag: {}",
                 config.mock_tag
             )
             .into(),
@@ -160,7 +159,7 @@ where
             seq.push(impl_event_id.clone().into());
         }
 
-        mapping.insert("title".into(), "Mock issue ready for implementation".into());
+        mapping.insert("title".into(), "Mock requirement ready for implementation".into());
         mapping.insert("requires_deep_analysis".into(), false.into());
     }
 
@@ -243,7 +242,7 @@ where
     for f in &moved_src_files {
         files.push(f.as_path());
     }
-    git.commit_files(&format!("[{}] decider: mock issues", config.mock_tag), &files)?;
+    git.commit_files(&format!("[{}] decider: mock requirements", config.mock_tag), &files)?;
     git.push_branch(&branch_name, false)?;
 
     // Create PR
@@ -251,7 +250,7 @@ where
         &branch_name,
         &config.jules_branch,
         &format!("[{}] Decider triage", config.mock_tag),
-        &format!("Mock decider run for workflow validation.\n\nMock tag: `{}`\n\nCreated issues:\n- `{}` (requires analysis)\n- `{}` (ready for impl)",
+        &format!("Mock decider run for workflow validation.\n\nMock tag: `{}`\n\nCreated requirements:\n- `{}` (requires analysis)\n- `{}` (ready for impl)",
             config.mock_tag, planner_issue_id, impl_issue_id),
     )?;
 

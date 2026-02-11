@@ -5,7 +5,7 @@
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 
-use crate::domain::{AppError, IssueHeader};
+use crate::domain::{AppError, RequirementHeader};
 use crate::ports::WorkspaceStore;
 
 /// Options for matrix routing command.
@@ -81,43 +81,35 @@ pub fn execute(
     let mut planner_issues = Vec::new();
     let mut implementer_issues = Vec::new();
 
-    let issues_dir = jules_path.join("exchange/issues");
+    let requirements_dir = jules_path.join("exchange/requirements");
 
-    let issues_dir_str = match issues_dir.to_str() {
+    let requirements_dir_str = match requirements_dir.to_str() {
         Some(s) => s,
         None => {
-            return Err(AppError::Validation(format!("Invalid path: {}", issues_dir.display())));
+            return Err(AppError::Validation(format!(
+                "Invalid path: {}",
+                requirements_dir.display()
+            )));
         }
     };
 
-    if store.file_exists(issues_dir_str) {
-        // Only scan directories matching routing labels
-        for label in &labels {
-            let label_dir = issues_dir.join(label);
-            let label_dir_str = match label_dir.to_str() {
-                Some(s) => s,
-                None => {
-                    return Err(AppError::Validation(format!(
-                        "Invalid path: {}",
-                        label_dir.display()
-                    )));
-                }
-            };
+    if store.file_exists(requirements_dir_str) {
+        let files = list_yml_files(store, &requirements_dir)?;
+        for file_path in files {
+            let header = RequirementHeader::read(store, &file_path)?;
+            let label_str = header.label.as_deref().unwrap_or("");
 
-            if !store.file_exists(label_dir_str) {
+            // Only include requirements whose label is in routing_labels
+            if !labels.contains(&label_str) {
                 continue;
             }
 
-            let files = list_yml_files(store, &label_dir)?;
-            for file_path in files {
-                let requires_deep = IssueHeader::read(store, &file_path)?.requires_deep_analysis;
-                let rel_path = to_repo_relative(root, &file_path);
+            let rel_path = to_repo_relative(root, &file_path);
 
-                if requires_deep {
-                    planner_issues.push(IssueMatrixEntry { issue: rel_path });
-                } else {
-                    implementer_issues.push(IssueMatrixEntry { issue: rel_path });
-                }
+            if header.requires_deep_analysis {
+                planner_issues.push(IssueMatrixEntry { issue: rel_path });
+            } else {
+                implementer_issues.push(IssueMatrixEntry { issue: rel_path });
             }
         }
     }
@@ -180,11 +172,12 @@ mod tests {
         store.write_version(env!("CARGO_PKG_VERSION")).unwrap();
     }
 
-    fn create_issue(store: &MemoryWorkspaceStore, label: &str, name: &str, deep: bool) {
-        let issues_dir = format!(".jules/exchange/issues/{}", label);
-        let content =
-            format!("id: {}\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n", name, deep);
-        let path = format!("{}/{}.yml", issues_dir, name);
+    fn create_issue(store: &MemoryWorkspaceStore, name: &str, label: &str, deep: bool) {
+        let content = format!(
+            "id: {}\nlabel: {}\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n",
+            name, label, deep
+        );
+        let path = format!(".jules/exchange/requirements/{}.yml", name);
         store.write_file(&path, &content).unwrap();
     }
 
@@ -193,10 +186,10 @@ mod tests {
         let store = MemoryWorkspaceStore::new();
         setup_workspace(&store);
 
-        create_issue(&store, "bugs", "abc123", true);
-        create_issue(&store, "bugs", "def456", false);
-        create_issue(&store, "feats", "ghi789", true);
-        create_issue(&store, "docs", "jkl012", false);
+        create_issue(&store, "abc123", "bugs", true);
+        create_issue(&store, "def456", "bugs", false);
+        create_issue(&store, "ghi789", "feats", true);
+        create_issue(&store, "jkl012", "docs", false);
 
         let output =
             execute(&store, MatrixRoutingOptions { routing_labels: "bugs,feats".into() }).unwrap();
@@ -209,19 +202,19 @@ mod tests {
 
         let planner_paths: Vec<&str> =
             output.planner_matrix.include.iter().map(|e| e.issue.as_str()).collect();
-        assert!(planner_paths[0].contains("bugs/abc123.yml"));
-        assert!(planner_paths[1].contains("feats/ghi789.yml"));
+        assert!(planner_paths[0].contains("abc123.yml"));
+        assert!(planner_paths[1].contains("ghi789.yml"));
 
         let impl_paths: Vec<&str> =
             output.implementer_matrix.include.iter().map(|e| e.issue.as_str()).collect();
-        assert!(impl_paths[0].contains("bugs/def456.yml"));
+        assert!(impl_paths[0].contains("def456.yml"));
 
         assert!(
-            !planner_paths.iter().any(|p| p.contains("docs")),
+            !planner_paths.iter().any(|p| p.contains("jkl012")),
             "docs issues should not be in planner"
         );
         assert!(
-            !impl_paths.iter().any(|p| p.contains("docs")),
+            !impl_paths.iter().any(|p| p.contains("jkl012")),
             "docs issues should not be in implementer"
         );
     }

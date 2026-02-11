@@ -1,15 +1,15 @@
 task: implement-tests
 
 objective:
-  Add or improve tests as described in the issue. Increase coverage, reliability,
+  Add or improve tests as described in the requirement. Increase coverage, reliability,
   or clarity of the test suite.
 
 steps:
-  - Identify the target code and current test coverage from the issue.
+  - Identify the target code and current test coverage from the requirement.
   - Write tests that cover the specified scenarios and edge cases.
   - Ensure new tests are deterministic and independent of execution order.
   - Run the full verification suite to confirm no regressions.
-  - Create a pull request referencing the issue.
+  - Create a pull request referencing the requirement.
 
 constraints:
   - Tests must be self-contained — no reliance on external services or mutable shared state.

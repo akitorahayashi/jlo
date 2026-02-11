@@ -3,13 +3,16 @@ schema_version: 2
 # Metadata
 id: "<6_random_lowercase_alphanumeric_chars>" # stable identity
 source_events:
-  - "<event_id>" # List of event IDs that triggered this issue
+  - "<event_id>" # List of event IDs that triggered this requirement
 title: "<Descriptive Title>"
-label: "<issue_label>" # Must match a key in .jules/github-labels.json and the issue directory name
+label: "<requirement_label>" # Must match a key in .jules/github-labels.json
 priority: "low|medium|high"
-summary: "<One-line statement of the issue>"
+summary: "<One-line statement of the requirement>"
 
 # Content
+goal: |
+  <What outcome is desired - the high-level objective>
+
 problem: |
   <What is wrong or missing - conceptual description>
 

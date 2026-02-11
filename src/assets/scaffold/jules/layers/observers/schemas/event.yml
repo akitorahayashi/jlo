@@ -24,7 +24,3 @@ evidence:
   # - path: "<repo-relative path>"
   #   loc: ["<line>", "<range>"]
   #   note: "<why this file determines the pattern>"
-
-tags:
-  - "<tag>"
-  - "<tag>"

@@ -2,9 +2,9 @@ layer: implementer
 branch_prefix: jules-implementer-
 
 purpose:
-  Implement the assigned issue by modifying source code, tests, and documentation,
+  Implement the assigned requirement by modifying source code, tests, and documentation,
   then create a pull request with the changes.
 
 constraints:
   - "Branch format: jules-implementer-<label>-<id>-<short_description>"
-  - "<label> must match the issue label"
+  - "<label> must match the requirement label"

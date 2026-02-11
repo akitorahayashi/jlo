@@ -38,19 +38,15 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
     let event_states = list_event_states()?;
     let event_confidence =
         read_enum_values(".jules/roles/observers/schemas/event.yml", "confidence")?;
-    let issue_priorities = read_enum_values(".jules/roles/decider/schemas/issue.yml", "priority")?;
+    let issue_priorities =
+        read_enum_values(".jules/roles/decider/schemas/requirements.yml", "priority")?;
 
     let mut diagnostics = Diagnostics::default();
 
     let _run_config = structure::read_run_config(&root, &mut diagnostics)?;
 
     structure::structural_checks(
-        structure::StructuralInputs {
-            jules_path,
-            root: &root,
-            issue_labels: &issue_labels,
-            event_states: &event_states,
-        },
+        structure::StructuralInputs { jules_path, root: &root, event_states: &event_states },
         &mut diagnostics,
     );
 
@@ -69,12 +65,12 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         &mut diagnostics,
     );
 
-    naming::naming_checks(jules_path, &issue_labels, &event_states, &mut diagnostics);
+    naming::naming_checks(jules_path, &event_states, &mut diagnostics);
 
-    let semantic_context = semantic::semantic_context(jules_path, &issue_labels, &mut diagnostics);
+    let semantic_context = semantic::semantic_context(jules_path, &mut diagnostics);
     semantic::semantic_checks(jules_path, &semantic_context, &mut diagnostics);
 
-    quality::quality_checks(jules_path, &issue_labels, &event_states, &mut diagnostics);
+    quality::quality_checks(jules_path, &event_states, &mut diagnostics);
 
     diagnostics.emit();
 

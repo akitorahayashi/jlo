@@ -23,7 +23,7 @@ Current schema shape:
 role: <role_id>
 layer: innovators
 profile:
-  bias_focus: <string>
+  focus: <string>
   analysis_points: <non-empty sequence>
   first_principles: <non-empty sequence>
   guiding_questions: <non-empty sequence>
@@ -42,7 +42,7 @@ Validator-critical fields:
 
 Innovator abstraction stays at leverage classes, not local patch classes.
 
-`bias_focus` defines the direction of strategic preference.
+`focus` defines the direction of strategic preference.
 `analysis_points` define recurring leverage opportunities.
 `first_principles` encode introduction-level decision logic.
 `guiding_questions` define proposal discrimination criteria.

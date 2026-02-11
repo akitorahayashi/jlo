@@ -142,7 +142,7 @@ id: "abc123"
 label: "bugs"
 title: "Test issue"
 "#;
-        let path = Path::new(".jules/exchange/issues/bugs/test.yml");
+        let path = Path::new(".jules/exchange/requirements/test.yml");
         let (label, id) = parse_issue_for_branch(content, path).unwrap();
         assert_eq!(label, "bugs");
         assert_eq!(id, "abc123");

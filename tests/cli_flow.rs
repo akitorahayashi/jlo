@@ -50,7 +50,7 @@ fn init_creates_complete_layer_structure() {
     ctx.assert_jules_exists();
     ctx.assert_layer_structure_exists();
     ctx.assert_events_structure_exists();
-    ctx.assert_issues_directory_exists();
+    ctx.assert_requirements_directory_exists();
     ctx.assert_default_scheduled_roles_exist();
     ctx.assert_narrator_exists();
 
