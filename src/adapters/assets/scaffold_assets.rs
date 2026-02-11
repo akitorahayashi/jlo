@@ -19,7 +19,11 @@ pub fn list_issue_labels() -> Result<Vec<String>, AppError> {
         .get("issue_labels")
         .and_then(|v| v.as_object())
         .map(|obj| obj.keys().cloned().collect())
-        .unwrap_or_default();
+        .ok_or_else(|| {
+            AppError::InternalError(
+                "github-labels.json missing or malformed 'issue_labels' key".into(),
+            )
+        })?;
 
     labels.sort();
     Ok(labels)

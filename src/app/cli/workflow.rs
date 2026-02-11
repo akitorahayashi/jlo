@@ -154,12 +154,8 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
         WorkflowCommands::Run { layer, mock, phase } => {
             let layer = parse_layer(&layer)?;
             let mock_tag = std::env::var("JULES_MOCK_TAG").ok();
-            let routing_labels = std::env::var("ROUTING_LABELS").ok().map(|s| {
-                s.split(',').map(str::trim).filter(|v| !v.is_empty()).map(String::from).collect()
-            });
 
-            let options =
-                workflow::WorkflowRunOptions { layer, mock, mock_tag, routing_labels, phase };
+            let options = workflow::WorkflowRunOptions { layer, mock, mock_tag, phase };
             let output = workflow::run(options)?;
             workflow::write_workflow_output(&output)
         }
