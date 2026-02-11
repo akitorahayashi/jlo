@@ -14,7 +14,7 @@ use crate::app::commands::run::RunResult;
 use crate::app::commands::run::config::{detect_repository_source, load_config};
 use crate::app::commands::run::requirement_execution::validate_requirement_path;
 
-/// Execute the implementer layer (single-role, issue-driven).
+/// Execute the implementer layer (single-role, requirement-driven).
 pub(crate) fn execute<W>(
     jules_path: &Path,
     options: &RunOptions,
@@ -114,7 +114,7 @@ fn assemble_implementer_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static
 /// Fails explicitly if the label is missing, empty, or unsafe — no silent fallback.
 fn extract_requirement_label(requirement_content: &str) -> Result<String, AppError> {
     let value: serde_yaml::Value = serde_yaml::from_str(requirement_content)
-        .map_err(|e| AppError::Validation(format!("Failed to parse issue YAML: {}", e)))?;
+        .map_err(|e| AppError::Validation(format!("Failed to parse requirement YAML: {}", e)))?;
 
     let label =
         value.get("label").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).ok_or_else(|| {

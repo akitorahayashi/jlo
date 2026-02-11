@@ -32,7 +32,7 @@ pub struct RunOptions {
     pub prompt_preview: bool,
     /// Override the starting branch.
     pub branch: Option<String>,
-    /// Local requirement file path (required for issue-driven layers: planner, implementer).
+    /// Local requirement file path (required for requirement-driven layers: planner, implementer).
     pub requirement: Option<PathBuf>,
     /// Run in mock mode (no Jules API, real git/GitHub operations).
     pub mock: bool,
@@ -79,7 +79,7 @@ where
         )));
     }
 
-    // Narrator is single-role but not issue-driven
+    // Narrator is single-role but not requirement-driven
     if options.layer == Layer::Narrator {
         return narrator::execute(
             jules_path,
@@ -95,11 +95,11 @@ where
         return decider::execute(jules_path, &options, workspace);
     }
 
-    // Issue-driven layers (Planner, Implementer) require a requirement path
+    // Requirement-driven layers (Planner, Implementer) require a requirement path
     if options.layer.is_issue_driven() {
         let requirement_path = options.requirement.as_deref().ok_or_else(|| {
             AppError::MissingArgument(
-                "Requirement path is required for issue-driven layers but was not provided."
+                "Requirement path is required for requirement-driven layers but was not provided."
                     .to_string(),
             )
         })?;
@@ -109,7 +109,7 @@ where
                 implementer::execute(jules_path, &options, requirement_path, workspace)
             }
             _ => Err(AppError::Validation(format!(
-                "Unexpected issue-driven layer '{}'",
+                "Unexpected requirement-driven layer '{}'",
                 options.layer.dir_name()
             ))),
         };

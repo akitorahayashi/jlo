@@ -49,7 +49,7 @@ pub enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
-    /// Run planner agent (single-role, issue-driven)
+    /// Run planner agent (single-role, requirement-driven)
     #[clap(visible_alias = "p", alias = "planners")]
     Planner {
         /// Local requirement file path (required)
@@ -65,7 +65,7 @@ pub enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
-    /// Run implementer agent (single-role, issue-driven)
+    /// Run implementer agent (single-role, requirement-driven)
     #[clap(visible_alias = "i", alias = "implementers")]
     Implementer {
         /// Local requirement file path (required)

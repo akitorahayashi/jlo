@@ -11,7 +11,7 @@ use crate::app::commands::run::config::{detect_repository_source, load_config};
 use crate::app::commands::run::prompt::assemble_single_role_prompt;
 use crate::app::commands::run::requirement_execution::validate_requirement_path;
 
-/// Execute the planner layer (single-role, issue-driven).
+/// Execute the planner layer (single-role, requirement-driven).
 pub(crate) fn execute<W>(
     jules_path: &Path,
     options: &RunOptions,

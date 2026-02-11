@@ -1,13 +1,13 @@
 ---
 name: create-jlo-observer
-description: Create or review `.jlo/roles/observers/<role>/role.yml` with a narrow analytical lens, reusable signal classes, and evidence-backed judgment quality. Use when asked to design a new observer persona, refine observer role definitions, or validate observer role.yml quality.
+description: Create or review `.jlo/roles/observers/<role>/role.yml` with a narrow analytical lens, reusable signal classes, and explicit evidence standards.
 ---
 
 # Create JLO Observer
 
 ## Core Objective
 
-Produce an observer `role.yml` that defines a precise analytical lens over repository state and yields reproducible evidence-backed judgment.
+Define an observer `role.yml` that produces repeatable analysis quality from repository evidence.
 
 ## Output Contract
 
@@ -22,10 +22,10 @@ layer: observers
 profile:
   focus: <string>
   analysis_points: <non-empty sequence>
-  first_principles: <sequence>
-  guiding_questions: <sequence>
-  anti_patterns: <sequence>
-  evidence_expectations: <sequence>
+  first_principles: <non-empty sequence>
+  guiding_questions: <non-empty sequence>
+  anti_patterns: <non-empty sequence>
+  evidence_expectations: <non-empty sequence>
 ```
 
 Validator-critical fields:
@@ -36,32 +36,32 @@ Validator-critical fields:
 
 ## Design Workflow
 
-1. Define a domain-specific role name with low overlap against existing observers.
-2. Set `focus` as a stable analytical boundary.
-3. Write `analysis_points` as reusable signal classes, not one-off incidents.
-4. Write `first_principles` as repeatable judgment logic.
-5. Write `guiding_questions` to enforce consistent reasoning behavior.
-6. Write `evidence_expectations` as required proof format before accepting claims.
-7. Validate the role as analytical, not solution-authoring.
+1. Set `focus` as one stable analytical boundary.
+2. Write `analysis_points` as recurring signal classes, not incident examples.
+3. Write `first_principles` as judgment logic that can be reused across repositories.
+4. Write `guiding_questions` that force falsifiable reasoning.
+5. Write `evidence_expectations` as minimum proof required before accepting claims.
+6. Confirm the role stays analytical and does not prescribe implementation work.
 
 ## Boundary Rules
 
-- Observer identifies signals and boundaries from current repository state.
-- Observer does not produce implementation plans as core role definition.
-- Observer role avoids generic ownership language that can absorb every problem.
+- Do not define the role by one tool, one file, or one temporary incident.
+- Do not encode layer-level task procedure into role.yml.
+- Do not add repository-specific input checklists in role.yml.
+- Keep wording narrow enough to reject out-of-scope requests.
 
 ## Anti-Pattern Checks
 
-- The role describes coding solutions instead of analytical judgment.
-- The role is defined by one tool, one file, or one temporary incident.
-- The role has stylistic preferences but no evidence contract.
-- The role duplicates an existing observer lens with renamed wording.
-- The role uses repository-specific checklists instead of reusable signal classes.
+- `focus` is broad enough to absorb unrelated domains.
+- `analysis_points` are action items or refactoring plans.
+- `analysis_points` are path-specific checklists instead of reusable signal classes.
+- `evidence_expectations` are missing, weak, or unfalsifiable.
+- The role duplicates another observer with renamed wording only.
 
 ## Review Mode
 
-When reviewing an existing observer role:
-1. Validate required fields and layer value.
-2. Flag broad or ambiguous `focus`.
-3. Flag non-reusable `analysis_points`.
-4. Return concrete rewrites for `focus`, `analysis_points`, and `evidence_expectations`.
+When reviewing an existing observer role, return only:
+1. Schema violations.
+2. Scope ambiguity in `focus`.
+3. Non-reusable entries in `analysis_points`.
+4. Concrete rewrites for `focus`, `analysis_points`, and `evidence_expectations`.
