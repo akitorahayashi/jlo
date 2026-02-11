@@ -1,0 +1,19 @@
+schema_version: 1
+id: "qa5678"
+issue_id: ""
+created_at: "2026-02-11"
+author_role: qa
+confidence: medium
+title: "Slow feedback loop due to heavy integration test setup"
+statement: |
+  The `TestContext::new()` harness used in `tests/cli_commands.rs` creates a fresh temporary directory and initializes a git repository for every single test case.
+  This setup is resource-intensive and slows down the feedback loop. Many tests verify logic (e.g., command parsing, configuration generation) that could be tested via unit tests without full environment emulation.
+evidence:
+  - path: "tests/common/mod.rs"
+    loc:
+      - "fn new() -> Self"
+    note: "Creates TempDir and runs git init for every test instance."
+  - path: "tests/cli_commands.rs"
+    loc:
+      - "mod tests"
+    note: "Contains 20+ tests each invoking TestContext::new()."

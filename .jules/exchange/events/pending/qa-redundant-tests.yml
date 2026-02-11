@@ -1,0 +1,19 @@
+schema_version: 1
+id: "qa1234"
+issue_id: ""
+created_at: "2026-02-11"
+author_role: qa
+confidence: high
+title: "Redundant coverage in CLI integration tests"
+statement: |
+  Both `tests/cli_commands.rs` and `tests/api_coverage.rs` extensively test the same initialization, bootstrapping, and structure verification flows.
+  Specifically, `init_creates_jules_directory` and `test_api_coverage_full_flow` perform nearly identical setup and assertion steps, increasing test suite runtime without adding unique value.
+evidence:
+  - path: "tests/cli_commands.rs"
+    loc:
+      - "fn init_creates_jules_directory"
+    note: "Tests init, bootstrap, structure verification in detail."
+  - path: "tests/api_coverage.rs"
+    loc:
+      - "fn test_api_coverage_full_flow"
+    note: "Tests init, bootstrap, structure verification in detail."
