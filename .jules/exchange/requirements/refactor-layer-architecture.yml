@@ -1,0 +1,47 @@
+schema_version: 2
+
+# Metadata
+id: "r2l3a4"
+source_events:
+  - "scat01"
+  - "ocp001"
+title: "Refactor Layer Architecture"
+label: "refacts"
+priority: "medium"
+summary: "Co-locate layer logic and decouple prompt assembly to respect Open/Closed Principle."
+
+# Content
+goal: |
+  Refactor the layer implementation to improve cohesion and reduce coupling. Each layer should be self-contained, and adding a new layer should not require modifying central registries.
+
+problem: |
+  1. Layer logic is scattered across `domain/workspace/layer.rs` (enum/properties), `domain/prompt_assembly/` (prompt logic), and `app/commands/run/` (execution logic).
+  2. `domain/prompt_assembly/mod.rs` hardcodes imports for all layers, violating OCP.
+
+impact: |
+  Adding or modifying a layer is error-prone and requires touching multiple disparate files. This increases cognitive load and the risk of merge conflicts.
+
+desired_outcome: |
+  - Layer logic is co-located (e.g., in a dedicated module per layer).
+  - Prompt assembly is dynamic or trait-based, avoiding hardcoded lists of modules.
+  - Adding a new layer involves adding a new file/module without modifying core domain logic.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/workspace/layer.rs"
+  - "src/domain/prompt_assembly/"
+  - "src/app/commands/run/"
+
+acceptance_criteria:
+  - "No hardcoded layer imports in `prompt_assembly/mod.rs`."
+  - "Layer execution logic is moved closer to domain definition or handled via a common trait."
+
+verification_criteria:
+  - "Code review of `src/domain/prompt_assembly/mod.rs`."
+  - "Verify build passes after refactor."
+
+requires_deep_analysis: false
+deep_analysis_reason: ""
