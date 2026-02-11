@@ -83,6 +83,15 @@ fn init_creates_complete_layer_structure() {
     // Innovators use phase-specific contracts
     assert!(jules.join("roles/innovators/contracts_creation.yml").exists());
     assert!(jules.join("roles/innovators/contracts_refinement.yml").exists());
+
+    // All layers have tasks/ directory
+    for layer in ["narrator", "observers", "deciders", "planners", "implementers", "innovators"] {
+        assert!(
+            jules.join("roles").join(layer).join("tasks").exists(),
+            "Layer {} should have tasks/ directory",
+            layer
+        );
+    }
 }
 
 #[test]

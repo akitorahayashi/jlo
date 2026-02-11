@@ -793,6 +793,13 @@ fn verify_scaffold_integrity() {
                 layer
             );
         }
+
+        // All layers have tasks/ directory
+        assert!(
+            layer_path.join("tasks").exists(),
+            "Layer {} tasks/ directory should exist",
+            layer
+        );
     }
 
     // Verify setup

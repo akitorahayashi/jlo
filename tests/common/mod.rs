@@ -250,6 +250,12 @@ impl TestContext {
                 layer_path.join("contracts.yml").display()
             );
         }
+
+        assert!(
+            layer_path.join("tasks").exists(),
+            "tasks/ directory should exist in layer {}",
+            layer
+        );
     }
 
     /// Read the .jlo-version file from the .jlo/ control plane.

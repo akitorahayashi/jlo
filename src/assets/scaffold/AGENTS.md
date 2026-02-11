@@ -42,31 +42,40 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   └── .gitkeep          # Ensures directory exists in git
 ├── roles/
 │   ├── narrator/
-│   │   ├── prompt_assembly.j2 # Prompt construction rules
-│   │   ├── contracts.yml # Layer contract
+│   │   ├── prompt_assembly.j2       # Prompt construction rules
+│   │   ├── contracts_bootstrap.yml  # Bootstrap (first-run) contract
+│   │   ├── contracts_incremental.yml # Incremental contract
+│   │   ├── tasks/                   # Action units (populated in later phases)
 │   │   └── schemas/
 │   │       └── change.yml
 │   ├── observers/
 │   │   ├── prompt_assembly.j2 # Prompt construction rules
-│   │   ├── contracts.yml # Layer contract
+│   │   ├── contracts.yml      # Layer contract
+│   │   ├── tasks/             # Action units
 │   │   └── schemas/
 │   │       ├── event.yml
 │   │       └── perspective.yml
-│   ├── decider/
+│   ├── deciders/
 │   │   ├── prompt_assembly.j2 # Prompt construction rules
-│   │   ├── contracts.yml # Layer contract
-│   │   ├── schemas/
+│   │   ├── contracts.yml      # Layer contract
+│   │   ├── tasks/             # Action units
+│   │   └── schemas/
 │   │       └── issue.yml
 │   ├── planners/
 │   │   ├── prompt_assembly.j2 # Prompt construction rules
-│   │   └── contracts.yml
+│   │   ├── contracts.yml      # Layer contract
+│   │   ├── tasks/             # Action units
+│   │   └── schemas/
 │   ├── implementers/
 │   │   ├── prompt_assembly.j2 # Prompt construction rules
-│   │   └── contracts.yml
+│   │   ├── contracts.yml      # Layer contract
+│   │   ├── tasks/             # Action units
+│   │   └── schemas/
 │   └── innovators/
 │       ├── prompt_assembly.j2      # Prompt construction (uses {{phase}})
 │       ├── contracts_creation.yml   # Creation phase contract
 │       ├── contracts_refinement.yml # Refinement phase contract
+│       ├── tasks/                   # Action units
 │       └── schemas/
 │           ├── perspective.yml
 │           ├── idea.yml
@@ -109,10 +118,11 @@ See "Critical Design Principles" above for the contract structure.
 
 | File | Scope | Content |
 |------|-------|---------|
-| `prompt_assembly.j2` | Layer | Prompt template that assembles contracts and includes. |
+| `prompt_assembly.j2` | Layer | Prompt template that assembles contracts, tasks, and includes. |
 | `role.yml` | Role | Specialized focus (observers/innovators). |
-| `contracts.yml` | Layer | Workflow, inputs, outputs, constraints shared within layer. |
+| `contracts.yml` | Layer | Scope, inputs, outputs, non-negotiable rules shared within layer. |
 | `contracts_<phase>.yml` | Phase | Phase-specific contracts (innovators only: creation, refinement). |
+| `tasks/<task-id>.yml` | Layer | Independent action units with local limits and output expectations. |
 | `JULES.md` | Global | Rules applying to ALL layers (branch naming, system boundaries). |
 
 ## Schema Files

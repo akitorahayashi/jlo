@@ -86,6 +86,12 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             diagnostics.push_error(schemas_dir.display().to_string(), "Missing schemas/");
         }
 
+        // Check tasks/ directory (all layers have this)
+        let tasks_dir = jules::tasks_dir(inputs.jules_path, layer);
+        if !tasks_dir.exists() {
+            diagnostics.push_error(tasks_dir.display().to_string(), "Missing tasks/");
+        }
+
         // Check prompt_assembly.j2 (all layers have this)
         let prompt_assembly = jules::prompt_assembly(inputs.jules_path, layer);
         if !prompt_assembly.exists() {
@@ -354,6 +360,7 @@ mod tests {
             let jules_layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
             jules_layer_dir.create_dir_all().unwrap();
             jules_layer_dir.child("schemas").create_dir_all().unwrap();
+            jules_layer_dir.child("tasks").create_dir_all().unwrap();
             jules_layer_dir.child("prompt_assembly.j2").touch().unwrap();
 
             // Phase-specific contracts for layers that use them

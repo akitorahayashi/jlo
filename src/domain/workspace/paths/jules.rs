@@ -58,6 +58,11 @@ pub fn schemas_dir(jules_path: &Path, layer: Layer) -> PathBuf {
     layer_dir(jules_path, layer).join("schemas")
 }
 
+/// `.jules/roles/<layer>/tasks/`
+pub fn tasks_dir(jules_path: &Path, layer: Layer) -> PathBuf {
+    layer_dir(jules_path, layer).join("tasks")
+}
+
 /// `.jules/roles/<layer>/schemas/<filename>`
 pub fn schema_file(jules_path: &Path, layer: Layer, filename: &str) -> PathBuf {
     schemas_dir(jules_path, layer).join(filename)
@@ -182,6 +187,10 @@ mod tests {
         assert_eq!(
             phase_contracts(jp, Layer::Innovators, "creation"),
             PathBuf::from("/ws/.jules/roles/innovators/contracts_creation.yml")
+        );
+        assert_eq!(
+            tasks_dir(jp, Layer::Observers),
+            PathBuf::from("/ws/.jules/roles/observers/tasks")
         );
     }
 
