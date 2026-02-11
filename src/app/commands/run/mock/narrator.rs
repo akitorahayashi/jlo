@@ -90,14 +90,6 @@ mod tests {
     struct MustNotTouchGitHub;
 
     impl GitHubPort for MustNotTouchGitHub {
-        fn dispatch_workflow(
-            &self,
-            _workflow_name: &str,
-            _inputs: &[(&str, &str)],
-        ) -> Result<(), AppError> {
-            panic!("mock narrator no-op must not call dispatch_workflow");
-        }
-
         fn create_pull_request(
             &self,
             _head: &str,

@@ -131,9 +131,6 @@ mod tests {
     }
 
     impl GitHubPort for FakeGitHub {
-        fn dispatch_workflow(&self, _: &str, _: &[(&str, &str)]) -> Result<(), AppError> {
-            Ok(())
-        }
         fn create_pull_request(
             &self,
             h: &str,

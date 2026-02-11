@@ -522,8 +522,8 @@ fn run_implementer_prompt_preview_with_issue_file() {
         ])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Prompt Preview: Local Dispatch"))
-        .stdout(predicate::str::contains("Would dispatch workflow"));
+        .stdout(predicate::str::contains("Prompt Preview: Implementer"))
+        .stdout(predicate::str::contains("Would execute 1 session"));
 }
 
 #[test]
@@ -548,8 +548,8 @@ fn run_planner_prompt_preview_with_issue_file() {
         .args(["run", "planner", ".jules/exchange/issues/bugs/test_issue.yml", "--prompt-preview"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Prompt Preview: Local Dispatch"))
-        .stdout(predicate::str::contains("Would dispatch workflow"));
+        .stdout(predicate::str::contains("Prompt Preview: Planner"))
+        .stdout(predicate::str::contains("Would execute 1 session"));
 }
 
 #[test]
