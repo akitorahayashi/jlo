@@ -12,11 +12,11 @@ statement: |
 
 evidence:
   - path: "src/domain/workspace/layer.rs"
-    loc: "Layer enum"
+    loc: ["Layer enum"]
     note: "Defines layer properties like `is_single_role`."
   - path: "src/domain/prompt_assembly/narrator.rs"
-    loc: "mod assemble"
+    loc: ["mod assemble"]
     note: "Contains prompt construction logic for Narrator."
   - path: "src/app/commands/run/narrator_logic.rs"
-    loc: "fn execute"
+    loc: ["fn execute"]
     note: "Contains execution logic for Narrator."

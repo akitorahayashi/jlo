@@ -12,5 +12,5 @@ statement: |
 
 evidence:
   - path: "src/domain/prompt_assembly/mod.rs"
-    loc: "pub mod narrator; pub mod decider; ..."
+    loc: ["pub mod narrator;", "pub mod decider;"]
     note: "Explicitly lists all layer modules."

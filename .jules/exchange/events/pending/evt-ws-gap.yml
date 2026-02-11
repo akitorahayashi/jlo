@@ -12,8 +12,8 @@ statement: |
 
 evidence:
   - path: ".jules"
-    loc: "ls output"
+    loc: ["ls output"]
     note: "The '.jules' directory contains 'workstations' but not 'workstreams'."
   - path: "."
-    loc: "grep -r workstream ."
+    loc: ["grep -r workstream ."]
     note: "Zero occurrences of 'workstream' in the entire repository."
