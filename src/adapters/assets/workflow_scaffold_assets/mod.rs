@@ -63,10 +63,7 @@ pub fn load_workflow_scaffold(
 
     let env = build_template_environment(&sources)?;
 
-    let runner = match mode {
-        WorkflowRunnerMode::Remote => "ubuntu-latest",
-        WorkflowRunnerMode::SelfHosted => "self-hosted",
-    };
+    let runner = mode.runner_label();
     let ctx = context! {
         runner => runner,
         target_branch => &generate_config.target_branch,
@@ -149,11 +146,11 @@ mod tests {
     #[test]
     fn workflow_scaffold_assets_load() {
         let generate_config = WorkflowGenerateConfig::default();
-        let remote = load_workflow_scaffold(WorkflowRunnerMode::Remote, &generate_config)
+        let remote = load_workflow_scaffold(WorkflowRunnerMode::remote(), &generate_config)
             .expect("remote assets");
         assert!(!remote.files.is_empty(), "remote scaffold should have files");
 
-        let self_hosted = load_workflow_scaffold(WorkflowRunnerMode::SelfHosted, &generate_config)
+        let self_hosted = load_workflow_scaffold(WorkflowRunnerMode::self_hosted(), &generate_config)
             .expect("self-hosted assets");
         assert!(!self_hosted.files.is_empty(), "self-hosted scaffold should have files");
     }

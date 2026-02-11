@@ -125,7 +125,7 @@ fn init_workflows_respects_unrelated_files() {
     fs::write(&unrelated_action, "custom action").unwrap();
 
     // Use API directly — testing workflow scaffold re-install over existing files
-    init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote).unwrap();
+    init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::remote()).unwrap();
 
     let updated_workflow = fs::read_to_string(&scaffold_workflow).unwrap();
     assert!(updated_workflow.contains("Jules Workflows"));
@@ -164,7 +164,7 @@ jobs:
     let cron_entries = ["0 12 * * 1-5", "0 6 * * 0"];
     write_jlo_config(root, &cron_entries, 42);
 
-    init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote).unwrap();
+    init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::remote()).unwrap();
 
     let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
     assert!(updated_workflow.contains("0 12 * * 1-5"), "Schedule should use config values");
@@ -181,7 +181,7 @@ fn init_workflows_requires_config() {
     let ctx = TestContext::new();
     let root = ctx.work_dir();
 
-    let result = init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote);
+    let result = init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::remote());
     assert!(result.is_err(), "Missing config should fail explicitly");
 }
 
@@ -194,7 +194,7 @@ fn init_workflows_fails_on_invalid_config() {
     fs::create_dir_all(&jlo_dir).unwrap();
     fs::write(jlo_dir.join("config.toml"), "invalid = [").unwrap();
 
-    let result = init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote);
+    let result = init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::remote());
     assert!(result.is_err(), "Invalid config should fail explicitly");
 }
 
@@ -209,7 +209,7 @@ fn init_workflows_overwrites_invalid_existing_workflow() {
     fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
     fs::write(&workflow_path, "name: [invalid\n  yaml: content").unwrap();
 
-    init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::Remote).unwrap();
+    init_workflows_at(root.to_path_buf(), WorkflowRunnerMode::remote()).unwrap();
 
     let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
     assert!(updated_workflow.contains("Jules Workflows"));

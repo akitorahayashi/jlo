@@ -22,7 +22,7 @@ This document describes how files under `src/assets/github/` are transformed int
 - `build_template_environment` registers every `.j2` template by its relative path.
 - `gha_expr` and `gha_raw` functions emit GitHub Actions expressions (e.g., `${{ ... }}`).
 - Rendering context contains:
-  - `runner`: `ubuntu-latest` for `WorkflowRunnerMode::Remote`, `self-hosted` for `WorkflowRunnerMode::SelfHosted`.
+  - `runner`: `ubuntu-latest` when `runner_mode` is `remote`; otherwise the config value is used directly as the `runs-on` label (e.g. `self-hosted`, `my-mac-mini`, `[self-hosted, macOS, arm64]`).
   - `target_branch`: rendered from `.jlo/config.toml` (`run.default_branch`).
   - `worker_branch`: rendered from `.jlo/config.toml` (`run.jules_branch`).
   - `workflow_schedule_crons`: cron list from `.jlo/config.toml` (`workflow.cron`).

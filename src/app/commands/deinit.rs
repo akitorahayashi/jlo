@@ -30,7 +30,7 @@ pub fn execute(root: &Path, git: &impl GitPort) -> Result<DeinitOutcome, AppErro
     let mut action_dirs = BTreeSet::new();
 
     let generate_config = WorkflowGenerateConfig::default();
-    for mode in [WorkflowRunnerMode::Remote, WorkflowRunnerMode::SelfHosted] {
+    for mode in [WorkflowRunnerMode::remote(), WorkflowRunnerMode::self_hosted()] {
         let scaffold = load_workflow_scaffold(mode, &generate_config)?;
         for file in scaffold.files {
             file_paths.insert(file.path);
