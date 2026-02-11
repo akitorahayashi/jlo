@@ -31,10 +31,11 @@ pub(crate) fn validate_issue_path<W: WorkspaceStore>(
         .canonicalize(exchange_dir_str)
         .map_err(|_| AppError::ExchangeDirectoryNotFound)?;
 
-    let has_issues_component = canonical_path.components().any(|c| c.as_os_str() == "issues");
-    if !canonical_path.starts_with(&canonical_exchange_dir) || !has_issues_component {
+    let has_requirements_component =
+        canonical_path.components().any(|c| c.as_os_str() == "requirements");
+    if !canonical_path.starts_with(&canonical_exchange_dir) || !has_requirements_component {
         return Err(AppError::Validation(format!(
-            "Issue file must be within {}/*/issues/",
+            "Issue file must be within {}/requirements/",
             canonical_exchange_dir.display()
         )));
     }

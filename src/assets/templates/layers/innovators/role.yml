@@ -3,7 +3,7 @@ description: "# TODO: One-line summary of role mandate"
 layer: innovators
 
 profile:
-  bias_focus: "# TODO: Describe the leverage lens for this persona (what class of improvements it prioritizes)"
+  focus: "# TODO: Describe the leverage lens for this persona (what class of improvements it prioritizes)"
   analysis_points:
     - "# TODO: List recurring repository patterns this persona investigates"
   first_principles:

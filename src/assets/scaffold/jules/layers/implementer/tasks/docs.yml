@@ -1,16 +1,16 @@
 task: implement-docs
 
 objective:
-  Update documentation as described in the issue. Ensure accuracy, completeness,
+  Update documentation as described in the requirement. Ensure accuracy, completeness,
   and consistency with the current codebase.
 
 steps:
-  - Understand what documentation needs to change from the issue.
+  - Understand what documentation needs to change from the requirement.
   - Verify the documented behaviour against the current code.
   - Write clear, concise documentation using the project's existing style.
   - Update cross-references and links if affected.
   - Run any documentation build or link-checking tools if available.
-  - Create a pull request referencing the issue.
+  - Create a pull request referencing the requirement.
 
 constraints:
   - Documentation must reflect the current state of the code, not aspirational designs.

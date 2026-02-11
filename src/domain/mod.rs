@@ -1,7 +1,7 @@
 pub mod configuration;
 pub mod error;
 pub mod identifiers;
-pub mod issue;
+pub mod requirement;
 
 pub mod prompt_assembly;
 pub mod workspace;
@@ -17,7 +17,7 @@ pub use configuration::{
 };
 pub use error::{AppError, IoErrorKind};
 pub use identifiers::{ComponentId, RoleId};
-pub use issue::IssueHeader;
+pub use requirement::RequirementHeader;
 
 pub use prompt_assembly::{
     PromptAssemblyError, PromptAssetLoader, PromptContext, assemble_prompt, assemble_with_issue,

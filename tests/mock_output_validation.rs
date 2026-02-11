@@ -79,22 +79,25 @@ fn mock_decider_issue_file_passes_doctor() {
     )
     .expect("Failed to write event file");
 
-    // Copy mock issue file to workspace - apply the same transformations as mock decider
-    let mock_issue = include_str!("../src/assets/mock/decider_issue.yml");
-    let issues_dir = ctx.jules_path().join("exchange").join("issues").join("bugs");
+    // Copy mock requirement file to workspace - apply the same transformations as mock decider
+    let mock_requirement = include_str!("../src/assets/mock/decider_requirement.yml");
+    let requirements_dir = ctx.jules_path().join("exchange").join("requirements");
 
-    fs::create_dir_all(&issues_dir).expect("Failed to create issues directory");
+    fs::create_dir_all(&requirements_dir).expect("Failed to create requirements directory");
 
-    // Test 1: Issue without deep analysis (implementer-ready)
-    let impl_issue_file = issues_dir.join("impl-issue.yml");
-    fs::write(&impl_issue_file, mock_issue.replace("mock01", issue_id).replace("event1", event_id))
-        .expect("Failed to write impl issue file");
+    // Test 1: Requirement without deep analysis (implementer-ready)
+    let impl_issue_file = requirements_dir.join("impl-issue.yml");
+    fs::write(
+        &impl_issue_file,
+        mock_requirement.replace("mock01", issue_id).replace("event1", event_id),
+    )
+    .expect("Failed to write impl requirement file");
 
-    // Test 2: Issue with deep analysis (planner-ready) - must include deep_analysis_reason
-    let planner_issue_file = issues_dir.join("planner-issue.yml");
+    // Test 2: Requirement with deep analysis (planner-ready) - must include deep_analysis_reason
+    let planner_issue_file = requirements_dir.join("planner-issue.yml");
     fs::write(
         &planner_issue_file,
-        mock_issue
+        mock_requirement
             .replace("mock01", "pln001")
             .replace("event1", event_id)
             .replace(
@@ -144,7 +147,7 @@ fn mock_innovator_idea_file_passes_doctor() {
     // Seed perspective so the room resembles real execution context.
     let perspective = r#"schema_version: 1
 persona: "alice"
-bias_focus: "High-leverage improvements"
+focus: "High-leverage improvements"
 current_view: |
   Current architecture has repetitive workflow logic.
 historical_learnings: |

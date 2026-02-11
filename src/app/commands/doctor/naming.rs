@@ -6,22 +6,15 @@ use super::diagnostics::Diagnostics;
 use super::structure::list_subdirs;
 use super::yaml::is_kebab_case;
 
-pub fn naming_checks(
-    jules_path: &Path,
-    issue_labels: &[String],
-    event_states: &[String],
-    diagnostics: &mut Diagnostics,
-) {
+pub fn naming_checks(jules_path: &Path, event_states: &[String], diagnostics: &mut Diagnostics) {
     for state in event_states {
         for entry in list_files(&jules::events_state_dir(jules_path, state), diagnostics) {
             validate_filename(&entry, diagnostics, "event");
         }
     }
 
-    for label in issue_labels {
-        for entry in list_files(&jules::issues_label_dir(jules_path, label), diagnostics) {
-            validate_filename(&entry, diagnostics, "issue");
-        }
+    for entry in list_files(&jules::requirements_dir(jules_path), diagnostics) {
+        validate_filename(&entry, diagnostics, "requirement");
     }
 
     let innovators_dir = jules::innovators_dir(jules_path);

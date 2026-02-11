@@ -6,23 +6,8 @@ purpose:
   emit 0-3 high-signal, evidence-backed findings as events. Maintain continuity
   across runs via workstation memory (perspective.yml).
 
-inputs:
-  - Source code and repository files
-  - .jlo/roles/observers/<role>/role.yml (role definition)
-  - .jules/workstations/<role>/perspective.yml (workstation memory)
-  - .jules/exchange/changes.yml (recent changes, if present — advisory, does not restrict scope)
-  - .jules/exchange/issues/**/*.yml (open issues, for deduplication)
-  - .jules/exchange/events/<state>/*.yml (recent events, for deduplication)
-  - .jules/roles/observers/schemas/event.yml (event schema)
-  - .jules/roles/innovators/schemas/comment.yml (observer-to-innovator feedback schema)
-
-outputs:
-  - .jules/exchange/events/pending/*.yml
-  - .jules/workstations/<role>/perspective.yml
-  - .jules/exchange/innovators/<persona>/comments/*.yml (if innovators scheduled and idea.yml exists)
-
 constraints:
-  - Do not duplicate findings already covered by open issues or recent events
+  - Do not duplicate findings already covered by open requirements or recent events
   - Workstation memory is perspective.yml only; do not create per-run history files
-  - "changes.yml is advisory context — it does not restrict inspection scope"
+  - "Do not prioritize changes.yml over direct repository inspection; use it only as a secondary hint"
   - "Goals must be validated every run; replace stale or completed goals"

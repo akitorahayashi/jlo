@@ -4,7 +4,7 @@ use crate::domain::{AppError, Layer};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 use std::path::Path;
 
-use super::issue_routing::find_issues;
+use super::issue_routing::find_requirements;
 use super::options::{RunResults, WorkflowRunOptions};
 
 /// Execute runs for a layer.
@@ -158,7 +158,7 @@ where
     let mock_suffix = if options.mock { " (mock)" } else { "" };
 
     // Find issues for the layer
-    let issues = find_issues(store, options.layer, options.routing_labels.as_deref())?;
+    let issues = find_requirements(store, options.layer)?;
 
     if issues.is_empty() {
         eprintln!("No issues found for {}", options.layer.dir_name(),);

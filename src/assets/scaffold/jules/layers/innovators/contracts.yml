@@ -8,6 +8,7 @@ purpose:
 
 constraints:
   - "Do not duplicate items already listed in perspective.yml recent_proposals"
-  - "All outputs must conform to the corresponding schema in schemas/"
+  - "Repository investigation is mandatory in both phases: codebase behavior, runtime assumptions, and open requirement context"
+  - "All outputs must conform to the corresponding schema in .jules/roles/innovators/schemas/"
   - "Proposals must introduce boundary, behavior, or decision-quality changes — not local refactoring findings"
   - "Self-check against role.yml proposal_quality_bar and evidence_expectations"

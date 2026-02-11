@@ -127,12 +127,11 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             }
         }
 
-        for label in inputs.issue_labels {
-            let label_dir = jules::issues_label_dir(inputs.jules_path, label);
-            for entry in read_yaml_files(&label_dir, diagnostics) {
-                validate_issue_file(
+        {
+            let requirements_dir = jules::requirements_dir(inputs.jules_path);
+            for entry in read_yaml_files(&requirements_dir, diagnostics) {
+                validate_requirement_file(
                     &entry,
-                    label,
                     inputs.issue_labels,
                     inputs.issue_priorities,
                     diagnostics,
@@ -257,9 +256,8 @@ pub fn validate_event(
     }
 }
 
-fn validate_issue_file(
+fn validate_requirement_file(
     path: &Path,
-    label: &str,
     issue_labels: &[String],
     issue_priorities: &[String],
     diagnostics: &mut Diagnostics,
@@ -268,13 +266,12 @@ fn validate_issue_file(
         Some(data) => data,
         None => return,
     };
-    validate_issue(&data, path, label, issue_labels, issue_priorities, diagnostics);
+    validate_requirement(&data, path, issue_labels, issue_priorities, diagnostics);
 }
 
-pub fn validate_issue(
+pub fn validate_requirement(
     data: &Mapping,
     path: &Path,
-    label: &str,
     issue_labels: &[String],
     issue_priorities: &[String],
     diagnostics: &mut Diagnostics,
@@ -300,20 +297,18 @@ pub fn validate_issue(
     ensure_non_empty_string(data, path, "label", diagnostics);
 
     let label_value = get_string(data, "label").unwrap_or_default();
-    if label_value != label {
+    if !label_value.is_empty() && !issue_labels.contains(&label_value) {
         diagnostics.push_error(
             path.display().to_string(),
-            format!("label '{}' does not match directory '{}'", label_value, label),
+            format!("label '{}' is not defined in github-labels.json", label_value),
         );
-    }
-    if !label_value.is_empty() && !issue_labels.contains(&label_value) {
-        diagnostics.push_error(path.display().to_string(), "label is not recognized");
     }
 
     let allowed: Vec<&str> = issue_priorities.iter().map(|value| value.as_str()).collect();
     ensure_enum(data, path, "priority", &allowed, diagnostics);
 
     ensure_non_empty_string(data, path, "summary", diagnostics);
+    ensure_non_empty_string(data, path, "goal", diagnostics);
     ensure_non_empty_string(data, path, "problem", diagnostics);
     ensure_non_empty_string(data, path, "impact", diagnostics);
     ensure_non_empty_string(data, path, "desired_outcome", diagnostics);
@@ -542,7 +537,7 @@ fn validate_innovator_role_file(path: &Path, role_dir: &Path, diagnostics: &mut 
 
     match data.get("profile") {
         Some(serde_yaml::Value::Mapping(profile_map)) => {
-            ensure_non_empty_string(profile_map, path, "bias_focus", diagnostics);
+            ensure_non_empty_string(profile_map, path, "focus", diagnostics);
             ensure_non_empty_sequence(profile_map, path, "analysis_points", diagnostics);
             ensure_non_empty_sequence(profile_map, path, "first_principles", diagnostics);
             ensure_non_empty_sequence(profile_map, path, "guiding_questions", diagnostics);
@@ -576,7 +571,7 @@ fn validate_innovator_perspective(path: &Path, persona_name: &str, diagnostics: 
 
     ensure_int(&data, path, "schema_version", diagnostics, Some(1));
     ensure_non_empty_string(&data, path, "persona", diagnostics);
-    ensure_non_empty_string(&data, path, "bias_focus", diagnostics);
+    ensure_non_empty_string(&data, path, "focus", diagnostics);
 
     let persona_value = get_string(&data, "persona").unwrap_or_default();
     if !persona_value.is_empty() && persona_value != persona_name {
@@ -738,7 +733,7 @@ evidence: []
     }
 
     #[test]
-    fn test_validate_issue_data_valid() {
+    fn test_validate_requirement_data_valid() {
         let yaml = r#"
 schema_version: 2
 requires_deep_analysis: false
@@ -748,6 +743,7 @@ title: "Bug fix"
 label: "bugs"
 priority: "high"
 summary: "Summary"
+goal: "Goal"
 problem: "Problem"
 impact: "Impact"
 desired_outcome: "Outcome"
@@ -761,12 +757,12 @@ verification_criteria: ["test commands"]
         let labels = vec!["bugs".to_string()];
         let priorities = vec!["high".to_string()];
 
-        validate_issue(&data, &path, "bugs", &labels, &priorities, &mut diagnostics);
+        validate_requirement(&data, &path, &labels, &priorities, &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
     }
 
     #[test]
-    fn test_validate_issue_missing_requires_deep_analysis() {
+    fn test_validate_requirement_missing_requires_deep_analysis() {
         let yaml = r#"
 schema_version: 2
 id: "abc123"
@@ -775,6 +771,7 @@ title: "Bug fix"
 label: "bugs"
 priority: "high"
 summary: "Summary"
+goal: "Goal"
 problem: "Problem"
 impact: "Impact"
 desired_outcome: "Outcome"
@@ -788,7 +785,7 @@ verification_criteria: ["test commands"]
         let labels = vec!["bugs".to_string()];
         let priorities = vec!["high".to_string()];
 
-        validate_issue(&data, &path, "bugs", &labels, &priorities, &mut diagnostics);
+        validate_requirement(&data, &path, &labels, &priorities, &mut diagnostics);
         assert!(diagnostics.error_count() > 0);
         assert!(diagnostics.errors()[0].message.contains("requires_deep_analysis is required"));
     }

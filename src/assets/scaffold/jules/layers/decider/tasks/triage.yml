@@ -2,14 +2,14 @@ task: triage
 
 objective: >-
   Process all pending observer events through a sequential pipeline —
-  verify currency, resolve conflicts, create or update issues, and
+  verify currency, resolve conflicts, create or update requirements, and
   transition event state.
 
 inputs:
   - ".jules/exchange/events/pending/*.yml (observer events)"
-  - ".jules/exchange/issues/**/*.yml (existing issues)"
-  - ".jules/roles/decider/schemas/issue.yml (issue schema)"
-  - ".jules/github-labels.json (available issue labels)"
+  - ".jules/exchange/requirements/*.yml (existing requirements)"
+  - ".jules/roles/decider/schemas/requirements.yml (requirement schema)"
+  - ".jules/github-labels.json (available requirement labels)"
 
 steps:
   # 1. Verify events
@@ -25,14 +25,14 @@ steps:
     the event with the strongest evidence (e.g. deletion overrides
     renaming, newer observation overrides older).
 
-  # 3. Create or update issues
+  # 3. Create or update requirements
   - >-
-    For events related to an existing issue, merge the event into that
-    issue and add the event ID to source_events.
+    For events related to an existing requirement, merge the event into that
+    requirement and add the event ID to source_events.
   - >-
-    For genuinely new problems, create a new issue file using
-    schemas/issue.yml with a label from .jules/github-labels.json.
-  - "Place issue files in .jules/exchange/issues/<label>/<kebab-case-title>.yml."
+    For genuinely new problems, create a new requirement file using
+    .jules/roles/decider/schemas/requirements.yml with a label from .jules/github-labels.json.
+  - "Place requirement files in .jules/exchange/requirements/<kebab-case-title>.yml."
 
   # 4. Transition event state
   - Update each processed event's issue_id field.
@@ -41,6 +41,6 @@ steps:
     .jules/exchange/events/decided/.
 
 output:
-  - ".jules/exchange/issues/<label>/<kebab-case-title>.yml (created or updated)"
+  - ".jules/exchange/requirements/<kebab-case-title>.yml (created or updated)"
   - ".jules/exchange/events/decided/*.yml (processed events with issue_id set)"
   - ".jules/exchange/events/pending/ contains no processed events."

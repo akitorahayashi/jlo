@@ -31,45 +31,45 @@ The Narrator layer produces `.jules/exchange/changes.yml`, summarizing recent co
 
 - `.jules/exchange/changes.yml` is overwritten in-place (no time-series).
 - Narrator excludes `.jules/` from all diffs and path lists.
-- Observers receive this context automatically when present.
+- Observers may use this only as a secondary hint after baseline repository inspection.
 - Schema is defined by `.jules/roles/narrator/schemas/changes.yml`.
 
 ## Exchange Model
 
-Jules uses a flat exchange model for handing off events and issues between layers. The exchange is located in `.jules/exchange/`.
+Jules uses a flat exchange model for handing off events and requirements between layers. The exchange is located in `.jules/exchange/`.
 
 - **Events** (Observer output, Decider input):
   - `.jules/exchange/events/<state>/*.yml` (states: `pending`, `decided`)
-- **Issues** (Decider/Planner output, Implementer input):
-  - `.jules/exchange/issues/<label>/*.yml` (labels: `bugs`, `feats`, `refacts`, `tests`, `docs`)
+- **Requirements** (Decider/Planner output, Implementer input):
+  - `.jules/exchange/requirements/*.yml`
 - **Innovator Rooms**:
   - `.jules/exchange/innovators/<persona>/` (contains proposals and comments)
 
 ## Workspace Data Flow
 
-The pipeline is file-based and uses local issues as the handoff point:
+The pipeline is file-based and uses local requirements as the handoff point:
 
 `narrator -> observers -> decider -> [planner] -> implementer`
 
-Narrator runs first, producing `.jules/exchange/changes.yml` for observer context.
+Narrator runs first, producing `.jules/exchange/changes.yml` as a secondary hint for observer triage.
 
 After decider output:
-- Issues with `requires_deep_analysis: false` are ready for implementation.
-- Issues with `requires_deep_analysis: true` trigger deep analysis by planner.
-- Implementer is invoked via `jlo run implementer` with a local issue file. Scheduled workflows may dispatch implementer according to repository policy.
+- Requirements with `requires_deep_analysis: false` are ready for implementation.
+- Requirements with `requires_deep_analysis: true` trigger deep analysis by planner.
+- Implementer is invoked via `jlo run implementer` with a local requirement file. Scheduled workflows may dispatch implementer according to repository policy.
 
-## Issue Identity and Deduplication
+## Requirement Identity and Deduplication
 
-- Issue filenames use stable kebab-case identifiers, not dates (e.g. `auth-inconsistency.yml`).
-- Observers check open issues before emitting events to avoid duplicates.
-- Decider links related events to issues (populating `source_events` in the issue).
+- Requirement filenames use stable kebab-case identifiers, not dates (e.g. `auth-inconsistency.yml`).
+- Observers check existing requirements before emitting events to avoid duplicates.
+- Decider links related events to requirements (populating `source_events` in the requirement).
 - Events are preserved in the exchange until an implementation workflow removes them.
 
 ## Deep Analysis
 
-When an issue requires deep analysis:
+When a requirement requires deep analysis:
 - `requires_deep_analysis: true` must have a non-empty `deep_analysis_reason` field.
-- Planner expands the issue and sets `requires_deep_analysis: false`.
+- Planner expands the requirement and sets `requires_deep_analysis: false`.
 - The original rationale is preserved and expanded with findings.
 
 ## File Rules
@@ -78,7 +78,7 @@ When an issue requires deep analysis:
 - Artifacts are created by copying the corresponding schema and filling its fields:
   - Changes: `.jules/roles/narrator/schemas/changes.yml`
   - Events: `.jules/roles/observers/schemas/event.yml`
-  - Issues: `.jules/roles/decider/schemas/issue.yml`
+  - Requirements: `.jules/roles/decider/schemas/requirements.yml`
 
 ## Git And Branch Rules
 
@@ -94,15 +94,15 @@ Branch names:
 
 `<id>` is 6 lowercase alphanumeric characters unless the layer contract specifies otherwise.
 
-`<label>` is an issue label defined in `.jules/github-labels.json` (e.g., `bugs`, `feats`).
+`<label>` is a requirement label defined in `.jules/github-labels.json` (e.g., `bugs`, `feats`).
 
 ## Safety Boundaries
 
 - Narrator modifies only `.jules/exchange/changes.yml`.
 - Observers, Decider, and Planner modify only `.jules/`.
-- Implementer modifies only what the issue specifies, runs the verification command, then
-  create a pull request for human review.
+- Implementer modifies only what the requirement specifies, runs the verification command, then
+  creates a pull request for human review.
 
 ## Forbidden By Default
 
-- `.github/workflows/` is not modified unless explicitly required by the issue.
+- `.github/workflows/` is not modified unless explicitly required by the requirement.

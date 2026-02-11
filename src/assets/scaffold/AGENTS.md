@@ -140,7 +140,7 @@ Schemas define the structure for artifacts produced by agents.
 
 ## Exchange Model
 
-Jules uses a flat exchange model for handing off events and issues between layers. The exchange is located in `.jules/exchange/`.
+Jules uses a flat exchange model for handing off events and requirements between layers. The exchange is located in `.jules/exchange/`.
 
 ### Exchange Directories
 
@@ -148,25 +148,25 @@ Jules uses a flat exchange model for handing off events and issues between layer
 |-----------|---------|
 | `.jules/exchange/changes.yml` | Narrator output (bounded changes summary) |
 | `.jules/exchange/events/<state>/` | Observer outputs |
-| `.jules/exchange/issues/<label>/` | Planner outputs, Implementer inputs |
+| `.jules/exchange/requirements/` | Decider outputs, Planner/Implementer inputs |
 | `.jules/exchange/innovators/<persona>/` | Innovator perspectives, ideas, proposals, comments |
 | `.jules/workstations/<role>/` | Role perspectives (memory) |
 
 ## Data Flow
 
-The pipeline is file-based and uses local issues as the handoff point:
+The pipeline is file-based and uses local requirements as the handoff point:
 
 ```
 narrator -> observers -> decider -> [planner] -> implementer
-(changes)   (events)    (issues)    (expand)      (code changes)
+(changes)   (events)    (requirements) (expand)  (code changes)
 
 innovators (independent cycle)
 perspective -> idea -> comments -> proposal
 ```
 
-1. **Narrator** runs first, producing `.jules/exchange/changes.yml` for observer context.
+1. **Narrator** runs first, producing `.jules/exchange/changes.yml` as a secondary hint for observer triage.
 2. **Observers** emit events to exchange event directories.
-3. **Decider** reads events, emits issues, and links related events via `source_events`.
-4. **Planner** expands issues with `requires_deep_analysis: true`.
+3. **Decider** reads events, emits requirements, and links related events via `source_events`.
+4. **Planner** expands requirements with `requires_deep_analysis: true`.
 5. **Implementer** executes approved tasks and creates PRs with code changes.
 6. **Innovators** run independently: each persona maintains a `perspective.yml`, drafts `idea.yml`, receives `comments/` from other personas, and produces `proposal.yml`.

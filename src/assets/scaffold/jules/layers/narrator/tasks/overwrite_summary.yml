@@ -8,9 +8,9 @@ description:
   fresh replacement.
 
 steps:
-  - Read schemas/changes.yml for the output structure.
+  - "Read .jules/roles/narrator/schemas/changes.yml for the output structure."
   - "Review the commits provided in Run Context (sha + message since the cursor)."
   - "If needed, inspect individual commits with `git show <sha> --stat` for detail."
-  - Identify exactly 5 themes across the new commits.
+  - "Identify exactly 5 themes across the new commits."
   - "For each theme: title (concise label), scope (affected paths/subsystem), impact (what changed and downstream effect)."
   - "Write .jules/exchange/changes.yml with created_at set to the current UTC time."

@@ -107,14 +107,9 @@ pub fn events_decided_dir(jules_path: &Path) -> PathBuf {
     events_state_dir(jules_path, "decided")
 }
 
-/// `.jules/exchange/issues/`
-pub fn issues_dir(jules_path: &Path) -> PathBuf {
-    exchange_dir(jules_path).join("issues")
-}
-
-/// `.jules/exchange/issues/<label>/`
-pub fn issues_label_dir(jules_path: &Path, label: &str) -> PathBuf {
-    issues_dir(jules_path).join(label)
+/// `.jules/exchange/requirements/`
+pub fn requirements_dir(jules_path: &Path) -> PathBuf {
+    exchange_dir(jules_path).join("requirements")
 }
 
 /// `.jules/exchange/innovators/`
@@ -190,7 +185,7 @@ mod tests {
         assert_eq!(exchange_dir(jp), PathBuf::from("/ws/.jules/exchange"));
         assert_eq!(events_pending_dir(jp), PathBuf::from("/ws/.jules/exchange/events/pending"));
         assert_eq!(events_decided_dir(jp), PathBuf::from("/ws/.jules/exchange/events/decided"));
-        assert_eq!(issues_label_dir(jp, "bugs"), PathBuf::from("/ws/.jules/exchange/issues/bugs"));
+        assert_eq!(requirements_dir(jp), PathBuf::from("/ws/.jules/exchange/requirements"));
     }
 
     #[test]

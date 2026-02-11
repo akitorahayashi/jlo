@@ -9,8 +9,8 @@ use crate::domain::workspace::paths::jules;
 use crate::ports::WorkspaceStore;
 
 use super::model::{
-    EventItem, EventStateSummary, EventSummary, IssueItem, IssueLabelSummary, IssueSummary,
-    RoleSummary, ScheduleLayerSummary, ScheduleSummary, WorkflowExchangeInspectOutput,
+    EventItem, EventStateSummary, EventSummary, RequirementItem, RequirementSummary, RoleSummary,
+    ScheduleLayerSummary, ScheduleSummary, WorkflowExchangeInspectOutput,
 };
 
 #[derive(Debug, Clone)]
@@ -53,13 +53,13 @@ pub(super) fn inspect_at(
 
     let root = jules_path.parent().unwrap_or(Path::new("."));
     let events = summarize_events(store, root, &exchange_dir)?;
-    let issues = summarize_issues(store, root, &exchange_dir)?;
+    let requirements = summarize_requirements(store, root, &exchange_dir)?;
 
     Ok(WorkflowExchangeInspectOutput {
         schema_version: 1,
         schedule: schedule_summary,
         events,
-        issues,
+        requirements,
     })
 }
 
@@ -106,45 +106,31 @@ fn summarize_events(
     Ok(EventSummary { states, pending_files, items })
 }
 
-fn summarize_issues(
+fn summarize_requirements(
     store: &impl WorkspaceStore,
     root: &Path,
     exchange_dir: &Path,
-) -> Result<IssueSummary, AppError> {
-    let issues_dir = exchange_dir.join("issues");
-    if !store.file_exists(issues_dir.to_str().unwrap()) {
+) -> Result<RequirementSummary, AppError> {
+    let requirements_dir = exchange_dir.join("requirements");
+    if !store.file_exists(requirements_dir.to_str().unwrap()) {
         return Err(AppError::Validation(format!(
-            "Missing issues directory: {}",
-            issues_dir.display()
+            "Missing requirements directory: {}",
+            requirements_dir.display()
         )));
     }
 
-    let mut labels = Vec::new();
     let mut items = Vec::new();
-    let label_dirs = list_subdirectories(store, &issues_dir)?;
+    let files = list_yml_files(store, &requirements_dir)?;
 
-    for label_dir in label_dirs {
-        let label_name = label_dir
-            .file_name()
-            .map(|name| name.to_string_lossy().to_string())
-            .unwrap_or_else(|| "unknown".to_string());
-        let files = list_yml_files(store, &label_dir)?;
-        let rel_files = files.iter().map(|path| to_repo_relative(root, path)).collect::<Vec<_>>();
-        labels.push(IssueLabelSummary {
-            name: label_name.clone(),
-            count: rel_files.len(),
-            files: rel_files,
-        });
-
-        for path in &files {
-            let item = read_issue_item(store, root, path, &label_name)?;
-            items.push(item);
-        }
+    for path in &files {
+        let item = read_requirement_item(store, root, path)?;
+        items.push(item);
     }
 
     items.sort_by(|left, right| left.path.cmp(&right.path));
+    let count = items.len();
 
-    Ok(IssueSummary { labels, items })
+    Ok(RequirementSummary { count, items })
 }
 
 fn list_yml_files(store: &impl WorkspaceStore, dir: &Path) -> Result<Vec<PathBuf>, AppError> {
@@ -173,20 +159,20 @@ fn read_event_item(
     Ok(EventItem { path: to_repo_relative(root, path), state: state.to_string(), id })
 }
 
-fn read_issue_item(
+fn read_requirement_item(
     store: &impl WorkspaceStore,
     root: &Path,
     path: &Path,
-    label: &str,
-) -> Result<IssueItem, AppError> {
+) -> Result<RequirementItem, AppError> {
     let map = read_yaml_mapping(store, path)?;
     let id = read_required_id(&map, path, "id")?;
+    let label = read_required_string(&map, path, "label")?;
     let requires_deep_analysis = read_required_bool(&map, path, "requires_deep_analysis")?;
     let source_events = read_required_string_list(&map, path, "source_events")?;
 
-    Ok(IssueItem {
+    Ok(RequirementItem {
         path: to_repo_relative(root, path),
-        label: label.to_string(),
+        label,
         requires_deep_analysis,
         id,
         source_events,
@@ -335,15 +321,15 @@ mod tests {
         let exchange_dir = jules_path.join("exchange");
         fs::create_dir_all(exchange_dir.join("events/pending")).unwrap();
         fs::create_dir_all(exchange_dir.join("events/decided")).unwrap();
-        fs::create_dir_all(exchange_dir.join("issues/bugs")).unwrap();
-        fs::create_dir_all(exchange_dir.join("issues/feats")).unwrap();
+        fs::create_dir_all(exchange_dir.join("requirements")).unwrap();
 
         fs::write(exchange_dir.join("events/pending/one.yml"), "id: abc123\n").unwrap();
         fs::write(exchange_dir.join("events/decided/two.yml"), "id: def456\n").unwrap();
         fs::write(
-            exchange_dir.join("issues/bugs/bug.yml"),
+            exchange_dir.join("requirements/bug-fix.yml"),
             r#"
 id: abc123
+label: bugs
 source_events:
   - abc123
 requires_deep_analysis: false
@@ -371,19 +357,18 @@ roles = [
         let pending = output.events.states.iter().find(|state| state.name == "pending").unwrap();
         assert_eq!(pending.count, 1);
         assert_eq!(output.events.pending_files.len(), 1);
-        let bug_label = output.issues.labels.iter().find(|label| label.name == "bugs").unwrap();
-        assert_eq!(bug_label.count, 1);
         assert_eq!(output.events.items.len(), 2);
         let pending_event =
             output.events.items.iter().find(|item| item.state == "pending").unwrap();
         assert_eq!(pending_event.id, "abc123");
         assert!(pending_event.path.ends_with("events/pending/one.yml"));
 
-        assert_eq!(output.issues.items.len(), 1);
-        let issue = &output.issues.items[0];
-        assert_eq!(issue.id, "abc123");
-        assert_eq!(issue.label, "bugs");
-        assert!(!issue.requires_deep_analysis);
-        assert_eq!(issue.source_events, vec!["abc123".to_string()]);
+        assert_eq!(output.requirements.count, 1);
+        assert_eq!(output.requirements.items.len(), 1);
+        let req = &output.requirements.items[0];
+        assert_eq!(req.id, "abc123");
+        assert_eq!(req.label, "bugs");
+        assert!(!req.requires_deep_analysis);
+        assert_eq!(req.source_events, vec!["abc123".to_string()]);
     }
 }

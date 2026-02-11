@@ -5,7 +5,7 @@ pub struct WorkflowExchangeInspectOutput {
     pub schema_version: u32,
     pub schedule: ScheduleSummary,
     pub events: EventSummary,
-    pub issues: IssueSummary,
+    pub requirements: RequirementSummary,
 }
 
 #[derive(Debug, Serialize)]
@@ -47,20 +47,13 @@ pub struct EventItem {
 }
 
 #[derive(Debug, Serialize)]
-pub struct IssueSummary {
-    pub labels: Vec<IssueLabelSummary>,
-    pub items: Vec<IssueItem>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct IssueLabelSummary {
-    pub name: String,
+pub struct RequirementSummary {
     pub count: usize,
-    pub files: Vec<String>,
+    pub items: Vec<RequirementItem>,
 }
 
 #[derive(Debug, Serialize)]
-pub struct IssueItem {
+pub struct RequirementItem {
     pub path: String,
     pub label: String,
     pub requires_deep_analysis: bool,

@@ -56,11 +56,11 @@ pub fn execute(
     let canonical_store = FilesystemWorkspaceStore::new(canonical_root);
     let inspect_output = inspect_at(&canonical_store)?;
 
-    let issue_item =
-        inspect_output.issues.items.iter().find(|item| item.path == issue_rel).ok_or_else(
+    let requirement_item =
+        inspect_output.requirements.items.iter().find(|item| item.path == issue_rel).ok_or_else(
             || {
                 AppError::Validation(format!(
-                    "Issue file not found in inspection output: {}",
+                    "Requirement file not found in inspection output: {}",
                     issue_rel
                 ))
             },
@@ -72,7 +72,7 @@ pub fn execute(
     }
 
     let mut deleted_paths = HashSet::new();
-    for event_id in &issue_item.source_events {
+    for event_id in &requirement_item.source_events {
         let event_path = event_map.get(event_id.as_str()).ok_or_else(|| {
             AppError::Validation(format!(
                 "Source event '{}' not found in inspection output",
@@ -100,7 +100,7 @@ pub fn execute(
         git.run_command(&["rm", "--", path], None)?;
     }
 
-    let commit_message = format!("jules: clean issue {}", issue_item.id);
+    let commit_message = format!("jules: clean requirement {}", requirement_item.id);
     git.run_command(&["commit", "-m", &commit_message], None)?;
     let commit_sha = git.get_head_sha()?;
 
@@ -134,9 +134,9 @@ fn resolve_issue_path(
     let parts: Vec<String> =
         rel_to_jules.components().map(|c| c.as_os_str().to_string_lossy().to_string()).collect();
 
-    if parts.len() < 4 || parts[0] != "exchange" || parts[1] != "issues" {
+    if parts.len() < 3 || parts[0] != "exchange" || parts[1] != "requirements" {
         return Err(AppError::Validation(format!(
-            "Issue file must be under .jules/exchange/issues/: {}",
+            "Requirement file must be under .jules/exchange/requirements/: {}",
             canonical_issue.display()
         )));
     }
@@ -203,14 +203,15 @@ mod tests {
         let jlo_path = repo_dir.join(".jlo");
         let exchange_dir = jules_path.join("exchange");
         fs::create_dir_all(exchange_dir.join("events/pending")).unwrap();
-        fs::create_dir_all(exchange_dir.join("issues/bugs")).unwrap();
+        fs::create_dir_all(exchange_dir.join("requirements")).unwrap();
 
         fs::write(exchange_dir.join("events/pending/event1.yml"), "id: abc123\n").unwrap();
         fs::write(exchange_dir.join("events/pending/event2.yml"), "id: def456\n").unwrap();
         fs::write(
-            exchange_dir.join("issues/bugs/issue.yml"),
+            exchange_dir.join("requirements/issue.yml"),
             r#"
 id: abc123
+label: bugs
 source_events:
   - abc123
   - def456
@@ -240,7 +241,7 @@ roles = [
         std::env::set_current_dir(&repo_dir).unwrap();
 
         let output = execute(WorkflowExchangeCleanIssueOptions {
-            issue_file: ".jules/exchange/issues/bugs/issue.yml".to_string(),
+            issue_file: ".jules/exchange/requirements/issue.yml".to_string(),
         })
         .unwrap();
 
@@ -251,7 +252,7 @@ roles = [
 
         assert!(!repo_dir.join(".jules/exchange/events/pending/event1.yml").exists());
         assert!(!repo_dir.join(".jules/exchange/events/pending/event2.yml").exists());
-        assert!(!repo_dir.join(".jules/exchange/issues/bugs/issue.yml").exists());
+        assert!(!repo_dir.join(".jules/exchange/requirements/issue.yml").exists());
 
         let head = Command::new("git")
             .args(["rev-parse", "HEAD"])

@@ -2,5 +2,5 @@ layer: planner
 branch_prefix: jules-planner-
 
 purpose:
-  Expand issues that require deep analysis with full system impact assessment,
+  Expand requirements that require deep analysis with full system impact assessment,
   dependency analysis, risks, and implementation specifics.

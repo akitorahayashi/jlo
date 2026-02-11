@@ -21,11 +21,7 @@ pub struct SemanticContext {
     issue_sources: HashMap<String, Vec<String>>,
 }
 
-pub fn semantic_context(
-    jules_path: &Path,
-    issue_labels: &[String],
-    diagnostics: &mut Diagnostics,
-) -> SemanticContext {
+pub fn semantic_context(jules_path: &Path, diagnostics: &mut Diagnostics) -> SemanticContext {
     let mut context = SemanticContext::default();
 
     let decided_dir = jules::events_decided_dir(jules_path);
@@ -40,15 +36,12 @@ pub fn semantic_context(
         }
     }
 
-    let issues_dir = jules::issues_dir(jules_path);
-    for label in issue_labels {
-        for entry in read_yaml_files(&issues_dir.join(label), diagnostics) {
-            if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
-                context.issues.insert(id.clone(), entry.clone());
-                if let Some(source_events) = read_yaml_strings(&entry, "source_events", diagnostics)
-                {
-                    context.issue_sources.insert(id, source_events);
-                }
+    let requirements_dir = jules::requirements_dir(jules_path);
+    for entry in read_yaml_files(&requirements_dir, diagnostics) {
+        if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
+            context.issues.insert(id.clone(), entry.clone());
+            if let Some(source_events) = read_yaml_strings(&entry, "source_events", diagnostics) {
+                context.issue_sources.insert(id, source_events);
             }
         }
     }

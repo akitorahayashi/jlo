@@ -151,10 +151,10 @@ impl TestContext {
         assert!(events_path.join("decided").exists(), "exchange/events/decided should exist");
     }
 
-    /// Assert that the issues directory exists (flat exchange).
-    pub fn assert_issues_directory_exists(&self) {
-        let issues_path = self.jules_path().join("exchange/issues");
-        assert!(issues_path.exists(), "exchange/issues directory should exist");
+    /// Assert that the requirements directory exists (flat exchange).
+    pub fn assert_requirements_directory_exists(&self) {
+        let requirements_path = self.jules_path().join("exchange/requirements");
+        assert!(requirements_path.exists(), "exchange/requirements directory should exist");
     }
 
     /// Assert that flat exchange directory structure exists.
@@ -164,7 +164,7 @@ impl TestContext {
         assert!(exchange.join("events").exists(), "exchange/events should exist");
         assert!(exchange.join("events/pending").exists(), "exchange/events/pending should exist");
         assert!(exchange.join("events/decided").exists(), "exchange/events/decided should exist");
-        assert!(exchange.join("issues").exists(), "exchange/issues should exist");
+        assert!(exchange.join("requirements").exists(), "exchange/requirements should exist");
         assert!(exchange.join("innovators").exists(), "exchange/innovators should exist");
     }
 

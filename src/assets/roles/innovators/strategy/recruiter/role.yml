@@ -3,7 +3,7 @@ description: Identify missing roles and contract boundaries.
 layer: innovators
 
 profile:
-  bias_focus: "Increase proposal quality by identifying missing observer/innovator personas and contract boundaries."
+  focus: "Increase proposal quality by identifying missing observer/innovator personas and contract boundaries."
   analysis_points:
     - "Role-definition coverage and boundary quality in .jules/roles/observers/*/role.yml"
     - "Role-definition coverage and boundary quality in .jules/roles/innovators/*/role.yml"
