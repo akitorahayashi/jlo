@@ -1,0 +1,20 @@
+schema_version: 1
+id: scafst
+issue_id: ""
+created_at: "2024-10-18"
+author_role: consistency
+confidence: high
+title: "Scaffold directory structure in AGENTS.md does not match implementation"
+statement: |
+  The documentation describes a `.jules/roles/` directory structure for the scaffold.
+  However, the actual scaffold assets in `src/assets/scaffold/jules/` use a `layers/` directory.
+  This leads to confusion about where to find layer-specific assets and inconsistency in references.
+evidence:
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc:
+      - "128-135"
+    note: "References .jules/roles/ directory structure."
+  - path: "src/assets/scaffold/jules"
+    loc:
+      - "layers/"
+    note: "Actual directory is named 'layers', not 'roles'."
