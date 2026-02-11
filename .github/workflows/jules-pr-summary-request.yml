@@ -3,9 +3,9 @@ name: Jules PR Summary Request
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened]
     branches:
-      - 'main'
+      - 'jules'
 
 permissions:
   contents: read
@@ -20,33 +20,17 @@ jobs:
   summary-request:
     runs-on: ubuntu-latest
     steps:
-      - name: Validate secrets
-        run: |
-          set -euo pipefail
-          if [ -z "${JULES_LINKED_GH_PAT:-}" ]; then
-            echo "::error::JULES_LINKED_GH_PAT is required. It must be a PAT for the GitHub account linked to the JULES_API_KEY principal."
-            exit 1
-          fi
-          if [ -n "${JLO_BOT_TOKEN:-}" ] && [ "${JULES_LINKED_GH_PAT}" = "${JLO_BOT_TOKEN}" ]; then
-            echo "::error::JULES_LINKED_GH_PAT must be distinct from JLO_BOT_TOKEN."
-            exit 1
-          fi
-        env:
-          JULES_LINKED_GH_PAT: ${{ secrets.JULES_LINKED_GH_PAT }}
-          JLO_BOT_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.ref }}
+          ref: 'jules'
           fetch-depth: 1
-          token: ${{ secrets.JULES_LINKED_GH_PAT }}
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
       - name: Post summary request comment
         env:
-          GH_TOKEN: ${{ secrets.JULES_LINKED_GH_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           PR_NUMBER=${{ github.event.pull_request.number }}

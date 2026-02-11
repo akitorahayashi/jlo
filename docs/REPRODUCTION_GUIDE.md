@@ -24,7 +24,7 @@ Minimum token permissions:
   - `Issues: Read and write`
 - Fine-grained PAT for `JULES_LINKED_GH_PAT`:
   - `Contents: Read`
-  - `Pull requests: Read`
+  - `Pull requests: Read and write`
   - `Issues: Read and write`
 - Classic PAT alternative (private repository): `repo` scope.
 
@@ -68,7 +68,7 @@ The orchestration workflow under `.github/workflows/jules-*.yml` runs the layers
 
 ## Self-hosted Runners
 
-The self-hosted workflow kit uses `runs-on: self-hosted` and installs `jlo` from release assets into a runner-local cache path (with temp fallback), then adds that path to the workflow PATH without requiring `sudo`.
+The self-hosted workflow kit uses `runs-on: self-hosted` and installs `jlo` into the runner temp directory, adding it to the workflow PATH without requiring `sudo`.
 Self-hosted runners must provide the commands referenced by the workflows; treat the workflow templates as the authoritative source of required tooling.
 The installer detects OS/architecture and fails fast if the release assets do not support the runner.
 
