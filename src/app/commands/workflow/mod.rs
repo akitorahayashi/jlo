@@ -4,24 +4,17 @@
 //! (e.g. self-hosted workers), while keeping workflow YAML thin.
 
 pub mod bootstrap;
-pub mod cleanup;
 mod doctor;
-pub mod exchange;
 pub mod generate;
 pub mod issue;
 pub mod matrix;
 mod output;
 pub mod pr;
 mod run;
+pub mod workspace;
 
 pub use bootstrap::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
-pub use cleanup::{WorkflowCleanupMockOptions, WorkflowCleanupMockOutput};
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
-pub use exchange::{
-    WorkflowExchangeCleanIssueOptions, WorkflowExchangeCleanIssueOutput,
-    WorkflowExchangeInspectOptions, WorkflowExchangeInspectOutput,
-    WorkflowExchangePublishProposalsOptions, WorkflowExchangePublishProposalsOutput,
-};
 pub use generate::{WorkflowGenerateOptions, WorkflowGenerateOutput};
 pub use output::write_workflow_output;
 pub use run::{WorkflowRunOptions, WorkflowRunOutput};
@@ -54,32 +47,4 @@ pub fn run(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
 /// Execute workflow generate command.
 pub fn generate(options: WorkflowGenerateOptions) -> Result<WorkflowGenerateOutput, AppError> {
     generate::execute(options)
-}
-
-/// Execute workflow cleanup mock command.
-pub fn cleanup_mock(
-    options: WorkflowCleanupMockOptions,
-) -> Result<WorkflowCleanupMockOutput, AppError> {
-    cleanup::cleanup_mock(options)
-}
-
-/// Execute workflow inspect command.
-pub fn inspect(
-    options: WorkflowExchangeInspectOptions,
-) -> Result<WorkflowExchangeInspectOutput, AppError> {
-    exchange::inspect(options)
-}
-
-/// Execute workflow clean issue command.
-pub fn clean_issue(
-    options: WorkflowExchangeCleanIssueOptions,
-) -> Result<WorkflowExchangeCleanIssueOutput, AppError> {
-    exchange::clean_issue(options)
-}
-
-/// Execute workflow publish-proposals command.
-pub fn publish_proposals(
-    options: WorkflowExchangePublishProposalsOptions,
-) -> Result<WorkflowExchangePublishProposalsOutput, AppError> {
-    exchange::publish_proposals(options)
 }

@@ -1,7 +1,9 @@
 use std::path::Path;
 
 use crate::adapters::jules_client_http::HttpJulesClient;
-use crate::app::commands::workflow::{WorkflowExchangeCleanIssueOptions, clean_issue};
+use crate::app::commands::workflow::workspace::{
+    WorkspaceCleanRequirementOptions, clean_requirement,
+};
 use crate::domain::prompt_assembly::implementer as implementer_asm;
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer};
@@ -44,11 +46,11 @@ where
     let session_id =
         execute_session(jules_path, &starting_branch, &source, &client, &issue_content, workspace)?;
 
-    let cleanup_output = clean_issue(WorkflowExchangeCleanIssueOptions {
-        issue_file: issue_info.issue_path_str.clone(),
+    let cleanup_output = clean_requirement(WorkspaceCleanRequirementOptions {
+        requirement_file: issue_info.issue_path_str.clone(),
     })?;
     println!(
-        "✅ Cleaned issue and source events ({} file(s) removed)",
+        "✅ Cleaned requirement and source events ({} file(s) removed)",
         cleanup_output.deleted_paths.len()
     );
 

@@ -12,14 +12,6 @@ use std::fs;
 fn setup_scaffold(ctx: &TestContext) {
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
-
-    // Ensure flat exchange subdirectories exist for issue labels used in tests
-    let exchange = ctx.jules_path().join("exchange");
-    fs::create_dir_all(exchange.join("issues/bugs")).unwrap();
-    fs::create_dir_all(exchange.join("issues/docs")).unwrap();
-    fs::create_dir_all(exchange.join("issues/feats")).unwrap();
-    fs::create_dir_all(exchange.join("issues/refacts")).unwrap();
-    fs::create_dir_all(exchange.join("issues/tests")).unwrap();
 }
 
 #[test]
