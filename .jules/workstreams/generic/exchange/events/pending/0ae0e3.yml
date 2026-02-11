@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "0ae0e3"
+issue_id: ""
+created_at: "2024-05-23"
+author_role: "rustacean"
+confidence: "medium"
+
+# Content
+title: "Imprecise Error Modeling in Git Command Adapter"
+statement: |
+  `GitCommandAdapter` converts all git failures into unstructured strings (`AppError::GitError { details: String }`), discarding exit codes and specific error types. This prevents callers from distinguishing between different failure modes (e.g., merge conflict vs. network error) and implementing appropriate recovery logic.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/adapters/git_command.rs"
+    loc:
+      - "24-27"
+    note: "Underlying I/O error is converted to a generic string message."
+  - path: "src/adapters/git_command.rs"
+    loc:
+      - "32-35"
+    note: "Exit status is checked but discarded, leaving only stderr text as context."

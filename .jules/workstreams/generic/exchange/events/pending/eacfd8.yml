@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "eacfd8"
+issue_id: ""
+created_at: "2024-05-23"
+author_role: "rustacean"
+confidence: "high"
+
+# Content
+title: "Inefficient Ownership and Cloning in Prompt Assembly"
+statement: |
+  The prompt assembly engine relies heavily on `Arc<Mutex<...>>` and cloning entire loader structures (`Box<L>`) to satisfy `minijinja`'s closure requirements. This creates unnecessary overhead and complexity, potentially impacting performance as the number of includes grows.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/prompt_assembly/engine.rs"
+    loc:
+      - "156-161"
+    note: "Entire `loader` and `IncludeContext` are cloned and boxed, potentially expensive if `loader` holds significant state."
+  - path: "src/domain/prompt_assembly/engine.rs"
+    loc:
+      - "168"
+    note: "`include_ctx` is cloned for every helper function added to the environment."
