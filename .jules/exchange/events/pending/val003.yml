@@ -1,0 +1,32 @@
+schema_version: 1
+
+# Metadata
+id: "val003"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-11"
+author_role: "data_arch"
+confidence: "medium"
+
+# Content
+title: "Missing Explicit Validation for RunConfig"
+statement: |
+  `RunConfig` objects are populated via `RunConfigDto` using `unwrap_or` defaults, but there is no step to validate the semantic correctness of the values.
+  Issues like negative timeouts (if types allowed), zero max_parallel, or empty strings where not allowed are not caught at the boundary.
+  This contrasts with `Schedule::validate` which enforces constraints.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/run/config_dto.rs"
+    loc:
+      - "impl From<RunConfigDto> for RunConfig"
+    note: "Performs structural conversion and default injection but no value validation."
+
+  - path: "src/domain/configuration/run_config.rs"
+    loc:
+      - "struct RunConfig"
+    note: "Data container without associated validation methods."
+
+  - path: "src/domain/configuration/schedule.rs"
+    loc:
+      - "fn validate(&self)"
+    note: "Example of proper validation pattern used elsewhere in the domain."
