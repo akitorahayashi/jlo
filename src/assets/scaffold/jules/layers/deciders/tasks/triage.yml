@@ -1,0 +1,41 @@
+task: triage
+
+objective:
+  Process all pending observer events through a sequential pipeline: verify
+  currency, resolve conflicts, create or update issues, and transition event
+  state.
+
+inputs:
+  - .jules/exchange/events/pending/*.yml (observer events)
+  - .jules/exchange/issues/**/*.yml (existing issues)
+  - .jules/roles/deciders/schemas/issue.yml (issue schema)
+  - .jules/github-labels.json (available issue labels)
+
+steps:
+  # 1. Verify events
+  - Read all event files from .jules/exchange/events/pending/.
+  - Verify each event against the current codebase — delete stale events whose
+    observations are no longer valid.
+
+  # 2. Rationalize conflicts
+  - Group remaining events by affected area or subject.
+  - Resolve conflicts: when multiple events contradict each other, keep the
+    event with the strongest evidence (e.g. deletion overrides renaming,
+    newer observation overrides older).
+
+  # 3. Create or update issues
+  - For events related to an existing issue, merge the event into that issue
+    and add the event ID to source_events.
+  - For genuinely new problems, create a new issue file using
+    schemas/issue.yml with a label from .jules/github-labels.json.
+  - Place issue files in .jules/exchange/issues/<label>/<kebab-case-title>.yml.
+
+  # 4. Transition event state
+  - Update each processed event's issue_id field.
+  - Move processed events from .jules/exchange/events/pending/ to
+    .jules/exchange/events/decided/.
+
+output:
+  - .jules/exchange/issues/<label>/<kebab-case-title>.yml (created or updated)
+  - .jules/exchange/events/decided/*.yml (processed events with issue_id set)
+  - .jules/exchange/events/pending/ contains no processed events.
