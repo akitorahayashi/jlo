@@ -1,0 +1,11 @@
+schema_version: 2
+observer: consistency
+updated_at: "2024-10-18T12:00:00Z"
+goals:
+  - "Detect CLI command discrepancies in README.md"
+  - "Detect scaffold structure discrepancies in AGENTS.md"
+rules: []
+ignore: []
+log:
+  - at: "2024-10-18T12:00:00Z"
+    summary: "Initial run, detecting CLI and scaffold documentation drift."
