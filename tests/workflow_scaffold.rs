@@ -515,6 +515,14 @@ fn automerge_delegates_to_jlo_command() {
         automerge.contains("jlo workflow gh pr enable-automerge"),
         "Automerge workflow must delegate to `jlo workflow gh pr enable-automerge`"
     );
+    assert!(
+        automerge.contains("ATTEMPTS=6"),
+        "Automerge workflow should retry transient auto-merge enable failures"
+    );
+    assert!(
+        automerge.contains("enablePullRequestAutoMerge"),
+        "Automerge workflow should retry only known branch-protection propagation failures"
+    );
 
     // Must NOT contain inline bash policy logic
     assert!(

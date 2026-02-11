@@ -66,4 +66,31 @@ jobs:
         run: |
           set -euo pipefail
           PR_NUMBER={{ gha_expr("github.event.pull_request.number") }}
-          jlo workflow gh pr enable-automerge "$PR_NUMBER"
+          ATTEMPTS=6
+          RETRY_DELAY_SECONDS=10
+
+          for attempt in $(seq 1 "$ATTEMPTS"); do
+            set +e
+            OUTPUT=$(jlo workflow gh pr enable-automerge "$PR_NUMBER" 2>&1)
+            STATUS=$?
+            set -e
+
+            echo "$OUTPUT"
+
+            if [ "$STATUS" -eq 0 ]; then
+              exit 0
+            fi
+
+            if ! printf '%s' "$OUTPUT" | grep -q "enablePullRequestAutoMerge"; then
+              echo "::error::Auto-merge enable failed with a non-retriable error."
+              exit "$STATUS"
+            fi
+
+            if [ "$attempt" -eq "$ATTEMPTS" ]; then
+              echo "::error::Auto-merge enable failed after ${ATTEMPTS} attempts."
+              exit "$STATUS"
+            fi
+
+            echo "::warning::Auto-merge branch protection is not ready yet (attempt ${attempt}/${ATTEMPTS}); retrying in ${RETRY_DELAY_SECONDS}s."
+            sleep "$RETRY_DELAY_SECONDS"
+          done
