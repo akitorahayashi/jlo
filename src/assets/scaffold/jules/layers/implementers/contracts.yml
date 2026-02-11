@@ -5,20 +5,6 @@ purpose:
   Implement the assigned issue by modifying source code, tests, and documentation,
   then create a pull request with the changes.
 
-inputs:
-  - Issue content embedded in this prompt
-
-outputs:
-  - Modified source files, tests, documentation
-  - Pull request
-
-workflow:
-  - 1. Read the embedded issue content — understand targets and acceptance criteria
-  - 2. Implement code changes, tests, and documentation
-  - 3. Run verification based on the issue's verification_criteria
-  - 4. Iterate if verification fails
-  - 5. Create pull request
-
 constraints:
   - "Branch format: jules-implementer-<label>-<id>-<short_description>"
   - "<label> must match the issue label"

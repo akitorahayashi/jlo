@@ -1,0 +1,18 @@
+task: implement-refact
+
+objective:
+  Refactor existing code as described in the issue. Improve structure, readability,
+  or maintainability without changing external behaviour.
+
+steps:
+  - Understand the refactoring scope and goals from the issue.
+  - Verify existing tests pass before making changes (establish baseline).
+  - Apply refactoring incrementally — keep each change reviewable.
+  - Ensure all existing tests still pass after refactoring.
+  - Add tests if coverage gaps are discovered during refactoring.
+  - Run the project's verification suite (tests, linting, type checks).
+  - Create a pull request referencing the issue.
+
+constraints:
+  - No observable behaviour changes unless explicitly stated in the issue.
+  - All existing tests must pass without modification (unless a test was testing incorrect behaviour).

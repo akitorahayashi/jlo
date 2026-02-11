@@ -777,22 +777,11 @@ fn verify_scaffold_integrity() {
         );
 
         // Check contracts
-        if layer == "innovators" {
-            assert!(
-                layer_path.join("contracts_creation.yml").exists(),
-                "contracts_creation.yml should exist in innovators"
-            );
-            assert!(
-                layer_path.join("contracts_refinement.yml").exists(),
-                "contracts_refinement.yml should exist in innovators"
-            );
-        } else {
-            assert!(
-                layer_path.join("contracts.yml").exists(),
-                "Layer {} contracts.yml should exist",
-                layer
-            );
-        }
+        assert!(
+            layer_path.join("contracts.yml").exists(),
+            "Layer {} contracts.yml should exist",
+            layer
+        );
 
         // All layers have tasks/ directory
         assert!(layer_path.join("tasks").exists(), "Layer {} tasks/ directory should exist", layer);

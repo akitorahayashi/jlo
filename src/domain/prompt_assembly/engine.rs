@@ -48,6 +48,7 @@ impl PromptContext {
     }
 
     /// Merge another context's variables into this one.
+    #[allow(dead_code)]
     pub fn merge(mut self, other: &PromptContext) -> Self {
         for (k, v) in &other.variables {
             self.variables.insert(k.clone(), v.clone());

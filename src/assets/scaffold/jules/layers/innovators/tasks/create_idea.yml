@@ -1,0 +1,16 @@
+task: create_idea
+phase: creation
+
+objective:
+  Draft one new idea (idea.yml) informed by codebase inspection and persona identity.
+  The idea is a hypothesis — refinement and feedback happen in the refinement phase.
+
+steps:
+  - Inspect the codebase and recent changes; check recent_proposals in perspective.yml to avoid duplicates.
+  - Create idea.yml conforming to schemas/idea.yml.
+
+output:
+  - .jules/exchange/innovators/<persona>/idea.yml
+
+constraints:
+  - "Do not create proposal.yml or modify perspective.yml during this phase"

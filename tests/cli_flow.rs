@@ -81,10 +81,14 @@ fn init_creates_complete_layer_structure() {
     assert!(jules.join("roles/narrator/tasks/overwrite_summary.yml").exists());
     assert!(jules.join("roles/planners/contracts.yml").exists());
     assert!(jules.join("roles/implementers/contracts.yml").exists());
+    assert!(jules.join("roles/innovators/contracts.yml").exists());
 
-    // Innovators use phase-specific contracts
-    assert!(jules.join("roles/innovators/contracts_creation.yml").exists());
-    assert!(jules.join("roles/innovators/contracts_refinement.yml").exists());
+    // Innovators have phase-based task files
+    assert!(jules.join("roles/innovators/tasks/create_idea.yml").exists());
+    assert!(jules.join("roles/innovators/tasks/refine_proposal.yml").exists());
+
+    // Implementers have task files
+    assert!(jules.join("roles/implementers/tasks/implement.yml").exists());
 
     // All layers have tasks/ directory
     for layer in ["narrator", "observers", "deciders", "planners", "implementers", "innovators"] {

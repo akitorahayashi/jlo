@@ -48,11 +48,6 @@ pub fn contracts(jules_path: &Path, layer: Layer) -> PathBuf {
     layer_dir(jules_path, layer).join("contracts.yml")
 }
 
-/// `.jules/roles/<layer>/contracts_<phase>.yml`
-pub fn phase_contracts(jules_path: &Path, layer: Layer, phase: &str) -> PathBuf {
-    layer_dir(jules_path, layer).join(format!("contracts_{}.yml", phase))
-}
-
 /// `.jules/roles/<layer>/schemas/`
 pub fn schemas_dir(jules_path: &Path, layer: Layer) -> PathBuf {
     layer_dir(jules_path, layer).join("schemas")
@@ -180,8 +175,8 @@ mod tests {
             PathBuf::from("/ws/.jules/roles/observers/observers_prompt.j2")
         );
         assert_eq!(
-            phase_contracts(jp, Layer::Innovators, "creation"),
-            PathBuf::from("/ws/.jules/roles/innovators/contracts_creation.yml")
+            contracts(jp, Layer::Innovators),
+            PathBuf::from("/ws/.jules/roles/innovators/contracts.yml")
         );
         assert_eq!(
             tasks_dir(jp, Layer::Observers),

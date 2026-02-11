@@ -92,18 +92,6 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             validate_contracts_file(&contracts_path, layer, diagnostics);
         }
 
-        // Validate phase-specific contracts
-        let phases: &[&str] = match layer {
-            Layer::Innovators => &["creation", "refinement"],
-            _ => &[],
-        };
-        for phase in phases {
-            let phase_contracts = jules::phase_contracts(inputs.jules_path, layer, phase);
-            if phase_contracts.exists() {
-                validate_contracts_file(&phase_contracts, layer, diagnostics);
-            }
-        }
-
         if layer == Layer::Observers {
             let roles_container = jules::layer_roles_container(inputs.jules_path, layer);
             if roles_container.exists() {
@@ -476,7 +464,6 @@ pub fn validate_contracts(
     }
 
     // constraints is optional — some layers may not need explicit guardrails
-    ensure_non_empty_sequence(data, path, "inputs", diagnostics);
 }
 
 /// Validate .jules/exchange/changes.yml schema.

@@ -112,8 +112,10 @@ Implementers modify source code and require human review.
     |
     +-- innovators/     # Multi-role layer (phase-driven)
         +-- innovators_prompt.j2      # Prompt construction (uses {{phase}})
-        +-- contracts_creation.yml   # Creation phase contract
-        +-- contracts_refinement.yml # Refinement phase contract
+        +-- contracts.yml             # Layer contract
+        +-- tasks/
+        |   +-- create_idea.yml       # Creation phase task
+        |   +-- refine_proposal.yml   # Refinement phase task
         +-- schemas/
         |   +-- perspective.yml
         |   +-- idea.yml
@@ -146,7 +148,7 @@ Implementers modify source code and require human review.
 
 **Single-role layers** (Deciders, Planners, Implementers): Have a fixed role with `contracts.yml` directly in the layer directory. Planners and Implementers are issue-driven and require an issue file path argument. Template creation is not supported.
 
-**Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated contracts file (`contracts_creation.yml` / `contracts_refinement.yml`) selected at runtime via the `{{phase}}` template variable in `innovators_prompt.j2`.
+**Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated task file (`tasks/create_idea.yml` / `tasks/refine_proposal.yml`) injected at runtime via the `task` context variable. Universal constraints are in `contracts.yml`.
 
 ## Exchange
  
@@ -160,7 +162,7 @@ Implementers modify source code and require human review.
 ## Configuration Files
 
 ### contracts.yml
-Layer-level shared constraints and workflows. All roles in the layer reference this file. Innovators use phase-specific contracts (`contracts_creation.yml`, `contracts_refinement.yml`) instead.
+Layer-level shared constraints. All roles in the layer reference this file.
 
 ### <layer>_prompt.j2
 Defines a prompt template that assembles required and optional includes into a single prompt sent to the agent.

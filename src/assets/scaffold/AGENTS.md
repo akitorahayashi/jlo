@@ -71,9 +71,10 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   │   └── schemas/
 │   └── innovators/
 │       ├── innovators_prompt.j2      # Prompt construction (uses {{phase}})
-│       ├── contracts_creation.yml   # Creation phase contract
-│       ├── contracts_refinement.yml # Refinement phase contract
-│       ├── tasks/                   # Action units
+│       ├── contracts.yml             # Layer contract
+│       ├── tasks/
+│       │   ├── create_idea.yml       # Creation phase task
+│       │   └── refine_proposal.yml   # Refinement phase task
 │       └── schemas/
 │           ├── perspective.yml
 │           ├── idea.yml

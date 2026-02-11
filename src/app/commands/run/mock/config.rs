@@ -47,57 +47,27 @@ fn load_branch_prefix_for_layer<W: WorkspaceStore>(
     layer: Layer,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let contract_paths = if layer == Layer::Innovators {
-        vec![
-            jules::phase_contracts(jules_path, layer, "creation"),
-            jules::phase_contracts(jules_path, layer, "refinement"),
-        ]
-    } else {
-        vec![jules::contracts(jules_path, layer)]
-    };
+    let contracts_path = jules::contracts(jules_path, layer);
+    let contracts_path_str = contracts_path
+        .to_str()
+        .ok_or_else(|| AppError::Validation("Invalid contracts path".to_string()))?;
 
-    let mut prefixes = Vec::new();
-    for contracts_path in &contract_paths {
-        let contracts_path_str = contracts_path
-            .to_str()
-            .ok_or_else(|| AppError::Validation("Invalid contracts path".to_string()))?;
+    let content = workspace.read_file(contracts_path_str).map_err(|_| {
+        AppError::Validation(format!(
+            "Missing contracts file for layer '{}' at {}",
+            layer.dir_name(),
+            contracts_path.display()
+        ))
+    })?;
 
-        let content = workspace.read_file(contracts_path_str).map_err(|_| {
-            AppError::Validation(format!(
-                "Missing contracts file for layer '{}' at {}",
-                layer.dir_name(),
-                contracts_path.display()
-            ))
-        })?;
-
-        let prefix = extract_branch_prefix(&content).map_err(|e| {
-            AppError::Validation(format!(
-                "Invalid contracts file for layer '{}' at {}: {}",
-                layer.dir_name(),
-                contracts_path.display(),
-                e
-            ))
-        })?;
-        prefixes.push((contracts_path.display().to_string(), prefix));
-    }
-
-    if layer == Layer::Innovators {
-        let expected = &prefixes[0].1;
-        if prefixes.iter().any(|(_, p)| p != expected) {
-            let details = prefixes
-                .into_iter()
-                .map(|(path, prefix)| format!("{} => {}", path, prefix))
-                .collect::<Vec<_>>()
-                .join(", ");
-            return Err(AppError::Validation(format!(
-                "Inconsistent branch_prefix for layer '{}': {}",
-                layer.dir_name(),
-                details
-            )));
-        }
-    }
-
-    Ok(prefixes[0].1.clone())
+    extract_branch_prefix(&content).map_err(|e| {
+        AppError::Validation(format!(
+            "Invalid contracts file for layer '{}' at {}: {}",
+            layer.dir_name(),
+            contracts_path.display(),
+            e
+        ))
+    })
 }
 
 /// Load mock configuration from workspace files.
@@ -110,8 +80,6 @@ pub fn load_mock_config<W: WorkspaceStore>(
     let run_config = load_config(jules_path)?;
 
     // Load branch prefixes from layer contracts.
-    // Innovators must define the same branch_prefix in both contracts_creation.yml
-    // and contracts_refinement.yml.
     let mut branch_prefixes = HashMap::new();
     for layer in [
         Layer::Narrators,
@@ -243,54 +211,13 @@ constraints:
     }
 
     #[test]
-    fn load_branch_prefix_for_innovators_requires_both_phase_contracts() {
+    fn load_branch_prefix_for_innovators_uses_contracts_yml() {
         use crate::testing::MockWorkspaceStore;
 
         let workspace = MockWorkspaceStore::new().with_file(
-            ".jules/roles/innovators/contracts_creation.yml",
+            ".jules/roles/innovators/contracts.yml",
             "branch_prefix: jules-innovator-\n",
         );
-
-        let err = load_branch_prefix_for_layer(Path::new(".jules"), Layer::Innovators, &workspace)
-            .unwrap_err();
-
-        assert!(err.to_string().contains("Missing contracts file for layer 'innovators'"));
-        assert!(err.to_string().contains("contracts_refinement.yml"));
-    }
-
-    #[test]
-    fn load_branch_prefix_for_innovators_requires_consistent_branch_prefix() {
-        use crate::testing::MockWorkspaceStore;
-
-        let workspace = MockWorkspaceStore::new()
-            .with_file(
-                ".jules/roles/innovators/contracts_creation.yml",
-                "branch_prefix: jules-innovator-a-\n",
-            )
-            .with_file(
-                ".jules/roles/innovators/contracts_refinement.yml",
-                "branch_prefix: jules-innovator-b-\n",
-            );
-
-        let err = load_branch_prefix_for_layer(Path::new(".jules"), Layer::Innovators, &workspace)
-            .unwrap_err();
-
-        assert!(err.to_string().contains("Inconsistent branch_prefix for layer 'innovators'"));
-    }
-
-    #[test]
-    fn load_branch_prefix_for_innovators_accepts_consistent_branch_prefix() {
-        use crate::testing::MockWorkspaceStore;
-
-        let workspace = MockWorkspaceStore::new()
-            .with_file(
-                ".jules/roles/innovators/contracts_creation.yml",
-                "branch_prefix: jules-innovator-\n",
-            )
-            .with_file(
-                ".jules/roles/innovators/contracts_refinement.yml",
-                "branch_prefix: jules-innovator-\n",
-            );
 
         let prefix =
             load_branch_prefix_for_layer(Path::new(".jules"), Layer::Innovators, &workspace)

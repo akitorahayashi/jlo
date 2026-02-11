@@ -5,14 +5,13 @@ This file defines the binding rules for Jules agents operating in this repositor
 ## Authority
 
 - This file is authoritative for global rules and shared conventions.
-- Each layer contract is authoritative for layer-specific workflows and schemas:
+- Each layer contract is authoritative for layer-specific rules and schemas:
   - `.jules/roles/narrator/contracts.yml`
   - `.jules/roles/observers/contracts.yml`
   - `.jules/roles/deciders/contracts.yml`
   - `.jules/roles/planners/contracts.yml`
   - `.jules/roles/implementers/contracts.yml`
-  - `.jules/roles/innovators/contracts_creation.yml`
-  - `.jules/roles/innovators/contracts_refinement.yml`
+  - `.jules/roles/innovators/contracts.yml`
 
 - **Role Definitions**: Defined in `.jlo/` (Control Plane).
   - `.jlo/roles/<layer>/roles/<role>/role.yml`

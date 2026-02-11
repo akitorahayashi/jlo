@@ -57,30 +57,14 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         }
 
         // Phase-specific contracts for layers that use them; single contracts.yml for others
-        let phases: &[&str] = match layer {
-            Layer::Innovators => &["creation", "refinement"],
-            _ => &[],
-        };
-        if phases.is_empty() {
-            let contracts = jules::contracts(inputs.jules_path, layer);
-            if !contracts.exists() {
-                diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
-            }
-        } else {
-            for phase in phases {
-                let contract_file = jules::phase_contracts(inputs.jules_path, layer, phase);
-                if !contract_file.exists() {
-                    diagnostics.push_error(
-                        contract_file.display().to_string(),
-                        format!("Missing contracts_{}.yml", phase),
-                    );
-                }
-            }
+        let contracts = jules::contracts(inputs.jules_path, layer);
+        if !contracts.exists() {
+            diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
         }
 
-        // Check schemas/ directory (all layers have this)
+        // Check schemas/ directory (all layers have this except implementers)
         let schemas_dir = jules::schemas_dir(inputs.jules_path, layer);
-        if !schemas_dir.exists() {
+        if layer != Layer::Implementers && !schemas_dir.exists() {
             diagnostics.push_error(schemas_dir.display().to_string(), "Missing schemas/");
         }
 
@@ -358,20 +342,13 @@ mod tests {
             // Runtime artifacts (contracts, schemas, prompts) in .jules/roles
             let jules_layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
             jules_layer_dir.create_dir_all().unwrap();
-            jules_layer_dir.child("schemas").create_dir_all().unwrap();
+            if layer != Layer::Implementers {
+                jules_layer_dir.child("schemas").create_dir_all().unwrap();
+            }
             jules_layer_dir.child("tasks").create_dir_all().unwrap();
             jules_layer_dir.child(layer.prompt_template_name()).touch().unwrap();
 
-            // Phase-specific contracts for layers that use them
-            match layer {
-                Layer::Innovators => {
-                    jules_layer_dir.child("contracts_creation.yml").touch().unwrap();
-                    jules_layer_dir.child("contracts_refinement.yml").touch().unwrap();
-                }
-                _ => {
-                    jules_layer_dir.child("contracts.yml").touch().unwrap();
-                }
-            }
+            jules_layer_dir.child("contracts.yml").touch().unwrap();
 
             if layer.is_single_role() {
                 if layer == Layer::Narrators {
