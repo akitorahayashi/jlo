@@ -84,7 +84,7 @@ jlo run narrator                     # Run narrator (no role flag needed)
 jlo run decider                      # Run decider (single role)
 ```
 
-**Issue-driven layers** (Planners, Implementers) require an issue file:
+**Issue-driven layers** (Planner, Implementer) require an issue file:
 
 ```bash
 jlo run planner .jules/exchange/issues/<label>/auth-inconsistency.yml

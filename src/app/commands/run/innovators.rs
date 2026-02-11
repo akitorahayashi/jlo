@@ -39,9 +39,8 @@ pub(crate) fn execute<W: WorkspaceStore + Clone + Send + Sync + 'static>(
 
     if options.prompt_preview {
         print_role_preview(jules_path, Layer::Innovators, &role_id, &starting_branch);
-        if let Ok(assembled) = innovators_asm::assemble(jules_path, &input, workspace) {
-            println!("  Assembled prompt: {} chars", assembled.content.len());
-        }
+        let assembled = innovators_asm::assemble(jules_path, &input, workspace)?;
+        println!("  Assembled prompt: {} chars", assembled.content.len());
         println!("\nWould execute 1 session");
         return Ok(RunResult { roles: vec![role.clone()], prompt_preview: true, sessions: vec![] });
     }

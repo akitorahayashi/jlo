@@ -508,7 +508,7 @@ fn run_implementer_prompt_preview_with_issue_file() {
     let issue_path = issue_dir.join("test_issue.yml");
     std::fs::write(
         &issue_path,
-        "fingerprint: test_issue\nid: test_issue\ntitle: Test Issue\nstatus: open\n",
+        "fingerprint: test_issue\nid: test_issue\ntitle: Test Issue\nlabel: bugs\nstatus: open\n",
     )
     .unwrap();
 

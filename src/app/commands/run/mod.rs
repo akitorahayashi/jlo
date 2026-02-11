@@ -28,7 +28,7 @@ use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 pub struct RunOptions {
     /// Target layer to run.
     pub layer: Layer,
-    /// Specific role to run (required for observers/decider/innovators).
+    /// Specific role to run (required for observers/innovators).
     pub role: Option<String>,
     /// Show assembled prompts without executing.
     pub prompt_preview: bool,

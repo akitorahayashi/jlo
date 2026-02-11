@@ -166,7 +166,7 @@ Implementer modifies source code and requires human review.
  
  - Events and issues are global to the repository.
  - `roles/` remains global.
-- Observers and decider operate on the single `exchange/` directory.
+ - Observers and Decider operate on the single `exchange/` directory.
  - Event state directories are defined by the scaffold templates.
 
 ## Configuration Files

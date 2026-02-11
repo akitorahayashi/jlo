@@ -160,12 +160,11 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         println!("Contracts: {}", contracts_path.display());
     }
 
-    if let Ok(mut prompt) = assemble_implementer_prompt(jules_path, issue_content, workspace) {
-        prompt.push_str("\n---\n# Issue Content\n");
-        prompt.push_str(issue_content);
+    let mut prompt = assemble_implementer_prompt(jules_path, issue_content, workspace)?;
+    prompt.push_str("\n---\n# Issue Content\n");
+    prompt.push_str(issue_content);
 
-        println!("Assembled prompt: {} chars (Prompt + No Path + Issue Content)", prompt.len());
-    }
+    println!("Assembled prompt: {} chars (Prompt + No Path + Issue Content)", prompt.len());
 
     println!("\nWould execute 1 session");
     Ok(())

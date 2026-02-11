@@ -22,9 +22,8 @@ pub(crate) fn execute<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         println!("=== Prompt Preview: Decider ===");
         println!("Starting branch: {}\n", starting_branch);
 
-        if let Ok(prompt) = assemble_single_role_prompt(jules_path, Layer::Decider, workspace) {
-            println!("  Assembled prompt: {} chars", prompt.len());
-        }
+        let prompt = assemble_single_role_prompt(jules_path, Layer::Decider, workspace)?;
+        println!("  Assembled prompt: {} chars", prompt.len());
 
         println!("\nWould dispatch workflow");
         return Ok(RunResult {

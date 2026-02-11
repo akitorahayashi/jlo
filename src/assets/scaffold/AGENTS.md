@@ -166,7 +166,7 @@ perspective -> idea -> comments -> proposal
 
 1. **Narrator** runs first, producing `.jules/exchange/changes.yml` for observer context.
 2. **Observers** emit events to exchange event directories.
-3. **Decider** read events, emit issues, and link related events via `source_events`.
+3. **Decider** reads events, emits issues, and links related events via `source_events`.
 4. **Planner** expands issues with `requires_deep_analysis: true`.
-5. **Implementer** executes approved tasks and create PRs with code changes.
+5. **Implementer** executes approved tasks and creates PRs with code changes.
 6. **Innovators** run independently: each persona maintains a `perspective.yml`, drafts `idea.yml`, receives `comments/` from other personas, and produces `proposal.yml`.

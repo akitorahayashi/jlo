@@ -1,4 +1,5 @@
-use std::process::Command;
+use std::io::Write;
+use std::process::{Command, Stdio};
 
 use crate::domain::AppError;
 use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
@@ -16,6 +17,38 @@ impl GitHubCommandAdapter {
         cmd.args(args);
 
         let output = cmd.output().map_err(|e| AppError::ExternalToolError {
+            tool: "gh".into(),
+            error: format!("Failed to execute gh CLI: {}", e),
+        })?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(AppError::ExternalToolError {
+                tool: "gh".into(),
+                error: format!("gh command failed: {}", stderr.trim()),
+            });
+        }
+
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    }
+
+    fn run_gh_with_input(&self, args: &[&str], input: &str) -> Result<String, AppError> {
+        let mut cmd = Command::new("gh");
+        cmd.args(args).stdin(Stdio::piped());
+
+        let mut child = cmd.spawn().map_err(|e| AppError::ExternalToolError {
+            tool: "gh".into(),
+            error: format!("Failed to execute gh CLI: {}", e),
+        })?;
+
+        if let Some(stdin) = child.stdin.as_mut() {
+            stdin.write_all(input.as_bytes()).map_err(|e| AppError::ExternalToolError {
+                tool: "gh".into(),
+                error: format!("Failed to write gh CLI input: {}", e),
+            })?;
+        }
+
+        let output = child.wait_with_output().map_err(|e| AppError::ExternalToolError {
             tool: "gh".into(),
             error: format!("Failed to execute gh CLI: {}", e),
         })?;
@@ -167,14 +200,9 @@ impl GitHubPort for GitHubCommandAdapter {
 
     fn create_pr_comment(&self, pr_number: u64, body: &str) -> Result<u64, AppError> {
         let endpoint = format!("repos/{{owner}}/{{repo}}/issues/{}/comments", pr_number);
-        let output = self.run_gh(&[
-            "api",
-            "-X",
-            "POST",
-            &endpoint,
-            "--raw-field",
-            &format!("body={}", body),
-        ])?;
+        let payload = serde_json::json!({ "body": body }).to_string();
+        let output =
+            self.run_gh_with_input(&["api", "-X", "POST", &endpoint, "--input", "-"], &payload)?;
         let json: serde_json::Value =
             serde_json::from_str(&output).map_err(|e| AppError::ParseError {
                 what: "PR comment creation response".into(),
@@ -187,7 +215,8 @@ impl GitHubPort for GitHubCommandAdapter {
 
     fn update_pr_comment(&self, comment_id: u64, body: &str) -> Result<(), AppError> {
         let endpoint = format!("repos/{{owner}}/{{repo}}/issues/comments/{}", comment_id);
-        self.run_gh(&["api", "-X", "PATCH", &endpoint, "--raw-field", &format!("body={}", body)])?;
+        let payload = serde_json::json!({ "body": body }).to_string();
+        self.run_gh_with_input(&["api", "-X", "PATCH", &endpoint, "--input", "-"], &payload)?;
         Ok(())
     }
 

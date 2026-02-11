@@ -22,7 +22,6 @@ where
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     let issue_info = validate_issue_path(issue_path, workspace)?;
-
     let issue_content = workspace.read_file(&issue_info.issue_path_str)?;
     let config = load_config(jules_path)?;
 

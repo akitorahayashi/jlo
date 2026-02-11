@@ -16,7 +16,7 @@ pub(crate) fn validate_issue_path<W: WorkspaceStore>(
         .to_str()
         .ok_or_else(|| AppError::Validation("Issue path contains invalid unicode".to_string()))?;
 
-    if !issue_path.exists() {
+    if !workspace.file_exists(path_str) {
         return Err(AppError::IssueFileNotFound(path_str.to_string()));
     }
 
