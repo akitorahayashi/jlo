@@ -1,4 +1,5 @@
 role: structural_arch
+description: Optimize repository structure and boundary design.
 layer: observers
 
 profile:

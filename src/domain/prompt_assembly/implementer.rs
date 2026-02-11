@@ -27,6 +27,6 @@ where
 {
     let context = PromptContext::new().with_var("task", input.task);
 
-    assemble_prompt(jules_path, Layer::Implementers, &context, loader)
+    assemble_prompt(jules_path, Layer::Implementer, &context, loader)
         .map_err(|e| AppError::InternalError(e.to_string()))
 }

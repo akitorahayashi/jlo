@@ -1,4 +1,5 @@
 role: taxonomy
+description: Establish shared vocabulary and naming consistency.
 layer: observers
 
 profile:

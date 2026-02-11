@@ -4,15 +4,15 @@ use std::fmt;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Layer {
     /// Narrator: Summarize codebase changes, produce changes feed
-    Narrators,
+    Narrator,
     /// Observers: Read source and changes, emit events (taxonomy, data_arch, consistency, qa)
     Observers,
-    /// Deciders: Read events, emit issues, delete events
-    Deciders,
-    /// Planners: Read issues requiring deep analysis, expand them in-place (specifier_global)
-    Planners,
-    /// Implementers: Execute approved tasks, create PRs with code changes (executor_global)
-    Implementers,
+    /// Decider: Read events, emit issues, delete events
+    Decider,
+    /// Planner: Read issues requiring deep analysis, expand them in-place (specifier_global)
+    Planner,
+    /// Implementer: Execute approved tasks, create PRs with code changes (executor_global)
+    Implementer,
     /// Innovators: Generate improvement proposals through brainstorming and feedback cycles
     Innovators,
 }
@@ -20,22 +20,22 @@ pub enum Layer {
 impl Layer {
     /// All available layers in order.
     pub const ALL: [Layer; 6] = [
-        Layer::Narrators,
+        Layer::Narrator,
         Layer::Observers,
-        Layer::Deciders,
-        Layer::Planners,
-        Layer::Implementers,
+        Layer::Decider,
+        Layer::Planner,
+        Layer::Implementer,
         Layer::Innovators,
     ];
 
     /// Directory name for this layer.
     pub fn dir_name(&self) -> &'static str {
         match self {
-            Layer::Narrators => "narrator",
+            Layer::Narrator => "narrator",
             Layer::Observers => "observers",
-            Layer::Deciders => "deciders",
-            Layer::Planners => "planners",
-            Layer::Implementers => "implementers",
+            Layer::Decider => "decider",
+            Layer::Planner => "planner",
+            Layer::Implementer => "implementer",
             Layer::Innovators => "innovators",
         }
     }
@@ -46,11 +46,11 @@ impl Layer {
     /// All other layers use singular.
     pub fn prompt_template_name(&self) -> &'static str {
         match self {
-            Layer::Narrators => "narrator_prompt.j2",
+            Layer::Narrator => "narrator_prompt.j2",
             Layer::Observers => "observers_prompt.j2",
-            Layer::Deciders => "decider_prompt.j2",
-            Layer::Planners => "planner_prompt.j2",
-            Layer::Implementers => "implementer_prompt.j2",
+            Layer::Decider => "decider_prompt.j2",
+            Layer::Planner => "planner_prompt.j2",
+            Layer::Implementer => "implementer_prompt.j2",
             Layer::Innovators => "innovators_prompt.j2",
         }
     }
@@ -58,11 +58,11 @@ impl Layer {
     /// Human-readable display name.
     pub fn display_name(&self) -> &'static str {
         match self {
-            Layer::Narrators => "Narrator",
+            Layer::Narrator => "Narrator",
             Layer::Observers => "Observer",
-            Layer::Deciders => "Decider",
-            Layer::Planners => "Planner",
-            Layer::Implementers => "Implementer",
+            Layer::Decider => "Decider",
+            Layer::Planner => "Planner",
+            Layer::Implementer => "Implementer",
             Layer::Innovators => "Innovator",
         }
     }
@@ -70,11 +70,11 @@ impl Layer {
     /// Parse a layer from its directory name.
     pub fn from_dir_name(name: &str) -> Option<Layer> {
         match name.to_lowercase().as_str() {
-            "narrator" => Some(Layer::Narrators),
+            "narrator" | "narrators" => Some(Layer::Narrator),
             "observers" | "observer" => Some(Layer::Observers),
-            "deciders" | "decider" => Some(Layer::Deciders),
-            "planners" | "planner" => Some(Layer::Planners),
-            "implementers" | "implementer" => Some(Layer::Implementers),
+            "deciders" | "decider" => Some(Layer::Decider),
+            "planners" | "planner" => Some(Layer::Planner),
+            "implementers" | "implementer" => Some(Layer::Implementer),
             "innovators" | "innovator" => Some(Layer::Innovators),
             _ => None,
         }
@@ -83,11 +83,11 @@ impl Layer {
     /// Description of this layer's responsibilities.
     pub fn description(&self) -> &'static str {
         match self {
-            Layer::Narrators => "Summarize codebase changes, produce changes feed for observers.",
+            Layer::Narrator => "Summarize codebase changes, produce changes feed for observers.",
             Layer::Observers => "Read source and changes, emit events. Never write issues.",
-            Layer::Deciders => "Read events, emit issues. Delete processed events.",
-            Layer::Planners => "Read issues requiring deep analysis, expand them in-place.",
-            Layer::Implementers => "Execute approved tasks, create PRs with code changes.",
+            Layer::Decider => "Read events, emit issues. Delete processed events.",
+            Layer::Planner => "Read issues requiring deep analysis, expand them in-place.",
+            Layer::Implementer => "Execute approved tasks, create PRs with code changes.",
             Layer::Innovators => {
                 "Generate improvement proposals through brainstorming and feedback."
             }
@@ -96,11 +96,11 @@ impl Layer {
 
     /// Whether this layer has a single, fixed role (no subdirectories).
     ///
-    /// Single-role layers (Narrators, Deciders, Planners, Implementers) have contracts.yml
+    /// Single-role layers (Narrator, Decider, Planner, Implementer) have contracts.yml
     /// directly in the layer directory rather than in role subdirectories. They do not
     /// support custom role creation or scheduled role lists.
     pub fn is_single_role(&self) -> bool {
-        matches!(self, Layer::Narrators | Layer::Deciders | Layer::Planners | Layer::Implementers)
+        matches!(self, Layer::Narrator | Layer::Decider | Layer::Planner | Layer::Implementer)
     }
 
     /// Whether this layer uses innovator room exchange structure.
@@ -113,10 +113,10 @@ impl Layer {
 
     /// Whether this layer is issue-driven.
     ///
-    /// Issue-driven layers (Planners, Implementers) require a local issue file path.
+    /// Issue-driven layers (Planner, Implementer) require a local issue file path.
     /// Narrator is single-role but not issue-driven.
     pub fn is_issue_driven(&self) -> bool {
-        matches!(self, Layer::Planners | Layer::Implementers)
+        matches!(self, Layer::Planner | Layer::Implementer)
     }
 }
 
@@ -153,32 +153,32 @@ mod tests {
     }
 
     #[test]
-    fn single_role_layers_include_narrator_planners_implementers() {
-        assert!(Layer::Narrators.is_single_role());
+    fn single_role_layers_include_narrator_planner_implementer() {
+        assert!(Layer::Narrator.is_single_role());
         assert!(!Layer::Observers.is_single_role());
-        assert!(Layer::Deciders.is_single_role());
-        assert!(Layer::Planners.is_single_role());
-        assert!(Layer::Implementers.is_single_role());
+        assert!(Layer::Decider.is_single_role());
+        assert!(Layer::Planner.is_single_role());
+        assert!(Layer::Implementer.is_single_role());
         assert!(!Layer::Innovators.is_single_role());
     }
 
     #[test]
-    fn issue_driven_layers_are_planners_and_implementers() {
-        assert!(!Layer::Narrators.is_issue_driven());
+    fn issue_driven_layers_are_planner_and_implementer() {
+        assert!(!Layer::Narrator.is_issue_driven());
         assert!(!Layer::Observers.is_issue_driven());
-        assert!(!Layer::Deciders.is_issue_driven());
-        assert!(Layer::Planners.is_issue_driven());
-        assert!(Layer::Implementers.is_issue_driven());
+        assert!(!Layer::Decider.is_issue_driven());
+        assert!(Layer::Planner.is_issue_driven());
+        assert!(Layer::Implementer.is_issue_driven());
         assert!(!Layer::Innovators.is_issue_driven());
     }
 
     #[test]
     fn innovator_layer_is_identified() {
-        assert!(!Layer::Narrators.is_innovator());
+        assert!(!Layer::Narrator.is_innovator());
         assert!(!Layer::Observers.is_innovator());
-        assert!(!Layer::Deciders.is_innovator());
-        assert!(!Layer::Planners.is_innovator());
-        assert!(!Layer::Implementers.is_innovator());
+        assert!(!Layer::Decider.is_innovator());
+        assert!(!Layer::Planner.is_innovator());
+        assert!(!Layer::Implementer.is_innovator());
         assert!(Layer::Innovators.is_innovator());
     }
 }

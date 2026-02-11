@@ -76,9 +76,9 @@ Core domain logic located in `src/domain/`.
 | `jlo create <layer> <name>` | `c` | Create a custom role under `.jlo/` |
 | `jlo run narrator [--prompt-preview] [--branch <branch>] [--mock]` | `r n` | Run narrator (produces changes feed) |
 | `jlo run observers --role <role> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |
-| `jlo run deciders [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
-| `jlo run planners <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (issue-driven) |
-| `jlo run implementers <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (issue-driven) |
+| `jlo run decider [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
+| `jlo run planner <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (issue-driven) |
+| `jlo run implementer <issue> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (issue-driven) |
 | `jlo run innovators --role <role> --phase <creation\|refinement> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
 | `jlo doctor [--strict]` | | Validate .jules/ structure and content |
 | `jlo workflow doctor` | `wf` | Validate workspace for workflow use |
@@ -128,12 +128,12 @@ cargo test --test mock_mode       # Mock execution flow
 |-------|------|------------|--------|
 | Narrator | Single-role | `jlo run narrator` | None (git-based) |
 | Observers | Multi-role | `jlo workflow run observers` | `.jlo/scheduled.toml` |
-| Deciders | Single-role | `jlo run deciders` | None |
-| Planners | Single-role | `jlo run planners <path>` | None (issue path) |
-| Implementers | Single-role | `jlo run implementers <path>` | None (issue path) |
+| Decider | Single-role | `jlo run decider` | None |
+| Planner | Single-role | `jlo run planner <path>` | None (issue path) |
+| Implementer | Single-role | `jlo run implementer <path>` | None (issue path) |
 | Innovators | Multi-role | `jlo workflow run innovators` | `.jlo/scheduled.toml` |
 
-**Single-role layers**: Narrator, Deciders, Planners, Implementers have a fixed role with a `<layer>_prompt.j2` template in the layer directory. Template creation not supported.
+**Single-role layers**: Narrator, Decider, Planner, Implementer have a fixed role with a `<layer>_prompt.j2` template in the layer directory. Template creation not supported.
 
 **Multi-role layers**: Observers and Innovators support multiple configurable roles listed in `.jlo/scheduled.toml`. Each role has its own subdirectory with `role.yml`.
 

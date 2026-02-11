@@ -450,53 +450,53 @@ fn setup_list_detail_not_found() {
 }
 
 // =============================================================================
-// Run Implementers Tests
+// Run Implementer Tests
 // =============================================================================
 
 #[test]
-fn run_implementers_requires_issue_file() {
+fn run_implementer_requires_issue_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     ctx.cli()
-        .args(["run", "implementers"])
+        .args(["run", "implementer"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("required arguments were not provided"));
 }
 
 #[test]
-fn run_planners_requires_issue_file() {
+fn run_planner_requires_issue_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     ctx.cli()
-        .args(["run", "planners"])
+        .args(["run", "planner"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("required arguments were not provided"));
 }
 
 #[test]
-fn run_implementers_with_missing_issue_file() {
+fn run_implementer_with_missing_issue_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 
     ctx.cli()
-        .args(["run", "implementers", ".jules/exchange/issues/nonexistent.yml"])
+        .args(["run", "implementer", ".jules/exchange/issues/nonexistent.yml"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Issue file not found"));
 }
 
 #[test]
-fn run_implementers_prompt_preview_with_issue_file() {
+fn run_implementer_prompt_preview_with_issue_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
@@ -508,7 +508,7 @@ fn run_implementers_prompt_preview_with_issue_file() {
     let issue_path = issue_dir.join("test_issue.yml");
     std::fs::write(
         &issue_path,
-        "fingerprint: test_issue\nid: test_issue\ntitle: Test Issue\nstatus: open\n",
+        "fingerprint: test_issue\nid: test_issue\ntitle: Test Issue\nlabel: bugs\nstatus: open\n",
     )
     .unwrap();
 
@@ -516,18 +516,18 @@ fn run_implementers_prompt_preview_with_issue_file() {
         .env_remove("GITHUB_ACTIONS")
         .args([
             "run",
-            "implementers",
+            "implementer",
             ".jules/exchange/issues/bugs/test_issue.yml",
             "--prompt-preview",
         ])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Prompt Preview: Local Dispatch"))
-        .stdout(predicate::str::contains("Would dispatch workflow"));
+        .stdout(predicate::str::contains("Prompt Preview: Implementer"))
+        .stdout(predicate::str::contains("Would execute 1 session"));
 }
 
 #[test]
-fn run_planners_prompt_preview_with_issue_file() {
+fn run_planner_prompt_preview_with_issue_file() {
     let ctx = TestContext::new();
 
     ctx.cli().args(["init", "--remote"]).assert().success();
@@ -545,11 +545,11 @@ fn run_planners_prompt_preview_with_issue_file() {
 
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
-        .args(["run", "planners", ".jules/exchange/issues/bugs/test_issue.yml", "--prompt-preview"])
+        .args(["run", "planner", ".jules/exchange/issues/bugs/test_issue.yml", "--prompt-preview"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Prompt Preview: Local Dispatch"))
-        .stdout(predicate::str::contains("Would dispatch workflow"));
+        .stdout(predicate::str::contains("Prompt Preview: Planner"))
+        .stdout(predicate::str::contains("Would execute 1 session"));
 }
 
 #[test]
@@ -756,16 +756,16 @@ fn verify_scaffold_integrity() {
     );
 
     // Verify layers and prompt assemblies
-    let layers = ["narrator", "observers", "deciders", "planners", "implementers", "innovators"];
+    let layers = ["narrator", "observers", "decider", "planner", "implementer", "innovators"];
     for layer in layers {
         let layer_path = ctx.jules_path().join("roles").join(layer);
         assert!(layer_path.exists(), "Layer {} should exist", layer);
         let template_name = match layer {
             "narrator" => "narrator_prompt.j2",
             "observers" => "observers_prompt.j2",
-            "deciders" => "decider_prompt.j2",
-            "planners" => "planner_prompt.j2",
-            "implementers" => "implementer_prompt.j2",
+            "decider" => "decider_prompt.j2",
+            "planner" => "planner_prompt.j2",
+            "implementer" => "implementer_prompt.j2",
             "innovators" => "innovators_prompt.j2",
             _ => unreachable!(),
         };

@@ -8,7 +8,7 @@ objective: >-
 inputs:
   - ".jules/exchange/events/pending/*.yml (observer events)"
   - ".jules/exchange/issues/**/*.yml (existing issues)"
-  - ".jules/roles/deciders/schemas/issue.yml (issue schema)"
+  - ".jules/roles/decider/schemas/issue.yml (issue schema)"
   - ".jules/github-labels.json (available issue labels)"
 
 steps:

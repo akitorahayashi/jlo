@@ -37,8 +37,8 @@ pub enum RunLayer {
         mock: bool,
     },
     /// Run decider agent (single role)
-    #[clap(visible_alias = "d")]
-    Deciders {
+    #[clap(visible_alias = "d", alias = "deciders")]
+    Decider {
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
         prompt_preview: bool,
@@ -50,8 +50,8 @@ pub enum RunLayer {
         mock: bool,
     },
     /// Run planner agent (single-role, issue-driven)
-    #[clap(visible_alias = "p")]
-    Planners {
+    #[clap(visible_alias = "p", alias = "planners")]
+    Planner {
         /// Local issue file path (required)
         issue: PathBuf,
         /// Show assembled prompts without executing
@@ -65,8 +65,8 @@ pub enum RunLayer {
         mock: bool,
     },
     /// Run implementer agent (single-role, issue-driven)
-    #[clap(visible_alias = "i")]
-    Implementers {
+    #[clap(visible_alias = "i", alias = "implementers")]
+    Implementer {
         /// Local issue file path (required)
         issue: PathBuf,
         /// Show assembled prompts without executing
@@ -105,19 +105,19 @@ pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
 
     let (target_layer, role, prompt_preview, branch, issue, mock, phase) = match layer {
         RunLayer::Narrator { prompt_preview, branch, mock } => {
-            (Layer::Narrators, None, prompt_preview, branch, None, mock, None)
+            (Layer::Narrator, None, prompt_preview, branch, None, mock, None)
         }
         RunLayer::Observers { role, prompt_preview, branch, mock } => {
             (Layer::Observers, Some(role), prompt_preview, branch, None, mock, None)
         }
-        RunLayer::Deciders { prompt_preview, branch, mock } => {
-            (Layer::Deciders, None, prompt_preview, branch, None, mock, None)
+        RunLayer::Decider { prompt_preview, branch, mock } => {
+            (Layer::Decider, None, prompt_preview, branch, None, mock, None)
         }
-        RunLayer::Planners { prompt_preview, branch, issue, mock } => {
-            (Layer::Planners, None, prompt_preview, branch, Some(issue), mock, None)
+        RunLayer::Planner { prompt_preview, branch, issue, mock } => {
+            (Layer::Planner, None, prompt_preview, branch, Some(issue), mock, None)
         }
-        RunLayer::Implementers { prompt_preview, branch, issue, mock } => {
-            (Layer::Implementers, None, prompt_preview, branch, Some(issue), mock, None)
+        RunLayer::Implementer { prompt_preview, branch, issue, mock } => {
+            (Layer::Implementer, None, prompt_preview, branch, Some(issue), mock, None)
         }
         RunLayer::Innovators { role, phase, prompt_preview, branch, mock } => {
             (Layer::Innovators, Some(role), prompt_preview, branch, None, mock, phase)

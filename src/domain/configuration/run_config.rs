@@ -55,7 +55,7 @@ fn default_retry_delay_ms() -> u64 {
 /// Execution configuration for agent runs.
 #[derive(Debug, Clone)]
 pub struct ExecutionConfig {
-    /// Default branch for agent operations (implementers work from here).
+    /// Default branch for agent operations (implementer works from here).
     pub default_branch: String,
     /// Branch where .jules/ workspace resides.
     pub jules_branch: String,

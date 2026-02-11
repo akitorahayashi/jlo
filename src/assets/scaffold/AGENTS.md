@@ -53,17 +53,17 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 │   │   └── schemas/
 │   │       ├── event.yml
 │   │       └── perspective.yml
-│   ├── deciders/
+│   ├── decider/
 │   │   ├── decider_prompt.j2 # Prompt construction rules
 │   │   ├── contracts.yml      # Layer contract
 │   │   ├── tasks/             # Action units
 │   │   └── schemas/
 │   │       └── issue.yml
-│   ├── planners/
+│   ├── planner/
 │   │   ├── planner_prompt.j2 # Prompt construction rules
 │   │   ├── contracts.yml      # Layer contract
 │   │   └── tasks/             # Action units
-│   ├── implementers/
+│   ├── implementer/
 │   │   ├── implementer_prompt.j2 # Prompt construction rules
 │   │   ├── contracts.yml      # Layer contract
 │   │   └── tasks/             # Action units
@@ -130,7 +130,7 @@ Schemas define the structure for artifacts produced by agents.
 | `changes.yml` | `.jules/roles/narrator/schemas/` | Changes summary structure |
 | `event.yml` | `.jules/roles/observers/schemas/` | Observer event structure |
 | `perspective.yml` | `.jules/roles/observers/schemas/` | Observer perspective structure |
-| `issue.yml` | `.jules/roles/deciders/schemas/` | Issue structure |
+| `issue.yml` | `.jules/roles/decider/schemas/` | Issue structure |
 | `perspective.yml` | `.jules/roles/innovators/schemas/` | Innovator persona memory |
 | `idea.yml` | `.jules/roles/innovators/schemas/` | Idea draft structure |
 | `proposal.yml` | `.jules/roles/innovators/schemas/` | Finalized proposal structure |
@@ -157,7 +157,7 @@ Jules uses a flat exchange model for handing off events and issues between layer
 The pipeline is file-based and uses local issues as the handoff point:
 
 ```
-narrator -> observers -> decider -> [planners] -> implementers
+narrator -> observers -> decider -> [planner] -> implementer
 (changes)   (events)    (issues)    (expand)      (code changes)
 
 innovators (independent cycle)
@@ -166,7 +166,7 @@ perspective -> idea -> comments -> proposal
 
 1. **Narrator** runs first, producing `.jules/exchange/changes.yml` for observer context.
 2. **Observers** emit events to exchange event directories.
-3. **Decider** read events, emit issues, and link related events via `source_events`.
-4. **Planners** expand issues with `requires_deep_analysis: true`.
-5. **Implementers** execute approved tasks and create PRs with code changes.
+3. **Decider** reads events, emits issues, and links related events via `source_events`.
+4. **Planner** expands issues with `requires_deep_analysis: true`.
+5. **Implementer** executes approved tasks and creates PRs with code changes.
 6. **Innovators** run independently: each persona maintains a `perspective.yml`, drafts `idea.yml`, receives `comments/` from other personas, and produces `proposal.yml`.

@@ -34,7 +34,7 @@ Narrator -> Observer -> Decider -> [Planner] -> Implementer
 |-----------|---------|----------------|
 | Narrator | `.jules/roles/narrator/` | Git history -> Changes summary |
 | Observer | directories under `.jlo/roles/observers/` | Source -> Events (domain-specialized observations) |
-| Decider | `.jlo/roles/deciders/role.yml` | Events -> Issues (validation + consolidation) |
+| Decider | `.jules/roles/decider/` | Events -> Issues (validation + consolidation) |
 | Planner | (Single-role; no `.jlo/` role definitions) | Issues -> Expanded Issues (deep analysis, optional) |
 | Implementer | (Single-role; no `.jlo/` role definitions) | Issues -> Code changes |
 
@@ -52,8 +52,8 @@ Narrator -> Observer -> Decider -> [Planner] -> Implementer
 | Planner | `jules` | `jules-planner-*` | ✅ (if `.jules/` only) |
 | Implementer | `main` | `jules-implementer-*` | ❌ (human review) |
 
-Narrator, Observers, Deciders, and Planners modify only `.jules/` and auto-merge after CI passes.
-Implementers modify source code and require human review.
+Narrator, Observers, Decider, and Planner modify only `.jules/` and auto-merge after CI passes.
+Implementer modifies source code and requires human review.
 
 ## Directory Structure
 
@@ -98,19 +98,19 @@ Implementers modify source code and require human review.
     |   +-- schemas/
     |   |   +-- event.yml    # Event template
     |
-    +-- deciders/       # Multi-role layer
+    +-- decider/       # Single-role layer
     |   +-- contracts.yml    # Shared decider contract
     |   +-- decider_prompt.j2 # Prompt construction rules
     |   +-- tasks/
     |   +-- schemas/
     |   |   +-- issue.yml    # Issue template
     |
-    +-- planners/       # Single-role layer (issue-driven)
+    +-- planner/       # Single-role layer (issue-driven)
     |   +-- planner_prompt.j2 # Prompt construction rules
     |   +-- contracts.yml    # Shared planner contract
     |   +-- tasks/
     |
-    +-- implementers/   # Single-role layer (issue-driven)
+    +-- implementer/   # Single-role layer (issue-driven)
     |   +-- implementer_prompt.j2 # Prompt construction rules
     |   +-- contracts.yml    # Shared implementer contract
     |   +-- tasks/
@@ -148,15 +148,15 @@ Implementers modify source code and require human review.
 |-------|------|------------|
 | Narrator | Single-role | `jlo run narrator` |
 | Observers | Multi-role | `jlo run observers --role <role>` |
-| Deciders | Single-role | `jlo run deciders` |
-| Planners | Single-role | `jlo run planners <path>` |
-| Implementers | Single-role | `jlo run implementers <path>` |
+| Decider | Single-role | `jlo run decider` |
+| Planner | Single-role | `jlo run planner <path>` |
+| Implementer | Single-role | `jlo run implementer <path>` |
 
 **Narrator**: Produces `.jules/exchange/changes.yml` summarizing recent codebase changes. Runs first, before observers.
 
 **Multi-role layers** (Observers, Innovators): Roles are scheduled via `.jlo/scheduled.toml`. Each role has its own subdirectory with `role.yml` in `.jlo/roles/`. Custom roles are authored with `jlo create <layer> <name>`, while built-in roles are installed with `jlo add <layer> <role>`.
 
-**Single-role layers** (Deciders, Planners, Implementers): Have a fixed role with `contracts.yml` directly in the layer directory. Planners and Implementers are issue-driven and require an issue file path argument. Template creation is not supported.
+**Single-role layers** (Decider, Planner, Implementer): Have a fixed role with `contracts.yml` directly in the layer directory. Planner and Implementer are issue-driven and require an issue file path argument. Template creation is not supported.
 
 **Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated task file (`tasks/create_idea.yml` / `tasks/refine_proposal.yml`) injected at runtime via the `task` context variable. Universal constraints are in `contracts.yml`.
 
@@ -166,7 +166,7 @@ Implementers modify source code and require human review.
  
  - Events and issues are global to the repository.
  - `roles/` remains global.
- - Observers and deciders operate on the single `exchange/` directory.
+ - Observers and Decider operate on the single `exchange/` directory.
  - Event state directories are defined by the scaffold templates.
 
 ## Configuration Files
@@ -178,7 +178,7 @@ Layer-level shared constraints. All roles in the layer reference this file.
 Defines a prompt template that assembles required and optional includes into a single prompt sent to the agent.
 
 ### role.yml
-Specialized focus for observers, deciders, and innovators. Continuity lives in the workstation perspective file.
+Specialized focus for observers and innovators. Continuity lives in the workstation perspective file.
 
 ### Templates (*.yml)
 Copyable templates (changes.yml, event.yml, issue.yml) defining the structure of artifacts.
@@ -239,11 +239,11 @@ Specifier agent (runs only for `requires_deep_analysis: true`):
 
 ### 4. Implementation (Via Local Issue)
 
-Implementation is invoked via workflow dispatch with a local issue file path. Scheduled workflows may also dispatch implementers based on repository policy.
+Implementation is invoked by running `jlo run implementer` with a local issue file path. Scheduled workflows may also dispatch implementer based on repository policy.
 
 ```bash
 # Example: Run implementer with a specific issue
-jlo run implementers .jules/exchange/issues/<label>/auth-inconsistency.yml
+jlo run implementer .jules/exchange/issues/<label>/auth-inconsistency.yml
 ```
 
 The implementer reads the issue content (embedded in prompt) and produces code changes.
@@ -251,8 +251,8 @@ The issue file must exist; missing files fail fast before agent execution.
 
 **Issue Lifecycle**:
 1. An issue file is selected from `.jules/exchange/issues/<label>/` on the `jules` branch.
-2. The workflow validates the file exists and passes content to the implementer.
-3. Issue file retention or deletion is handled by the dispatching workflow policy.
+2. `jlo run implementer` validates the file exists and passes content to the implementer.
+3. `jlo run implementer` deletes the issue file and its source events after dispatching the session.
 4. The implementer works on the default code branch and creates a PR for human review.
 5. The `sync-jules.yml` workflow keeps `jules` in sync with the default branch after merges.
 

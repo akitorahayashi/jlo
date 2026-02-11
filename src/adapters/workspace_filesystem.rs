@@ -384,7 +384,7 @@ mod tests {
         fs::create_dir_all(&inn_dir).unwrap();
         fs::write(inn_dir.join("role.yml"), "role: screener\nlayer: innovators").unwrap();
 
-        // Note: Planners is a single-role layer, so we don't create roles in it
+        // Note: Planner is a single-role layer, so we don't create roles in it
 
         let roles = ws.discover_roles().unwrap();
 

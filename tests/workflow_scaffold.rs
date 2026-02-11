@@ -64,9 +64,9 @@ fn init_workflows_installs_remote_scaffold() {
     let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
     assert!(!workflow.contains("strategy: matrix"), "Should not use matrix strategy");
     assert!(workflow.contains("Run observers"), "Should run observers");
-    assert!(workflow.contains("Run deciders"), "Should run deciders");
-    assert!(workflow.contains("Run planners"), "Should run planners");
-    assert!(workflow.contains("Run implementers"), "Should run implementers");
+    assert!(workflow.contains("Run decider"), "Should run decider");
+    assert!(workflow.contains("Run planner"), "Should run planner");
+    assert!(workflow.contains("Run implementer"), "Should run implementer");
     assert!(workflow.contains("Run innovators (first pass)"), "Should run innovators first pass");
     assert!(workflow.contains("Run innovators (second pass)"), "Should run innovators second pass");
     assert!(workflow.contains("Publish proposals"), "Should publish proposals");
@@ -294,7 +294,7 @@ fn init_workflows_no_scripts_references() {
     }
 
     // Verify composite actions do not reference .github/scripts
-    for action_dir in ["install-jlo", "configure-git", "run-implementer"] {
+    for action_dir in ["install-jlo", "configure-git"] {
         let action_path = root.join(format!(".github/actions/{}/action.yml", action_dir));
         if action_path.exists() {
             let content = fs::read_to_string(&action_path).unwrap();
@@ -349,7 +349,7 @@ fn init_workflows_enforces_explicit_branch_contract() {
         }
     }
 
-    for action_dir in ["install-jlo", "configure-git", "run-implementer"] {
+    for action_dir in ["install-jlo", "configure-git"] {
         let action_path = root.join(format!(".github/actions/{}/action.yml", action_dir));
         if action_path.exists() {
             let content = fs::read_to_string(&action_path).unwrap();

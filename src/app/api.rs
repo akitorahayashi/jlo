@@ -123,11 +123,11 @@ pub fn builtin_role_catalog() -> Result<Vec<BuiltinRoleEntry>, AppError> {
 /// Execute Jules agents for a layer.
 ///
 /// # Arguments
-/// * `layer` - Target layer (observers, deciders, planners, implementers)
-/// * `role` - Specific role to run (required for observers/deciders/innovators)
+/// * `layer` - Target layer (observers, decider, planner, implementer)
+/// * `role` - Specific role to run (required for observers/decider/innovators)
 /// * `prompt_preview` - Show prompts without executing
 /// * `branch` - Override the starting branch
-/// * `issue` - Local issue file path (required for planners/implementers)
+/// * `issue` - Local issue file path (required for planner/implementer)
 /// * `mock` - Run in mock mode (no Jules API, tag from JULES_MOCK_TAG env)
 /// * `phase` - Execution phase for innovators (creation or refinement)
 #[allow(clippy::too_many_arguments)]

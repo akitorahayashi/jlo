@@ -9,7 +9,7 @@ pub(crate) fn find_issues(
     layer: Layer,
     routing_labels: Option<&[String]>,
 ) -> Result<Vec<PathBuf>, AppError> {
-    if layer != Layer::Planners && layer != Layer::Implementers {
+    if layer != Layer::Planner && layer != Layer::Implementer {
         return Err(AppError::Validation("Invalid layer for issue discovery".to_string()));
     }
 
@@ -38,8 +38,8 @@ pub(crate) fn find_issues(
 
             let requires_deep_analysis = IssueHeader::read(store, &path)?.requires_deep_analysis;
             let belongs_to_layer = match layer {
-                Layer::Planners => requires_deep_analysis,
-                Layer::Implementers => !requires_deep_analysis,
+                Layer::Planner => requires_deep_analysis,
+                Layer::Implementer => !requires_deep_analysis,
                 _ => false,
             };
             if belongs_to_layer {
@@ -133,7 +133,7 @@ mod tests {
         write_issue(&store, "docs", "ignored-by-routing", true);
 
         let routing_labels = vec!["bugs".to_string()];
-        let issues = find_issues(&store, Layer::Planners, Some(&routing_labels)).unwrap();
+        let issues = find_issues(&store, Layer::Planner, Some(&routing_labels)).unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("requires-planning.yml"));
@@ -149,7 +149,7 @@ mod tests {
         write_issue(&store, "bugs", "ready-to-implement", false);
 
         let routing_labels = vec!["bugs".to_string()];
-        let issues = find_issues(&store, Layer::Implementers, Some(&routing_labels)).unwrap();
+        let issues = find_issues(&store, Layer::Implementer, Some(&routing_labels)).unwrap();
 
         assert_eq!(issues.len(), 1);
         assert!(issues[0].to_string_lossy().contains("ready-to-implement.yml"));

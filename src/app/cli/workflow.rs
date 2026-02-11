@@ -16,7 +16,7 @@ pub enum WorkflowCommands {
     },
     /// Run a layer and return wait-gating metadata
     Run {
-        /// Target layer (narrator, observers, deciders, planners, implementers, innovators)
+        /// Target layer (narrator, observers, decider, planner, implementer, innovators)
         layer: String,
         /// Run in mock mode (requires JULES_MOCK_TAG)
         #[arg(long)]

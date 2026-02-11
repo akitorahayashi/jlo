@@ -49,7 +49,6 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 | `.github/workflows/jules-*.yml` | jlo | `jlo init` | Workflow definitions |
 | `.github/actions/install-jlo/**` | jlo | `jlo init` | jlo installer action |
 | `.github/actions/configure-git/**` | jlo | `jlo init` | Git configuration action |
-| `.github/actions/run-implementer/**` | jlo | `jlo init` | Implementer execution action |
 
 ## Classification Rules
 

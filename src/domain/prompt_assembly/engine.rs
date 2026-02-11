@@ -123,7 +123,7 @@ impl std::error::Error for PromptAssemblyError {}
 /// the `role` variable. For single-role layers, the context
 /// may be empty.
 ///
-/// For issue-driven layers (planners, implementers), use `assemble_with_issue`
+/// For issue-driven layers (planner, implementer), use `assemble_with_issue`
 /// to append issue content to the assembled prompt.
 pub fn assemble_prompt<L>(
     jules_path: &Path,
@@ -238,7 +238,7 @@ fn validate_safe_path(path: &str) -> Result<(), PromptAssemblyError> {
     Ok(())
 }
 
-/// Assemble a prompt for an issue-driven layer (planners, implementers).
+/// Assemble a prompt for an issue-driven layer (planner, implementer).
 ///
 /// This appends the issue content to the base assembled prompt.
 #[allow(dead_code)]
@@ -427,21 +427,21 @@ mod tests {
         let mock_loader = MockPromptLoader::new();
         let jules_path = Path::new(".jules");
 
-        // Setup mock files for Planners layer
+        // Setup mock files for Planner layer
         mock_loader.add_file(
-                        ".jules/roles/planners/planner_prompt.j2",
-                        r#"{{ section("Contracts", include_required(".jules/roles/planners/contracts.yml")) }}"#,
+            ".jules/roles/planner/planner_prompt.j2",
+            r#"{{ section("Contracts", include_required(".jules/roles/planner/contracts.yml")) }}"#,
         );
         mock_loader
-            .add_file(".jules/roles/planners/contracts.yml", "layer: planners\nconstraints: []");
+            .add_file(".jules/roles/planner/contracts.yml", "layer: planner\nconstraints: []");
 
         let result =
-            assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_loader);
+            assemble_prompt(jules_path, Layer::Planner, &PromptContext::new(), &mock_loader);
 
         assert!(result.is_ok());
         let assembled = result.unwrap();
         assert!(assembled.content.contains("# Contracts"));
-        assert!(assembled.content.contains("layer: planners"));
+        assert!(assembled.content.contains("layer: planner"));
     }
 
     #[test]
@@ -467,12 +467,12 @@ mod tests {
         let jules_path = Path::new(".jules");
 
         mock_loader.add_file(
-            ".jules/roles/planners/planner_prompt.j2",
-            r#"{{ section("Missing", include_required(".jules/roles/planners/contracts.yml")) }}"#,
+            ".jules/roles/planner/planner_prompt.j2",
+            r#"{{ section("Missing", include_required(".jules/roles/planner/contracts.yml")) }}"#,
         );
 
         let result =
-            assemble_prompt(jules_path, Layer::Planners, &PromptContext::new(), &mock_loader);
+            assemble_prompt(jules_path, Layer::Planner, &PromptContext::new(), &mock_loader);
 
         assert!(matches!(result, Err(PromptAssemblyError::RequiredIncludeNotFound { .. })));
     }

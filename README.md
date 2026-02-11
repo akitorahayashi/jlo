@@ -67,7 +67,7 @@ jlo add innovators recruiter       # Install built-in innovator role
 
 ### Run Command
 
-Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (deciders), `p` (planners), `i` (implementers), `x` (innovators).
+Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (decider), `p` (planner), `i` (implementer), `x` (innovators).
 
 **Multi-role layers** (Observers, Innovators) require `--role`:
 
@@ -77,18 +77,18 @@ jlo run observers --role <role> --prompt-preview    # Show prompts without execu
 jlo run observers --role <role> --branch custom     # Override starting branch
 ```
 
-**Single-role layers** (Narrator, Deciders, Planners, Implementers):
+**Single-role layers** (Narrator, Decider, Planner, Implementer):
 
 ```bash
 jlo run narrator                     # Run narrator (no role flag needed)
-jlo run deciders                     # Run deciders (single role)
+jlo run decider                      # Run decider (single role)
 ```
 
-**Issue-driven layers** (Planners, Implementers) require an issue file:
+**Issue-driven layers** (Planner, Implementer) require an issue file:
 
 ```bash
-jlo run planners .jules/exchange/issues/<label>/auth-inconsistency.yml
-jlo run implementers .jules/exchange/issues/<label>/auth-inconsistency.yml
+jlo run planner .jules/exchange/issues/<label>/auth-inconsistency.yml
+jlo run implementer .jules/exchange/issues/<label>/auth-inconsistency.yml
 ```
 
 **Mock Mode**: Validate workflow orchestration without calling Jules API:
@@ -96,7 +96,7 @@ jlo run implementers .jules/exchange/issues/<label>/auth-inconsistency.yml
 ```bash
 jlo run narrator --mock
 jlo run observers --role <role> --mock
-jlo run deciders --mock
+jlo run decider --mock
 jlo run innovators --role <role> --mock
 ```
 
@@ -107,7 +107,7 @@ Mock mode creates real branches and PRs with synthetic commit content, enabling 
 - `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)
 - `--branch <name>`: Override the default starting branch
-- `<path>`: Local issue file (required for planners and implementers)
+- `<path>`: Local issue file (required for planner and implementer)
 
 **Configuration**: Execution settings are configured in `.jules/config.toml`:
 
@@ -187,17 +187,17 @@ Workflow expressions read these values from GitHub Actions variables (`vars.*`),
 |----------------|------------|-------------|----------------|
 | `JULES_WORKER_BRANCH` | N/A | `JLO_TARGET_BRANCH` | Synced from target |
 | `jules-observer-*` | Observers | `JULES_WORKER_BRANCH` | Auto-merged |
-| `jules-decider-*` | Deciders | `JULES_WORKER_BRANCH` | Auto-merged |
-| `jules-planner-*` | Planners | `JULES_WORKER_BRANCH` | Auto-merged |
-| `jules-implementer-*` | Implementers | `JLO_TARGET_BRANCH` | Human review |
+| `jules-decider-*` | Decider | `JULES_WORKER_BRANCH` | Auto-merged |
+| `jules-planner-*` | Planner | `JULES_WORKER_BRANCH` | Auto-merged |
+| `jules-implementer-*` | Implementer | `JLO_TARGET_BRANCH` | Human review |
 | `jules-innovator-*` | Innovators | `JULES_WORKER_BRANCH` | Auto-merged |
 
 **Flow**:
 1. **Sync**: `JULES_WORKER_BRANCH` syncs from `JLO_TARGET_BRANCH` periodically
 2. **Analysis**: Observers create event files under `.jules/exchange/events/`
-3. **Triage**: Deciders link and consolidate events into issue files
-4. **Expansion**: Planners expand issues that require deep analysis
-5. **Implementation**: Implementers are dispatched by workflow policy or manual dispatch with a local issue file
+3. **Triage**: Decider links and consolidates events into issue files
+4. **Expansion**: Planner expands issues that require deep analysis
+5. **Implementation**: Implementer implements solutions for issues, either automatically via workflow or manually with a specified issue file
 6. **Innovation**: Innovators generate ideas and proposals, published as GitHub issues
 
 **Pause/Resume**: Set the repository pause variable referenced by the workflows to skip scheduled runs.

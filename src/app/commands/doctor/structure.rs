@@ -64,7 +64,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
 
         // Check schemas/ directory (layers with output schemas)
         let schemas_dir = jules::schemas_dir(inputs.jules_path, layer);
-        let has_schemas = !matches!(layer, Layer::Implementers | Layer::Planners);
+        let has_schemas = !matches!(layer, Layer::Implementer | Layer::Planner);
         if has_schemas && !schemas_dir.exists() {
             diagnostics.push_error(schemas_dir.display().to_string(), "Missing schemas/");
         }
@@ -86,7 +86,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
 
         if layer.is_single_role() {
             // Narrator requires changes.yml schema template
-            if layer == Layer::Narrators {
+            if layer == Layer::Narrator {
                 let change_template = jules::narrator_change_schema(inputs.jules_path);
                 if !change_template.exists() {
                     diagnostics
@@ -343,7 +343,7 @@ mod tests {
             // Runtime artifacts (contracts, schemas, prompts) in .jules/roles
             let jules_layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
             jules_layer_dir.create_dir_all().unwrap();
-            if !matches!(layer, Layer::Implementers | Layer::Planners) {
+            if !matches!(layer, Layer::Implementer | Layer::Planner) {
                 jules_layer_dir.child("schemas").create_dir_all().unwrap();
             }
             jules_layer_dir.child("tasks").create_dir_all().unwrap();
@@ -352,7 +352,7 @@ mod tests {
             jules_layer_dir.child("contracts.yml").touch().unwrap();
 
             if layer.is_single_role() {
-                if layer == Layer::Narrators {
+                if layer == Layer::Narrator {
                     jules_layer_dir.child("schemas/changes.yml").touch().unwrap();
                 }
             } else {
@@ -441,8 +441,8 @@ mod tests {
         let temp = assert_fs::TempDir::new().unwrap();
         create_valid_workspace(&temp);
 
-        // Remove implementers contracts
-        std::fs::remove_file(temp.path().join(".jules/roles/implementers/contracts.yml")).unwrap();
+        // Remove implementer contracts
+        std::fs::remove_file(temp.path().join(".jules/roles/implementer/contracts.yml")).unwrap();
 
         let mut diagnostics = Diagnostics::default();
         let issue_labels = vec!["tests".to_string()];

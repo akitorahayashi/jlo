@@ -24,7 +24,7 @@ pub fn ensure_role_scheduled<W: WorkspaceStore>(
             let target = schedule.innovators.get_or_insert_with(|| ScheduleLayer { roles: vec![] });
             insert_role(target, role)
         }
-        Layer::Narrators | Layer::Deciders | Layer::Planners | Layer::Implementers => false,
+        Layer::Narrator | Layer::Decider | Layer::Planner | Layer::Implementer => false,
     };
 
     if updated {

@@ -6,8 +6,8 @@ use crate::app::commands::run::RunOptions;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
-/// Execute mock implementers.
-pub fn execute_mock_implementers<G, H, W>(
+/// Execute mock implementer.
+pub fn execute_mock_implementer<G, H, W>(
     _jules_path: &Path,
     options: &RunOptions,
     config: &MockConfig,
@@ -21,7 +21,7 @@ where
     W: WorkspaceStore,
 {
     let issue_path = options.issue.as_ref().ok_or_else(|| {
-        AppError::MissingArgument("Issue path is required for implementers".to_string())
+        AppError::MissingArgument("Issue path is required for implementer".to_string())
     })?;
 
     // Parse issue to get label and id
@@ -39,11 +39,11 @@ where
     }
 
     // Implementer branch format: jules-implementer-<label>-<id>-<short_description>
-    let prefix = config.branch_prefix(Layer::Implementers)?;
+    let prefix = config.branch_prefix(Layer::Implementer)?;
     let issue_id_short = issue_id.chars().take(6).collect::<String>();
     let branch_name = format!("{}{}-{}-{}", prefix, label, issue_id_short, config.mock_tag);
 
-    println!("Mock implementers: creating branch {}", branch_name);
+    println!("Mock implementer: creating branch {}", branch_name);
 
     // Fetch and checkout from default branch (not jules)
     git.fetch("origin")?;
@@ -83,7 +83,7 @@ where
     )?;
 
     // NOTE: Implementer PRs do NOT get auto-merge enabled
-    println!("Mock implementers: created PR #{} ({}) - awaiting label", pr.number, pr.url);
+    println!("Mock implementer: created PR #{} ({}) - awaiting label", pr.number, pr.url);
 
     Ok(MockOutput {
         mock_branch: branch_name,

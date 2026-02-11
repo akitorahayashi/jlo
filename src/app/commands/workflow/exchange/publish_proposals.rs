@@ -365,13 +365,6 @@ mod tests {
     }
 
     impl GitHubPort for FakeGitHub {
-        fn dispatch_workflow(
-            &self,
-            _workflow_name: &str,
-            _inputs: &[(&str, &str)],
-        ) -> Result<(), AppError> {
-            Ok(())
-        }
         fn create_pull_request(
             &self,
             head: &str,

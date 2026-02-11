@@ -26,7 +26,7 @@ Role templates are supported only for **multi-role layers** (Observers and Innov
 - **Observers**: `layers/observers/role.yml`
 - **Innovators**: `layers/innovators/role.yml`
 
-Single-role layers (Narrator, Deciders, Planners, Implementers) have a fixed role with `contracts.yml` in the layer directory and do not support template creation.
+Single-role layers (Narrator, Decider, Planner, Implementer) have a fixed role with `contracts.yml` in the layer directory and do not support template creation.
 
 ### Application
 

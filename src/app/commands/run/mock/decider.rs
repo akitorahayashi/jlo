@@ -8,8 +8,8 @@ use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
-/// Execute mock deciders.
-pub fn execute_mock_deciders<G, H, W>(
+/// Execute mock decider.
+pub fn execute_mock_decider<G, H, W>(
     jules_path: &Path,
     _options: &RunOptions,
     config: &MockConfig,
@@ -23,9 +23,9 @@ where
     W: WorkspaceStore,
 {
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
-    let branch_name = config.branch_name(Layer::Deciders, &timestamp)?;
+    let branch_name = config.branch_name(Layer::Decider, &timestamp)?;
 
-    println!("Mock deciders: creating branch {}", branch_name);
+    println!("Mock decider: creating branch {}", branch_name);
 
     // Fetch and checkout from jules branch
     git.fetch("origin")?;
@@ -255,7 +255,7 @@ where
             config.mock_tag, planner_issue_id, impl_issue_id),
     )?;
 
-    println!("Mock deciders: created PR #{} ({})", pr.number, pr.url);
+    println!("Mock decider: created PR #{} ({})", pr.number, pr.url);
 
     Ok(MockOutput {
         mock_branch: branch_name,

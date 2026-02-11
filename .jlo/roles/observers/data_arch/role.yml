@@ -1,4 +1,5 @@
 role: data_arch
+description: Analyze data models and data flow efficiency.
 layer: observers
 
 profile:

@@ -70,7 +70,7 @@ pub fn layer_roles_container(jules_path: &Path, layer: Layer) -> PathBuf {
 
 /// `.jules/roles/narrator/schemas/changes.yml`
 pub fn narrator_change_schema(jules_path: &Path) -> PathBuf {
-    schema_file(jules_path, Layer::Narrators, "changes.yml")
+    schema_file(jules_path, Layer::Narrator, "changes.yml")
 }
 
 // ── Narrator output ────────────────────────────────────────────────────
@@ -169,7 +169,7 @@ mod tests {
     #[test]
     fn layer_structure() {
         let jp = Path::new("/ws/.jules");
-        assert_eq!(layer_dir(jp, Layer::Narrators), PathBuf::from("/ws/.jules/roles/narrator"));
+        assert_eq!(layer_dir(jp, Layer::Narrator), PathBuf::from("/ws/.jules/roles/narrator"));
         assert_eq!(
             prompt_template(jp, Layer::Observers),
             PathBuf::from("/ws/.jules/roles/observers/observers_prompt.j2")

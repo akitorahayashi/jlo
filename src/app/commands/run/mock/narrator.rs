@@ -16,7 +16,7 @@ where
     H: GitHubPort,
     W: WorkspaceStore,
 {
-    let _ = config.branch_prefix(Layer::Narrators)?;
+    let _ = config.branch_prefix(Layer::Narrator)?;
     println!("Mock narrator: no-op (preserving existing .jules/exchange/changes.yml)");
 
     Ok(MockOutput {
@@ -90,14 +90,6 @@ mod tests {
     struct MustNotTouchGitHub;
 
     impl GitHubPort for MustNotTouchGitHub {
-        fn dispatch_workflow(
-            &self,
-            _workflow_name: &str,
-            _inputs: &[(&str, &str)],
-        ) -> Result<(), AppError> {
-            panic!("mock narrator no-op must not call dispatch_workflow");
-        }
-
         fn create_pull_request(
             &self,
             _head: &str,
@@ -265,7 +257,7 @@ mod tests {
     #[test]
     fn narrator_mock_is_noop() {
         let mut prefixes = HashMap::new();
-        prefixes.insert(Layer::Narrators, "jules-narrator-".to_string());
+        prefixes.insert(Layer::Narrator, "jules-narrator-".to_string());
         let config = MockConfig {
             mock_tag: "mock-run-123".to_string(),
             branch_prefixes: prefixes,

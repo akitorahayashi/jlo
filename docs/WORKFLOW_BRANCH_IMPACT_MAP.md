@@ -27,21 +27,21 @@ Out of scope:
 
 | Symptom | Probable contract break | First files to inspect |
 |---|---|---|
-| `Can't find 'action.yml' ... .github/actions/install-jlo` | Action resolution path does not exist in current checkout | `src/assets/github/workflows/jules-workflows/components/bootstrap.yml.j2`, `src/assets/github/workflows/jules-run-implementer.yml.j2`, `src/assets/github/workflows/jules-sync.yml.j2` |
+| `Can't find 'action.yml' ... .github/actions/install-jlo` | Action resolution path does not exist in current checkout | `src/assets/github/workflows/jules-workflows/components/bootstrap.yml.j2`, `src/assets/github/workflows/jules-sync.yml.j2` |
 | `.jlo/.jlo-version is missing or empty` | Wrong source branch for version pin lookup | `src/assets/github/actions/install-jlo/action.yml` |
 | Worker branch bootstrap never converges | Worker creation/sync path mis-specified | `src/assets/github/workflows/jules-workflows/components/bootstrap.yml.j2`, `src/assets/github/workflows/jules-sync.yml.j2` |
-| Implementer writes to unexpected branch | Target-branch variable wiring drifted | `src/assets/github/workflows/jules-workflows.yml.j2`, `src/assets/github/workflows/jules-run-implementer.yml.j2`, `src/assets/github/actions/run-implementer/action.yml` |
+| Implementer writes to unexpected branch | Target-branch variable wiring drifted | `src/assets/github/workflows/jules-workflows.yml.j2` |
 | Sync workflow reports success but no effective sync | Skip gating or branch match logic is wrong | `src/assets/github/workflows/jules-sync.yml.j2` |
 
 ## Change-to-Impact Matrix
 
 | Change type | Workflow templates impacted | Composite actions impacted | Tests/doc impacted |
 |---|---|---|---|
-| Rename/add/remove branch variables | `jules-workflows.yml.j2`, `jules-sync.yml.j2`, `jules-run-implementer.yml.j2`, `jules-run-planner.yml.j2`, `jules-automerge.yml.j2`, `jules-mock-cleanup.yml.j2`, `jules-workflows/components/*.yml.j2`, `jules-workflows/macros/run_job.j2` | `install-jlo/action.yml`, `run-implementer/action.yml` | `tests/workflow_kit.rs`, `.github/AGENTS.md`, `docs/CONTROL_PLANE_OWNERSHIP.md`, this file |
+| Rename/add/remove branch variables | `jules-workflows.yml.j2`, `jules-sync.yml.j2`, `jules-automerge.yml.j2`, `jules-mock-cleanup.yml.j2`, `jules-workflows/components/*.yml.j2`, `jules-workflows/macros/run_job.j2` | `install-jlo/action.yml` | `tests/workflow_kit.rs`, `.github/AGENTS.md`, `docs/CONTROL_PLANE_OWNERSHIP.md`, this file |
 | Change source of `.jlo/.jlo-version` | Any workflow using install step | `install-jlo/action.yml` | `tests/workflow_kit.rs`, docs branch-contract sections |
 | Change worker bootstrap branch creation strategy | `jules-workflows/components/bootstrap.yml.j2`, `jules-sync.yml.j2` | none | `tests/workflow_kit.rs`, ownership docs |
-| Change action resolution strategy (`./.github/actions/*`) | All workflows invoking local actions | `run-implementer/action.yml` | `tests/workflow_kit.rs` (string assertions) |
-| Change implementer target routing | `jules-workflows.yml.j2`, `jules-run-implementer.yml.j2` | `run-implementer/action.yml` | `tests/workflow_kit.rs`, `.github/AGENTS.md` |
+| Change action resolution strategy (`./.github/actions/*`) | All workflows invoking local actions | `install-jlo/action.yml` | `tests/workflow_kit.rs` (string assertions) |
+| Change implementer target routing | `jules-workflows.yml.j2` | `install-jlo/action.yml` | `tests/workflow_kit.rs`, `.github/AGENTS.md` |
 
 ## Fast Investigation Path
 
