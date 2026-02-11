@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
-      - '{{ worker_branch }}'
+      - '{{ target_branch }}'
 
 permissions:
   contents: read
@@ -22,24 +22,30 @@ jobs:
       - name: Validate secrets
         run: |
           set -euo pipefail
-          if [ -z "${JULES_LINKED_GH_TOKEN:-}" ]; then
-            echo "::error::JULES_LINKED_GH_TOKEN secret is required. Do not fall back to GITHUB_TOKEN."
+          if [ -z "${JULES_LINKED_GH_PAT:-}" ]; then
+            echo "::error::JULES_LINKED_GH_PAT is required. It must be a PAT for the GitHub account linked to the JULES_API_KEY principal."
+            exit 1
+          fi
+          if [ -n "${JLO_BOT_TOKEN:-}" ] && [ "${JULES_LINKED_GH_PAT}" = "${JLO_BOT_TOKEN}" ]; then
+            echo "::error::JULES_LINKED_GH_PAT must be distinct from JLO_BOT_TOKEN."
             exit 1
           fi
         env:
-          JULES_LINKED_GH_TOKEN: {{ gha_expr("secrets.JULES_LINKED_GH_TOKEN") }}
+          JULES_LINKED_GH_PAT: {{ gha_expr("secrets.JULES_LINKED_GH_PAT") }}
+          JLO_BOT_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 
       - uses: actions/checkout@v4
         with:
-          ref: '{{ worker_branch }}'
+          ref: {{ gha_expr("github.event.pull_request.base.ref") }}
           fetch-depth: 1
+          token: {{ gha_expr("secrets.JULES_LINKED_GH_PAT") }}
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
       - name: Post summary request comment
         env:
-          GH_TOKEN: {{ gha_expr("secrets.JULES_LINKED_GH_TOKEN") }}
+          GH_TOKEN: {{ gha_expr("secrets.JULES_LINKED_GH_PAT") }}
         run: |
           set -euo pipefail
           PR_NUMBER={{ gha_expr("github.event.pull_request.number") }}
