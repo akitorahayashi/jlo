@@ -416,10 +416,7 @@ fn workflow_templates_validate_structure() {
 
     // Validate root keys
     let root = workflow.as_mapping().expect("Root should be a mapping");
-    assert!(
-        root.contains_key(&serde_yaml::Value::String("name".to_string())),
-        "Missing 'name'"
-    );
+    assert!(root.contains_key(&serde_yaml::Value::String("name".to_string())), "Missing 'name'");
     assert!(root.contains_key(&serde_yaml::Value::String("on".to_string())), "Missing 'on'");
     assert!(root.contains_key(&serde_yaml::Value::String("jobs".to_string())), "Missing 'jobs'");
     assert!(

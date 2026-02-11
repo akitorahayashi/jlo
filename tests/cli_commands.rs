@@ -339,10 +339,7 @@ fn init_creates_setup_structure() {
     // I added partial checks in lifecycle but not all. I'll keep this one as it's fast.
     let ctx = TestContext::new();
 
-    ctx.cli()
-        .args(["init", "--remote"])
-        .assert()
-        .success();
+    ctx.cli().args(["init", "--remote"]).assert().success();
 
     ctx.cli().args(["workflow", "bootstrap"]).assert().success();
 

@@ -35,10 +35,10 @@ impl RequirementHeader {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{PromptAssetLoader, AppError, IoErrorKind};
-    use crate::ports::{WorkspaceStore, DiscoveredRole};
-    use std::path::PathBuf;
+    use crate::domain::{AppError, IoErrorKind, PromptAssetLoader};
+    use crate::ports::{DiscoveredRole, WorkspaceStore};
     use std::collections::HashMap;
+    use std::path::PathBuf;
 
     struct MockWorkspaceStore {
         files: HashMap<String, String>,
@@ -79,25 +79,66 @@ mod tests {
         }
 
         // Unused methods
-        fn exists(&self) -> bool { unimplemented!() }
-        fn jlo_exists(&self) -> bool { unimplemented!() }
-        fn jules_path(&self) -> PathBuf { unimplemented!() }
-        fn jlo_path(&self) -> PathBuf { unimplemented!() }
-        fn create_structure(&self, _scaffold_files: &[crate::ports::ScaffoldFile]) -> Result<(), AppError> { unimplemented!() }
-        fn write_version(&self, _version: &str) -> Result<(), AppError> { unimplemented!() }
-        fn read_version(&self) -> Result<Option<String>, AppError> { unimplemented!() }
-        fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> { unimplemented!() }
-        fn find_role_fuzzy(&self, _query: &str) -> Result<Option<DiscoveredRole>, AppError> { unimplemented!() }
-        fn role_path(&self, _role: &DiscoveredRole) -> Option<PathBuf> { unimplemented!() }
-        fn write_file(&self, _path: &str, _content: &str) -> Result<(), AppError> { unimplemented!() }
-        fn remove_file(&self, _path: &str) -> Result<(), AppError> { unimplemented!() }
-        fn list_dir(&self, _path: &str) -> Result<Vec<PathBuf>, AppError> { unimplemented!() }
-        fn set_executable(&self, _path: &str) -> Result<(), AppError> { unimplemented!() }
-        fn file_exists(&self, _path: &str) -> bool { unimplemented!() }
-        fn is_dir(&self, _path: &str) -> bool { unimplemented!() }
-        fn create_dir_all(&self, _path: &str) -> Result<(), AppError> { unimplemented!() }
-        fn resolve_path(&self, _path: &str) -> PathBuf { unimplemented!() }
-        fn canonicalize(&self, _path: &str) -> Result<PathBuf, AppError> { unimplemented!() }
+        fn exists(&self) -> bool {
+            unimplemented!()
+        }
+        fn jlo_exists(&self) -> bool {
+            unimplemented!()
+        }
+        fn jules_path(&self) -> PathBuf {
+            unimplemented!()
+        }
+        fn jlo_path(&self) -> PathBuf {
+            unimplemented!()
+        }
+        fn create_structure(
+            &self,
+            _scaffold_files: &[crate::ports::ScaffoldFile],
+        ) -> Result<(), AppError> {
+            unimplemented!()
+        }
+        fn write_version(&self, _version: &str) -> Result<(), AppError> {
+            unimplemented!()
+        }
+        fn read_version(&self) -> Result<Option<String>, AppError> {
+            unimplemented!()
+        }
+        fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
+            unimplemented!()
+        }
+        fn find_role_fuzzy(&self, _query: &str) -> Result<Option<DiscoveredRole>, AppError> {
+            unimplemented!()
+        }
+        fn role_path(&self, _role: &DiscoveredRole) -> Option<PathBuf> {
+            unimplemented!()
+        }
+        fn write_file(&self, _path: &str, _content: &str) -> Result<(), AppError> {
+            unimplemented!()
+        }
+        fn remove_file(&self, _path: &str) -> Result<(), AppError> {
+            unimplemented!()
+        }
+        fn list_dir(&self, _path: &str) -> Result<Vec<PathBuf>, AppError> {
+            unimplemented!()
+        }
+        fn set_executable(&self, _path: &str) -> Result<(), AppError> {
+            unimplemented!()
+        }
+        fn file_exists(&self, _path: &str) -> bool {
+            unimplemented!()
+        }
+        fn is_dir(&self, _path: &str) -> bool {
+            unimplemented!()
+        }
+        fn create_dir_all(&self, _path: &str) -> Result<(), AppError> {
+            unimplemented!()
+        }
+        fn resolve_path(&self, _path: &str) -> PathBuf {
+            unimplemented!()
+        }
+        fn canonicalize(&self, _path: &str) -> Result<PathBuf, AppError> {
+            unimplemented!()
+        }
     }
 
     #[test]
