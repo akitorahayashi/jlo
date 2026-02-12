@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use chrono::Utc;
+use serde::Deserialize;
 
 use crate::domain::configuration::loader::detect_repository_source;
 use crate::domain::configuration::mock_loader::load_mock_config;
@@ -310,29 +311,32 @@ where
 }
 
 fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, String), AppError> {
-    let mut label = None;
-    let mut id = None;
-
-    for line in content.lines() {
-        let line = line.trim();
-        if line.starts_with("label:") {
-            let value =
-                line.trim_start_matches("label:").trim().trim_matches('"').trim_matches('\'');
-            if !value.is_empty() {
-                label = Some(value.to_string());
-            }
-        } else if line.starts_with("id:") {
-            let value = line.trim_start_matches("id:").trim().trim_matches('"').trim_matches('\'');
-            if !value.is_empty() {
-                id = Some(value.to_string());
-            }
-        }
+    #[derive(Deserialize)]
+    struct RequirementMeta {
+        label: Option<String>,
+        id: Option<String>,
     }
 
-    let label = label.ok_or_else(|| {
+    let parsed: RequirementMeta = serde_yaml::from_str(content).map_err(|err| {
+        AppError::Validation(format!(
+            "Requirement file must be valid YAML ({}): {}",
+            path.display(),
+            err
+        ))
+    })?;
+
+    let label = parsed.label.filter(|value| !value.trim().is_empty()).ok_or_else(|| {
         AppError::Validation(format!("Requirement file missing label field: {}", path.display()))
     })?;
-    let id = id.ok_or_else(|| {
+    if !crate::domain::identifiers::validation::validate_safe_path_component(&label) {
+        return Err(AppError::Validation(format!(
+            "Requirement label '{}' is not a safe path component: {}",
+            label,
+            path.display()
+        )));
+    }
+
+    let id = parsed.id.filter(|value| !value.trim().is_empty()).ok_or_else(|| {
         AppError::Validation(format!("Requirement file missing id field: {}", path.display()))
     })?;
 

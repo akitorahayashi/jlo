@@ -8,7 +8,9 @@ use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::layers::mock_utils::{MOCK_ASSETS, generate_mock_id};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions};
+use crate::domain::{
+    AppError, IoErrorKind, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions,
+};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 use super::multi_role::{dispatch_session, print_role_preview, validate_role_exists};
@@ -31,6 +33,9 @@ where
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
         if options.mock {
+            let role = options.role.clone().ok_or_else(|| {
+                AppError::MissingArgument("Role is required for observers in mock mode".to_string())
+            })?;
             let mock_config = load_mock_config(jules_path, options, workspace)?;
             let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
             // Write mock output
@@ -42,7 +47,7 @@ where
                 super::mock_utils::print_local(&output);
             }
             return Ok(RunResult {
-                roles: vec![options.role.clone().unwrap_or_else(|| "mock".to_string())],
+                roles: vec![role],
                 prompt_preview: false,
                 sessions: vec![],
                 cleanup_requirement: None,
@@ -140,16 +145,16 @@ fn resolve_observer_bridge_task<W: WorkspaceStore>(
     let innovators = jules::innovators_dir(jules_path);
     let innovators_str = innovators.to_string_lossy();
 
-    let has_ideas = workspace
-        .list_dir(&innovators_str)
-        .ok()
-        .map(|entries| {
-            entries.iter().any(|entry| {
-                workspace.is_dir(&entry.to_string_lossy())
-                    && workspace.file_exists(&entry.join("idea.yml").to_string_lossy())
-            })
-        })
-        .unwrap_or(false);
+    let entries = match workspace.list_dir(&innovators_str) {
+        Ok(entries) => entries,
+        Err(AppError::Io { kind: IoErrorKind::NotFound, .. }) => return Ok(String::new()),
+        Err(err) => return Err(err),
+    };
+
+    let has_ideas = entries.iter().any(|entry| {
+        workspace.is_dir(&entry.to_string_lossy())
+            && workspace.file_exists(&entry.join("idea.yml").to_string_lossy())
+    });
 
     if !has_ideas {
         return Ok(String::new());
@@ -209,7 +214,9 @@ where
             AppError::InternalError("Invalid UTF-8 in observer_event.yml".to_string())
         })?;
 
-    let observer_role = options.role.as_deref().unwrap_or("mock");
+    let observer_role = options.role.as_deref().ok_or_else(|| {
+        AppError::MissingArgument("Role is required for observers in mock mode".to_string())
+    })?;
     if !validate_safe_path_component(observer_role) {
         return Err(AppError::Validation(format!(
             "Invalid role name '{}': must be alphanumeric with hyphens or underscores only",
@@ -251,7 +258,7 @@ where
 
     // Bridge: generate comment artifacts for each scheduled innovator persona.
     let mut comment_files: Vec<PathBuf> = Vec::new();
-    let innovator_personas = resolve_innovator_personas(workspace);
+    let innovator_personas = resolve_innovator_personas(workspace)?;
 
     if !innovator_personas.is_empty() {
         let mock_comment_template = MOCK_ASSETS
@@ -319,13 +326,14 @@ where
     })
 }
 
-fn resolve_innovator_personas<W: WorkspaceStore>(workspace: &W) -> Vec<String> {
+fn resolve_innovator_personas<W: WorkspaceStore>(workspace: &W) -> Result<Vec<String>, AppError> {
     let schedule = match load_schedule(workspace) {
-        Ok(s) => s,
-        Err(_) => return Vec::new(),
+        Ok(schedule) => schedule,
+        Err(AppError::ScheduleConfigMissing(_)) => return Ok(Vec::new()),
+        Err(err) => return Err(err),
     };
     let Some(ref innovators) = schedule.innovators else {
-        return Vec::new();
+        return Ok(Vec::new());
     };
-    innovators.enabled_roles().iter().map(|r| r.as_str().to_string()).collect()
+    Ok(innovators.enabled_roles().iter().map(|r| r.as_str().to_string()).collect())
 }

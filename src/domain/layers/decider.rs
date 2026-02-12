@@ -162,9 +162,13 @@ where
     })?;
     let mock_issue_template = MOCK_ASSETS
         .get_file("decider_requirement.yml")
-        .expect("Mock asset missing: decider_requirement.yml")
+        .ok_or_else(|| {
+            AppError::InternalError("Mock asset missing: decider_requirement.yml".to_string())
+        })?
         .contents_utf8()
-        .expect("Invalid UTF-8 in decider_requirement.yml");
+        .ok_or_else(|| {
+            AppError::InternalError("Invalid UTF-8 in decider_requirement.yml".to_string())
+        })?;
 
     // Move any mock pending events to decided first
     let mut moved_src_files: Vec<PathBuf> = Vec::new();
@@ -243,7 +247,12 @@ where
         planner_issue_file
             .to_str()
             .ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
-        &serde_yaml::to_string(&planner_issue_yaml).unwrap(),
+        &serde_yaml::to_string(&planner_issue_yaml).map_err(|err| {
+            AppError::InternalError(format!(
+                "Failed to serialize planner requirement YAML: {}",
+                err
+            ))
+        })?,
     )?;
 
     // Requirement 2: ready for implementer
@@ -280,7 +289,12 @@ where
 
     workspace.write_file(
         impl_issue_file.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
-        &serde_yaml::to_string(&impl_issue_yaml).unwrap(),
+        &serde_yaml::to_string(&impl_issue_yaml).map_err(|err| {
+            AppError::InternalError(format!(
+                "Failed to serialize implementer requirement YAML: {}",
+                err
+            ))
+        })?,
     )?;
 
     // Ensure all tag-matched decided events have issue_id.
