@@ -1,0 +1,18 @@
+schema_version: 1
+id: "s9k1l1"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "codifier"
+confidence: "high"
+title: "Missing Bootstrap Schema for Skills"
+statement: |
+  The repository lacks a documented procedure or template for bootstrapping new skill directories (.agents/skills/), forcing authors to copy-paste existing skills without understanding the required structure.
+evidence:
+  - path: ".agents/skills"
+    loc:
+      - "directory listing"
+    note: "Contains existing skills but no template or create-skill procedure."
+  - path: "AGENTS.md"
+    loc:
+      - "whole file"
+    note: "No mention of skill directory structure or creation process."

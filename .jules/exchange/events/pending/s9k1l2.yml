@@ -1,0 +1,18 @@
+schema_version: 1
+id: "s9k1l2"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "codifier"
+confidence: "high"
+title: "Undocumented Field Intent in agents/openai.yaml"
+statement: |
+  The `agents/openai.yaml` file uses fields like `display_name`, `short_description`, and `default_prompt` without explicit documentation on their intent or usage by the system, leaving authors to guess their values.
+evidence:
+  - path: ".agents/skills/create-jlo-innovator/agents/openai.yaml"
+    loc:
+      - "interface section"
+    note: "Fields `display_name`, `short_description`, `default_prompt` are used but undefined."
+  - path: ".agents/skills/create-jlo-observer/agents/openai.yaml"
+    loc:
+      - "interface section"
+    note: "Same undefined fields used here."

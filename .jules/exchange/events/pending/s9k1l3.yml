@@ -1,0 +1,18 @@
+schema_version: 1
+id: "s9k1l3"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "codifier"
+confidence: "medium"
+title: "Implicit Branching in Skill Procedures"
+statement: |
+  Existing skills contain a "Review Mode" section that implies a branching workflow (Create vs. Review) but do not explicitly define the decision point or condition in the procedure steps, leading to ambiguous execution flow.
+evidence:
+  - path: ".agents/skills/create-jlo-innovator/SKILL.md"
+    loc:
+      - "Review Mode section"
+    note: "Review logic is appended at the end, not integrated into the main flow as a branch."
+  - path: ".agents/skills/create-jlo-observer/SKILL.md"
+    loc:
+      - "Review Mode section"
+    note: "Same implicit branching structure here."

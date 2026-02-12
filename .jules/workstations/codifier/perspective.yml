@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: "codifier"
+
+updated_at: "2026-02-12T21:36:31Z"
+
+goals:
+  - "Establish bootstrap schema clarity for skills"
+  - "Clarify field intent for skill definitions"
+  - "Improve procedure blueprint completeness"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-12T21:36:31Z"
+    summary: "Initialized workstation memory for codifier role."
