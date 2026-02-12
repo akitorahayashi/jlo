@@ -660,7 +660,7 @@ mod tests {
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
         assert!(result.is_err());
         assert!(
-            matches!(result, Err(AppError::Validation(msg)) if msg.contains("requires at least 2 decided events"))
+            matches!(result, Err(AppError::InvalidConfig(msg)) if msg.contains("requires at least 2 decided events"))
         );
     }
 }

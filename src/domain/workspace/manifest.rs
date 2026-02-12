@@ -53,7 +53,8 @@ impl ScaffoldManifest {
 
 pub fn is_default_role_file(path: &str) -> bool {
     let path_obj = Path::new(path);
-    let Some(parts) = path_obj.components().map(|c| c.as_os_str().to_str()).collect::<Option<Vec<_>>>()
+    let Some(parts) =
+        path_obj.components().map(|c| c.as_os_str().to_str()).collect::<Option<Vec<_>>>()
     else {
         return false;
     };
