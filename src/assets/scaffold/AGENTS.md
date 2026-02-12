@@ -2,19 +2,7 @@
 
 ## Critical Design Principles
 
-### 1. Prompt Hierarchy (No Duplication)
-Prompts are constructed by layer-specific `<layer>_prompt.j2` templates, which render prompt sections via explicit include helpers. Each layer has a single prompt template that references contracts, role definitions, and exchange data.
-
-```jinja
-{{ section("Layer Contracts", include_required(".jules/roles/<layer>/contracts.yml")) }}
-{{ section("Role", include_required(".jlo/roles/<layer>/" ~ role ~ "/role.yml")) }}
-{{ section("Change Summary", include_optional(".jules/exchange/changes.yml")) }}
-```
-
-**Rule**: Never duplicate content across levels. Each level refines the constraints of the previous one.
-
-### 2. Workflow-Driven Execution
-Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules API; workflows control scheduling, branching, and merge policies.
+See [root AGENTS.md](../../AGENTS.md) for critical design principles including Prompt Hierarchy and Workflow-Driven Execution.
 
 ## Directory Structure
 

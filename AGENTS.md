@@ -18,16 +18,21 @@ All scaffold files, workflow kits, configurations, and prompts must exist as rea
 - **Why**: Keeps the scaffold structure visible and maintainable without digging into implementation details.
 - **How**: Use `include_dir!` to load `src/assets/scaffold` and `src/assets/github` as authoritative sources of truth.
 
-### 2. Prompt Hierarchy (No Duplication)
-Prompts are constructed by layer-specific `<layer>_prompt.j2` templates, which render prompt sections via explicit include helpers.
+### 2. Scaffold Mapping
+The directory `src/assets/scaffold/jules/layers` in the source code maps directly to `.jules/roles` in the deployed environment. This renaming (layers -> roles) occurs during scaffold installation to better reflect the user-facing concept of "roles" while maintaining a "layered" architecture internally.
+
+### 3. Prompt Hierarchy (No Duplication)
+Prompts are constructed by layer-specific `<layer>_prompt.j2` templates, which render prompt sections via explicit include helpers. Each layer has a single prompt template that references contracts, role definitions, and exchange data.
 
 ```jinja
 {{ section("Layer Contracts", include_required(".jules/roles/<layer>/contracts.yml")) }}
+{{ section("Role", include_required(".jlo/roles/<layer>/" ~ role ~ "/role.yml")) }}
+{{ section("Change Summary", include_optional(".jules/exchange/changes.yml")) }}
 ```
 
 **Rule**: Never duplicate content across levels. Each level refines the constraints of the previous one.
 
-### 3. Workflow-Driven Execution
+### 4. Workflow-Driven Execution
 Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules API; workflows control scheduling, branching, and merge policies.
 
 ## Development Context

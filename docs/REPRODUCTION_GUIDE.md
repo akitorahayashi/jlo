@@ -11,10 +11,6 @@ Branch protection on `JULES_WORKER_BRANCH` must require the workflow status chec
 
 - `JULES_API_KEY`: Jules API key.
 - `JLO_BOT_TOKEN`: Automation token for repository operations (checkout/push/labels/automerge).
-- `JULES_LINKED_GH_PAT`: Personal access token used only by `jules-pr-summary-request.yml`.
-  - This value is a PAT, not a generic GitHub token label.
-  - It authenticates as the GitHub account linked to the `JULES_API_KEY` principal.
-  - It is distinct from `JLO_BOT_TOKEN` (same value is invalid).
 
 Minimum token permissions:
 
@@ -22,13 +18,7 @@ Minimum token permissions:
   - `Contents: Read and write`
   - `Pull requests: Read and write`
   - `Issues: Read and write`
-- Fine-grained PAT for `JULES_LINKED_GH_PAT`:
-  - `Contents: Read`
-  - `Pull requests: Read and write`
-  - `Issues: Read and write`
 - Classic PAT alternative (private repository): `repo` scope.
-
-`gh auth token` output is valid only when it is the PAT for the correct linked GitHub account and has the required permissions above.
 
 ## Required Files
 
