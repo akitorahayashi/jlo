@@ -30,13 +30,13 @@ jlo init --remote
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow scaffold |
-| `jlo update [--prompt-preview]` | `u` | Advance version pin, refresh workflow scaffold, and refresh unchanged defaults |
+| `jlo update [--prompt-preview] [--cli]` | `u` | Advance version pin, refresh workflow scaffold, and refresh unchanged defaults. Use `--cli` to update the binary itself. |
 | `jlo deinit` | | Remove `.jlo/`, workflow scaffold, and local `jules` branch |
 | `jlo create [<layer> <name>]` | `cr` | Create a custom role under `.jlo/` (observers, innovators) |
 | `jlo add [<layer> <role>]` | `a, ad` | Install a built-in role under `.jlo/` (observers, innovators) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo doctor [--strict]` | | Validate `.jules/` structure and content |
-| `jlo workflow run <layer>` | | Run layer and return orchestration metadata |
+| `jlo workflow run <layer>` | `wf` | Run layer and return orchestration metadata |
 | `jlo workflow workspace inspect` | | Inspect exchange state for automation |
 | `jlo workflow workspace publish-proposals` | | Publish innovator proposals as GitHub issues |
 | `jlo workflow workspace clean requirement <file>` | | Remove a processed requirement and its source events |
@@ -78,8 +78,9 @@ Execute Jules agents for a specific layer. You can use `r` as an alias for `run`
 
 ```bash
 jlo run observers --role <role>                    # Run specific observer role
-jlo run observers --role <role> --prompt-preview    # Show prompts without executing
-jlo run observers --role <role> --branch custom     # Override starting branch
+jlo run observers --role <role> --prompt-preview   # Show prompts without executing
+jlo run observers --role <role> --branch custom    # Override starting branch
+jlo run innovators --role <role> --phase creation  # Run innovator role in creation phase
 ```
 
 **Single-role layers** (Narrator, Decider, Planner, Implementer):
@@ -109,6 +110,7 @@ Mock mode creates real branches and PRs with synthetic commit content, enabling 
 
 **Flags**:
 - `-r, --role <name>`: Run specific role (required for observers/innovators)
+- `--phase <name>`: Innovator execution phase (`creation` or `refinement`)
 - `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)
 - `--branch <name>`: Override the default starting branch

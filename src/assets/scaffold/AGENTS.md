@@ -4,6 +4,21 @@
 
 See [root AGENTS.md](../../AGENTS.md) for critical design principles including Prompt Hierarchy and Workflow-Driven Execution.
 
+## Architecture Concepts
+
+### Layers vs Roles
+
+*   **Layer**: A distinct stage in the agent pipeline with a specific responsibility (e.g., Observers, Decider). Layers are the top-level organizational units.
+*   **Role**: A specific agent persona within a layer.
+
+### Layer Types
+
+*   **Single-Role Layers**: The layer itself acts as the sole agent.
+    *   *Narrator, Decider, Planner, Implementer*
+*   **Multi-Role Layers**: The layer contains multiple distinct roles (personas) that can be run independently.
+    *   *Observers*: e.g., `taxonomy`, `security`
+    *   *Innovators*: e.g., `researcher`, `architect`
+
 ## Directory Structure
 
 ```
