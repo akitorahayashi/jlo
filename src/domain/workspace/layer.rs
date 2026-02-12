@@ -59,11 +59,11 @@ impl Layer {
     pub fn display_name(&self) -> &'static str {
         match self {
             Layer::Narrator => "Narrator",
-            Layer::Observers => "Observer",
+            Layer::Observers => "Observers",
             Layer::Decider => "Decider",
             Layer::Planner => "Planner",
             Layer::Implementer => "Implementer",
-            Layer::Innovators => "Innovator",
+            Layer::Innovators => "Innovators",
         }
     }
 

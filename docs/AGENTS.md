@@ -15,8 +15,6 @@ This directory contains key architectural decisions, role guides, and operationa
 | `CONTROL_PLANE_OWNERSHIP.md` | Defines the ownership model for `.jlo/` (control plane) and `.jules/` (runtime state). |
 | `WORKFLOW_LAYER_CHANGE_MAP.md` | Maps code changes to specific workflow layers. |
 | `WORKFLOW_BRANCH_IMPACT_MAP.md` | Details how branches affect workflow execution. |
-| `INNOVATOR_ROLE_YML_GUIDE.md` | Guide for configuring Innovator roles. |
-| `OBSERVER_ROLE_YML_GUIDE.md` | Guide for configuring Observer roles. |
 | `REPRODUCTION_GUIDE.md` | Steps to reproduce issues or environments. |
 
 ## Keeping Docs Updated
