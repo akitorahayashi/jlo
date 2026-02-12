@@ -7,7 +7,7 @@ use clap::Subcommand;
 
 #[derive(Subcommand)]
 pub enum RunLayer {
-    /// Run narrator agent (summarizes codebase changes)
+    /// Run narrator layer (summarizes codebase changes)
     #[clap(visible_alias = "n")]
     Narrator {
         /// Show assembled prompts without executing
@@ -20,10 +20,10 @@ pub enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
-    /// Run observer agent (single role)
+    /// Run observers layer (requires role)
     #[clap(visible_alias = "o")]
     Observers {
-        /// Role to run
+        /// Role (persona) to run
         #[arg(short = 'r', long)]
         role: String,
         /// Show assembled prompts without executing
@@ -36,7 +36,7 @@ pub enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
-    /// Run decider agent (single role)
+    /// Run decider layer (single role)
     #[clap(visible_alias = "d", alias = "deciders")]
     Decider {
         /// Show assembled prompts without executing
@@ -49,7 +49,7 @@ pub enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
-    /// Run planner agent (single-role, requirement-driven)
+    /// Run planner layer (requirement-driven)
     #[clap(visible_alias = "p", alias = "planners")]
     Planner {
         /// Local requirement file path (required)
@@ -64,7 +64,7 @@ pub enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
-    /// Run implementer agent (single-role, requirement-driven)
+    /// Run implementer layer (requirement-driven)
     #[clap(visible_alias = "i", alias = "implementers")]
     Implementer {
         /// Local requirement file path (required)
@@ -79,7 +79,7 @@ pub enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
-    /// Run innovator agent (single role)
+    /// Run innovators layer (requires role)
     #[clap(visible_alias = "x")]
     Innovators {
         /// Role (persona) to run
