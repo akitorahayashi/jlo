@@ -59,8 +59,14 @@ fn workflow_templates_validate_structure() {
     assert!(on.contains_key(serde_yaml::Value::from("schedule")));
     assert!(on.contains_key(serde_yaml::Value::from("workflow_dispatch")));
     assert!(on.contains_key(serde_yaml::Value::from("workflow_call")));
-    assert!(on.contains_key(serde_yaml::Value::from("push")));
-    assert!(on.contains_key(serde_yaml::Value::from("pull_request")));
+    assert!(
+        !on.contains_key(serde_yaml::Value::from("push")),
+        "scheduled workflow should not include push trigger"
+    );
+    assert!(
+        !on.contains_key(serde_yaml::Value::from("pull_request")),
+        "scheduled workflow should not include pull_request trigger"
+    );
 
     let jobs = root
         .get(serde_yaml::Value::from("jobs"))
@@ -68,9 +74,7 @@ fn workflow_templates_validate_structure() {
         .as_mapping()
         .expect("'jobs' should be mapping");
     for job in [
-        "sync-worker-branch",
-        "process-implementer-pr-metadata",
-        "validate-and-automerge",
+        "bootstrap",
         "run-narrator",
         "check-schedule",
         "run-observers",

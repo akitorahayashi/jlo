@@ -1,22 +1,4 @@
-{# DESIGN GUARD: Branch filtering belongs in `on:` to avoid skipped-run spam.
-   Only PRs targeting the worker branch should trigger this workflow.
-   Branch values are rendered from .jlo/config.toml at generation time. #}
-# Jules Auto-Merge
-#
-# Validates Jules PRs with doctor check and enables auto-merge on success.
-# Policy gates (branch prefix, .jules/-only scope, draft, duplicates) are
-# evaluated by `jlo workflow gh pr enable-automerge`, not inline shell logic.
-#
-# Flow:
-#   1. Jules creates PR → doctor runs
-#   2. Doctor fails → Jules detects, fixes, pushes
-#   3. Doctor passes → enable-automerge evaluates gates → merges when checks pass
-#
-# Prerequisites:
-# - Repository Settings: Enable "Allow auto-merge"
-# - Branch Protection: Require this workflow as status check
-
-name: Jules Auto-Merge
+name: Jules Auto-merge
 
 on:
   pull_request:
@@ -24,15 +6,21 @@ on:
     branches:
       - '{{ worker_branch }}'
 
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  JLO_TARGET_BRANCH: '{{ target_branch }}'
+  JULES_WORKER_BRANCH: '{{ worker_branch }}'
+
 jobs:
   validate-and-automerge:
+    if: {{ gha_expr("github.base_ref == '" ~ worker_branch ~ "'") }}
     runs-on: {{ runner }}
-    permissions:
-      contents: write
-      pull-requests: write
-    env:
-      JLO_TARGET_BRANCH: '{{ target_branch }}'
-      JULES_WORKER_BRANCH: '{{ worker_branch }}'
+    concurrency:
+      group: {{ gha_expr("format('jules-automerge-pr-{0}', github.event.pull_request.number)") }}
+      cancel-in-progress: false
     steps:
       - name: Validate branch variables
         run: |
@@ -57,40 +45,16 @@ jobs:
       - name: Validate with doctor
         run: |
           echo "::group::Doctor check"
-          jlo doctor
+          jlo workflow doctor
           echo "::endgroup::"
 
-      - name: Enable auto-merge
+      - name: Process PR auto-merge
         env:
           GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
         run: |
           set -euo pipefail
-          PR_NUMBER={{ gha_expr("github.event.pull_request.number") }}
-          ATTEMPTS=12
-          RETRY_DELAY_SECONDS=10
-
-          for attempt in $(seq 1 "$ATTEMPTS"); do
-            set +e
-            OUTPUT=$(jlo workflow gh pr enable-automerge "$PR_NUMBER" 2>&1)
-            STATUS=$?
-            set -e
-
-            echo "$OUTPUT"
-
-            if [ "$STATUS" -eq 0 ]; then
-              exit 0
-            fi
-
-            if ! printf '%s' "$OUTPUT" | grep -Eq "enablePullRequestAutoMerge|mergePullRequest|Base branch was modified|Protected branch rules not configured"; then
-              echo "::error::Auto-merge enable failed with a non-retriable error."
-              exit "$STATUS"
-            fi
-
-            if [ "$attempt" -eq "$ATTEMPTS" ]; then
-              echo "::error::Auto-merge enable failed after ${ATTEMPTS} attempts."
-              exit "$STATUS"
-            fi
-
-            echo "::warning::Auto-merge transient GitHub state detected (attempt ${attempt}/${ATTEMPTS}); retrying in ${RETRY_DELAY_SECONDS}s."
-            sleep "$RETRY_DELAY_SECONDS"
-          done
+          jlo workflow gh pr process {{ gha_expr("github.event.pull_request.number") }} \
+            --mode automerge \
+            --retry-attempts 12 \
+            --retry-delay-seconds 10 \
+            --fail-on-error

@@ -55,9 +55,8 @@ Workflow orchestration delegates to `jlo workflow` commands:
 `jules-scheduled-workflows.yml` contains the consolidated trigger paths:
 
 1. Schedule/dispatch/call orchestration path for layer execution
-2. Target-branch push path for worker sync
-3. Implementer-branch push path for PR metadata synchronization
-4. Worker-branch pull_request path for doctor validation and auto-merge enablement
+2. Implementer-branch push path for PR metadata synchronization
+3. Worker-branch pull_request path for doctor validation and auto-merge enablement
 
 Layer orchestration sequence remains narrator → schedule check → innovators/observers → decider → planner → implementer.
 
@@ -69,7 +68,7 @@ Repository secrets/variables referenced by the workflow kit:
 |------|------|----------|----------|
 | `JULES_API_KEY` | Secret | API key for Jules service | (required) |
 | `JLO_BOT_TOKEN` | Secret | GitHub PAT for checkout, push, and merge operations | (required) |
-| `JULES_LINKED_GH_TOKEN` | Secret | GitHub token for implementer PR metadata processing | (required) |
+| `JULES_LINKED_GH_PAT` | Secret | GitHub token for implementer PR metadata processing | (required) |
 | `JLO_PAUSED` | Variable | Set `true` to skip scheduled runs | `false` |
 
 Branch values (`target_branch`, `worker_branch`) are rendered from `.jlo/config.toml` into workflow YAML at generation time.

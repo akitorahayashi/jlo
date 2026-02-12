@@ -1,8 +1,8 @@
 # Jules Agent Orchestration
 #
-# Orchestrates sequential execution and PR event handling from a single workflow.
-# Layer-phase orchestration, metadata synchronization, and auto-merge delegation
-# are command-driven through `jlo workflow`.
+# Orchestrates scheduled/dispatch layer execution in sequence.
+# Implementer PR metadata and auto-merge are delegated to dedicated workflows.
+# Layer-phase orchestration is command-driven through `jlo workflow`.
 
 name: Jules Scheduled Workflows
 
@@ -45,23 +45,13 @@ on:
         type: boolean
         default: false
 
-  push:
-    branches:
-      - '{{ target_branch }}'
-      - 'jules-implementer-*'
-
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches:
-      - '{{ worker_branch }}'
-
 permissions:
   contents: write
   issues: write
   pull-requests: write
 
 concurrency:
-  group: {{ gha_expr("(github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && 'jules-orchestration' || format('jules-events-{0}-{1}', github.event_name, github.ref_name)") }}
+  group: 'jules-orchestration'
   cancel-in-progress: false
 
 env:
@@ -74,170 +64,6 @@ env:
 {% import "workflows/jules-workflows/macros/wait_job.j2" as wait_macro %}
 {% import "workflows/jules-workflows/macros/run_job.j2" as run_macro %}
 jobs:
-  sync-worker-branch:
-    if: {{ gha_expr("github.event_name == 'push' && github.ref_name == '" ~ target_branch ~ "'") }}
-    runs-on: {{ runner }}
-    concurrency:
-      group: 'jules-sync-{{ worker_branch }}'
-      cancel-in-progress: false
-    steps:
-      - name: Validate branch variables
-        run: |
-          set -euo pipefail
-          if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
-            echo "::error::JLO_TARGET_BRANCH is required."
-            exit 1
-          fi
-          if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
-            echo "::error::JULES_WORKER_BRANCH is required."
-            exit 1
-          fi
-
-      - uses: actions/checkout@v4
-        with:
-          ref: '{{ target_branch }}'
-          fetch-depth: 0
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Ensure worker branch exists
-        run: |
-          set -euo pipefail
-          if git ls-remote --exit-code --heads origin "${JULES_WORKER_BRANCH}" >/dev/null 2>&1; then
-            git fetch origin "${JULES_WORKER_BRANCH}"
-            git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JULES_WORKER_BRANCH}"
-          else
-            git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JLO_TARGET_BRANCH}"
-          fi
-
-      - name: Merge target branch into worker
-        run: |
-          set -euo pipefail
-          git fetch origin "$JLO_TARGET_BRANCH"
-          # Merge control branch, preferring control-plane code changes.
-          git merge "origin/$JLO_TARGET_BRANCH" --no-edit -X theirs --allow-unrelated-histories || {
-            # On conflict, preserve runtime plane from the worker branch.
-            git checkout --ours .jules/
-            git add .jules/
-            if git diff --cached --quiet; then
-              echo "::error::Merge failed and no conflict resolution changes were staged."
-              exit 1
-            fi
-            git commit --no-edit
-          }
-
-      - name: Push changes
-        run: git push origin "${JULES_WORKER_BRANCH}"
-
-  process-implementer-pr-metadata:
-    if: {{ gha_expr("github.event_name == 'push' && startsWith(github.ref_name, 'jules-implementer-')") }}
-    runs-on: {{ runner }}
-    concurrency:
-      group: {{ gha_expr("format('jules-implementer-pr-{0}', github.ref_name)") }}
-      cancel-in-progress: true
-    steps:
-      - name: Validate branch variables
-        run: |
-          set -euo pipefail
-          if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
-            echo "::error::JLO_TARGET_BRANCH is required."
-            exit 1
-          fi
-          if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
-            echo "::error::JULES_WORKER_BRANCH is required."
-            exit 1
-          fi
-
-      - uses: actions/checkout@v4
-        with:
-          # Label definitions and contracts are read from the worker branch.
-          ref: '{{ worker_branch }}'
-          fetch-depth: 1
-          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-
-      - name: Discover PR number
-        id: discover
-        env:
-          GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-          BRANCH_NAME: {{ gha_expr("github.ref_name") }}
-          REPO: {{ gha_expr("github.repository") }}
-        run: |
-          set -euo pipefail
-          PR_NUMBER=""
-          ATTEMPTS=24
-          for _ in $(seq 1 "$ATTEMPTS"); do
-            PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --repo "$REPO" --json number -q '.[0].number')
-            if [ -n "$PR_NUMBER" ]; then
-              break
-            fi
-            sleep 5
-          done
-          if [ -z "$PR_NUMBER" ]; then
-            echo "::notice::No PR found yet for branch $BRANCH_NAME. Skipping metadata sync."
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "found=true" >> "$GITHUB_OUTPUT"
-
-      - name: Install jlo
-        if: steps.discover.outputs.found == 'true'
-        uses: ./.github/actions/install-jlo
-
-      - name: Process PR metadata
-        if: steps.discover.outputs.found == 'true'
-        env:
-          GH_TOKEN: {{ gha_expr("secrets.JULES_LINKED_GH_TOKEN") }}
-        run: |
-          set -euo pipefail
-          jlo workflow gh pr process {{ gha_expr("steps.discover.outputs.pr_number") }} --mode metadata --fail-on-error
-
-  validate-and-automerge:
-    if: {{ gha_expr("github.event_name == 'pull_request' && github.base_ref == '" ~ worker_branch ~ "'") }}
-    runs-on: {{ runner }}
-    concurrency:
-      group: {{ gha_expr("format('jules-automerge-pr-{0}', github.event.pull_request.number)") }}
-      cancel-in-progress: false
-    steps:
-      - name: Validate branch variables
-        run: |
-          set -euo pipefail
-          if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
-            echo "::error::JLO_TARGET_BRANCH is required."
-            exit 1
-          fi
-          if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
-            echo "::error::JULES_WORKER_BRANCH is required."
-            exit 1
-          fi
-
-      - uses: actions/checkout@v4
-        with:
-          ref: {{ gha_expr("github.head_ref") }}
-          fetch-depth: 0
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Validate with doctor
-        run: |
-          echo "::group::Doctor check"
-          jlo workflow doctor
-          echo "::endgroup::"
-
-      - name: Process PR auto-merge
-        env:
-          GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-        run: |
-          set -euo pipefail
-          jlo workflow gh pr process {{ gha_expr("github.event.pull_request.number") }} \
-            --mode automerge \
-            --retry-attempts 12 \
-            --retry-delay-seconds 10 \
-            --fail-on-error
-
   # ============================================================
   # Phase 0: Bootstrap runtime workspace on worker branch
   # ============================================================

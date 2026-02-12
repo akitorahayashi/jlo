@@ -8,8 +8,7 @@ fn automerge_path_delegates_policy_to_jlo_process_command() {
     ctx.init_remote();
 
     let root = ctx.work_dir();
-    let workflow =
-        fs::read_to_string(root.join(".github/workflows/jules-scheduled-workflows.yml")).unwrap();
+    let workflow = fs::read_to_string(root.join(".github/workflows/jules-automerge.yml")).unwrap();
 
     assert!(workflow.contains("validate-and-automerge:"));
     assert!(workflow.contains("jlo workflow gh pr process"));
@@ -22,7 +21,9 @@ fn automerge_path_delegates_policy_to_jlo_process_command() {
     assert!(!workflow.contains("Auto-merge transient GitHub state detected"));
 
     assert!(
-        !root.join(".github/workflows/jules-automerge.yml").exists(),
-        "standalone automerge workflow should not be installed"
+        !fs::read_to_string(root.join(".github/workflows/jules-scheduled-workflows.yml"))
+            .unwrap()
+            .contains("validate-and-automerge:"),
+        "scheduled workflow should not inline automerge job"
     );
 }
