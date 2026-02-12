@@ -166,27 +166,57 @@ max_parallel = 0
     }
 
     impl GitPort for MockGitPort {
-        fn get_head_sha(&self) -> Result<String, AppError> { Ok("".into()) }
-        fn get_current_branch(&self) -> Result<String, AppError> { Ok("".into()) }
-        fn commit_exists(&self, _sha: &str) -> bool { true }
-        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> { Ok("".into()) }
-        fn has_changes(&self, _from: &str, _to: &str, _pathspec: &[&str]) -> Result<bool, AppError> { Ok(false) }
+        fn get_head_sha(&self) -> Result<String, AppError> {
+            Ok("".into())
+        }
+        fn get_current_branch(&self) -> Result<String, AppError> {
+            Ok("".into())
+        }
+        fn commit_exists(&self, _sha: &str) -> bool {
+            true
+        }
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
+            Ok("".into())
+        }
+        fn has_changes(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<bool, AppError> {
+            Ok(false)
+        }
         fn run_command(&self, args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
             if self.fail {
                 return Err(AppError::InternalError("Mock git failure".into()));
             }
-            if args.len() >= 3 && args[0] == "remote" && args[1] == "get-url" && args[2] == "origin" {
-                 if let Some(ref url) = self.remote_url {
+            if args.len() >= 3
+                && args[0] == "remote"
+                && args[1] == "get-url"
+                && args[2] == "origin"
+            {
+                #[allow(clippy::collapsible_if)]
+                if let Some(ref url) = self.remote_url {
                     return Ok(url.clone());
                 }
             }
             Ok("".into())
         }
-        fn checkout_branch(&self, _branch: &str, _create: bool) -> Result<(), AppError> { Ok(()) }
-        fn push_branch(&self, _branch: &str, _force: bool) -> Result<(), AppError> { Ok(()) }
-        fn commit_files(&self, _message: &str, _files: &[&Path]) -> Result<String, AppError> { Ok("".into()) }
-        fn fetch(&self, _remote: &str) -> Result<(), AppError> { Ok(()) }
-        fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> { Ok(true) }
+        fn checkout_branch(&self, _branch: &str, _create: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn push_branch(&self, _branch: &str, _force: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn commit_files(&self, _message: &str, _files: &[&Path]) -> Result<String, AppError> {
+            Ok("".into())
+        }
+        fn fetch(&self, _remote: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> {
+            Ok(true)
+        }
     }
 
     struct EnvVarGuard {
@@ -256,10 +286,7 @@ max_parallel = 0
     #[serial]
     fn detects_from_env_var_when_git_fails() {
         let _guard = EnvVarGuard::set("GITHUB_REPOSITORY", "env-owner/env-repo");
-        let git = MockGitPort {
-            remote_url: None,
-            fail: true,
-        };
+        let git = MockGitPort { remote_url: None, fail: true };
         let result = detect_repository_source(&git).expect("should succeed from env");
         assert_eq!(result, "sources/github/env-owner/env-repo");
     }
@@ -268,10 +295,7 @@ max_parallel = 0
     #[serial]
     fn fails_when_both_fail() {
         let _guard = EnvVarGuard::remove("GITHUB_REPOSITORY");
-        let git = MockGitPort {
-            remote_url: None,
-            fail: true,
-        };
+        let git = MockGitPort { remote_url: None, fail: true };
         let result = detect_repository_source(&git);
         assert!(result.is_err());
         assert!(matches!(result, Err(AppError::RepositoryDetectionFailed)));

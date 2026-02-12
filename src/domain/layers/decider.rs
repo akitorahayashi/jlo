@@ -503,16 +503,41 @@ mod tests {
     }
 
     impl GitPort for FakeGit {
-        fn get_head_sha(&self) -> Result<String, AppError> { Ok("abc123".into()) }
-        fn get_current_branch(&self) -> Result<String, AppError> { Ok("jules".into()) }
-        fn commit_exists(&self, _sha: &str) -> bool { true }
-        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> { Ok("parent".into()) }
-        fn has_changes(&self, _from: &str, _to: &str, _pathspec: &[&str]) -> Result<bool, AppError> { Ok(false) }
-        fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> { Ok(String::new()) }
-        fn fetch(&self, _remote: &str) -> Result<(), AppError> { Ok(()) }
-        fn checkout_branch(&self, _name: &str, _create: bool) -> Result<(), AppError> { Ok(()) }
-        fn push_branch(&self, _name: &str, _force: bool) -> Result<(), AppError> { Ok(()) }
-        fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> { Ok(true) }
+        fn get_head_sha(&self) -> Result<String, AppError> {
+            Ok("abc123".into())
+        }
+        fn get_current_branch(&self) -> Result<String, AppError> {
+            Ok("jules".into())
+        }
+        fn commit_exists(&self, _sha: &str) -> bool {
+            true
+        }
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
+            Ok("parent".into())
+        }
+        fn has_changes(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<bool, AppError> {
+            Ok(false)
+        }
+        fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
+            Ok(String::new())
+        }
+        fn fetch(&self, _remote: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn checkout_branch(&self, _name: &str, _create: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn push_branch(&self, _name: &str, _force: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> {
+            Ok(true)
+        }
         fn commit_files(&self, _msg: &str, files: &[&Path]) -> Result<String, AppError> {
             let mut committed = self.committed_files.lock().unwrap();
             for f in files {
@@ -539,22 +564,59 @@ mod tests {
                 base: base.to_string(),
             })
         }
-        fn close_pull_request(&self, _pr_number: u64) -> Result<(), AppError> { Ok(()) }
-        fn delete_branch(&self, _branch: &str) -> Result<(), AppError> { Ok(()) }
-        fn create_issue(&self, _title: &str, _body: &str, _labels: &[&str]) -> Result<crate::ports::IssueInfo, AppError> {
+        fn close_pull_request(&self, _pr_number: u64) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn delete_branch(&self, _branch: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn create_issue(
+            &self,
+            _title: &str,
+            _body: &str,
+            _labels: &[&str],
+        ) -> Result<crate::ports::IssueInfo, AppError> {
             Ok(crate::ports::IssueInfo { number: 1, url: "https://example.com/issues/1".into() })
         }
-        fn get_pr_detail(&self, _pr_number: u64) -> Result<crate::ports::PullRequestDetail, AppError> {
-             Ok(crate::ports::PullRequestDetail { number: 101, head: String::new(), base: String::new(), is_draft: false, auto_merge_enabled: false })
+        fn get_pr_detail(
+            &self,
+            _pr_number: u64,
+        ) -> Result<crate::ports::PullRequestDetail, AppError> {
+            Ok(crate::ports::PullRequestDetail {
+                number: 101,
+                head: String::new(),
+                base: String::new(),
+                is_draft: false,
+                auto_merge_enabled: false,
+            })
         }
-        fn list_pr_comments(&self, _pr_number: u64) -> Result<Vec<crate::ports::PrComment>, AppError> { Ok(Vec::new()) }
-        fn create_pr_comment(&self, _pr_number: u64, _body: &str) -> Result<u64, AppError> { Ok(1) }
-        fn update_pr_comment(&self, _comment_id: u64, _body: &str) -> Result<(), AppError> { Ok(()) }
-        fn ensure_label(&self, _label: &str, _color: Option<&str>) -> Result<(), AppError> { Ok(()) }
-        fn add_label_to_pr(&self, _pr_number: u64, _label: &str) -> Result<(), AppError> { Ok(()) }
-        fn add_label_to_issue(&self, _issue_number: u64, _label: &str) -> Result<(), AppError> { Ok(()) }
-        fn enable_automerge(&self, _pr_number: u64) -> Result<(), AppError> { Ok(()) }
-        fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> { Ok(Vec::new()) }
+        fn list_pr_comments(
+            &self,
+            _pr_number: u64,
+        ) -> Result<Vec<crate::ports::PrComment>, AppError> {
+            Ok(Vec::new())
+        }
+        fn create_pr_comment(&self, _pr_number: u64, _body: &str) -> Result<u64, AppError> {
+            Ok(1)
+        }
+        fn update_pr_comment(&self, _comment_id: u64, _body: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn ensure_label(&self, _label: &str, _color: Option<&str>) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn add_label_to_pr(&self, _pr_number: u64, _label: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn add_label_to_issue(&self, _issue_number: u64, _label: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn enable_automerge(&self, _pr_number: u64) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> {
+            Ok(Vec::new())
+        }
     }
 
     fn make_config() -> MockConfig {
@@ -578,8 +640,18 @@ mod tests {
         let config = make_config();
 
         // Create 2 mock pending events
-        workspace.write_file(".jules/exchange/events/pending/mock-mock-test-decider-event1.yml", "id: event1\nsummary: s1").unwrap();
-        workspace.write_file(".jules/exchange/events/pending/mock-mock-test-decider-event2.yml", "id: event2\nsummary: s2").unwrap();
+        workspace
+            .write_file(
+                ".jules/exchange/events/pending/mock-mock-test-decider-event1.yml",
+                "id: event1\nsummary: s1",
+            )
+            .unwrap();
+        workspace
+            .write_file(
+                ".jules/exchange/events/pending/mock-mock-test-decider-event2.yml",
+                "id: event2\nsummary: s2",
+            )
+            .unwrap();
 
         let options = RunOptions {
             layer: Layer::Decider,
@@ -600,15 +672,27 @@ mod tests {
         // Verify requirements created (planner and implementer)
         let req_dir = ".jules/exchange/requirements";
         let req_files = workspace.list_dir(req_dir).unwrap();
-        let planner_req = req_files.iter().find(|p| p.to_string_lossy().contains("mock-planner-mock-test-decider")).expect("planner req missing");
-        let impl_req = req_files.iter().find(|p| p.to_string_lossy().contains("mock-impl-mock-test-decider")).expect("implementer req missing");
+        let planner_req = req_files
+            .iter()
+            .find(|p| p.to_string_lossy().contains("mock-planner-mock-test-decider"))
+            .expect("planner req missing");
+        let impl_req = req_files
+            .iter()
+            .find(|p| p.to_string_lossy().contains("mock-impl-mock-test-decider"))
+            .expect("implementer req missing");
 
         assert!(workspace.file_exists(&planner_req.to_string_lossy()));
         assert!(workspace.file_exists(&impl_req.to_string_lossy()));
 
         // Verify events moved to decided
-        assert!(!workspace.file_exists(".jules/exchange/events/pending/mock-mock-test-decider-event1.yml"));
-        assert!(workspace.file_exists(".jules/exchange/events/decided/mock-mock-test-decider-event1.yml"));
+        assert!(
+            !workspace
+                .file_exists(".jules/exchange/events/pending/mock-mock-test-decider-event1.yml")
+        );
+        assert!(
+            workspace
+                .file_exists(".jules/exchange/events/decided/mock-mock-test-decider-event1.yml")
+        );
     }
 
     #[test]
@@ -620,7 +704,12 @@ mod tests {
         let config = make_config();
 
         // Only 1 event
-        workspace.write_file(".jules/exchange/events/pending/mock-mock-test-decider-event1.yml", "id: event1").unwrap();
+        workspace
+            .write_file(
+                ".jules/exchange/events/pending/mock-mock-test-decider-event1.yml",
+                "id: event1",
+            )
+            .unwrap();
 
         let options = RunOptions {
             layer: Layer::Decider,
@@ -634,6 +723,8 @@ mod tests {
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
         assert!(result.is_err());
-        assert!(matches!(result, Err(AppError::Validation(msg)) if msg.contains("requires at least 2 decided events")));
+        assert!(
+            matches!(result, Err(AppError::Validation(msg)) if msg.contains("requires at least 2 decided events"))
+        );
     }
 }

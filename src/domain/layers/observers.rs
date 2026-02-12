@@ -67,6 +67,7 @@ where
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn execute_real<G, W>(
     jules_path: &Path,
     prompt_preview: bool,
