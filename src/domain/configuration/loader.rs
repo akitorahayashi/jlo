@@ -1,23 +1,52 @@
 //! Run configuration loading and repository detection.
 
-use std::fs;
 use std::path::Path;
 
 use crate::domain::workspace::paths::jlo;
-use crate::domain::{AppError, RunConfig};
+use crate::domain::{AppError, IoErrorKind, RunConfig, Schedule};
+use crate::ports::WorkspaceStore;
+
+/// Load the root schedule from `.jlo/scheduled.toml`.
+pub fn load_schedule(store: &impl WorkspaceStore) -> Result<Schedule, AppError> {
+    let path = store.jlo_path().join("scheduled.toml");
+    let path_str = path.to_string_lossy();
+
+    let content = store.read_file(&path_str).map_err(|err| {
+        if matches!(err, AppError::Io { kind: IoErrorKind::NotFound, .. }) {
+            AppError::ScheduleConfigMissing(path.display().to_string())
+        } else {
+            err
+        }
+    })?;
+    Ok(Schedule::parse_toml(&content)?)
+}
 
 /// Load and parse the run configuration.
-pub fn load_config(jules_path: &Path) -> Result<RunConfig, AppError> {
+pub fn load_config<W: WorkspaceStore>(
+    jules_path: &Path,
+    workspace: &W,
+) -> Result<RunConfig, AppError> {
     // jules_path is typically .jules/
     // We need to look in .jlo/config.toml which is a sibling of .jules/
-    let root = jules_path.parent().unwrap_or(Path::new("."));
+    let root = jules_path.parent().ok_or_else(|| {
+        AppError::Validation(format!(
+            "Invalid .jules path (missing parent): {}",
+            jules_path.display()
+        ))
+    })?;
     let config_path = jlo::config(root);
+    let config_path_str = config_path.to_str().ok_or_else(|| {
+        AppError::Validation(format!(
+            "Config path contains invalid unicode: {}",
+            config_path.display()
+        ))
+    })?;
 
-    if !config_path.exists() {
+    if !workspace.file_exists(config_path_str) {
         return Err(AppError::RunConfigMissing);
     }
 
-    let content = fs::read_to_string(&config_path)?;
+    let content = workspace.read_file(config_path_str)?;
     parse_config_content(&content)
 }
 
@@ -119,5 +148,16 @@ retry_delay_ms = 250
 
         assert_eq!(config.run.default_branch, "main");
         assert!(config.run.parallel);
+    }
+
+    #[test]
+    fn run_config_validation_fails() {
+        let toml = r#"
+[run]
+max_parallel = 0
+"#;
+        let result = parse_config_content(toml);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(AppError::Validation(_))));
     }
 }
