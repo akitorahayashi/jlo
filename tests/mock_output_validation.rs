@@ -60,16 +60,27 @@ fn mock_decider_issue_file_passes_doctor() {
     fs::create_dir_all(&events_dir).expect("Failed to create events directory");
 
     // Event must have issue_id set when in decided state
-    let event_id = "evt001"; // 6 lowercase alphanumeric chars
-    let issue_id = "iss001"; // 6 lowercase alphanumeric chars
-    let event_file = events_dir.join(format!("{}.yml", event_id));
+    let impl_event_id = "evt001"; // 6 lowercase alphanumeric chars
+    let impl_issue_id = "iss001"; // 6 lowercase alphanumeric chars
+    let impl_event_file = events_dir.join(format!("{}.yml", impl_event_id));
     fs::write(
-        &event_file,
+        &impl_event_file,
         mock_event
-            .replace("mock01", event_id)
-            .replace("issue_id: \"\"", &format!("issue_id: \"{}\"", issue_id)),
+            .replace("mock01", impl_event_id)
+            .replace("issue_id: \"\"", &format!("issue_id: \"{}\"", impl_issue_id)),
     )
     .expect("Failed to write event file");
+
+    let planner_event_id = "evt002"; // 6 lowercase alphanumeric chars
+    let planner_issue_id = "pln001"; // 6 lowercase alphanumeric chars
+    let planner_event_file = events_dir.join(format!("{}.yml", planner_event_id));
+    fs::write(
+        &planner_event_file,
+        mock_event
+            .replace("mock01", planner_event_id)
+            .replace("issue_id: \"\"", &format!("issue_id: \"{}\"", planner_issue_id)),
+    )
+    .expect("Failed to write planner event file");
 
     // Copy mock requirement file to workspace - apply the same transformations as mock decider
     let mock_requirement = include_str!("../src/assets/mock/decider_requirement.yml");
@@ -81,7 +92,7 @@ fn mock_decider_issue_file_passes_doctor() {
     let impl_issue_file = requirements_dir.join("impl-issue.yml");
     fs::write(
         &impl_issue_file,
-        mock_requirement.replace("mock01", issue_id).replace("event1", event_id),
+        mock_requirement.replace("mock01", impl_issue_id).replace("event1", impl_event_id),
     )
     .expect("Failed to write impl requirement file");
 
@@ -90,8 +101,8 @@ fn mock_decider_issue_file_passes_doctor() {
     fs::write(
         &planner_issue_file,
         mock_requirement
-            .replace("mock01", "pln001")
-            .replace("event1", event_id)
+            .replace("mock01", planner_issue_id)
+            .replace("event1", planner_event_id)
             .replace(
                 "requires_deep_analysis: false",
                 "requires_deep_analysis: true\ndeep_analysis_reason: \"Mock issue requires architectural analysis\"",
