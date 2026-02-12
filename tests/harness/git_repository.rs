@@ -30,7 +30,11 @@ pub(crate) fn init_bare_repo(path: &Path) {
         .current_dir(path)
         .output()
         .expect("git init bare failed");
-    assert!(output.status.success(), "git init bare failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "git init bare failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 pub(crate) fn add_origin_remote(repo_dir: &Path, url: &str) {

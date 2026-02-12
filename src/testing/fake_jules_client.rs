@@ -1,7 +1,7 @@
-use std::sync::{Arc, Mutex};
 use crate::domain::AppError;
 use crate::domain::layers::strategy::JulesClientFactory;
 use crate::ports::{JulesClient, SessionRequest, SessionResponse};
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
 pub struct FakeJulesClient {

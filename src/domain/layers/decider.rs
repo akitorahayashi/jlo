@@ -605,15 +605,8 @@ mod tests {
         // Need prompt template
         workspace.write_file(".jules/roles/decider/decider_prompt.j2", "Decider Prompt").unwrap();
 
-        let result = execute_real(
-            &jules_path,
-            false,
-            None,
-            &config,
-            &git,
-            &workspace,
-            &client_factory,
-        );
+        let result =
+            execute_real(&jules_path, false, None, &config, &git, &workspace, &client_factory);
 
         if let Err(ref e) = result {
             println!("Error: {:?}", e);

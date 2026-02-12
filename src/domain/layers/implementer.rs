@@ -543,7 +543,9 @@ mod tests {
         // Also need task definition
         workspace.write_file(".jules/roles/implementer/tasks/bugs.yml", "Fix the bug").unwrap();
         // And prompt template
-        workspace.write_file(".jules/roles/implementer/implementer_prompt.j2", "Task: {{ task }}").unwrap();
+        workspace
+            .write_file(".jules/roles/implementer/implementer_prompt.j2", "Task: {{ task }}")
+            .unwrap();
 
         let result = execute_real(
             &jules_path,
@@ -582,7 +584,9 @@ mod tests {
         let req_path = PathBuf::from(".jules/exchange/requirements/req.yml");
         workspace.write_file(req_path.to_str().unwrap(), "id: abc123\nlabel: bugs\n").unwrap();
         workspace.write_file(".jules/roles/implementer/tasks/bugs.yml", "Fix the bug").unwrap();
-        workspace.write_file(".jules/roles/implementer/implementer_prompt.j2", "Task: {{ task }}").unwrap();
+        workspace
+            .write_file(".jules/roles/implementer/implementer_prompt.j2", "Task: {{ task }}")
+            .unwrap();
 
         let result = execute_real(
             &jules_path,

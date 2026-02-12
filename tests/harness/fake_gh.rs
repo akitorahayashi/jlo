@@ -62,15 +62,12 @@ exit 0
 
         fs::write(&gh_script_path, script_content).expect("Failed to write gh script");
 
-        let mut perms = fs::metadata(&gh_script_path).expect("Failed to get metadata").permissions();
+        let mut perms =
+            fs::metadata(&gh_script_path).expect("Failed to get metadata").permissions();
         perms.set_mode(0o755);
         fs::set_permissions(&gh_script_path, perms).expect("Failed to set permissions");
 
-        Self {
-            root,
-            bin_dir,
-            log_file,
-        }
+        Self { root, bin_dir, log_file }
     }
 
     pub fn get_log(&self) -> String {
