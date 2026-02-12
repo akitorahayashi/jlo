@@ -19,7 +19,7 @@ jobs:
     if: {{ gha_expr("github.base_ref == '" ~ worker_branch ~ "'") }}
     runs-on: {{ runner }}
     concurrency:
-      group: 'jules-automerge-{{ worker_branch }}'
+      group: {{ gha_expr("format('jules-automerge-pr-{0}', github.event.pull_request.number)") }}
       cancel-in-progress: false
     steps:
       - name: Validate branch variables
