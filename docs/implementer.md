@@ -47,7 +47,7 @@ jlo run implementer .jules/exchange/requirements/<requirement-id>.yml
 
 ## Tasks
 
-The Implementer's prompt (`implementer_prompt.j2`) guides the agent through the implementation steps.
+The Implementer's prompt (`implementer_prompt.j2`) receives the task description directly from the requirement file it is executing. This guides the agent through the implementation steps.
 
 ## Mock Mode
 
@@ -61,5 +61,5 @@ This creates a dummy PR with the correct branch name but no actual code changes.
 
 ## Troubleshooting
 
-- **Merge Conflicts**: If the base branch has moved significantly, the Implementer might encounter conflicts. Rebase the `jules` branch or the PR branch.
+- **Merge Conflicts**: If the base branch has moved significantly, the Implementer might encounter conflicts. Rebase the PR branch onto `JLO_TARGET_BRANCH` (e.g. `main`).
 - **Failed Tests**: The Implementer attempts to fix broken tests, but complex failures may require human intervention.

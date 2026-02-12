@@ -50,12 +50,12 @@ jlo run narrator
 
 ## Tasks
 
-The Narrator performs specific tasks defined in `.jules/roles/narrator/tasks/`:
+The Narrator performs specific tasks defined in `.jules/roles/narrator/tasks/`. The main prompt, `narrator_prompt.j2`, dynamically includes a task based on the run mode:
 
 - `bootstrap_summary`: Used when no previous history exists.
 - `overwrite_summary`: Used to update the existing summary with new changes (incremental).
 
 ## Troubleshooting
 
-- **No Changes Detected**: If no changes occurred outside of `.jules/` or `.jlo/`, the Narrator may skip execution.
+- **No Changes Detected**: If no changes occurred outside `.jules/` or `.jlo/`, the Narrator may skip execution.
 - **Cursor Drift**: If the git history is rewritten (rebase), the Narrator might lose its place. In this case, deleting `.jules/exchange/changes.yml` forces a bootstrap run.

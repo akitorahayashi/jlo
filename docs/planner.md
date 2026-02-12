@@ -47,7 +47,7 @@ Alternatively, the automated workflow finds requirements needing analysis and ru
 
 ## Tasks
 
-The Planner uses tasks defined in `.jules/roles/planner/tasks/` (if any specific tasks are defined beyond the main prompt).
+The Planner uses tasks defined in `.jules/roles/planner/tasks/` to structure its reasoning. The main prompt, `planner_prompt.j2`, includes these tasks to guide the agent.
 
 ## Troubleshooting
 

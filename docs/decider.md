@@ -54,7 +54,7 @@ The requirement output follows the schema defined in `.jules/roles/decider/schem
 
 ## Tasks
 
-The Decider uses tasks defined in `.jules/roles/decider/tasks/` to structure its reasoning.
+The Decider uses tasks defined in `.jules/roles/decider/tasks/` to structure its reasoning. The main prompt, `decider_prompt.j2`, includes these tasks to guide the agent.
 
 ## Troubleshooting
 
