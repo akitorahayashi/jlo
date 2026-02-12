@@ -416,32 +416,26 @@ fn workflow_templates_validate_structure() {
 
     // Validate root keys
     let root = workflow.as_mapping().expect("Root should be a mapping");
-    assert!(root.contains_key(serde_yaml::Value::String("name".to_string())), "Missing 'name'");
-    assert!(root.contains_key(serde_yaml::Value::String("on".to_string())), "Missing 'on'");
-    assert!(root.contains_key(serde_yaml::Value::String("jobs".to_string())), "Missing 'jobs'");
-    assert!(
-        root.contains_key(serde_yaml::Value::String("permissions".to_string())),
-        "Missing 'permissions'"
-    );
+    assert!(root.contains_key(serde_yaml::Value::from("name")), "Missing 'name'");
+    assert!(root.contains_key(serde_yaml::Value::from("on")), "Missing 'on'");
+    assert!(root.contains_key(serde_yaml::Value::from("jobs")), "Missing 'jobs'");
+    assert!(root.contains_key(serde_yaml::Value::from("permissions")), "Missing 'permissions'");
 
     // Validate 'on' triggers
     let on = root
-        .get(serde_yaml::Value::String("on".to_string()))
+        .get(serde_yaml::Value::from("on"))
         .unwrap()
         .as_mapping()
         .expect("'on' should be mapping");
+    assert!(on.contains_key(serde_yaml::Value::from("schedule")), "Missing 'schedule' trigger");
     assert!(
-        on.contains_key(serde_yaml::Value::String("schedule".to_string())),
-        "Missing 'schedule' trigger"
-    );
-    assert!(
-        on.contains_key(serde_yaml::Value::String("workflow_dispatch".to_string())),
+        on.contains_key(serde_yaml::Value::from("workflow_dispatch")),
         "Missing 'workflow_dispatch' trigger"
     );
 
     // Validate 'jobs'
     let jobs = root
-        .get(serde_yaml::Value::String("jobs".to_string()))
+        .get(serde_yaml::Value::from("jobs"))
         .unwrap()
         .as_mapping()
         .expect("'jobs' should be mapping");
@@ -456,11 +450,7 @@ fn workflow_templates_validate_structure() {
         "run-implementer",
     ];
     for job in required_jobs {
-        assert!(
-            jobs.contains_key(serde_yaml::Value::String(job.to_string())),
-            "Missing job '{}'",
-            job
-        );
+        assert!(jobs.contains_key(serde_yaml::Value::from(job)), "Missing job '{}'", job);
     }
 }
 

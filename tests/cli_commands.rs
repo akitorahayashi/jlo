@@ -186,6 +186,11 @@ fn deinit_removes_workflows_and_branch() {
 
     let jlo_path = ctx.work_dir().join(".jlo");
     assert!(!jlo_path.exists(), ".jlo/ should be removed after deinit");
+
+    let workflow_path = ctx.work_dir().join(".github/workflows/jules-workflows.yml");
+    let action_path = ctx.work_dir().join(".github/actions/install-jlo/action.yml");
+    assert!(!workflow_path.exists(), "workflow kit file should be removed");
+    assert!(!action_path.exists(), "workflow action should be removed");
 }
 
 #[test]
