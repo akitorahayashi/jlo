@@ -86,4 +86,3 @@ interface:
     - Ensure frontmatter is present.
     - Define clear Core Objective and Output Contract.
     - Explicitly define Creation and Review workflows if applicable.
-4.  Verify the skill by running it against a test case.
