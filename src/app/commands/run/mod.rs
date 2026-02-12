@@ -323,6 +323,40 @@ mod tests {
         issue_id: String,
     }
 
+    struct EnvVarGuard {
+        key: String,
+        original: Option<std::ffi::OsString>,
+    }
+
+    impl EnvVarGuard {
+        fn set<K: Into<String>, V: AsRef<std::ffi::OsStr>>(key: K, value: V) -> Self {
+            let key = key.into();
+            let original = std::env::var_os(&key);
+            // SAFETY: This helper is used only from serial tests in this module.
+            // No concurrent environment access occurs while the guard is alive.
+            unsafe {
+                std::env::set_var(&key, value);
+            }
+            Self { key, original }
+        }
+    }
+
+    impl Drop for EnvVarGuard {
+        fn drop(&mut self) {
+            if let Some(original) = self.original.as_ref() {
+                // SAFETY: Drop runs in the same serial-test context as `set`.
+                unsafe {
+                    std::env::set_var(&self.key, original);
+                }
+            } else {
+                // SAFETY: Drop runs in the same serial-test context as `set`.
+                unsafe {
+                    std::env::remove_var(&self.key);
+                }
+            }
+        }
+    }
+
     fn write_mock_workspace(root: &Path, mock_tag: &str) {
         fs::create_dir_all(root.join(".jules/exchange/events/pending"))
             .expect("create pending dir");
@@ -406,10 +440,7 @@ roles = [
 
         write_mock_workspace(&root, mock_tag);
 
-        // SAFETY: This test is serial; env var updates are scoped to this test.
-        unsafe {
-            std::env::set_var("JULES_MOCK_TAG", mock_tag);
-        }
+        let _mock_tag_env = EnvVarGuard::set("JULES_MOCK_TAG", mock_tag);
 
         let workspace = FilesystemWorkspaceStore::new(root.clone());
         let github = TestGitHub::new();
@@ -563,10 +594,5 @@ roles = [
             Some("jules"),
             "cleanup push should target restored exchange branch"
         );
-
-        // SAFETY: This test is serial; env var updates are scoped to this test.
-        unsafe {
-            std::env::remove_var("JULES_MOCK_TAG");
-        }
     }
 }
