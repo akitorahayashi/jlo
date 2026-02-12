@@ -149,4 +149,15 @@ retry_delay_ms = 250
         assert_eq!(config.run.default_branch, "main");
         assert!(config.run.parallel);
     }
+
+    #[test]
+    fn run_config_validation_fails() {
+        let toml = r#"
+[run]
+max_parallel = 0
+"#;
+        let result = parse_config_content(toml);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(AppError::Validation(_))));
+    }
 }
