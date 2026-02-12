@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "d1r1ft"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "taxonomy"
+confidence: "medium"
+
+# Content
+title: "Structural Drift: Layer vs. Role Naming"
+statement: |
+  The source code and scaffold templates use "layers" as the primary organizational unit (e.g., `src/assets/scaffold/jules/layers`), but the deployed scaffold organizes by "roles" (`.jules/roles`). This creates a mental model mismatch for developers working across the boundary.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/assets/scaffold/jules/layers"
+    loc:
+      - "1"
+    note: "Source directory uses `layers`"
+  - path: ".jules/roles"
+    loc:
+      - "1"
+    note: "Deployed directory uses `roles`"
+  - path: "src/domain/layers/mod.rs"
+    loc:
+      - "1-10"
+    note: "Source code uses `layers` module"
