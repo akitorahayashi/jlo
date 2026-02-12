@@ -57,22 +57,25 @@ where
             options.branch.as_deref(),
             options.requirement.as_deref(),
             config,
+            git,
             workspace,
             client_factory,
         )
     }
 }
 
-fn execute_real<W>(
+fn execute_real<G, W>(
     jules_path: &Path,
     prompt_preview: bool,
     branch: Option<&str>,
     requirement_path: Option<&Path>,
     config: &RunConfig,
+    git: &G,
     workspace: &W,
     client_factory: &dyn JulesClientFactory,
 ) -> Result<RunResult, AppError>
 where
+    G: GitPort + ?Sized,
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     let requirement_path = requirement_path.ok_or_else(|| {
@@ -95,7 +98,7 @@ where
         });
     }
 
-    let source = detect_repository_source()?;
+    let source = detect_repository_source(git)?;
     let client = client_factory.create()?;
 
     let session_id = execute_session(
@@ -360,4 +363,144 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
     }
 
     Ok((label, id))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testing::MockWorkspaceStore;
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+
+    struct FakeGit {
+        committed_files: Mutex<Vec<PathBuf>>,
+    }
+
+    impl FakeGit {
+        fn new() -> Self {
+            Self { committed_files: Mutex::new(vec![]) }
+        }
+    }
+
+    impl GitPort for FakeGit {
+        fn get_head_sha(&self) -> Result<String, AppError> { Ok("abc123".into()) }
+        fn get_current_branch(&self) -> Result<String, AppError> { Ok("jules".into()) }
+        fn commit_exists(&self, _sha: &str) -> bool { true }
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> { Ok("parent".into()) }
+        fn has_changes(&self, _from: &str, _to: &str, _pathspec: &[&str]) -> Result<bool, AppError> { Ok(false) }
+        fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> { Ok(String::new()) }
+        fn fetch(&self, _remote: &str) -> Result<(), AppError> { Ok(()) }
+        fn checkout_branch(&self, _name: &str, _create: bool) -> Result<(), AppError> { Ok(()) }
+        fn push_branch(&self, _name: &str, _force: bool) -> Result<(), AppError> { Ok(()) }
+        fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> { Ok(true) }
+        fn commit_files(&self, _msg: &str, files: &[&Path]) -> Result<String, AppError> {
+            let mut committed = self.committed_files.lock().unwrap();
+            for f in files {
+                committed.push(f.to_path_buf());
+            }
+            Ok("fake-sha".into())
+        }
+    }
+
+    struct FakeGitHub;
+
+    impl GitHubPort for FakeGitHub {
+        fn create_pull_request(
+            &self,
+            head: &str,
+            base: &str,
+            _title: &str,
+            _body: &str,
+        ) -> Result<crate::ports::PullRequestInfo, AppError> {
+            Ok(crate::ports::PullRequestInfo {
+                number: 202,
+                url: "https://example.com/pr/202".into(),
+                head: head.to_string(),
+                base: base.to_string(),
+            })
+        }
+        fn close_pull_request(&self, _pr_number: u64) -> Result<(), AppError> { Ok(()) }
+        fn delete_branch(&self, _branch: &str) -> Result<(), AppError> { Ok(()) }
+        fn create_issue(&self, _title: &str, _body: &str, _labels: &[&str]) -> Result<crate::ports::IssueInfo, AppError> {
+            Ok(crate::ports::IssueInfo { number: 1, url: "https://example.com/issues/1".into() })
+        }
+        fn get_pr_detail(&self, _pr_number: u64) -> Result<crate::ports::PullRequestDetail, AppError> {
+             Ok(crate::ports::PullRequestDetail { number: 202, head: String::new(), base: String::new(), is_draft: false, auto_merge_enabled: false })
+        }
+        fn list_pr_comments(&self, _pr_number: u64) -> Result<Vec<crate::ports::PrComment>, AppError> { Ok(Vec::new()) }
+        fn create_pr_comment(&self, _pr_number: u64, _body: &str) -> Result<u64, AppError> { Ok(1) }
+        fn update_pr_comment(&self, _comment_id: u64, _body: &str) -> Result<(), AppError> { Ok(()) }
+        fn ensure_label(&self, _label: &str, _color: Option<&str>) -> Result<(), AppError> { Ok(()) }
+        fn add_label_to_pr(&self, _pr_number: u64, _label: &str) -> Result<(), AppError> { Ok(()) }
+        fn add_label_to_issue(&self, _issue_number: u64, _label: &str) -> Result<(), AppError> { Ok(()) }
+        fn enable_automerge(&self, _pr_number: u64) -> Result<(), AppError> { Ok(()) }
+        fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> { Ok(Vec::new()) }
+    }
+
+    fn make_config() -> MockConfig {
+        let mut prefixes = HashMap::new();
+        prefixes.insert(Layer::Implementer, "jules-implementer-".to_string());
+        MockConfig {
+            mock_tag: "mock-test-impl".to_string(),
+            branch_prefixes: prefixes,
+            default_branch: "main".to_string(),
+            jules_branch: "jules".to_string(),
+            issue_labels: vec!["bugs".to_string()],
+        }
+    }
+
+    #[test]
+    fn mock_implementer_creates_pr_for_valid_requirement() {
+        let jules_path = PathBuf::from(".jules");
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let github = FakeGitHub;
+        let config = make_config();
+
+        let req_path = PathBuf::from(".jules/exchange/requirements/req.yml");
+        workspace.write_file(req_path.to_str().unwrap(), "id: abc123\nlabel: bugs\n").unwrap();
+
+        let options = RunOptions {
+            layer: Layer::Implementer,
+            role: None,
+            prompt_preview: false,
+            branch: None,
+            requirement: Some(req_path.clone()),
+            mock: true,
+            phase: None,
+        };
+
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        assert!(result.is_ok());
+        let output = result.unwrap();
+
+        assert!(output.mock_branch.starts_with("jules-implementer-bugs-abc123-"));
+        assert_eq!(output.mock_pr_number, 202);
+    }
+
+    #[test]
+    fn mock_implementer_fails_if_label_not_allowed() {
+        let jules_path = PathBuf::from(".jules");
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let github = FakeGitHub;
+        let config = make_config(); // Allows "bugs"
+
+        let req_path = PathBuf::from(".jules/exchange/requirements/req.yml");
+        workspace.write_file(req_path.to_str().unwrap(), "id: abc123\nlabel: features\n").unwrap(); // "features" not allowed
+
+        let options = RunOptions {
+            layer: Layer::Implementer,
+            role: None,
+            prompt_preview: false,
+            branch: None,
+            requirement: Some(req_path),
+            mock: true,
+            phase: None,
+        };
+
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(AppError::Validation(msg)) if msg.contains("not defined in github-labels.json")));
+    }
 }

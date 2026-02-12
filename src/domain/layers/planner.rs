@@ -55,22 +55,25 @@ where
             options.branch.as_deref(),
             options.requirement.as_deref(),
             config,
+            git,
             workspace,
             client_factory,
         )
     }
 }
 
-fn execute_real<W>(
+fn execute_real<G, W>(
     jules_path: &Path,
     prompt_preview: bool,
     branch: Option<&str>,
     requirement_path: Option<&Path>,
     config: &RunConfig,
+    git: &G,
     workspace: &W,
     client_factory: &dyn JulesClientFactory,
 ) -> Result<RunResult, AppError>
 where
+    G: GitPort + ?Sized,
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     let requirement_path = requirement_path.ok_or_else(|| {
@@ -98,7 +101,7 @@ where
         });
     }
 
-    let source = detect_repository_source()?;
+    let source = detect_repository_source(git)?;
     let client = client_factory.create()?;
 
     let session_id = execute_session(

@@ -60,22 +60,25 @@ where
             options.branch.as_deref(),
             options.role.as_deref(),
             config,
+            git,
             workspace,
             client_factory,
         )
     }
 }
 
-fn execute_real<W>(
+fn execute_real<G, W>(
     jules_path: &Path,
     prompt_preview: bool,
     branch: Option<&str>,
     role: Option<&str>,
     config: &RunConfig,
+    git: &G,
     workspace: &W,
     client_factory: &dyn JulesClientFactory,
 ) -> Result<RunResult, AppError>
 where
+    G: GitPort + ?Sized,
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     let role = role
@@ -103,7 +106,7 @@ where
         });
     }
 
-    let source = detect_repository_source()?;
+    let source = detect_repository_source(git)?;
     let assembled =
         assemble_observer_prompt(jules_path, role_id.as_str(), &bridge_task, workspace)?;
     let client = client_factory.create()?;

@@ -116,7 +116,7 @@ where
     }
 
     // Create session
-    let source = detect_repository_source()?;
+    let source = detect_repository_source(git)?;
     let client = client_factory.create()?;
 
     let request = SessionRequest {
