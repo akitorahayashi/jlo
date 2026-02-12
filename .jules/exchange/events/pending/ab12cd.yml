@@ -1,0 +1,25 @@
+schema_version: 1
+
+id: "ab12cd"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "consistency"
+confidence: "high"
+
+title: "Undocumented `phase` argument for innovators execution"
+statement: |
+  The `jlo run innovators` and `jlo workflow run` commands accept a `--phase` argument (creation or refinement) which is critical for innovator logic but is not documented in `README.md`.
+
+evidence:
+  - path: "src/app/cli/run.rs"
+    loc:
+      - "91"
+    note: "The `phase` argument is defined in the `RunLayer::Innovators` struct."
+  - path: "src/app/cli/workflow.rs"
+    loc:
+      - "20"
+    note: "The `phase` argument is defined in the `WorkflowCommands::Run` struct."
+  - path: "README.md"
+    loc:
+      - "120"
+    note: "The `jlo run innovators` command documentation does not mention the `--phase` flag."

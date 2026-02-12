@@ -1,0 +1,21 @@
+schema_version: 1
+
+id: "ij56kl"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "consistency"
+confidence: "high"
+
+title: "Undocumented `--cli` flag for `jlo update` command"
+statement: |
+  The `jlo update` command accepts a `--cli` flag to update the binary itself, but this flag is not documented in the `README.md` command table.
+
+evidence:
+  - path: "src/app/cli/mod.rs"
+    loc:
+      - "53"
+    note: "The `Update` variant defines the `cli` flag."
+  - path: "README.md"
+    loc:
+      - "20"
+    note: "The `jlo update` command description only mentions `--prompt-preview`."

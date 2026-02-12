@@ -1,0 +1,21 @@
+schema_version: 1
+
+id: "ef34gh"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "consistency"
+confidence: "high"
+
+title: "Undocumented `wf` alias for `jlo workflow` command"
+statement: |
+  The `jlo workflow` command has a `wf` alias defined in the code, but it is not listed in the command table in `README.md`.
+
+evidence:
+  - path: "src/app/cli/mod.rs"
+    loc:
+      - "84"
+    note: "The `Workflow` variant has `#[clap(visible_alias = \"wf\")]`."
+  - path: "README.md"
+    loc:
+      - "38"
+    note: "The `jlo workflow run` command description does not mention the `wf` alias."
