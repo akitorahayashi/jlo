@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: "data_arch"
+
+updated_at: "2026-02-12T21:37:00Z"
+
+goals:
+  - "Identify inefficient data transformations (Vec <-> Map conversions)"
+  - "Detect brittle path handling logic"
+  - "Flag inefficient file parsing for headers"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-12T21:37:00Z"
+    summary: "Initialized data_arch perspective"

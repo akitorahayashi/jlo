@@ -1,0 +1,19 @@
+schema_version: 1
+
+id: "darch1"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "data_arch"
+confidence: "high"
+
+title: "ScaffoldManifest uses Vec instead of Map"
+statement: |
+  ScaffoldManifest uses a Vec for storing file entries but converts to/from BTreeMap for operations. This allows duplicate paths (invalid state) and incurs O(n) conversion costs.
+
+evidence:
+  - path: "src/domain/workspace/manifest.rs"
+    loc: ["17-20"]
+    note: "Struct stores entries as a Vec, allowing duplicates."
+  - path: "src/domain/workspace/manifest.rs"
+    loc: ["29-37"]
+    note: "from_map and to_map methods suggest map semantics but incur conversion overhead."
