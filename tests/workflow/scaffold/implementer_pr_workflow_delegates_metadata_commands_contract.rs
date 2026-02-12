@@ -2,22 +2,26 @@ use crate::harness::TestContext;
 use std::fs;
 
 #[test]
-fn implementer_pr_workflow_delegates_metadata_commands() {
+fn implementer_metadata_path_delegates_to_unified_process_command() {
     let ctx = TestContext::new();
 
     ctx.init_remote();
 
     let root = ctx.work_dir();
-    let workflow = fs::read_to_string(root.join(".github/workflows/jules-implementer-pr.yml"))
-        .expect("read implementer PR workflow");
+    let workflow =
+        fs::read_to_string(root.join(".github/workflows/jules-scheduled-workflows.yml")).unwrap();
 
-    assert!(workflow.contains("branches:"));
+    assert!(workflow.contains("process-implementer-pr-metadata:"));
     assert!(workflow.contains("'jules-implementer-*'"));
-    assert!(workflow.contains("jlo workflow gh pr sync-category-label"));
-    assert!(workflow.contains("jlo workflow gh pr comment-summary-request"));
-    assert!(workflow.contains("secrets.JLO_BOT_TOKEN"));
+    assert!(workflow.contains("jlo workflow gh pr process"));
+    assert!(workflow.contains("--mode metadata"));
+    assert!(workflow.contains("--fail-on-error"));
     assert!(workflow.contains("secrets.JULES_LINKED_GH_TOKEN"));
 
+    assert!(
+        !root.join(".github/workflows/jules-implementer-pr.yml").exists(),
+        "standalone implementer metadata workflow should not be installed"
+    );
     assert!(
         !root.join(".github/workflows/jules-implementer-label.yml").exists(),
         "legacy implementer-label workflow should not be installed"

@@ -2,21 +2,27 @@ use crate::harness::TestContext;
 use std::fs;
 
 #[test]
-fn automerge_workflow_delegates_policy_to_jlo_command() {
+fn automerge_path_delegates_policy_to_jlo_process_command() {
     let ctx = TestContext::new();
 
     ctx.init_remote();
 
     let root = ctx.work_dir();
-    let automerge = fs::read_to_string(root.join(".github/workflows/jules-automerge.yml")).unwrap();
+    let workflow =
+        fs::read_to_string(root.join(".github/workflows/jules-scheduled-workflows.yml")).unwrap();
 
-    assert!(automerge.contains("jlo workflow gh pr enable-automerge"));
-    assert!(automerge.contains("ATTEMPTS=12"));
-    assert!(automerge.contains("enablePullRequestAutoMerge"));
-    assert!(automerge.contains("mergePullRequest"));
-    assert!(!automerge.contains("\n    concurrency:\n"));
+    assert!(workflow.contains("validate-and-automerge:"));
+    assert!(workflow.contains("jlo workflow gh pr process"));
+    assert!(workflow.contains("--mode automerge"));
+    assert!(workflow.contains("--retry-attempts 12"));
+    assert!(workflow.contains("--retry-delay-seconds 10"));
+    assert!(workflow.contains("--fail-on-error"));
 
-    assert!(!automerge.contains("allowed_prefixes"));
-    assert!(!automerge.contains("git ls-tree"));
-    assert!(!automerge.contains("in_scope"));
+    assert!(!workflow.contains("enablePullRequestAutoMerge|mergePullRequest"));
+    assert!(!workflow.contains("Auto-merge transient GitHub state detected"));
+
+    assert!(
+        !root.join(".github/workflows/jules-automerge.yml").exists(),
+        "standalone automerge workflow should not be installed"
+    );
 }

@@ -33,7 +33,7 @@ fn deinit_removes_managed_assets_and_deletes_local_jules_branch() {
 
     assert!(!ctx.work_dir().join(".jlo").exists(), ".jlo/ should be removed after deinit");
     assert!(
-        !ctx.work_dir().join(".github/workflows/jules-workflows.yml").exists(),
+        !ctx.work_dir().join(".github/workflows/jules-scheduled-workflows.yml").exists(),
         "workflow kit file should be removed"
     );
     assert!(

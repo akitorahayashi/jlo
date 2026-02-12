@@ -107,10 +107,22 @@ pub enum WorkflowPrCommands {
         /// PR number
         pr_number: u64,
     },
-    /// Run all event-level PR commands in order
+    /// Run PR event commands in configured mode
     Process {
         /// PR number
         pr_number: u64,
+        /// Execution mode (all, metadata, automerge)
+        #[arg(long, default_value = "all", value_parser = ["all", "metadata", "automerge"])]
+        mode: String,
+        /// Fail if any step returns an execution error
+        #[arg(long)]
+        fail_on_error: bool,
+        /// Retry attempts for transient auto-merge errors
+        #[arg(long, default_value_t = 1)]
+        retry_attempts: u32,
+        /// Delay between retry attempts (seconds)
+        #[arg(long, default_value_t = 0)]
+        retry_delay_seconds: u64,
     },
 }
 
@@ -255,8 +267,31 @@ fn run_workflow_gh_pr(
             let output = workflow::gh::pr::events::enable_automerge::execute(github, options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowPrCommands::Process { pr_number } => {
-            let options = workflow::gh::pr::ProcessOptions { pr_number };
+        WorkflowPrCommands::Process {
+            pr_number,
+            mode,
+            fail_on_error,
+            retry_attempts,
+            retry_delay_seconds,
+        } => {
+            let mode = match mode.as_str() {
+                "all" => workflow::gh::pr::ProcessMode::All,
+                "metadata" => workflow::gh::pr::ProcessMode::Metadata,
+                "automerge" => workflow::gh::pr::ProcessMode::Automerge,
+                _ => {
+                    return Err(AppError::Validation(format!(
+                        "Invalid process mode '{}'. Expected one of: all, metadata, automerge",
+                        mode
+                    )));
+                }
+            };
+            let options = workflow::gh::pr::ProcessOptions {
+                pr_number,
+                mode,
+                fail_on_error,
+                retry_attempts,
+                retry_delay_seconds,
+            };
             let output = workflow::gh::pr::process::execute(github, options)?;
             workflow::write_workflow_output(&output)
         }

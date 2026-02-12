@@ -4,7 +4,7 @@ name: Jules Mock Cleanup
 on:
   workflow_run:
     workflows:
-      - Jules Workflows
+      - Jules Scheduled Workflows
     types:
       - completed
 
