@@ -55,7 +55,7 @@ where
     }
 }
 
-fn execute_real<G, W>(
+pub(crate) fn execute_real<G, W>(
     jules_path: &Path,
     prompt_preview: bool,
     branch: Option<&str>,
@@ -434,7 +434,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::MockWorkspaceStore;
+    use crate::testing::{FakeJulesClient, FakeJulesClientFactory, MockWorkspaceStore};
     use std::collections::HashMap;
     use std::path::PathBuf;
     use std::sync::Mutex;
@@ -470,7 +470,11 @@ mod tests {
         ) -> Result<bool, AppError> {
             Ok(false)
         }
-        fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
+        fn run_command(&self, args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
+            if args.len() >= 3 && args[0] == "remote" && args[1] == "get-url" && args[2] == "origin"
+            {
+                return Ok("https://github.com/owner/repo.git".to_string());
+            }
             Ok(String::new())
         }
         fn fetch(&self, _remote: &str) -> Result<(), AppError> {
@@ -576,6 +580,86 @@ mod tests {
             jules_branch: "jules".to_string(),
             issue_labels: vec!["bugs".to_string()],
         }
+    }
+
+    fn make_run_config() -> RunConfig {
+        RunConfig {
+            run: crate::domain::ExecutionConfig {
+                jules_branch: "jules".to_string(),
+                default_branch: "main".to_string(),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn execute_real_creates_session_for_decider() {
+        let jules_path = PathBuf::from(".jules");
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let client = FakeJulesClient::new("session-456");
+        let client_factory = FakeJulesClientFactory::new(client.clone());
+        let config = make_run_config();
+
+        // Need prompt template
+        workspace.write_file(".jules/roles/decider/decider_prompt.j2", "Decider Prompt").unwrap();
+
+        let result = execute_real(
+            &jules_path,
+            false,
+            None,
+            &config,
+            &git,
+            &workspace,
+            &client_factory,
+        );
+
+        if let Err(ref e) = result {
+            println!("Error: {:?}", e);
+        }
+        assert!(result.is_ok());
+        let run_result = result.unwrap();
+        assert_eq!(run_result.sessions, vec!["session-456"]);
+        assert!(!run_result.prompt_preview);
+
+        let sessions = client.get_created_sessions();
+        assert_eq!(sessions.len(), 1);
+        assert_eq!(sessions[0].starting_branch, "jules"); // Decider starts from jules branch
+        assert!(sessions[0].prompt.contains("Decider Prompt"));
+    }
+
+    #[test]
+    fn execute_real_prompt_preview_does_not_create_session() {
+        let jules_path = PathBuf::from(".jules");
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let client = FakeJulesClient::new("session-456");
+        let client_factory = FakeJulesClientFactory::new(client.clone());
+        let config = make_run_config();
+
+        workspace.write_file(".jules/roles/decider/decider_prompt.j2", "Decider Prompt").unwrap();
+
+        let result = execute_real(
+            &jules_path,
+            true, // Prompt preview
+            None,
+            &config,
+            &git,
+            &workspace,
+            &client_factory,
+        );
+
+        if let Err(ref e) = result {
+            println!("Error: {:?}", e);
+        }
+        assert!(result.is_ok());
+        let run_result = result.unwrap();
+        assert!(run_result.prompt_preview);
+        assert!(run_result.sessions.is_empty());
+
+        let sessions = client.get_created_sessions();
+        assert!(sessions.is_empty());
     }
 
     #[test]

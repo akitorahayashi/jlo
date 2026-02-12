@@ -59,7 +59,7 @@ where
 }
 
 #[allow(clippy::too_many_arguments)]
-fn execute_real<G, W>(
+pub(crate) fn execute_real<G, W>(
     jules_path: &Path,
     prompt_preview: bool,
     branch: Option<&str>,
@@ -371,7 +371,7 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::MockWorkspaceStore;
+    use crate::testing::{FakeJulesClient, FakeJulesClientFactory, MockWorkspaceStore};
     use std::collections::HashMap;
     use std::sync::Mutex;
 
@@ -406,7 +406,11 @@ mod tests {
         ) -> Result<bool, AppError> {
             Ok(false)
         }
-        fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
+        fn run_command(&self, args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
+            if args.len() >= 3 && args[0] == "remote" && args[1] == "get-url" && args[2] == "origin"
+            {
+                return Ok("https://github.com/owner/repo.git".to_string());
+            }
             Ok(String::new())
         }
         fn fetch(&self, _remote: &str) -> Result<(), AppError> {
@@ -512,6 +516,95 @@ mod tests {
             jules_branch: "jules".to_string(),
             issue_labels: vec!["bugs".to_string()],
         }
+    }
+
+    fn make_run_config() -> RunConfig {
+        RunConfig {
+            run: crate::domain::ExecutionConfig {
+                jules_branch: "jules".to_string(),
+                default_branch: "main".to_string(),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn execute_real_creates_session_for_valid_requirement() {
+        let jules_path = PathBuf::from(".jules");
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let client = FakeJulesClient::new("session-123");
+        let client_factory = FakeJulesClientFactory::new(client.clone());
+        let config = make_run_config();
+
+        let req_path = PathBuf::from(".jules/exchange/requirements/req.yml");
+        workspace.write_file(req_path.to_str().unwrap(), "id: abc123\nlabel: bugs\n").unwrap();
+        // Also need task definition
+        workspace.write_file(".jules/roles/implementer/tasks/bugs.yml", "Fix the bug").unwrap();
+        // And prompt template
+        workspace.write_file(".jules/roles/implementer/implementer_prompt.j2", "Task: {{ task }}").unwrap();
+
+        let result = execute_real(
+            &jules_path,
+            false,
+            None,
+            Some(&req_path),
+            &config,
+            &git,
+            &workspace,
+            &client_factory,
+        );
+
+        if let Err(ref e) = result {
+            println!("Error: {:?}", e);
+        }
+        assert!(result.is_ok());
+        let run_result = result.unwrap();
+        assert_eq!(run_result.sessions, vec!["session-123"]);
+        assert!(!run_result.prompt_preview);
+
+        let sessions = client.get_created_sessions();
+        assert_eq!(sessions.len(), 1);
+        assert_eq!(sessions[0].starting_branch, "main"); // Default branch
+        assert!(sessions[0].prompt.contains("Task: Fix the bug"));
+    }
+
+    #[test]
+    fn execute_real_prompt_preview_does_not_create_session() {
+        let jules_path = PathBuf::from(".jules");
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let client = FakeJulesClient::new("session-123");
+        let client_factory = FakeJulesClientFactory::new(client.clone());
+        let config = make_run_config();
+
+        let req_path = PathBuf::from(".jules/exchange/requirements/req.yml");
+        workspace.write_file(req_path.to_str().unwrap(), "id: abc123\nlabel: bugs\n").unwrap();
+        workspace.write_file(".jules/roles/implementer/tasks/bugs.yml", "Fix the bug").unwrap();
+        workspace.write_file(".jules/roles/implementer/implementer_prompt.j2", "Task: {{ task }}").unwrap();
+
+        let result = execute_real(
+            &jules_path,
+            true, // Prompt preview
+            None,
+            Some(&req_path),
+            &config,
+            &git,
+            &workspace,
+            &client_factory,
+        );
+
+        if let Err(ref e) = result {
+            println!("Error: {:?}", e);
+        }
+        assert!(result.is_ok());
+        let run_result = result.unwrap();
+        assert!(run_result.prompt_preview);
+        assert!(run_result.sessions.is_empty());
+
+        let sessions = client.get_created_sessions();
+        assert!(sessions.is_empty());
     }
 
     #[test]

@@ -24,6 +24,15 @@ pub(crate) fn configure_user(repo_dir: &Path) {
     );
 }
 
+pub(crate) fn init_bare_repo(path: &Path) {
+    let output = std::process::Command::new("git")
+        .args(["init", "--bare"])
+        .current_dir(path)
+        .output()
+        .expect("git init bare failed");
+    assert!(output.status.success(), "git init bare failed: {}", String::from_utf8_lossy(&output.stderr));
+}
+
 pub(crate) fn add_origin_remote(repo_dir: &Path, url: &str) {
     let output = std::process::Command::new("git")
         .args(["remote", "add", "origin", url])

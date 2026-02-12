@@ -5,10 +5,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
+use crate::harness::fake_gh::FakeGh;
+
 /// Testing harness providing an isolated environment for CLI exercises.
 pub(crate) struct TestContext {
     root: TempDir,
     work_dir: PathBuf,
+    fake_gh: Option<FakeGh>,
 }
 
 impl TestContext {
@@ -30,7 +33,12 @@ impl TestContext {
             String::from_utf8_lossy(&output.stderr)
         );
 
-        Self { root, work_dir }
+        Self { root, work_dir, fake_gh: None }
+    }
+
+    pub(crate) fn setup_fake_gh(&mut self) -> &FakeGh {
+        self.fake_gh = Some(FakeGh::new());
+        self.fake_gh.as_ref().unwrap()
     }
 
     /// Checkout a git branch in the test repo.
@@ -72,6 +80,13 @@ impl TestContext {
     pub(crate) fn cli_in<P: AsRef<Path>>(&self, dir: P) -> Command {
         let mut cmd = Command::cargo_bin("jlo").expect("Failed to locate jlo binary");
         cmd.current_dir(dir.as_ref()).env("HOME", self.home());
+
+        if let Some(fake_gh) = &self.fake_gh {
+            let path = std::env::var("PATH").unwrap_or_default();
+            let new_path = format!("{}:{}", fake_gh.bin_dir.display(), path);
+            cmd.env("PATH", new_path);
+        }
+
         cmd
     }
 
