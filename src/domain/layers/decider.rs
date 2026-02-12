@@ -5,10 +5,13 @@ use chrono::Utc;
 
 use crate::domain::configuration::loader::detect_repository_source;
 use crate::domain::configuration::mock_loader::load_mock_config;
-use crate::domain::layers::mock_utils::{MOCK_ASSETS, generate_mock_id};
+use crate::domain::layers::mock_utils::{
+    MOCK_ASSETS, MockExecutionService, generate_mock_id, list_mock_tagged_files,
+    mock_event_id_from_path,
+};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, IoErrorKind, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
+use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
 use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
 
 use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -31,15 +34,7 @@ where
     ) -> Result<RunResult, AppError> {
         if options.mock {
             let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
-            // Write mock output
-            if std::env::var("GITHUB_OUTPUT").is_ok() {
-                super::mock_utils::write_github_output(&output).map_err(|e| {
-                    AppError::InternalError(format!("Failed to write GITHUB_OUTPUT: {}", e))
-                })?;
-            } else {
-                super::mock_utils::print_local(&output);
-            }
+            let _output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
             return Ok(RunResult {
                 roles: vec!["decider".to_string()],
                 prompt_preview: false,
@@ -53,21 +48,24 @@ where
             options.prompt_preview,
             options.branch.as_deref(),
             config,
+            git,
             workspace,
             client_factory,
         )
     }
 }
 
-fn execute_real<W>(
+fn execute_real<G, W>(
     jules_path: &Path,
     prompt_preview: bool,
     branch: Option<&str>,
     config: &RunConfig,
+    git: &G,
     workspace: &W,
     client_factory: &dyn JulesClientFactory,
 ) -> Result<RunResult, AppError>
 where
+    G: GitPort + ?Sized,
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     let starting_branch =
@@ -89,7 +87,7 @@ where
         });
     }
 
-    let source = detect_repository_source()?;
+    let source = detect_repository_source(git)?;
     let client = client_factory.create()?;
 
     let prompt = assemble_decider_prompt(jules_path, workspace)?;
@@ -97,7 +95,7 @@ where
     let request = SessionRequest {
         prompt,
         source: source.to_string(),
-        starting_branch: starting_branch.to_string(),
+        starting_branch,
         require_plan_approval: false,
         automation_mode: AutomationMode::AutoCreatePr,
     };
@@ -136,15 +134,16 @@ where
     H: GitHubPort + ?Sized,
     W: WorkspaceStore,
 {
+    let service = MockExecutionService::new(jules_path, config, git, github, workspace);
+
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Decider, &timestamp)?;
 
     println!("Mock decider: creating branch {}", branch_name);
 
     // Fetch and checkout from jules branch
-    git.fetch("origin")?;
-    git.checkout_branch(&format!("origin/{}", config.jules_branch), false)?;
-    git.checkout_branch(&branch_name, true)?;
+    service.fetch_and_checkout_base(&config.jules_branch)?;
+    service.checkout_new_branch(&branch_name)?;
 
     // Find and process pending events
     let pending_dir = jules::events_pending_dir(jules_path);
@@ -152,12 +151,18 @@ where
     let requirements_dir = jules::requirements_dir(jules_path);
 
     // Ensure directories exist.
-    workspace.create_dir_all(path_to_str(&decided_dir, "Invalid decided events path")?)?;
-    workspace.create_dir_all(path_to_str(&requirements_dir, "Invalid requirements path")?)?;
+    workspace.create_dir_all(
+        decided_dir.to_str().ok_or_else(|| AppError::InvalidPath("Invalid decided dir".into()))?,
+    )?;
+    workspace.create_dir_all(
+        requirements_dir
+            .to_str()
+            .ok_or_else(|| AppError::InvalidPath("Invalid requirements dir".into()))?,
+    )?;
 
     // Create two mock requirements: one for planner, one for implementer
     let label = config.issue_labels.first().cloned().ok_or_else(|| {
-        AppError::Validation("No issue labels available for mock decider".to_string())
+        AppError::InvalidConfig("No issue labels available for mock decider".to_string())
     })?;
     let mock_issue_template = MOCK_ASSETS
         .get_file("decider_requirement.yml")
@@ -172,24 +177,30 @@ where
     // Move any mock pending events to decided first
     let mut moved_src_files: Vec<PathBuf> = Vec::new();
     for path in list_mock_tagged_files(workspace, &pending_dir, &config.mock_tag)? {
-        let source = path_to_str(&path, "Invalid pending event path")?;
+        let source = path
+            .to_str()
+            .ok_or_else(|| AppError::InvalidPath("Invalid pending event path".into()))?;
         let content = workspace.read_file(source)?;
         let dest = decided_dir.join(path.file_name().ok_or_else(|| {
-            AppError::Validation(format!("Pending event missing filename: {}", path.display()))
+            AppError::InvalidPath(format!("Pending event missing filename: {}", path.display()))
         })?);
-        workspace.write_file(path_to_str(&dest, "Invalid decided event path")?, &content)?;
+        workspace.write_file(
+            dest.to_str()
+                .ok_or_else(|| AppError::InvalidPath("Invalid decided event path".into()))?,
+            &content,
+        )?;
         workspace.remove_file(source)?;
         moved_src_files.push(path);
     }
 
-    let decided_mock_files = list_mock_decided_files(workspace, &decided_dir, &config.mock_tag)?;
+    let decided_mock_files = list_mock_tagged_files(workspace, &decided_dir, &config.mock_tag)?;
     let source_event_ids: Vec<String> = decided_mock_files
         .iter()
         .filter_map(|path| mock_event_id_from_path(path, &config.mock_tag))
         .collect();
 
     if source_event_ids.len() < 2 {
-        return Err(AppError::Validation(format!(
+        return Err(AppError::InvalidConfig(format!(
             "Mock decider requires at least 2 decided events for tag '{}', found {}",
             config.mock_tag,
             source_event_ids.len()
@@ -239,9 +250,12 @@ where
     }
 
     workspace.write_file(
-        planner_issue_file
-            .to_str()
-            .ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
+        planner_issue_file.to_str().ok_or_else(|| {
+            AppError::InvalidPath(format!(
+                "Invalid planner requirement path: {}",
+                planner_issue_file.display()
+            ))
+        })?,
         &serde_yaml::to_string(&planner_issue_yaml).map_err(|err| {
             AppError::InternalError(format!(
                 "Failed to serialize planner requirement YAML: {}",
@@ -285,7 +299,12 @@ where
     }
 
     workspace.write_file(
-        impl_issue_file.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
+        impl_issue_file.to_str().ok_or_else(|| {
+            AppError::InvalidPath(format!(
+                "Invalid implementer requirement path: {}",
+                impl_issue_file.display()
+            ))
+        })?,
         &serde_yaml::to_string(&impl_issue_yaml).map_err(|err| {
             AppError::InternalError(format!(
                 "Failed to serialize implementer requirement YAML: {}",
@@ -295,7 +314,6 @@ where
     )?;
 
     // Ensure all tag-matched decided events have issue_id.
-    // Each event belongs to exactly one requirement.
     let planner_event_set: HashSet<&str> =
         planner_source_event_ids.iter().map(|event_id| event_id.as_str()).collect();
     for decided_file in &decided_mock_files {
@@ -384,11 +402,14 @@ where
     for f in &moved_src_files {
         files.push(f.as_path());
     }
-    git.commit_files(&format!("[{}] decider: mock requirements", config.mock_tag), &files)?;
-    git.push_branch(&branch_name, false)?;
+    service.commit_and_push(
+        &format!("[{}] decider: mock requirements", config.mock_tag),
+        &files,
+        &branch_name,
+    )?;
 
     // Create PR
-    let pr = github.create_pull_request(
+    let pr = service.create_pr(
         &branch_name,
         &config.jules_branch,
         &format!("[{}] Decider triage", config.mock_tag),
@@ -398,88 +419,254 @@ where
 
     println!("Mock decider: created PR #{} ({})", pr.number, pr.url);
 
-    Ok(MockOutput {
+    let output = MockOutput {
         mock_branch: branch_name,
         mock_pr_number: pr.number,
         mock_pr_url: pr.url,
         mock_tag: config.mock_tag.clone(),
-    })
-}
-
-fn mock_event_id_from_path(path: &Path, mock_tag: &str) -> Option<String> {
-    let file_name = path.file_name()?.to_str()?;
-    let prefix = format!("mock-{}-", mock_tag);
-    file_name.strip_prefix(&prefix)?.strip_suffix(".yml").map(ToString::to_string)
-}
-
-fn list_mock_decided_files<W: WorkspaceStore>(
-    workspace: &W,
-    decided_dir: &Path,
-    mock_tag: &str,
-) -> Result<Vec<PathBuf>, AppError> {
-    list_mock_tagged_files(workspace, decided_dir, mock_tag)
-}
-
-fn list_mock_tagged_files<W: WorkspaceStore>(
-    workspace: &W,
-    dir: &Path,
-    mock_tag: &str,
-) -> Result<Vec<PathBuf>, AppError> {
-    let dir_str = path_to_str(dir, "Invalid directory path")?;
-    let entries = match workspace.list_dir(dir_str) {
-        Ok(entries) => entries,
-        Err(AppError::Io { kind: IoErrorKind::NotFound, .. }) => return Ok(Vec::new()),
-        Err(err) => return Err(err),
     };
 
-    let mut files: Vec<PathBuf> = entries
-        .into_iter()
-        .filter(|path| !workspace.is_dir(&path.to_string_lossy()))
-        .filter(|path| mock_event_id_from_path(path, mock_tag).is_some())
-        .collect();
+    service.finish(&output)?;
 
-    files.sort();
-    Ok(files)
-}
-
-fn path_to_str<'a>(path: &'a Path, err_prefix: &str) -> Result<&'a str, AppError> {
-    path.to_str().ok_or_else(|| AppError::Validation(format!("{}: {}", err_prefix, path.display())))
+    Ok(output)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{list_mock_decided_files, mock_event_id_from_path};
-    use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
-    use std::fs;
-    use tempfile::tempdir;
+    use super::*;
+    use crate::testing::MockWorkspaceStore;
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    use std::sync::Mutex;
 
-    #[test]
-    fn parses_mock_event_id_from_path() {
-        let mock_tag = "mock-run-123";
-        let valid_path = std::path::Path::new("mock-mock-run-123-a1b2c3.yml");
-        let invalid_path = std::path::Path::new("mock-other-tag-a1b2c3.yml");
+    struct FakeGit {
+        committed_files: Mutex<Vec<PathBuf>>,
+    }
 
-        assert_eq!(mock_event_id_from_path(valid_path, mock_tag), Some("a1b2c3".to_string()));
-        assert_eq!(mock_event_id_from_path(invalid_path, mock_tag), None);
+    impl FakeGit {
+        fn new() -> Self {
+            Self { committed_files: Mutex::new(vec![]) }
+        }
+    }
+
+    impl GitPort for FakeGit {
+        fn get_head_sha(&self) -> Result<String, AppError> {
+            Ok("abc123".into())
+        }
+        fn get_current_branch(&self) -> Result<String, AppError> {
+            Ok("jules".into())
+        }
+        fn commit_exists(&self, _sha: &str) -> bool {
+            true
+        }
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
+            Ok("parent".into())
+        }
+        fn has_changes(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<bool, AppError> {
+            Ok(false)
+        }
+        fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
+            Ok(String::new())
+        }
+        fn fetch(&self, _remote: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn checkout_branch(&self, _name: &str, _create: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn push_branch(&self, _name: &str, _force: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> {
+            Ok(true)
+        }
+        fn commit_files(&self, _msg: &str, files: &[&Path]) -> Result<String, AppError> {
+            let mut committed = self.committed_files.lock().unwrap();
+            for f in files {
+                committed.push(f.to_path_buf());
+            }
+            Ok("fake-sha".into())
+        }
+    }
+
+    struct FakeGitHub;
+
+    impl GitHubPort for FakeGitHub {
+        fn create_pull_request(
+            &self,
+            head: &str,
+            base: &str,
+            _title: &str,
+            _body: &str,
+        ) -> Result<crate::ports::PullRequestInfo, AppError> {
+            Ok(crate::ports::PullRequestInfo {
+                number: 101,
+                url: "https://example.com/pr/101".into(),
+                head: head.to_string(),
+                base: base.to_string(),
+            })
+        }
+        fn close_pull_request(&self, _pr_number: u64) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn delete_branch(&self, _branch: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn create_issue(
+            &self,
+            _title: &str,
+            _body: &str,
+            _labels: &[&str],
+        ) -> Result<crate::ports::IssueInfo, AppError> {
+            Ok(crate::ports::IssueInfo { number: 1, url: "https://example.com/issues/1".into() })
+        }
+        fn get_pr_detail(
+            &self,
+            _pr_number: u64,
+        ) -> Result<crate::ports::PullRequestDetail, AppError> {
+            Ok(crate::ports::PullRequestDetail {
+                number: 101,
+                head: String::new(),
+                base: String::new(),
+                is_draft: false,
+                auto_merge_enabled: false,
+            })
+        }
+        fn list_pr_comments(
+            &self,
+            _pr_number: u64,
+        ) -> Result<Vec<crate::ports::PrComment>, AppError> {
+            Ok(Vec::new())
+        }
+        fn create_pr_comment(&self, _pr_number: u64, _body: &str) -> Result<u64, AppError> {
+            Ok(1)
+        }
+        fn update_pr_comment(&self, _comment_id: u64, _body: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn ensure_label(&self, _label: &str, _color: Option<&str>) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn add_label_to_pr(&self, _pr_number: u64, _label: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn add_label_to_issue(&self, _issue_number: u64, _label: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn enable_automerge(&self, _pr_number: u64) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> {
+            Ok(Vec::new())
+        }
+    }
+
+    fn make_config() -> MockConfig {
+        let mut prefixes = HashMap::new();
+        prefixes.insert(Layer::Decider, "jules-decider-".to_string());
+        MockConfig {
+            mock_tag: "mock-test-decider".to_string(),
+            branch_prefixes: prefixes,
+            default_branch: "main".to_string(),
+            jules_branch: "jules".to_string(),
+            issue_labels: vec!["bugs".to_string()],
+        }
     }
 
     #[test]
-    fn lists_only_tagged_decided_files_in_sorted_order() {
-        let dir = tempdir().expect("tempdir");
-        let decided_dir = dir.path().join("decided");
-        fs::create_dir_all(&decided_dir).expect("mkdir");
+    fn mock_decider_processes_events_and_creates_requirements() {
+        let jules_path = PathBuf::from(".jules");
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let github = FakeGitHub;
+        let config = make_config();
 
-        fs::write(decided_dir.join("mock-mock-run-123-bbbbbb.yml"), "id: bbbbbb\n").expect("write");
-        fs::write(decided_dir.join("mock-mock-run-123-aaaaaa.yml"), "id: aaaaaa\n").expect("write");
-        fs::write(decided_dir.join("mock-other-run-cccccc.yml"), "id: cccccc\n").expect("write");
-        fs::write(decided_dir.join("notes.txt"), "ignored\n").expect("write");
+        workspace
+            .write_file(
+                ".jules/exchange/events/pending/mock-mock-test-decider-event1.yml",
+                "id: event1\nsummary: s1",
+            )
+            .unwrap();
+        workspace
+            .write_file(
+                ".jules/exchange/events/pending/mock-mock-test-decider-event2.yml",
+                "id: event2\nsummary: s2",
+            )
+            .unwrap();
 
-        let workspace = FilesystemWorkspaceStore::new(dir.path().to_path_buf());
-        let files =
-            list_mock_decided_files(&workspace, &decided_dir, "mock-run-123").expect("list");
+        let options = RunOptions {
+            layer: Layer::Decider,
+            role: None,
+            prompt_preview: false,
+            branch: None,
+            requirement: None,
+            mock: true,
+            phase: None,
+        };
 
-        assert_eq!(files.len(), 2);
-        assert!(files[0].to_string_lossy().ends_with("mock-mock-run-123-aaaaaa.yml"));
-        assert!(files[1].to_string_lossy().ends_with("mock-mock-run-123-bbbbbb.yml"));
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        assert!(output.mock_branch.starts_with("jules-decider-"));
+        assert_eq!(output.mock_pr_number, 101);
+
+        let req_dir = ".jules/exchange/requirements";
+        let req_files = workspace.list_dir(req_dir).unwrap();
+        let planner_req = req_files
+            .iter()
+            .find(|p| p.to_string_lossy().contains("mock-planner-mock-test-decider"))
+            .expect("planner req missing");
+        let impl_req = req_files
+            .iter()
+            .find(|p| p.to_string_lossy().contains("mock-impl-mock-test-decider"))
+            .expect("implementer req missing");
+
+        assert!(workspace.file_exists(&planner_req.to_string_lossy()));
+        assert!(workspace.file_exists(&impl_req.to_string_lossy()));
+        assert!(
+            !workspace
+                .file_exists(".jules/exchange/events/pending/mock-mock-test-decider-event1.yml")
+        );
+        assert!(
+            workspace
+                .file_exists(".jules/exchange/events/decided/mock-mock-test-decider-event1.yml")
+        );
+    }
+
+    #[test]
+    fn mock_decider_fails_with_insufficient_events() {
+        let jules_path = PathBuf::from(".jules");
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let github = FakeGitHub;
+        let config = make_config();
+
+        workspace
+            .write_file(
+                ".jules/exchange/events/pending/mock-mock-test-decider-event1.yml",
+                "id: event1",
+            )
+            .unwrap();
+
+        let options = RunOptions {
+            layer: Layer::Decider,
+            role: None,
+            prompt_preview: false,
+            branch: None,
+            requirement: None,
+            mock: true,
+            phase: None,
+        };
+
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        assert!(result.is_err());
+        assert!(
+            matches!(result, Err(AppError::InvalidConfig(msg)) if msg.contains("requires at least 2 decided events"))
+        );
     }
 }

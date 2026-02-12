@@ -40,3 +40,29 @@ fn init_workflows_preserves_unrelated_files() {
     let unrelated_action_content = fs::read_to_string(&unrelated_action).unwrap();
     assert_eq!(unrelated_action_content, "custom action");
 }
+
+#[test]
+fn init_workflows_removes_stale_jules_workflows() {
+    let ctx = TestContext::new();
+    let root = ctx.work_dir();
+
+    jlo_config::write_jlo_config(root, &[jlo_config::DEFAULT_TEST_CRON], 30);
+
+    let stale_impl_label = root.join(".github/workflows/jules-implementer-label.yml");
+    let stale_summary = root.join(".github/workflows/jules-pr-summary-request.yml");
+    fs::create_dir_all(stale_impl_label.parent().unwrap()).unwrap();
+    fs::write(&stale_impl_label, "legacy impl label workflow").unwrap();
+    fs::write(&stale_summary, "legacy summary workflow").unwrap();
+
+    init_workflows_at(root.to_path_buf(), &WorkflowRunnerMode::remote()).unwrap();
+
+    assert!(
+        !stale_impl_label.exists(),
+        "stale jlo-managed implementer label workflow should be removed"
+    );
+    assert!(!stale_summary.exists(), "stale jlo-managed summary workflow should be removed");
+    assert!(
+        root.join(".github/workflows/jules-implementer-pr.yml").exists(),
+        "current implementer PR workflow should be installed"
+    );
+}

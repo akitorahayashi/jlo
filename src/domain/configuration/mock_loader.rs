@@ -5,6 +5,7 @@ use chrono::Utc;
 use serde::Deserialize;
 
 use crate::domain::configuration::loader::load_config;
+use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, RunOptions};
 use crate::ports::WorkspaceStore;
@@ -49,10 +50,10 @@ fn load_branch_prefix_for_layer<W: WorkspaceStore>(
     let contracts_path = jules::contracts(jules_path, layer);
     let contracts_path_str = contracts_path
         .to_str()
-        .ok_or_else(|| AppError::Validation("Invalid contracts path".to_string()))?;
+        .ok_or_else(|| AppError::InvalidPath("Invalid contracts path".to_string()))?;
 
     let content = workspace.read_file(contracts_path_str).map_err(|_| {
-        AppError::Validation(format!(
+        AppError::InvalidConfig(format!(
             "Missing contracts file for layer '{}' at {}",
             layer.dir_name(),
             contracts_path.display()
@@ -60,7 +61,7 @@ fn load_branch_prefix_for_layer<W: WorkspaceStore>(
     })?;
 
     extract_branch_prefix(&content).map_err(|e| {
-        AppError::Validation(format!(
+        AppError::InvalidConfig(format!(
             "Invalid contracts file for layer '{}' at {}: {}",
             layer.dir_name(),
             contracts_path.display(),
@@ -89,16 +90,16 @@ pub fn load_mock_config<W: WorkspaceStore>(
     let labels_path = jules::github_labels(jules_path);
     let labels_path_str = labels_path
         .to_str()
-        .ok_or_else(|| AppError::Validation("Invalid labels path".to_string()))?;
+        .ok_or_else(|| AppError::InvalidPath("Invalid labels path".to_string()))?;
     let labels_content = workspace.read_file(labels_path_str).map_err(|_| {
-        AppError::Validation(format!(
+        AppError::InvalidConfig(format!(
             "Missing github-labels.json for mock mode: {}",
             labels_path.display()
         ))
     })?;
     let issue_labels = extract_issue_labels(&labels_content)?;
     if issue_labels.is_empty() {
-        return Err(AppError::Validation(format!(
+        return Err(AppError::InvalidConfig(format!(
             "No issue labels defined in github-labels.json: {}",
             labels_path.display()
         )));
@@ -114,8 +115,14 @@ pub fn load_mock_config<W: WorkspaceStore>(
     });
 
     if !mock_tag.contains("mock") {
-        return Err(AppError::Validation(
+        return Err(AppError::InvalidConfig(
             "JULES_MOCK_TAG must include 'mock' to mark mock artifacts.".to_string(),
+        ));
+    }
+    if !validate_safe_path_component(&mock_tag) {
+        return Err(AppError::InvalidConfig(
+            "JULES_MOCK_TAG must be a safe path component (letters, numbers, '-' or '_')."
+                .to_string(),
         ));
     }
 
@@ -135,7 +142,7 @@ fn extract_branch_prefix(content: &str) -> Result<String, AppError> {
     })?;
 
     if config.branch_prefix.trim().is_empty() {
-        return Err(AppError::Validation("branch_prefix cannot be empty".to_string()));
+        return Err(AppError::InvalidConfig("branch_prefix cannot be empty".to_string()));
     }
 
     Ok(config.branch_prefix)
@@ -216,5 +223,19 @@ constraints:
                 .unwrap();
 
         assert_eq!(prefix, "jules-innovator-");
+    }
+
+    #[test]
+    fn rejects_mock_tag_with_path_separator() {
+        let mock_tag = "mock-../escape";
+        assert!(mock_tag.contains("mock"));
+        assert!(!validate_safe_path_component(mock_tag));
+    }
+
+    #[test]
+    fn rejects_mock_tag_with_newline() {
+        let mock_tag = "mock-run\ninjected";
+        assert!(mock_tag.contains("mock"));
+        assert!(!validate_safe_path_component(mock_tag));
     }
 }

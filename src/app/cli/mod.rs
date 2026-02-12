@@ -58,7 +58,7 @@ enum Commands {
         /// Layer (observers, innovators)
         layer: Option<String>,
         /// Name for the new role
-        name: Option<String>,
+        role: Option<String>,
     },
     /// Add a built-in role under .jlo/
     #[clap(visible_aliases = ["a", "ad"])]
@@ -103,7 +103,7 @@ pub fn run() {
     let result: Result<i32, AppError> = match cli.command {
         Commands::Init { remote, self_hosted } => init::run_init(remote, self_hosted).map(|_| 0),
         Commands::Update { prompt_preview, cli } => run_update(prompt_preview, cli).map(|_| 0),
-        Commands::Create { layer, name } => run_create(layer, name).map(|_| 0),
+        Commands::Create { layer, role } => run_create(layer, role).map(|_| 0),
         Commands::Add { layer, role } => run_add(layer, role).map(|_| 0),
         Commands::Setup { command } => match command {
             setup::SetupCommands::Gen { path } => setup::run_setup_gen(path).map(|_| 0),
@@ -175,11 +175,11 @@ fn run_update(prompt_preview: bool, cli: bool) -> Result<(), AppError> {
     Ok(())
 }
 
-fn run_create(layer: Option<String>, name: Option<String>) -> Result<(), AppError> {
-    let Some((layer, name)) = resolve_create_inputs(layer, name)? else {
+fn run_create(layer: Option<String>, role: Option<String>) -> Result<(), AppError> {
+    let Some((layer, role)) = resolve_create_inputs(layer, role)? else {
         return Ok(());
     };
-    let outcome = crate::app::api::create_role(&layer, &name)?;
+    let outcome = crate::app::api::create_role(&layer, &role)?;
 
     println!("✅ Created new {} at {}/", outcome.entity_type(), outcome.display_path());
     Ok(())
@@ -197,7 +197,7 @@ fn run_add(layer: Option<String>, role: Option<String>) -> Result<(), AppError> 
 
 fn resolve_create_inputs(
     layer: Option<String>,
-    name: Option<String>,
+    role: Option<String>,
 ) -> Result<Option<(String, String)>, AppError> {
     let layer_enum = match layer {
         Some(value) => {
@@ -213,7 +213,7 @@ fn resolve_create_inputs(
         },
     };
 
-    let name_value = match name {
+    let role_value = match role {
         Some(value) => value,
         None => match prompt_role_name()? {
             Some(value) => value,
@@ -221,7 +221,7 @@ fn resolve_create_inputs(
         },
     };
 
-    Ok(Some((layer_enum.dir_name().to_string(), name_value)))
+    Ok(Some((layer_enum.dir_name().to_string(), role_value)))
 }
 
 fn resolve_add_inputs(
