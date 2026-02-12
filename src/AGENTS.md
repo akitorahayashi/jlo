@@ -21,10 +21,12 @@ src/
 │   └── catalog/       # Setup component definitions
 └── testing/           # Mock implementations
 tests/
-├── common/            # Shared test fixtures
-├── cli_commands.rs    # CLI tests
-├── cli_flow.rs        # Workflow tests
-└── commands_api.rs    # Library API tests
+├── harness/           # Shared fixtures (TestContext, git helpers, config writers)
+├── cli.rs             # CLI behavior contracts
+├── workflow.rs         # Bootstrap + workflow-kit contracts
+├── doctor.rs          # Doctor/schema + mock fixture validity contracts
+├── mock.rs            # Mock mode CLI contracts
+└── library.rs          # Public library API lifecycle contract
 ```
 
 ## Tech Stack
@@ -115,10 +117,12 @@ Run only relevant tests to save time:
 # By name (substring match)
 cargo test <test_name>
 
-# By integration test file
-cargo test --test cli_commands    # CLI parsing & commands
-cargo test --test workflow_scaffold    # Workflow scaffold & YAML linting
-cargo test --test mock_mode       # Mock execution flow
+# By integration target
+cargo test --test cli
+cargo test --test workflow
+cargo test --test doctor
+cargo test --test mock
+cargo test --test library
 ```
 
 ## Layer Architecture

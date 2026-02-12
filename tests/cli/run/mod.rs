@@ -1,0 +1,6 @@
+mod implementer_prompt_preview_contract;
+mod narrator_prompt_preview_contract;
+mod narrator_skips_when_no_codebase_changes_contract;
+mod planner_prompt_preview_contract;
+mod rejects_missing_requirement_argument_contract;
+mod rejects_missing_requirement_file_contract;
