@@ -1058,3 +1058,49 @@ jobs:
           done
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
+
+  # ============================================================
+  # Phase 19: Cleanup mock artifacts
+  # ============================================================
+  cleanup-mock-artifacts:
+    needs: [wait-after-implementer]
+    if: |
+      always() &&
+      (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true') ||
+        (github.event_name == 'workflow_call' && inputs.mock == true)
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+    steps:
+      - name: Validate branch variables
+        run: |
+          set -euo pipefail
+          if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
+            echo "::error::JLO_TARGET_BRANCH is required."
+            exit 1
+          fi
+          if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
+            echo "::error::JULES_WORKER_BRANCH is required."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: 'jules'
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Cleanup mock artifacts for this run
+        run: |
+          jlo workflow workspace clean mock --mock-tag "$JULES_MOCK_TAG"
+

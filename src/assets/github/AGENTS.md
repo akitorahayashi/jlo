@@ -31,8 +31,6 @@ This document describes how files under `src/assets/github/` are transformed int
 ## Installed Output Examples
 - `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`
   → `.github/workflows/jules-scheduled-workflows.yml`
-- `src/assets/github/workflows/jules-mock-cleanup.yml.j2`
-  → `.github/workflows/jules-mock-cleanup.yml`
 - `src/assets/github/actions/install-jlo/action.yml`
   → `.github/actions/install-jlo/action.yml`
 

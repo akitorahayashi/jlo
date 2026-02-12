@@ -32,7 +32,6 @@ Install control-plane and workflow kit with `jlo init --remote` (or `--self-host
 Expected workflow outputs:
 
 - `.github/workflows/jules-scheduled-workflows.yml`
-- `.github/workflows/jules-mock-cleanup.yml`
 - `.github/actions/*`
 
 ### Review Configuration

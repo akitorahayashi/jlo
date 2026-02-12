@@ -365,3 +365,8 @@ jobs:
   # Phase 18: Wait for implementer labels
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-implementer', 'run-implementer', 'run-implementer', 'implementer') }}
+
+  # ============================================================
+  # Phase 19: Cleanup mock artifacts
+  # ============================================================
+{% include "workflows/jules-workflows/components/cleanup-mock-artifacts.yml.j2" %}

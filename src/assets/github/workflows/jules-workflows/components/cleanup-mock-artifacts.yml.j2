@@ -1,33 +1,16 @@
-name: Jules Mock Cleanup
-
-on:
-  workflow_run:
-    workflows:
-      - Jules Scheduled Workflows
-    types:
-      - completed
-    branches:
-      - '{{ target_branch }}'
-
-permissions:
-  contents: write
-  pull-requests: write
-
-env:
-  JLO_TARGET_BRANCH: '{{ target_branch }}'
-  JULES_WORKER_BRANCH: '{{ worker_branch }}'
-
-jobs:
   cleanup-mock-artifacts:
-    if: >-
-      github.event.workflow_run.event == 'workflow_dispatch' ||
-      github.event.workflow_run.event == 'workflow_call'
+    needs: [wait-after-implementer]
+    if: |
+      always() &&
+      (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true') ||
+        (github.event_name == 'workflow_call' && inputs.mock == true)
+      )
     runs-on: {{ runner }}
     timeout-minutes: 10
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
       GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
-      JULES_MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.event.workflow_run.id)") }}
     steps:
       - name: Validate branch variables
         run: |
@@ -53,6 +36,6 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Cleanup mock artifacts for completed run
+      - name: Cleanup mock artifacts for this run
         run: |
           jlo workflow workspace clean mock --mock-tag "$JULES_MOCK_TAG"
