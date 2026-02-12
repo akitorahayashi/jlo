@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "qa013f"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-12"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Critical Integration Gap: Missing E2E tests for mock execution"
+statement: |
+  The repository lacks end-to-end integration tests for the `jlo run --mock` command, which is a critical path for verifying developer workflows. Existing tests only cover argument parsing or unit-test the mock logic with mocked git dependencies.
+
+# Evidence supporting the observation
+evidence:
+  - path: "tests/cli/run/mod.rs"
+    loc:
+      - "module list"
+    note: "Contains only prompt preview and validation tests, no execution tests."
+
+  - path: "tests/mock/mock_mode_contract.rs"
+    loc:
+      - "file content"
+    note: "Only validates CLI arguments and environment variables."
+
+  - path: "src/domain/layers/decider.rs"
+    loc:
+      - "mod tests"
+    note: "Unit tests use FakeGit/FakeGitHub, bypassing real git interactions."
