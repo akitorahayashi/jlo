@@ -4,6 +4,8 @@
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::thread;
+use std::time::Duration;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -13,6 +15,15 @@ use crate::adapters::github_command::GitHubCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+
+const CLEANUP_AUTOMERGE_RETRY_ATTEMPTS: u32 = 12;
+const CLEANUP_AUTOMERGE_RETRY_DELAY_SECONDS: u64 = 10;
+const CLEANUP_AUTOMERGE_TRANSIENT_ERROR_PATTERNS: &[&str] = &[
+    "enablePullRequestAutoMerge",
+    "mergePullRequest",
+    "Base branch was modified",
+    "Protected branch rules not configured",
+];
 
 /// Options for workflow cleanup mock command.
 #[derive(Debug, Clone)]
@@ -92,7 +103,7 @@ pub fn execute(options: WorkspaceCleanMockOptions) -> Result<WorkspaceCleanMockO
 
     let closed_prs_count = close_pull_requests(&github, &pr_numbers)?;
     let deleted_branches_count = delete_remote_branches(&github, &branches)?;
-    let deleted_files_count = delete_mock_files(&workspace, &git, &options.mock_tag)?;
+    let deleted_files_count = delete_mock_files(&workspace, &git, &github, &options.mock_tag)?;
 
     eprintln!(
         "Cleaned mock artifacts for tag '{}': {} PRs, {} branches, {} files",
@@ -109,14 +120,8 @@ pub fn execute(options: WorkspaceCleanMockOptions) -> Result<WorkspaceCleanMockO
 
 fn ensure_jules_branch_checked_out(git: &GitCommandAdapter) -> Result<(), AppError> {
     git.fetch("origin")?;
-
-    match git.run_command(&["checkout", "jules"], None) {
-        Ok(_) => Ok(()),
-        Err(_) => {
-            git.run_command(&["checkout", "-b", "jules", "origin/jules"], None)?;
-            Ok(())
-        }
-    }
+    git.run_command(&["checkout", "-B", "jules", "origin/jules"], None)?;
+    Ok(())
 }
 
 fn close_pull_requests(
@@ -146,6 +151,7 @@ fn delete_remote_branches(
 fn delete_mock_files(
     workspace: &FilesystemWorkspaceStore,
     git: &GitCommandAdapter,
+    github: &GitHubCommandAdapter,
     mock_tag: &str,
 ) -> Result<usize, AppError> {
     let root = workspace_root(workspace)?;
@@ -165,16 +171,66 @@ fn delete_mock_files(
     }
 
     let status = git.run_command(&["status", "--porcelain", "--", ".jules"], None)?;
-    if !status.trim().is_empty() {
-        let message = format!("jules: cleanup mock artifacts {}", mock_tag);
-        git.run_command(&["add", "-u", ".jules"], None)?;
-        git.run_command(&["commit", "-m", &message], None)?;
-
-        let branch = git.get_current_branch()?;
-        git.push_branch(&branch, false)?;
+    if status.trim().is_empty() {
+        return Ok(files.len());
     }
 
+    let cleanup_branch = build_cleanup_branch_name(mock_tag);
+    git.run_command(&["checkout", "-b", &cleanup_branch], None)?;
+
+    let message = format!("jules: cleanup mock artifacts {}", mock_tag);
+    git.run_command(&["add", "-u", ".jules"], None)?;
+    git.run_command(&["commit", "-m", &message], None)?;
+    git.push_branch(&cleanup_branch, false)?;
+
+    let pr_title = format!("chore: cleanup mock artifacts {}", mock_tag);
+    let pr_body = format!(
+        "Automated cleanup for mock run `{}`.\n\n- remove mock-tagged runtime artifacts\n- close/delete related mock resources",
+        mock_tag
+    );
+    let pr = github.create_pull_request(&cleanup_branch, "jules", &pr_title, &pr_body)?;
+    enable_automerge_with_retry(github, pr.number)?;
+
     Ok(files.len())
+}
+
+fn enable_automerge_with_retry(
+    github: &GitHubCommandAdapter,
+    pr_number: u64,
+) -> Result<(), AppError> {
+    for attempt in 1..=CLEANUP_AUTOMERGE_RETRY_ATTEMPTS {
+        match github.enable_automerge(pr_number) {
+            Ok(()) => return Ok(()),
+            Err(error) => {
+                if attempt < CLEANUP_AUTOMERGE_RETRY_ATTEMPTS
+                    && is_transient_cleanup_automerge_error(&error)
+                {
+                    thread::sleep(Duration::from_secs(CLEANUP_AUTOMERGE_RETRY_DELAY_SECONDS));
+                    continue;
+                }
+                return Err(error);
+            }
+        }
+    }
+
+    Err(AppError::Validation("cleanup auto-merge retry loop ended unexpectedly".to_string()))
+}
+
+fn is_transient_cleanup_automerge_error(error: &AppError) -> bool {
+    let message = error.to_string();
+    CLEANUP_AUTOMERGE_TRANSIENT_ERROR_PATTERNS.iter().any(|pattern| message.contains(pattern))
+}
+
+fn build_cleanup_branch_name(mock_tag: &str) -> String {
+    let sanitized: String = mock_tag
+        .chars()
+        .map(
+            |ch| {
+                if ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-' { ch } else { '-' }
+            },
+        )
+        .collect();
+    format!("jules-mock-cleanup-{}", sanitized)
 }
 
 fn collect_mock_files(jules_path: &Path, mock_tag: &str) -> Result<Vec<PathBuf>, AppError> {
