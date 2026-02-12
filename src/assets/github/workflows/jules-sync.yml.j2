@@ -17,6 +17,9 @@ env:
 jobs:
   sync:
     runs-on: {{ runner }}
+    concurrency:
+      group: 'jules-sync-{{ worker_branch }}'
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:

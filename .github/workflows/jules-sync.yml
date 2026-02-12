@@ -16,6 +16,9 @@ env:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    concurrency:
+      group: 'jules-sync-jules'
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
