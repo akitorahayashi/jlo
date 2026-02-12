@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "dupcfg"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Duplicate RunConfig Loading Logic"
+statement: |
+  The logic for loading and parsing `RunConfig` is duplicated in the App layer and the Domain layer.
+  `src/app/commands/run/config.rs` implements `load_config` using direct filesystem access.
+  `src/domain/configuration/loader.rs` implements `load_config` using `WorkspaceStore`.
+  This violates the Single Source of Truth principle and creates maintenance overhead.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/run/config.rs"
+    loc:
+      - "12-28"
+      - "30-35"
+    note: "Implements load_config and parse_config_content directly."
+
+  - path: "src/domain/configuration/loader.rs"
+    loc:
+      - "23-48"
+      - "51-55"
+    note: "Implements almost identical load_config and parse_config_content logic."
