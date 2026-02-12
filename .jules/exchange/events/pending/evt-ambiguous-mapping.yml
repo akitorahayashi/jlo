@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "e7d9f2"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "tactician"
+confidence: "high"
+
+# Content
+title: "Ambiguous Scaffold Mapping in Documentation"
+statement: |
+  `src/assets/scaffold/AGENTS.md` documents `.jules/roles` as the structure but the adjacent source directory is `jules/layers`. The mapping logic is hidden in `scaffold_assets.rs`. This violates "No Ambiguous Priority" and "Execution-critical completeness" for maintainers.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc:
+      - "1-50"
+    note: "Documents .jules/roles structure but resides near jules/layers."
+  - path: "src/adapters/assets/scaffold_assets.rs"
+    loc:
+      - "62-72"
+    note: "Contains the unmap_scaffold_path logic that maps layers to roles."

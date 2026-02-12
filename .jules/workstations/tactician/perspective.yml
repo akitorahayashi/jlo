@@ -2,12 +2,12 @@ schema_version: 2
 
 observer: "tactician"
 
-updated_at: "2026-02-11T21:01:29Z"
+updated_at: "2026-02-12T02:44:13Z"
 
 goals:
-  - "Monitor duplicate verification instructions and consolidate to src/AGENTS.md."
-  - "Establish tests/AGENTS.md for explicit testing contracts."
-  - "Establish src/domain/AGENTS.md for explicit domain logic contracts."
+  - "Monitor duplicate design principles across AGENTS files."
+  - "Ensure scaffold documentation reflects source-to-deploy mapping explicitly."
+  - "Maintain token efficiency in AGENTS contracts."
 
 rules:
   - "Prefer consolidation over duplication."
@@ -16,5 +16,7 @@ rules:
 ignore: []
 
 log:
+  - at: "2026-02-12T02:44:13Z"
+    summary: "Identified ambiguous scaffold mapping and duplicate design principles."
   - at: "2026-02-11T21:01:29Z"
     summary: "Initialized perspective and identified 3 findings."
