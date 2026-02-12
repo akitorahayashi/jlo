@@ -1,0 +1,26 @@
+schema_version: 1
+id: "a1b2c3"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "tactician"
+confidence: "high"
+title: "Volatile Content Duplication and Drift in Scaffold AGENTS.md"
+statement: |
+  `src/assets/scaffold/AGENTS.md` duplicates the "Prompt Hierarchy" section from `AGENTS.md` with wording variance, and contains a stale list of schema files (e.g. `issue.yml` vs `requirements.yml`), violating the "Duplicated directives" and "Volatile implementation detail" anti-patterns.
+evidence:
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc:
+      - "Prompt Hierarchy table"
+    note: "Duplicates prompt hierarchy definition from root AGENTS.md"
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc:
+      - "Schema Files table"
+    note: "Lists `issue.yml` which does not exist in .jules/roles/decider/schemas/"
+  - path: "AGENTS.md"
+    loc:
+      - "Prompt Hierarchy (No Duplication)"
+    note: "Authoritative definition of prompt hierarchy"
+  - path: "src/assets/scaffold/jules/roles/decider/schemas/requirements.yml"
+    loc:
+      - "file exists"
+    note: "Actual schema file name differs from documentation"

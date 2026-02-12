@@ -1,0 +1,14 @@
+schema_version: 2
+observer: "tactician"
+updated_at: "2026-02-12T21:39:00Z"
+goals:
+  - "Identify and document architectural drift in scaffold and test structure."
+  - "Enforce strict domain boundaries by flagging rule violations."
+  - "Ensure AGENTS.md files are accurate and non-redundant."
+rules:
+  - "Prefer structural findings over content drift unless content is critical."
+  - "Always cite the governing AGENTS.md rule when flagging a violation."
+ignore: []
+log:
+  - at: "2026-02-12T21:39:00Z"
+    summary: "Detected scaffold drift, domain arch violations, and test duplication."

@@ -1,0 +1,22 @@
+schema_version: 1
+id: "g7h8i9"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "tactician"
+confidence: "high"
+title: "Undocumented Test Architecture Drift and Code Duplication"
+statement: |
+  `tests/common/` contains a duplicate `TestContext` implementation matching `tests/harness/test_context.rs`, and is not documented in `tests/AGENTS.md`. This indicates architectural drift where new patterns (common) are emerging alongside legacy ones (harness) without clear governance or cleanup.
+evidence:
+  - path: "tests/AGENTS.md"
+    loc:
+      - "Structure section"
+    note: "Mentions `tests/harness/` but omits `tests/common/`"
+  - path: "tests/common/mod.rs"
+    loc:
+      - "pub struct TestContext"
+    note: "Duplicate definition of TestContext"
+  - path: "tests/harness/test_context.rs"
+    loc:
+      - "pub(crate) struct TestContext"
+    note: "Existing definition of TestContext"
