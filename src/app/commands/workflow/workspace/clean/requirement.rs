@@ -28,23 +28,32 @@ pub fn execute(
     options: WorkspaceCleanRequirementOptions,
 ) -> Result<WorkspaceCleanRequirementOutput, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
+    let root = workspace_root(&workspace)?;
+    let git = GitCommandAdapter::new(root);
+    execute_with_adapters(options, &workspace, &git)
+}
 
+pub fn execute_with_adapters<G: GitPort, W: WorkspaceStore>(
+    options: WorkspaceCleanRequirementOptions,
+    workspace: &W,
+    git: &G,
+) -> Result<WorkspaceCleanRequirementOutput, AppError> {
     if !workspace.exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 
     let jules_path = workspace.jules_path();
-    let canonical_jules = jules_path
-        .canonicalize()
+    let canonical_jules = workspace
+        .canonicalize(path_to_str(&jules_path, "Invalid .jules path")?)
         .map_err(|e| AppError::InternalError(format!("Failed to resolve .jules path: {}", e)))?;
 
-    let requirement_path = Path::new(&options.requirement_file);
-    let canonical_requirement = requirement_path.canonicalize().map_err(|_| {
-        AppError::Validation(format!(
-            "Requirement file does not exist: {}",
-            options.requirement_file
-        ))
-    })?;
+    let canonical_requirement =
+        workspace.canonicalize(&options.requirement_file).map_err(|_| {
+            AppError::Validation(format!(
+                "Requirement file does not exist: {}",
+                options.requirement_file
+            ))
+        })?;
 
     if !canonical_requirement.starts_with(&canonical_jules) {
         return Err(AppError::Validation(format!(
@@ -54,11 +63,9 @@ pub fn execute(
     }
 
     let requirement_rel =
-        resolve_requirement_path(&canonical_jules, &canonical_requirement, &workspace)?;
+        resolve_requirement_path(&canonical_jules, &canonical_requirement, workspace)?;
 
-    let canonical_root = canonical_jules.parent().unwrap_or(Path::new(".")).to_path_buf();
-    let canonical_store = FilesystemWorkspaceStore::new(canonical_root);
-    let inspect_output = inspect_at(&canonical_store)?;
+    let inspect_output = inspect_at(workspace)?;
 
     let requirement_item = inspect_output
         .requirements
@@ -99,9 +106,6 @@ pub fn execute(
         ));
     }
 
-    let root = workspace_root(&workspace)?;
-    let git = GitCommandAdapter::new(root);
-
     for path in &deleted_paths {
         git.run_command(&["rm", "--", path], None)?;
     }
@@ -128,10 +132,10 @@ pub fn execute(
     })
 }
 
-fn resolve_requirement_path(
+fn resolve_requirement_path<W: WorkspaceStore + ?Sized>(
     canonical_jules: &Path,
     canonical_requirement: &Path,
-    workspace: &FilesystemWorkspaceStore,
+    workspace: &W,
 ) -> Result<String, AppError> {
     let rel_to_jules = canonical_requirement
         .strip_prefix(canonical_jules)
@@ -153,14 +157,27 @@ fn resolve_requirement_path(
     Ok(requirement_rel)
 }
 
-fn workspace_root(workspace: &FilesystemWorkspaceStore) -> Result<PathBuf, AppError> {
-    let root = workspace.jules_path().parent().unwrap_or(Path::new(".")).to_path_buf();
-    root.canonicalize()
+fn workspace_root<W: WorkspaceStore + ?Sized>(workspace: &W) -> Result<PathBuf, AppError> {
+    let jules_path = workspace.jules_path();
+    let root = jules_path.parent().ok_or_else(|| {
+        AppError::Validation(format!(
+            "Invalid .jules path (missing parent): {}",
+            jules_path.display()
+        ))
+    })?;
+    let root = root.to_path_buf();
+    let root_str = path_to_str(&root, "Workspace root contains invalid unicode")?;
+    workspace
+        .canonicalize(root_str)
         .map_err(|e| AppError::InternalError(format!("Failed to resolve workspace root: {}", e)))
 }
 
 fn to_repo_relative(root: &Path, path: &Path) -> String {
     path.strip_prefix(root).unwrap_or(path).to_string_lossy().to_string()
+}
+
+fn path_to_str<'a>(path: &'a Path, err_prefix: &str) -> Result<&'a str, AppError> {
+    path.to_str().ok_or_else(|| AppError::Validation(format!("{}: {}", err_prefix, path.display())))
 }
 
 #[cfg(test)]

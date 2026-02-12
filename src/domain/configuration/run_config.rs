@@ -23,12 +23,8 @@ pub struct RunConfig {
 
 impl RunConfig {
     pub fn validate(&self) -> Result<(), AppError> {
-        if self.run.max_parallel == 0 {
-            return Err(AppError::Validation("max_parallel must be greater than 0".to_string()));
-        }
-        if self.jules.timeout_secs == 0 {
-            return Err(AppError::Validation("timeout_secs must be greater than 0".to_string()));
-        }
+        self.run.validate()?;
+        self.jules.validate()?;
         Ok(())
     }
 }
@@ -59,6 +55,18 @@ impl Default for JulesApiConfig {
             max_retries: default_max_retries(),
             retry_delay_ms: default_retry_delay_ms(),
         }
+    }
+}
+
+impl JulesApiConfig {
+    pub fn validate(&self) -> Result<(), AppError> {
+        if self.timeout_secs == 0 {
+            return Err(AppError::Validation("timeout_secs must be greater than 0".to_string()));
+        }
+        if self.retry_delay_ms == 0 {
+            return Err(AppError::Validation("retry_delay_ms must be greater than 0".to_string()));
+        }
+        Ok(())
     }
 }
 
@@ -108,6 +116,21 @@ impl Default for ExecutionConfig {
     }
 }
 
+impl ExecutionConfig {
+    pub fn validate(&self) -> Result<(), AppError> {
+        if self.max_parallel == 0 {
+            return Err(AppError::Validation("max_parallel must be greater than 0".to_string()));
+        }
+        if self.default_branch.trim().is_empty() {
+            return Err(AppError::Validation("default_branch must not be empty".to_string()));
+        }
+        if self.jules_branch.trim().is_empty() {
+            return Err(AppError::Validation("jules_branch must not be empty".to_string()));
+        }
+        Ok(())
+    }
+}
+
 fn default_branch() -> String {
     "main".to_string()
 }
@@ -144,6 +167,34 @@ mod tests {
         assert_eq!(config.run.jules_branch, "jules");
         assert!(config.run.parallel);
         assert_eq!(config.run.max_parallel, 3);
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn validate_execution_config_invalid_max_parallel() {
+        let config = ExecutionConfig { max_parallel: 0, ..Default::default() };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn validate_execution_config_empty_branches() {
+        let config = ExecutionConfig { default_branch: "  ".to_string(), ..Default::default() };
+        assert!(config.validate().is_err());
+
+        let config = ExecutionConfig { jules_branch: "".to_string(), ..Default::default() };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn validate_jules_config_invalid_timeout() {
+        let config = JulesApiConfig { timeout_secs: 0, ..Default::default() };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn validate_jules_config_invalid_retry_delay() {
+        let config = JulesApiConfig { retry_delay_ms: 0, ..Default::default() };
+        assert!(config.validate().is_err());
     }
 
     #[test]
