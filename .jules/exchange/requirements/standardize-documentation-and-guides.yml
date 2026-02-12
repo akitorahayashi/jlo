@@ -1,0 +1,39 @@
+schema_version: 2
+id: "d0c123"
+source_events:
+  - "e7d9f2"
+  - "dlay01"
+  - "srol01"
+  - "scrt8b"
+  - "unsc9c"
+  - "f9a2b3"
+title: "Standardize Documentation and Guides"
+label: "docs"
+priority: "medium"
+summary: "Address documentation gaps, drifts, and inconsistencies across the codebase and guides."
+goal: |
+  Ensure all documentation (README, AGENTS.md, docs/) is accurate, up-to-date, and consistent with the codebase.
+problem: |
+  Several documentation issues have been identified: ambiguous mapping between source layers and deployed roles, missing documentation for domain layers and single-role layers, outdated secret documentation, and duplicate design principles.
+impact: |
+  Inaccurate or missing documentation leads to developer confusion, increased onboarding time, and potential misuse of the system.
+desired_outcome: |
+  Documentation accurately reflects the current state of the system, including correct directory mappings, up-to-date secret usage, and comprehensive guides for all layers.
+affected_areas:
+  - "src/assets/scaffold/AGENTS.md"
+  - "src/domain/layers/"
+  - "docs/"
+  - ".github/AGENTS.md"
+  - "README.md"
+acceptance_criteria:
+  - "Clarify mapping between `src/assets/scaffold/jules/layers` and `.jules/roles` in AGENTS.md."
+  - "Add documentation for `src/domain/layers/` explaining implementation strategies."
+  - "Create user guides for Narrator, Decider, Planner, and Implementer in `docs/`."
+  - "Update secret documentation to reflect replacement of `JULES_LINKED_GH_TOKEN` with `GITHUB_TOKEN`."
+  - "Document `JLO_BOT_TOKEN` and remove deprecated `JULES_API_SECRET` references."
+  - "Consolidate duplicate design principles into the root `AGENTS.md`."
+verification_criteria:
+  - "Manual review of updated documentation files."
+  - "Verify links and references are valid."
+requires_deep_analysis: false
+deep_analysis_reason: ""
