@@ -1,0 +1,51 @@
+schema_version: 2
+
+# Metadata
+id: "8d92ka" # stable identity
+source_events:
+  - "cov001"
+  - "cov002"
+  - "cov003"
+  - "qa013f"
+  - "g7h8i9"
+title: "Comprehensive Test Strategy"
+label: "tests" # Must match a key in .jules/github-labels.json
+priority: "high"
+summary: "Implement comprehensive testing for production execution paths and mock E2E."
+
+# Content
+goal: |
+  Ensure robust testing coverage across both mock and real execution paths, with a unified test harness, to prevent regressions and ensure system reliability.
+
+problem: |
+  The current testing strategy is heavily mock-centric, leaving critical production logic (API calls, session management) in `ImplementerLayer` and `DeciderLayer` untested. Additionally, there are no end-to-end integration tests for the `jlo run --mock` command, and the test harness code is duplicated between `tests/common/` and `tests/harness/`.
+
+impact: |
+  This creates a high risk of production failures due to untested API interactions. It also increases maintenance burden due to duplicated test code and provides false confidence from passing mock tests that do not reflect real-world usage.
+
+desired_outcome: |
+  `ImplementerLayer::execute_real` and `DeciderLayer::execute_real` have dedicated unit tests. A new E2E test suite verifies `jlo run --mock` functionality. The duplicate `TestContext` is removed and the harness is unified.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/layers/implementer.rs"
+  - "src/domain/layers/decider.rs"
+  - "tests/cli/run/"
+  - "tests/common/"
+  - "tests/harness/"
+
+acceptance_criteria:
+  - "Unit tests cover `execute_real` logic in Implementer and Decider layers."
+  - "New E2E test suite verifies `jlo run --mock` functionality."
+  - "Duplicate `TestContext` implementation is removed."
+
+verification_criteria:
+  - "cargo test passes."
+  - "Coverage report shows increased coverage for `implementer.rs` and `decider.rs`."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

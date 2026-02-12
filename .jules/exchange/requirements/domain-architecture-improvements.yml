@@ -1,0 +1,57 @@
+schema_version: 2
+
+# Metadata
+id: "j29s1x" # stable identity
+source_events:
+  - "c8d9e0"
+  - "darch1"
+  - "darch2"
+  - "darch3"
+  - "d4e5f6"
+  - "e4a1b2"
+  - "f1a2b3"
+title: "Domain Architecture Improvements"
+label: "refacts" # Must match a key in .jules/github-labels.json
+priority: "medium"
+summary: "Refactor domain architecture to enforce boundaries, improve data structures, and decouple mock logic."
+
+# Content
+goal: |
+  Clean up technical debt and enforce architectural purity in the domain layer, improving maintainability, performance, and error handling.
+
+problem: |
+  The domain layer suffers from several architectural issues: usage of `Vec` where `Map` is appropriate in `ScaffoldManifest`, inefficient full-file parsing in `RequirementHeader`, brittle path logic in manifests, violations of domain purity rules (mock utils importing adapters), loss of semantic error information, and mock logic polluting production code.
+
+impact: |
+  These issues lead to reduced maintainability, potential performance bottlenecks, increased risk of invalid state (e.g., duplicate paths), harder debugging due to lost error context, and a codebase that is difficult to navigate due to mixed concerns.
+
+desired_outcome: |
+  `ScaffoldManifest` uses `BTreeMap` internally. `RequirementHeader` parses only headers efficiently. Manifest logic uses named path components. Domain code does not depend on adapters. Mock logic is extracted to dedicated modules. Semantic errors are preserved and propagated.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/workspace/manifest.rs"
+  - "src/domain/requirement.rs"
+  - "src/domain/layers/mock_utils.rs"
+  - "src/domain/layers/decider.rs"
+  - "src/domain/layers/implementer.rs"
+  - "src/domain/prompt_assembly/engine.rs"
+
+acceptance_criteria:
+  - "`ScaffoldManifest` internally uses a map to prevent duplicates."
+  - "`RequirementHeader` uses a streaming parser or buffered reader to avoid reading the whole file."
+  - "`mock_utils.rs` no longer imports from `adapters`."
+  - "Mock logic in layer strategies is moved to `mock_utils` or similar."
+  - "`AppError` variants are used correctly to preserve error semantics."
+
+verification_criteria:
+  - "cargo check passes."
+  - "cargo clippy passes."
+  - "jlo doctor passes."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

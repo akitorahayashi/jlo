@@ -1,0 +1,48 @@
+schema_version: 2
+
+# Metadata
+id: "m39x0z" # stable identity
+source_events:
+  - "ab12cd"
+  - "ef34gh"
+  - "ij56kl"
+  - "ambig1"
+  - "incos1"
+title: "CLI Documentation Consistency"
+label: "docs" # Must match a key in .jules/github-labels.json
+priority: "medium"
+summary: "Update CLI documentation for missing arguments and aliases, and address terminology inconsistencies."
+
+# Content
+goal: |
+  Ensure the CLI documentation is accurate, complete, and consistent with the codebase, reducing user confusion and friction.
+
+problem: |
+  Several CLI features are undocumented, including the `--phase` argument for innovators, the `wf` alias for `jlo workflow`, and the `--cli` flag for `jlo update`. Additionally, terminology ("Role" vs "Layer") and pluralization ("Narrator" vs "Observers") are inconsistent across the CLI and documentation.
+
+impact: |
+  Users may not be aware of useful features or may be confused by inconsistent naming, leading to a poor developer experience and difficulty navigating the system.
+
+desired_outcome: |
+  `README.md` lists all CLI arguments and aliases. Terminology is clarified in documentation or code is refactored for consistency. Layer naming conventions are standardized.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "README.md"
+  - "src/app/cli/"
+  - "src/assets/scaffold/AGENTS.md"
+
+acceptance_criteria:
+  - "`README.md` documents `--phase`, `--cli`, and `wf`."
+  - "`AGENTS.md` clarifies the distinction between 'Role' and 'Layer'."
+  - "Layer naming inconsistencies are reviewed and a decision is made (and documented/implemented)."
+
+verification_criteria:
+  - "Manual review of `README.md` against `jlo --help` output."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

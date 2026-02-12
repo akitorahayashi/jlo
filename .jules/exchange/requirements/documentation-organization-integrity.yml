@@ -1,0 +1,45 @@
+schema_version: 2
+
+# Metadata
+id: "p10s2y" # stable identity
+source_events:
+  - "a1b2c3"
+  - "lib001"
+title: "Documentation Organization Integrity"
+label: "docs" # Must match a key in .jules/github-labels.json
+priority: "medium"
+summary: "Deduplicate scaffold content and organize documentation into a hierarchical structure."
+
+# Content
+goal: |
+  Create a single source of truth for documentation and organize it logically into subdirectories to improve discoverability and maintainability.
+
+problem: |
+  `src/assets/scaffold/AGENTS.md` duplicates the "Prompt Hierarchy" section from the root `AGENTS.md` and contains stale schema references. The `docs/` directory is a flat list of specialized documents, violating namespace discipline and making it hard to find relevant information.
+
+impact: |
+  Maintenance overhead is increased due to the need to update duplicate content in multiple places. The flat documentation structure hinders navigation and comprehension of the project's documentation.
+
+desired_outcome: |
+  Scaffold `AGENTS.md` references the root `AGENTS.md` or uses a build-time inclusion mechanism to avoid manual duplication. The `docs/` directory is reorganized into logical subdirectories (e.g., `guides/`, `architecture/`, `reference/`).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/assets/scaffold/AGENTS.md"
+  - "docs/"
+
+acceptance_criteria:
+  - "`src/assets/scaffold/AGENTS.md` does not duplicate the \"Prompt Hierarchy\" section manually."
+  - "Stale schema references in scaffold assets are corrected."
+  - "`docs/` directory contains subdirectories grouping related documents."
+
+verification_criteria:
+  - "File existence checks for new documentation structure."
+  - "Content comparison to ensure no divergent duplicates remain."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

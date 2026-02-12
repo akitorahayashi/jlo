@@ -1,7 +1,7 @@
 schema_version: 1
 
 id: "incos1"
-issue_id: ""
+issue_id: "m39x0z"
 created_at: "2026-02-12"
 author_role: "taxonomy"
 confidence: "high"
@@ -12,8 +12,8 @@ statement: |
 
 evidence:
   - path: "src/domain/workspace/layer.rs"
-    loc: "Layer::prompt_template_name"
+    loc: ["Layer::prompt_template_name"]
     note: "Layer enum variants mix singular (Narrator) and plural (Observers)."
   - path: "src/app/cli/run.rs"
-    loc: "RunLayer enum"
+    loc: ["RunLayer enum"]
     note: "CLI subcommands mirror the internal inconsistency (Observers vs Narrator)."

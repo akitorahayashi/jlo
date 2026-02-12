@@ -1,0 +1,45 @@
+schema_version: 2
+
+# Metadata
+id: "k48d1w" # stable identity
+source_events:
+  - "s9k1l1"
+  - "s9k1l2"
+  - "s9k1l3"
+title: "Skills Framework Standardization"
+label: "docs" # Must match a key in .jules/github-labels.json
+priority: "low"
+summary: "Define and document the standard procedure and schema for creating and maintaining skills."
+
+# Content
+goal: |
+  Establish a clear, documented framework for skill creation to enable consistent contributions and lower the barrier to entry for new skill authors.
+
+problem: |
+  There is no documented procedure or template for creating new skills in `.agents/skills/`. The `agents/openai.yaml` schema contains undefined fields like `display_name` and `default_prompt`. Existing skills have implicit branching logic in their procedures that is not clearly defined.
+
+impact: |
+  This leads to inconsistent skill implementations, confusion for authors about required fields, and difficulty in understanding the intended flow of skill execution.
+
+desired_outcome: |
+  A "Create Skill" guide and template are available. The `agents/openai.yaml` schema is fully documented. Skill procedures explicitly define branching logic (e.g., Creation vs. Review modes).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - ".agents/skills/"
+  - "AGENTS.md"
+
+acceptance_criteria:
+  - "A guide for creating skills is added to the documentation."
+  - "`agents/openai.yaml` schema fields are defined and documented."
+  - "Implicit branching in skill procedures is made explicit in the documentation or templates."
+
+verification_criteria:
+  - "Manual review of new documentation and templates."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
