@@ -37,11 +37,11 @@ Out of scope:
 
 | Change type | Workflow templates impacted | Composite actions impacted | Tests/doc impacted |
 |---|---|---|---|
-| Rename/add/remove branch variables | `jules-workflows.yml.j2`, `jules-sync.yml.j2`, `jules-automerge.yml.j2`, `jules-mock-cleanup.yml.j2`, `jules-workflows/components/*.yml.j2`, `jules-workflows/macros/run_job.j2` | `install-jlo/action.yml` | `tests/workflow_kit.rs`, `.github/AGENTS.md`, `docs/CONTROL_PLANE_OWNERSHIP.md`, this file |
-| Change source of `.jlo/.jlo-version` | Any workflow using install step | `install-jlo/action.yml` | `tests/workflow_kit.rs`, docs branch-contract sections |
-| Change worker bootstrap branch creation strategy | `jules-workflows/components/bootstrap.yml.j2`, `jules-sync.yml.j2` | none | `tests/workflow_kit.rs`, ownership docs |
-| Change action resolution strategy (`./.github/actions/*`) | All workflows invoking local actions | `install-jlo/action.yml` | `tests/workflow_kit.rs` (string assertions) |
-| Change implementer target routing | `jules-workflows.yml.j2` | `install-jlo/action.yml` | `tests/workflow_kit.rs`, `.github/AGENTS.md` |
+| Rename/add/remove branch variables | `jules-workflows.yml.j2`, `jules-sync.yml.j2`, `jules-automerge.yml.j2`, `jules-mock-cleanup.yml.j2`, `jules-workflows/components/*.yml.j2`, `jules-workflows/macros/run_job.j2` | `install-jlo/action.yml` | `tests/workflow.rs`, `.github/AGENTS.md`, `docs/CONTROL_PLANE_OWNERSHIP.md`, this file |
+| Change source of `.jlo/.jlo-version` | Any workflow using install step | `install-jlo/action.yml` | `tests/workflow.rs`, docs branch-contract sections |
+| Change worker bootstrap branch creation strategy | `jules-workflows/components/bootstrap.yml.j2`, `jules-sync.yml.j2` | none | `tests/workflow.rs`, ownership docs |
+| Change action resolution strategy (`./.github/actions/*`) | All workflows invoking local actions | `install-jlo/action.yml` | `tests/workflow.rs` (string assertions) |
+| Change implementer target routing | `jules-workflows.yml.j2` | `install-jlo/action.yml` | `tests/workflow.rs`, `.github/AGENTS.md` |
 
 ## Fast Investigation Path
 
@@ -65,7 +65,7 @@ When a branch-related workflow failure occurs:
 Run after any branch-contract edit:
 
 ```bash
-cargo test --test workflow_kit
+cargo test --test workflow
 cargo test workflow_templates_parse_with_serde_yaml
 cargo test workflow_templates_pass_yaml_lint_remote
 ```
