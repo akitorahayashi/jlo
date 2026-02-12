@@ -36,7 +36,10 @@ pub fn load_config<W: WorkspaceStore>(
     })?;
     let config_path = jlo::config(root);
     let config_path_str = config_path.to_str().ok_or_else(|| {
-        AppError::Validation(format!("Config path contains invalid unicode: {}", config_path.display()))
+        AppError::Validation(format!(
+            "Config path contains invalid unicode: {}",
+            config_path.display()
+        ))
     })?;
 
     if !workspace.file_exists(config_path_str) {
