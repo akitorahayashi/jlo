@@ -1,0 +1,11 @@
+schema_version: 2
+observer: "librarian"
+updated_at: "2026-02-12T21:36:27Z"
+goals:
+  - "Audit documentation structure for top-level namespace discipline."
+  - "Identify flat documentation accumulation."
+rules: []
+ignore: []
+log:
+  - at: "2026-02-12T21:36:27Z"
+    summary: "Initialized librarian perspective."
