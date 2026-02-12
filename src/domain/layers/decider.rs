@@ -421,6 +421,3 @@ where
 
     Ok(output)
 }
-
-#[cfg(test)]
-mod tests {}

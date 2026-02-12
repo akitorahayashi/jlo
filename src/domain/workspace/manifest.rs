@@ -53,8 +53,10 @@ impl ScaffoldManifest {
 
 pub fn is_default_role_file(path: &str) -> bool {
     let path_obj = Path::new(path);
-    let parts: Vec<_> =
-        path_obj.components().map(|c| c.as_os_str().to_str().unwrap_or("")).collect();
+    let Some(parts) = path_obj.components().map(|c| c.as_os_str().to_str()).collect::<Option<Vec<_>>>()
+    else {
+        return false;
+    };
 
     // .jules/roles/<layer>/<role>/role.yml (multi-role layers: observers, innovators)
     // Example: .jules/roles/observers/taxonomy/role.yml
@@ -72,8 +74,11 @@ pub fn is_default_role_file(path: &str) -> bool {
 
 pub fn is_control_plane_entity_file(path: &str) -> bool {
     let path_obj = Path::new(path);
-    let components: Vec<_> =
-        path_obj.components().map(|c| c.as_os_str().to_str().unwrap_or("")).collect();
+    let Some(components) =
+        path_obj.components().map(|c| c.as_os_str().to_str()).collect::<Option<Vec<_>>>()
+    else {
+        return false;
+    };
 
     // .jlo/roles/<layer>/<role>/role.yml
     if components.len() == 5
