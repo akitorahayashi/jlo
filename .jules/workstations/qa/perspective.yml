@@ -1,11 +1,13 @@
 schema_version: 2
 observer: qa
-updated_at: "2026-02-11T21:02:47Z"
+updated_at: "2026-02-12T03:00:00Z"
 goals:
-  - "Identify redundant test coverage across integration suites."
-  - "Highlight opportunities to move logic verification to unit tests."
+  - "Promote unit test coverage for Narrator and Decider layers."
+  - "Evaluate effectiveness of mock_output_validation.rs for regression testing."
 rules: []
 ignore: []
 log:
+  - at: "2026-02-12T03:00:00Z"
+    summary: "Identified redundant integration tests in commands_core.rs and missing unit tests in domain layers."
   - at: "2026-02-11T21:02:47Z"
     summary: "Initialized QA perspective and performed initial assessment."

@@ -1,0 +1,19 @@
+schema_version: 1
+id: x7k3m9
+issue_id: ""
+created_at: "2026-02-12"
+author_role: qa
+confidence: high
+title: Consolidate redundant command integration tests
+statement: |
+  The test file `tests/commands_core.rs` tests the same library functions (`init_at`, `create_role_at`) that are thoroughly exercised via the CLI in `tests/cli_commands.rs`. This duplication increases maintenance overhead without adding significant coverage or diagnosability.
+evidence:
+  - path: "tests/commands_core.rs"
+    loc:
+      - "1-22"
+    note: "Entire file duplicates scenarios covered in cli_commands.rs"
+  - path: "tests/cli_commands.rs"
+    loc:
+      - "51-120"
+      - "184-192"
+    note: "Equivalent coverage exists in test_cli_lifecycle and create_role_fails_without_workspace"
