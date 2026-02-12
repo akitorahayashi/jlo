@@ -1,0 +1,22 @@
+schema_version: 1
+
+# Metadata
+id: "conf01"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "cov"
+confidence: "medium"
+
+# Content
+title: "Repository Detection Logic Unverified"
+statement: |
+  The `detect_repository_source` function in `src/app/commands/run/config.rs` contains complex
+  precedence logic (Git config vs Env var) and failure modes that are not covered by unit tests.
+  Failures in repository detection in different environments (e.g., CI vs Local) may go unnoticed.
+
+# Evidence
+evidence:
+  - path: "src/app/commands/run/config.rs"
+    loc:
+      - "detect_repository_source"
+    note: "Relies on git command execution without unit test coverage for failure or precedence logic."

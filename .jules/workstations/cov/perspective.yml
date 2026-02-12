@@ -2,17 +2,19 @@ schema_version: 2
 
 observer: "cov"
 
-updated_at: "2026-02-11T21:03:47Z"
+updated_at: "2026-02-12T02:30:00Z"
 
 goals:
-  - "Identify critical paths with zero coverage."
-  - "Monitor coverage trends on PRs."
-  - "Advocate for higher coverage thresholds."
+  - "Advocate for unit tests on `execute_mock` logic in domain layers."
+  - "Encourage isolation tests for domain execution (`execute_real`)."
+  - "Monitor coverage of configuration logic."
 
 rules: []
 
 ignore: []
 
 log:
+  - at: "2026-02-12T02:30:00Z"
+    summary: "Identified critical gaps in mock logic, domain execution, and config detection."
   - at: "2026-02-11T21:03:47Z"
     summary: "Initialized workstation and identified 3 initial findings."
