@@ -9,7 +9,7 @@ fn implementer_metadata_path_delegates_to_unified_process_command() {
 
     let root = ctx.work_dir();
     let workflow =
-        fs::read_to_string(root.join(".github/workflows/jules-scheduled-workflows.yml")).unwrap();
+        fs::read_to_string(root.join(".github/workflows/jules-implementer-pr.yml")).unwrap();
 
     assert!(workflow.contains("process-implementer-pr-metadata:"));
     assert!(workflow.contains("'jules-implementer-*'"));
@@ -20,8 +20,10 @@ fn implementer_metadata_path_delegates_to_unified_process_command() {
     assert!(workflow.contains("secrets.JLO_BOT_TOKEN"));
 
     assert!(
-        !root.join(".github/workflows/jules-implementer-pr.yml").exists(),
-        "standalone implementer metadata workflow should not be installed"
+        !fs::read_to_string(root.join(".github/workflows/jules-scheduled-workflows.yml"))
+            .unwrap()
+            .contains("process-implementer-pr-metadata:"),
+        "scheduled workflow should not inline metadata job"
     );
     assert!(
         !root.join(".github/workflows/jules-implementer-label.yml").exists(),
