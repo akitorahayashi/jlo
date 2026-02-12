@@ -43,6 +43,14 @@ pub enum AppError {
     #[error("Validation failed: {0}")]
     Validation(String),
 
+    /// Invalid configuration error.
+    #[error("Invalid configuration: {0}")]
+    InvalidConfig(String),
+
+    /// Invalid path error.
+    #[error("Invalid path: {0}")]
+    InvalidPath(String),
+
     /// Missing required argument.
     #[error("Missing argument: {0}")]
     MissingArgument(String),

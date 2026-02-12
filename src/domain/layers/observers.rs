@@ -113,7 +113,7 @@ where
         &role_id,
         assembled,
         &source,
-        &starting_branch,
+        starting_branch,
         client.as_ref(),
     )?;
 

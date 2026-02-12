@@ -29,14 +29,14 @@ pub fn load_config<W: WorkspaceStore>(
     // jules_path is typically .jules/
     // We need to look in .jlo/config.toml which is a sibling of .jules/
     let root = jules_path.parent().ok_or_else(|| {
-        AppError::Validation(format!(
+        AppError::InvalidPath(format!(
             "Invalid .jules path (missing parent): {}",
             jules_path.display()
         ))
     })?;
     let config_path = jlo::config(root);
     let config_path_str = config_path.to_str().ok_or_else(|| {
-        AppError::Validation(format!(
+        AppError::InvalidPath(format!(
             "Config path contains invalid unicode: {}",
             config_path.display()
         ))
@@ -158,6 +158,6 @@ max_parallel = 0
 "#;
         let result = parse_config_content(toml);
         assert!(result.is_err());
-        assert!(matches!(result, Err(AppError::Validation(_))));
+        assert!(matches!(result, Err(AppError::InvalidConfig(_))));
     }
 }
