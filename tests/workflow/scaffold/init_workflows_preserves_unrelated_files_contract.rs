@@ -51,8 +51,6 @@ fn init_workflows_removes_stale_jules_workflows() {
     let stale_paths = [
         root.join(".github/workflows/jules-workflows.yml"),
         root.join(".github/workflows/jules-sync.yml"),
-        root.join(".github/workflows/jules-automerge.yml"),
-        root.join(".github/workflows/jules-implementer-pr.yml"),
         root.join(".github/workflows/jules-implementer-label.yml"),
         root.join(".github/workflows/jules-pr-summary-request.yml"),
         root.join(".github/workflows/jules-mock-cleanup.yml"),
@@ -76,5 +74,13 @@ fn init_workflows_removes_stale_jules_workflows() {
     assert!(
         root.join(".github/workflows/jules-scheduled-workflows.yml").exists(),
         "current primary workflow should be installed"
+    );
+    assert!(
+        root.join(".github/workflows/jules-automerge.yml").exists(),
+        "current automerge workflow should be installed"
+    );
+    assert!(
+        root.join(".github/workflows/jules-implementer-pr.yml").exists(),
+        "current implementer metadata workflow should be installed"
     );
 }
