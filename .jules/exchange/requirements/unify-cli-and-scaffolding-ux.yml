@@ -1,0 +1,35 @@
+schema_version: 2
+id: "ux4567"
+source_events:
+  - "n4m3r0"
+  - "c1f1ag"
+  - "d1r1ft"
+  - "rsyn7a"
+title: "Unify CLI and Scaffolding UX"
+label: "refacts"
+priority: "medium"
+summary: "Resolve inconsistencies in CLI arguments, flags, and scaffolding terminology to improve user experience."
+goal: |
+  Create a consistent and intuitive user experience for the `jlo` CLI and the scaffolded file structure.
+problem: |
+  The CLI currently suffers from inconsistent argument naming (`name` vs `role`), overloaded flags (`-r`), and syntax drift (`jlo run` arguments). Additionally, there is a disconnect between source layer naming (`jules/layers`) and deployed role structure (`.jules/roles`).
+impact: |
+  These inconsistencies increase cognitive load, cause confusion, and make the tool harder to learn and use.
+desired_outcome: |
+  The CLI uses consistent terminology and flags. The scaffolding structure is aligned with the source concepts or consistently mapped.
+affected_areas:
+  - "src/app/cli/mod.rs"
+  - "src/app/cli/run.rs"
+  - "src/adapters/assets/scaffold_assets.rs"
+  - "src/assets/scaffold/jules/layers"
+acceptance_criteria:
+  - "Unify CLI arguments: Use `role` consistently for role names in `create` and `add` commands."
+  - "Resolve flag collision: Ensure `-r` is not ambiguous or use different short flags."
+  - "Align `jlo run` syntax with documentation (or update docs if the flag is preferred)."
+  - "Address the structural drift between `layers` (source) and `roles` (deployed), likely by renaming source to `roles` to match the user-facing concept."
+verification_criteria:
+  - "Run `jlo --help` to verify consistent argument naming."
+  - "Verify `jlo run` commands work as documented."
+  - "Check that source directory structure matches the intended design."
+requires_deep_analysis: false
+deep_analysis_reason: ""

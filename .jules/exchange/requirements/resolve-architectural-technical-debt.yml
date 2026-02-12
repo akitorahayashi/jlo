@@ -1,0 +1,39 @@
+schema_version: 2
+id: "deb234"
+source_events:
+  - "jntkko"
+  - "dupmck"
+  - "dupcfg"
+  - "bl9wch"
+  - "zp8isa"
+  - "strpth"
+title: "Resolve Architectural Technical Debt"
+label: "refacts"
+priority: "medium"
+summary: "Refactor codebase to eliminate duplication, improve type safety, and decouple logic."
+goal: |
+  Clean up technical debt to improve maintainability, reduce error-proneness, and enforce architectural boundaries (Single Source of Truth).
+problem: |
+  The codebase contains several areas of technical debt: unnecessary clones at API boundaries, duplicate configuration loading logic, stringly-typed error/path handling, and monolithic mock execution logic that bypasses domain abstractions.
+impact: |
+  These issues lead to code duplication (violation of DRY/SSOT), fragile code (stringly-typed logic), and harder maintenance/testing (monolithic functions).
+desired_outcome: |
+  Configuration loading is unified. Error handling and path manipulation are strongly typed. Mock logic is modular and testable. Unnecessary allocations are removed.
+affected_areas:
+  - "src/domain/configuration/"
+  - "src/app/commands/run/"
+  - "src/domain/error.rs"
+  - "src/domain/workspace/manifest.rs"
+  - "src/domain/layers/"
+acceptance_criteria:
+  - "Consolidate `RunConfig` and `MockConfig` loading logic to a single source of truth in the domain layer."
+  - "Refactor `AppError` to use structured variants instead of string holders where possible."
+  - "Refactor `manifest.rs` to use `Path` API and constants instead of string splitting."
+  - "Refactor `execute_mock` in layers to use helper functions or domain services."
+  - "Remove unnecessary `.clone()` and `.to_string()` calls in `decider.rs` and `multi_role.rs`."
+verification_criteria:
+  - "Verify no duplicate config loading logic exists."
+  - "Verify error handling preserves context."
+  - "Verify mock execution still works as expected."
+requires_deep_analysis: false
+deep_analysis_reason: ""
