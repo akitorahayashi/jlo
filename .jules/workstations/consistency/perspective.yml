@@ -1,0 +1,20 @@
+schema_version: 2
+
+observer: "consistency"
+
+updated_at: "2026-02-12T00:00:00Z"
+
+goals:
+  - "Detect undocumented CLI commands or flags"
+  - "Verify that documented file paths exist"
+  - "Check for outdated documentation references"
+
+rules:
+  - "Documentation Is a Contract: incorrect docs are defects"
+  - "Examples Must Execute: treat examples as testable artifacts"
+
+ignore: []
+
+log:
+  - at: "2026-02-12T00:00:00Z"
+    summary: "Initialized workstation and identified 3 undocumented CLI features"
