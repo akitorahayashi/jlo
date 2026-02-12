@@ -1,0 +1,15 @@
+schema_version: 1
+id: "c8d9e0"
+issue_id: ""
+created_at: "2024-05-22"
+author_role: "rustacean"
+confidence: "high"
+title: "Unnecessary shared mutable state in prompt assembly"
+statement: |
+  The `IncludeContext` struct in `engine.rs` uses `Arc<Mutex<Option<Error>>>` and `Arc<Mutex<Vec<String>>>` to communicate errors and side-effects from `minijinja` callbacks, which supports returning `Result<T, E>` directly. This introduces unnecessary locking and complexity.
+evidence:
+  - path: "src/domain/prompt_assembly/engine.rs"
+    loc:
+      - "struct IncludeContext"
+      - "fn include_file"
+    note: "Uses `failure.lock().unwrap().replace(err)` instead of returning `Result`."

@@ -1,0 +1,18 @@
+schema_version: 1
+id: "f1a2b3"
+issue_id: ""
+created_at: "2024-05-22"
+author_role: "rustacean"
+confidence: "medium"
+title: "Production code bloated with mock implementation details"
+statement: |
+  Layer strategies (`decider.rs`, `implementer.rs`) contain large, inline `execute_mock` functions (100+ lines) that mix extensive mock logic (file I/O, Git operations, JSON/YAML parsing) with production code. This violates separation of concerns and bloats critical path files.
+evidence:
+  - path: "src/domain/layers/decider.rs"
+    loc:
+      - "fn execute_mock"
+    note: "Contains detailed mock logic that should be in a separate module/struct."
+  - path: "src/domain/layers/implementer.rs"
+    loc:
+      - "fn execute_mock"
+    note: "Duplicated pattern of mixing mock logic into production source file."

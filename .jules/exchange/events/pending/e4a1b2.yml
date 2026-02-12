@@ -1,0 +1,18 @@
+schema_version: 1
+id: "e4a1b2"
+issue_id: ""
+created_at: "2024-05-22"
+author_role: "rustacean"
+confidence: "high"
+title: "Loss of semantic errors in layer execution"
+statement: |
+  Error mapping in `decider.rs` (and others) reduces strongly-typed errors to generic strings via `AppError::InternalError`, bypassing available specific variants like `AppError::PromptAssembly` that preserve context and facilitate programmatic handling.
+evidence:
+  - path: "src/domain/layers/decider.rs"
+    loc:
+      - "fn assemble_decider_prompt"
+    note: "`map_err(|e| AppError::InternalError(e.to_string()))` swallows `PromptAssemblyError` despite `AppError` having `#[from] PromptAssemblyError`."
+  - path: "src/domain/layers/implementer.rs"
+    loc:
+      - "fn assemble_implementer_prompt"
+    note: "Similar pattern reduces `PromptAssemblyError` to `InternalError` string."

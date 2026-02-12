@@ -1,0 +1,14 @@
+schema_version: 2
+observer: "rustacean"
+updated_at: "2024-05-22T12:00:00Z"
+goals:
+  - "Identify and report semantic error handling issues where types are reduced to strings."
+  - "Identify unnecessary shared mutable state (Arc<Mutex<T>>) that can be replaced with owned values or return types."
+  - "Identify production code bloat caused by inline mock logic."
+rules:
+  - "Use `#[from]` for `thiserror` enums instead of manual `map_err` to `InternalError`."
+  - "Propagate errors via `Result` in closures when the API supports it."
+ignore: []
+log:
+  - at: "2024-05-22T12:00:00Z"
+    summary: "Initialized workstation and identified 3 key findings."
