@@ -209,8 +209,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=15
-            echo "Mock mode enabled: overriding wait to 15 seconds."
+            TOTAL_SECONDS=30
+            echo "Mock mode enabled: overriding wait to 30 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -303,11 +303,11 @@ jobs:
   # ============================================================
 
   run-observers:
-    needs: [check-schedule]
+    needs: ["check-schedule", "wait-after-innovators-1"]
     if: |
       always() &&
-            needs.check-schedule.result == 'success' &&
-            fromJSON(needs.check-schedule.outputs.json).should_run == true
+            fromJSON(needs.check-schedule.outputs.json).should_run == true &&
+            (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -356,8 +356,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=15
-            echo "Mock mode enabled: overriding wait to 15 seconds."
+            TOTAL_SECONDS=30
+            echo "Mock mode enabled: overriding wait to 30 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -410,8 +410,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=15
-            echo "Mock mode enabled: overriding wait to 15 seconds."
+            TOTAL_SECONDS=30
+            echo "Mock mode enabled: overriding wait to 30 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -447,12 +447,11 @@ jobs:
   # ============================================================
 
   run-innovators-2:
-    needs: ["check-schedule", "wait-after-observers", "wait-after-innovators-1"]
+    needs: ["check-schedule", "wait-after-observers"]
     if: |
       always() &&
             fromJSON(needs.check-schedule.outputs.json).should_run == true &&
-            (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped') &&
-            (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')
+            (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -501,8 +500,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=15
-            echo "Mock mode enabled: overriding wait to 15 seconds."
+            TOTAL_SECONDS=30
+            echo "Mock mode enabled: overriding wait to 30 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -651,8 +650,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=15
-            echo "Mock mode enabled: overriding wait to 15 seconds."
+            TOTAL_SECONDS=30
+            echo "Mock mode enabled: overriding wait to 30 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -777,8 +776,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=15
-            echo "Mock mode enabled: overriding wait to 15 seconds."
+            TOTAL_SECONDS=30
+            echo "Mock mode enabled: overriding wait to 30 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -868,8 +867,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=15
-            echo "Mock mode enabled: overriding wait to 15 seconds."
+            TOTAL_SECONDS=30
+            echo "Mock mode enabled: overriding wait to 30 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi

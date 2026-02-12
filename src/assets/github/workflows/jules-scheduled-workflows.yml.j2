@@ -99,10 +99,15 @@ jobs:
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-observers',
-    'check-schedule',
-    'should_run',
+    'wait-after-innovators-1',
+    'json',
     'observers',
-    'Run observers'
+    'Run observers',
+    {},
+    ['check-schedule', 'wait-after-innovators-1'],
+    "always() &&
+      fromJSON(needs.check-schedule.outputs.json).should_run == true &&
+      (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')"
 ) }}
   # ============================================================
   # Phase 6: Wait for observer processing
@@ -122,11 +127,10 @@ jobs:
     'innovators',
     'Run innovators (second pass)',
     {},
-    ['check-schedule', 'wait-after-observers', 'wait-after-innovators-1'],
+    ['check-schedule', 'wait-after-observers'],
     "always() &&
       fromJSON(needs.check-schedule.outputs.json).should_run == true &&
-      (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped') &&
-      (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')",
+      (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')",
     extra_run_args='--phase refinement'
 ) }}
   # ============================================================

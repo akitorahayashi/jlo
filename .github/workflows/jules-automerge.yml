@@ -20,7 +20,7 @@ jobs:
     if: ${{ github.base_ref == 'jules' }}
     runs-on: ubuntu-latest
     concurrency:
-      group: ${{ format('jules-automerge-pr-{0}', github.event.pull_request.number) }}
+      group: 'jules-automerge-jules'
       cancel-in-progress: false
     steps:
       - name: Validate branch variables
