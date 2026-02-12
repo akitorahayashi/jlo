@@ -8,12 +8,7 @@ fn run_implementer_rejects_missing_requirement_file() {
     ctx.init_remote_and_bootstrap();
 
     ctx.cli()
-        .args([
-            "run",
-            "implementer",
-            "--requirement",
-            ".jules/exchange/requirements/nonexistent.yml",
-        ])
+        .args(["run", "implementer", ".jules/exchange/requirements/nonexistent.yml"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Requirement file not found"));

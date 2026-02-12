@@ -1,4 +1,5 @@
 mod automerge_delegates_to_jlo_command_contract;
+mod implementer_pr_workflow_delegates_metadata_commands_contract;
 mod init_installs_workflow_scaffold_contract;
 mod init_workflows_config_contract;
 mod init_workflows_preserves_unrelated_files_contract;

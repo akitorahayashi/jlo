@@ -3,6 +3,7 @@
 //! Applies category label to implementer PRs by reading the label from the
 //! PR head branch name and syncing it from `.jules/github-labels.json`.
 
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
@@ -44,8 +45,11 @@ pub fn execute(
 ) -> Result<SyncCategoryLabelOutput, AppError> {
     let pr = github.get_pr_detail(options.pr_number)?;
 
+    let labels_path = Path::new(".jules/github-labels.json");
+    let issue_labels = load_issue_labels(labels_path)?;
+
     // Only target implementer branches
-    let parsed = match parse_implementer_branch(&pr.head) {
+    let parsed = match parse_implementer_branch(&pr.head, &issue_labels) {
         Ok(p) => p,
         Err(_) => {
             return Ok(SyncCategoryLabelOutput {
@@ -61,9 +65,12 @@ pub fn execute(
         }
     };
 
-    // Load label color from github-labels.json
-    let labels_path = Path::new(".jules/github-labels.json");
-    let label_info = load_label_info(labels_path, &parsed.label)?;
+    let label_info = issue_labels.get(&parsed.label).ok_or_else(|| {
+        AppError::Validation(format!(
+            "Label '{}' not found in github-labels.json issue_labels",
+            parsed.label
+        ))
+    })?;
 
     // Ensure label exists with configured color, then apply to PR
     github.ensure_label(&label_info.name, Some(&label_info.color))?;
@@ -74,13 +81,20 @@ pub fn execute(
         applied: true,
         skipped_reason: None,
         target: options.pr_number,
-        label: Some(label_info.name),
+        label: Some(label_info.name.clone()),
     })
 }
 
 /// Parse implementer branch name.
-/// Expected format: `jules-implementer-<label>-<issue_id>` where issue_id is 6 lowercase alphanumeric chars.
-fn parse_implementer_branch(branch: &str) -> Result<ParsedBranch, AppError> {
+/// Expected format: `jules-implementer-<label>-<issue_id>-<short_description>`
+/// where:
+/// - `<label>` must exist in github-labels.json issue_labels keys
+/// - `<issue_id>` is 6 lowercase alphanumeric chars
+/// - `<short_description>` is non-empty and may contain hyphens.
+fn parse_implementer_branch(
+    branch: &str,
+    issue_labels: &HashMap<String, LabelInfo>,
+) -> Result<ParsedBranch, AppError> {
     if !branch.starts_with("jules-implementer-") {
         return Err(AppError::Validation(format!(
             "Branch '{}' does not match implementer pattern",
@@ -88,34 +102,33 @@ fn parse_implementer_branch(branch: &str) -> Result<ParsedBranch, AppError> {
         )));
     }
 
-    let suffix = branch.trim_start_matches("jules-implementer-");
-    let last_hyphen = suffix.rfind('-').ok_or_else(|| {
-        AppError::Validation(format!(
-            "Invalid implementer branch format: missing issue ID in '{}'",
-            branch
-        ))
-    })?;
+    let suffix =
+        branch.strip_prefix("jules-implementer-").expect("branch prefix is validated above");
+    let mut labels: Vec<&str> = issue_labels.keys().map(|label| label.as_str()).collect();
+    labels.sort_by_key(|label| std::cmp::Reverse(label.len()));
 
-    let label = &suffix[..last_hyphen];
-    let issue_id = &suffix[last_hyphen + 1..];
-
-    if label.is_empty() {
-        return Err(AppError::Validation(format!(
-            "Invalid implementer branch format: empty label in '{}'",
-            branch
-        )));
+    for label in labels {
+        let label_prefix = format!("{}-", label);
+        let Some(rest) = suffix.strip_prefix(&label_prefix) else {
+            continue;
+        };
+        let mut parts = rest.splitn(2, '-');
+        let issue_id = parts.next().unwrap_or("");
+        let short_description = parts.next().unwrap_or("");
+        if short_description.is_empty() {
+            continue;
+        }
+        if issue_id.len() == 6
+            && issue_id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+        {
+            return Ok(ParsedBranch { label: label.to_string(), issue_id: issue_id.to_string() });
+        }
     }
 
-    if issue_id.len() != 6
-        || !issue_id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-    {
-        return Err(AppError::Validation(format!(
-            "Invalid implementer branch: issue ID must be 6 alphanumeric chars, got '{}' in '{}'",
-            issue_id, branch
-        )));
-    }
-
-    Ok(ParsedBranch { label: label.to_string(), issue_id: issue_id.to_string() })
+    Err(AppError::Validation(format!(
+        "Branch '{}' does not match implementer pattern '<label>-<id>-<short_description>'",
+        branch
+    )))
 }
 
 /// Label information from github-labels.json.
@@ -124,8 +137,8 @@ struct LabelInfo {
     color: String,
 }
 
-/// Load and validate label from github-labels.json.
-fn load_label_info(labels_path: &Path, label: &str) -> Result<LabelInfo, AppError> {
+/// Load and validate issue labels from github-labels.json.
+fn load_issue_labels(labels_path: &Path) -> Result<HashMap<String, LabelInfo>, AppError> {
     let content = fs::read_to_string(labels_path).map_err(|_| {
         AppError::Validation(format!("Missing github-labels.json: {}", labels_path.display()))
     })?;
@@ -138,22 +151,22 @@ fn load_label_info(labels_path: &Path, label: &str) -> Result<LabelInfo, AppErro
         AppError::Validation("github-labels.json missing issue_labels object".to_string())
     })?;
 
-    let label_obj = issue_labels.get(label).ok_or_else(|| {
-        AppError::Validation(format!(
-            "Label '{}' not found in github-labels.json issue_labels",
-            label
-        ))
-    })?;
-
-    let color = label_obj
-        .get("color")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| {
-            AppError::Validation(format!("Label '{}' missing color in github-labels.json", label))
-        })?
-        .to_string();
-
-    Ok(LabelInfo { name: label.to_string(), color })
+    issue_labels
+        .iter()
+        .map(|(name, value)| {
+            let color = value
+                .get("color")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| {
+                    AppError::Validation(format!(
+                        "Label '{}' missing color in github-labels.json",
+                        name
+                    ))
+                })?
+                .to_string();
+            Ok((name.to_string(), LabelInfo { name: name.to_string(), color }))
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -162,28 +175,60 @@ mod tests {
 
     #[test]
     fn parse_valid_implementer_branch() {
-        let parsed = parse_implementer_branch("jules-implementer-bugs-abc123").unwrap();
+        let mut labels = HashMap::new();
+        labels.insert(
+            "bugs".to_string(),
+            LabelInfo { name: "bugs".to_string(), color: "d73a4a".to_string() },
+        );
+        let parsed =
+            parse_implementer_branch("jules-implementer-bugs-abc123-fix-crash", &labels).unwrap();
         assert_eq!(parsed.label, "bugs");
         assert_eq!(parsed.issue_id, "abc123");
     }
 
     #[test]
     fn parse_implementer_branch_with_hyphenated_label() {
-        let parsed = parse_implementer_branch("jules-implementer-tech-debt-def456").unwrap();
+        let mut labels = HashMap::new();
+        labels.insert(
+            "tech-debt".to_string(),
+            LabelInfo { name: "tech-debt".to_string(), color: "0055aa".to_string() },
+        );
+        let parsed =
+            parse_implementer_branch("jules-implementer-tech-debt-def456-refactor-parser", &labels)
+                .unwrap();
         assert_eq!(parsed.label, "tech-debt");
         assert_eq!(parsed.issue_id, "def456");
     }
 
     #[test]
     fn reject_non_implementer_branch() {
-        assert!(parse_implementer_branch("jules-narrator-abc123").is_err());
-        assert!(parse_implementer_branch("main").is_err());
+        let labels = HashMap::new();
+        assert!(parse_implementer_branch("jules-narrator-abc123", &labels).is_err());
+        assert!(parse_implementer_branch("main", &labels).is_err());
     }
 
     #[test]
     fn reject_invalid_issue_id() {
-        assert!(parse_implementer_branch("jules-implementer-bugs-abc").is_err());
-        assert!(parse_implementer_branch("jules-implementer-bugs-abc1234").is_err());
-        assert!(parse_implementer_branch("jules-implementer-bugs-ABC123").is_err());
+        let mut labels = HashMap::new();
+        labels.insert(
+            "bugs".to_string(),
+            LabelInfo { name: "bugs".to_string(), color: "d73a4a".to_string() },
+        );
+        assert!(parse_implementer_branch("jules-implementer-bugs-abc-fix", &labels).is_err());
+        assert!(parse_implementer_branch("jules-implementer-bugs-abc1234-fix", &labels).is_err());
+        assert!(parse_implementer_branch("jules-implementer-bugs-ABC123-fix", &labels).is_err());
+    }
+
+    #[test]
+    fn reject_unknown_label_in_branch() {
+        let mut labels = HashMap::new();
+        labels.insert(
+            "bugs".to_string(),
+            LabelInfo { name: "bugs".to_string(), color: "d73a4a".to_string() },
+        );
+        assert!(
+            parse_implementer_branch("jules-implementer-tech-debt-abc123-fix-parser", &labels)
+                .is_err()
+        );
     }
 }
