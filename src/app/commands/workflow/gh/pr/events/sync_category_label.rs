@@ -150,22 +150,22 @@ fn load_issue_labels(labels_path: &Path) -> Result<HashMap<String, LabelInfo>, A
         AppError::Validation("github-labels.json missing issue_labels object".to_string())
     })?;
 
-    let mut labels: HashMap<String, LabelInfo> = HashMap::new();
-    for (name, value) in issue_labels {
-        let color = value
-            .get("color")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| {
-                AppError::Validation(format!(
-                    "Label '{}' missing color in github-labels.json",
-                    name
-                ))
-            })?
-            .to_string();
-        labels.insert(name.to_string(), LabelInfo { name: name.to_string(), color });
-    }
-
-    Ok(labels)
+    issue_labels
+        .iter()
+        .map(|(name, value)| {
+            let color = value
+                .get("color")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| {
+                    AppError::Validation(format!(
+                        "Label '{}' missing color in github-labels.json",
+                        name
+                    ))
+                })?
+                .to_string();
+            Ok((name.to_string(), LabelInfo { name: name.to_string(), color }))
+        })
+        .collect()
 }
 
 #[cfg(test)]
