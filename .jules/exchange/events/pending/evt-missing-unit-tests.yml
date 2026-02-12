@@ -1,0 +1,18 @@
+schema_version: 1
+id: p2r5t8
+issue_id: ""
+created_at: "2026-02-12"
+author_role: qa
+confidence: medium
+title: Missing unit tests for domain layer execution logic
+statement: |
+  The `src/domain/layers/implementer.rs` module contains complex logic for prompt assembly, mock execution, and real execution flow. However, it lacks unit tests, relying entirely on heavy integration tests in `tests/cli_commands.rs`. This makes failure diagnosis harder and discourages testing edge cases.
+evidence:
+  - path: "src/domain/layers/implementer.rs"
+    loc:
+      - "1-229"
+    note: "File contains complex logic but lacks a unit test module."
+  - path: "tests/cli_commands.rs"
+    loc:
+      - "430-454"
+    note: "Logic like prompt assembly is only tested via integration tests (run_implementer_prompt_preview_with_requirement_file)."
