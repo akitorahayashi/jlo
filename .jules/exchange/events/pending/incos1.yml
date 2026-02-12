@@ -1,0 +1,19 @@
+schema_version: 1
+
+id: "incos1"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "taxonomy"
+confidence: "high"
+
+title: "Inconsistent Pluralization in Layer Names"
+statement: |
+  Layer names follow a mix of singular (Narrator, Decider, Planner, Implementer) and plural (Observers, Innovators) forms based on role cardinality. This creates friction in CLI usage and directory navigation, as users must memorize which layers are singular and which are plural.
+
+evidence:
+  - path: "src/domain/workspace/layer.rs"
+    loc: "Layer::prompt_template_name"
+    note: "Layer enum variants mix singular (Narrator) and plural (Observers)."
+  - path: "src/app/cli/run.rs"
+    loc: "RunLayer enum"
+    note: "CLI subcommands mirror the internal inconsistency (Observers vs Narrator)."

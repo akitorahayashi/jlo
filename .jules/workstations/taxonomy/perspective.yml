@@ -1,0 +1,20 @@
+schema_version: 2
+
+observer: "taxonomy"
+
+updated_at: "2026-02-12T21:37:38Z"
+
+goals:
+  - "Align CLI and internal layer names for consistent pluralization (singular for single-role, plural for multi-role)"
+  - "Clarify 'Role' vs 'Layer' usage in documentation and directory structures"
+
+rules:
+  - "Multi-role layers (Observers, Innovators) use plural forms."
+  - "Single-role layers (Narrator, Decider) use singular forms."
+  - "CLI aliases should support both forms where ambiguous."
+
+ignore: []
+
+log:
+  - at: "2026-02-12T21:37:38Z"
+    summary: "Initial inspection: identified inconsistent pluralization and ambiguous role terminology."
