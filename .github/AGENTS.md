@@ -10,9 +10,8 @@ See [CONTROL_PLANE_OWNERSHIP.md](../docs/CONTROL_PLANE_OWNERSHIP.md) for the `.j
 | `JLO_TARGET_BRANCH` | `.jlo/` (user intent overlay), `.github/` (workflow kit) | User + `jlo init` |
 | `JULES_WORKER_BRANCH` | `.jules/` (runtime scaffold, materialized by bootstrap) | Workflow automation |
 
-The `JULES_WORKER_BRANCH` branch is **never edited directly** by users. Its `.jules/` directory is assembled by the bootstrap job from two sources:
-1. **Embedded scaffold** — `jlo workflow bootstrap` writes the base structure from the `jlo` binary's embedded assets.
-2. **Intent overlay** — `jlo workflow bootstrap` overlays `.jlo/` inputs that are present on the worker branch (created from `JLO_TARGET_BRANCH`).
+The `JULES_WORKER_BRANCH` branch is never edited directly by users.
+Its `.jules/` directory is assembled by `jlo workflow bootstrap` from embedded scaffold assets and `.jlo/` intent overlay.
 
 ## Branch Strategy
 
@@ -27,98 +26,76 @@ The `JULES_WORKER_BRANCH` branch is **never edited directly** by users. Its `.ju
 
 ## Workflow Files
 
-Jules workflows are installed via `jlo init --remote` (or `--self-hosted`) and follow these patterns:
+Jules workflow kit files are installed by `jlo init --remote` (or `--self-hosted`).
+Runtime orchestration is centralized in:
 
-- `.github/workflows/jules-*.yml`
-- `.github/actions/` (Jules composite actions)
+- `.github/workflows/jules-scheduled-workflows.yml`
 
-Non-Jules CI workflows remain in `.github/workflows/` alongside the kit.
+Utility workflow:
 
-The workflow kit is generated from `src/assets/github/`. Edit that source directory, not `.github/`, and re-run `jlo init` to apply changes.
+- `.github/workflows/jules-mock-cleanup.yml`
 
-The `jules-*.yml` files under `.github/` are jlo's dogfooding artifacts. Direct edits are not recommended; workflow changes are made in `src/assets/github/` and the related rendering pipeline. See `src/assets/github/AGENTS.md` for the template pipeline summary.
+Local composite actions are installed under `.github/actions/`.
 
-## Composite Actions
-
-Jules composite actions live under `.github/actions/` and are installed with the workflow kit.
+The source of truth is `src/assets/github/`; generated files under `.github/` are installation artifacts.
 
 ## Orchestration Commands
 
-Workflow orchestration uses `jlo workflow` commands:
+Workflow orchestration delegates to `jlo workflow` commands:
 
-- `jlo workflow run <layer>` → Execute layer with JSON output
-- `jlo workflow workspace inspect` → Inspect exchange state as JSON
-- `jlo workflow workspace publish-proposals` → Publish innovator proposals as GitHub issues
-- `jlo workflow workspace clean requirement <file>` → Remove processed requirement and source events
-- `jlo workflow workspace clean mock --mock-tag <tag>` → Cleanup mock artifacts
-- `jlo workflow gh pr comment-summary-request <pr_number>` → Post/update summary-request comment
-- `jlo workflow gh pr sync-category-label <pr_number>` → Sync implementer category label from branch
-- `jlo workflow gh pr enable-automerge <pr_number>` → Enable auto-merge (policy gates in code)
-- `jlo workflow gh pr process <pr_number>` → Run all PR event commands in order
-- `jlo workflow gh issue label-innovator <issue_number> <persona>` → Apply innovator labels
+- `jlo workflow run <layer>`
+- `jlo workflow workspace inspect`
+- `jlo workflow workspace publish-proposals`
+- `jlo workflow workspace clean requirement <file>`
+- `jlo workflow workspace clean mock --mock-tag <tag>`
+- `jlo workflow gh pr comment-summary-request <pr_number>`
+- `jlo workflow gh pr sync-category-label <pr_number>`
+- `jlo workflow gh pr enable-automerge <pr_number>`
+- `jlo workflow gh pr process <pr_number> [--mode all|metadata|automerge] [--retry-attempts N] [--retry-delay-seconds N] [--fail-on-error]`
+- `jlo workflow gh issue label-innovator <issue_number> <persona>`
 
 ## Workflow Execution Flow
 
-The primary orchestration workflow in `.github/workflows/jules-*.yml` orchestrates the layers in sequence:
+`jules-scheduled-workflows.yml` contains four trigger paths:
 
-1. **Narrator** → Produces `.jules/exchange/changes.yml`
-2. **Schedule Check** → Validates schedule conditions
-3. **Innovator Execution (creation phase)** → `--phase creation` (parallel with observers)
-4. **Observer Execution** → Sequential execution (max-parallel=1)
-5. **Innovator Execution (refinement phase)** → `--phase refinement` (after observers + creation)
-6. **Proposal Publication** → Published as GitHub issues (validates perspective.yml)
-7. **Pending Events Check** → Uses workspace inspect to identify pending events
-8. **Decider Execution** → Sequential execution (max-parallel=1)
-9. **Requirement Discovery** → Uses workspace inspect for planner/implementer routing
-10. **Planner Execution** → Sequential execution for deep analysis
-11. **Implementer Execution** → Sequential execution for code changes
+1. Schedule/dispatch/call orchestration path for layer execution
+2. Target-branch push path for worker sync
+3. Implementer-branch push path for PR metadata synchronization
+4. Worker-branch pull_request path for doctor validation and auto-merge enablement
+
+Layer orchestration sequence remains narrator → schedule check → innovators/observers → decider → planner → implementer.
 
 ## Required Configuration
 
-Repository variables and secrets referenced by `.github/workflows/jules-*.yml`:
+Repository secrets/variables referenced by the workflow kit:
 
 | Name | Type | Purpose | Default |
 |------|------|----------|----------|
 | `JULES_API_KEY` | Secret | API key for Jules service | (required) |
-| `JLO_BOT_TOKEN` | Secret | GitHub PAT for bot operations (checkout, push, labels) | (required) |
-| `JULES_LINKED_GH_TOKEN` | Secret | GitHub token with PR comment access for implementer PR metadata comments | (required for implementer PR metadata workflow) |
-| `JLO_PAUSED` | Variable | Set to `true` to skip scheduled runs | `false` |
+| `JLO_BOT_TOKEN` | Secret | GitHub PAT for checkout, push, and merge operations | (required) |
+| `JULES_LINKED_GH_TOKEN` | Secret | GitHub token for implementer PR metadata processing | (required) |
+| `JLO_PAUSED` | Variable | Set `true` to skip scheduled runs | `false` |
 
-Branch values (`target_branch`, `worker_branch`) are rendered at build time from `.jlo/config.toml` and baked into the workflow YAML. They are not read from repository variables at runtime.
+Branch values (`target_branch`, `worker_branch`) are rendered from `.jlo/config.toml` into workflow YAML at generation time.
 
 ## Workflow Timing Configuration
 
-Workflow timing is rendered from `.jlo/config.toml` and baked into the workflow kit at install time. The authoritative keys are:
+Workflow timing keys in `.jlo/config.toml`:
 
-- `[workflow].runner_mode` (`remote` or `self-hosted`)
-- `[workflow].cron` (array of cron strings)
-- `[workflow].wait_minutes_default` (number)
+- `[workflow].runner_mode`
+- `[workflow].cron`
+- `[workflow].wait_minutes_default`
 
-Reinstalling the workflow kit overwrites the schedule and wait defaults with the values in `.jlo/config.toml`. Existing workflow YAML is never used as a configuration source.
-
-## Mock Mode Validation
-
-The `validate-workflow-kit.yml` workflow tests the workflow kit without Jules API:
-
-1. **build** → Compile jlo
-2. **validate-scaffold** → Test `jlo init --remote` (scaffold + workflows)
-3. **mock-e2e** → Validate `jlo run <layer> --dry-run` for all layers
-4. **validate-workflow-template** → Verify rendered workflow contains mock support
-
-Mock mode (`--mock`) creates real branches/PRs with synthetic content. Mock tag is auto-generated from `JULES_MOCK_TAG` env var. The kit scripts pass `JLO_RUN_FLAGS` to jlo commands, enabling mock flags via environment variable.
-
-Triggers:
-- Pull requests modifying `src/assets/github/**`, `src/app/commands/run/**`, or `src/domain/mock_config.rs`
-- Manual dispatch
+Reinstalling the workflow kit overwrites rendered schedule/wait values with `.jlo/config.toml` values.
 
 ## Repository Requirements
 
-- The `JULES_WORKER_BRANCH` branch is created and maintained by workflow automation (bootstrap job)
-- The `JLO_TARGET_BRANCH` branch contains `.jlo/` (user intent overlay) and `.github/` (workflow kit)
-- Branch protection on `JULES_WORKER_BRANCH` with required status checks and auto-merge enabled
-- Bot account used by workflows has write access
-- Auto-review tools configured for on-demand review only
+- `JULES_WORKER_BRANCH` is created and maintained by workflow automation.
+- `JLO_TARGET_BRANCH` contains `.jlo/` and `.github/`.
+- Branch protection on `JULES_WORKER_BRANCH` requires status checks and allows auto-merge.
+- Workflow bot identities have required repository permissions.
 
 ## Relationship to REPRODUCTION_GUIDE.md
 
-[REPRODUCTION_GUIDE.md](REPRODUCTION_GUIDE.md) contains setup instructions for reproducing the Jules workflow in other repositories. This file (AGENTS.md) focuses on development knowledge for modifying workflows.
+[REPRODUCTION_GUIDE.md](../docs/REPRODUCTION_GUIDE.md) provides reproduction setup guidance.
+This file focuses on workflow development context.

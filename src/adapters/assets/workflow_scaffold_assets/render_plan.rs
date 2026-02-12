@@ -36,7 +36,7 @@ mod tests {
 
     #[test]
     fn keeps_primary_templates_and_static_files() {
-        assert!(!is_partial_template("workflows/jules-workflows.yml.j2"));
+        assert!(!is_partial_template("workflows/jules-scheduled-workflows.yml.j2"));
         assert!(!is_partial_template("actions/install-jlo/action.yml"));
     }
 }

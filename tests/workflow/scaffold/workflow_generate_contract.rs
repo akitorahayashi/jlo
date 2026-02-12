@@ -16,7 +16,7 @@ fn workflow_generate_writes_expected_files_to_custom_output_dir() {
         .success();
 
     assert!(
-        output_dir.join(".github/workflows/jules-workflows.yml").exists(),
+        output_dir.join(".github/workflows/jules-scheduled-workflows.yml").exists(),
         "Generated workflow file should exist"
     );
 }
@@ -30,7 +30,7 @@ fn workflow_generate_uses_default_output_dir() {
     ctx.cli().args(["workflow", "generate", "remote"]).assert().success();
 
     assert!(
-        ctx.work_dir().join(".github/workflows/jules-workflows.yml").exists(),
+        ctx.work_dir().join(".github/workflows/jules-scheduled-workflows.yml").exists(),
         "Default generate output should exist in .github/"
     );
 }
@@ -42,7 +42,7 @@ fn workflow_generate_overwrites_by_default() {
     jlo_config::write_jlo_config(ctx.work_dir(), &[jlo_config::DEFAULT_TEST_CRON], 30);
 
     let output_dir = ctx.work_dir().join(".tmp/workflow-scaffold-generate/overwrite");
-    let stale_workflow_path = output_dir.join(".github/workflows/jules-workflows.yml");
+    let stale_workflow_path = output_dir.join(".github/workflows/jules-scheduled-workflows.yml");
     fs::create_dir_all(stale_workflow_path.parent().unwrap()).unwrap();
     fs::write(&stale_workflow_path, "stale workflow").unwrap();
 
@@ -55,12 +55,12 @@ fn workflow_generate_overwrites_by_default() {
     let updated_workflow =
         fs::read_to_string(&stale_workflow_path).expect("read generated workflow");
     assert!(
-        updated_workflow.contains("Jules Workflows"),
+        updated_workflow.contains("Jules Scheduled Workflows"),
         "Generated workflow should replace stale content"
     );
 
     assert!(
-        output_dir.join(".github/workflows/jules-workflows.yml").exists(),
+        output_dir.join(".github/workflows/jules-scheduled-workflows.yml").exists(),
         "Generated workflow file should exist after overwrite"
     );
 }

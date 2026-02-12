@@ -41,7 +41,7 @@ fn workflow_templates_validate_structure() {
     let ctx = TestContext::new();
     let output_dir = support::generate_workflow_scaffold(&ctx, "remote", "structure");
 
-    let workflow_path = output_dir.join(".github/workflows/jules-workflows.yml");
+    let workflow_path = output_dir.join(".github/workflows/jules-scheduled-workflows.yml");
     let content = fs::read_to_string(&workflow_path).expect("Failed to read workflow");
     let workflow: serde_yaml::Value = serde_yaml::from_str(&content).expect("Failed to parse YAML");
 
@@ -58,6 +58,9 @@ fn workflow_templates_validate_structure() {
         .expect("'on' should be mapping");
     assert!(on.contains_key(serde_yaml::Value::from("schedule")));
     assert!(on.contains_key(serde_yaml::Value::from("workflow_dispatch")));
+    assert!(on.contains_key(serde_yaml::Value::from("workflow_call")));
+    assert!(on.contains_key(serde_yaml::Value::from("push")));
+    assert!(on.contains_key(serde_yaml::Value::from("pull_request")));
 
     let jobs = root
         .get(serde_yaml::Value::from("jobs"))
@@ -65,6 +68,9 @@ fn workflow_templates_validate_structure() {
         .as_mapping()
         .expect("'jobs' should be mapping");
     for job in [
+        "sync-worker-branch",
+        "process-implementer-pr-metadata",
+        "validate-and-automerge",
         "run-narrator",
         "check-schedule",
         "run-observers",
