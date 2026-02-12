@@ -56,9 +56,9 @@ pub fn is_default_role_file(path: &str) -> bool {
     // Example: .jules/roles/observers/taxonomy/role.yml
     if parts.len() == 5
         && parts[0] == paths::JULES_DIR
-        && parts[1] == "roles"
+        && parts[1] == paths::ROLES_DIR
         && matches!(parts[2], "observers" | "innovators")
-        && parts[4] == "role.yml"
+        && parts[4] == paths::ROLE_FILENAME
     {
         return true;
     }
@@ -74,14 +74,16 @@ pub fn is_control_plane_entity_file(path: &str) -> bool {
     // .jlo/roles/<layer>/<role>/role.yml
     if components.len() == 5
         && components[0] == paths::JLO_DIR
-        && components[1] == "roles"
-        && components[4] == "role.yml"
+        && components[1] == paths::ROLES_DIR
+        && components[4] == paths::ROLE_FILENAME
     {
         return true;
     }
 
     // .jlo/scheduled.toml (root schedule)
-    if components.len() == 2 && components[0] == paths::JLO_DIR && components[1] == "scheduled.toml"
+    if components.len() == 2
+        && components[0] == paths::JLO_DIR
+        && components[1] == paths::SCHEDULED_FILENAME
     {
         return true;
     }

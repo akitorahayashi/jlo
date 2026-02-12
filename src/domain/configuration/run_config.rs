@@ -17,6 +17,7 @@ pub struct RunConfig {
     pub jules: JulesApiConfig,
     /// Workflow timing configuration.
     #[serde(default)]
+    #[allow(dead_code)]
     pub workflow: WorkflowTimingConfig,
 }
 
