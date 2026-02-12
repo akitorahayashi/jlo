@@ -1,0 +1,26 @@
+schema_version: 1
+
+# Metadata
+id: "rsyn7a"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-12"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Run Command Syntax Drift"
+statement: |
+  The `jlo run` command for planner and implementer requires the `-r/--requirement` flag, but documentation shows it as a positional argument.
+
+# Evidence supporting the observation
+evidence:
+  - path: "README.md"
+    loc:
+      - "142-143"
+    note: "Shows `jlo run planner <file>` and `jlo run implementer <file>` without flags."
+
+  - path: "src/app/cli/run.rs"
+    loc:
+      - "53-54"
+      - "63-64"
+    note: "Defines `requirement` as a named argument `#[arg(short = 'r', long)]`."
