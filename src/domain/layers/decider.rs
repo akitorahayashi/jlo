@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use chrono::Utc;
@@ -195,8 +196,8 @@ where
         )));
     }
 
-    let planner_event_id = source_event_ids[0].clone();
-    let impl_event_id = source_event_ids[1].clone();
+    let planner_source_event_ids = vec![source_event_ids[0].clone()];
+    let impl_source_event_ids: Vec<String> = source_event_ids[1..].to_vec();
 
     // Requirement 1: requires deep analysis (for planner)
     let planner_issue_id = generate_mock_id();
@@ -223,7 +224,9 @@ where
             .or_insert_with(|| serde_yaml::Value::Sequence(vec![]));
         if let Some(seq) = src_events.as_sequence_mut() {
             seq.clear();
-            seq.push(planner_event_id.clone().into());
+            for event_id in &planner_source_event_ids {
+                seq.push(event_id.clone().into());
+            }
         }
 
         mapping.insert("title".into(), "Mock requirement requiring deep analysis".into());
@@ -272,7 +275,9 @@ where
             .or_insert_with(|| serde_yaml::Value::Sequence(vec![]));
         if let Some(seq) = src_events.as_sequence_mut() {
             seq.clear();
-            seq.push(impl_event_id.clone().into());
+            for event_id in &impl_source_event_ids {
+                seq.push(event_id.clone().into());
+            }
         }
 
         mapping.insert("title".into(), "Mock requirement ready for implementation".into());
@@ -290,11 +295,16 @@ where
     )?;
 
     // Ensure all tag-matched decided events have issue_id.
-    // Extra events (e.g., workflow re-run with same mock tag) are attached to implementer issue.
+    // Each event belongs to exactly one requirement.
+    let planner_event_set: HashSet<&str> =
+        planner_source_event_ids.iter().map(|event_id| event_id.as_str()).collect();
     for decided_file in &decided_mock_files {
         if let Some(event_id) = mock_event_id_from_path(decided_file, &config.mock_tag) {
-            let assigned_issue_id =
-                if event_id == planner_event_id { &planner_issue_id } else { &impl_issue_id };
+            let assigned_issue_id = if planner_event_set.contains(event_id.as_str()) {
+                &planner_issue_id
+            } else {
+                &impl_issue_id
+            };
 
             let decided_file_str = match decided_file.to_str() {
                 Some(path) => path,
