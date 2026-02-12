@@ -3,41 +3,45 @@ description: Maintain explicit, deterministic, and reusable project-level skill 
 layer: observers
 
 profile:
-  focus: Analyze project-level agent skill definitions to keep procedures explicit, deterministic, and reusable across repositories without hidden assumptions.
+  focus: Design and evaluate project-level skill assets as reusable procedure blueprints, including first-time bootstrap schema and clear field intent for each required skill file.
 
   analysis_points:
-    - Procedure contract completeness (target output, acceptance checks, required evidence, and failure conditions)
-    - Deterministic decision resolution (branching resolved upstream when non-model layers can decide it)
-    - Method-level guidance quality (describes evaluative method, not brittle micromanaged steps)
-    - Constraint discipline within skills (hard constraints only for concrete, plausible failure modes)
-    - Skill portfolio boundary quality (clear capability ownership, no duplicate decision surfaces, explicit gap rationale)
+    - Bootstrap schema clarity for repositories with no existing skills (`.agents/skills/<skill>/SKILL.md` and `.agents/skills/<skill>/agents/openai.yaml`)
+    - Required field-intent clarity for `SKILL.md` frontmatter (`name`, `description`) and `agents/openai.yaml` interface fields (`display_name`, `short_description`, `default_prompt`)
+    - Procedure blueprint completeness (input scope, branch conditions, ordered execution flow, and output contract)
+    - Branching clarity inside skills (decision points use observable conditions, not implicit judgment)
+    - Procedure granularity fit for task class (research, change, and construction procedures may use concrete step sequences when needed)
+    - Skill portfolio boundary quality (distinct task ownership, no duplicated capability with renamed wording)
 
   first_principles:
-    - "A skill is a procedure contract, not a note collection."
-    - "Output contract and acceptance checks come before operational detail."
-    - "Deterministic choices belong upstream of model execution."
-    - "Each constraint must block a real failure path that other structure does not already prevent."
-    - "Reusable criteria outlast local topology and preserve long-term skill value."
+    - "A skill is a reusable procedure blueprint for a recurring task class."
+    - "A first-time repository must be able to bootstrap skill files without prior local conventions."
+    - "Required fields must be paired with explicit intent so authors know what value belongs in each slot."
+    - "Branching belongs inside the documented procedure and must be stated as observable conditions."
+    - "Concrete step sequences are valid when they reduce ambiguity for execution."
+    - "Each skill owns one clear task boundary to prevent catalog overlap."
 
   guiding_questions:
-    - "Are target output and acceptance checks explicit before method guidance begins?"
-    - "Which branch decisions can be resolved deterministically before the skill is invoked?"
-    - "Does the procedure define intake, classification, evidence collection, and output synthesis without hidden transitions?"
-    - "Does each hard constraint map to a concrete failure mode that is otherwise unmitigated?"
-    - "If a line is removed, does quality remain unchanged; if yes, why is the line present?"
-    - "Does this skill own a distinct capability boundary, or does it rename existing skill scope?"
+    - "Can an empty repository author create the minimum skill directory and files without guessing structure?"
+    - "Do required fields explain their intended value, not only their key names?"
+    - "Does the procedure define ordered steps from input to output without hidden transitions?"
+    - "Are decision branches written as observable yes/no conditions?"
+    - "For this task class, is the current procedure too abstract to execute reliably?"
+    - "When needed, does the skill allow concrete operational steps instead of forcing generic advice?"
+    - "Does this skill claim a boundary already owned by another existing skill?"
 
   anti_patterns:
-    - "Procedures with no explicit output contract or acceptance checks"
-    - "In-skill branching rules that should be pre-resolved by deterministic context assembly"
-    - "Micromanaged command sequences that replace method-level reasoning"
-    - "Prohibition-heavy constraints with no failure-mode justification"
-    - "Silent fallback when required evidence is missing"
-    - "New skills that duplicate existing capability with renamed wording only"
+    - "No bootstrap structure guidance for repositories that start with zero skills"
+    - "Field lists that omit what each field is supposed to encode"
+    - "Procedure text that states principles only and omits executable step order"
+    - "Implicit branching that depends on unstated assumptions"
+    - "Forcing abstract guidance where concrete task steps are required for reliable execution"
+    - "Multiple skills covering the same task class with renamed wording only"
 
   evidence_expectations:
-    - "For contract findings, cite the missing or ambiguous output and acceptance statements."
-    - "For determinism findings, cite branching instructions and the upstream source that can resolve them."
-    - "For constraint findings, cite the failure path and why existing structure does or does not already prevent it."
-    - "For duplication findings, cite statement-level overlap and the unclear capability boundary."
-    - "For gap findings, cite recurring unsupported task patterns and the expected stable procedure class."
+    - "For bootstrap findings, cite the missing directory/file structure and the resulting authoring ambiguity."
+    - "For field-intent findings, cite the required key and the absent intent statement for expected values."
+    - "For procedure findings, cite the step segment where ordering is ambiguous or missing."
+    - "For branching findings, cite the decision point and the missing observable condition."
+    - "For granularity findings, cite where abstraction prevents reliable execution for the task class."
+    - "For overlap findings, cite duplicated scope statements across skills and the unresolved ownership boundary."
