@@ -29,7 +29,7 @@ pub struct ScaffoldManifestEntry {
 
 mod manifest_serde {
     use super::ScaffoldManifestEntry;
-    use serde::{Deserializer, Serializer, Deserialize, Serialize};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
     use std::collections::BTreeMap;
 
     pub fn serialize<S>(map: &BTreeMap<String, String>, serializer: S) -> Result<S::Ok, S::Error>

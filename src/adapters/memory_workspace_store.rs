@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use crate::domain::workspace::paths::{jules};
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, JLO_DIR, JULES_DIR, PromptAssetLoader, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
