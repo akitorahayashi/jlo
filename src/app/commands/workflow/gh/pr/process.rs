@@ -83,9 +83,7 @@ pub fn execute(
     options: ProcessOptions,
 ) -> Result<ProcessOutput, AppError> {
     if options.retry_attempts == 0 {
-        return Err(AppError::Validation(
-            "retry_attempts must be greater than zero".to_string(),
-        ));
+        return Err(AppError::Validation("retry_attempts must be greater than zero".to_string()));
     }
 
     let planned_steps = match options.mode {
@@ -105,7 +103,9 @@ pub fn execute(
 
     for step in planned_steps {
         let result = match step {
-            ProcessStep::CommentSummaryRequest => run_comment_summary_request(github, options.pr_number),
+            ProcessStep::CommentSummaryRequest => {
+                run_comment_summary_request(github, options.pr_number)
+            }
             ProcessStep::SyncCategoryLabel => run_sync_category_label(github, options.pr_number),
             ProcessStep::EnableAutomerge => run_enable_automerge(
                 github,
@@ -235,9 +235,7 @@ fn run_enable_automerge(
 
 fn is_transient_automerge_error(error: &AppError) -> bool {
     let message = error.to_string();
-    TRANSIENT_AUTOMERGE_ERROR_PATTERNS
-        .iter()
-        .any(|pattern| message.contains(pattern))
+    TRANSIENT_AUTOMERGE_ERROR_PATTERNS.iter().any(|pattern| message.contains(pattern))
 }
 
 #[cfg(test)]

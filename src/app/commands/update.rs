@@ -455,7 +455,11 @@ wait_minutes_default = 30
 
         let workflow_path = temp.path().join(".github/workflows");
         fs::create_dir_all(&workflow_path).unwrap();
-        fs::write(workflow_path.join("jules-scheduled-workflows.yml"), "name: Jules Scheduled Workflows\n").unwrap();
+        fs::write(
+            workflow_path.join("jules-scheduled-workflows.yml"),
+            "name: Jules Scheduled Workflows\n",
+        )
+        .unwrap();
 
         fs::write(jlo_path.join(".jlo-version"), "0.0.0").unwrap();
         fs::write(
