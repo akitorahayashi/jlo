@@ -7,8 +7,6 @@ on:
       - Jules Scheduled Workflows
     types:
       - completed
-    branches:
-      - 'main'
 
 permissions:
   contents: write
