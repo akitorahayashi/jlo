@@ -35,7 +35,7 @@ A layer-level change means one of the following:
 | Auto-merge qualification | Branch prefix and scope policy gates are evaluated in `jlo workflow gh pr enable-automerge` | `src/app/commands/workflow/gh/pr/events/enable_automerge.rs` |
 | Mock behavior | Per-layer mock behavior is implemented in dedicated modules | `src/app/commands/run/mock/*.rs` |
 | Failure recovery | Mock residue cleanup scope is explicit and code-defined | `src/app/commands/workflow/workspace/clean/mock.rs` |
-| Tests | Integration tests assert layer structure, workflow text, and mock behavior | `tests/cli_flow.rs`, `tests/cli_commands.rs`, `tests/workflow_kit.rs`, `tests/mock_mode.rs` |
+| Tests | Integration tests assert layer structure, workflow text, and mock behavior | `tests/workflow.rs`, `tests/cli.rs`, `tests/mock.rs`, `tests/doctor.rs` |
 
 ## Layer Types and Downstream Effects
 

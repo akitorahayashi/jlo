@@ -1,0 +1,4 @@
+mod conflicts_with_prompt_preview_contract;
+mod prompt_preview_shows_plan_contract;
+mod requires_workspace_contract;
+mod succeeds_when_workspace_current_contract;
