@@ -46,7 +46,7 @@ See [root AGENTS.md](../../AGENTS.md) for critical design principles including P
 │   │   ├── contracts.yml      # Layer contract
 │   │   ├── tasks/             # Action units
 │   │   └── schemas/
-│   │       └── issue.yml
+│   │       └── requirements.yml
 │   ├── planner/
 │   │   ├── planner_prompt.j2 # Prompt construction rules
 │   │   ├── contracts.yml      # Layer contract
@@ -95,18 +95,6 @@ See [root AGENTS.md](../../AGENTS.md) for critical design principles including P
 
 **Rule**: Jules-internal definitions stay in `.jules/`. User configuration stays in `.jlo/`. Execution/orchestration belongs in `.github/`.
 
-## Prompt Hierarchy
-
-See "Critical Design Principles" above for the contract structure.
-
-| File | Scope | Content |
-|------|-------|---------|
-| `<layer>_prompt.j2` | Layer | Prompt template that assembles contracts, tasks, and includes. |
-| `role.yml` | Role | Specialized focus (observers/innovators). |
-| `contracts.yml` | Layer | Universal constraints shared within layer. |
-| `tasks/<task-id>.yml` | Layer | Independent action units with local limits and output expectations. |
-| `JULES.md` | Global | Rules applying to ALL layers (branch naming, system boundaries). |
-
 ## Schema Files
 
 Schemas define the structure for artifacts produced by agents.
@@ -116,7 +104,7 @@ Schemas define the structure for artifacts produced by agents.
 | `changes.yml` | `.jules/roles/narrator/schemas/` | Changes summary structure |
 | `event.yml` | `.jules/roles/observers/schemas/` | Observer event structure |
 | `perspective.yml` | `.jules/roles/observers/schemas/` | Observer perspective structure |
-| `issue.yml` | `.jules/roles/decider/schemas/` | Issue structure |
+| `requirements.yml` | `.jules/roles/decider/schemas/` | Requirements structure |
 | `perspective.yml` | `.jules/roles/innovators/schemas/` | Innovator persona memory |
 | `idea.yml` | `.jules/roles/innovators/schemas/` | Idea draft structure |
 | `proposal.yml` | `.jules/roles/innovators/schemas/` | Finalized proposal structure |

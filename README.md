@@ -209,7 +209,7 @@ Workflow expressions read these values from GitHub Actions variables (`vars.*`),
 
 ## Documentation
 
-- **Control plane ownership**: `docs/CONTROL_PLANE_OWNERSHIP.md`
+- **Control plane ownership**: `docs/architecture/CONTROL_PLANE_OWNERSHIP.md`
 - **Workflow details**: `.jules/README.md` (materialized by bootstrap)
 - **Agent contracts**: `.jules/JULES.md` (materialized by bootstrap)
 - **Development guide**: `AGENTS.md`

@@ -48,9 +48,13 @@ See [src/AGENTS.md](src/AGENTS.md) for development verification commands and CLI
 - [src/assets/templates/AGENTS.md](src/assets/templates/AGENTS.md) — Template system
 
 ### Operational Guides (docs/)
-- [Control Plane Ownership](docs/CONTROL_PLANE_OWNERSHIP.md) — `.jlo/` vs `.jules/` ownership model and projection rules
-- [Innovator Role Guide](docs/INNOVATOR_ROLE_YML_GUIDE.md) — Design standard for creating innovator personas
-- [Observer Role Guide](docs/OBSERVER_ROLE_YML_GUIDE.md) — Design standard for creating observer personas
-- [Reproduction Guide](docs/REPRODUCTION_GUIDE.md) — How to reproduce the Jules workflow in other projects
-- [Workflow Branch Impact Map](docs/WORKFLOW_BRANCH_IMPACT_MAP.md) — Operational index for branch-contract changes
-- [Workflow Layer Change Map](docs/WORKFLOW_LAYER_CHANGE_MAP.md) — Repository touch points for layer-level changes
+
+#### Architecture
+- [Control Plane Ownership](docs/architecture/CONTROL_PLANE_OWNERSHIP.md) — `.jlo/` vs `.jules/` ownership model and projection rules
+- [Workflow Branch Impact Map](docs/architecture/WORKFLOW_BRANCH_IMPACT_MAP.md) — Operational index for branch-contract changes
+- [Workflow Layer Change Map](docs/architecture/WORKFLOW_LAYER_CHANGE_MAP.md) — Repository touch points for layer-level changes
+
+#### Guides
+- [Innovator Role Guide](docs/guides/INNOVATOR_ROLE_YML_GUIDE.md) — Design standard for creating innovator personas
+- [Observer Role Guide](docs/guides/OBSERVER_ROLE_YML_GUIDE.md) — Design standard for creating observer personas
+- [Reproduction Guide](docs/guides/REPRODUCTION_GUIDE.md) — How to reproduce the Jules workflow in other projects
