@@ -190,10 +190,7 @@ max_parallel = 0
             if self.fail {
                 return Err(AppError::InternalError("Mock git failure".into()));
             }
-            if args.len() >= 3
-                && args[0] == "remote"
-                && args[1] == "get-url"
-                && args[2] == "origin"
+            if args.len() >= 3 && args[0] == "remote" && args[1] == "get-url" && args[2] == "origin"
             {
                 #[allow(clippy::collapsible_if)]
                 if let Some(ref url) = self.remote_url {
