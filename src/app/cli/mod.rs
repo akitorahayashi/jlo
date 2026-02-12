@@ -65,8 +65,8 @@ enum Commands {
     Add {
         /// Layer (observers, innovators)
         layer: Option<String>,
-        /// Built-in role name
-        role: Option<String>,
+        /// Built-in role name(s)
+        roles: Vec<String>,
     },
     /// Setup compiler commands
     #[clap(visible_alias = "s")]
@@ -104,7 +104,7 @@ pub fn run() {
         Commands::Init { remote, self_hosted } => init::run_init(remote, self_hosted).map(|_| 0),
         Commands::Update { prompt_preview, cli } => run_update(prompt_preview, cli).map(|_| 0),
         Commands::Create { layer, role } => run_create(layer, role).map(|_| 0),
-        Commands::Add { layer, role } => run_add(layer, role).map(|_| 0),
+        Commands::Add { layer, roles } => run_add(layer, roles).map(|_| 0),
         Commands::Setup { command } => match command {
             setup::SetupCommands::Gen { path } => setup::run_setup_gen(path).map(|_| 0),
             setup::SetupCommands::List { detail } => setup::run_setup_list(detail).map(|_| 0),
@@ -185,13 +185,15 @@ fn run_create(layer: Option<String>, role: Option<String>) -> Result<(), AppErro
     Ok(())
 }
 
-fn run_add(layer: Option<String>, role: Option<String>) -> Result<(), AppError> {
-    let Some((layer, role)) = resolve_add_inputs(layer, role)? else {
+fn run_add(layer: Option<String>, roles: Vec<String>) -> Result<(), AppError> {
+    let Some((layer, roles)) = resolve_add_inputs(layer, roles)? else {
         return Ok(());
     };
-    let outcome = crate::app::api::add_role(&layer, &role)?;
 
-    println!("✅ Added new {} at {}/", outcome.entity_type(), outcome.display_path());
+    for role in roles {
+        let outcome = crate::app::api::add_role(&layer, &role)?;
+        println!("✅ Added new {} at {}/", outcome.entity_type(), outcome.display_path());
+    }
     Ok(())
 }
 
@@ -226,9 +228,9 @@ fn resolve_create_inputs(
 
 fn resolve_add_inputs(
     layer: Option<String>,
-    role: Option<String>,
-) -> Result<Option<(String, String)>, AppError> {
-    if let Some(role_value) = role {
+    roles: Vec<String>,
+) -> Result<Option<(String, Vec<String>)>, AppError> {
+    if !roles.is_empty() {
         let layer_enum = match layer {
             Some(value) => {
                 let l =
@@ -243,7 +245,7 @@ fn resolve_add_inputs(
                 None => return Ok(None),
             },
         };
-        return Ok(Some((layer_enum.dir_name().to_string(), role_value)));
+        return Ok(Some((layer_enum.dir_name().to_string(), roles)));
     }
 
     let catalog = crate::app::api::builtin_role_catalog()?;
@@ -257,7 +259,7 @@ fn resolve_add_inputs(
 
         return match prompt_builtin_role(&catalog, layer_enum, false)? {
             BuiltinRoleSelection::Selected(role) => {
-                Ok(Some((layer_enum.dir_name().to_string(), role)))
+                Ok(Some((layer_enum.dir_name().to_string(), vec![role])))
             }
             BuiltinRoleSelection::Cancel => Ok(None),
             BuiltinRoleSelection::BackToLayer => unreachable!("layer is fixed"),
@@ -271,7 +273,7 @@ fn resolve_add_inputs(
         let layer_enum = Layer::from_dir_name(&selected_layer).unwrap();
         match prompt_builtin_role(&catalog, layer_enum, true)? {
             BuiltinRoleSelection::Selected(role) => {
-                return Ok(Some((layer_enum.dir_name().to_string(), role)));
+                return Ok(Some((layer_enum.dir_name().to_string(), vec![role])));
             }
             BuiltinRoleSelection::BackToLayer => continue,
             BuiltinRoleSelection::Cancel => return Ok(None),
