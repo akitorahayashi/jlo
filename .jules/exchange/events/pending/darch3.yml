@@ -1,0 +1,16 @@
+schema_version: 1
+
+id: "darch3"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "data_arch"
+confidence: "high"
+
+title: "Manifest logic coupled to path indices"
+statement: |
+  is_default_role_file and is_control_plane_entity_file rely on hardcoded path component indices, making the logic brittle to directory structure changes.
+
+evidence:
+  - path: "src/domain/workspace/manifest.rs"
+    loc: ["63-67"]
+    note: "Logic relies on hardcoded path indices and fixed depth."
