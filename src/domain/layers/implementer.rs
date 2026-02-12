@@ -307,8 +307,11 @@ where
 
     // Restore original branch so post-run cleanup (requirement + source events) runs on
     // the exchange-bearing branch instead of the implementer branch.
-    let restore_branch =
-        if original_branch.trim().is_empty() { config.jules_branch.as_str() } else { &original_branch };
+    let restore_branch = if original_branch.trim().is_empty() {
+        config.jules_branch.as_str()
+    } else {
+        &original_branch
+    };
     git.checkout_branch(restore_branch, false)?;
 
     Ok(MockOutput {

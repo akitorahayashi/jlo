@@ -275,7 +275,12 @@ mod tests {
             Ok("deadbeef".to_string())
         }
 
-        fn has_changes(&self, _from: &str, _to: &str, _pathspec: &[&str]) -> Result<bool, AppError> {
+        fn has_changes(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<bool, AppError> {
             Ok(false)
         }
 
@@ -330,7 +335,12 @@ mod tests {
             Ok(())
         }
 
-        fn create_issue(&self, _title: &str, _body: &str, _labels: &[&str]) -> Result<IssueInfo, AppError> {
+        fn create_issue(
+            &self,
+            _title: &str,
+            _body: &str,
+            _labels: &[&str],
+        ) -> Result<IssueInfo, AppError> {
             Ok(IssueInfo { number: 1, url: "https://example.com/issues/1".to_string() })
         }
 
@@ -404,13 +414,17 @@ roles = [
         let github = NoopGitHub;
 
         let mut executed_roles: Vec<String> = Vec::new();
-        let mut run_layer =
-            |_path: &Path, run_options: RunOptions, _git: &NoopGit, _gh: &NoopGitHub, _store: &MockWorkspaceStore| {
-                executed_roles.push(run_options.role.expect("role should be present"));
-                Ok(())
-            };
+        let mut run_layer = |_path: &Path,
+                             run_options: RunOptions,
+                             _git: &NoopGit,
+                             _gh: &NoopGitHub,
+                             _store: &MockWorkspaceStore| {
+            executed_roles.push(run_options.role.expect("role should be present"));
+            Ok(())
+        };
 
-        let out = execute_layer_with_runner(&store, &options, &git, &github, &mut run_layer).unwrap();
+        let out =
+            execute_layer_with_runner(&store, &options, &git, &github, &mut run_layer).unwrap();
         assert!(out.mock_pr_numbers.is_none());
         assert!(out.mock_branches.is_none());
         assert_eq!(

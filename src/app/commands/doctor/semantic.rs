@@ -290,9 +290,12 @@ mod tests {
     use tempfile::tempdir;
 
     fn write_minimal_workspace(root: &Path) {
-        fs::create_dir_all(root.join(".jules/exchange/events/decided")).expect("create decided dir");
-        fs::create_dir_all(root.join(".jules/exchange/requirements")).expect("create requirements dir");
-        fs::create_dir_all(root.join(".jlo/roles/observers/taxonomy")).expect("create observer role dir");
+        fs::create_dir_all(root.join(".jules/exchange/events/decided"))
+            .expect("create decided dir");
+        fs::create_dir_all(root.join(".jules/exchange/requirements"))
+            .expect("create requirements dir");
+        fs::create_dir_all(root.join(".jlo/roles/observers/taxonomy"))
+            .expect("create observer role dir");
         fs::write(
             root.join(".jlo/scheduled.toml"),
             r#"
@@ -370,11 +373,17 @@ roles = [
         let context = semantic_context(&root.join(".jules"), &mut diagnostics);
         semantic_checks(&root.join(".jules"), &context, &mut diagnostics);
 
-        assert!(diagnostics.errors().iter().any(|diag| {
-            diag.message.contains("does not match requirement source owner")
-        }));
-        assert!(diagnostics.errors().iter().any(|diag| {
-            diag.message.contains("belongs to requirement 'req111'")
-        }));
+        assert!(
+            diagnostics
+                .errors()
+                .iter()
+                .any(|diag| { diag.message.contains("does not match requirement source owner") })
+        );
+        assert!(
+            diagnostics
+                .errors()
+                .iter()
+                .any(|diag| { diag.message.contains("belongs to requirement 'req111'") })
+        );
     }
 }

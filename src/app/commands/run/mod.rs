@@ -167,7 +167,12 @@ mod tests {
             Ok("mocksha000000".to_string())
         }
 
-        fn has_changes(&self, _from: &str, _to: &str, _pathspec: &[&str]) -> Result<bool, AppError> {
+        fn has_changes(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<bool, AppError> {
             Ok(false)
         }
 
@@ -319,8 +324,10 @@ mod tests {
     }
 
     fn write_mock_workspace(root: &Path, mock_tag: &str) {
-        fs::create_dir_all(root.join(".jules/exchange/events/pending")).expect("create pending dir");
-        fs::create_dir_all(root.join(".jules/exchange/requirements")).expect("create requirements dir");
+        fs::create_dir_all(root.join(".jules/exchange/events/pending"))
+            .expect("create pending dir");
+        fs::create_dir_all(root.join(".jules/exchange/requirements"))
+            .expect("create requirements dir");
         fs::create_dir_all(root.join(".jules/roles/narrator")).expect("create narrator role dir");
         fs::create_dir_all(root.join(".jules/roles/observers")).expect("create observers role dir");
         fs::create_dir_all(root.join(".jules/roles/decider")).expect("create decider role dir");
@@ -373,8 +380,8 @@ roles = [
 
         let event_ids = ["aa1111", "bb2222", "cc3333", "dd4444"];
         for event_id in event_ids {
-            let path =
-                root.join(format!(".jules/exchange/events/pending/mock-{}-{}.yml", mock_tag, event_id));
+            let path = root
+                .join(format!(".jules/exchange/events/pending/mock-{}-{}.yml", mock_tag, event_id));
             fs::write(path, format!("id: {}\nsummary: mock event {}\n", event_id, event_id))
                 .expect("write pending event");
         }
@@ -426,11 +433,12 @@ roles = [
         )
         .expect("decider run should succeed");
 
-        let mut requirement_files: Vec<PathBuf> = fs::read_dir(root.join(".jules/exchange/requirements"))
-            .expect("read requirements dir")
-            .map(|entry| entry.expect("read dir entry").path())
-            .filter(|path| path.extension().is_some_and(|ext| ext == "yml"))
-            .collect();
+        let mut requirement_files: Vec<PathBuf> =
+            fs::read_dir(root.join(".jules/exchange/requirements"))
+                .expect("read requirements dir")
+                .map(|entry| entry.expect("read dir entry").path())
+                .filter(|path| path.extension().is_some_and(|ext| ext == "yml"))
+                .collect();
         requirement_files.sort();
         assert_eq!(requirement_files.len(), 2, "decider should create two requirements");
 
@@ -478,9 +486,13 @@ roles = [
 
         let event_ids = ["aa1111", "bb2222", "cc3333", "dd4444"];
         for event_id in event_ids {
-            let decided_path =
-                root.join(format!(".jules/exchange/events/decided/mock-{}-{}.yml", mock_tag, event_id));
-            assert!(decided_path.exists(), "decided event should exist: {}", decided_path.display());
+            let decided_path = root
+                .join(format!(".jules/exchange/events/decided/mock-{}-{}.yml", mock_tag, event_id));
+            assert!(
+                decided_path.exists(),
+                "decided event should exist: {}",
+                decided_path.display()
+            );
 
             let event_doc = read_event_doc(&decided_path);
             assert!(
@@ -526,8 +538,8 @@ roles = [
         );
 
         for event_id in &implementer_sources {
-            let path =
-                root.join(format!(".jules/exchange/events/decided/mock-{}-{}.yml", mock_tag, event_id));
+            let path = root
+                .join(format!(".jules/exchange/events/decided/mock-{}-{}.yml", mock_tag, event_id));
             assert!(
                 !path.exists(),
                 "implementer-owned source event should be deleted during cleanup: {}",
@@ -536,13 +548,9 @@ roles = [
         }
 
         for event_id in &planner_sources {
-            let path =
-                root.join(format!(".jules/exchange/events/decided/mock-{}-{}.yml", mock_tag, event_id));
-            assert!(
-                path.exists(),
-                "planner-owned source event should remain: {}",
-                path.display()
-            );
+            let path = root
+                .join(format!(".jules/exchange/events/decided/mock-{}-{}.yml", mock_tag, event_id));
+            assert!(path.exists(), "planner-owned source event should remain: {}", path.display());
         }
 
         let pushed = implementer_git.pushed_branches();

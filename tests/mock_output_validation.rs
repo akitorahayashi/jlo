@@ -92,9 +92,7 @@ fn mock_decider_issue_file_passes_doctor() {
     let impl_issue_file = requirements_dir.join("impl-issue.yml");
     fs::write(
         &impl_issue_file,
-        mock_requirement
-            .replace("mock01", impl_issue_id)
-            .replace("event1", impl_event_id),
+        mock_requirement.replace("mock01", impl_issue_id).replace("event1", impl_event_id),
     )
     .expect("Failed to write impl requirement file");
 
