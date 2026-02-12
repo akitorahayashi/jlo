@@ -15,5 +15,14 @@ pub const JULES_DIR: &str = ".jules";
 /// The `.jlo/` control-plane directory name.
 pub const JLO_DIR: &str = ".jlo";
 
+/// The roles directory name.
+pub const ROLES_DIR: &str = "roles";
+
+/// The role definition file name.
+pub const ROLE_FILENAME: &str = "role.yml";
+
+/// The scheduled execution file name.
+pub const SCHEDULED_FILENAME: &str = "scheduled.toml";
+
 /// The version marker file name.
 pub const VERSION_FILE: &str = ".jlo-version";

@@ -11,9 +11,10 @@ pub mod component_graph;
 pub mod setup_artifacts;
 
 pub use builtin_role::BuiltinRoleEntry;
+#[allow(unused_imports)]
+pub use configuration::{ExecutionConfig, WorkflowTimingConfig};
 pub use configuration::{
-    ExecutionConfig, JulesApiConfig, MockConfig, MockOutput, RunConfig, Schedule,
-    WorkflowRunnerMode,
+    JulesApiConfig, MockConfig, MockOutput, RunConfig, Schedule, WorkflowRunnerMode,
 };
 pub use error::{AppError, IoErrorKind};
 pub use identifiers::{ComponentId, RoleId};
