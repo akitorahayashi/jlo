@@ -1,33 +1,14 @@
-name: Jules Mock Cleanup
-
-on:
-  workflow_run:
-    workflows:
-      - Jules Scheduled Workflows
-    types:
-      - completed
-    branches:
-      - '{{ target_branch }}'
-
-permissions:
-  contents: write
-  pull-requests: write
-
-env:
-  JLO_TARGET_BRANCH: '{{ target_branch }}'
-  JULES_WORKER_BRANCH: '{{ worker_branch }}'
-
-jobs:
   cleanup-mock-artifacts:
-    if: >-
-      github.event.workflow_run.event == 'workflow_dispatch' ||
-      github.event.workflow_run.event == 'workflow_call'
+    needs: [wait-after-implementer]
+    if: |
+      always() &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call')
     runs-on: {{ runner }}
     timeout-minutes: 10
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
       GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
-      JULES_MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.event.workflow_run.id)") }}
+      JULES_MOCK_TAG: {{ gha_expr("env.JULES_MOCK_TAG") }}
     steps:
       - name: Validate branch variables
         run: |
@@ -39,6 +20,14 @@ jobs:
           if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
             echo "::error::JULES_WORKER_BRANCH is required."
             exit 1
+          fi
+
+      - name: Skip when not mock mode
+        run: |
+          set -euo pipefail
+          if [ "${MOCK_MODE}" != "true" ]; then
+            echo "Mock mode is disabled; cleanup is not required."
+            exit 0
           fi
 
       - uses: actions/checkout@v4
@@ -53,6 +42,6 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Cleanup mock artifacts for completed run
+      - name: Cleanup mock artifacts for this run
         run: |
           jlo workflow workspace clean mock --mock-tag "$JULES_MOCK_TAG"

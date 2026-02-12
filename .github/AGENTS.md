@@ -31,10 +31,6 @@ Runtime orchestration is centralized in:
 
 - `.github/workflows/jules-scheduled-workflows.yml`
 
-Utility workflow:
-
-- `.github/workflows/jules-mock-cleanup.yml`
-
 Local composite actions are installed under `.github/actions/`.
 
 The source of truth is `src/assets/github/`; generated files under `.github/` are installation artifacts.
@@ -56,7 +52,7 @@ Workflow orchestration delegates to `jlo workflow` commands:
 
 ## Workflow Execution Flow
 
-`jules-scheduled-workflows.yml` contains four trigger paths:
+`jules-scheduled-workflows.yml` contains the consolidated trigger paths:
 
 1. Schedule/dispatch/call orchestration path for layer execution
 2. Target-branch push path for worker sync

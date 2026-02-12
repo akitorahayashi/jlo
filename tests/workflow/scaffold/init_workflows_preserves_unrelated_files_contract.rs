@@ -55,6 +55,7 @@ fn init_workflows_removes_stale_jules_workflows() {
         root.join(".github/workflows/jules-implementer-pr.yml"),
         root.join(".github/workflows/jules-implementer-label.yml"),
         root.join(".github/workflows/jules-pr-summary-request.yml"),
+        root.join(".github/workflows/jules-mock-cleanup.yml"),
     ];
 
     fs::create_dir_all(root.join(".github/workflows")).unwrap();
