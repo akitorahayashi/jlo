@@ -1,0 +1,14 @@
+schema_version: 1
+id: cov003
+issue_id: ""
+created_at: "2024-05-22"
+author_role: cov
+confidence: medium
+title: "Systemic risk from mock-centric testing strategy"
+statement: |
+  The testing strategy heavily favors `execute_mock`, which verifies local file operations and git commands but bypasses the core value proposition: AI interaction via the API. This creates a false sense of security where "tests pass" but production code might fail on basic API contract violations.
+evidence:
+  - path: "src/domain/layers/mod.rs"
+    loc:
+      - "trait LayerStrategy"
+    note: "Interface encourages separation, but implementations (implementer.rs, decider.rs) lack tests for the real implementation."

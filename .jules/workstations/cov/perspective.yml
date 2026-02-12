@@ -1,0 +1,13 @@
+schema_version: 2
+observer: cov
+updated_at: "2024-05-22T10:00:00Z"
+goals:
+  - "Identify critical production paths with zero coverage"
+  - "Highlight risks masked by mock-only testing"
+rules:
+  - "Mock tests are insufficient for API client interactions"
+  - "Production execution logic must have at least one integration test"
+ignore: []
+log:
+  - at: "2024-05-22T10:00:00Z"
+    summary: "Initial assessment: Critical gaps found in Implementer/Decider real execution paths."
