@@ -179,8 +179,8 @@ mod tests {
             "bugs".to_string(),
             LabelInfo { name: "bugs".to_string(), color: "d73a4a".to_string() },
         );
-        let parsed = parse_implementer_branch("jules-implementer-bugs-abc123-fix-crash", &labels)
-            .unwrap();
+        let parsed =
+            parse_implementer_branch("jules-implementer-bugs-abc123-fix-crash", &labels).unwrap();
         assert_eq!(parsed.label, "bugs");
         assert_eq!(parsed.issue_id, "abc123");
     }
@@ -192,11 +192,9 @@ mod tests {
             "tech-debt".to_string(),
             LabelInfo { name: "tech-debt".to_string(), color: "0055aa".to_string() },
         );
-        let parsed = parse_implementer_branch(
-            "jules-implementer-tech-debt-def456-refactor-parser",
-            &labels,
-        )
-        .unwrap();
+        let parsed =
+            parse_implementer_branch("jules-implementer-tech-debt-def456-refactor-parser", &labels)
+                .unwrap();
         assert_eq!(parsed.label, "tech-debt");
         assert_eq!(parsed.issue_id, "def456");
     }

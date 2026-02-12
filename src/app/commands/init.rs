@@ -169,11 +169,8 @@ fn remove_stale_managed_workflows(
         return Ok(());
     }
 
-    let rendered_paths: HashSet<_> = scaffold
-        .files
-        .iter()
-        .map(|file| root.join(&file.path))
-        .collect();
+    let rendered_paths: HashSet<_> =
+        scaffold.files.iter().map(|file| root.join(&file.path)).collect();
 
     let entries = fs::read_dir(&workflows_dir)?;
     for entry in entries {

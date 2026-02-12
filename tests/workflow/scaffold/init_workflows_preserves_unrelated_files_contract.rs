@@ -60,10 +60,7 @@ fn init_workflows_removes_stale_jules_workflows() {
         !stale_impl_label.exists(),
         "stale jlo-managed implementer label workflow should be removed"
     );
-    assert!(
-        !stale_summary.exists(),
-        "stale jlo-managed summary workflow should be removed"
-    );
+    assert!(!stale_summary.exists(), "stale jlo-managed summary workflow should be removed");
     assert!(
         root.join(".github/workflows/jules-implementer-pr.yml").exists(),
         "current implementer PR workflow should be installed"
