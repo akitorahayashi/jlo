@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::adapters::jules_client_http::HttpJulesClient;
 use crate::app::commands::workflow::workspace::{
-    WorkspaceCleanRequirementOptions, clean_requirement,
+    WorkspaceCleanRequirementOptions, clean_requirement_with_adapters,
 };
 pub use crate::domain::configuration::parse_config_content;
 use crate::domain::configuration::{load_config, validate_mock_prerequisites};
@@ -68,10 +68,12 @@ where
 
     // Handle post-execution cleanup (e.g. Implementer requirement)
     if let Some(path) = result.cleanup_requirement.as_ref() {
-        // Note: clean_requirement re-initializes workspace/git adapters internally.
-        // This assumes we are running in a context where that is valid (filesystem).
         let path_str = path.to_string_lossy().to_string();
-        match clean_requirement(WorkspaceCleanRequirementOptions { requirement_file: path_str }) {
+        match clean_requirement_with_adapters(
+            WorkspaceCleanRequirementOptions { requirement_file: path_str },
+            workspace,
+            git,
+        ) {
             Ok(cleanup_res) => {
                 println!(
                     "✅ Cleaned requirement and source events ({} file(s) removed)",

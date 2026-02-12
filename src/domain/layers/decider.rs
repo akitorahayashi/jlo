@@ -7,7 +7,7 @@ use crate::domain::configuration::mock_loader::load_mock_config;
 use crate::domain::layers::mock_utils::{MOCK_ASSETS, generate_mock_id};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
+use crate::domain::{AppError, IoErrorKind, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
 use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
 
 use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -150,11 +150,9 @@ where
     let decided_dir = jules::events_decided_dir(jules_path);
     let requirements_dir = jules::requirements_dir(jules_path);
 
-    // Ensure directories exist
-    // Using workspace for directory creation if possible, but pending_dir is usually created by observers
-    // Use fs for now as in original mock implementation
-    std::fs::create_dir_all(&decided_dir)?;
-    std::fs::create_dir_all(&requirements_dir)?;
+    // Ensure directories exist.
+    workspace.create_dir_all(path_to_str(&decided_dir, "Invalid decided events path")?)?;
+    workspace.create_dir_all(path_to_str(&requirements_dir, "Invalid requirements path")?)?;
 
     // Create two mock requirements: one for planner, one for implementer
     let label = config.issue_labels.first().cloned().ok_or_else(|| {
@@ -172,24 +170,18 @@ where
 
     // Move any mock pending events to decided first
     let mut moved_src_files: Vec<PathBuf> = Vec::new();
-    if pending_dir.exists() {
-        for entry in std::fs::read_dir(&pending_dir)? {
-            let entry = entry?;
-            let path = entry.path();
-            if mock_event_id_from_path(&path, &config.mock_tag).is_some() {
-                let dest = decided_dir.join(path.file_name().ok_or_else(|| {
-                    AppError::Validation(format!(
-                        "Pending event missing filename: {}",
-                        path.display()
-                    ))
-                })?);
-                std::fs::rename(&path, &dest)?;
-                moved_src_files.push(path);
-            }
-        }
+    for path in list_mock_tagged_files(workspace, &pending_dir, &config.mock_tag)? {
+        let source = path_to_str(&path, "Invalid pending event path")?;
+        let content = workspace.read_file(source)?;
+        let dest = decided_dir.join(path.file_name().ok_or_else(|| {
+            AppError::Validation(format!("Pending event missing filename: {}", path.display()))
+        })?);
+        workspace.write_file(path_to_str(&dest, "Invalid decided event path")?, &content)?;
+        workspace.remove_file(source)?;
+        moved_src_files.push(path);
     }
 
-    let decided_mock_files = list_mock_decided_files(&decided_dir, &config.mock_tag)?;
+    let decided_mock_files = list_mock_decided_files(workspace, &decided_dir, &config.mock_tag)?;
     let source_event_ids: Vec<String> = decided_mock_files
         .iter()
         .filter_map(|path| mock_event_id_from_path(path, &config.mock_tag))
@@ -304,7 +296,18 @@ where
             let assigned_issue_id =
                 if event_id == planner_event_id { &planner_issue_id } else { &impl_issue_id };
 
-            let content = match std::fs::read_to_string(decided_file) {
+            let decided_file_str = match decided_file.to_str() {
+                Some(path) => path,
+                None => {
+                    println!(
+                        "::warning::Invalid decided event file path (non UTF-8): {}",
+                        decided_file.display()
+                    );
+                    continue;
+                }
+            };
+
+            let content = match workspace.read_file(decided_file_str) {
                 Ok(content) => content,
                 Err(err) => {
                     println!(
@@ -353,7 +356,7 @@ where
                 }
             };
 
-            if let Err(err) = std::fs::write(decided_file, updated_content) {
+            if let Err(err) = workspace.write_file(decided_file_str, &updated_content) {
                 println!(
                     "::warning::Failed to write decided event file {}: {}",
                     decided_file.display(),
@@ -399,15 +402,29 @@ fn mock_event_id_from_path(path: &Path, mock_tag: &str) -> Option<String> {
     file_name.strip_prefix(&prefix)?.strip_suffix(".yml").map(ToString::to_string)
 }
 
-fn list_mock_decided_files(decided_dir: &Path, mock_tag: &str) -> Result<Vec<PathBuf>, AppError> {
-    if !decided_dir.exists() {
-        return Ok(Vec::new());
-    }
+fn list_mock_decided_files<W: WorkspaceStore>(
+    workspace: &W,
+    decided_dir: &Path,
+    mock_tag: &str,
+) -> Result<Vec<PathBuf>, AppError> {
+    list_mock_tagged_files(workspace, decided_dir, mock_tag)
+}
 
-    let mut files: Vec<PathBuf> = std::fs::read_dir(decided_dir)?
-        .filter_map(|entry| entry.ok())
-        .map(|entry| entry.path())
-        .filter(|path| path.is_file())
+fn list_mock_tagged_files<W: WorkspaceStore>(
+    workspace: &W,
+    dir: &Path,
+    mock_tag: &str,
+) -> Result<Vec<PathBuf>, AppError> {
+    let dir_str = path_to_str(dir, "Invalid directory path")?;
+    let entries = match workspace.list_dir(dir_str) {
+        Ok(entries) => entries,
+        Err(AppError::Io { kind: IoErrorKind::NotFound, .. }) => return Ok(Vec::new()),
+        Err(err) => return Err(err),
+    };
+
+    let mut files: Vec<PathBuf> = entries
+        .into_iter()
+        .filter(|path| !workspace.is_dir(&path.to_string_lossy()))
         .filter(|path| mock_event_id_from_path(path, mock_tag).is_some())
         .collect();
 
@@ -415,9 +432,14 @@ fn list_mock_decided_files(decided_dir: &Path, mock_tag: &str) -> Result<Vec<Pat
     Ok(files)
 }
 
+fn path_to_str<'a>(path: &'a Path, err_prefix: &str) -> Result<&'a str, AppError> {
+    path.to_str().ok_or_else(|| AppError::Validation(format!("{}: {}", err_prefix, path.display())))
+}
+
 #[cfg(test)]
 mod tests {
     use super::{list_mock_decided_files, mock_event_id_from_path};
+    use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
     use std::fs;
     use tempfile::tempdir;
 
@@ -442,7 +464,9 @@ mod tests {
         fs::write(decided_dir.join("mock-other-run-cccccc.yml"), "id: cccccc\n").expect("write");
         fs::write(decided_dir.join("notes.txt"), "ignored\n").expect("write");
 
-        let files = list_mock_decided_files(&decided_dir, "mock-run-123").expect("list");
+        let workspace = FilesystemWorkspaceStore::new(dir.path().to_path_buf());
+        let files =
+            list_mock_decided_files(&workspace, &decided_dir, "mock-run-123").expect("list");
 
         assert_eq!(files.len(), 2);
         assert!(files[0].to_string_lossy().ends_with("mock-mock-run-123-aaaaaa.yml"));
