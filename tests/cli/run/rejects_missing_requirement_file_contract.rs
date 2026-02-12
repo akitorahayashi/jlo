@@ -11,7 +11,6 @@ fn run_implementer_rejects_missing_requirement_file() {
         .args([
             "run",
             "implementer",
-            "--requirement",
             ".jules/exchange/requirements/nonexistent.yml",
         ])
         .assert()
