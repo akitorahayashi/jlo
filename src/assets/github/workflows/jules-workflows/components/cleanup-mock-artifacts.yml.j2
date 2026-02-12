@@ -2,13 +2,15 @@
     needs: [wait-after-implementer]
     if: |
       always() &&
-      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call')
+      (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true') ||
+        (github.event_name == 'workflow_call' && inputs.mock == true)
+      )
     runs-on: {{ runner }}
     timeout-minutes: 10
     env:
       GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
       GITHUB_REPOSITORY: {{ gha_expr("github.repository") }}
-      JULES_MOCK_TAG: {{ gha_expr("env.JULES_MOCK_TAG") }}
     steps:
       - name: Validate branch variables
         run: |
@@ -20,14 +22,6 @@
           if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
             echo "::error::JULES_WORKER_BRANCH is required."
             exit 1
-          fi
-
-      - name: Skip when not mock mode
-        run: |
-          set -euo pipefail
-          if [ "${MOCK_MODE}" != "true" ]; then
-            echo "Mock mode is disabled; cleanup is not required."
-            exit 0
           fi
 
       - uses: actions/checkout@v4
