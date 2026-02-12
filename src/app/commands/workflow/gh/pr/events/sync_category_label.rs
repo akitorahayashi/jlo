@@ -102,7 +102,8 @@ fn parse_implementer_branch(
         )));
     }
 
-    let suffix = branch.trim_start_matches("jules-implementer-");
+    let suffix =
+        branch.strip_prefix("jules-implementer-").expect("branch prefix is validated above");
     let mut labels: Vec<&str> = issue_labels.keys().map(|label| label.as_str()).collect();
     labels.sort_by_key(|label| std::cmp::Reverse(label.len()));
 

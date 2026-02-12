@@ -252,7 +252,12 @@ where
     workspace.write_file(
         planner_issue_file
             .to_str()
-            .ok_or_else(|| AppError::InvalidPath("Invalid path".to_string()))?,
+            .ok_or_else(|| {
+                AppError::InvalidPath(format!(
+                    "Invalid planner requirement path: {}",
+                    planner_issue_file.display()
+                ))
+            })?,
         &serde_yaml::to_string(&planner_issue_yaml).map_err(|err| {
             AppError::InternalError(format!(
                 "Failed to serialize planner requirement YAML: {}",
@@ -298,7 +303,12 @@ where
     workspace.write_file(
         impl_issue_file
             .to_str()
-            .ok_or_else(|| AppError::InvalidPath("Invalid path".to_string()))?,
+            .ok_or_else(|| {
+                AppError::InvalidPath(format!(
+                    "Invalid implementer requirement path: {}",
+                    impl_issue_file.display()
+                ))
+            })?,
         &serde_yaml::to_string(&impl_issue_yaml).map_err(|err| {
             AppError::InternalError(format!(
                 "Failed to serialize implementer requirement YAML: {}",

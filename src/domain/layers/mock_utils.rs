@@ -12,11 +12,24 @@ pub static MOCK_ASSETS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/m
 pub fn write_github_output(output: &MockOutput) -> std::io::Result<()> {
     if let Ok(output_file) = std::env::var("GITHUB_OUTPUT") {
         use std::io::Write;
+        ensure_single_line_output_value("mock_branch", &output.mock_branch)?;
+        ensure_single_line_output_value("mock_pr_url", &output.mock_pr_url)?;
+        ensure_single_line_output_value("mock_tag", &output.mock_tag)?;
         let mut file = std::fs::OpenOptions::new().append(true).open(&output_file)?;
         writeln!(file, "mock_branch={}", output.mock_branch)?;
         writeln!(file, "mock_pr_number={}", output.mock_pr_number)?;
         writeln!(file, "mock_pr_url={}", output.mock_pr_url)?;
         writeln!(file, "mock_tag={}", output.mock_tag)?;
+    }
+    Ok(())
+}
+
+fn ensure_single_line_output_value(name: &str, value: &str) -> std::io::Result<()> {
+    if value.contains('\n') || value.contains('\r') {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            format!("Output value '{}' contains a newline and cannot be written safely", name),
+        ));
     }
     Ok(())
 }
@@ -187,5 +200,16 @@ mod tests {
         assert_eq!(files.len(), 2);
         assert!(files[0].to_string_lossy().ends_with("mock-mock-run-123-aaaaaa.yml"));
         assert!(files[1].to_string_lossy().ends_with("mock-mock-run-123-bbbbbb.yml"));
+    }
+
+    #[test]
+    fn output_value_validation_rejects_multiline_values() {
+        assert!(ensure_single_line_output_value("mock_tag", "mock-run\ninjected").is_err());
+        assert!(ensure_single_line_output_value("mock_tag", "mock-run\rinjected").is_err());
+    }
+
+    #[test]
+    fn output_value_validation_accepts_single_line_values() {
+        assert!(ensure_single_line_output_value("mock_tag", "mock-run-123").is_ok());
     }
 }

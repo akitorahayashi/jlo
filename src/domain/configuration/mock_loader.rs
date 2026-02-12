@@ -4,6 +4,7 @@ use std::path::Path;
 use chrono::Utc;
 use serde::Deserialize;
 
+use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::configuration::loader::load_config;
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, RunOptions};
@@ -118,6 +119,12 @@ pub fn load_mock_config<W: WorkspaceStore>(
             "JULES_MOCK_TAG must include 'mock' to mark mock artifacts.".to_string(),
         ));
     }
+    if !validate_safe_path_component(&mock_tag) {
+        return Err(AppError::InvalidConfig(
+            "JULES_MOCK_TAG must be a safe path component (letters, numbers, '-' or '_')."
+                .to_string(),
+        ));
+    }
 
     Ok(MockConfig {
         mock_tag,
@@ -216,5 +223,19 @@ constraints:
                 .unwrap();
 
         assert_eq!(prefix, "jules-innovator-");
+    }
+
+    #[test]
+    fn rejects_mock_tag_with_path_separator() {
+        let mock_tag = "mock-../escape";
+        assert!(mock_tag.contains("mock"));
+        assert!(!validate_safe_path_component(mock_tag));
+    }
+
+    #[test]
+    fn rejects_mock_tag_with_newline() {
+        let mock_tag = "mock-run\ninjected";
+        assert!(mock_tag.contains("mock"));
+        assert!(!validate_safe_path_component(mock_tag));
     }
 }
