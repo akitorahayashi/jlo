@@ -123,7 +123,6 @@ cargo test --test workflow
 cargo test --test doctor
 cargo test --test mock
 cargo test --test library
-cargo test --test mock_mode       # Mock execution flow
 ```
 
 ## Layer Architecture

@@ -123,4 +123,4 @@ A layer-level change means one of the following:
 - Doctor checks updated for new/removed artifacts.
 - Workflow templates updated.
 - Mock behavior and cleanup updated.
-- Tests updated (`cli_flow`, `cli_commands`, `workflow_kit`, `mock_mode`).
+- Tests updated (`cli`, `workflow`, `doctor`, `mock`).

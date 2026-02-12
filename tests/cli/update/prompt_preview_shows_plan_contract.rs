@@ -8,7 +8,7 @@ fn update_prompt_preview_prints_plan() {
     ctx.init_remote();
 
     // Simulate an older version to trigger update logic.
-    let version_file = ctx.work_dir().join(".jlo").join(".jlo-version");
+    let version_file = ctx.jlo_path().join(".jlo-version");
     std::fs::write(&version_file, "0.0.0").expect("write version");
 
     ctx.cli()
