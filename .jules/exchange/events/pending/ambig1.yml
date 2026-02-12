@@ -1,0 +1,19 @@
+schema_version: 1
+
+id: "ambig1"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "taxonomy"
+confidence: "medium"
+
+title: "Overloaded 'Role' Terminology"
+statement: |
+  The term "Role" is overloaded to refer to both the architectural layer (e.g., Narrator) and specific personas within a layer (e.g., Observer roles). This ambiguity is reinforced by directory structures where layers are nested under `.jules/roles/` but some layers contain further roles.
+
+evidence:
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc: "Scaffold Mapping"
+    note: "Documentation states 'layers -> roles' mapping, conflating the two concepts."
+  - path: "src/domain/workspace/layer.rs"
+    loc: "Layer::is_single_role"
+    note: "Code explicitly handles 'single-role' layers, acknowledging the conceptual overlap."
