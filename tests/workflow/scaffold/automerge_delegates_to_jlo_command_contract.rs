@@ -16,7 +16,9 @@ fn automerge_path_delegates_policy_to_jlo_process_command() {
     assert!(workflow.contains("--retry-attempts 12"));
     assert!(workflow.contains("--retry-delay-seconds 10"));
     assert!(workflow.contains("--fail-on-error"));
-    assert!(workflow.contains("group: 'jules-automerge-jules'"));
+    assert!(
+        workflow.contains("format('jules-automerge-pr-{0}', github.event.pull_request.number)")
+    );
 
     assert!(!workflow.contains("enablePullRequestAutoMerge|mergePullRequest"));
     assert!(!workflow.contains("Auto-merge transient GitHub state detected"));
