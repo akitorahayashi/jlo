@@ -210,7 +210,9 @@ fn resolve_create_inputs(
             l
         }
         None => match prompt_multi_role_layer()? {
-            Some(value) => Layer::from_dir_name(&value).unwrap(),
+            Some(value) => {
+                Layer::from_dir_name(&value).ok_or(AppError::InvalidLayer { name: value })?
+            }
             None => return Ok(None),
         },
     };
@@ -241,7 +243,9 @@ fn resolve_add_inputs(
                 l
             }
             None => match prompt_multi_role_layer()? {
-                Some(value) => Layer::from_dir_name(&value).unwrap(),
+                Some(value) => {
+                    Layer::from_dir_name(&value).ok_or(AppError::InvalidLayer { name: value })?
+                }
                 None => return Ok(None),
             },
         };
@@ -270,7 +274,8 @@ fn resolve_add_inputs(
         let Some(selected_layer) = prompt_multi_role_layer()? else {
             return Ok(None);
         };
-        let layer_enum = Layer::from_dir_name(&selected_layer).unwrap();
+        let layer_enum = Layer::from_dir_name(&selected_layer)
+            .ok_or(AppError::InvalidLayer { name: selected_layer })?;
         match prompt_builtin_role(&catalog, layer_enum, true)? {
             BuiltinRoleSelection::Selected(role) => {
                 return Ok(Some((layer_enum.dir_name().to_string(), vec![role])));
