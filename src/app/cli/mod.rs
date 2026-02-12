@@ -65,8 +65,8 @@ enum Commands {
     Add {
         /// Layer (observers, innovators)
         layer: Option<String>,
-        /// Built-in role name
-        role: Option<String>,
+        /// Built-in role name(s)
+        roles: Vec<String>,
     },
     /// Setup compiler commands
     #[clap(visible_alias = "s")]
@@ -104,7 +104,7 @@ pub fn run() {
         Commands::Init { remote, self_hosted } => init::run_init(remote, self_hosted).map(|_| 0),
         Commands::Update { prompt_preview, cli } => run_update(prompt_preview, cli).map(|_| 0),
         Commands::Create { layer, role } => run_create(layer, role).map(|_| 0),
-        Commands::Add { layer, role } => run_add(layer, role).map(|_| 0),
+        Commands::Add { layer, roles } => run_add(layer, roles).map(|_| 0),
         Commands::Setup { command } => match command {
             setup::SetupCommands::Gen { path } => setup::run_setup_gen(path).map(|_| 0),
             setup::SetupCommands::List { detail } => setup::run_setup_list(detail).map(|_| 0),
@@ -185,13 +185,15 @@ fn run_create(layer: Option<String>, role: Option<String>) -> Result<(), AppErro
     Ok(())
 }
 
-fn run_add(layer: Option<String>, role: Option<String>) -> Result<(), AppError> {
-    let Some((layer, role)) = resolve_add_inputs(layer, role)? else {
+fn run_add(layer: Option<String>, roles: Vec<String>) -> Result<(), AppError> {
+    let Some((layer, roles)) = resolve_add_inputs(layer, roles)? else {
         return Ok(());
     };
-    let outcome = crate::app::api::add_role(&layer, &role)?;
 
-    println!("✅ Added new {} at {}/", outcome.entity_type(), outcome.display_path());
+    for role in roles {
+        let outcome = crate::app::api::add_role(&layer, &role)?;
+        println!("✅ Added new {} at {}/", outcome.entity_type(), outcome.display_path());
+    }
     Ok(())
 }
 
@@ -208,7 +210,9 @@ fn resolve_create_inputs(
             l
         }
         None => match prompt_multi_role_layer()? {
-            Some(value) => Layer::from_dir_name(&value).unwrap(),
+            Some(value) => {
+                Layer::from_dir_name(&value).ok_or(AppError::InvalidLayer { name: value })?
+            }
             None => return Ok(None),
         },
     };
@@ -226,34 +230,60 @@ fn resolve_create_inputs(
 
 fn resolve_add_inputs(
     layer: Option<String>,
-    role: Option<String>,
-) -> Result<Option<(String, String)>, AppError> {
-    let layer_enum = match layer {
-        Some(value) => {
-            let l = Layer::from_dir_name(&value).ok_or(AppError::InvalidLayer { name: value })?;
-            if l.is_single_role() {
-                return Err(AppError::SingleRoleLayerTemplate(l.dir_name().to_string()));
+    roles: Vec<String>,
+) -> Result<Option<(String, Vec<String>)>, AppError> {
+    if !roles.is_empty() {
+        let layer_enum = match layer {
+            Some(value) => {
+                let l =
+                    Layer::from_dir_name(&value).ok_or(AppError::InvalidLayer { name: value })?;
+                if l.is_single_role() {
+                    return Err(AppError::SingleRoleLayerTemplate(l.dir_name().to_string()));
+                }
+                l
             }
-            l
-        }
-        None => match prompt_multi_role_layer()? {
-            Some(value) => Layer::from_dir_name(&value).unwrap(),
-            None => return Ok(None),
-        },
-    };
-
-    let role_value = match role {
-        Some(value) => value,
-        None => {
-            let catalog = crate::app::api::builtin_role_catalog()?;
-            match prompt_builtin_role(&catalog, layer_enum)? {
-                Some(value) => value,
+            None => match prompt_multi_role_layer()? {
+                Some(value) => {
+                    Layer::from_dir_name(&value).ok_or(AppError::InvalidLayer { name: value })?
+                }
                 None => return Ok(None),
-            }
-        }
-    };
+            },
+        };
+        return Ok(Some((layer_enum.dir_name().to_string(), roles)));
+    }
 
-    Ok(Some((layer_enum.dir_name().to_string(), role_value)))
+    let catalog = crate::app::api::builtin_role_catalog()?;
+
+    if let Some(value) = layer {
+        let layer_enum =
+            Layer::from_dir_name(&value).ok_or(AppError::InvalidLayer { name: value })?;
+        if layer_enum.is_single_role() {
+            return Err(AppError::SingleRoleLayerTemplate(layer_enum.dir_name().to_string()));
+        }
+
+        return match prompt_builtin_role(&catalog, layer_enum, false)? {
+            BuiltinRoleSelection::Selected(role) => {
+                Ok(Some((layer_enum.dir_name().to_string(), vec![role])))
+            }
+            BuiltinRoleSelection::Cancel => Ok(None),
+            BuiltinRoleSelection::BackToLayer => unreachable!("layer is fixed"),
+        };
+    }
+
+    loop {
+        let Some(selected_layer) = prompt_multi_role_layer()? else {
+            return Ok(None);
+        };
+        let layer_enum = Layer::from_dir_name(&selected_layer)
+            .ok_or(AppError::InvalidLayer { name: selected_layer })?;
+        match prompt_builtin_role(&catalog, layer_enum, true)? {
+            BuiltinRoleSelection::Selected(role) => {
+                return Ok(Some((layer_enum.dir_name().to_string(), vec![role])));
+            }
+            BuiltinRoleSelection::BackToLayer => continue,
+            BuiltinRoleSelection::Cancel => return Ok(None),
+        }
+    }
 }
 
 fn prompt_multi_role_layer() -> Result<Option<String>, AppError> {
@@ -275,10 +305,19 @@ fn prompt_multi_role_layer() -> Result<Option<String>, AppError> {
     Ok(selection.map(|index| layers[index].dir_name().to_string()))
 }
 
+enum BuiltinRoleSelection {
+    Selected(String),
+    BackToLayer,
+    Cancel,
+}
+
+const MENU_BACK_OPTION: &str = "[back]";
+
 fn prompt_builtin_role(
     catalog: &[BuiltinRoleEntry],
     layer: Layer,
-) -> Result<Option<String>, AppError> {
+    allow_layer_back: bool,
+) -> Result<BuiltinRoleSelection, AppError> {
     let entries_by_category = catalog.iter().filter(|entry| entry.layer == layer).fold(
         BTreeMap::<&str, Vec<&BuiltinRoleEntry>>::new(),
         |mut map, entry| {
@@ -295,30 +334,54 @@ fn prompt_builtin_role(
     }
 
     let categories: Vec<&str> = entries_by_category.keys().copied().collect();
-    let category_index = Select::new()
-        .with_prompt("Select category")
-        .items(&categories)
-        .default(0)
-        .interact_opt()
-        .map_err(|err| AppError::Validation(format!("Failed to select category: {}", err)))?;
+    loop {
+        let mut category_items: Vec<String> =
+            categories.iter().map(|value| value.to_string()).collect();
+        if allow_layer_back {
+            category_items.push(MENU_BACK_OPTION.to_string());
+        }
 
-    let Some(category_index) = category_index else {
-        return Ok(None);
-    };
+        let category_index = Select::new()
+            .with_prompt("Select category")
+            .items(&category_items)
+            .default(0)
+            .interact_opt()
+            .map_err(|err| AppError::Validation(format!("Failed to select category: {}", err)))?;
 
-    let selected_category = categories[category_index];
-    let roles = entries_by_category.get(selected_category).unwrap();
+        let Some(category_index) = category_index else {
+            return Ok(BuiltinRoleSelection::Cancel);
+        };
 
-    let role_items: Vec<String> =
-        roles.iter().map(|entry| format!("{}: {}", entry.name.as_str(), entry.summary)).collect();
-    let role_index = Select::new()
-        .with_prompt("Select role")
-        .items(&role_items)
-        .default(0)
-        .interact_opt()
-        .map_err(|err| AppError::Validation(format!("Failed to select role: {}", err)))?;
+        if allow_layer_back && category_index == category_items.len() - 1 {
+            return Ok(BuiltinRoleSelection::BackToLayer);
+        }
 
-    Ok(role_index.map(|index| roles[index].name.as_str().to_string()))
+        let selected_category = categories[category_index];
+        let roles = entries_by_category.get(selected_category).unwrap();
+
+        let mut role_items: Vec<String> = roles
+            .iter()
+            .map(|entry| format!("{}: {}", entry.name.as_str(), entry.summary))
+            .collect();
+        role_items.push(MENU_BACK_OPTION.to_string());
+
+        let role_index = Select::new()
+            .with_prompt("Select role")
+            .items(&role_items)
+            .default(0)
+            .interact_opt()
+            .map_err(|err| AppError::Validation(format!("Failed to select role: {}", err)))?;
+
+        let Some(role_index) = role_index else {
+            return Ok(BuiltinRoleSelection::Cancel);
+        };
+
+        if role_index == role_items.len() - 1 {
+            continue;
+        }
+
+        return Ok(BuiltinRoleSelection::Selected(roles[role_index].name.as_str().to_string()));
+    }
 }
 
 fn prompt_role_name() -> Result<Option<String>, AppError> {
