@@ -1,0 +1,18 @@
+schema_version: 1
+id: "d4e5f6"
+issue_id: ""
+created_at: "2026-02-12"
+author_role: "tactician"
+confidence: "high"
+title: "Unenforced Domain Architecture Rules"
+statement: |
+  `src/domain/layers/mock_utils.rs` (in tests) imports `crate::adapters::workspace_filesystem::FilesystemWorkspaceStore`, violating the explicit prohibition of `crate::adapters` in `src/domain/AGENTS.md`. The rule exists but lacks enforcement via CI or compiler checks, allowing gradual erosion of the "Pure Logic" boundary.
+evidence:
+  - path: "src/domain/AGENTS.md"
+    loc:
+      - "Dependencies section"
+    note: "Explicitly forbids crate::adapters"
+  - path: "src/domain/layers/mock_utils.rs"
+    loc:
+      - "use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore"
+    note: "Import used in tests, violating architectural purity"
