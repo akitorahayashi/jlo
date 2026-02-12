@@ -54,6 +54,8 @@ pub fn semantic_checks(
     context: &SemanticContext,
     diagnostics: &mut Diagnostics,
 ) {
+    let event_source_index = build_event_source_index(context);
+
     for (event_id, issue_id) in &context.event_issue_map {
         if !context.issues.contains_key(issue_id)
             && let Some(path) = context.decided_events.get(event_id)
@@ -73,6 +75,66 @@ pub fn semantic_checks(
                 diagnostics.push_error(
                     path.display().to_string(),
                     format!("source_events refers to missing event '{}'", source),
+                );
+            }
+        }
+    }
+
+    for (event_id, issue_ids) in &event_source_index {
+        if issue_ids.len() > 1 {
+            let owners = issue_ids.join(", ");
+            for issue_id in issue_ids {
+                if let Some(path) = context.issues.get(issue_id) {
+                    diagnostics.push_error(
+                        path.display().to_string(),
+                        format!(
+                            "event '{}' is referenced by multiple requirements in source_events: {}",
+                            event_id, owners
+                        ),
+                    );
+                }
+            }
+        }
+    }
+
+    for (event_id, issue_id) in &context.event_issue_map {
+        if let Some(owners) = event_source_index.get(event_id) {
+            if !owners.iter().any(|owner| owner == issue_id)
+                && let Some(path) = context.decided_events.get(event_id)
+            {
+                diagnostics.push_error(
+                    path.display().to_string(),
+                    format!(
+                        "event '{}' issue_id '{}' does not match requirement source owner(s): {}",
+                        event_id,
+                        issue_id,
+                        owners.join(", ")
+                    ),
+                );
+            }
+        } else if let Some(path) = context.decided_events.get(event_id) {
+            diagnostics.push_error(
+                path.display().to_string(),
+                format!(
+                    "event '{}' has issue_id '{}' but is not referenced by any requirement source_events",
+                    event_id, issue_id
+                ),
+            );
+        }
+    }
+
+    for (issue_id, sources) in &context.issue_sources {
+        for source in sources {
+            if let Some(event_issue_id) = context.event_issue_map.get(source)
+                && event_issue_id != issue_id
+                && let Some(path) = context.issues.get(issue_id)
+            {
+                diagnostics.push_error(
+                    path.display().to_string(),
+                    format!(
+                        "source event '{}' belongs to requirement '{}' via event.issue_id, but was found in requirement '{}'",
+                        source, event_issue_id, issue_id
+                    ),
                 );
             }
         }
@@ -204,5 +266,115 @@ fn validate_scheduled_layer(
                 ),
             );
         }
+    }
+}
+
+fn build_event_source_index(context: &SemanticContext) -> HashMap<String, Vec<String>> {
+    let mut index: HashMap<String, Vec<String>> = HashMap::new();
+    for (issue_id, sources) in &context.issue_sources {
+        for source in sources {
+            index.entry(source.clone()).or_default().push(issue_id.clone());
+        }
+    }
+    for owners in index.values_mut() {
+        owners.sort();
+        owners.dedup();
+    }
+    index
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    fn write_minimal_workspace(root: &Path) {
+        fs::create_dir_all(root.join(".jules/exchange/events/decided")).expect("create decided dir");
+        fs::create_dir_all(root.join(".jules/exchange/requirements")).expect("create requirements dir");
+        fs::create_dir_all(root.join(".jlo/roles/observers/taxonomy")).expect("create observer role dir");
+        fs::write(
+            root.join(".jlo/scheduled.toml"),
+            r#"
+version = 1
+enabled = true
+
+[observers]
+roles = [
+  { name = "taxonomy", enabled = true },
+]
+"#,
+        )
+        .expect("write schedule");
+    }
+
+    #[test]
+    fn semantic_checks_reject_event_referenced_by_multiple_requirements() {
+        let dir = tempdir().expect("tempdir");
+        let root = dir.path();
+        write_minimal_workspace(root);
+
+        fs::write(
+            root.join(".jules/exchange/events/decided/event-a.yml"),
+            "id: abc123\nissue_id: req111\n",
+        )
+        .expect("write event");
+        fs::write(
+            root.join(".jules/exchange/requirements/req-one.yml"),
+            "id: req111\nsource_events:\n  - abc123\n",
+        )
+        .expect("write requirement one");
+        fs::write(
+            root.join(".jules/exchange/requirements/req-two.yml"),
+            "id: req222\nsource_events:\n  - abc123\n",
+        )
+        .expect("write requirement two");
+
+        let mut diagnostics = Diagnostics::default();
+        let context = semantic_context(&root.join(".jules"), &mut diagnostics);
+        semantic_checks(&root.join(".jules"), &context, &mut diagnostics);
+
+        assert!(diagnostics.errors().iter().any(|diag| {
+            diag.message.contains("referenced by multiple requirements in source_events")
+        }));
+    }
+
+    #[test]
+    fn semantic_checks_reject_issue_id_source_owner_mismatch() {
+        let dir = tempdir().expect("tempdir");
+        let root = dir.path();
+        write_minimal_workspace(root);
+
+        fs::write(
+            root.join(".jules/exchange/events/decided/event-a.yml"),
+            "id: abc123\nissue_id: req111\n",
+        )
+        .expect("write event a");
+        fs::write(
+            root.join(".jules/exchange/events/decided/event-b.yml"),
+            "id: def456\nissue_id: req111\n",
+        )
+        .expect("write event b");
+        fs::write(
+            root.join(".jules/exchange/requirements/req-one.yml"),
+            "id: req111\nsource_events:\n  - def456\n",
+        )
+        .expect("write requirement one");
+        fs::write(
+            root.join(".jules/exchange/requirements/req-two.yml"),
+            "id: req222\nsource_events:\n  - abc123\n",
+        )
+        .expect("write requirement two");
+
+        let mut diagnostics = Diagnostics::default();
+        let context = semantic_context(&root.join(".jules"), &mut diagnostics);
+        semantic_checks(&root.join(".jules"), &context, &mut diagnostics);
+
+        assert!(diagnostics.errors().iter().any(|diag| {
+            diag.message.contains("does not match requirement source owner")
+        }));
+        assert!(diagnostics.errors().iter().any(|diag| {
+            diag.message.contains("belongs to requirement 'req111'")
+        }));
     }
 }

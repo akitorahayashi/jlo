@@ -3,7 +3,7 @@ schema_version: 2
 # Metadata
 id: "<6_random_lowercase_alphanumeric_chars>" # stable identity
 source_events:
-  - "<event_id>" # List of event IDs that triggered this requirement
+  - "<event_id>" # List of event IDs that triggered this requirement; each event ID belongs to only one requirement
 title: "<Descriptive Title>"
 label: "<requirement_label>" # Must match a key in .jules/github-labels.json
 priority: "low|medium|high"

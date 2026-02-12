@@ -34,6 +34,7 @@ where
         if options.mock {
             let mock_config = load_mock_config(jules_path, options, workspace)?;
             let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let cleanup_requirement = options.requirement.clone();
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::mock_utils::write_github_output(&output).map_err(|e| {
@@ -46,7 +47,7 @@ where
                 roles: vec!["implementer".to_string()],
                 prompt_preview: false,
                 sessions: vec![],
-                cleanup_requirement: None,
+                cleanup_requirement,
             });
         }
 
@@ -237,6 +238,8 @@ where
     H: GitHubPort + ?Sized,
     W: WorkspaceStore,
 {
+    let original_branch = git.get_current_branch()?;
+
     let requirement_path = options.requirement.as_ref().ok_or_else(|| {
         AppError::MissingArgument("Requirement path is required for implementer".to_string())
     })?;
@@ -301,6 +304,12 @@ where
 
     // NOTE: Implementer PRs do NOT get auto-merge enabled
     println!("Mock implementer: created PR #{} ({}) - awaiting label", pr.number, pr.url);
+
+    // Restore original branch so post-run cleanup (requirement + source events) runs on
+    // the exchange-bearing branch instead of the implementer branch.
+    let restore_branch =
+        if original_branch.trim().is_empty() { config.jules_branch.as_str() } else { &original_branch };
+    git.checkout_branch(restore_branch, false)?;
 
     Ok(MockOutput {
         mock_branch: branch_name,
