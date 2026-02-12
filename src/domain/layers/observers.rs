@@ -230,7 +230,7 @@ where
 
     // Create mock event 1 (for planner routing)
     let event_id_1 = generate_mock_id();
-    let event_file_1 = events_dir.join(format!("mock-{}-{}.yml", config.mock_tag, event_id_1));
+    let event_file_1 = events_dir.join(format!("{}-{}.yml", config.mock_tag, event_id_1));
     let event_content_1 = mock_event_template
         .replace(TMPL_ID, &event_id_1)
         .replace(TMPL_DATE, &Utc::now().format("%Y-%m-%d").to_string())
@@ -238,7 +238,7 @@ where
 
     // Create mock event 2 (for implementer routing)
     let event_id_2 = generate_mock_id();
-    let event_file_2 = events_dir.join(format!("mock-{}-{}.yml", config.mock_tag, event_id_2));
+    let event_file_2 = events_dir.join(format!("{}-{}.yml", config.mock_tag, event_id_2));
     let event_content_2 = mock_event_template
         .replace(TMPL_ID, &event_id_2)
         .replace(TMPL_DATE, &Utc::now().format("%Y-%m-%d").to_string())

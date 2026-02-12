@@ -414,8 +414,8 @@ roles = [
 
         let event_ids = ["aa1111", "bb2222", "cc3333", "dd4444"];
         for event_id in event_ids {
-            let path = root
-                .join(format!(".jules/exchange/events/pending/mock-{}-{}.yml", mock_tag, event_id));
+            let path =
+                root.join(format!(".jules/exchange/events/pending/{}-{}.yml", mock_tag, event_id));
             fs::write(path, format!("id: {}\nsummary: mock event {}\n", event_id, event_id))
                 .expect("write pending event");
         }
@@ -517,8 +517,8 @@ roles = [
 
         let event_ids = ["aa1111", "bb2222", "cc3333", "dd4444"];
         for event_id in event_ids {
-            let decided_path = root
-                .join(format!(".jules/exchange/events/decided/mock-{}-{}.yml", mock_tag, event_id));
+            let decided_path =
+                root.join(format!(".jules/exchange/events/decided/{}-{}.yml", mock_tag, event_id));
             assert!(
                 decided_path.exists(),
                 "decided event should exist: {}",
@@ -569,8 +569,8 @@ roles = [
         );
 
         for event_id in &implementer_sources {
-            let path = root
-                .join(format!(".jules/exchange/events/decided/mock-{}-{}.yml", mock_tag, event_id));
+            let path =
+                root.join(format!(".jules/exchange/events/decided/{}-{}.yml", mock_tag, event_id));
             assert!(
                 !path.exists(),
                 "implementer-owned source event should be deleted during cleanup: {}",
@@ -579,8 +579,8 @@ roles = [
         }
 
         for event_id in &planner_sources {
-            let path = root
-                .join(format!(".jules/exchange/events/decided/mock-{}-{}.yml", mock_tag, event_id));
+            let path =
+                root.join(format!(".jules/exchange/events/decided/{}-{}.yml", mock_tag, event_id));
             assert!(path.exists(), "planner-owned source event should remain: {}", path.display());
         }
 

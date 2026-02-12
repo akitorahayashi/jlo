@@ -52,7 +52,7 @@ pub fn generate_mock_id() -> String {
 /// Parse mock event ID from filename.
 pub fn mock_event_id_from_path(path: &Path, mock_tag: &str) -> Option<String> {
     let file_name = path.file_name()?.to_str()?;
-    let prefix = format!("mock-{}-", mock_tag);
+    let prefix = format!("{}-", mock_tag);
     file_name.strip_prefix(&prefix)?.strip_suffix(".yml").map(ToString::to_string)
 }
 
@@ -176,7 +176,7 @@ mod tests {
     #[test]
     fn test_mock_event_id_from_path() {
         let mock_tag = "mock-run-123";
-        let valid_path = std::path::Path::new("mock-mock-run-123-a1b2c3.yml");
+        let valid_path = std::path::Path::new("mock-run-123-a1b2c3.yml");
         let invalid_path = std::path::Path::new("mock-other-tag-a1b2c3.yml");
 
         assert_eq!(mock_event_id_from_path(valid_path, mock_tag), Some("a1b2c3".to_string()));
@@ -189,8 +189,8 @@ mod tests {
         let decided_dir = dir.path().join("decided");
         fs::create_dir_all(&decided_dir).expect("mkdir");
 
-        fs::write(decided_dir.join("mock-mock-run-123-bbbbbb.yml"), "id: bbbbbb\n").expect("write");
-        fs::write(decided_dir.join("mock-mock-run-123-aaaaaa.yml"), "id: aaaaaa\n").expect("write");
+        fs::write(decided_dir.join("mock-run-123-bbbbbb.yml"), "id: bbbbbb\n").expect("write");
+        fs::write(decided_dir.join("mock-run-123-aaaaaa.yml"), "id: aaaaaa\n").expect("write");
         fs::write(decided_dir.join("mock-other-run-cccccc.yml"), "id: cccccc\n").expect("write");
         fs::write(decided_dir.join("notes.txt"), "ignored\n").expect("write");
 
@@ -198,8 +198,8 @@ mod tests {
         let files = list_mock_tagged_files(&workspace, &decided_dir, "mock-run-123").expect("list");
 
         assert_eq!(files.len(), 2);
-        assert!(files[0].to_string_lossy().ends_with("mock-mock-run-123-aaaaaa.yml"));
-        assert!(files[1].to_string_lossy().ends_with("mock-mock-run-123-bbbbbb.yml"));
+        assert!(files[0].to_string_lossy().ends_with("mock-run-123-aaaaaa.yml"));
+        assert!(files[1].to_string_lossy().ends_with("mock-run-123-bbbbbb.yml"));
     }
 
     #[test]

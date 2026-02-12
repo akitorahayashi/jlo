@@ -209,8 +209,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=30
-            echo "Mock mode enabled: overriding wait to 30 seconds."
+            TOTAL_SECONDS=15
+            echo "Mock mode enabled: overriding wait to 15 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -356,8 +356,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=30
-            echo "Mock mode enabled: overriding wait to 30 seconds."
+            TOTAL_SECONDS=15
+            echo "Mock mode enabled: overriding wait to 15 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -410,8 +410,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=30
-            echo "Mock mode enabled: overriding wait to 30 seconds."
+            TOTAL_SECONDS=15
+            echo "Mock mode enabled: overriding wait to 15 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -500,8 +500,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=30
-            echo "Mock mode enabled: overriding wait to 30 seconds."
+            TOTAL_SECONDS=15
+            echo "Mock mode enabled: overriding wait to 15 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -650,8 +650,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=30
-            echo "Mock mode enabled: overriding wait to 30 seconds."
+            TOTAL_SECONDS=15
+            echo "Mock mode enabled: overriding wait to 15 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -776,8 +776,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=30
-            echo "Mock mode enabled: overriding wait to 30 seconds."
+            TOTAL_SECONDS=15
+            echo "Mock mode enabled: overriding wait to 15 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi
@@ -867,8 +867,8 @@ jobs:
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=30
-            echo "Mock mode enabled: overriding wait to 30 seconds."
+            TOTAL_SECONDS=15
+            echo "Mock mode enabled: overriding wait to 15 seconds."
           else
             TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
           fi

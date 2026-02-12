@@ -271,7 +271,7 @@ where
     service.checkout_new_branch(&branch_name)?;
 
     // Create minimal mock file to have a commit
-    let mock_file_path = format!(".mock-{}", config.mock_tag);
+    let mock_file_path = format!(".{}", config.mock_tag);
     let mock_content = format!(
         "# Mock implementation marker\n# Mock tag: {}\n# Issue: {}\n# Created: {}\n",
         config.mock_tag,

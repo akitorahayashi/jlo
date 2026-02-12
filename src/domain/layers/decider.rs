@@ -212,7 +212,7 @@ where
 
     // Requirement 1: requires deep analysis (for planner)
     let planner_issue_id = generate_mock_id();
-    let planner_issue_file = requirements_dir.join(format!("mock-planner-{}.yml", config.mock_tag));
+    let planner_issue_file = requirements_dir.join(format!("planner-{}.yml", config.mock_tag));
 
     let mut planner_issue_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
         .map_err(|e| {
@@ -266,7 +266,7 @@ where
 
     // Requirement 2: ready for implementer
     let impl_issue_id = generate_mock_id();
-    let impl_issue_file = requirements_dir.join(format!("mock-impl-{}.yml", config.mock_tag));
+    let impl_issue_file = requirements_dir.join(format!("impl-{}.yml", config.mock_tag));
 
     let mut impl_issue_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
         .map_err(|e| {
@@ -588,13 +588,13 @@ mod tests {
 
         workspace
             .write_file(
-                ".jules/exchange/events/pending/mock-mock-test-decider-event1.yml",
+                ".jules/exchange/events/pending/mock-test-decider-event1.yml",
                 "id: event1\nsummary: s1",
             )
             .unwrap();
         workspace
             .write_file(
-                ".jules/exchange/events/pending/mock-mock-test-decider-event2.yml",
+                ".jules/exchange/events/pending/mock-test-decider-event2.yml",
                 "id: event2\nsummary: s2",
             )
             .unwrap();
@@ -619,22 +619,20 @@ mod tests {
         let req_files = workspace.list_dir(req_dir).unwrap();
         let planner_req = req_files
             .iter()
-            .find(|p| p.to_string_lossy().contains("mock-planner-mock-test-decider"))
+            .find(|p| p.to_string_lossy().contains("planner-mock-test-decider"))
             .expect("planner req missing");
         let impl_req = req_files
             .iter()
-            .find(|p| p.to_string_lossy().contains("mock-impl-mock-test-decider"))
+            .find(|p| p.to_string_lossy().contains("impl-mock-test-decider"))
             .expect("implementer req missing");
 
         assert!(workspace.file_exists(&planner_req.to_string_lossy()));
         assert!(workspace.file_exists(&impl_req.to_string_lossy()));
         assert!(
-            !workspace
-                .file_exists(".jules/exchange/events/pending/mock-mock-test-decider-event1.yml")
+            !workspace.file_exists(".jules/exchange/events/pending/mock-test-decider-event1.yml")
         );
         assert!(
-            workspace
-                .file_exists(".jules/exchange/events/decided/mock-mock-test-decider-event1.yml")
+            workspace.file_exists(".jules/exchange/events/decided/mock-test-decider-event1.yml")
         );
     }
 
@@ -647,10 +645,7 @@ mod tests {
         let config = make_config();
 
         workspace
-            .write_file(
-                ".jules/exchange/events/pending/mock-mock-test-decider-event1.yml",
-                "id: event1",
-            )
+            .write_file(".jules/exchange/events/pending/mock-test-decider-event1.yml", "id: event1")
             .unwrap();
 
         let options = RunOptions {
