@@ -146,7 +146,7 @@ Exit codes:
 
 `jlo deinit` removes the `.jlo/` control plane, the local `JULES_WORKER_BRANCH`, and workflow scaffold files from `.github/`.
 The command refuses to run while the current branch is `JULES_WORKER_BRANCH` or `jules-test-*`.
-GitHub secrets (such as `JULES_API_KEY` and `JULES_API_SECRET`) remain configured and require manual removal.
+GitHub secrets (such as `JULES_API_KEY` and `JLO_BOT_TOKEN`) remain configured and require manual removal.
 
 ### Other Examples
 
