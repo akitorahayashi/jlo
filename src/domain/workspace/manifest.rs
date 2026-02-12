@@ -38,8 +38,10 @@ impl ScaffoldManifest {
     }
 
     pub fn from_yaml(content: &str) -> Result<Self, AppError> {
-        serde_yaml::from_str(content)
-            .map_err(|err| AppError::InternalError(format!("Failed to parse manifest: {}", err)))
+        serde_yaml::from_str(content).map_err(|err| AppError::ParseError {
+            what: "manifest".to_string(),
+            details: err.to_string(),
+        })
     }
 
     pub fn to_yaml(&self) -> Result<String, AppError> {
@@ -50,7 +52,9 @@ impl ScaffoldManifest {
 }
 
 pub fn is_default_role_file(path: &str) -> bool {
-    let parts: Vec<&str> = path.split('/').collect();
+    let path_obj = Path::new(path);
+    let parts: Vec<_> =
+        path_obj.components().map(|c| c.as_os_str().to_str().unwrap_or("")).collect();
 
     // .jules/roles/<layer>/<role>/role.yml (multi-role layers: observers, innovators)
     // Example: .jules/roles/observers/taxonomy/role.yml

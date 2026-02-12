@@ -50,12 +50,12 @@ pub fn validate_role_exists<W: WorkspaceStore + ?Sized>(
     Ok(())
 }
 
-pub fn dispatch_session<C: JulesClient + ?Sized>(
+pub fn dispatch_session<C: JulesClient + ?Sized, S: Into<String>>(
     layer: Layer,
     role: &RoleId,
     prompt: String,
     source: &str,
-    starting_branch: &str,
+    starting_branch: S,
     client: &C,
 ) -> Result<String, AppError> {
     println!("Executing {} / {}...", layer.dir_name(), role);
@@ -63,7 +63,7 @@ pub fn dispatch_session<C: JulesClient + ?Sized>(
     let request = SessionRequest {
         prompt,
         source: source.to_string(),
-        starting_branch: starting_branch.to_string(),
+        starting_branch: starting_branch.into(),
         require_plan_approval: false,
         automation_mode: AutomationMode::AutoCreatePr,
     };

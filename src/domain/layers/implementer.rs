@@ -5,6 +5,7 @@ use serde::Deserialize;
 
 use crate::domain::configuration::loader::detect_repository_source;
 use crate::domain::configuration::mock_loader::load_mock_config;
+use crate::domain::layers::mock_utils::MockExecutionService;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
@@ -33,16 +34,9 @@ where
     ) -> Result<RunResult, AppError> {
         if options.mock {
             let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let _output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
             let cleanup_requirement = options.requirement.clone();
-            // Write mock output
-            if std::env::var("GITHUB_OUTPUT").is_ok() {
-                super::mock_utils::write_github_output(&output).map_err(|e| {
-                    AppError::InternalError(format!("Failed to write GITHUB_OUTPUT: {}", e))
-                })?;
-            } else {
-                super::mock_utils::print_local(&output);
-            }
+            // Mock output is written by execute_mock's service.finish()
             return Ok(RunResult {
                 roles: vec!["implementer".to_string()],
                 prompt_preview: false,
@@ -226,7 +220,7 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
 }
 
 fn execute_mock<G, H, W>(
-    _jules_path: &Path,
+    jules_path: &Path,
     options: &RunOptions,
     config: &MockConfig,
     git: &G,
@@ -238,6 +232,8 @@ where
     H: GitHubPort + ?Sized,
     W: WorkspaceStore,
 {
+    let service = MockExecutionService::new(jules_path, config, git, github, workspace);
+
     let original_branch = git.get_current_branch()?;
 
     let requirement_path = options.requirement.as_ref().ok_or_else(|| {
@@ -247,12 +243,12 @@ where
     // Parse requirement to get label and id
     let requirement_path_str = requirement_path
         .to_str()
-        .ok_or_else(|| AppError::Validation("Invalid requirement path".to_string()))?;
+        .ok_or_else(|| AppError::InvalidPath("Invalid requirement path".to_string()))?;
 
     let requirement_content = workspace.read_file(requirement_path_str)?;
     let (label, issue_id) = parse_requirement_for_branch(&requirement_content, requirement_path)?;
     if !config.issue_labels.contains(&label) {
-        return Err(AppError::Validation(format!(
+        return Err(AppError::InvalidConfig(format!(
             "Issue label '{}' is not defined in github-labels.json",
             label
         )));
@@ -266,10 +262,9 @@ where
     println!("Mock implementer: creating branch {}", branch_name);
 
     // Fetch and checkout from default branch (not jules)
-    git.fetch("origin")?;
     let base_branch = options.branch.as_deref().unwrap_or(&config.default_branch);
-    git.checkout_branch(&format!("origin/{}", base_branch), false)?;
-    git.checkout_branch(&branch_name, true)?;
+    service.fetch_and_checkout_base(base_branch)?;
+    service.checkout_new_branch(&branch_name)?;
 
     // Create minimal mock file to have a commit
     let mock_file_path = format!(".mock-{}", config.mock_tag);
@@ -285,11 +280,14 @@ where
     // Commit and push
     let mock_path = Path::new(&mock_file_path);
     let files: Vec<&Path> = vec![mock_path];
-    git.commit_files(&format!("[{}] implementer: mock implementation", config.mock_tag), &files)?;
-    git.push_branch(&branch_name, false)?;
+    service.commit_and_push(
+        &format!("[{}] implementer: mock implementation", config.mock_tag),
+        &files,
+        &branch_name,
+    )?;
 
     // Create PR targeting default branch (NOT jules)
-    let pr = github.create_pull_request(
+    let pr = service.create_pr(
         &branch_name,
         base_branch,
         &format!("[{}] Implementation: {}", config.mock_tag, label),
@@ -312,14 +310,18 @@ where
     } else {
         &original_branch
     };
-    git.checkout_branch(restore_branch, false)?;
+    service.git.checkout_branch(restore_branch, false)?;
 
-    Ok(MockOutput {
+    let output = MockOutput {
         mock_branch: branch_name,
         mock_pr_number: pr.number,
         mock_pr_url: pr.url,
         mock_tag: config.mock_tag.clone(),
-    })
+    };
+
+    service.finish(&output)?;
+
+    Ok(output)
 }
 
 fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, String), AppError> {
@@ -330,7 +332,7 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
     }
 
     let parsed: RequirementMeta = serde_yaml::from_str(content).map_err(|err| {
-        AppError::Validation(format!(
+        AppError::InvalidConfig(format!(
             "Requirement file must be valid YAML ({}): {}",
             path.display(),
             err
@@ -338,10 +340,10 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
     })?;
 
     let label = parsed.label.filter(|value| !value.trim().is_empty()).ok_or_else(|| {
-        AppError::Validation(format!("Requirement file missing label field: {}", path.display()))
+        AppError::InvalidConfig(format!("Requirement file missing label field: {}", path.display()))
     })?;
     if !crate::domain::identifiers::validation::validate_safe_path_component(&label) {
-        return Err(AppError::Validation(format!(
+        return Err(AppError::InvalidConfig(format!(
             "Requirement label '{}' is not a safe path component: {}",
             label,
             path.display()
@@ -349,11 +351,11 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
     }
 
     let id = parsed.id.filter(|value| !value.trim().is_empty()).ok_or_else(|| {
-        AppError::Validation(format!("Requirement file missing id field: {}", path.display()))
+        AppError::InvalidConfig(format!("Requirement file missing id field: {}", path.display()))
     })?;
 
     if id.len() != 6 || !id.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit()) {
-        return Err(AppError::Validation(format!(
+        return Err(AppError::InvalidConfig(format!(
             "Issue id must be 6 lowercase alphanumeric chars: {}",
             path.display()
         )));
