@@ -293,7 +293,9 @@ where
     }
 
     workspace.write_file(
-        impl_issue_file.to_str().ok_or_else(|| AppError::InvalidPath("Invalid path".to_string()))?,
+        impl_issue_file
+            .to_str()
+            .ok_or_else(|| AppError::InvalidPath("Invalid path".to_string()))?,
         &serde_yaml::to_string(&impl_issue_yaml).map_err(|err| {
             AppError::InternalError(format!(
                 "Failed to serialize implementer requirement YAML: {}",
