@@ -80,7 +80,7 @@ Repository variables and secrets referenced by `.github/workflows/jules-*.yml`:
 | Name | Type | Purpose | Default |
 |------|------|----------|----------|
 | `JULES_API_KEY` | Secret | API key for Jules service | (required) |
-| `JULES_LINKED_GH_TOKEN` | Secret | GitHub token with PR comment access for summary requests | (required for summary-request workflow) |
+| `JLO_BOT_TOKEN` | Secret | GitHub PAT for bot operations (checkout, push, labels) | (required) |
 | `JLO_PAUSED` | Variable | Set to `true` to skip scheduled runs | `false` |
 
 Branch values (`target_branch`, `worker_branch`) are rendered at build time from `.jlo/config.toml` and baked into the workflow YAML. They are not read from repository variables at runtime.

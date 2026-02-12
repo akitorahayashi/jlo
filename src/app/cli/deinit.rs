@@ -31,6 +31,6 @@ pub fn run_deinit() -> Result<(), AppError> {
         }
     }
 
-    println!("⚠️ Remove JULES_API_KEY and JULES_API_SECRET from GitHub repository settings.");
+    println!("⚠️ Remove JULES_API_KEY and JLO_BOT_TOKEN from GitHub repository settings.");
     Ok(())
 }
