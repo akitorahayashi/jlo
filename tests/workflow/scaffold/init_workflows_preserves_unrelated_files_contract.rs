@@ -10,7 +10,7 @@ fn init_workflows_preserves_unrelated_files() {
 
     jlo_config::write_jlo_config(root, &[jlo_config::DEFAULT_TEST_CRON], 30);
 
-    let scaffold_workflow = root.join(".github/workflows/jules-workflows.yml");
+    let scaffold_workflow = root.join(".github/workflows/jules-scheduled-workflows.yml");
     fs::create_dir_all(scaffold_workflow.parent().unwrap()).unwrap();
     fs::write(&scaffold_workflow, "old workflow").unwrap();
 
@@ -29,7 +29,7 @@ fn init_workflows_preserves_unrelated_files() {
     init_workflows_at(root.to_path_buf(), &WorkflowRunnerMode::remote()).unwrap();
 
     let updated_workflow = fs::read_to_string(&scaffold_workflow).unwrap();
-    assert!(updated_workflow.contains("Jules Workflows"));
+    assert!(updated_workflow.contains("Jules Scheduled Workflows"));
 
     let updated_action = fs::read_to_string(&scaffold_action).unwrap();
     assert!(updated_action.contains("Install jlo"));
@@ -48,21 +48,32 @@ fn init_workflows_removes_stale_jules_workflows() {
 
     jlo_config::write_jlo_config(root, &[jlo_config::DEFAULT_TEST_CRON], 30);
 
-    let stale_impl_label = root.join(".github/workflows/jules-implementer-label.yml");
-    let stale_summary = root.join(".github/workflows/jules-pr-summary-request.yml");
-    fs::create_dir_all(stale_impl_label.parent().unwrap()).unwrap();
-    fs::write(&stale_impl_label, "legacy impl label workflow").unwrap();
-    fs::write(&stale_summary, "legacy summary workflow").unwrap();
+    let stale_paths = [
+        root.join(".github/workflows/jules-workflows.yml"),
+        root.join(".github/workflows/jules-sync.yml"),
+        root.join(".github/workflows/jules-automerge.yml"),
+        root.join(".github/workflows/jules-implementer-pr.yml"),
+        root.join(".github/workflows/jules-implementer-label.yml"),
+        root.join(".github/workflows/jules-pr-summary-request.yml"),
+    ];
+
+    fs::create_dir_all(root.join(".github/workflows")).unwrap();
+    for stale in &stale_paths {
+        fs::write(stale, "legacy jlo-managed workflow").unwrap();
+    }
 
     init_workflows_at(root.to_path_buf(), &WorkflowRunnerMode::remote()).unwrap();
 
+    for stale in &stale_paths {
+        assert!(
+            !stale.exists(),
+            "stale jlo-managed workflow should be removed: {}",
+            stale.display()
+        );
+    }
+
     assert!(
-        !stale_impl_label.exists(),
-        "stale jlo-managed implementer label workflow should be removed"
-    );
-    assert!(!stale_summary.exists(), "stale jlo-managed summary workflow should be removed");
-    assert!(
-        root.join(".github/workflows/jules-implementer-pr.yml").exists(),
-        "current implementer PR workflow should be installed"
+        root.join(".github/workflows/jules-scheduled-workflows.yml").exists(),
+        "current primary workflow should be installed"
     );
 }

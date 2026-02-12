@@ -8,13 +8,13 @@ fn installed_workflow_scaffold_enforces_explicit_branch_contract() {
     ctx.init_remote();
 
     let root = ctx.work_dir();
-    let primary = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
+    let primary =
+        fs::read_to_string(root.join(".github/workflows/jules-scheduled-workflows.yml")).unwrap();
     assert!(primary.contains("JLO_TARGET_BRANCH"));
     assert!(primary.contains("JULES_WORKER_BRANCH"));
-
-    let sync = fs::read_to_string(root.join(".github/workflows/jules-sync.yml")).unwrap();
-    assert!(sync.contains("JLO_TARGET_BRANCH"));
-    assert!(sync.contains("JULES_WORKER_BRANCH"));
+    assert!(primary.contains("sync-worker-branch:"));
+    assert!(primary.contains("process-implementer-pr-metadata:"));
+    assert!(primary.contains("validate-and-automerge:"));
 
     for entry in fs::read_dir(root.join(".github/workflows")).unwrap() {
         let entry = entry.unwrap();

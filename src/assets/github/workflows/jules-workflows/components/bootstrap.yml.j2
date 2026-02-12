@@ -1,7 +1,7 @@
   bootstrap:
     if: >-
-      (vars.JLO_PAUSED || 'false') != 'true' ||
-      github.event_name != 'schedule'
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') &&
+      ((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule')
     runs-on: {{ runner }}
     timeout-minutes: 10
     env:

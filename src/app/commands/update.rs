@@ -276,7 +276,17 @@ fn configured_workflow_mode<W>(workspace: &W) -> Result<Option<WorkflowRunnerMod
 where
     W: WorkspaceStore,
 {
-    if !workspace.file_exists(".github/workflows/jules-workflows.yml") {
+    let has_managed_workflow = [
+        ".github/workflows/jules-scheduled-workflows.yml",
+        ".github/workflows/jules-workflows.yml",
+        ".github/workflows/jules-sync.yml",
+        ".github/workflows/jules-automerge.yml",
+        ".github/workflows/jules-implementer-pr.yml",
+    ]
+    .iter()
+    .any(|path| workspace.file_exists(path));
+
+    if !has_managed_workflow {
         return Ok(None);
     }
 
@@ -445,7 +455,7 @@ wait_minutes_default = 30
 
         let workflow_path = temp.path().join(".github/workflows");
         fs::create_dir_all(&workflow_path).unwrap();
-        fs::write(workflow_path.join("jules-workflows.yml"), "name: Jules Workflows\n").unwrap();
+        fs::write(workflow_path.join("jules-scheduled-workflows.yml"), "name: Jules Scheduled Workflows\n").unwrap();
 
         fs::write(jlo_path.join(".jlo-version"), "0.0.0").unwrap();
         fs::write(

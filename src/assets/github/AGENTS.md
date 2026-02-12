@@ -29,10 +29,10 @@ This document describes how files under `src/assets/github/` are transformed int
   - `workflow_wait_minutes_default`: wait default from `.jlo/config.toml` (`workflow.wait_minutes_default`).
 
 ## Installed Output Examples
-- `src/assets/github/workflows/jules-workflows.yml.j2`
-  → `.github/workflows/jules-workflows.yml`
-- `src/assets/github/workflows/jules-sync.yml.j2`
-  → `.github/workflows/jules-sync.yml`
+- `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`
+  → `.github/workflows/jules-scheduled-workflows.yml`
+- `src/assets/github/workflows/jules-mock-cleanup.yml.j2`
+  → `.github/workflows/jules-mock-cleanup.yml`
 - `src/assets/github/actions/install-jlo/action.yml`
   → `.github/actions/install-jlo/action.yml`
 

@@ -9,11 +9,11 @@ fn init_workflows_generates_timing_from_config() {
     let root = ctx.work_dir();
 
     // Create an existing workflow with a custom schedule.
-    let workflow_path = root.join(".github/workflows/jules-workflows.yml");
+    let workflow_path = root.join(".github/workflows/jules-scheduled-workflows.yml");
     fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
     fs::write(
         &workflow_path,
-        r#"name: Jules Workflows
+        r#"name: Jules Scheduled Workflows
 
 on:
   schedule:
@@ -68,12 +68,12 @@ fn init_workflows_overwrites_invalid_existing_workflow() {
 
     jlo_config::write_jlo_config(root, &[jlo_config::DEFAULT_TEST_CRON], 30);
 
-    let workflow_path = root.join(".github/workflows/jules-workflows.yml");
+    let workflow_path = root.join(".github/workflows/jules-scheduled-workflows.yml");
     fs::create_dir_all(workflow_path.parent().unwrap()).unwrap();
     fs::write(&workflow_path, "name: [invalid\n  yaml: content").unwrap();
 
     init_workflows_at(root.to_path_buf(), &WorkflowRunnerMode::remote()).unwrap();
 
     let updated_workflow = fs::read_to_string(&workflow_path).unwrap();
-    assert!(updated_workflow.contains("Jules Workflows"));
+    assert!(updated_workflow.contains("Jules Scheduled Workflows"));
 }

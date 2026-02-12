@@ -92,7 +92,7 @@ Core domain logic located in `src/domain/`.
 | `jlo workflow gh pr comment-summary-request <pr_number>` | | Post or update summary-request comment on a Jules PR |
 | `jlo workflow gh pr sync-category-label <pr_number>` | | Sync implementer category label from branch to PR |
 | `jlo workflow gh pr enable-automerge <pr_number>` | | Enable auto-merge on an eligible PR |
-| `jlo workflow gh pr process <pr_number>` | | Run all event-level PR commands in order |
+| `jlo workflow gh pr process <pr_number> [--mode all|metadata|automerge] [--retry-attempts <n>] [--retry-delay-seconds <n>] [--fail-on-error]` | | Run PR event commands in configured mode |
 | `jlo workflow gh issue label-innovator <issue_number> <persona>` | | Apply innovator labels to a proposal issue |
 | `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
 | `jlo setup list [--detail <component>]` | `s ls` | List available components |

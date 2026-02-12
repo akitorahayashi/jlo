@@ -10,7 +10,7 @@ fn installed_workflow_scaffold_has_no_script_references() {
     let root = ctx.work_dir();
     let workflow_dir = root.join(".github/workflows");
 
-    let workflow = fs::read_to_string(workflow_dir.join("jules-workflows.yml")).unwrap();
+    let workflow = fs::read_to_string(workflow_dir.join("jules-scheduled-workflows.yml")).unwrap();
     assert!(!workflow.contains(".github/scripts/"));
 
     for entry in fs::read_dir(&workflow_dir).unwrap() {

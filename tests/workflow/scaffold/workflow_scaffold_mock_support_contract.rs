@@ -8,7 +8,7 @@ fn installed_workflow_scaffold_includes_mock_support() {
     ctx.init_remote();
 
     let root = ctx.work_dir();
-    let workflow = fs::read_to_string(root.join(".github/workflows/jules-workflows.yml")).unwrap();
+    let workflow = fs::read_to_string(root.join(".github/workflows/jules-scheduled-workflows.yml")).unwrap();
 
     assert!(workflow.contains("mock:"), "Should have mock input");
     assert!(workflow.contains("workflow_call:"), "Should support workflow_call trigger");

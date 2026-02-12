@@ -1,20 +1,17 @@
 # Jules Workflow Reproduction Guide
 
-This document describes the repository state required to reproduce the Jules workflow in other projects.
+This document describes the repository state required to reproduce Jules workflow behavior in another repository.
 
 ## Required Configuration
 
-Configure repository variables and secrets referenced by the workflow kit (see `.github/workflows/jules-*.yml`).
-Branch protection on `JULES_WORKER_BRANCH` must require the workflow status checks and allow auto-merge.
+Configure repository secrets and variables referenced by the workflow kit.
+Branch protection on `JULES_WORKER_BRANCH` must require workflow checks and allow auto-merge.
 
 ### Required Secrets and Permissions
 
 - `JULES_API_KEY`: Jules API key.
-- `JLO_BOT_TOKEN`: Automation token for repository operations (checkout/push/labels/automerge).
-- `JULES_LINKED_GH_TOKEN`: Personal access token used by `jules-implementer-pr.yml` for summary request comments.
-  - This value is a PAT, not a generic GitHub token label.
-  - It authenticates as the GitHub account linked to the `JULES_API_KEY` principal.
-  - It is distinct from `JLO_BOT_TOKEN` (same value is invalid).
+- `JLO_BOT_TOKEN`: automation token for checkout/push/merge operations.
+- `JULES_LINKED_GH_TOKEN`: token used by implementer PR metadata processing in `jules-scheduled-workflows.yml`.
 
 Minimum token permissions:
 
@@ -22,52 +19,52 @@ Minimum token permissions:
   - `Contents: Read and write`
   - `Pull requests: Read and write`
   - `Issues: Read and write`
+- Fine-grained PAT for `JULES_LINKED_GH_TOKEN`:
+  - `Contents: Read`
+  - `Pull requests: Read and write`
+  - `Issues: Read and write`
 - Classic PAT alternative (private repository): `repo` scope.
 
 ## Required Files
 
-Install the control plane and workflow kit with `jlo init --remote` (or `--self-hosted`) to populate `.jlo/` and `.github/` assets.
+Install control-plane and workflow kit with `jlo init --remote` (or `--self-hosted`).
 
-The kit layout follows these patterns:
+Expected workflow outputs:
 
-- `.github/workflows/jules-*.yml`
-- `.github/actions/` (Jules composite actions)
+- `.github/workflows/jules-scheduled-workflows.yml`
+- `.github/workflows/jules-mock-cleanup.yml`
+- `.github/actions/*`
 
 ### Review Configuration
 
-If you use automated review tools, configure them to suppress reviews on Jules-managed PRs while keeping reviews active for human Implementer PRs.
-
-### .jlo/ (control plane)
-
-The `.jlo/` directory is the user-facing intent overlay, created by `jlo init` on `JLO_TARGET_BRANCH`. It contains role definitions, version pins, and configuration.
-
-### .jules/ (runtime)
-
-The `.jules/` directory on `JULES_WORKER_BRANCH` is assembled automatically by the workflow bootstrap job. Users never edit it directly.
+If automated review tools are enabled, configure them to avoid blocking Jules-managed PR flow while preserving review quality for human implementer PRs.
 
 ## Repository State
 
-- The `JLO_TARGET_BRANCH` branch contains `.jlo/` and `.github/` (installed by `jlo init`).
-- The `JULES_WORKER_BRANCH` branch is created and maintained by workflow automation (bootstrap job).
-- The git identity configured by the workflow kit matches the target repository's bot account.
-- The bot account used by workflows has write access to the repository.
-- Auto-review tools are configured for on-demand review only for Jules-managed PRs.
+- `JLO_TARGET_BRANCH` contains `.jlo/` and `.github/`.
+- `JULES_WORKER_BRANCH` is managed by workflow automation.
+- Workflow bot identities have write access to the repository.
 
 ## Workflow Execution Flow
 
-The orchestration workflow under `.github/workflows/jules-*.yml` runs the layers in sequence, producing agent branches according to workflow rules.
+`jules-scheduled-workflows.yml` orchestrates:
 
-- Observer/Decider/Planner: Only `.jules/` changes, auto-merge
-- Implementer: Source code changes, human review required
+- schedule/dispatch/call layer execution
+- target-branch sync to worker branch
+- implementer PR metadata processing
+- worker PR doctor validation and auto-merge processing
+
+Auto-merge remains limited to policy-qualified `.jules/`-scoped Jules PRs.
 
 ## Self-hosted Runners
 
-The self-hosted workflow kit uses `runs-on: self-hosted` and installs `jlo` into the runner temp directory, adding it to the workflow PATH without requiring `sudo`.
-Self-hosted runners must provide the commands referenced by the workflows; treat the workflow templates as the authoritative source of required tooling.
-The installer detects OS/architecture and fails fast if the release assets do not support the runner.
+Self-hosted mode renders `runs-on: self-hosted` and installs `jlo` into runner temp PATH.
+Runners must provide tools referenced by workflow templates.
 
 ## Troubleshooting
 
 ### Auto-merge Fails
 
-- Repository settings, branch protection, and permissions align with the requirements referenced by the Jules workflows.
+- Confirm repository settings allow auto-merge.
+- Confirm branch protection requires workflow checks on `JULES_WORKER_BRANCH`.
+- Confirm `JLO_BOT_TOKEN` permissions are sufficient for merge operations.
