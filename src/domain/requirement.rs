@@ -24,8 +24,9 @@ impl RequirementHeader {
         let path_str = path
             .to_str()
             .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", path.display())))?;
-        let content = store.read_file(path_str)?;
-        let header: RequirementHeader = serde_yaml::from_str(&content).map_err(|e| {
+
+        let reader = store.open_file(path_str)?;
+        let header: RequirementHeader = serde_yaml::from_reader(reader).map_err(|e| {
             AppError::ParseError { what: path.display().to_string(), details: e.to_string() }
         })?;
         Ok(header)

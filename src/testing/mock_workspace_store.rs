@@ -155,6 +155,13 @@ impl WorkspaceStore for MockWorkspaceStore {
         })
     }
 
+    fn open_file(&self, path: &str) -> Result<Box<dyn std::io::Read>, AppError> {
+        let content = self.files.lock().unwrap().get(path).cloned().ok_or_else(|| {
+            AppError::from(std::io::Error::new(std::io::ErrorKind::NotFound, "Mock file not found"))
+        })?;
+        Ok(Box::new(std::io::Cursor::new(content.into_bytes())))
+    }
+
     fn write_file(&self, path: &str, content: &str) -> Result<(), AppError> {
         self.files.lock().unwrap().insert(path.to_string(), content.to_string());
         Ok(())

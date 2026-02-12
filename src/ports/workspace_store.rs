@@ -50,6 +50,9 @@ pub trait WorkspaceStore: PromptAssetLoader {
     /// Read a file as a string.
     fn read_file(&self, path: &str) -> Result<String, AppError>;
 
+    /// Open a file for reading (streaming).
+    fn open_file(&self, path: &str) -> Result<Box<dyn std::io::Read>, AppError>;
+
     /// Write content to a file.
     fn write_file(&self, path: &str, content: &str) -> Result<(), AppError>;
 

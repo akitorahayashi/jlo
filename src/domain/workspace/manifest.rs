@@ -17,7 +17,8 @@ pub const MANIFEST_FILENAME: &str = ".jlo-managed.yml";
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScaffoldManifest {
     pub schema_version: u32,
-    pub files: Vec<ScaffoldManifestEntry>,
+    #[serde(with = "manifest_serde")]
+    pub files: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,15 +27,42 @@ pub struct ScaffoldManifestEntry {
     pub sha256: String,
 }
 
+mod manifest_serde {
+    use super::ScaffoldManifestEntry;
+    use serde::{Deserializer, Serializer, Deserialize, Serialize};
+    use std::collections::BTreeMap;
+
+    pub fn serialize<S>(map: &BTreeMap<String, String>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let entries: Vec<ScaffoldManifestEntry> = map
+            .iter()
+            .map(|(path, sha256)| ScaffoldManifestEntry {
+                path: path.clone(),
+                sha256: sha256.clone(),
+            })
+            .collect();
+        entries.serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<BTreeMap<String, String>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let entries: Vec<ScaffoldManifestEntry> = Vec::deserialize(deserializer)?;
+        let map = entries.into_iter().map(|e| (e.path, e.sha256)).collect();
+        Ok(map)
+    }
+}
+
 impl ScaffoldManifest {
     pub fn from_map(map: BTreeMap<String, String>) -> Self {
-        let files =
-            map.into_iter().map(|(path, sha256)| ScaffoldManifestEntry { path, sha256 }).collect();
-        Self { schema_version: MANIFEST_SCHEMA_VERSION, files }
+        Self { schema_version: MANIFEST_SCHEMA_VERSION, files: map }
     }
 
     pub fn to_map(&self) -> BTreeMap<String, String> {
-        self.files.iter().map(|entry| (entry.path.clone(), entry.sha256.clone())).collect()
+        self.files.clone()
     }
 
     pub fn from_yaml(content: &str) -> Result<Self, AppError> {
@@ -124,6 +152,27 @@ mod tests {
 
         let round_trip_map = manifest.to_map();
         assert_eq!(map, round_trip_map);
+    }
+
+    #[test]
+    fn test_scaffold_manifest_serialization() {
+        let mut map = BTreeMap::new();
+        map.insert("file1.txt".to_string(), "hash1".to_string());
+        map.insert("file2.txt".to_string(), "hash2".to_string());
+
+        let manifest = ScaffoldManifest::from_map(map.clone());
+        let yaml = manifest.to_yaml().unwrap();
+
+        // Check format manually
+        assert!(yaml.contains("files:"));
+        assert!(yaml.contains("- path: file1.txt"));
+        assert!(yaml.contains("sha256: hash1"));
+        assert!(yaml.contains("- path: file2.txt"));
+        assert!(yaml.contains("sha256: hash2"));
+
+        // Round trip
+        let deserialized = ScaffoldManifest::from_yaml(&yaml).unwrap();
+        assert_eq!(deserialized.files, map);
     }
 
     #[test]

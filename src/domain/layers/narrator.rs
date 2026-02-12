@@ -665,6 +665,10 @@ created_at: "2026-02-05 00:00:00"
             panic!("mock narrator no-op must not call read_file");
         }
 
+        fn open_file(&self, _path: &str) -> Result<Box<dyn std::io::Read>, AppError> {
+            panic!("mock narrator no-op must not call open_file");
+        }
+
         fn write_file(&self, _path: &str, _content: &str) -> Result<(), AppError> {
             panic!("mock narrator no-op must not call write_file");
         }

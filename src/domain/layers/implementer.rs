@@ -1,14 +1,11 @@
 use std::path::{Path, PathBuf};
 
-use chrono::Utc;
-use serde::Deserialize;
-
 use crate::domain::configuration::loader::detect_repository_source;
 use crate::domain::configuration::mock_loader::load_mock_config;
-use crate::domain::layers::mock_utils::MockExecutionService;
+use crate::domain::layers::mock_utils::execute_implementer_mock;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
+use crate::domain::{AppError, Layer, RunConfig, RunOptions};
 use crate::ports::{
     AutomationMode, GitHubPort, GitPort, JulesClient, SessionRequest, WorkspaceStore,
 };
@@ -34,7 +31,15 @@ where
     ) -> Result<RunResult, AppError> {
         if options.mock {
             let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let _output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let _output = execute_implementer_mock(
+                jules_path,
+                options.requirement.as_deref(),
+                options.branch.as_deref(),
+                &mock_config,
+                git,
+                github,
+                workspace,
+            )?;
             let cleanup_requirement = options.requirement.clone();
             // Mock output is written by execute_mock's service.finish()
             return Ok(RunResult {
@@ -223,151 +228,6 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     Ok(())
 }
 
-fn execute_mock<G, H, W>(
-    jules_path: &Path,
-    options: &RunOptions,
-    config: &MockConfig,
-    git: &G,
-    github: &H,
-    workspace: &W,
-) -> Result<MockOutput, AppError>
-where
-    G: GitPort + ?Sized,
-    H: GitHubPort + ?Sized,
-    W: WorkspaceStore,
-{
-    let service = MockExecutionService::new(jules_path, config, git, github, workspace);
-
-    let original_branch = git.get_current_branch()?;
-
-    let requirement_path = options.requirement.as_ref().ok_or_else(|| {
-        AppError::MissingArgument("Requirement path is required for implementer".to_string())
-    })?;
-
-    // Parse requirement to get label and id
-    let requirement_path_str = requirement_path
-        .to_str()
-        .ok_or_else(|| AppError::InvalidPath("Invalid requirement path".to_string()))?;
-
-    let requirement_content = workspace.read_file(requirement_path_str)?;
-    let (label, issue_id) = parse_requirement_for_branch(&requirement_content, requirement_path)?;
-    if !config.issue_labels.contains(&label) {
-        return Err(AppError::InvalidConfig(format!(
-            "Issue label '{}' is not defined in github-labels.json",
-            label
-        )));
-    }
-
-    // Implementer branch format: jules-implementer-<label>-<id>-<short_description>
-    let prefix = config.branch_prefix(Layer::Implementer)?;
-    let issue_id_short = issue_id.chars().take(6).collect::<String>();
-    let branch_name = format!("{}{}-{}-{}", prefix, label, issue_id_short, config.mock_tag);
-
-    println!("Mock implementer: creating branch {}", branch_name);
-
-    // Fetch and checkout from default branch (not jules)
-    let base_branch = options.branch.as_deref().unwrap_or(&config.default_branch);
-    service.fetch_and_checkout_base(base_branch)?;
-    service.checkout_new_branch(&branch_name)?;
-
-    // Create minimal mock file to have a commit
-    let mock_file_path = format!(".{}", config.mock_tag);
-    let mock_content = format!(
-        "# Mock implementation marker\n# Mock tag: {}\n# Issue: {}\n# Created: {}\n",
-        config.mock_tag,
-        issue_id,
-        Utc::now().to_rfc3339()
-    );
-
-    workspace.write_file(&mock_file_path, &mock_content)?;
-
-    // Commit and push
-    let mock_path = Path::new(&mock_file_path);
-    let files: Vec<&Path> = vec![mock_path];
-    service.commit_and_push(
-        &format!("[{}] implementer: mock implementation", config.mock_tag),
-        &files,
-        &branch_name,
-    )?;
-
-    // Create PR targeting default branch (NOT jules)
-    let pr = service.create_pr(
-        &branch_name,
-        base_branch,
-        &format!("[{}] Implementation: {}", config.mock_tag, label),
-        &format!(
-            "Mock implementer run for workflow validation.\n\nMock tag: `{}`\nIssue: `{}`\nLabel: `{}`\n\n⚠️ This PR targets `{}` (not `jules`) - requires human review.",
-            config.mock_tag,
-            issue_id,
-            label,
-            base_branch
-        ),
-    )?;
-
-    // NOTE: Implementer PRs do NOT get auto-merge enabled
-    println!("Mock implementer: created PR #{} ({}) - awaiting label", pr.number, pr.url);
-
-    // Restore original branch so post-run cleanup (requirement + source events) runs on
-    // the exchange-bearing branch instead of the implementer branch.
-    let restore_branch = if original_branch.trim().is_empty() {
-        config.jules_branch.as_str()
-    } else {
-        &original_branch
-    };
-    service.git.checkout_branch(restore_branch, false)?;
-
-    let output = MockOutput {
-        mock_branch: branch_name,
-        mock_pr_number: pr.number,
-        mock_pr_url: pr.url,
-        mock_tag: config.mock_tag.clone(),
-    };
-
-    service.finish(&output)?;
-
-    Ok(output)
-}
-
-fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, String), AppError> {
-    #[derive(Deserialize)]
-    struct RequirementMeta {
-        label: Option<String>,
-        id: Option<String>,
-    }
-
-    let parsed: RequirementMeta = serde_yaml::from_str(content).map_err(|err| {
-        AppError::InvalidConfig(format!(
-            "Requirement file must be valid YAML ({}): {}",
-            path.display(),
-            err
-        ))
-    })?;
-
-    let label = parsed.label.filter(|value| !value.trim().is_empty()).ok_or_else(|| {
-        AppError::InvalidConfig(format!("Requirement file missing label field: {}", path.display()))
-    })?;
-    if !crate::domain::identifiers::validation::validate_safe_path_component(&label) {
-        return Err(AppError::InvalidConfig(format!(
-            "Requirement label '{}' is not a safe path component: {}",
-            label,
-            path.display()
-        )));
-    }
-
-    let id = parsed.id.filter(|value| !value.trim().is_empty()).ok_or_else(|| {
-        AppError::InvalidConfig(format!("Requirement file missing id field: {}", path.display()))
-    })?;
-
-    if id.len() != 6 || !id.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit()) {
-        return Err(AppError::InvalidConfig(format!(
-            "Issue id must be 6 lowercase alphanumeric chars: {}",
-            path.display()
-        )));
-    }
-
-    Ok((label, id))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -502,10 +362,10 @@ mod tests {
         }
     }
 
-    fn make_config() -> MockConfig {
+    fn make_config() -> crate::domain::MockConfig {
         let mut prefixes = HashMap::new();
         prefixes.insert(Layer::Implementer, "jules-implementer-".to_string());
-        MockConfig {
+        crate::domain::MockConfig {
             mock_tag: "mock-test-impl".to_string(),
             branch_prefixes: prefixes,
             default_branch: "main".to_string(),
@@ -525,17 +385,17 @@ mod tests {
         let req_path = PathBuf::from(".jules/exchange/requirements/req.yml");
         workspace.write_file(req_path.to_str().unwrap(), "id: abc123\nlabel: bugs\n").unwrap();
 
-        let options = RunOptions {
-            layer: Layer::Implementer,
-            role: None,
-            prompt_preview: false,
-            branch: None,
-            requirement: Some(req_path.clone()),
-            mock: true,
-            phase: None,
-        };
-
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        // Testing the shared function directly as unit test, or update execute to call it.
+        // We test via execute_implementer_mock
+        let result = execute_implementer_mock(
+            &jules_path,
+            Some(&req_path),
+            None,
+            &config,
+            &git,
+            &github,
+            &workspace,
+        );
         assert!(result.is_ok());
         let output = result.unwrap();
 
@@ -554,17 +414,15 @@ mod tests {
         let req_path = PathBuf::from(".jules/exchange/requirements/req.yml");
         workspace.write_file(req_path.to_str().unwrap(), "id: abc123\nlabel: features\n").unwrap(); // "features" not allowed
 
-        let options = RunOptions {
-            layer: Layer::Implementer,
-            role: None,
-            prompt_preview: false,
-            branch: None,
-            requirement: Some(req_path),
-            mock: true,
-            phase: None,
-        };
-
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_implementer_mock(
+            &jules_path,
+            Some(&req_path),
+            None,
+            &config,
+            &git,
+            &github,
+            &workspace,
+        );
         assert!(result.is_err());
         assert!(
             matches!(result, Err(AppError::InvalidConfig(msg)) if msg.contains("not defined in github-labels.json"))

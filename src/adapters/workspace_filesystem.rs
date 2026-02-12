@@ -172,6 +172,13 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         fs::read_to_string(full_path).map_err(AppError::from)
     }
 
+    fn open_file(&self, path: &str) -> Result<Box<dyn std::io::Read>, AppError> {
+        let full_path = self.resolve_path(path);
+        self.validate_path_within_root(&full_path)?;
+        let file = fs::File::open(full_path).map_err(AppError::from)?;
+        Ok(Box::new(file))
+    }
+
     fn write_file(&self, path: &str, content: &str) -> Result<(), AppError> {
         let full_path = self.resolve_path(path);
         self.validate_path_within_root(&full_path)?;

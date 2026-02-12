@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use crate::domain::workspace::paths::jules;
+use crate::domain::workspace::paths::{jules};
 use crate::domain::{AppError, JLO_DIR, JULES_DIR, PromptAssetLoader, VERSION_FILE};
 use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
 
@@ -104,6 +104,18 @@ impl WorkspaceStore for MemoryWorkspaceStore {
             None => Err(AppError::from(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 format!("File not found: {}", path.display()),
+            ))),
+        }
+    }
+
+    fn open_file(&self, path: &str) -> Result<Box<dyn std::io::Read>, AppError> {
+        let files = self.files.lock().unwrap();
+        let path_buf = PathBuf::from(path);
+        match files.get(&path_buf) {
+            Some(bytes) => Ok(Box::new(std::io::Cursor::new(bytes.clone()))),
+            None => Err(AppError::from(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("File not found: {}", path_buf.display()),
             ))),
         }
     }
