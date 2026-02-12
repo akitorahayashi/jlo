@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -135,6 +135,7 @@ pub fn install_workflow_scaffold(
     generate_config: &WorkflowGenerateConfig,
 ) -> Result<(), AppError> {
     let scaffold = load_workflow_scaffold(mode, generate_config)?;
+    remove_stale_managed_workflows(root, &scaffold)?;
 
     for action_dir in &scaffold.action_dirs {
         let destination = root.join(action_dir);
@@ -154,6 +155,48 @@ pub fn install_workflow_scaffold(
         }
 
         fs::write(&destination, &file.content)?;
+    }
+
+    Ok(())
+}
+
+fn remove_stale_managed_workflows(
+    root: &Path,
+    scaffold: &crate::adapters::assets::workflow_scaffold_assets::WorkflowScaffoldAssets,
+) -> Result<(), AppError> {
+    let workflows_dir = root.join(".github/workflows");
+    if !workflows_dir.exists() {
+        return Ok(());
+    }
+
+    let rendered_paths: HashSet<_> = scaffold
+        .files
+        .iter()
+        .map(|file| root.join(&file.path))
+        .collect();
+
+    let entries = fs::read_dir(&workflows_dir)?;
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let file_name = match path.file_name().and_then(|name| name.to_str()) {
+            Some(name) => name,
+            None => continue,
+        };
+        let is_yaml = path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .is_some_and(|ext| ext == "yml" || ext == "yaml");
+        if !is_yaml || !file_name.starts_with("jules-") {
+            continue;
+        }
+        if rendered_paths.contains(&path) {
+            continue;
+        }
+        fs::remove_file(path)?;
     }
 
     Ok(())
