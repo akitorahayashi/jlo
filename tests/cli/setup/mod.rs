@@ -1,0 +1,4 @@
+mod generates_install_script_contract;
+mod init_creates_setup_assets_contract;
+mod list_surfaces_component_catalog_contract;
+mod requires_init_contract;

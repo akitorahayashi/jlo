@@ -1,0 +1,1 @@
+mod rejects_when_already_initialized_contract;

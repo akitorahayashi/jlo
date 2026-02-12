@@ -1,0 +1,5 @@
+mod creates_custom_role_in_multi_role_layer_contract;
+mod rejects_duplicate_role_contract;
+mod rejects_invalid_layer_contract;
+mod rejects_single_role_layers_contract;
+mod rejects_without_workspace_contract;

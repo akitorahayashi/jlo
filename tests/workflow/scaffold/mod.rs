@@ -1,0 +1,12 @@
+mod automerge_delegates_to_jlo_command_contract;
+mod init_installs_workflow_scaffold_contract;
+mod init_workflows_config_contract;
+mod init_workflows_preserves_unrelated_files_contract;
+mod workflow_generate_contract;
+mod workflow_scaffold_branch_contract;
+mod workflow_scaffold_excludes_scripts_contract;
+mod workflow_scaffold_mock_support_contract;
+mod workflow_scaffold_pause_variable_contract;
+mod workflow_scaffold_yaml_validity_contract;
+
+mod support;

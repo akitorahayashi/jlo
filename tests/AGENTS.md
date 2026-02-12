@@ -1,63 +1,77 @@
 # Integration Tests
 
-This directory contains integration and end-to-end tests for the `jlo` CLI and workflow orchestration.
+This directory contains integration and end-to-end tests for the `jlo` CLI and its workflow scaffolding.
 
 ## Purpose
 
-- **Behavior Verification**: Ensure the CLI behaves as expected from the user's perspective.
-- **Workflow Simulation**: Verify that complex workflows (init -> bootstrap -> run) execute correctly.
-- **Artifact Validation**: Check that generated files (scaffolds, install scripts) are correct.
+- **Behavior verification**: validate CLI behavior and exit codes from a user perspective.
+- **Scaffold contracts**: validate generated `.jules/` runtime scaffolding and installed `.github/` workflow kit.
+- **Schema safety**: validate that doctor catches contract violations and that shipped mock fixtures remain valid.
 
 ## Structure
 
-| File | Purpose |
-|------|---------|
-| `cli_commands.rs` | Tests specific CLI command parsing, arguments, and simple execution. |
-| `cli_flow.rs` | Tests full workflow lifecycles (e.g., `init` then `bootstrap`). |
-| `workflow_scaffold.rs` | Verifies the content and structure of generated workflow files. |
-| `mock_mode.rs` | Tests the mock execution mode (`--mock`). |
-| `bootstrap.rs` | Tests specific to the bootstrap process. |
-| `api_coverage.rs` | Tests covering API surface area. |
-| `commands_core.rs` | Core command logic tests. |
-| `common/` | Shared test utilities and `TestContext` setup. |
+Integration tests are organized as **small, stable targets** (top-level `tests/*.rs`), with detailed contract modules under `tests/<target>/`.
 
-## Patterns
+```text
+tests/
+    harness/                 # Shared fixtures (no tests)
+        test_context.rs        # TestContext
+        git_repository.rs      # git helpers (commits/remotes)
+        jlo_config.rs          # .jlo/config.toml writers
+        scheduled_roles.rs     # scheduled.toml readers
 
-### Isolation via `TestContext`
+    cli.rs
+    cli/                     # CLI behavior contracts (by command)
 
-All tests should use `common::TestContext` to create an isolated temporary directory.
+    workflow.rs
+    workflow/                 # bootstrap + workflow-kit contracts
 
-```rust
-use common::TestContext;
+    doctor.rs
+    doctor/                   # schema failure + mock-fixture validity contracts
 
-#[test]
-fn my_feature_works() {
-    let ctx = TestContext::new();
-    // ctx.work_dir() is a temp dir
-    // ctx.cli() returns a command builder for the current binary
-}
+    mock.rs
+    mock/                     # mock-mode CLI contracts
+
+    library.rs
+    library/                  # public API lifecycle contract
 ```
 
-### Assertions
+## Contract Granularity
 
-Use `assert_cmd` and `predicates` for robust assertions on stdout/stderr and exit codes.
+- Default rule: **one behavior contract per file**.
+- Multiple `#[test]` functions in one file are allowed only when they validate the **same contract** (typical target: 1–3 tests, ~250 LOC max).
+- Avoid catch-all buckets and unrelated assertions in the same file.
+
+## Shared Harness
+
+All integration tests should use `TestContext` to create an isolated temporary workspace.
 
 ```rust
-ctx.cli()
-    .args(["my", "command"])
-    .assert()
-    .success()
-    .stdout(predicate::str::contains("Success message"));
+use crate::harness::TestContext;
+
+#[test]
+fn my_contract() {
+        let ctx = TestContext::new();
+        ctx.init_remote_and_bootstrap();
+        // ctx.work_dir() is a temp repo root
+        // ctx.cli() invokes the compiled jlo binary
+}
 ```
 
 ## Running Tests
 
 Run all integration tests:
+
 ```bash
 cargo test --tests
 ```
 
-Run a specific test file:
+Run by target:
+
 ```bash
-cargo test --test cli_commands
+cargo test --test cli
+cargo test --test workflow
+cargo test --test doctor
+cargo test --test mock
+cargo test --test library
 ```
