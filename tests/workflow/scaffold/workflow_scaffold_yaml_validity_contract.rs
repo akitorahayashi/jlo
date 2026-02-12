@@ -68,7 +68,7 @@ fn workflow_templates_validate_structure() {
         .as_mapping()
         .expect("'jobs' should be mapping");
     for job in [
-        "sync-worker-branch",
+        "bootstrap",
         "process-implementer-pr-metadata",
         "validate-and-automerge",
         "run-narrator",

@@ -16,7 +16,8 @@ fn implementer_metadata_path_delegates_to_unified_process_command() {
     assert!(workflow.contains("jlo workflow gh pr process"));
     assert!(workflow.contains("--mode metadata"));
     assert!(workflow.contains("--fail-on-error"));
-    assert!(workflow.contains("secrets.JULES_LINKED_GH_TOKEN"));
+    assert!(workflow.contains("secrets.JULES_LINKED_GH_PAT"));
+    assert!(workflow.contains("secrets.JLO_BOT_TOKEN"));
 
     assert!(
         !root.join(".github/workflows/jules-implementer-pr.yml").exists(),

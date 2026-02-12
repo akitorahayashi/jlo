@@ -11,7 +11,7 @@ Branch protection on `JULES_WORKER_BRANCH` must require workflow checks and allo
 
 - `JULES_API_KEY`: Jules API key.
 - `JLO_BOT_TOKEN`: automation token for checkout/push/merge operations.
-- `JULES_LINKED_GH_TOKEN`: token used by implementer PR metadata processing in `jules-scheduled-workflows.yml`.
+- `JULES_LINKED_GH_PAT`: token used by implementer PR metadata processing in `jules-scheduled-workflows.yml`.
 
 Minimum token permissions:
 
@@ -19,7 +19,7 @@ Minimum token permissions:
   - `Contents: Read and write`
   - `Pull requests: Read and write`
   - `Issues: Read and write`
-- Fine-grained PAT for `JULES_LINKED_GH_TOKEN`:
+- Fine-grained PAT for `JULES_LINKED_GH_PAT`:
   - `Contents: Read`
   - `Pull requests: Read and write`
   - `Issues: Read and write`
@@ -49,7 +49,7 @@ If automated review tools are enabled, configure them to avoid blocking Jules-ma
 `jules-scheduled-workflows.yml` orchestrates:
 
 - schedule/dispatch/call layer execution
-- target-branch sync to worker branch
+- bootstrap-time target-to-worker branch sync
 - implementer PR metadata processing
 - worker PR doctor validation and auto-merge processing
 
