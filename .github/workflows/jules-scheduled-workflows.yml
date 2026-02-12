@@ -107,7 +107,7 @@ jobs:
         run: |
           set -euo pipefail
           if git ls-remote --exit-code --heads origin "${JULES_WORKER_BRANCH}" >/dev/null 2>&1; then
-            git fetch origin "${JULES_WORKER_BRANCH}" --depth=1
+            git fetch origin "${JULES_WORKER_BRANCH}"
             git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JULES_WORKER_BRANCH}"
           else
             git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JLO_TARGET_BRANCH}"
