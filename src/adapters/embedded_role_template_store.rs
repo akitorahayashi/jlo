@@ -99,14 +99,10 @@ fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
 /// to search tools like ripgrep and ag which skip hidden directories by default.
 /// Deployment targets use dot-prefixed names (`.jlo/`, `.jules/`).
 ///
-/// Additionally, `jules/layers/` maps to `.jules/roles/` — the source uses
-/// `layers/` for clarity while the deployed scaffold uses `roles/` for
-/// backwards compatibility with the runtime path contract.
+/// Additionally, `jules/roles/` maps to `.jules/roles/` (implicitly via `jules/` prefix).
 fn map_scaffold_path(path: &str) -> String {
     if let Some(rest) = path.strip_prefix("jlo/") {
         format!(".jlo/{}", rest)
-    } else if let Some(rest) = path.strip_prefix("jules/layers/") {
-        format!(".jules/roles/{}", rest)
     } else if let Some(rest) = path.strip_prefix("jules/") {
         format!(".jules/{}", rest)
     } else {
