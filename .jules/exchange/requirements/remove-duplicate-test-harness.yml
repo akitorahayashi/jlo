@@ -1,0 +1,43 @@
+schema_version: 2
+
+# Metadata
+id: "3223cb"
+source_events:
+  - "dedcde"
+title: "remove-duplicate-test-harness"
+label: "refacts"
+priority: "medium"
+summary: "Remove duplicate test harness code in tests/common/."
+
+# Content
+goal: |
+  Eliminate code duplication in test harnesses.
+
+problem: |
+  The `tests/common/` directory contains dead code that duplicates the functionality found in `tests/harness/test_context.rs`.
+
+impact: |
+  Maintenance burden and confusion about which harness to use.
+
+desired_outcome: |
+  `tests/common/` should be removed or refactored to use `tests/harness/test_context.rs` if needed, or simply deleted if unused.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "tests/common/"
+  - "tests/harness/"
+
+acceptance_criteria:
+  - "Duplicate code is removed."
+  - "All tests rely on a single source of truth for the test harness."
+
+verification_criteria:
+  - "Check that `tests/common/` is gone or empty/redirected."
+  - "Run all tests to ensure no breakage."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

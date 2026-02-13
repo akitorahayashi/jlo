@@ -1,0 +1,43 @@
+schema_version: 2
+
+# Metadata
+id: "ce507e"
+source_events:
+  - "qa0001"
+  - "qa0002"
+title: "standardize-layer-unit-tests"
+label: "tests"
+priority: "high"
+summary: "Ensure consistent unit testing strategy across all layers."
+
+# Content
+goal: |
+  Establish a consistent unit testing strategy for all layers, ensuring execution logic is covered.
+
+problem: |
+  Unit testing for execution logic is inconsistent. `ImplementerLayer` and `DeciderLayer` have unit tests, while `PlannerLayer` and `ObserversLayer` lack them.
+
+impact: |
+  Lack of tests in Planner and Observers layers increases the risk of regressions and bugs.
+
+desired_outcome: |
+  All layers should have comparable unit test coverage for their execution logic (`execute_mock`, `execute_real` where applicable).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/layers/planner.rs"
+  - "src/domain/layers/observers.rs"
+
+acceptance_criteria:
+  - "`PlannerLayer` has unit tests."
+  - "`ObserversLayer` has unit tests."
+
+verification_criteria:
+  - "Run `cargo test` and verify coverage for these modules."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

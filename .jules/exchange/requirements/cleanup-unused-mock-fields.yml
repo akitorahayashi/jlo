@@ -1,0 +1,40 @@
+schema_version: 2
+
+# Metadata
+id: "1c6fc0"
+source_events:
+  - "unufld"
+title: "cleanup-unused-mock-fields"
+label: "refacts"
+priority: "low"
+summary: "Remove unused fields in MockExecutionService."
+
+# Content
+goal: |
+  Clean up unused fields in `MockExecutionService`.
+
+problem: |
+  The `MockExecutionService` struct has fields `jules_path`, `config`, and `workspace` marked as `#[allow(dead_code)]`.
+
+impact: |
+  Unnecessary code and potential confusion.
+
+desired_outcome: |
+  Unused fields should be removed.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/layers/mock_utils.rs"
+
+acceptance_criteria:
+  - "`MockExecutionService` has no unused fields marked with `#[allow(dead_code)]`."
+
+verification_criteria:
+  - "Check `src/domain/layers/mock_utils.rs`."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
