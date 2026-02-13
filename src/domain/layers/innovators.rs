@@ -158,8 +158,15 @@ fn resolve_innovator_task<W: WorkspaceStore>(
     task: &str,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let filename = format!("{task}.yml");
-    let task_path = jules::tasks_dir(jules_path, Layer::Innovators).join(&filename);
+    let filename = match task {
+        "create_idea" => "create_idea.yml",
+        "refine_idea_and_create_proposal" => "refine_idea_and_create_proposal.yml",
+        "create_proposal" => "create_proposal.yml",
+        _ => {
+            return Err(AppError::Validation(format!("Invalid innovator task '{}'", task)));
+        }
+    };
+    let task_path = jules::tasks_dir(jules_path, Layer::Innovators).join(filename);
     workspace.read_file(&task_path.to_string_lossy()).map_err(|_| {
         AppError::Validation(format!(
             "No task file for innovators task '{}': expected {}",
@@ -270,12 +277,12 @@ where
     } else if task == "refine_idea_and_create_proposal" {
         if workspace.file_exists(idea_path_str) {
             workspace.remove_file(idea_path_str)?;
+            let files: Vec<&Path> = vec![idea_path.as_path()];
+            git.commit_files(
+                &format!("[{}] innovator: mock refinement (remove idea)", config.mock_tag),
+                &files,
+            )?;
         }
-        let files: Vec<&Path> = vec![idea_path.as_path()];
-        git.commit_files(
-            &format!("[{}] innovator: mock refinement (remove idea)", config.mock_tag),
-            &files,
-        )?;
     } else {
         let proposal_path = room_dir.join("proposal.yml");
         let proposal_path_str = proposal_path

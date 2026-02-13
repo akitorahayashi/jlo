@@ -1,4 +1,4 @@
-task: create_proposal_direct
+task: create_proposal
 mode: direct
 
 objective:

@@ -42,11 +42,6 @@ where
     F: FnMut(&Path, RunOptions, &G, &H, &W) -> Result<(), AppError>,
 {
     let jules_path = store.jules_path();
-    if options.task.is_some() && options.layer != Layer::Innovators {
-        return Err(AppError::Validation(
-            "--task is only supported when layer is innovators".to_string(),
-        ));
-    }
 
     match options.layer {
         Layer::Narrator => execute_narrator(store, options, &jules_path, git, github, run_layer),
