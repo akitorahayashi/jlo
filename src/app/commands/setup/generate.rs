@@ -2,9 +2,9 @@
 
 use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 use crate::app::config::SetupConfig;
-use crate::app::services::setup_component_resolver::SetupComponentResolver;
-use crate::app::services::setup_script_generator::SetupScriptGenerator;
 use crate::domain::AppError;
+use crate::domain::component_graph::ComponentGraph;
+use crate::domain::provisioning::ArtifactFactory;
 use crate::ports::WorkspaceStore;
 
 /// Execute the setup gen command.
@@ -38,19 +38,14 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
         ));
     }
 
-    // Initialize services
-    let catalog = EmbeddedComponentCatalog::new()?;
-
     // Resolve dependencies
-    let components = SetupComponentResolver::resolve(&config.tools, &catalog)?;
+    let catalog = EmbeddedComponentCatalog::new()?;
+    let components = ComponentGraph::resolve(&config.tools, &catalog)?;
 
     // Generate install script
-    let script_content = SetupScriptGenerator::generate_install_script(&components);
-
+    let script_content = ArtifactFactory::generate_install_script(&components);
     let install_sh = ".jlo/setup/install.sh";
     store.write_file(install_sh, &script_content)?;
-
-    // Make executable
     store.set_executable(install_sh)?;
 
     // Generate/merge vars.toml and secrets.toml
@@ -62,7 +57,7 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
         .file_exists(secrets_toml_path)
         .then(|| store.read_file(secrets_toml_path))
         .transpose()?;
-    let env_artifacts = SetupScriptGenerator::merge_env_artifacts(
+    let env_artifacts = ArtifactFactory::merge_env_artifacts(
         &components,
         existing_vars.as_deref(),
         existing_secrets.as_deref(),
@@ -70,7 +65,6 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
     store.write_file(vars_toml_path, &env_artifacts.vars_toml)?;
     store.write_file(secrets_toml_path, &env_artifacts.secrets_toml)?;
 
-    // Return component names
     Ok(components.iter().map(|c| c.name.to_string()).collect())
 }
 

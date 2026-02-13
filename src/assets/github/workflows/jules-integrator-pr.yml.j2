@@ -48,14 +48,17 @@ jobs:
         run: |
           set -euo pipefail
           PR_NUMBER=""
-          ATTEMPTS=24
-          for _ in $(seq 1 "$ATTEMPTS"); do
+          # Poll for up to 2 minutes (24 * 5s) for the PR to be created, as there can be a
+          # delay between the push event and the PR being available via the API.
+          PR_DISCOVERY_ATTEMPTS=24
+          for _ in $(seq 1 "$PR_DISCOVERY_ATTEMPTS"); do
             PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --repo "$REPO" --json number -q '.[0].number')
             if [ -n "$PR_NUMBER" ]; then
               break
             fi
             sleep 5
-          done
+            done
+
           if [ -z "$PR_NUMBER" ]; then
             echo "::notice::No PR found yet for branch $BRANCH_NAME. Skipping metadata sync."
             echo "found=false" >> "$GITHUB_OUTPUT"
