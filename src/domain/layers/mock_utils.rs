@@ -189,12 +189,8 @@ mod tests {
             .with_file("decided/mock-other-run-cccccc.yml", "id: cccccc\n")
             .with_file("decided/notes.txt", "ignored\n");
 
-        let files = list_mock_tagged_files(
-            &workspace,
-            Path::new("decided"),
-            "mock-run-123",
-        )
-        .expect("list");
+        let files =
+            list_mock_tagged_files(&workspace, Path::new("decided"), "mock-run-123").expect("list");
 
         assert_eq!(files.len(), 2);
         assert!(files[0].to_string_lossy().ends_with("mock-run-123-aaaaaa.yml"));
