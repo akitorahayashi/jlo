@@ -21,6 +21,7 @@ fn workflow_generate_writes_expected_files_to_custom_output_dir() {
     );
     assert!(output_dir.join(".github/workflows/jules-implementer-pr.yml").exists());
     assert!(output_dir.join(".github/workflows/jules-automerge.yml").exists());
+    assert!(output_dir.join(".github/workflows/jules-integrator.yml").exists());
 }
 
 #[test]
