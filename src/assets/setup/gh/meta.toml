@@ -2,7 +2,5 @@ name = "gh"
 summary = "GitHub CLI for repository automation and PR discussion workflows"
 dependencies = []
 
-[[env]]
-name = "GH_TOKEN"
-description = "GitHub token used by gh CLI authentication in the Jules VM"
-secret = true
+[secrets]
+GH_TOKEN = { description = "GitHub token used by gh CLI authentication in the Jules VM" }

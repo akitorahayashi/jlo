@@ -171,11 +171,11 @@ name = "component-name"       # Optional; defaults to directory name
 summary = "Short description"
 dependencies = ["other-comp"] # Optional
 
-[[env]]
-name = "ENV_VAR"
-description = "What this variable does"
-default = "optional-default"  # Optional
-secret = true                 # Optional, defaults to false
+[vars]
+ENV_VAR = { description = "What this variable does", default = "optional-default" }
+
+[secrets]
+SECRET_VAR = { description = "Secret used by runtime authentication" }
 ```
 
 ### Services
