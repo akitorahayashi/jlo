@@ -51,6 +51,7 @@ Narrator -> Observer -> Decider -> [Planner] -> Implementer
 | Decider | `jules` | `jules-decider-*` | ✅ (if `.jules/` only) |
 | Planner | `jules` | `jules-planner-*` | ✅ (if `.jules/` only) |
 | Implementer | `main` | `jules-implementer-*` | ❌ (human review) |
+| Integrator | `main` | `jules-integrator-*` | ❌ (human review) |
 
 Narrator, Observers, Decider, and Planner modify only `.jules/` and auto-merge after CI passes.
 Implementer modifies source code and requires human review.
@@ -120,6 +121,12 @@ Implementer modifies source code and requires human review.
     |   |   +-- refacts.yml
     |   |   +-- tests.yml
     |
+    +-- integrator/    # Single-role layer (manual, on-demand)
+    |   +-- integrator_prompt.j2 # Prompt construction rules
+    |   +-- contracts.yml    # Shared integrator contract
+    |   +-- tasks/
+    |   |   +-- integrate_implementer_branches.yml
+    |
     +-- innovators/     # Multi-role layer (phase-driven)
         +-- innovators_prompt.j2      # Prompt construction (uses {{phase}})
         +-- contracts.yml             # Layer contract
@@ -151,12 +158,15 @@ Implementer modifies source code and requires human review.
 | Decider | Single-role | `jlo run decider` |
 | Planner | Single-role | `jlo run planner <path>` |
 | Implementer | Single-role | `jlo run implementer <path>` |
+| Integrator | Single-role | `jlo run integrator` |
 
 **Narrator**: Produces `.jules/exchange/changes.yml` summarizing recent codebase changes. Runs first, before observers. Observers treat this as a secondary hint, not as a scope driver.
 
 **Multi-role layers** (Observers, Innovators): Roles are scheduled via `.jlo/scheduled.toml`. Each role has its own subdirectory with `role.yml` in `.jlo/roles/`. Custom roles are authored with `jlo create <layer> <name>`, while built-in roles are installed with `jlo add <layer> <role>`.
 
 **Single-role layers** (Decider, Planner, Implementer): Have a fixed role with `contracts.yml` directly in the layer directory. Planner and Implementer are requirement-driven and require a requirement file path argument. Template creation is not supported.
+
+**Integrator**: A manual, on-demand layer that merges all remote `jules-implementer-*` branches into a single integration branch. PR discussions are retrieved live via `gh` during execution. Not part of the scheduled orchestration chain.
 
 **Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated task file (`tasks/create_idea.yml` / `tasks/refine_proposal.yml`) injected at runtime via the `task` context variable. Universal constraints are in `contracts.yml`.
 
@@ -282,6 +292,7 @@ jules-observer-<id>
 jules-decider-<id>
 jules-planner-<id>
 jules-implementer-<id>-<short_description>
+jules-integrator-<timestamp>-<id>
 ```
 
 ## Testing and Validation

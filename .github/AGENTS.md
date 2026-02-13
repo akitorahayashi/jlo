@@ -22,6 +22,7 @@ Its `.jules/` directory is assembled by `jlo workflow bootstrap` from embedded s
 | Decider | `JULES_WORKER_BRANCH` | `jules-decider-*` | ✅ (if `.jules/` only) |
 | Planner | `JULES_WORKER_BRANCH` | `jules-planner-*` | ✅ (if `.jules/` only) |
 | Implementer | `JLO_TARGET_BRANCH` | `jules-implementer-*` | ❌ (human review) |
+| Integrator | `JLO_TARGET_BRANCH` | `jules-integrator-*` | ❌ (human review) |
 | Innovator | `JULES_WORKER_BRANCH` | `jules-innovator-*` | ✅ (if `.jules/` only) |
 
 ## Workflow Files
@@ -30,6 +31,7 @@ Jules workflow kit files are installed by `jlo init --remote` (or `--self-hosted
 Runtime orchestration is centralized in:
 
 - `.github/workflows/jules-scheduled-workflows.yml`
+- `.github/workflows/jules-integrator.yml` (manual dispatch only)
 
 Local composite actions are installed under `.github/actions/`.
 
@@ -59,6 +61,8 @@ Workflow orchestration delegates to `jlo workflow` commands:
 3. Worker-branch pull_request path for doctor validation and auto-merge enablement
 
 Layer orchestration sequence remains narrator → schedule check → innovators/observers → decider → planner → implementer.
+
+Integrator is a manual-only workflow (`workflow_dispatch`). It discovers all remote `jules-implementer-*` branches, retrieves their PR discussions via `gh`, and merges them into a single integration branch targeting `JLO_TARGET_BRANCH`.
 
 ## Required Configuration
 

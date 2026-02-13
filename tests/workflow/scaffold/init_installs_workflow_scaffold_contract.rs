@@ -12,6 +12,7 @@ fn init_installs_remote_workflow_scaffold() {
     assert!(root.join(".github/workflows/jules-scheduled-workflows.yml").exists());
     assert!(root.join(".github/workflows/jules-implementer-pr.yml").exists());
     assert!(root.join(".github/workflows/jules-automerge.yml").exists());
+    assert!(root.join(".github/workflows/jules-integrator.yml").exists());
     assert!(root.join(".github/actions/install-jlo/action.yml").exists());
     assert!(
         !root.join(".github/actions/wait/action.yml").exists(),

@@ -123,7 +123,7 @@ pub fn builtin_role_catalog() -> Result<Vec<BuiltinRoleEntry>, AppError> {
 /// Execute Jules agents for a layer.
 ///
 /// # Arguments
-/// * `layer` - Target layer (observers, decider, planner, implementer)
+/// * `layer` - Target layer (observers, decider, planner, implementer, integrator)
 /// * `role` - Specific role to run (required for observers/decider/innovators)
 /// * `prompt_preview` - Show prompts without executing
 /// * `branch` - Override the starting branch

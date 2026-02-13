@@ -11,6 +11,7 @@ This file defines the binding rules for Jules agents operating in this repositor
   - `.jules/roles/decider/contracts.yml`
   - `.jules/roles/planner/contracts.yml`
   - `.jules/roles/implementer/contracts.yml`
+  - `.jules/roles/integrator/contracts.yml`
   - `.jules/roles/innovators/contracts.yml`
 
 - **Role Definitions**: Defined in `.jlo/` (Control Plane).
@@ -91,6 +92,7 @@ Branch names:
 - Decider: `jules-decider-<id>`
 - Planner: `jules-planner-<id>`
 - Implementer: `jules-implementer-<label>-<id>-<short_description>`
+- Integrator: `jules-integrator-<timestamp>-<id>`
 
 `<id>` is 6 lowercase alphanumeric characters unless the layer contract specifies otherwise.
 
@@ -102,6 +104,8 @@ Branch names:
 - Observers, Decider, and Planner modify only `.jules/`.
 - Implementer modifies only what the requirement specifies, runs the verification command, then
   creates a pull request for human review.
+- Integrator merges implementer branches contextually and creates a single integration pull request
+  for human review.
 
 ## Forbidden By Default
 
