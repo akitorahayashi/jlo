@@ -53,5 +53,13 @@ fn installed_workflow_scaffold_includes_mock_support() {
     assert!(workflow.contains("run-innovators-1:"), "Should have first innovator pass job");
     assert!(workflow.contains("run-innovators-2:"), "Should have second innovator pass job");
     assert!(workflow.contains("publish-proposals:"), "Should have publish-proposals job");
-    assert!(workflow.contains("- innovators"), "Entry point choices should include innovators");
+    assert!(!workflow.contains("- innovators"), "Entry point choices should exclude innovators");
+    assert!(
+        workflow.contains("observers)\n              run_innovators_1=true"),
+        "Observers entry-point should trigger innovators"
+    );
+    assert!(
+        workflow.contains("decider)\n              run_decider=true"),
+        "Decider entry-point should not force innovators"
+    );
 }

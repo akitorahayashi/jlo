@@ -1,4 +1,4 @@
-  generate-planner-matrix:
+  generate-routing-matrix:
     needs: [check-schedule, generate-decider-matrix, run-decider, wait-after-decider]
     if: |
       always() &&
@@ -18,8 +18,4 @@
           REQUEST_IMPLEMENTER: {{ gha_expr("fromJSON(needs.check-schedule.outputs.json).run_implementer") }}
         run: |
           set -euo pipefail
-          OUTPUT_JSON=$(jlo workflow workspace inspect | jq -c --argjson req_planner "$REQUEST_PLANNER" --argjson req_implementer "$REQUEST_IMPLEMENTER" '{
-            run_planner: ($req_planner and (([.requirements.items[] | select(.requires_deep_analysis == true)] | length) > 0)),
-            run_implementer: ($req_implementer and (([.requirements.items[] | select(.requires_deep_analysis == false)] | length) > 0))
-          }')
-          echo "json=$OUTPUT_JSON" >> "$GITHUB_OUTPUT"
+          echo "json={\"run_planner\":$REQUEST_PLANNER,\"run_implementer\":$REQUEST_IMPLEMENTER}" >> "$GITHUB_OUTPUT"

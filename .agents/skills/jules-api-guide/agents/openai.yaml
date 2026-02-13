@@ -1,0 +1,5 @@
+---
+interface:
+  display_name: "Jules API Guide"
+  short_description: "Guide for Jules API and repo settings automation"
+  default_prompt: "Use $jules-api-guide when design or review for Jules API."

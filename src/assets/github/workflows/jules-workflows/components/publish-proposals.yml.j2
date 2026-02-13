@@ -1,10 +1,9 @@
   publish-proposals:
-    needs: [check-schedule, wait-after-innovators-2, wait-after-innovators-direct]
+    needs: [check-schedule, wait-after-innovators-2]
     if: |
       always() &&
       fromJSON(needs.check-schedule.outputs.json).run_publish_proposals == true &&
-      (needs.wait-after-innovators-2.result == 'success' || needs.wait-after-innovators-2.result == 'skipped') &&
-      (needs.wait-after-innovators-direct.result == 'success' || needs.wait-after-innovators-direct.result == 'skipped')
+      (needs.wait-after-innovators-2.result == 'success' || needs.wait-after-innovators-2.result == 'skipped')
     runs-on: {{ runner }}
     timeout-minutes: 30
     env:

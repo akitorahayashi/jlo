@@ -17,7 +17,6 @@
         run: |
           set -euo pipefail
           run_innovators_1=false
-          run_innovators_direct=false
           run_observers=false
           run_innovators_2=false
           run_publish_proposals=false
@@ -35,12 +34,11 @@
               run_planner=true
               run_implementer=true
               ;;
-            innovators)
-              run_innovators_direct=true
-              run_publish_proposals=true
-              ;;
             observers)
+              run_innovators_1=true
               run_observers=true
+              run_innovators_2=true
+              run_publish_proposals=true
               ;;
             decider)
               run_decider=true
@@ -57,4 +55,4 @@
               ;;
           esac
 
-          echo "json={\"should_run\":true,\"entry_point\":\"${ENTRY_POINT}\",\"run_innovators_1\":${run_innovators_1},\"run_innovators_direct\":${run_innovators_direct},\"run_observers\":${run_observers},\"run_innovators_2\":${run_innovators_2},\"run_publish_proposals\":${run_publish_proposals},\"run_decider\":${run_decider},\"run_planner\":${run_planner},\"run_implementer\":${run_implementer}}" >> "$GITHUB_OUTPUT"
+          echo "json={\"should_run\":true,\"entry_point\":\"${ENTRY_POINT}\",\"run_innovators_1\":${run_innovators_1},\"run_observers\":${run_observers},\"run_innovators_2\":${run_innovators_2},\"run_publish_proposals\":${run_publish_proposals},\"run_decider\":${run_decider},\"run_planner\":${run_planner},\"run_implementer\":${run_implementer}}" >> "$GITHUB_OUTPUT"
