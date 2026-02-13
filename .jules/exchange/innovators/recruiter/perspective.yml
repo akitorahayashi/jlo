@@ -1,0 +1,34 @@
+schema_version: 1
+
+persona: "recruiter"
+
+focus: "Identify missing roles and contract boundaries."
+
+# Structured repository understanding updated every cycle.
+repository_observations:
+  codebase_state:
+    - "The codebase is predominantly Rust, but the active observer set lacks a dedicated Rust language expert."
+  startup_and_runtime_contracts:
+    - "Roles are loaded from .jlo/roles/, but the authoritative source for roles is src/assets/roles/."
+  decision_quality_gaps:
+    - "Current code reviews lack expert scrutiny on ownership, borrowing, lifetimes, and error handling patterns specific to Rust."
+  leverage_candidates:
+    - "Activate the `rustacean` observer role from src/assets/roles/observers/language/rustacean/role.yml."
+
+# Thought process and hypothesis evolution.
+thinking_notes:
+  hypotheses:
+    - "Activating the rustacean observer will reduce memory safety risks and improve idiomatic Rust usage by catching issues early."
+  tradeoff_assessment:
+    - "Adding another observer increases the review loop complexity slightly but significantly reduces technical debt accumulation in core domain logic."
+  rejected_paths:
+    - "Proposing a generic 'code reviewer' role (rejected: specific expertise is needed for Rust)."
+
+# Observer feedback assimilation and next-cycle planning.
+feedback_assimilation:
+  observer_inputs: []
+  next_focus:
+    - "Monitor the rustacean observer's impact on pull request quality and identify any new gaps in concurrency safety."
+
+# Newest first; keep max 15 entries (FIFO).
+recent_proposals: []
