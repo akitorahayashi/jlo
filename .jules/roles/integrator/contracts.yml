@@ -1,0 +1,42 @@
+layer: integrator
+branch_prefix: jules-integrator-
+
+purpose:
+  Integrate all remote implementer branches into a single integration branch and
+  open one pull request. The integration run processes every discovered candidate
+  branch end-to-end without pausing between branches.
+
+target_branch_basis: JLO_TARGET_BRANCH
+runtime_target_set: remote branches matching jules-implementer-*
+
+discovery:
+  - "Enumerate remote branches on origin matching the implementer branch prefix (jules-implementer-*)."
+  - "Fail explicitly if zero candidate branches exist."
+
+pr_discussion_retrieval:
+  tool: gh
+  per_branch:
+    - "Find the PR by head branch name using gh pr list."
+    - "Load PR body (Summary of Changes context)."
+    - "Load issue comments via gh pr view with comments."
+    - "Load review objects (states and review bodies)."
+    - "Load line-level review comments."
+  failure:
+    - "Zero PR matches for a candidate branch: fail explicitly."
+    - "Multiple PR matches for a single head branch: fail explicitly."
+    - "gh unavailable or authentication failure: fail explicitly."
+
+conflict_resolution:
+  - "Resolve conflicts contextually using repository conventions, architecture consistency, and maintainability."
+  - "Never apply blind conflict picks (e.g. always-ours or always-theirs)."
+  - "Never apply review suggestions blindly without evaluating correctness."
+
+completion:
+  - "Process all candidate branches in one run without human checkpoints."
+  - "Produce one integration branch and one pull request as final output."
+
+constraints:
+  - "Branch format: jules-integrator-<timestamp>-<id>"
+  - "No dependency on .mx/branches/*.md or any pre-generated local summaries."
+  - "Operator-side cleanup of unwanted implementer branches is an external precondition."
+  - "All development-related documentation must be written in English."

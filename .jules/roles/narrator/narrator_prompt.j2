@@ -1,0 +1,4 @@
+{{ section("Layer Contracts", include_required(".jules/roles/narrator/contracts.yml")) }}
+{{ section("Task", include_required(".jules/roles/narrator/tasks/" ~ run_mode ~ "_summary.yml")) }}
+{{ section("Target Range", range_description) }}
+{{ section("Commits Since Cursor", commits_since_cursor) }}
