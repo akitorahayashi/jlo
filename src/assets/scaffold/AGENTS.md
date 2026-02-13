@@ -32,9 +32,10 @@ See [root AGENTS.md](../../AGENTS.md) for critical design principles including P
 │   └── .gitkeep
 └── setup/
     ├── tools.yml         # Tool selection
-    ├── env.toml          # Environment variables (generated/merged)
+    ├── vars.toml         # Non-secret environment variables (generated/merged)
+    ├── secrets.toml      # Secret environment variables (generated/merged)
     ├── install.sh        # Installation script (generated)
-    └── .gitignore        # Ignores env.toml
+    └── .gitignore        # Ignores secrets.toml only
 
 .jules/ (System Definition)
 ├── JULES.md              # Agent contract (formal rules)

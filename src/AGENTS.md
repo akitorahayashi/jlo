@@ -18,7 +18,7 @@ src/
 │   ├── scaffold/      # Embedded .jules/ structure
 │   ├── templates/     # Role templates by layer
 │   ├── workflows/     # Workflow scaffold assets
-│   └── catalog/       # Setup component definitions
+│   └── setup/         # Setup component definitions
 └── testing/           # Mock implementations
 tests/
 ├── harness/           # Shared fixtures (TestContext, git helpers, config writers)
@@ -54,7 +54,7 @@ tests/
 | **Projection** | Deterministic materialization of `.jules/` from `.jlo/` + scaffold assets during workflow bootstrap. See `docs/CONTROL_PLANE_OWNERSHIP.md`. |
 | **Exchange** | The flat handoff directory structure under `.jules/exchange/`. |
 | **Workflow scaffold** | `.github/` automation assets installed by `jlo init`. |
-| **Component** | Development tools managed by `jlo setup`, defined in `src/assets/catalog/`. |
+| **Component** | Development tools managed by `jlo setup`, defined in `src/assets/setup/`. |
 
 ## Domain Modules
 
@@ -95,7 +95,7 @@ Core domain logic located in `src/domain/`.
 | `jlo workflow gh pr enable-automerge <pr_number>` | | Enable auto-merge on an eligible PR |
 | `jlo workflow gh pr process <pr_number> [--mode all|metadata|automerge] [--retry-attempts <n>] [--retry-delay-seconds <n>] [--fail-on-error]` | | Run PR event commands in configured mode |
 | `jlo workflow gh issue label-innovator <issue_number> <persona>` | | Apply innovator labels to a proposal issue |
-| `jlo setup gen [path]` | `s g` | Generate `install.sh` and `env.toml` |
+| `jlo setup gen [path]` | `s g` | Generate `.jlo/setup/install.sh`, `vars.toml`, and `secrets.toml` |
 | `jlo setup list [--detail <component>]` | `s ls` | List available components |
 | `jlo deinit` | | Remove all jlo-managed assets (`.jlo/`, branch, workflows) |
 
@@ -159,7 +159,7 @@ The setup compiler generates dependency-aware installation scripts for developme
 ### Component Catalog Structure
 
 ```
-src/assets/catalog/<component>/
+src/assets/setup/<component>/
   meta.toml      # name, summary, dependencies, env specs
   install.sh     # Installation script
 ```
@@ -171,10 +171,11 @@ name = "component-name"       # Optional; defaults to directory name
 summary = "Short description"
 dependencies = ["other-comp"] # Optional
 
-[[env]]
-name = "ENV_VAR"
-description = "What this variable does"
-default = "optional-default"  # Optional
+[vars]
+ENV_VAR = { description = "What this variable does", default = "optional-default" }
+
+[secrets]
+SECRET_VAR = { description = "Secret used by runtime authentication" }
 ```
 
 ### Services
@@ -183,7 +184,7 @@ default = "optional-default"  # Optional
 |---------|----------------|
 | **CatalogService** | Loads components from embedded assets |
 | **ResolverService** | Topological sort with cycle detection |
-| **GeneratorService** | Produces install.sh and merges env.toml |
+| **GeneratorService** | Produces install.sh and merges vars.toml + secrets.toml |
 
 ### Environment Contract
 

@@ -1,0 +1,6 @@
+name = "gh"
+summary = "GitHub CLI for repository automation and PR discussion workflows"
+dependencies = []
+
+[secrets]
+GH_TOKEN = { description = "GitHub token used by gh CLI authentication in the Jules VM" }

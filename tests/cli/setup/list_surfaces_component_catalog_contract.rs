@@ -10,6 +10,7 @@ fn setup_list_shows_available_components() {
         .assert()
         .success()
         .stdout(predicate::str::contains("Available components:"))
+        .stdout(predicate::str::contains("gh"))
         .stdout(predicate::str::contains("just"));
 }
 

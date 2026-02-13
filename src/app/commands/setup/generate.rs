@@ -1,4 +1,4 @@
-//! Setup gen command - generates install.sh and env.toml.
+//! Setup gen command - generates install.sh, vars.toml, and secrets.toml.
 
 use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
 use crate::app::config::SetupConfig;
@@ -9,9 +9,10 @@ use crate::ports::WorkspaceStore;
 
 /// Execute the setup gen command.
 ///
-/// Reads `.jules/setup/tools.yml`, resolves dependencies, and generates:
-/// - `.jules/setup/install.sh` - Installation script
-/// - `.jules/setup/env.toml` - Environment variables
+/// Reads `.jlo/setup/tools.yml`, resolves dependencies, and generates:
+/// - `.jlo/setup/install.sh` - Installation script
+/// - `.jlo/setup/vars.toml` - Non-secret environment variables
+/// - `.jlo/setup/secrets.toml` - Secret environment variables
 ///
 /// Returns the list of resolved component names in installation order.
 pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
@@ -46,19 +47,28 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
     // Generate install script
     let script_content = SetupScriptGenerator::generate_install_script(&components);
 
-    let install_sh = ".jules/setup/install.sh";
+    let install_sh = ".jlo/setup/install.sh";
     store.write_file(install_sh, &script_content)?;
 
     // Make executable
     store.set_executable(install_sh)?;
 
-    // Generate/merge env.toml
-    let env_toml_path = ".jules/setup/env.toml";
-    let existing_content =
-        if store.file_exists(env_toml_path) { Some(store.read_file(env_toml_path)?) } else { None };
-    let env_content =
-        SetupScriptGenerator::merge_env_toml(&components, existing_content.as_deref())?;
-    store.write_file(env_toml_path, &env_content)?;
+    // Generate/merge vars.toml and secrets.toml
+    let vars_toml_path = ".jlo/setup/vars.toml";
+    let secrets_toml_path = ".jlo/setup/secrets.toml";
+    let existing_vars =
+        store.file_exists(vars_toml_path).then(|| store.read_file(vars_toml_path)).transpose()?;
+    let existing_secrets = store
+        .file_exists(secrets_toml_path)
+        .then(|| store.read_file(secrets_toml_path))
+        .transpose()?;
+    let env_artifacts = SetupScriptGenerator::merge_env_artifacts(
+        &components,
+        existing_vars.as_deref(),
+        existing_secrets.as_deref(),
+    )?;
+    store.write_file(vars_toml_path, &env_artifacts.vars_toml)?;
+    store.write_file(secrets_toml_path, &env_artifacts.secrets_toml)?;
 
     // Return component names
     Ok(components.iter().map(|c| c.name.to_string()).collect())
@@ -100,7 +110,7 @@ mod tests {
     }
 
     #[test]
-    fn generates_install_script() {
+    fn generates_install_script_and_env_files_in_control_plane() {
         let store = MemoryWorkspaceStore::new();
         store.write_file(".jlo/setup/tools.yml", "tools:\n  - just").unwrap();
 
@@ -108,11 +118,14 @@ mod tests {
 
         assert!(result.contains(&"just".to_string()));
 
-        let install_sh = ".jules/setup/install.sh";
+        let install_sh = ".jlo/setup/install.sh";
         assert!(store.file_exists(install_sh));
 
         let content = store.read_file(install_sh).unwrap();
         assert!(content.starts_with("#!/usr/bin/env bash"));
         assert!(content.contains("just"));
+
+        assert!(store.file_exists(".jlo/setup/vars.toml"));
+        assert!(store.file_exists(".jlo/setup/secrets.toml"));
     }
 }

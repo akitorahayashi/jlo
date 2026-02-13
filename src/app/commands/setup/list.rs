@@ -79,6 +79,7 @@ mod tests {
         let result = execute().unwrap();
 
         assert!(!result.is_empty());
+        assert!(result.iter().any(|c| c.name == "gh"));
         assert!(result.iter().any(|c| c.name == "just"));
         assert!(result.iter().any(|c| c.name == "swift"));
         assert!(result.iter().any(|c| c.name == "uv"));

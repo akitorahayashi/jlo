@@ -1,4 +1,4 @@
-//! Component catalog service - loads components from embedded assets.
+//! Setup component catalog service - loads components from embedded assets.
 
 use include_dir::{Dir, include_dir};
 use serde::Deserialize;
@@ -8,8 +8,8 @@ use std::collections::BTreeMap;
 use crate::domain::{AppError, Component, ComponentId, EnvSpec};
 use crate::ports::ComponentCatalog;
 
-/// Embedded catalog directory.
-static CATALOG_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/catalog");
+/// Embedded setup component directory.
+static CATALOG_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/setup");
 
 /// Metadata parsed from meta.toml.
 #[derive(Debug, Deserialize)]
@@ -22,9 +22,23 @@ struct ComponentMeta {
     /// Dependencies list.
     #[serde(default)]
     pub dependencies: Vec<String>,
-    /// Environment specifications.
+    /// Non-secret environment specifications.
     #[serde(default)]
-    pub env: Vec<EnvSpec>,
+    pub vars: BTreeMap<String, EnvValueSpec>,
+    /// Secret environment specifications.
+    #[serde(default)]
+    pub secrets: BTreeMap<String, EnvValueSpec>,
+}
+
+/// Value spec used by `[vars]` and `[secrets]` metadata sections.
+#[derive(Debug, Clone, Deserialize)]
+struct EnvValueSpec {
+    /// Human-readable description.
+    #[serde(default)]
+    pub description: String,
+    /// Default value (if any).
+    #[serde(default)]
+    pub default: Option<String>,
 }
 
 /// Service for managing the component catalog.
@@ -82,11 +96,41 @@ impl EmbeddedComponentCatalog {
                 })?);
             }
 
+            if let Some(duplicate_key) =
+                meta.vars.keys().find(|key| meta.secrets.contains_key(*key))
+            {
+                return Err(AppError::InvalidComponentMetadata {
+                    component: dir_name.to_string(),
+                    reason: format!(
+                        "Environment key '{}' is declared in both [vars] and [secrets]",
+                        duplicate_key
+                    ),
+                });
+            }
+
+            let mut env = Vec::new();
+            for (name, spec) in &meta.vars {
+                env.push(EnvSpec {
+                    name: name.clone(),
+                    description: spec.description.clone(),
+                    default: spec.default.clone(),
+                    secret: false,
+                });
+            }
+            for (name, spec) in &meta.secrets {
+                env.push(EnvSpec {
+                    name: name.clone(),
+                    description: spec.description.clone(),
+                    default: spec.default.clone(),
+                    secret: true,
+                });
+            }
+
             let component = Component {
                 name: name_id,
                 summary: meta.summary,
                 dependencies,
-                env: meta.env,
+                env,
                 script_content: script_content.to_string(),
             };
 
@@ -126,6 +170,7 @@ mod tests {
         let catalog = EmbeddedComponentCatalog::new().unwrap();
         let names = catalog.names();
 
+        assert!(names.contains(&"gh"), "should contain 'gh' component");
         assert!(names.contains(&"just"), "should contain 'just' component");
         assert!(names.contains(&"swift"), "should contain 'swift' component");
         assert!(names.contains(&"uv"), "should contain 'uv' component");
@@ -146,7 +191,7 @@ mod tests {
         let catalog = EmbeddedComponentCatalog::new().unwrap();
         let all = catalog.list_all();
 
-        assert!(all.len() >= 3);
+        assert!(all.len() >= 4);
         // BTreeMap maintains order
         let names: Vec<_> = all.iter().map(|c| c.name.as_str()).collect();
         let mut sorted = names.clone();

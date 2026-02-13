@@ -73,6 +73,10 @@ where
     let generate_config = load_workflow_generate_config(&root)?;
     install_workflow_scaffold(&root, mode, &generate_config)?;
 
+    // Generate setup artifacts immediately in control plane.
+    // Hard-fail init when setup generation fails.
+    crate::app::commands::setup::generate(ctx.workspace())?;
+
     Ok(())
 }
 

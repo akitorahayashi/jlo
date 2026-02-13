@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Install GitHub CLI
+
+if command -v gh >/dev/null 2>&1; then
+  echo "gh already installed: $(gh --version | head -1)"
+  exit 0
+fi
+
+if [[ "$(uname -s)" != "Linux" ]]; then
+  echo "Unsupported platform for automated gh install: $(uname -s). Install gh manually." >&2
+  exit 1
+fi
+
+if ! command -v apt-get >/dev/null 2>&1; then
+  echo "apt-get is required to install gh automatically. Install gh manually for this environment." >&2
+  exit 1
+fi
+
+install_gh_from_official_repo() {
+  apt-get update
+  apt-get install -y --no-install-recommends ca-certificates curl gnupg
+
+  mkdir -p -m 755 /etc/apt/keyrings
+  curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+    -o /etc/apt/keyrings/githubcli-archive-keyring.gpg
+  chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+    > /etc/apt/sources.list.d/github-cli.list
+
+  apt-get update
+  apt-get install -y --no-install-recommends gh
+}
+
+if [[ "$(id -u)" -eq 0 ]]; then
+  install_gh_from_official_repo
+elif command -v sudo >/dev/null 2>&1; then
+  sudo bash -lc "$(declare -f install_gh_from_official_repo); install_gh_from_official_repo"
+else
+  echo "Root or sudo is required to install gh with apt-get. Install gh manually." >&2
+  exit 1
+fi
+
+gh --version
