@@ -42,7 +42,7 @@ where
             branch: None,
             requirement: None,
             mock: options.mock,
-            task: None,
+            task: options.task.clone(),
         };
 
         eprintln!("Executing: observers --role {}{}", role, mock_suffix);

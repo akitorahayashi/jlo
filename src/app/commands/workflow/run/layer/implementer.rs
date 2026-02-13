@@ -35,7 +35,7 @@ where
             branch: None,
             requirement: Some(requirement_path.clone()),
             mock: options.mock,
-            task: None,
+            task: options.task.clone(),
         };
 
         eprintln!("Executing: implementer {}{}", requirement_path.display(), mock_suffix);

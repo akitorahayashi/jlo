@@ -26,7 +26,7 @@ where
         branch: None,
         requirement: None,
         mock: options.mock,
-        task: None,
+        task: options.task.clone(),
     };
 
     eprintln!("Executing: narrator{}", if options.mock { " (mock)" } else { "" });
