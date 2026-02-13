@@ -606,7 +606,7 @@ mod tests {
             branch: None,
             requirement: None,
             mock: true,
-            phase: None,
+            task: None,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
@@ -655,7 +655,7 @@ mod tests {
             branch: None,
             requirement: None,
             mock: true,
-            phase: None,
+            task: None,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);

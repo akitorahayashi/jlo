@@ -532,7 +532,7 @@ mod tests {
             branch: None,
             requirement: Some(req_path.clone()),
             mock: true,
-            phase: None,
+            task: None,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
@@ -561,7 +561,7 @@ mod tests {
             branch: None,
             requirement: Some(req_path),
             mock: true,
-            phase: None,
+            task: None,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);

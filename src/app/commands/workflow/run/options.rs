@@ -10,8 +10,8 @@ pub struct WorkflowRunOptions {
     pub mock: bool,
     /// Mock tag (required if mock is true).
     pub mock_tag: Option<String>,
-    /// Execution phase for innovators (creation or refinement).
-    pub phase: Option<String>,
+    /// Task selector for innovators (e.g. create_idea, refine_idea_and_create_proposal).
+    pub task: Option<String>,
 }
 
 /// Output of workflow run command.
@@ -44,12 +44,8 @@ mod tests {
 
     #[test]
     fn workflow_run_options() {
-        let options = WorkflowRunOptions {
-            layer: Layer::Observers,
-            mock: false,
-            mock_tag: None,
-            phase: None,
-        };
+        let options =
+            WorkflowRunOptions { layer: Layer::Observers, mock: false, mock_tag: None, task: None };
         assert_eq!(options.layer, Layer::Observers);
         assert!(!options.mock);
     }

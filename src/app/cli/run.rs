@@ -85,9 +85,9 @@ pub enum RunLayer {
         /// Role (persona) to run
         #[arg(short = 'r', long)]
         role: String,
-        /// Execution phase (creation or refinement)
+        /// Task selector (e.g. create_idea, refine_idea_and_create_proposal, create_proposal)
         #[arg(long)]
-        phase: Option<String>,
+        task: Option<String>,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
         prompt_preview: bool,
@@ -113,7 +113,7 @@ pub enum RunLayer {
 pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     use crate::domain::Layer;
 
-    let (target_layer, role, prompt_preview, branch, requirement, mock, phase) = match layer {
+    let (target_layer, role, prompt_preview, branch, requirement, mock, task) = match layer {
         RunLayer::Narrator { prompt_preview, branch, mock } => {
             (Layer::Narrator, None, prompt_preview, branch, None, mock, None)
         }
@@ -129,8 +129,8 @@ pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
         RunLayer::Implementer { prompt_preview, branch, requirement, mock } => {
             (Layer::Implementer, None, prompt_preview, branch, Some(requirement), mock, None)
         }
-        RunLayer::Innovators { role, phase, prompt_preview, branch, mock } => {
-            (Layer::Innovators, Some(role), prompt_preview, branch, None, mock, phase)
+        RunLayer::Innovators { role, task, prompt_preview, branch, mock } => {
+            (Layer::Innovators, Some(role), prompt_preview, branch, None, mock, task)
         }
         RunLayer::Integrator { prompt_preview, branch } => {
             (Layer::Integrator, None, prompt_preview, branch, None, false, None)
@@ -138,7 +138,7 @@ pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     };
 
     let result =
-        crate::app::api::run(target_layer, role, prompt_preview, branch, requirement, mock, phase)?;
+        crate::app::api::run(target_layer, role, prompt_preview, branch, requirement, mock, task)?;
 
     if !result.prompt_preview && !result.roles.is_empty() && !result.sessions.is_empty() {
         println!("✅ Created {} Jules session(s)", result.sessions.len());

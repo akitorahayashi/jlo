@@ -54,7 +54,7 @@ where
             options.prompt_preview,
             options.branch.as_deref(),
             options.role.as_deref(),
-            options.phase.as_deref(),
+            options.task.as_deref(),
             config,
             git,
             workspace,
@@ -69,7 +69,7 @@ fn execute_real<G, W>(
     prompt_preview: bool,
     branch: Option<&str>,
     role: Option<&str>,
-    phase: Option<&str>,
+    task: Option<&str>,
     config: &RunConfig,
     git: &G,
     workspace: &W,
@@ -88,19 +88,19 @@ where
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
 
-    let phase = phase.ok_or_else(|| {
+    let task = task.ok_or_else(|| {
         AppError::MissingArgument(
-            "--phase is required for innovators (creation or refinement)".to_string(),
+            "--task is required for innovators (e.g. create_idea, refine_idea_and_create_proposal, create_proposal)".to_string(),
         )
     })?;
-    let task_content = resolve_innovator_task(jules_path, phase, workspace)?;
+    let task_content = resolve_innovator_task(jules_path, task, workspace)?;
 
     if prompt_preview {
         print_role_preview(jules_path, Layer::Innovators, &role_id, &starting_branch, workspace);
         let assembled = assemble_innovator_prompt(
             jules_path,
             role_id.as_str(),
-            phase,
+            task,
             &task_content,
             workspace,
         )?;
@@ -116,7 +116,7 @@ where
 
     let source = detect_repository_source(git)?;
     let assembled =
-        assemble_innovator_prompt(jules_path, role_id.as_str(), phase, &task_content, workspace)?;
+        assemble_innovator_prompt(jules_path, role_id.as_str(), task, &task_content, workspace)?;
     let client = client_factory.create()?;
 
     let session_id = dispatch_session(
@@ -139,12 +139,14 @@ where
 fn assemble_innovator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
     role: &str,
-    phase: &str,
+    task_name: &str,
     task: &str,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let context =
-        PromptContext::new().with_var("role", role).with_var("phase", phase).with_var("task", task);
+    let context = PromptContext::new()
+        .with_var("role", role)
+        .with_var("task_name", task_name)
+        .with_var("task", task);
 
     assemble_prompt(jules_path, Layer::Innovators, &context, workspace)
         .map(|p: AssembledPrompt| p.content)
@@ -153,24 +155,15 @@ fn assemble_innovator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
 
 fn resolve_innovator_task<W: WorkspaceStore>(
     jules_path: &Path,
-    phase: &str,
+    task: &str,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let filename = match phase {
-        "creation" => "create_idea.yml",
-        "refinement" => "refine_proposal.yml",
-        _ => {
-            return Err(AppError::Validation(format!(
-                "Unknown innovator phase '{}': must be 'creation' or 'refinement'",
-                phase
-            )));
-        }
-    };
-    let task_path = jules::tasks_dir(jules_path, Layer::Innovators).join(filename);
+    let filename = format!("{task}.yml");
+    let task_path = jules::tasks_dir(jules_path, Layer::Innovators).join(&filename);
     workspace.read_file(&task_path.to_string_lossy()).map_err(|_| {
         AppError::Validation(format!(
-            "No task file for innovator phase '{}': expected {}",
-            phase,
+            "No task file for innovators task '{}': expected {}",
+            task,
             task_path.display()
         ))
     })
@@ -206,16 +199,19 @@ where
         AppError::MissingArgument("Role (persona) is required for innovators".to_string())
     })?;
 
-    let phase = options.phase.as_deref().ok_or_else(|| {
+    let task = options.task.as_deref().ok_or_else(|| {
         AppError::MissingArgument(
-            "--phase is required for innovators (creation or refinement)".to_string(),
+            "--task is required for innovators (create_idea, refine_idea_and_create_proposal, create_proposal)".to_string(),
         )
     })?;
 
-    if phase != "creation" && phase != "refinement" {
+    if task != "create_idea"
+        && task != "refine_idea_and_create_proposal"
+        && task != "create_proposal"
+    {
         return Err(AppError::Validation(format!(
-            "Invalid phase '{}': must be 'creation' or 'refinement'",
-            phase
+            "Invalid innovator task '{}': expected create_idea, refine_idea_and_create_proposal, or create_proposal",
+            task
         )));
     }
 
@@ -244,11 +240,9 @@ where
         room_dir.to_str().ok_or_else(|| AppError::Validation("Invalid room path".to_string()))?;
     workspace.create_dir_all(room_dir_str)?;
 
-    let is_creation = phase == "creation";
+    println!("Mock innovators: task={} for {}", task, role);
 
-    println!("Mock innovators: phase={} for {}", phase, role);
-
-    if is_creation {
+    if task == "create_idea" {
         let mock_idea_template = MOCK_ASSETS
             .get_file("innovator_idea.yml")
             .ok_or_else(|| {
@@ -273,11 +267,34 @@ where
             &format!("[{}] innovator: mock creation (create idea)", config.mock_tag),
             &files,
         )?;
-    } else if workspace.file_exists(idea_path_str) {
-        workspace.remove_file(idea_path_str)?;
+    } else if task == "refine_idea_and_create_proposal" {
+        if workspace.file_exists(idea_path_str) {
+            workspace.remove_file(idea_path_str)?;
+        }
         let files: Vec<&Path> = vec![idea_path.as_path()];
         git.commit_files(
             &format!("[{}] innovator: mock refinement (remove idea)", config.mock_tag),
+            &files,
+        )?;
+    } else {
+        let proposal_path = room_dir.join("proposal.yml");
+        let proposal_path_str = proposal_path
+            .to_str()
+            .ok_or_else(|| AppError::Validation("Invalid proposal.yml path".to_string()))?;
+        let proposal_id = generate_mock_id();
+        let safe_tag = sanitize_yaml_value(&config.mock_tag);
+        let proposal_content = format!(
+            "schema_version: 1\nid: \"{}\"\npersona: \"{}\"\ncreated_at: \"{}\"\ntitle: \"Mock direct proposal for {}\"\nproblem: |\n  Mock direct proposal generated without observer pass.\n  Mock tag: {}\nintroduction: |\n  Direct path for innovators entry-point execution.\nimportance: |\n  Validate single-pass proposal publication behavior.\nimpact_surface:\n  - \"workflow\"\nimplementation_cost: \"medium\"\nconsistency_risks:\n  - \"Bypasses observer feedback loop by design for direct mode\"\nverification_signals:\n  - \"Issue is created from proposal.yml in the same run\"\n",
+            proposal_id,
+            role,
+            Utc::now().format("%Y-%m-%d"),
+            role,
+            safe_tag
+        );
+        workspace.write_file(proposal_path_str, &proposal_content)?;
+        let files: Vec<&Path> = vec![proposal_path.as_path()];
+        git.commit_files(
+            &format!("[{}] innovator: mock direct proposal", config.mock_tag),
             &files,
         )?;
     }
@@ -287,11 +304,11 @@ where
     let pr = github.create_pull_request(
         &branch_name,
         &config.jules_worker_branch,
-        &format!("[{}] Innovator {} {}", config.mock_tag, role, phase),
+        &format!("[{}] Innovator {} {}", config.mock_tag, role, task),
         &format!(
             "Mock innovator run for workflow validation.\n\n\
-             Mock tag: `{}`\nPersona: `{}`\nPhase: {}",
-            config.mock_tag, role, phase
+             Mock tag: `{}`\nPersona: `{}`\nTask: {}",
+            config.mock_tag, role, task
         ),
     )?;
 
@@ -452,7 +469,7 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_creates_idea_with_creation_phase() {
+    fn mock_innovator_creates_idea_with_create_idea_task() {
         let jules_path = PathBuf::from(".jules");
         let workspace = MockWorkspaceStore::new().with_exists(true);
         let git = FakeGit::new();
@@ -466,7 +483,7 @@ mod tests {
             branch: None,
             requirement: None,
             mock: true,
-            phase: Some("creation".to_string()),
+            task: Some("create_idea".to_string()),
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
@@ -481,7 +498,7 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_removes_idea_with_refinement_phase() {
+    fn mock_innovator_removes_idea_with_refine_idea_and_create_proposal_task() {
         let jules_path = PathBuf::from(".jules");
         let workspace = MockWorkspaceStore::new().with_exists(true);
         let git = FakeGit::new();
@@ -499,7 +516,7 @@ mod tests {
             branch: None,
             requirement: None,
             mock: true,
-            phase: Some("refinement".to_string()),
+            task: Some("refine_idea_and_create_proposal".to_string()),
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
@@ -510,7 +527,7 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_creation_then_refinement_is_deterministic() {
+    fn mock_innovator_create_then_refine_is_deterministic() {
         let jules_path = PathBuf::from(".jules");
         let workspace = MockWorkspaceStore::new().with_exists(true);
         let git = FakeGit::new();
@@ -519,7 +536,7 @@ mod tests {
 
         let idea_path = jules_path.join("exchange/innovators/alice/idea.yml");
 
-        // Creation phase: creates idea.yml
+        // create_idea task: creates idea.yml
         let create_options = RunOptions {
             layer: Layer::Innovators,
             role: Some("alice".to_string()),
@@ -527,13 +544,13 @@ mod tests {
             branch: None,
             requirement: None,
             mock: true,
-            phase: Some("creation".to_string()),
+            task: Some("create_idea".to_string()),
         };
         let _ =
             execute_mock(&jules_path, &create_options, &config, &git, &github, &workspace).unwrap();
         assert!(workspace.file_exists(idea_path.to_str().unwrap()));
 
-        // Refinement phase: removes idea.yml
+        // refine_proposal task: removes idea.yml
         let refine_options = RunOptions {
             layer: Layer::Innovators,
             role: Some("alice".to_string()),
@@ -541,7 +558,7 @@ mod tests {
             branch: None,
             requirement: None,
             mock: true,
-            phase: Some("refinement".to_string()),
+            task: Some("refine_idea_and_create_proposal".to_string()),
         };
         let _ =
             execute_mock(&jules_path, &refine_options, &config, &git, &github, &workspace).unwrap();
@@ -549,7 +566,7 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_rejects_missing_phase() {
+    fn mock_innovator_direct_task_creates_proposal() {
         let jules_path = PathBuf::from(".jules");
         let workspace = MockWorkspaceStore::new().with_exists(true);
         let git = FakeGit::new();
@@ -563,7 +580,32 @@ mod tests {
             branch: None,
             requirement: None,
             mock: true,
-            phase: None,
+            task: Some("create_proposal".to_string()),
+        };
+
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        assert!(result.is_ok());
+
+        let proposal_path = jules_path.join("exchange/innovators/alice/proposal.yml");
+        assert!(workspace.file_exists(proposal_path.to_str().unwrap()));
+    }
+
+    #[test]
+    fn mock_innovator_rejects_missing_task() {
+        let jules_path = PathBuf::from(".jules");
+        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let github = FakeGitHub;
+        let config = make_config();
+
+        let options = RunOptions {
+            layer: Layer::Innovators,
+            role: Some("alice".to_string()),
+            prompt_preview: false,
+            branch: None,
+            requirement: None,
+            mock: true,
+            task: None,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
@@ -571,7 +613,7 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_rejects_invalid_phase() {
+    fn mock_innovator_rejects_invalid_task() {
         let jules_path = PathBuf::from(".jules");
         let workspace = MockWorkspaceStore::new().with_exists(true);
         let git = FakeGit::new();
@@ -585,7 +627,7 @@ mod tests {
             branch: None,
             requirement: None,
             mock: true,
-            phase: Some("invalid".to_string()),
+            task: Some("invalid".to_string()),
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);

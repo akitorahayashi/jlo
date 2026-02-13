@@ -2,7 +2,7 @@
     needs: [check-schedule, generate-decider-matrix, run-decider, wait-after-decider]
     if: |
       always() &&
-      fromJSON(needs.check-schedule.outputs.json).should_run == true &&
+      (fromJSON(needs.check-schedule.outputs.json).run_planner == true || fromJSON(needs.check-schedule.outputs.json).run_implementer == true) &&
       (needs.generate-decider-matrix.result == 'success' || needs.generate-decider-matrix.result == 'skipped') &&
       (needs.run-decider.result == 'success' || needs.run-decider.result == 'skipped') &&
       (needs.wait-after-decider.result == 'success' || needs.wait-after-decider.result == 'skipped')
@@ -11,21 +11,11 @@
     outputs:
       json: {{ gha_expr("steps.matrix.outputs.json") }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: '{{ worker_branch }}'
-          fetch-depth: 0
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Discover requirements for routing
+      - name: Resolve planner/implementer run requests
         id: matrix
+        env:
+          REQUEST_PLANNER: {{ gha_expr("fromJSON(needs.check-schedule.outputs.json).run_planner") }}
+          REQUEST_IMPLEMENTER: {{ gha_expr("fromJSON(needs.check-schedule.outputs.json).run_implementer") }}
         run: |
           set -euo pipefail
-          OUTPUT_JSON=$(jlo workflow workspace inspect | jq -c '{
-            has_planners: (([.requirements.items[] | select(.requires_deep_analysis == true)] | length) > 0),
-            has_implementers: (([.requirements.items[] | select(.requires_deep_analysis == false)] | length) > 0),
-            requirement_count: .requirements.count
-          }')
-          echo "json=$OUTPUT_JSON" >> "$GITHUB_OUTPUT"
+          echo "json={\"run_planner\":$REQUEST_PLANNER,\"run_implementer\":$REQUEST_IMPLEMENTER}" >> "$GITHUB_OUTPUT"

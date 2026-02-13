@@ -63,14 +63,20 @@ where
     W: WorkspaceStore + Clone + Send + Sync + 'static,
     F: Fn(&RunOptions) -> Result<(), AppError>,
 {
-    // Validate phase if provided (prevents path traversal)
-    if let Some(ref phase) = options.phase
-        && !validate_safe_path_component(phase)
+    // Validate task selector if provided (prevents path traversal)
+    if let Some(ref task) = options.task
+        && !validate_safe_path_component(task)
     {
         return Err(AppError::Validation(format!(
-            "Invalid phase '{}': must be a safe path component (e.g. 'creation', 'refinement')",
-            phase,
+            "Invalid task '{}': must be a safe path component (e.g. 'create_idea')",
+            task,
         )));
+    }
+
+    if options.task.is_some() && options.layer != crate::domain::Layer::Innovators {
+        return Err(AppError::Validation(
+            "--task is only supported when layer is innovators".to_string(),
+        ));
     }
 
     // Load configuration
@@ -458,7 +464,7 @@ roles = [
                 branch: None,
                 requirement: None,
                 mock: true,
-                phase: None,
+                task: None,
             },
             &decider_git,
             &github,
@@ -553,7 +559,7 @@ roles = [
                 branch: None,
                 requirement: Some(implementer_requirement.clone()),
                 mock: true,
-                phase: None,
+                task: None,
             },
             &implementer_git,
             &github,

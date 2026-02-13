@@ -2,7 +2,7 @@
     needs: [check-schedule, wait-after-observers]
     if: |
       always() &&
-      fromJSON(needs.check-schedule.outputs.json).should_run == true &&
+      fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
       (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
     runs-on: {{ runner }}
     timeout-minutes: 10
@@ -19,7 +19,13 @@
 
       - name: Check for pending events
         id: matrix
+        env:
+          REQUEST_DECIDER: {{ gha_expr("fromJSON(needs.check-schedule.outputs.json).run_decider") }}
         run: |
           set -euo pipefail
           HAS_PENDING=$(jlo workflow workspace inspect | jq '(.events.pending_files | length) > 0')
-          echo "json={\"has_pending\":$HAS_PENDING}" >> "$GITHUB_OUTPUT"
+          RUN_DECIDER=false
+          if [ "$REQUEST_DECIDER" = "true" ] && [ "$HAS_PENDING" = "true" ]; then
+            RUN_DECIDER=true
+          fi
+          echo "json={\"has_pending\":$HAS_PENDING,\"run_decider\":$RUN_DECIDER}" >> "$GITHUB_OUTPUT"
