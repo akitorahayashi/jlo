@@ -12,8 +12,8 @@ pub(crate) fn write_jlo_config(root: &Path, crons: &[&str], wait_minutes_default
 
     let content = format!(
         r#"[run]
-default_branch = "main"
-jules_branch = "jules"
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
 
 [workflow]
 cron = [{}]

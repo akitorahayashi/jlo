@@ -60,7 +60,11 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
         match layer {
             Layer::Observers => templates::OBSERVER_ROLE.to_string(),
             Layer::Innovators => templates::INNOVATOR_ROLE.to_string(),
-            Layer::Decider | Layer::Narrator | Layer::Planner | Layer::Implementer => String::new(),
+            Layer::Decider
+            | Layer::Narrator
+            | Layer::Planner
+            | Layer::Implementer
+            | Layer::Integrator => String::new(),
         }
     }
 

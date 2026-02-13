@@ -120,7 +120,7 @@ mod tests {
     fn run_config_parses_from_toml() {
         let toml = r#"
 [run]
-default_branch = "develop"
+jlo_target_branch = "develop"
 parallel = false
 max_parallel = 5
 
@@ -132,7 +132,7 @@ retry_delay_ms = 250
 "#;
         let config = parse_config_content(toml).unwrap();
 
-        assert_eq!(config.run.default_branch, "develop");
+        assert_eq!(config.run.jlo_target_branch, "develop");
         assert!(!config.run.parallel);
         assert_eq!(config.run.max_parallel, 5);
         assert_eq!(config.jules.api_url.as_str(), "https://example.com/v1/sessions");
@@ -143,7 +143,7 @@ retry_delay_ms = 250
         let toml = r#""#;
         let config = parse_config_content(toml).unwrap();
 
-        assert_eq!(config.run.default_branch, "main");
+        assert_eq!(config.run.jlo_target_branch, "main");
         assert!(config.run.parallel);
     }
 

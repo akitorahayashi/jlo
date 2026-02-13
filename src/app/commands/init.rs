@@ -209,8 +209,8 @@ struct WorkflowGenerateConfigDto {
 #[serde(deny_unknown_fields)]
 #[allow(dead_code)]
 struct WorkflowRunDto {
-    default_branch: Option<String>,
-    jules_branch: Option<String>,
+    jlo_target_branch: Option<String>,
+    jules_worker_branch: Option<String>,
     parallel: Option<bool>,
     max_parallel: Option<usize>,
 }
@@ -340,11 +340,11 @@ pub fn load_workflow_generate_config(root: &Path) -> Result<WorkflowGenerateConf
         AppError::Validation("Missing [workflow] section in .jlo/config.toml.".into())
     })?;
 
-    let target_branch = run.default_branch.ok_or_else(|| {
-        AppError::Validation("Missing run.default_branch in .jlo/config.toml.".into())
+    let target_branch = run.jlo_target_branch.ok_or_else(|| {
+        AppError::Validation("Missing run.jlo_target_branch in .jlo/config.toml.".into())
     })?;
-    let worker_branch = run.jules_branch.ok_or_else(|| {
-        AppError::Validation("Missing run.jules_branch in .jlo/config.toml.".into())
+    let worker_branch = run.jules_worker_branch.ok_or_else(|| {
+        AppError::Validation("Missing run.jules_worker_branch in .jlo/config.toml.".into())
     })?;
 
     let raw_crons = workflow
@@ -405,8 +405,8 @@ mod tests {
         let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
         let config = r#"# heading
 [run]
-default_branch = "main"
-jules_branch = "jules"
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
 
 [workflow]
 runner_mode = "remote" # keep me
@@ -419,7 +419,7 @@ wait_minutes_default = 30
         let updated = fs::read_to_string(temp.path().join(".jlo/config.toml")).unwrap();
 
         assert!(updated.contains("runner_mode = \"self-hosted\" # keep me"));
-        assert!(updated.contains("default_branch = \"main\""));
+        assert!(updated.contains("jlo_target_branch = \"main\""));
         assert!(updated.contains("cron = [\"0 20 * * *\"]"));
     }
 
@@ -431,8 +431,8 @@ wait_minutes_default = 30
             .write_file(
                 ".jlo/config.toml",
                 r#"[run]
-default_branch = "main"
-jules_branch = "jules"
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
 "#,
             )
             .unwrap();

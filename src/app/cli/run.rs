@@ -98,6 +98,16 @@ pub enum RunLayer {
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
     },
+    /// Run integrator layer (merges implementer branches into one integration PR)
+    #[clap(visible_alias = "g", alias = "integrators")]
+    Integrator {
+        /// Show assembled prompts without executing
+        #[arg(long)]
+        prompt_preview: bool,
+        /// Override the starting branch
+        #[arg(long)]
+        branch: Option<String>,
+    },
 }
 
 pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
@@ -121,6 +131,9 @@ pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
         }
         RunLayer::Innovators { role, phase, prompt_preview, branch, mock } => {
             (Layer::Innovators, Some(role), prompt_preview, branch, None, mock, phase)
+        }
+        RunLayer::Integrator { prompt_preview, branch } => {
+            (Layer::Integrator, None, prompt_preview, branch, None, false, None)
         }
     };
 

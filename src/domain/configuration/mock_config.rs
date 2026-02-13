@@ -11,10 +11,10 @@ pub struct MockConfig {
     pub mock_tag: String,
     /// Branch prefixes per layer, from contracts.yml.
     pub branch_prefixes: HashMap<Layer, String>,
-    /// Default branch for implementer operations, from config.toml.
-    pub default_branch: String,
-    /// Jules branch for observer/decider/planner operations, from config.toml.
-    pub jules_branch: String,
+    /// Target branch for implementer operations, from config.toml.
+    pub jlo_target_branch: String,
+    /// Jules worker branch for observer/decider/planner operations, from config.toml.
+    pub jules_worker_branch: String,
     /// Allowed issue labels, from github-labels.json.
     pub issue_labels: Vec<String>,
 }
@@ -36,7 +36,11 @@ impl MockConfig {
     /// Get base branch for a layer.
     #[allow(dead_code)]
     pub fn base_branch(&self, layer: Layer) -> &str {
-        if layer == Layer::Implementer { &self.default_branch } else { &self.jules_branch }
+        if layer == Layer::Implementer {
+            &self.jlo_target_branch
+        } else {
+            &self.jules_worker_branch
+        }
     }
 }
 
@@ -66,8 +70,8 @@ mod tests {
         let config = MockConfig {
             mock_tag: "run123".to_string(),
             branch_prefixes: prefixes,
-            default_branch: "main".to_string(),
-            jules_branch: "jules".to_string(),
+            jlo_target_branch: "main".to_string(),
+            jules_worker_branch: "jules".to_string(),
             issue_labels: vec!["bugs".to_string()],
         };
 
@@ -86,8 +90,8 @@ mod tests {
         let config = MockConfig {
             mock_tag: "test".to_string(),
             branch_prefixes: HashMap::new(),
-            default_branch: "main".to_string(),
-            jules_branch: "jules".to_string(),
+            jlo_target_branch: "main".to_string(),
+            jules_worker_branch: "jules".to_string(),
             issue_labels: vec![],
         };
 

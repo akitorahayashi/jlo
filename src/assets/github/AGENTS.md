@@ -23,8 +23,8 @@ This document describes how files under `src/assets/github/` are transformed int
 - `gha_expr` and `gha_raw` functions emit GitHub Actions expressions (e.g., `${{ ... }}`).
 - Rendering context contains:
   - `runner`: `ubuntu-latest` when `runner_mode` is `remote`; otherwise the config value is used directly as the `runs-on` label (e.g. `self-hosted`, `my-mac-mini`, `[self-hosted, macOS, arm64]`).
-  - `target_branch`: rendered from `.jlo/config.toml` (`run.default_branch`).
-  - `worker_branch`: rendered from `.jlo/config.toml` (`run.jules_branch`).
+  - `target_branch`: rendered from `.jlo/config.toml` (`run.jlo_target_branch`).
+  - `worker_branch`: rendered from `.jlo/config.toml` (`run.jules_worker_branch`).
   - `workflow_schedule_crons`: cron list from `.jlo/config.toml` (`workflow.cron`).
   - `workflow_wait_minutes_default`: wait default from `.jlo/config.toml` (`workflow.wait_minutes_default`).
 

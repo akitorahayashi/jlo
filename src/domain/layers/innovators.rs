@@ -86,7 +86,7 @@ where
     validate_role_exists(jules_path, Layer::Innovators, role_id.as_str(), workspace)?;
 
     let starting_branch =
-        branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
+        branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
 
     let phase = phase.ok_or_else(|| {
         AppError::MissingArgument(
@@ -237,7 +237,7 @@ where
     let branch_name = config.branch_name(Layer::Innovators, &timestamp)?;
 
     git.fetch("origin")?;
-    git.checkout_branch(&format!("origin/{}", config.jules_branch), false)?;
+    git.checkout_branch(&format!("origin/{}", config.jules_worker_branch), false)?;
     git.checkout_branch(&branch_name, true)?;
 
     let room_dir_str =
@@ -286,7 +286,7 @@ where
 
     let pr = github.create_pull_request(
         &branch_name,
-        &config.jules_branch,
+        &config.jules_worker_branch,
         &format!("[{}] Innovator {} {}", config.mock_tag, role, phase),
         &format!(
             "Mock innovator run for workflow validation.\n\n\
@@ -445,8 +445,8 @@ mod tests {
         MockConfig {
             mock_tag: "mock-test-001".to_string(),
             branch_prefixes: prefixes,
-            default_branch: "main".to_string(),
-            jules_branch: "jules".to_string(),
+            jlo_target_branch: "main".to_string(),
+            jules_worker_branch: "jules".to_string(),
             issue_labels: vec![],
         }
     }

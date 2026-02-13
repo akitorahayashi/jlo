@@ -75,9 +75,9 @@ where
     let changes_path = exchange_changes_path(jules_path)?;
     let had_previous_changes = workspace.file_exists(&changes_path);
 
-    // Determine starting branch (Narrator always uses jules branch)
+    // Determine starting branch (Narrator always uses jules worker branch)
     let starting_branch =
-        branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
+        branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
 
     // Determine commit range
     let range = determine_range(&changes_path, git, workspace)?;
@@ -709,8 +709,8 @@ created_at: "2026-02-05 00:00:00"
         let config = MockConfig {
             mock_tag: "mock-run-123".to_string(),
             branch_prefixes: prefixes,
-            default_branch: "main".to_string(),
-            jules_branch: "jules".to_string(),
+            jlo_target_branch: "main".to_string(),
+            jules_worker_branch: "jules".to_string(),
             issue_labels: vec!["bugs".to_string()],
         };
 

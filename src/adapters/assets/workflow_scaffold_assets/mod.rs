@@ -22,9 +22,9 @@ static WORKFLOWS_ASSET_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/g
 /// as static literals in generated workflow YAML.
 #[derive(Debug, Clone)]
 pub struct WorkflowGenerateConfig {
-    /// Target/control branch (e.g. `main`). Maps to `run.default_branch`.
+    /// Target/control branch (e.g. `main`). Maps to `run.jlo_target_branch`.
     pub target_branch: String,
-    /// Worker branch hosting `.jules/` runtime state. Maps to `run.jules_branch`.
+    /// Worker branch hosting `.jules/` runtime state. Maps to `run.jules_worker_branch`.
     pub worker_branch: String,
     /// Cron entries used for workflow schedule.
     pub schedule_crons: Vec<String>,

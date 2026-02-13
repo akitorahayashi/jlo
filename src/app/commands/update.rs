@@ -329,8 +329,8 @@ mod tests {
 
     fn sample_config_content() -> String {
         r#"[run]
-default_branch = "main"
-jules_branch = "jules"
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
 
 [workflow]
 runner_mode = "remote"
@@ -419,8 +419,8 @@ wait_minutes_default = 30
         fs::write(jlo_path.join(".jlo-version"), "0.0.0").unwrap();
         // User has customized config
         let custom_config = r#"[run]
-    default_branch = "custom"
-    jules_branch = "custom-jules"
+    jlo_target_branch = "custom"
+    jules_worker_branch = "custom-jules"
 
     [workflow]
     runner_mode = "remote"
@@ -465,8 +465,8 @@ wait_minutes_default = 30
         fs::write(
             jlo_path.join("config.toml"),
             r#"[run]
-default_branch = "main"
-jules_branch = "jules"
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
 
 [workflow]
 cron = ["0 20 * * *"]

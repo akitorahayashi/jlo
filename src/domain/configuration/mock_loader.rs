@@ -129,8 +129,8 @@ pub fn load_mock_config<W: WorkspaceStore>(
     Ok(MockConfig {
         mock_tag,
         branch_prefixes,
-        default_branch: run_config.run.default_branch,
-        jules_branch: run_config.run.jules_branch,
+        jlo_target_branch: run_config.run.jlo_target_branch,
+        jules_worker_branch: run_config.run.jules_worker_branch,
         issue_labels,
     })
 }
