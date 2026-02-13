@@ -1,0 +1,41 @@
+schema_version: 2
+
+# Metadata
+id: "cd719e"
+source_events:
+  - "dompur"
+title: "enforce-domain-purity-mock-utils"
+label: "refacts"
+priority: "medium"
+summary: "Remove adapter imports from domain mock utils."
+
+# Content
+goal: |
+  Restore domain purity by removing concrete adapter imports from domain logic.
+
+problem: |
+  `src/domain/layers/mock_utils.rs` imports `crate::adapters::workspace_filesystem::FilesystemWorkspaceStore` in its test module.
+
+impact: |
+  Violates clean architecture/hexagonal architecture principles. Domain should not depend on adapters.
+
+desired_outcome: |
+  The test should use a mock implementation of `WorkspaceStore` instead of the concrete filesystem adapter.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/layers/mock_utils.rs"
+
+acceptance_criteria:
+  - "No imports from `crate::adapters` in `src/domain/layers/mock_utils.rs`."
+
+verification_criteria:
+  - "Check imports in `src/domain/layers/mock_utils.rs`."
+  - "Run tests to ensure they still pass."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

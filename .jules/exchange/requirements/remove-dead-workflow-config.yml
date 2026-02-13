@@ -1,0 +1,40 @@
+schema_version: 2
+
+# Metadata
+id: "113cf8"
+source_events:
+  - "qyw08i"
+title: "remove-dead-workflow-config"
+label: "refacts"
+priority: "low"
+summary: "Remove or implement dead code in WorkflowTimingConfig."
+
+# Content
+goal: |
+  Clean up dead code in configuration structs.
+
+problem: |
+  `WorkflowTimingConfig` struct in `RunConfig` is marked with `#[allow(dead_code)]` and has no validation logic.
+
+impact: |
+  Dead code creates confusion and maintenance burden.
+
+desired_outcome: |
+  The dead code should be removed if not needed, or properly implemented and used if it is needed.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/configuration/run_config.rs"
+
+acceptance_criteria:
+  - "`WorkflowTimingConfig` is either removed or fully implemented without `#[allow(dead_code)]`."
+
+verification_criteria:
+  - "Check `src/domain/configuration/run_config.rs` for removal or usage."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

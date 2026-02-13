@@ -1,0 +1,44 @@
+schema_version: 2
+
+# Metadata
+id: "bb7e62"
+source_events:
+  - "namc01"
+title: "resolve-roles-directory-collision"
+label: "refacts"
+priority: "high"
+summary: "Resolve terminology collision between system layers and role instances."
+
+# Content
+goal: |
+  Clarify the directory structure to distinguish between architectural Layers and Role personas.
+
+problem: |
+  The `.jules/roles` directory contains Layer definitions (e.g. `observers`, `narrator`), while `.jlo/roles` contains Role instances. This violates "One Concept, One Preferred Term" and creates confusion.
+
+impact: |
+  Developers and agents may be confused about where to find or place files.
+
+desired_outcome: |
+  The directory structure should clearly distinguish between layers and roles. For example, renaming `.jules/roles` to `.jules/layers` or similar, if feasible, or clarifying documentation. Given the constraint of preserving existing structure if expensive to change, documentation clarification might be the first step, but a structural change is preferred if possible.
+
+constraints:
+  - "Must ensure backward compatibility or provide a migration path if directories are renamed."
+
+risks:
+  - "Breaking changes if paths are hardcoded in many places."
+
+# Specifics
+affected_areas:
+  - ".jules/roles/"
+  - "AGENTS.md"
+
+acceptance_criteria:
+  - "The ambiguity is resolved either by renaming or strict documentation updates."
+
+verification_criteria:
+  - "Check directory structure and AGENTS.md."
+
+# Analysis Flags
+requires_deep_analysis: true
+deep_analysis_reason: "Renaming a core directory like .jules/roles/ involves checking all references in code and prompts."
