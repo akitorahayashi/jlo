@@ -1,0 +1,18 @@
+schema_version: 1
+id: "ev0002"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "consistency"
+confidence: "medium"
+title: "Narrator excludes .jlo/ but documentation omits this"
+statement: |
+  The Narrator implementation excludes `.jlo/` from the changes summary, but `src/assets/scaffold/jules/JULES.md` and `README.md` only mention excluding `.jules/`.
+evidence:
+  - path: "src/app/commands/run/layer/narrator.rs"
+    loc:
+      - ":(exclude).jlo"
+    note: "Code explicitly excludes .jlo/."
+  - path: "src/assets/scaffold/jules/JULES.md"
+    loc:
+      - "Narrator excludes .jules/ from all diffs and path lists."
+    note: "Docs omit .jlo/ exclusion."
