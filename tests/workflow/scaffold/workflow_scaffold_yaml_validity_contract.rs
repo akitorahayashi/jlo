@@ -87,3 +87,46 @@ fn workflow_templates_validate_structure() {
         assert!(jobs.contains_key(serde_yaml::Value::from(job)), "Missing job '{}'", job);
     }
 }
+
+#[test]
+fn automerge_workflow_uses_push_scoped_trigger_contract() {
+    let ctx = TestContext::new();
+    let output_dir = support::generate_workflow_scaffold(&ctx, "remote", "automerge-trigger");
+
+    let workflow_path = output_dir.join(".github/workflows/jules-automerge.yml");
+    let content = fs::read_to_string(&workflow_path).expect("Failed to read workflow");
+    let workflow: serde_yaml::Value = serde_yaml::from_str(&content).expect("Failed to parse YAML");
+
+    let root = workflow.as_mapping().expect("Root should be a mapping");
+    let on = root
+        .get(serde_yaml::Value::from("on"))
+        .unwrap()
+        .as_mapping()
+        .expect("'on' should be mapping");
+
+    assert!(on.contains_key(serde_yaml::Value::from("push")));
+    assert!(
+        !on.contains_key(serde_yaml::Value::from("pull_request")),
+        "automerge workflow should not include pull_request trigger"
+    );
+
+    let push = on
+        .get(serde_yaml::Value::from("push"))
+        .unwrap()
+        .as_mapping()
+        .expect("'push' should be mapping");
+    let branches = push
+        .get(serde_yaml::Value::from("branches"))
+        .unwrap()
+        .as_sequence()
+        .expect("push.branches should be a list");
+
+    let branch_values: Vec<&str> = branches.iter().filter_map(|v| v.as_str()).collect();
+    assert!(branch_values.contains(&"jules-narrator-*"));
+    assert!(branch_values.contains(&"jules-observer-*"));
+    assert!(branch_values.contains(&"jules-decider-*"));
+    assert!(branch_values.contains(&"jules-planner-*"));
+    assert!(branch_values.contains(&"jules-innovator-*"));
+    assert!(branch_values.contains(&"jules-mock-cleanup-*"));
+    assert!(!branch_values.contains(&"jules-implementer-*"));
+}

@@ -42,6 +42,14 @@ fn installed_workflow_scaffold_includes_mock_support() {
         !root.join(".github/workflows/jules-mock-cleanup.yml").exists(),
         "Should not install separate mock cleanup workflow"
     );
+    assert!(
+        workflow.contains("Cleanup uses a PR merge path to satisfy branch protection"),
+        "Cleanup flow should explain PR-based branch protection rationale"
+    );
+    assert!(
+        workflow.contains("authority is centralized in jules-automerge workflow"),
+        "Cleanup flow should explain centralized auto-merge ownership"
+    );
     assert!(workflow.contains("run-innovators-1:"), "Should have first innovator pass job");
     assert!(workflow.contains("run-innovators-2:"), "Should have second innovator pass job");
     assert!(workflow.contains("publish-proposals:"), "Should have publish-proposals job");

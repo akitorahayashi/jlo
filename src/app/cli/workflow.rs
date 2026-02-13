@@ -103,7 +103,8 @@ pub enum WorkflowPrCommands {
         pr_number: u64,
     },
     /// Enable auto-merge on an eligible PR
-    EnableAutomerge {
+    #[command(alias = "enable-automerge")]
+    Automerge {
         /// PR number
         pr_number: u64,
     },
@@ -262,7 +263,7 @@ fn run_workflow_gh_pr(
             let output = workflow::gh::pr::events::sync_category_label::execute(github, options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowPrCommands::EnableAutomerge { pr_number } => {
+        WorkflowPrCommands::Automerge { pr_number } => {
             let options = workflow::gh::pr::EnableAutomergeOptions { pr_number };
             let output = workflow::gh::pr::events::enable_automerge::execute(github, options)?;
             workflow::write_workflow_output(&output)

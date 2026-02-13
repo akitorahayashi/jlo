@@ -38,4 +38,6 @@
 
       - name: Cleanup mock artifacts for this run
         run: |
+          # Cleanup uses a PR merge path to satisfy branch protection and preserve auditable history.
+          # Auto-merge is not enabled here; authority is centralized in jules-automerge workflow.
           jlo workflow workspace clean mock --mock-tag "$JULES_MOCK_TAG"
