@@ -1,0 +1,20 @@
+schema_version: 1
+
+id: "6riyv9"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "data_arch"
+confidence: "medium"
+
+title: "Excessive Argument Coupling in Layer Strategy"
+statement: |
+  LayerStrategy::execute trait method has excessive arguments, coupling all layers to all ports (GitPort, GitHubPort) even if unused.
+  This necessitates `#[allow(clippy::too_many_arguments)]` and indicates a need for a context object.
+
+evidence:
+  - path: "src/domain/layers/strategy.rs"
+    loc: ["29-37"]
+    note: "Trait method signature with many arguments."
+  - path: "src/domain/layers/observers.rs"
+    loc: ["69"]
+    note: "Example usage requiring clippy allow directive."
