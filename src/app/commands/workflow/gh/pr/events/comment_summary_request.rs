@@ -12,9 +12,13 @@ use crate::ports::GitHubPort;
 /// Marker prefix embedded in the managed comment body for idempotent detection.
 const MANAGED_COMMENT_MARKER: &str = "<!-- jlo:summary-request -->";
 
-/// Fixed summary request comment body per spec.
-const SUMMARY_REQUEST_BODY: &str =
-    include_str!("../../../../../../assets/prompts/summary_request.md");
+/// Summary request body for implementer PRs.
+const IMPLEMENTER_SUMMARY_REQUEST_BODY: &str =
+    include_str!("../../../../../../assets/summary-requests/implementer.md");
+
+/// Summary request body for integrator PRs.
+const INTEGRATOR_SUMMARY_REQUEST_BODY: &str =
+    include_str!("../../../../../../assets/summary-requests/integrator.md");
 
 /// Options for `workflow gh pr comment-summary-request`.
 #[derive(Debug, Clone)]
@@ -35,6 +39,15 @@ pub struct CommentSummaryRequestOutput {
     pub comment_id: Option<u64>,
 }
 
+/// Select the appropriate summary request body based on branch prefix.
+fn summary_request_body(head_branch: &str) -> &'static str {
+    if head_branch.starts_with("jules-integrator-") {
+        INTEGRATOR_SUMMARY_REQUEST_BODY
+    } else {
+        IMPLEMENTER_SUMMARY_REQUEST_BODY
+    }
+}
+
 /// Execute `pr comment-summary-request`.
 pub fn execute(
     github: &impl GitHubPort,
@@ -53,17 +66,19 @@ pub fn execute(
         });
     }
 
+    let body = summary_request_body(&pr.head);
+
     // Check for existing managed comment
     let comments = github.list_pr_comments(options.pr_number)?;
     let existing = comments.iter().find(|c| c.body.contains(MANAGED_COMMENT_MARKER));
 
     let comment_id = if let Some(managed) = existing {
         // Update existing comment
-        github.update_pr_comment(managed.id, SUMMARY_REQUEST_BODY)?;
+        github.update_pr_comment(managed.id, body)?;
         managed.id
     } else {
         // Create new comment
-        github.create_pr_comment(options.pr_number, SUMMARY_REQUEST_BODY)?
+        github.create_pr_comment(options.pr_number, body)?
     };
 
     Ok(CommentSummaryRequestOutput {
@@ -204,5 +219,61 @@ mod tests {
         // Should update, not create a new one
         assert_eq!(gh.comments.borrow().len(), 1);
         assert!(gh.comments.borrow()[0].body.contains("Summary of Changes"));
+    }
+
+    #[test]
+    fn implementer_pr_uses_implementer_template() {
+        let gh = FakeGitHub {
+            pr_detail: PullRequestDetail {
+                number: 3,
+                head: "jules-implementer-bugs-abc123-fix-crash".to_string(),
+                base: "main".to_string(),
+                is_draft: false,
+                auto_merge_enabled: false,
+            },
+            comments: RefCell::new(Vec::new()),
+            next_comment_id: RefCell::new(100),
+        };
+        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 3 }).unwrap();
+        assert!(out.applied);
+        let body = &gh.comments.borrow()[0].body;
+        assert!(
+            body.contains("Summary of Changes"),
+            "implementer template should contain 'Summary of Changes'"
+        );
+        assert!(
+            !body.contains("Integration Summary"),
+            "implementer template should not contain integrator sections"
+        );
+    }
+
+    #[test]
+    fn integrator_pr_uses_integrator_template() {
+        let gh = FakeGitHub {
+            pr_detail: PullRequestDetail {
+                number: 4,
+                head: "jules-integrator-20260213-abc123".to_string(),
+                base: "main".to_string(),
+                is_draft: false,
+                auto_merge_enabled: false,
+            },
+            comments: RefCell::new(Vec::new()),
+            next_comment_id: RefCell::new(100),
+        };
+        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 4 }).unwrap();
+        assert!(out.applied);
+        let body = &gh.comments.borrow()[0].body;
+        assert!(
+            body.contains("Integration Summary"),
+            "integrator template should contain 'Integration Summary'"
+        );
+        assert!(
+            body.contains("Conflict Resolutions"),
+            "integrator template should contain 'Conflict Resolutions'"
+        );
+        assert!(
+            body.contains("Risk Assessment"),
+            "integrator template should contain 'Risk Assessment'"
+        );
     }
 }

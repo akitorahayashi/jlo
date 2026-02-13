@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-set -euo pipefail
 # Install Swift via swiftly
 
 if command -v swift >/dev/null 2>&1; then

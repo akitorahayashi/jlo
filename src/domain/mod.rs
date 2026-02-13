@@ -9,7 +9,7 @@ pub mod workspace;
 
 pub mod builtin_role;
 pub mod component_graph;
-pub mod setup_artifacts;
+pub mod provisioning;
 
 pub use builtin_role::BuiltinRoleEntry;
 #[allow(unused_imports)]

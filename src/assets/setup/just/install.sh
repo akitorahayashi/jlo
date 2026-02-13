@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-set -euo pipefail
 # Install just - command runner
 
 if command -v just >/dev/null 2>&1; then

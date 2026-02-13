@@ -282,6 +282,7 @@ where
         ".github/workflows/jules-sync.yml",
         ".github/workflows/jules-automerge.yml",
         ".github/workflows/jules-implementer-pr.yml",
+        ".github/workflows/jules-integrator-pr.yml",
     ]
     .iter()
     .any(|path| workspace.file_exists(path));
