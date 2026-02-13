@@ -9,7 +9,7 @@ use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, RunConfig, RunOptions};
 use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
 
-use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
+use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
 #[derive(Deserialize)]
 struct ContractFile {

@@ -3,9 +3,9 @@ use std::path::{Path, PathBuf};
 use chrono::Utc;
 use serde::Deserialize;
 
+use super::super::mock::mock_execution::MockExecutionService;
 use crate::domain::configuration::loader::detect_repository_source;
 use crate::domain::configuration::mock_loader::load_mock_config;
-use crate::domain::layers::mock_utils::MockExecutionService;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
@@ -13,8 +13,8 @@ use crate::ports::{
     AutomationMode, GitHubPort, GitPort, JulesClient, SessionRequest, WorkspaceStore,
 };
 
-use super::requirement::validate_requirement_path;
-use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
+use super::super::requirement_path::validate_requirement_path;
+use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
 pub struct ImplementerLayer;
 

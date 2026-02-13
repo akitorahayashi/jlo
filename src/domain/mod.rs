@@ -1,7 +1,6 @@
 pub mod configuration;
 pub mod error;
 pub mod identifiers;
-pub mod layers;
 pub mod requirement;
 
 pub mod prompt_assembly;
@@ -19,8 +18,6 @@ pub use configuration::{
 };
 pub use error::{AppError, IoErrorKind};
 pub use identifiers::{ComponentId, RoleId};
-#[allow(unused_imports)]
-pub use layers::{LayerStrategy, RunResult, get_layer_strategy};
 pub use requirement::RequirementHeader;
 
 pub use prompt_assembly::{PromptAssemblyError, PromptAssetLoader};

@@ -1,19 +1,26 @@
 //! Run command implementation for executing Jules agents.
 
+mod layer;
+mod mock;
+mod requirement_path;
+mod role_session;
+mod strategy;
+
 use std::path::Path;
 
 use crate::adapters::jules_client_http::HttpJulesClient;
+use crate::app::commands::run::strategy::{JulesClientFactory, get_layer_strategy};
 use crate::app::commands::workflow::workspace::{
     WorkspaceCleanRequirementOptions, clean_requirement_with_adapters,
 };
+pub use crate::domain::RunOptions;
 pub use crate::domain::configuration::parse_config_content;
 use crate::domain::configuration::{load_config, validate_mock_prerequisites};
 use crate::domain::identifiers::validation::validate_safe_path_component;
-use crate::domain::layers::get_layer_strategy;
-use crate::domain::layers::strategy::JulesClientFactory;
 use crate::domain::{AppError, JulesApiConfig};
-pub use crate::domain::{RunOptions, RunResult};
 use crate::ports::{GitHubPort, GitPort, JulesClient, WorkspaceStore};
+
+pub use strategy::RunResult;
 
 struct LazyClientFactory {
     config: JulesApiConfig,

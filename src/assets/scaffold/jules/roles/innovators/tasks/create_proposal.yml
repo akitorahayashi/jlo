@@ -2,23 +2,20 @@ task: create_proposal
 mode: direct
 
 objective:
-  Produce proposal.yml in a single pass without observer feedback.
-  This path is intended for direct layer invocation where proposal publication speed
-  is prioritized over the standard feedback loop.
+  Create proposal.yml from repository context and persona perspective.
 
 steps:
-  - Inspect repository behavior and constraints directly before drafting conclusions.
-  - Update perspective.yml repository_observations and thinking_notes with the rationale used for direct publication.
+  - Inspect repository behavior, boundaries, and runtime assumptions before drafting conclusions.
+  - Update perspective.yml repository_observations and thinking_notes with concise evidence and rationale.
   - Update perspective.yml feedback_assimilation.next_focus with follow-up validation tasks.
   - Create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals.
   - Update perspective.yml recent_proposals (FIFO, max 5, newest first) with the proposal title.
-  - Delete idea.yml if it exists.
-  - Delete comments/*.yml if any are present.
+  - Delete idea.yml and comments/*.yml if present.
 
 output:
   - .jules/exchange/innovators/<persona>/proposal.yml
   - .jules/exchange/innovators/<persona>/perspective.yml (updated)
 
 constraints:
-  - "Do not wait for observer feedback in this direct mode task"
+  - "proposal.yml must be justified by repository evidence gathered in this run"
   - "recent_proposals must include the current proposal title and keep FIFO max 5"
