@@ -39,22 +39,24 @@ jobs:
             exit 1
           fi
 
+      - uses: actions/checkout@v4
+        with:
+          ref: {{ gha_expr("github.ref_name") }}
+          fetch-depth: 0
+
       - name: Discover open PR for pushed branch
         id: discover
         env:
           GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
-          GH_REPO: {{ gha_expr("github.repository") }}
         run: |
           set -euo pipefail
           pr_number=""
-          repo_owner="${GITHUB_REPOSITORY%%/*}"
           for attempt in $(seq 1 12); do
-            pr_number="$(gh api "repos/${GITHUB_REPOSITORY}/pulls" \
-              --method GET \
-              -f state="open" \
-              -f head="${repo_owner}:${GITHUB_REF_NAME}" \
-              -f base="${JULES_WORKER_BRANCH}" \
-              -f per_page="1" \
+            pr_number="$(gh pr list \
+              --state open \
+              --head "${GITHUB_REF_NAME}" \
+              --base "${JULES_WORKER_BRANCH}" \
+              --json number \
               --jq '.[0].number')"
             if [ -n "${pr_number}" ] && [ "${pr_number}" != "null" ]; then
               break
@@ -72,11 +74,6 @@ jobs:
             esac
           done
           echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/checkout@v4
-        with:
-          ref: {{ gha_expr("github.ref_name") }}
-          fetch-depth: 0
 
       - name: Install jlo
         uses: ./.github/actions/install-jlo
