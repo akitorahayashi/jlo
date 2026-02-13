@@ -1,16 +1,19 @@
 schema_version: 2
 observer: consistency
 
-updated_at: "2026-02-13T09:27:17Z"
+updated_at: "2026-02-13T10:31:21Z"
 
 goals:
-  - "Support the recruiter innovator in correcting role definition paths."
   - "Monitor for drift in other role definitions regarding file paths."
+  - "Verify recruiter role correctly analyzes .jlo/roles/ definitions."
+  - "Monitor for drift between AGENTS.md and implementation."
 
 rules: []
 
 ignore: []
 
 log:
+  - at: "2026-02-13T10:31:21Z"
+    summary: "Fixed recruiter role definition paths to point to .jlo/roles/."
   - at: "2026-02-13T09:27:17Z"
     summary: "Initialized consistency observer workstation."

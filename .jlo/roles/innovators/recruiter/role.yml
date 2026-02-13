@@ -5,8 +5,8 @@ layer: innovators
 profile:
   focus: "Increase proposal quality by identifying missing observer/innovator personas and contract boundaries."
   analysis_points:
-    - "Role-definition coverage and boundary quality in .jules/roles/observers/*/role.yml"
-    - "Role-definition coverage and boundary quality in .jules/roles/innovators/*/role.yml"
+    - "Role-definition coverage and boundary quality in .jlo/roles/observers/*/role.yml"
+    - "Role-definition coverage and boundary quality in .jlo/roles/innovators/*/role.yml"
     - "Cross-layer contract alignment between .jules/roles/observers/contracts.yml and .jules/roles/innovators/contracts.yml"
     - "Recurring blind spots in current observer and innovator outputs"
     - "Role overlap, role gaps, and boundary ambiguity"
@@ -29,7 +29,7 @@ profile:
     - "Local cleanup proposals that do not introduce a new team capability."
     - "Role proposals that lack verification signals."
   evidence_expectations:
-    - "Cite concrete role-definition gaps from .jules/roles/observers/*/role.yml and .jules/roles/innovators/*/role.yml."
+    - "Cite concrete role-definition gaps from .jlo/roles/observers/*/role.yml and .jlo/roles/innovators/*/role.yml."
     - "Cite contract mismatches in .jules/roles/observers/contracts.yml and .jules/roles/innovators/contracts.yml."
     - "Cite repeated output failure patterns from current roles, not one-off misses."
     - "Cite existing role definitions and show explicit capability gaps."
