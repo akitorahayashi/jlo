@@ -1,7 +1,9 @@
 use std::path::Path;
 
 use crate::domain::configuration::loader::detect_repository_source;
+use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
+use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, RunConfig, RunOptions};
 use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
 
@@ -52,12 +54,25 @@ where
     G: GitPort + ?Sized,
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
-    // Integrator starts from the implementer target branch (default_branch)
+    // Validate branch override if provided
+    if let Some(b) = branch {
+        if !validate_safe_path_component(b) {
+            return Err(AppError::Validation(format!(
+                "Invalid branch '{}': must be a safe path component",
+                b,
+            )));
+        }
+    }
+
+    // Integrator starts from the target branch (same basis as implementer output routing)
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.default_branch.clone());
 
+    // Resolve implementer branch prefix from its contracts for discovery
+    let implementer_prefix = load_implementer_branch_prefix(jules_path, workspace)?;
+
     // Preflight: discover candidate branches before Jules API session creation
-    let candidates = discover_candidate_branches(git)?;
+    let candidates = discover_candidate_branches(git, &implementer_prefix)?;
 
     if prompt_preview {
         println!("=== Prompt Preview: Integrator ===");
@@ -106,30 +121,65 @@ where
     })
 }
 
+/// Read the implementer branch prefix from its contracts.yml to drive discovery.
+fn load_implementer_branch_prefix<W: WorkspaceStore>(
+    jules_path: &Path,
+    workspace: &W,
+) -> Result<String, AppError> {
+    let contracts_path = jules::contracts(jules_path, Layer::Implementer);
+    let contracts_path_str = contracts_path.to_string_lossy();
+
+    let content = workspace.read_file(&contracts_path_str).map_err(|_| {
+        AppError::Validation(format!(
+            "Cannot read implementer contracts at {}: required for branch discovery",
+            contracts_path.display()
+        ))
+    })?;
+
+    let value: serde_yaml::Value = serde_yaml::from_str(&content)
+        .map_err(|e| AppError::Validation(format!("Invalid implementer contracts YAML: {}", e)))?;
+
+    value
+        .get("branch_prefix")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .ok_or_else(|| {
+            AppError::Validation(
+                "Implementer contracts.yml missing required 'branch_prefix' field".to_string(),
+            )
+        })
+}
+
 /// Discover remote implementer branches matching the branch prefix policy.
 ///
 /// Fails explicitly if no candidate branches exist.
-fn discover_candidate_branches<G: GitPort + ?Sized>(git: &G) -> Result<Vec<String>, AppError> {
-    // Fetch latest remote state
+fn discover_candidate_branches<G: GitPort + ?Sized>(
+    git: &G,
+    implementer_prefix: &str,
+) -> Result<Vec<String>, AppError> {
     git.fetch("origin")?;
 
-    // List remote branches matching implementer prefix
-    let output = git.run_command(
-        &["branch", "-r", "--list", "origin/jules-implementer-*", "--format=%(refname:short)"],
-        None,
-    )?;
+    let pattern = format!("origin/{}*", implementer_prefix);
+    let output =
+        git.run_command(&["branch", "-r", "--list", &pattern, "--format=%(refname:short)"], None)?;
 
     let candidates: Vec<String> = output
         .lines()
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
         .map(|line| line.strip_prefix("origin/").unwrap_or(line).to_string())
+        .filter(|name| {
+            name.chars()
+                .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '/')
+        })
         .collect();
 
     if candidates.is_empty() {
-        return Err(AppError::Validation(
-            "No remote jules-implementer-* branches found. Nothing to integrate.".to_string(),
-        ));
+        return Err(AppError::Validation(format!(
+            "No remote {}* branches found. Nothing to integrate.",
+            implementer_prefix
+        )));
     }
 
     println!(
