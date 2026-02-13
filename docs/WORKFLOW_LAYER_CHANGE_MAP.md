@@ -32,7 +32,7 @@ A layer-level change means one of the following:
 | Doctor validation | Structural/schema/semantic checks iterate layers and exchange data contracts | `src/app/commands/doctor/*.rs` |
 | Requirement routing | Workspace inspect provides requirement counts for planner/implementer gating | `src/app/commands/workflow/workspace/inspect.rs`, `src/app/commands/workflow/run/*.rs` |
 | Workflow orchestration | Layer sequence is defined in workflow templates; integrator has a dedicated manual-dispatch workflow | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`, `src/assets/github/workflows/jules-integrator.yml.j2` |
-| Auto-merge qualification | Branch prefix and scope policy gates are evaluated in `jlo workflow gh pr enable-automerge` | `src/app/commands/workflow/gh/pr/events/enable_automerge.rs` |
+| Auto-merge qualification | Branch prefix and scope policy gates are evaluated in `jlo workflow gh pr automerge` | `src/app/commands/workflow/gh/pr/events/enable_automerge.rs` |
 | Mock behavior | Per-layer mock behavior is implemented in dedicated modules | `src/app/commands/run/mock/*.rs` |
 | Failure recovery | Mock residue cleanup scope is explicit and code-defined | `src/app/commands/workflow/workspace/clean/mock.rs` |
 | Tests | Integration tests assert layer structure, workflow text, and mock behavior | `tests/workflow.rs`, `tests/cli.rs`, `tests/mock.rs`, `tests/doctor.rs` |
@@ -44,7 +44,7 @@ A layer-level change means one of the following:
 | Add/remove layer in enum | `Layer::ALL`, parsing, display, descriptions, tests |
 | Single-role vs multi-role change | CLI shape, role discovery, schedule parsing, run dispatch |
 | Issue-driven toggle change | `run` argument handling, workflow routing, `single_role` execution path |
-| Branching/merge policy change | `enable-automerge` gate policy in command code, layer contracts `branch_prefix` |
+| Branching/merge policy change | `automerge` gate policy in command code, layer contracts `branch_prefix` |
 | Artifact contract change | Scaffold schemas, doctor schema checks, mock artifact generators |
 
 ## Adding a Layer: Change Order
@@ -103,7 +103,7 @@ A layer-level change means one of the following:
 
 ## Workflow Maintenance Invariants
 - Workflow kit source of truth is `src/assets/github/`; generated `.github/` files are installation outputs.
-- Auto-merge policy gates (branch prefix, `.jules/`-only scope, draft, already-enabled) are evaluated in `src/app/commands/workflow/gh/pr/events/enable_automerge.rs`. The workflow template delegates to `jlo workflow gh pr process --mode automerge`.
+- Auto-merge policy gates (branch prefix, `.jules/`-only scope, draft, already-enabled) are evaluated in `src/app/commands/workflow/gh/pr/events/enable_automerge.rs`. The workflow template delegates to `jlo workflow gh pr process automerge`.
 - Adding or removing a layer requires updating the `ALLOWED_PREFIXES` constant in `enable_automerge.rs` and regenerating workflows.
 - `.jules/`-only scope remains the automerge safety boundary.
 - Control-plane files live under `.jlo/` on the control branch; `.jules/` is materialized by workflow bootstrap.

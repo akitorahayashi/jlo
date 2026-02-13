@@ -2,10 +2,14 @@
 name: Jules Auto-merge
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  push:
     branches:
-      - 'jules'
+      - 'jules-narrator-*'
+      - 'jules-observer-*'
+      - 'jules-decider-*'
+      - 'jules-planner-*'
+      - 'jules-innovator-*'
+      - 'jules-mock-cleanup-*'
 
 permissions:
   contents: write
@@ -17,10 +21,10 @@ env:
 
 jobs:
   validate-and-automerge:
-    if: ${{ github.base_ref == 'jules' }}
+    if: ${{ github.event.deleted == false }}
     runs-on: ubuntu-latest
     concurrency:
-      group: ${{ format('jules-automerge-pr-{0}', github.event.pull_request.number) }}
+      group: ${{ format('jules-automerge-branch-{0}', github.ref_name) }}
       cancel-in-progress: false
     steps:
       - name: Validate branch variables
@@ -35,9 +39,40 @@ jobs:
             exit 1
           fi
 
+      - name: Discover open PR for pushed branch
+        id: discover
+        env:
+          GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          pr_number=""
+          for attempt in $(seq 1 12); do
+            pr_number="$(gh pr list \
+              --state open \
+              --head "${GITHUB_REF_NAME}" \
+              --base "${JULES_WORKER_BRANCH}" \
+              --json number \
+              --jq '.[0].number')"
+            if [ -n "${pr_number}" ] && [ "${pr_number}" != "null" ]; then
+              break
+            fi
+
+            if [ "${attempt}" -eq 12 ]; then
+              echo "::error::No open PR found for branch '${GITHUB_REF_NAME}' into '${JULES_WORKER_BRANCH}' after 12 attempts."
+              exit 1
+            fi
+
+            case "${attempt}" in
+              1) sleep 1 ;;
+              2) sleep 2 ;;
+              *) sleep 5 ;;
+            esac
+          done
+          echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Install jlo
@@ -54,8 +89,7 @@ jobs:
           GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
         run: |
           set -euo pipefail
-          jlo workflow gh pr process ${{ github.event.pull_request.number }} \
-            --mode automerge \
+          jlo workflow gh pr process automerge ${{ steps.discover.outputs.pr_number }} \
             --retry-attempts 12 \
             --retry-delay-seconds 10 \
             --fail-on-error

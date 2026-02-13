@@ -48,8 +48,8 @@ Workflow orchestration delegates to `jlo workflow` commands:
 - `jlo workflow workspace clean mock --mock-tag <tag>`
 - `jlo workflow gh pr comment-summary-request <pr_number>`
 - `jlo workflow gh pr sync-category-label <pr_number>`
-- `jlo workflow gh pr enable-automerge <pr_number>`
-- `jlo workflow gh pr process <pr_number> [--mode all|metadata|automerge] [--retry-attempts N] [--retry-delay-seconds N] [--fail-on-error]`
+- `jlo workflow gh pr automerge <pr_number>`
+- `jlo workflow gh pr process <all|metadata|automerge> <pr_number> [--retry-attempts N] [--retry-delay-seconds N] [--fail-on-error]`
 - `jlo workflow gh issue label-innovator <issue_number> <persona>`
 
 ## Workflow Execution Flow

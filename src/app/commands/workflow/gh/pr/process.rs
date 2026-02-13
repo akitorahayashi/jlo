@@ -18,6 +18,7 @@ const TRANSIENT_AUTOMERGE_ERROR_PATTERNS: &[&str] = &[
     "Base branch was modified",
     "Protected branch rules not configured",
 ];
+const RETRY_FIRST_DELAYS_SECONDS: &[u64] = &[1, 2, 5];
 
 /// Execution mode for `workflow gh pr process`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -195,6 +196,28 @@ fn run_enable_automerge(
     let opts = enable_automerge::EnableAutomergeOptions { pr_number };
 
     for attempt in 1..=retry_attempts {
+        match github.get_pr_detail(pr_number) {
+            Ok(pr_detail) if pr_detail.auto_merge_enabled => {
+                return ProcessStepResult {
+                    command: "enable-automerge".to_string(),
+                    applied: false,
+                    skipped_reason: Some("auto-merge already enabled".to_string()),
+                    error: None,
+                    attempts: attempt,
+                };
+            }
+            Ok(_) => {}
+            Err(error) => {
+                return ProcessStepResult {
+                    command: "enable-automerge".to_string(),
+                    applied: false,
+                    skipped_reason: None,
+                    error: Some(error.to_string()),
+                    attempts: attempt,
+                };
+            }
+        }
+
         match enable_automerge::execute(github, opts.clone()) {
             Ok(out) => {
                 return ProcessStepResult {
@@ -206,9 +229,22 @@ fn run_enable_automerge(
                 };
             }
             Err(e) => {
+                if let Ok(pr_detail) = github.get_pr_detail(pr_number)
+                    && pr_detail.auto_merge_enabled
+                {
+                    return ProcessStepResult {
+                        command: "enable-automerge".to_string(),
+                        applied: false,
+                        skipped_reason: Some("auto-merge already enabled".to_string()),
+                        error: None,
+                        attempts: attempt,
+                    };
+                }
+
                 if attempt < retry_attempts && is_transient_automerge_error(&e) {
-                    if retry_delay_seconds > 0 {
-                        thread::sleep(Duration::from_secs(retry_delay_seconds));
+                    let sleep_seconds = compute_retry_delay_seconds(attempt, retry_delay_seconds);
+                    if sleep_seconds > 0 {
+                        thread::sleep(Duration::from_secs(sleep_seconds));
                     }
                     continue;
                 }
@@ -233,6 +269,18 @@ fn run_enable_automerge(
     }
 }
 
+fn compute_retry_delay_seconds(attempt: u32, configured_delay_seconds: u64) -> u64 {
+    if configured_delay_seconds == 0 {
+        return 0;
+    }
+
+    let profile_delay = RETRY_FIRST_DELAYS_SECONDS
+        .get((attempt.saturating_sub(1)) as usize)
+        .copied()
+        .unwrap_or_else(|| RETRY_FIRST_DELAYS_SECONDS[RETRY_FIRST_DELAYS_SECONDS.len() - 1]);
+    profile_delay.min(configured_delay_seconds)
+}
+
 fn is_transient_automerge_error(error: &AppError) -> bool {
     let message = error.to_string();
     TRANSIENT_AUTOMERGE_ERROR_PATTERNS.iter().any(|pattern| message.contains(pattern))
@@ -242,27 +290,31 @@ fn is_transient_automerge_error(error: &AppError) -> bool {
 mod tests {
     use super::*;
     use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
 
     struct FakeGitHub {
-        pr_detail: PullRequestDetail,
+        pr_detail: RefCell<PullRequestDetail>,
         files: Vec<String>,
         remaining_transient_automerge_failures: Cell<u32>,
+        fatal_automerge_failure: Cell<bool>,
+        set_automerge_enabled_on_first_error: Cell<bool>,
         enable_calls: Cell<u32>,
     }
 
     impl FakeGitHub {
         fn jules_runtime_pr() -> Self {
             Self {
-                pr_detail: PullRequestDetail {
+                pr_detail: RefCell::new(PullRequestDetail {
                     number: 42,
                     head: "jules-observer-abc123".to_string(),
                     base: "jules".to_string(),
                     is_draft: false,
                     auto_merge_enabled: false,
-                },
+                }),
                 files: vec![".jules/exchange/events/pending/state.yml".to_string()],
                 remaining_transient_automerge_failures: Cell::new(0),
+                fatal_automerge_failure: Cell::new(false),
+                set_automerge_enabled_on_first_error: Cell::new(false),
                 enable_calls: Cell::new(0),
             }
         }
@@ -273,17 +325,32 @@ mod tests {
             gh
         }
 
+        fn with_fatal_automerge_failure() -> Self {
+            let gh = Self::jules_runtime_pr();
+            gh.fatal_automerge_failure.set(true);
+            gh
+        }
+
+        fn with_race_automerge_state_after_first_failure() -> Self {
+            let gh = Self::jules_runtime_pr();
+            gh.remaining_transient_automerge_failures.set(1);
+            gh.set_automerge_enabled_on_first_error.set(true);
+            gh
+        }
+
         fn non_jules_pr() -> Self {
             Self {
-                pr_detail: PullRequestDetail {
+                pr_detail: RefCell::new(PullRequestDetail {
                     number: 99,
                     head: "feature/foo".to_string(),
                     base: "main".to_string(),
                     is_draft: false,
                     auto_merge_enabled: false,
-                },
+                }),
                 files: vec!["src/main.rs".to_string()],
                 remaining_transient_automerge_failures: Cell::new(0),
+                fatal_automerge_failure: Cell::new(false),
+                set_automerge_enabled_on_first_error: Cell::new(false),
                 enable_calls: Cell::new(0),
             }
         }
@@ -313,7 +380,7 @@ mod tests {
         }
 
         fn get_pr_detail(&self, _: u64) -> Result<PullRequestDetail, AppError> {
-            Ok(self.pr_detail.clone())
+            Ok(self.pr_detail.borrow().clone())
         }
 
         fn list_pr_comments(&self, _: u64) -> Result<Vec<PrComment>, AppError> {
@@ -342,14 +409,25 @@ mod tests {
 
         fn enable_automerge(&self, _: u64) -> Result<(), AppError> {
             self.enable_calls.set(self.enable_calls.get() + 1);
+            if self.fatal_automerge_failure.get() {
+                return Err(AppError::ExternalToolError {
+                    tool: "gh".to_string(),
+                    error: "gh command failed: GraphQL: Validation failed: Pull request is not in a mergeable state".to_string(),
+                });
+            }
             let remaining = self.remaining_transient_automerge_failures.get();
             if remaining > 0 {
                 self.remaining_transient_automerge_failures.set(remaining - 1);
+                if self.set_automerge_enabled_on_first_error.get() {
+                    self.pr_detail.borrow_mut().auto_merge_enabled = true;
+                    self.set_automerge_enabled_on_first_error.set(false);
+                }
                 return Err(AppError::ExternalToolError {
                     tool: "gh".to_string(),
                     error: "gh command failed: GraphQL: Base branch was modified. Review and try the merge again. (mergePullRequest)".to_string(),
                 });
             }
+            self.pr_detail.borrow_mut().auto_merge_enabled = true;
             Ok(())
         }
 
@@ -397,6 +475,49 @@ mod tests {
         assert!(!out.had_errors);
         assert_eq!(out.steps[0].attempts, 3);
         assert_eq!(gh.enable_calls.get(), 3);
+    }
+
+    #[test]
+    fn does_not_retry_non_transient_automerge_errors() {
+        let gh = FakeGitHub::with_fatal_automerge_failure();
+        let out = execute(
+            &gh,
+            ProcessOptions {
+                pr_number: 42,
+                mode: ProcessMode::Automerge,
+                fail_on_error: false,
+                retry_attempts: 3,
+                retry_delay_seconds: 0,
+            },
+        )
+        .unwrap();
+
+        assert!(out.had_errors);
+        assert_eq!(out.steps[0].attempts, 1);
+        assert_eq!(gh.enable_calls.get(), 1);
+        assert!(out.steps[0].error.as_deref().unwrap_or("").contains("mergeable state"));
+    }
+
+    #[test]
+    fn recheck_recovers_when_automerge_is_enabled_by_race() {
+        let gh = FakeGitHub::with_race_automerge_state_after_first_failure();
+        let out = execute(
+            &gh,
+            ProcessOptions {
+                pr_number: 42,
+                mode: ProcessMode::Automerge,
+                fail_on_error: true,
+                retry_attempts: 3,
+                retry_delay_seconds: 0,
+            },
+        )
+        .unwrap();
+
+        assert!(!out.had_errors);
+        assert_eq!(gh.enable_calls.get(), 1);
+        assert_eq!(out.steps[0].attempts, 1);
+        assert_eq!(out.steps[0].skipped_reason.as_deref(), Some("auto-merge already enabled"));
+        assert!(out.steps[0].error.is_none());
     }
 
     #[test]
@@ -456,5 +577,16 @@ mod tests {
         assert_eq!(out.steps.len(), 1);
         assert!(!out.steps[0].applied);
         assert!(out.steps[0].skipped_reason.as_deref().unwrap_or("").contains("does not match"));
+    }
+
+    #[test]
+    fn retry_delay_profile_is_retry_first_and_bounded() {
+        assert_eq!(compute_retry_delay_seconds(1, 10), 1);
+        assert_eq!(compute_retry_delay_seconds(2, 10), 2);
+        assert_eq!(compute_retry_delay_seconds(3, 10), 5);
+        assert_eq!(compute_retry_delay_seconds(4, 10), 5);
+        assert_eq!(compute_retry_delay_seconds(1, 2), 1);
+        assert_eq!(compute_retry_delay_seconds(3, 2), 2);
+        assert_eq!(compute_retry_delay_seconds(1, 0), 0);
     }
 }

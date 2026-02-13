@@ -13,8 +13,14 @@ use crate::domain::AppError;
 use crate::ports::GitHubPort;
 
 /// Allowed branch prefixes derived from the Layer model.
-const ALLOWED_PREFIXES: &[&str] =
-    &["jules-narrator-", "jules-observer-", "jules-decider-", "jules-planner-", "jules-innovator-"];
+const ALLOWED_PREFIXES: &[&str] = &[
+    "jules-narrator-",
+    "jules-observer-",
+    "jules-decider-",
+    "jules-planner-",
+    "jules-innovator-",
+    "jules-mock-cleanup-",
+];
 
 /// Options for `workflow gh pr enable-automerge`.
 #[derive(Debug, Clone)]
@@ -182,6 +188,16 @@ mod tests {
     #[test]
     fn enables_automerge_on_eligible_pr() {
         let gh = FakeGitHub::eligible_pr();
+        let out = execute(&gh, EnableAutomergeOptions { pr_number: 1 }).unwrap();
+        assert!(out.applied);
+        assert_eq!(out.automerge_state.as_deref(), Some("enabled"));
+        assert!(*gh.automerge_called.borrow());
+    }
+
+    #[test]
+    fn enables_automerge_on_mock_cleanup_branch() {
+        let mut gh = FakeGitHub::eligible_pr();
+        gh.pr_detail.head = "jules-mock-cleanup-mock-run-123".to_string();
         let out = execute(&gh, EnableAutomergeOptions { pr_number: 1 }).unwrap();
         assert!(out.applied);
         assert_eq!(out.automerge_state.as_deref(), Some("enabled"));

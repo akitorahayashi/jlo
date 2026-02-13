@@ -41,10 +41,10 @@ jlo init --remote
 | `jlo workflow workspace publish-proposals` | | Publish innovator proposals as GitHub issues |
 | `jlo workflow workspace clean requirement <file>` | | Remove a processed requirement and its source events |
 | `jlo workflow workspace clean mock --mock-tag <tag>` | | Clean up mock artifacts |
-| `jlo workflow gh pr process <pr_number>` | | Run all event-level PR commands in order |
+| `jlo workflow gh pr process <all|metadata|automerge> <pr_number>` | | Run PR event commands for the selected action |
+| `jlo workflow gh pr automerge <pr>` | | Enable auto-merge on an eligible PR |
 | `jlo workflow gh pr comment-summary-request <pr>` | | Post or update summary-request comment on a Jules PR |
 | `jlo workflow gh pr sync-category-label <pr>` | | Sync implementer category label from branch to PR |
-| `jlo workflow gh pr enable-automerge <pr>` | | Enable auto-merge on an eligible PR |
 | `jlo workflow gh issue label-innovator <issue> <persona>` | | Apply innovator labels to a proposal issue |
 | `jlo workflow generate <mode> [--output-dir <dir>]` | `g [-o]` | Generate workflow scaffold files to an output directory |
 | `jlo setup gen [path]` | `s g` | Generate `.jlo/setup/install.sh`, `.jlo/setup/vars.toml`, and `.jlo/setup/secrets.toml` |
@@ -198,6 +198,10 @@ Workflow expressions read these values from GitHub Actions variables (`vars.*`),
 | `jules-planner-*` | Planner | `JULES_WORKER_BRANCH` | Auto-merged |
 | `jules-implementer-*` | Implementer | `JLO_TARGET_BRANCH` | Human review |
 | `jules-innovator-*` | Innovators | `JULES_WORKER_BRANCH` | Auto-merged |
+| `jules-mock-cleanup-*` | Mock cleanup | `JULES_WORKER_BRANCH` | Auto-merged |
+
+Auto-merge authority is centralized in `.github/workflows/jules-automerge.yml`, triggered by push on the Jules auto-merge branch families.
+Cleanup keeps a PR-based merge path for branch-protection compatibility and auditable history.
 
 **Flow**:
 1. **Sync**: `JULES_WORKER_BRANCH` syncs from `JLO_TARGET_BRANCH` periodically
