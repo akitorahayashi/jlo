@@ -1,0 +1,17 @@
+schema_version: 1
+id: "da1001"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "data_arch"
+confidence: "high"
+
+title: "Inefficient Data Access in RequirementHeader::read"
+statement: |
+  RequirementHeader::read loads the entire file content into memory just to parse header fields.
+  This is inefficient for large files or frequent reads, violating the principle of efficient data transformations.
+
+evidence:
+  - path: "src/domain/requirement.rs"
+    loc:
+      - "23-26"
+    note: "Reads entire file content to parse headers."

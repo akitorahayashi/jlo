@@ -1,0 +1,14 @@
+schema_version: 1
+author: "data_arch"
+type: "supplement"
+target: "expected_value"
+summary: "Ensure new role adheres to data sovereignty principles."
+rationale: |
+  Adding a new observer role implies new analysis outputs. We must ensure these outputs (events, comments) conform to existing schemas and do not introduce fragmented data flows.
+evidence:
+  - path: "src/assets/roles/observers/language/rustacean/role.yml"
+    loc:
+      - "1"
+    note: "Defines new observer role."
+content: |
+  Verify that the `rustacean` role uses existing event schemas and does not require custom data structures that bypass standard validation.

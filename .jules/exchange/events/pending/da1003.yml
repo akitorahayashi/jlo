@@ -1,0 +1,17 @@
+schema_version: 1
+id: "da1003"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "data_arch"
+confidence: "medium"
+
+title: "Implicit Environment Coupling in detect_repository_source"
+statement: |
+  detect_repository_source relies on the GITHUB_REPOSITORY environment variable as a fallback.
+  This couples domain logic to the runtime environment, violating the principle of Boundary Sovereignty.
+
+evidence:
+  - path: "src/domain/configuration/loader.rs"
+    loc:
+      - "70"
+    note: "Depends on GITHUB_REPOSITORY environment variable."

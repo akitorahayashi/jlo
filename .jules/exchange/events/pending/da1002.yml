@@ -1,0 +1,21 @@
+schema_version: 1
+id: "da1002"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "data_arch"
+confidence: "high"
+
+title: "Invalid State Representation in ScheduleLayer"
+statement: |
+  ScheduleLayer uses a Vec<ScheduledRole> to store roles, which structurally permits duplicates.
+  This requires runtime validation (validate_roles) to enforce uniqueness, rather than encoding the invariant in the type system (e.g., using a Set or Map).
+
+evidence:
+  - path: "src/domain/configuration/schedule.rs"
+    loc:
+      - "27"
+    note: "Uses Vec<ScheduledRole> allowing duplicates."
+  - path: "src/domain/configuration/schedule.rs"
+    loc:
+      - "70"
+    note: "Requires explicit validation to check for duplicates."
