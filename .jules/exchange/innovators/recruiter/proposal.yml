@@ -1,0 +1,31 @@
+schema_version: 1
+
+id: "f7a2b9"
+persona: "recruiter"
+
+created_at: "2026-02-13"
+
+title: "Update Recruiter Role Definition Paths"
+problem: |
+  The `recruiter` role definition currently points to `.jules/roles/` for analyzing role definitions and contracts. However, the active role instances reside in `.jlo/roles/` and the source of truth in `src/assets/roles/`. The `.jules/roles/` directory does not contain the target files, causing the `recruiter` to fail in its analysis mandate.
+
+introduction: |
+  Update the `recruiter` role definition in both `.jlo/roles/innovators/recruiter/role.yml` and `src/assets/roles/innovators/strategy/recruiter/role.yml`.
+  Change all references from `.jules/roles/` to `.jlo/roles/` within the `analysis_points` and `evidence_expectations` sections. This aligns the role's focus with the actual runtime configuration location, enabling accurate identification of missing roles and coverage gaps.
+
+importance: |
+  High. The role is currently broken and cannot perform its primary function of identifying missing roles and contract boundaries.
+
+impact_surface:
+  - ".jlo/roles/innovators/recruiter/role.yml"
+  - "src/assets/roles/innovators/strategy/recruiter/role.yml"
+
+implementation_cost: |
+  Low. Requires text replacement in two YAML files.
+
+consistency_risks:
+  - "None. This change aligns the definition with the existing system architecture."
+
+verification_signals:
+  - "The `recruiter` role successfully reads role definitions from `.jlo/roles/` during execution."
+  - "Manual inspection of the `role.yml` files confirms the path update."

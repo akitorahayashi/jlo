@@ -22,6 +22,7 @@ thinking_notes:
     - "Fixing the path references in `recruiter` role definition will allow it to correctly identify missing roles."
   tradeoff_assessment:
     - "Pointing to `.jlo/roles` analyzes the deployed instance; pointing to `src/assets/roles` analyzes the source of truth. Since `recruiter` suggests new roles, looking at `src/assets` might be more appropriate to avoid suggesting already-existing-but-undeployed roles, but `.jlo` shows what is active."
+    - "Decision: Update `recruiter` role definition to reference `.jlo/roles` for active instances and `src/assets/roles` for source of truth."
   rejected_paths:
     - "Moving role definitions to `.jules/` was rejected as `.jlo/` is the established pattern for instance configuration."
 
