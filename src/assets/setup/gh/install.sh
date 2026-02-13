@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-set -euo pipefail
 # Install GitHub CLI
 
 if command -v gh >/dev/null 2>&1; then

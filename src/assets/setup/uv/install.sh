@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-set -euo pipefail
 # Install uv - Python package installer
 
 if command -v uv >/dev/null 2>&1; then

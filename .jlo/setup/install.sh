@@ -9,10 +9,6 @@ set -euo pipefail
 # gh: GitHub CLI for repository automation and PR discussion workflows
 # ==============================================================================
 
-#!/usr/bin/env bash
-set -euo pipefail
-# Install GitHub CLI
-
 if command -v gh >/dev/null 2>&1; then
   echo "gh already installed: $(gh --version | head -1)"
   exit 0

@@ -1,6 +1,0 @@
-name = "swift"
-summary = "Swift programming language via swiftly installer"
-dependencies = []
-
-[vars]
-SWIFT_VERSION = { description = "Version of Swift to install (leave empty for latest)" }
