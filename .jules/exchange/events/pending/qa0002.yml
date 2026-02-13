@@ -1,0 +1,23 @@
+schema_version: 1
+
+# Metadata
+id: "qa0002"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Dead code in tests/common"
+statement: |
+  The tests/common directory contains unused code that duplicates functionality found in tests/harness/test_context.rs, creating maintenance burden and potential confusion.
+
+# Evidence
+evidence:
+  - path: "tests/common/mod.rs"
+    loc: ["file"]
+    note: "Entire file appears to be unused dead code."
+
+  - path: "tests/harness/test_context.rs"
+    loc: ["file"]
+    note: "The active test harness implementation."

@@ -1,0 +1,23 @@
+schema_version: 1
+
+# Metadata
+id: "qa0001"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Missing unit test coverage for Planner and Observers layers"
+statement: |
+  The PlannerLayer and ObserversLayer structs implement LayerStrategy but lack dedicated unit tests for their execution logic, unlike DeciderLayer and ImplementerLayer.
+
+# Evidence
+evidence:
+  - path: "src/domain/layers/planner.rs"
+    loc: ["no-tests"]
+    note: "No #[cfg(test)] module or associated unit tests found."
+
+  - path: "src/domain/layers/observers.rs"
+    loc: ["no-tests"]
+    note: "No #[cfg(test)] module or associated unit tests found."

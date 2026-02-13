@@ -1,0 +1,19 @@
+schema_version: 1
+
+# Metadata
+id: "qa0003"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "qa"
+confidence: "medium"
+
+# Content
+title: "Shared mutable state in Prompt Assembly engine"
+statement: |
+  The PromptAssembly engine uses Arc<Mutex<T>> to manage side effects (included/skipped files) within minijinja callbacks, coupling logic to IO and reducing testability and thread safety.
+
+# Evidence
+evidence:
+  - path: "src/domain/prompt_assembly/engine.rs"
+    loc: ["IncludeContext"]
+    note: "Use of Arc<Mutex> for error propagation and state management inside callbacks."
