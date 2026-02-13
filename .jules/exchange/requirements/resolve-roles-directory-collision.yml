@@ -17,28 +17,50 @@ problem: |
   The `.jules/roles` directory contains Layer definitions (e.g. `observers`, `narrator`), while `.jlo/roles` contains Role instances. This violates "One Concept, One Preferred Term" and creates confusion.
 
 impact: |
-  Developers and agents may be confused about where to find or place files.
+  Developers and agents may be confused about where to find or place files. The collision increases cognitive load and risk of misplacing files (e.g., creating a role in the layer definition directory). Automated tools relying on path conventions might misinterpret directories.
 
 desired_outcome: |
-  The directory structure should clearly distinguish between layers and roles. For example, renaming `.jules/roles` to `.jules/layers` or similar, if feasible, or clarifying documentation. Given the constraint of preserving existing structure if expensive to change, documentation clarification might be the first step, but a structural change is preferred if possible.
+  The directory structure should clearly distinguish between layers and roles. Specifically, rename `.jules/roles` to `.jules/layers`. The system must support automatic migration for existing repositories via `jlo update` to move `.jules/roles` to `.jules/layers`. All scaffold templates and internal path references must be updated.
 
 constraints:
   - "Must ensure backward compatibility or provide a migration path if directories are renamed."
+  - "Existing repositories must be migrated seamlessly via `jlo update` or similar command."
 
 risks:
   - "Breaking changes if paths are hardcoded in many places."
+  - "User confusion during transition period if documentation lags."
+  - "Incomplete migration if custom files exist in .jules/roles that are not expected."
 
 # Specifics
 affected_areas:
-  - ".jules/roles/"
-  - "AGENTS.md"
+  - "src/domain/workspace/paths/jules.rs"
+  - "src/assets/scaffold/jules/roles/"
+  - "src/assets/scaffold/AGENTS.md"
+  - "src/app/commands/update.rs"
+  - "tests/"
 
 acceptance_criteria:
-  - "The ambiguity is resolved either by renaming or strict documentation updates."
+  - "The ambiguity is resolved by renaming .jules/roles to .jules/layers."
+  - "All tests pass with the new directory structure."
+  - "jlo update successfully migrates an existing .jules/roles directory to .jules/layers."
+  - "New projects created with jlo init use .jules/layers."
 
 verification_criteria:
-  - "Check directory structure and AGENTS.md."
+  - "Check directory structure matches .jules/layers."
+  - "Verify AGENTS.md references .jules/layers."
+  - "Run migration test case."
 
 # Analysis Flags
-requires_deep_analysis: true
-deep_analysis_reason: "Renaming a core directory like .jules/roles/ involves checking all references in code and prompts."
+requires_deep_analysis: false
+deep_analysis_reason: |
+  Renaming a core directory like .jules/roles/ involves checking all references in code and prompts.
+
+  [Analysis Findings]
+  - Usage: `.jules/roles` is heavily used in `src/domain/workspace/paths/jules.rs` (central path definition), `src/assets/scaffold/` (templates), and `tests/`.
+  - Impact: Renaming to `.jules/layers` aligns with the architectural concept of "Layers". `.jlo/roles` correctly remains for "Role Instances".
+  - Migration Strategy:
+    1. Update `src/domain/workspace/paths/jules.rs` to point to `.jules/layers`.
+    2. Rename `src/assets/scaffold/jules/roles` to `src/assets/scaffold/jules/layers` and update all template content.
+    3. Implement migration logic in `jlo update` (or `jlo init`) to detect `.jules/roles` and move it to `.jules/layers` if `.jules/layers` does not exist.
+    4. Update all tests to use the new path.
+  - Risk Mitigation: The `jlo update` command is the primary mechanism for distributing this change. It must handle the directory move safely.
