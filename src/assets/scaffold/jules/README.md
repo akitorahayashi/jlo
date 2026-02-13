@@ -132,7 +132,7 @@ Implementer modifies source code and requires human review.
         +-- contracts.yml             # Layer contract
         +-- tasks/
         |   +-- create_idea.yml       # Creation phase task
-        |   +-- refine_proposal.yml   # Refinement phase task
+        |   +-- refine_idea_and_create_proposal.yml   # Refinement phase task
         +-- schemas/
         |   +-- perspective.yml
         |   +-- idea.yml
@@ -169,7 +169,7 @@ Implementer modifies source code and requires human review.
 
 **Integrator**: A manual, on-demand layer that merges all remote `jules-implementer-*` branches into a single integration branch. PR discussions are retrieved live via `gh` during execution. Not part of the scheduled orchestration chain.
 
-**Innovators**: Phase-driven execution (`--phase creation` or `--phase refinement`). Each phase uses a dedicated task file (`tasks/create_idea.yml` / `tasks/refine_proposal.yml`) injected at runtime via the `task` context variable. Universal constraints are in `contracts.yml`.
+**Innovators**: Task-driven execution (`--task <task_name>`). Standard scheduled flow uses `tasks/create_idea.yml` then `tasks/refine_idea_and_create_proposal.yml` with observer feedback in between. Direct invocation can use `tasks/create_proposal.yml` to publish without observer pass. Universal constraints are in `contracts.yml`.
 
 ## Exchange
  

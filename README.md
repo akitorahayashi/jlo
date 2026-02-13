@@ -77,7 +77,7 @@ Execute Jules agents for a specific layer. You can use `r` as an alias for `run`
 jlo run observers --role <role>                    # Run specific observer role
 jlo run observers --role <role> --prompt-preview   # Show prompts without executing
 jlo run observers --role <role> --branch custom    # Override starting branch
-jlo run innovators --role <role> --phase creation  # Run innovator role in creation phase
+jlo run innovators --role <role> --task create_idea  # Run innovator role with a task
 ```
 
 **Single-role layers** (Narrator, Decider, Planner, Implementer):
@@ -107,7 +107,7 @@ Mock mode creates real branches and PRs with synthetic commit content, enabling 
 
 **Flags**:
 - `-r, --role <name>`: Run specific role (required for observers/innovators)
-- `--phase <name>`: Innovator execution phase (`creation` or `refinement`)
+- `--task <name>`: Innovator task selector (`create_idea`, `refine_idea_and_create_proposal`, `create_proposal`)
 - `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)
 - `--branch <name>`: Override the default starting branch

@@ -1,6 +1,6 @@
 //! Workflow `issue label-innovator` command implementation.
 //!
-//! Applies `innovator` and `innovator/<persona>` labels to proposal issues.
+//! Applies `innovator/<persona>` label to proposal issues.
 //! Label color policy: existing labels keep their repository color; new labels
 //! are created without specifying color so GitHub assigns a random one.
 //! No color registry file is introduced.
@@ -35,15 +35,12 @@ pub fn execute(
     github: &impl GitHubPort,
     options: LabelInnovatorOptions,
 ) -> Result<LabelInnovatorOutput, AppError> {
-    let base_label = "innovator".to_string();
     let persona_label = format!("innovator/{}", options.persona);
 
-    // Ensure both labels exist (no color specified → GitHub assigns random on first creation)
-    github.ensure_label(&base_label, None)?;
+    // Ensure persona label exists (no color specified → GitHub assigns random on first creation)
     github.ensure_label(&persona_label, None)?;
 
-    // Apply both labels to the issue
-    github.add_label_to_issue(options.issue_number, &base_label)?;
+    // Apply persona label to the issue
     github.add_label_to_issue(options.issue_number, &persona_label)?;
 
     Ok(LabelInnovatorOutput {
@@ -51,7 +48,7 @@ pub fn execute(
         applied: true,
         skipped_reason: None,
         target: options.issue_number,
-        labels: vec![base_label, persona_label],
+        labels: vec![persona_label],
     })
 }
 
@@ -132,28 +129,26 @@ mod tests {
     }
 
     #[test]
-    fn applies_innovator_labels() {
+    fn applies_only_persona_innovator_label() {
         let gh = FakeGitHub::new();
         let out =
             execute(&gh, LabelInnovatorOptions { issue_number: 42, persona: "scout".to_string() })
                 .unwrap();
 
         assert!(out.applied);
-        assert_eq!(out.labels, vec!["innovator", "innovator/scout"]);
-        assert_eq!(gh.ensured_labels.borrow().len(), 2);
-        assert_eq!(gh.applied_labels.borrow().len(), 2);
-        assert_eq!(gh.applied_labels.borrow()[0], (42, "innovator".to_string()));
-        assert_eq!(gh.applied_labels.borrow()[1], (42, "innovator/scout".to_string()));
+        assert_eq!(out.labels, vec!["innovator/scout"]);
+        assert_eq!(gh.ensured_labels.borrow().len(), 1);
+        assert_eq!(gh.applied_labels.borrow().len(), 1);
+        assert_eq!(gh.applied_labels.borrow()[0], (42, "innovator/scout".to_string()));
     }
 
     #[test]
-    fn ensures_labels_without_color() {
+    fn ensures_persona_label_without_color() {
         let gh = FakeGitHub::new();
         execute(&gh, LabelInnovatorOptions { issue_number: 1, persona: "architect".to_string() })
             .unwrap();
 
         // ensure_label is called with None color (random assignment by GitHub)
-        assert!(gh.ensured_labels.borrow().contains(&"innovator".to_string()));
         assert!(gh.ensured_labels.borrow().contains(&"innovator/architect".to_string()));
     }
 }

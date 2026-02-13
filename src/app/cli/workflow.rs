@@ -16,9 +16,9 @@ pub enum WorkflowCommands {
         /// Run in mock mode (requires JULES_MOCK_TAG)
         #[arg(long)]
         mock: bool,
-        /// Execution phase for innovators (creation or refinement)
+        /// Task selector for innovators (e.g. create_idea, refine_idea_and_create_proposal, create_proposal)
         #[arg(long)]
-        phase: Option<String>,
+        task: Option<String>,
     },
     /// Generate workflow scaffold files to an output directory
     #[clap(visible_alias = "g")]
@@ -173,11 +173,11 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let output = workflow::doctor(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowCommands::Run { layer, mock, phase } => {
+        WorkflowCommands::Run { layer, mock, task } => {
             let layer = parse_layer(&layer)?;
             let mock_tag = std::env::var("JULES_MOCK_TAG").ok();
 
-            let options = workflow::WorkflowRunOptions { layer, mock, mock_tag, phase };
+            let options = workflow::WorkflowRunOptions { layer, mock, mock_tag, task };
             let output = workflow::run(options)?;
             workflow::write_workflow_output(&output)
         }

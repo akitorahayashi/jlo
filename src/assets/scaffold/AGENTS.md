@@ -76,7 +76,7 @@ See [root AGENTS.md](../../AGENTS.md) for critical design principles including P
 │       ├── contracts.yml             # Layer contract
 │       ├── tasks/
 │       │   ├── create_idea.yml       # Creation phase task
-│       │   └── refine_proposal.yml   # Refinement phase task
+│       │   └── refine_idea_and_create_proposal.yml   # Refinement phase task
 │       └── schemas/
 │           ├── perspective.yml
 │           ├── idea.yml

@@ -84,7 +84,7 @@ where
         branch: None,
         requirement: None,
         mock: options.mock,
-        phase: None,
+        task: None,
     };
 
     eprintln!("Executing: narrator{}", if options.mock { " (mock)" } else { "" });
@@ -121,7 +121,7 @@ where
         branch: None,
         requirement: None,
         mock: options.mock,
-        phase: None,
+        task: None,
     };
 
     eprintln!("Executing: decider{}", if options.mock { " (mock)" } else { "" });
@@ -196,7 +196,7 @@ where
             branch: None,
             requirement: None,
             mock: options.mock,
-            phase: options.phase.clone(),
+            task: options.task.clone(),
         };
 
         eprintln!("Executing: {} --role {}{}", options.layer.dir_name(), role, mock_suffix);
@@ -238,7 +238,7 @@ where
             branch: None,
             requirement: Some(requirement_path.clone()),
             mock: options.mock,
-            phase: None,
+            task: None,
         };
 
         eprintln!(
@@ -275,7 +275,7 @@ where
         branch: None,
         requirement: None,
         mock: options.mock,
-        phase: None,
+        task: None,
     };
 
     eprintln!("Executing: integrator");
@@ -442,7 +442,7 @@ roles = [
             layer: Layer::Observers,
             mock: true,
             mock_tag: Some("mock-test-001".to_string()),
-            phase: None,
+            task: None,
         };
         let git = NoopGit;
         let github = NoopGitHub;

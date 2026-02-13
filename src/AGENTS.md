@@ -82,7 +82,7 @@ Core domain logic located in `src/domain/`.
 | `jlo run planner <requirement> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (requirement-driven) |
 | `jlo run implementer <requirement> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (requirement-driven) |
 | `jlo run integrator [--prompt-preview] [--branch <branch>]` | `r g` | Run integrator (merges implementer branches) |
-| `jlo run innovators --role <role> --phase <creation\|refinement> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
+| `jlo run innovators --role <role> --task <task_name> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
 | `jlo doctor [--strict]` | | Validate .jules/ structure and content |
 | `jlo workflow doctor` | `wf` | Validate workspace for workflow use |
 | `jlo workflow run <layer> [--mock]` | | Run layer and return wait-gating metadata |

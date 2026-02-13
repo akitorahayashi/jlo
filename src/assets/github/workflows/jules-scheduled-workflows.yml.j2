@@ -3,7 +3,7 @@
 #
 # Orchestrates scheduled/dispatch layer execution in sequence.
 # Implementer PR metadata and auto-merge are delegated to dedicated workflows.
-# Layer-phase orchestration is command-driven through `jlo workflow`.
+# Layer/task orchestration is command-driven through `jlo workflow`.
 
 name: Jules Scheduled Workflows
 
@@ -90,10 +90,10 @@ jobs:
 {{ run_macro.run_agent_job(
     'run-innovators-1',
     'check-schedule',
-    'should_run',
+    'run_innovators_1',
     'innovators',
     'Run innovators (first pass)',
-    extra_run_args='--phase creation'
+    extra_run_args='--task create_idea'
 ) }}
   # ============================================================
   # Phase 5: Run observers
@@ -107,7 +107,7 @@ jobs:
     {},
     ['check-schedule', 'wait-after-innovators-1'],
     "always() &&
-      fromJSON(needs.check-schedule.outputs.json).should_run == true &&
+      fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
       (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')"
 ) }}
   # ============================================================
@@ -119,85 +119,100 @@ jobs:
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-innovators-1', 'run-innovators-1', 'run-innovators-1', 'innovators (first pass)') }}
   # ============================================================
-  # Phase 8: Run innovators (second pass - proposal and cleanup)
+  # Phase 8: Run innovators (direct proposal mode for innovators entry-point)
+  # ============================================================
+{{ run_macro.run_agent_job(
+    'run-innovators-direct',
+    'check-schedule',
+    'run_innovators_direct',
+    'innovators',
+    'Run innovators (direct proposal)',
+    extra_run_args='--task create_proposal'
+) }}
+  # ============================================================
+  # Phase 9: Wait for innovators direct processing
+  # ============================================================
+{{ wait_macro.wait_for_processing('wait-after-innovators-direct', 'run-innovators-direct', 'run-innovators-direct', 'innovators (direct proposal)') }}
+  # ============================================================
+  # Phase 10: Run innovators (second pass - proposal and cleanup)
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-innovators-2',
     'check-schedule',
-    'should_run',
+    'run_innovators_2',
     'innovators',
     'Run innovators (second pass)',
     {},
     ['check-schedule', 'wait-after-observers'],
     "always() &&
-      fromJSON(needs.check-schedule.outputs.json).should_run == true &&
+      fromJSON(needs.check-schedule.outputs.json).run_innovators_2 == true &&
       (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')",
-    extra_run_args='--phase refinement'
+    extra_run_args='--task refine_idea_and_create_proposal'
 ) }}
   # ============================================================
-  # Phase 9: Wait for innovator processing (second pass)
+  # Phase 11: Wait for innovator processing (second pass)
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-innovators-2', 'run-innovators-2', 'run-innovators-2', 'innovators (second pass)') }}
   # ============================================================
-  # Phase 10: Publish innovator proposals as GitHub issues
+  # Phase 12: Publish innovator proposals as GitHub issues
   # ============================================================
 {% include "workflows/jules-workflows/components/publish-proposals.yml.j2" %}
 
   # ============================================================
-  # Phase 11: Check for pending events (decider gate)
+  # Phase 13: Check for pending events (decider gate)
   # ============================================================
 {% include "workflows/jules-workflows/components/generate-decider-matrix.yml.j2" %}
 
   # ============================================================
-  # Phase 12: Run decider
+  # Phase 14: Run decider
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-decider',
     'generate-decider-matrix',
-    'has_pending',
+    'run_decider',
     'decider',
     'Run decider'
 ) }}
   # ============================================================
-  # Phase 13: Wait for decider processing
+  # Phase 15: Wait for decider processing
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-decider', 'run-decider', 'run-decider', 'decider') }}
   # ============================================================
-  # Phase 14: Discover requirements for routing
+  # Phase 16: Resolve planner/implementer run requests
   # ============================================================
 {% include "workflows/jules-workflows/components/generate-planner-matrix.yml.j2" %}
 
   # ============================================================
-  # Phase 15: Run planner
+  # Phase 17: Run planner
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-planner',
     'generate-planner-matrix',
-    'has_planners',
+    'run_planner',
     'planner',
     'Run planner'
 ) }}
   # ============================================================
-  # Phase 16: Wait for planner PRs
+  # Phase 18: Wait for planner PRs
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-planner', 'run-planner', 'run-planner', 'planner') }}
   # ============================================================
-  # Phase 17: Run implementer
+  # Phase 19: Run implementer
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-implementer',
     'generate-planner-matrix',
-    'has_implementers',
+    'run_implementer',
     'implementer',
     'Run implementer',
   {'TARGET_BRANCH': "'" ~ target_branch ~ "'"}
 ) }}
   # ============================================================
-  # Phase 18: Wait for implementer labels
+  # Phase 20: Wait for implementer labels
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-implementer', 'run-implementer', 'run-implementer', 'implementer') }}
 
   # ============================================================
-  # Phase 19: Cleanup mock artifacts
+  # Phase 21: Cleanup mock artifacts
   # ============================================================
 {% include "workflows/jules-workflows/components/cleanup-mock-artifacts.yml.j2" %}
