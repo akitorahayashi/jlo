@@ -2,12 +2,13 @@ schema_version: 2
 
 observer: "data_arch"
 
-updated_at: "2026-02-13T09:26:34Z"
+updated_at: "2026-02-13T10:00:00Z"
 
 # 1-3 goals. Validated and refreshed every run — replace stale or completed goals.
 goals:
-  - "Identify and track redundant data structures and inefficient transformations"
-  - "Ensure validation is robust and covers all data paths"
+  - "Identify hidden state mutations and side effects in critical paths"
+  - "Enforce boundary sovereignty by eliminating implicit global state dependencies"
+  - "Ensure data structures represent valid states by construction"
 
 # Stable rules of thumb for producing consistent, high-signal events.
 rules: []
@@ -17,5 +18,7 @@ ignore: []
 
 # Newest first; keep max 5 entries.
 log:
+  - at: "2026-02-13T10:00:00Z"
+    summary: "Created 3 events: Hidden state in prompt assembly, Implicit global config dependency, Inefficient schedule structure."
   - at: "2026-02-13T09:26:34Z"
     summary: "Created 3 events: RequirementHeader inefficiency, Strategy coupling, Dead config code."

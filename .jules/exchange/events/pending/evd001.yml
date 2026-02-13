@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "evd001"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Hidden State Mutation in Prompt Assembly"
+statement: |
+  The prompt assembly engine relies on shared mutable state (`Arc<Mutex<T>>`) to capture side effects from `minijinja` callbacks, specifically for error propagation and file tracking. This design hides control flow, makes error handling implicit rather than explicit, and violates the principle of "Represent Valid States Only" by allowing invalid intermediate states (errors stored in mutex while rendering continues).
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/prompt_assembly/engine.rs"
+    loc:
+      - "149-151"
+    note: "Creation of shared mutable containers for side effects."
+  - path: "src/domain/prompt_assembly/engine.rs"
+    loc:
+      - "287-289"
+    note: "Implicit error check via mutex lock inside include callback."

@@ -1,0 +1,20 @@
+schema_version: 1
+
+# Metadata
+id: "evd002"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "data_arch"
+confidence: "medium"
+
+# Content
+title: "Implicit Global State Dependency in Configuration Loader"
+statement: |
+  `detect_repository_source` implicitly depends on global mutable state (`std::env::var`) as a fallback for repository detection. This violates "Boundary Sovereignty" by coupling the domain logic to the runtime environment, making testing fragile (requiring `serial` execution) and hiding dependencies.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/configuration/loader.rs"
+    loc:
+      - "71-73"
+    note: "Implicit dependency on GITHUB_REPOSITORY environment variable."
