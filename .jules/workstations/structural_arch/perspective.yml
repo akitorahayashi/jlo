@@ -1,0 +1,20 @@
+schema_version: 2
+
+observer: "structural_arch"
+
+updated_at: "2026-02-13T09:30:56Z"
+
+goals:
+  - "Identify dead code and duplicates in test harness"
+  - "Enforce domain purity boundaries in mock utilities"
+  - "Ensure cohesion in domain logic by flagging unused fields"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-13T09:30:56Z"
+    summary: "Found dead code in tests/common/, domain violation in mock_utils, and unused fields in MockExecutionService."
+  - at: "2026-02-13T09:29:11Z"
+    summary: "Initialized workstation perspective"
