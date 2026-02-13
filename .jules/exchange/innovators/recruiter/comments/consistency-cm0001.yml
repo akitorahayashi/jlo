@@ -1,0 +1,20 @@
+schema_version: 1
+author: "consistency"
+type: "supplement"
+target: "introduction"
+summary: "Ensure role instantiation uses `jlo add` to register in scheduled.toml."
+rationale: |
+  The `rustacean` role exists in assets but must be properly registered in `.jlo/scheduled.toml` via `jlo add` to be scheduled for execution. Manual file creation is insufficient.
+evidence:
+  - path: "src/assets/roles/observers/language/rustacean/role.yml"
+    loc:
+      - "role: rustacean"
+    note: "Source role definition exists."
+content: |
+  The `rustacean` role is indeed available in the embedded assets.
+  To instantiate it correctly, you should use the `jlo add observers rustacean` command.
+  This ensures that:
+  1. The role configuration is copied to `.jlo/roles/observers/rustacean/role.yml`.
+  2. The role is added to `.jlo/scheduled.toml` so it runs on schedule.
+
+  Simply copying the file without updating the schedule will result in a dormant role.

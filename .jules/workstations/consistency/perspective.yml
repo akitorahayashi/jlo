@@ -1,0 +1,17 @@
+schema_version: 2
+observer: "consistency"
+updated_at: "2026-02-13T21:05:00Z"
+
+goals:
+  - "Detect drift between documented and implemented behavior."
+  - "Provide constructive feedback to innovators on role consistency."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-13T21:05:00Z"
+    summary: "Emitted events ev0001, ev0002 and bridged comment consistency-cm0001."
+  - at: "2026-02-13T21:00:00Z"
+    summary: "Initialized consistency observer workstation."

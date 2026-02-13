@@ -1,0 +1,18 @@
+schema_version: 1
+id: "ev0001"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "consistency"
+confidence: "high"
+title: "Innovator comments directory missing"
+statement: |
+  The `jlo doctor` command requires a `comments/` subdirectory for each innovator persona, but `.jules/exchange/innovators/recruiter/` lacks it. This causes validation failures.
+evidence:
+  - path: "src/app/commands/doctor/structure.rs"
+    loc:
+      - "comments_dir.exists()"
+    note: "Validation logic requires comments/ directory."
+  - path: ".jules/exchange/innovators/recruiter/"
+    loc:
+      - "comments/"
+    note: "Directory is missing."
