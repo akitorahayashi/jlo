@@ -375,7 +375,7 @@ mod tests {
     use std::collections::HashMap;
     use std::path::PathBuf;
 
-    // --- Tests from narrator_logic.rs ---
+    // --- Range strategy tests ---
 
     #[test]
     fn test_extract_created_at_valid() {
