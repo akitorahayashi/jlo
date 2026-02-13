@@ -1,7 +1,7 @@
 //! Workflow command implementation.
 
 use crate::domain::AppError;
-use clap::Subcommand;
+use clap::{Args, Subcommand};
 
 #[derive(Subcommand)]
 pub enum WorkflowCommands {
@@ -91,15 +91,6 @@ pub enum WorkflowProcessCommands {
     Pr {
         #[command(subcommand)]
         command: WorkflowProcessPrCommands,
-        /// Fail if any step returns an execution error
-        #[arg(long)]
-        fail_on_error: bool,
-        /// Retry attempts for transient auto-merge errors
-        #[arg(long, default_value_t = 1)]
-        retry_attempts: u32,
-        /// Delay between retry attempts (seconds)
-        #[arg(long, default_value_t = 0)]
-        retry_delay_seconds: u64,
     },
     /// Process an Issue
     Issue {
@@ -108,23 +99,43 @@ pub enum WorkflowProcessCommands {
     },
 }
 
+/// Shared flags for PR processing commands.
+#[derive(Args, Debug, Clone)]
+pub struct ProcessPrArgs {
+    /// Fail if any step returns an execution error
+    #[arg(long)]
+    pub fail_on_error: bool,
+    /// Retry attempts for transient auto-merge errors
+    #[arg(long, default_value_t = 1)]
+    pub retry_attempts: u32,
+    /// Delay between retry attempts (seconds)
+    #[arg(long, default_value_t = 0)]
+    pub retry_delay_seconds: u64,
+}
+
 #[derive(Subcommand)]
 pub enum WorkflowProcessPrCommands {
     /// Run all PR event commands
     All {
         /// PR number
         pr_number: u64,
+        #[command(flatten)]
+        args: ProcessPrArgs,
     },
     /// Run metadata-only commands
     Metadata {
         /// PR number
         pr_number: u64,
+        #[command(flatten)]
+        args: ProcessPrArgs,
     },
     /// Run auto-merge command only
     #[command(alias = "auto-merge")]
     Automerge {
         /// PR number
         pr_number: u64,
+        #[command(flatten)]
+        args: ProcessPrArgs,
     },
 }
 
@@ -243,18 +254,7 @@ fn run_workflow_gh(command: WorkflowGhCommands) -> Result<(), AppError> {
     let github = crate::adapters::github_command::GitHubCommandAdapter::new();
     match command {
         WorkflowGhCommands::Process { command } => match command {
-            WorkflowProcessCommands::Pr {
-                command,
-                fail_on_error,
-                retry_attempts,
-                retry_delay_seconds,
-            } => run_workflow_gh_process_pr(
-                &github,
-                command,
-                fail_on_error,
-                retry_attempts,
-                retry_delay_seconds,
-            ),
+            WorkflowProcessCommands::Pr { command } => run_workflow_gh_process_pr(&github, command),
             WorkflowProcessCommands::Issue { command } => {
                 run_workflow_gh_process_issue(&github, command)
             }
@@ -265,29 +265,26 @@ fn run_workflow_gh(command: WorkflowGhCommands) -> Result<(), AppError> {
 fn run_workflow_gh_process_pr(
     github: &impl crate::ports::GitHubPort,
     command: WorkflowProcessPrCommands,
-    fail_on_error: bool,
-    retry_attempts: u32,
-    retry_delay_seconds: u64,
 ) -> Result<(), AppError> {
     use crate::app::commands::workflow;
 
-    let (pr_number, mode) = match command {
-        WorkflowProcessPrCommands::All { pr_number } => {
-            (pr_number, workflow::gh::pr::ProcessMode::All)
+    let (pr_number, mode, args) = match command {
+        WorkflowProcessPrCommands::All { pr_number, args } => {
+            (pr_number, workflow::gh::pr::ProcessMode::All, args)
         }
-        WorkflowProcessPrCommands::Metadata { pr_number } => {
-            (pr_number, workflow::gh::pr::ProcessMode::Metadata)
+        WorkflowProcessPrCommands::Metadata { pr_number, args } => {
+            (pr_number, workflow::gh::pr::ProcessMode::Metadata, args)
         }
-        WorkflowProcessPrCommands::Automerge { pr_number } => {
-            (pr_number, workflow::gh::pr::ProcessMode::Automerge)
+        WorkflowProcessPrCommands::Automerge { pr_number, args } => {
+            (pr_number, workflow::gh::pr::ProcessMode::Automerge, args)
         }
     };
     let options = workflow::gh::pr::ProcessOptions {
         pr_number,
         mode,
-        fail_on_error,
-        retry_attempts,
-        retry_delay_seconds,
+        fail_on_error: args.fail_on_error,
+        retry_attempts: args.retry_attempts,
+        retry_delay_seconds: args.retry_delay_seconds,
     };
     let output = workflow::gh::pr::process::execute(github, options)?;
     workflow::write_workflow_output(&output)
