@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: "data_arch"
+
+updated_at: "2026-02-13T21:05:00Z"
+
+goals:
+  - "Identify inefficient data access patterns (e.g., reading entire files for headers)."
+  - "Flag data structures that allow invalid states (e.g., duplicates)."
+  - "Detect implicit couplings between domain logic and runtime environment."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-13T21:05:00Z"
+    summary: "Emitted 3 events (da1001-da1003) and 1 comment (data_arch_0le6yh)."
