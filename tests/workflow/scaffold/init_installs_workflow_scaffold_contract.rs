@@ -10,6 +10,7 @@ fn init_installs_remote_workflow_scaffold() {
 
     let root = ctx.work_dir();
     assert!(root.join(".github/workflows/jules-scheduled-workflows.yml").exists());
+    assert!(root.join(".github/workflows/jules-run-only-innovators.yml").exists());
     assert!(root.join(".github/workflows/jules-implementer-pr.yml").exists());
     assert!(root.join(".github/workflows/jules-automerge.yml").exists());
     assert!(root.join(".github/workflows/jules-integrator.yml").exists());

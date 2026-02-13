@@ -46,6 +46,8 @@ This document describes how files under `src/assets/github/` are transformed int
 ## Installed Output Examples
 - `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`
   → `.github/workflows/jules-scheduled-workflows.yml`
+- `src/assets/github/workflows/jules-run-only-innovators.yml.j2`
+  → `.github/workflows/jules-run-only-innovators.yml`
 - `src/assets/github/workflows/jules-automerge.yml.j2`
   → `.github/workflows/jules-automerge.yml` (push-scoped trigger for Jules auto-merge branch families)
 - `src/assets/github/actions/install-jlo/action.yml`

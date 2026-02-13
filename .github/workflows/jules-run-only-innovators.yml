@@ -1,0 +1,260 @@
+# This file is auto-generated. Manual edits are strictly prohibited.
+# Jules Run Only Innovators Workflow
+#
+# Runs innovators and publishes proposals.
+
+name: Jules Run Only Innovators
+
+on:
+  workflow_dispatch:
+    inputs:
+      wait_minutes:
+        description: 'Minutes to wait for Jules async processing time'
+        type: number
+        default: 20
+      mock:
+        description: 'Run in mock mode (creates branches/PRs without Jules API)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: 'jules-run-only-innovators'
+  cancel-in-progress: false
+
+env:
+  WAIT_MINUTES: ${{ inputs.wait_minutes || 20 }}
+  MOCK_MODE: ${{ inputs.mock || false }}
+  JULES_MOCK_TAG: ${{ format('mock-run-{0}', github.run_id) }}
+  JLO_RUN_FLAGS: ${{ (inputs.mock || false) && '--mock' || '' }}
+  JLO_TARGET_BRANCH: 'main'
+  JULES_WORKER_BRANCH: 'jules'
+
+jobs:
+  bootstrap:
+    if: >-
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') &&
+      ((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+    steps:
+      - name: Validate branch variables
+        run: |
+          set -euo pipefail
+          if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
+            echo "::error::JLO_TARGET_BRANCH is required."
+            exit 1
+          fi
+          if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
+            echo "::error::JULES_WORKER_BRANCH is required."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: 'main'
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Ensure worker branch
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin "${JULES_WORKER_BRANCH}" >/dev/null 2>&1; then
+            echo "${JULES_WORKER_BRANCH} branch exists, checking out"
+            git fetch origin "${JULES_WORKER_BRANCH}"
+            git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JULES_WORKER_BRANCH}"
+          else
+            echo "Creating ${JULES_WORKER_BRANCH} from ${JLO_TARGET_BRANCH}"
+            git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JLO_TARGET_BRANCH}"
+          fi
+
+      - name: Merge target branch into worker
+        run: |
+          set -euo pipefail
+          git fetch origin "$JLO_TARGET_BRANCH"
+          # Merge control branch, preferring control-plane code changes.
+          git merge "origin/$JLO_TARGET_BRANCH" --no-edit -X theirs --allow-unrelated-histories || {
+            # On conflict, preserve runtime plane from the worker branch.
+            git checkout --ours .jules/
+            git add .jules/
+            if git diff --cached --quiet; then
+              echo "::error::Merge failed and no conflict resolution changes were staged."
+              exit 1
+            fi
+            git commit --no-edit
+          }
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Bootstrap runtime workspace
+        run: jlo workflow bootstrap
+
+      - name: Commit and push changes
+        id: bootstrap
+        run: |
+          set -euo pipefail
+          if [ -n "$(git status --porcelain .jules)" ]; then
+            git add .jules/
+            git commit -m "chore: bootstrap .jules/ runtime workspace [jlo $(jlo --version | awk '{print $2}')]"
+            git push origin "${JULES_WORKER_BRANCH}"
+            echo "committed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+
+  run-only-innovators:
+    needs: [bootstrap]
+    if: needs.bootstrap.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      json: ${{ steps.run.outputs.json }}
+    env:
+      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'jules'
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Run only innovators
+        id: run
+        run: |
+          set -euo pipefail
+          jlo workflow run innovators ${{ env.JLO_RUN_FLAGS }} --task create_proposal
+
+
+  wait-after-run-only-innovators:
+    needs: run-only-innovators
+    if: |
+      always() &&
+      needs.run-only-innovators.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      json: ${{ steps.wait.outputs.json }}
+    steps:
+      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+        id: wait
+        shell: bash
+        run: |
+          set -euo pipefail
+          trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
+
+          if [ "${{ env.MOCK_MODE }}" = "true" ]; then
+            TOTAL_SECONDS=15
+            echo "Mock mode enabled: overriding wait to 15 seconds."
+          else
+            TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
+          fi
+
+          if [ "$TOTAL_SECONDS" -le 0 ]; then
+            echo "Wait skipped (TOTAL_SECONDS=$TOTAL_SECONDS)."
+            echo "json={}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -n "only innovators" ]; then
+            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process only innovators..."
+          else
+            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process..."
+          fi
+          ELAPSED=0
+          INTERVAL=5
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            STEP=$INTERVAL
+            REMAINING=$((TOTAL_SECONDS - ELAPSED))
+            if [ "$REMAINING" -lt "$STEP" ]; then
+              STEP=$REMAINING
+            fi
+            sleep "$STEP" &
+            wait $!
+            ELAPSED=$((ELAPSED + STEP))
+            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+          done
+          echo "Wait complete."
+          echo "json={}" >> "$GITHUB_OUTPUT"
+
+  publish-proposals:
+    needs: [wait-after-run-only-innovators]
+    if: |
+      always() &&
+      (needs.wait-after-run-only-innovators.result == 'success' || needs.wait-after-run-only-innovators.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'jules'
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Publish proposals
+        run: jlo workflow workspace publish-proposals
+
+  cleanup-mock-artifacts:
+    needs: [wait-after-run-only-innovators]
+    if: |
+      always() &&
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.mock == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+    steps:
+      - name: Validate branch variables
+        run: |
+          set -euo pipefail
+          if [ -z "${JLO_TARGET_BRANCH:-}" ]; then
+            echo "::error::JLO_TARGET_BRANCH is required."
+            exit 1
+          fi
+          if [ -z "${JULES_WORKER_BRANCH:-}" ]; then
+            echo "::error::JULES_WORKER_BRANCH is required."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: 'jules'
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Cleanup mock artifacts for this run
+        run: |
+          jlo workflow workspace clean mock --mock-tag "$JULES_MOCK_TAG"
