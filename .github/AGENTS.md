@@ -75,6 +75,8 @@ Repository secrets/variables referenced by the workflow kit:
 | `JULES_LINKED_GH_PAT` | Secret | GitHub token for implementer PR metadata processing | (required) |
 | `JLO_PAUSED` | Variable | Set `true` to skip scheduled runs | `false` |
 
+Integrator does not require runner-side `JULES_LINKED_GH_PAT`; `gh` runtime authentication is provided inside the Jules VM.
+
 Branch values (`target_branch`, `worker_branch`) are rendered from `.jlo/config.toml` into workflow YAML at generation time.
 
 ## Workflow Timing Configuration

@@ -117,8 +117,8 @@ pub enum AppError {
     #[error("Duplicate role '{0}' specified")]
     DuplicateRoleRequest(String),
 
-    /// Setup workspace not initialized (.jules/setup/ missing).
-    #[error("Setup not initialized. Run 'jlo setup init' first.")]
+    /// Setup workspace not initialized (.jlo/setup/ missing).
+    #[error("Setup not initialized. Run 'jlo init --remote' or 'jlo init --self-hosted' first.")]
     SetupNotInitialized,
 
     /// Setup config file missing (tools.yml).
@@ -141,8 +141,8 @@ pub enum AppError {
     #[error("Invalid metadata for '{component}': {reason}")]
     InvalidComponentMetadata { component: String, reason: String },
 
-    /// Malformed env.toml file.
-    #[error("Malformed env.toml: {0}")]
+    /// Malformed setup environment TOML file.
+    #[error("Malformed setup environment TOML: {0}")]
     MalformedEnvToml(String),
 
     /// Run config file missing (.jules/config.toml).

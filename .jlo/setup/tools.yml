@@ -2,6 +2,8 @@
 # List the tools you want to install
 
 tools:
+  - gh
+  # Optional additions:
   # - just
   # - swift
   # - uv

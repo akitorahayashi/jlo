@@ -1,0 +1,7 @@
+name = "uv"
+summary = "uv - fast Python package installer and resolver"
+dependencies = []
+
+[[env]]
+name = "UV_VERSION"
+description = "Version of uv to install (leave empty for latest)"

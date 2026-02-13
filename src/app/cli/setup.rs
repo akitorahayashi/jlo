@@ -7,10 +7,10 @@ use clap::Subcommand;
 
 #[derive(Subcommand)]
 pub enum SetupCommands {
-    /// Generate install.sh and env.toml from tools.yml
+    /// Generate install.sh, vars.toml, and secrets.toml from tools.yml
     #[clap(visible_alias = "g")]
     Gen {
-        /// Project directory containing .jules/setup/ (defaults to current directory)
+        /// Project directory containing .jlo/setup/ (defaults to current directory)
         path: Option<PathBuf>,
     },
     /// List available components

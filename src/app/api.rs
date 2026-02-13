@@ -175,7 +175,8 @@ pub fn run_at(
 ///
 /// Reads `tools.yml`, resolves dependencies, and generates:
 /// - `install.sh` - Installation script (executable)
-/// - `env.toml` - Environment variables
+/// - `vars.toml` - Non-secret environment variables
+/// - `secrets.toml` - Secret environment variables
 ///
 /// Returns the list of resolved component names in installation order.
 pub fn setup_gen(path: Option<&Path>) -> Result<Vec<String>, AppError> {

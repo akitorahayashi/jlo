@@ -144,9 +144,10 @@ Implementer modifies source code and requires human review.
 |
 +-- setup/
     +-- tools.yml       # Tool selection
-    +-- env.toml        # Environment variables (generated/merged)
+  +-- vars.toml       # Non-secret environment variables (generated/merged)
+  +-- secrets.toml    # Secret environment variables (generated/merged)
     +-- install.sh      # Installation script (generated)
-    +-- .gitignore      # Ignores env.toml
+  +-- .gitignore      # Ignores secrets.toml only
 ```
 
 ## Layer Architecture

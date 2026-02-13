@@ -20,8 +20,6 @@ env:
 jobs:
   run-integrator:
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.JULES_LINKED_GH_PAT }}
     steps:
       - name: Validate branch variables
         run: |
@@ -51,11 +49,7 @@ jobs:
             echo "::error::gh CLI is required but not found."
             exit 1
           fi
-          if [ -z "${GH_TOKEN}" ]; then
-            echo "::error::JULES_LINKED_GH_PAT is required for integrator PR discussion retrieval."
-            exit 1
-          fi
-          gh auth status
+          gh --version
 
       - name: Run integrator
         env:

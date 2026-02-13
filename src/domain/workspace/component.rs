@@ -14,6 +14,9 @@ pub struct EnvSpec {
     /// Default value (if any).
     #[serde(default)]
     pub default: Option<String>,
+    /// Whether this value must be stored as secret.
+    #[serde(default)]
+    pub secret: bool,
 }
 
 /// A component that can be installed.

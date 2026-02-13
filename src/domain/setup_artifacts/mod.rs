@@ -4,6 +4,13 @@ use std::collections::BTreeMap;
 
 use crate::domain::{AppError, Component};
 
+/// Split setup environment artifacts.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SetupEnvArtifacts {
+    pub vars_toml: String,
+    pub secrets_toml: String,
+}
+
 /// Domain logic for generating setup scripts and configuration files.
 pub struct ArtifactFactory;
 
@@ -39,49 +46,84 @@ set -euo pipefail
         parts.join("\n")
     }
 
-    /// Generate or merge env.toml content.
+    /// Generate or merge vars.toml and secrets.toml content.
     ///
     /// Preserves existing values while adding new keys from components.
-    pub fn merge_env_toml(
+    pub fn merge_env_artifacts(
         components: &[Component],
-        existing_content: Option<&str>,
-    ) -> Result<String, AppError> {
+        existing_vars_toml: Option<&str>,
+        existing_secrets_toml: Option<&str>,
+    ) -> Result<SetupEnvArtifacts, AppError> {
         // Load existing values
-        let existing = if let Some(content) = existing_content {
+        let existing_vars = if let Some(content) = existing_vars_toml {
             Self::parse_env_toml(content)?
         } else {
             BTreeMap::new()
         };
 
-        // Collect all env specs from components
-        let mut all_env: BTreeMap<String, (String, Option<String>)> = BTreeMap::new();
+        let existing_secrets = if let Some(content) = existing_secrets_toml {
+            Self::parse_env_toml(content)?
+        } else {
+            BTreeMap::new()
+        };
+
+        // Collect all env specs from components.
+        // First occurrence wins to keep deterministic behavior when keys are duplicated.
+        let mut all_env: BTreeMap<String, (String, Option<String>, bool)> = BTreeMap::new();
         for component in components {
             for env_spec in &component.env {
                 if !all_env.contains_key(&env_spec.name) {
                     all_env.insert(
                         env_spec.name.clone(),
-                        (env_spec.description.clone(), env_spec.default.clone()),
+                        (env_spec.description.clone(), env_spec.default.clone(), env_spec.secret),
                     );
                 }
             }
         }
 
-        // Build output in TOML table format
+        let vars_toml = Self::build_env_toml(
+            "# Non-secret environment configuration for jlo setup",
+            &all_env,
+            false,
+            &existing_vars,
+            &existing_secrets,
+        )?;
+        let secrets_toml = Self::build_env_toml(
+            "# Secret environment configuration for jlo setup",
+            &all_env,
+            true,
+            &existing_secrets,
+            &existing_vars,
+        )?;
+
+        Ok(SetupEnvArtifacts { vars_toml, secrets_toml })
+    }
+
+    fn build_env_toml(
+        header: &str,
+        all_env: &BTreeMap<String, (String, Option<String>, bool)>,
+        include_secret: bool,
+        existing_primary: &BTreeMap<String, BTreeMap<String, String>>,
+        existing_secondary: &BTreeMap<String, BTreeMap<String, String>>,
+    ) -> Result<String, AppError> {
         let mut lines = vec![
-            "# Environment configuration for jlo setup".to_string(),
+            header.to_string(),
             "# Edit values as needed before running install.sh".to_string(),
             String::new(),
         ];
 
-        for (name, (description, default)) in &all_env {
+        for (name, (description, default, secret)) in all_env {
+            if *secret != include_secret {
+                continue;
+            }
+
             lines.push(format!("[{}]", name));
 
-            // Use existing value if present, otherwise default
-            let value = if let Some(existing_table) = existing.get(name) {
-                existing_table
-                    .get("value")
-                    .cloned()
-                    .unwrap_or_else(|| default.clone().unwrap_or_default())
+            let existing_table =
+                existing_primary.get(name).or_else(|| existing_secondary.get(name));
+
+            let value = if let Some(table) = existing_table {
+                table.get("value").cloned().unwrap_or_else(|| default.clone().unwrap_or_default())
             } else {
                 default.clone().unwrap_or_default()
             };
@@ -89,11 +131,11 @@ set -euo pipefail
                 .map_err(|e| AppError::MalformedEnvToml(e.to_string()))?;
             lines.push(format!("value = {}", value_str));
 
-            // Preserve existing note if present, otherwise use component description
-            let note = existing
-                .get(name)
-                .and_then(|t| t.get("note").cloned())
-                .unwrap_or_else(|| description.clone());
+            let note = if let Some(table) = existing_table {
+                table.get("note").cloned().unwrap_or_else(|| description.clone())
+            } else {
+                description.clone()
+            };
             if !note.is_empty() {
                 let note_str = serde_json::to_string(&note)
                     .map_err(|e| AppError::MalformedEnvToml(e.to_string()))?;
@@ -106,7 +148,7 @@ set -euo pipefail
         Ok(lines.join("\n"))
     }
 
-    /// Parse env.toml content into table name -> key/value pairs.
+    /// Parse vars.toml/secrets.toml content into table name -> key/value pairs.
     fn parse_env_toml(
         content: &str,
     ) -> Result<BTreeMap<String, BTreeMap<String, String>>, AppError> {
@@ -172,43 +214,117 @@ mod tests {
     }
 
     #[test]
-    fn merge_env_toml_creates_new() {
+    fn merge_env_artifacts_creates_new() {
         let components = vec![make_component(
             "test",
-            vec![EnvSpec {
-                name: "TEST_VAR".to_string(),
-                description: "A test variable".to_string(),
-                default: Some("default_value".to_string()),
-            }],
+            vec![
+                EnvSpec {
+                    name: "TEST_VAR".to_string(),
+                    description: "A test variable".to_string(),
+                    default: Some("default_value".to_string()),
+                    secret: false,
+                },
+                EnvSpec {
+                    name: "TEST_SECRET".to_string(),
+                    description: "A test secret".to_string(),
+                    default: Some("secret_value".to_string()),
+                    secret: true,
+                },
+            ],
         )];
 
-        let result = ArtifactFactory::merge_env_toml(&components, None).unwrap();
+        let result = ArtifactFactory::merge_env_artifacts(&components, None, None).unwrap();
 
-        assert!(result.contains("[TEST_VAR]"));
-        assert!(result.contains("value = \"default_value\""));
-        assert!(result.contains("note = \"A test variable\""));
+        assert!(result.vars_toml.contains("[TEST_VAR]"));
+        assert!(result.vars_toml.contains("value = \"default_value\""));
+        assert!(result.vars_toml.contains("note = \"A test variable\""));
+        assert!(!result.vars_toml.contains("TEST_SECRET"));
+
+        assert!(result.secrets_toml.contains("[TEST_SECRET]"));
+        assert!(result.secrets_toml.contains("value = \"secret_value\""));
+        assert!(result.secrets_toml.contains("note = \"A test secret\""));
+        assert!(!result.secrets_toml.contains("TEST_VAR"));
     }
 
     #[test]
-    fn merge_env_toml_preserves_existing() {
-        let existing_content = r#"
+    fn merge_env_artifacts_preserves_existing() {
+        let existing_vars = r#"
 [TEST_VAR]
 value = "custom_value"
 note = "Custom note"
 "#;
 
+        let existing_secrets = r#"
+[TEST_SECRET]
+value = "custom_secret"
+note = "Custom secret note"
+"#;
+
         let components = vec![make_component(
             "test",
+            vec![
+                EnvSpec {
+                    name: "TEST_VAR".to_string(),
+                    description: "A test variable".to_string(),
+                    default: Some("default_value".to_string()),
+                    secret: false,
+                },
+                EnvSpec {
+                    name: "TEST_SECRET".to_string(),
+                    description: "A test secret".to_string(),
+                    default: Some("default_secret".to_string()),
+                    secret: true,
+                },
+            ],
+        )];
+
+        let result = ArtifactFactory::merge_env_artifacts(
+            &components,
+            Some(existing_vars),
+            Some(existing_secrets),
+        )
+        .unwrap();
+
+        assert!(
+            result.vars_toml.contains("value = \"custom_value\""),
+            "should preserve existing non-secret value"
+        );
+        assert!(
+            result.vars_toml.contains("note = \"Custom note\""),
+            "should preserve existing non-secret note"
+        );
+        assert!(
+            result.secrets_toml.contains("value = \"custom_secret\""),
+            "should preserve existing secret value"
+        );
+        assert!(
+            result.secrets_toml.contains("note = \"Custom secret note\""),
+            "should preserve existing secret note"
+        );
+    }
+
+    #[test]
+    fn merge_env_artifacts_migrates_value_when_secret_classification_changes() {
+        let existing_vars = r#"
+[GH_TOKEN]
+value = "from-vars"
+note = "legacy location"
+"#;
+
+        let components = vec![make_component(
+            "gh",
             vec![EnvSpec {
-                name: "TEST_VAR".to_string(),
-                description: "A test variable".to_string(),
-                default: Some("default_value".to_string()),
+                name: "GH_TOKEN".to_string(),
+                description: "Token for gh CLI authentication".to_string(),
+                default: None,
+                secret: true,
             }],
         )];
 
-        let result = ArtifactFactory::merge_env_toml(&components, Some(existing_content)).unwrap();
+        let result =
+            ArtifactFactory::merge_env_artifacts(&components, Some(existing_vars), None).unwrap();
 
-        assert!(result.contains("value = \"custom_value\""), "should preserve existing value");
-        assert!(result.contains("note = \"Custom note\""), "should preserve existing note");
+        assert!(result.secrets_toml.contains("value = \"from-vars\""));
+        assert!(result.secrets_toml.contains("note = \"legacy location\""));
     }
 }

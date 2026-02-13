@@ -47,7 +47,7 @@ jlo init --remote
 | `jlo workflow gh pr enable-automerge <pr>` | | Enable auto-merge on an eligible PR |
 | `jlo workflow gh issue label-innovator <issue> <persona>` | | Apply innovator labels to a proposal issue |
 | `jlo workflow generate <mode> [--output-dir <dir>]` | `g [-o]` | Generate workflow scaffold files to an output directory |
-| `jlo setup gen [path]` | `s g` | Generate `install.sh` script and `env.toml` |
+| `jlo setup gen [path]` | `s g` | Generate `.jlo/setup/install.sh`, `.jlo/setup/vars.toml`, and `.jlo/setup/secrets.toml` |
 | `jlo setup list` | `s ls` | List available components |
 
 ### Create Command
@@ -162,7 +162,7 @@ jlo add observers pythonista                # Install built-in observer role
 # Setup compiler
 jlo setup list                              # List available components
 jlo setup list --detail just                # Show component details
-jlo setup gen                               # Generate install script
+jlo setup gen                               # Generate install.sh + vars.toml + secrets.toml
 ```
 
 ## GitHub Actions Integration

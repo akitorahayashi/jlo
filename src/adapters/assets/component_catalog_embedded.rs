@@ -1,4 +1,4 @@
-//! Component catalog service - loads components from embedded assets.
+//! Setup component catalog service - loads components from embedded assets.
 
 use include_dir::{Dir, include_dir};
 use serde::Deserialize;
@@ -8,8 +8,8 @@ use std::collections::BTreeMap;
 use crate::domain::{AppError, Component, ComponentId, EnvSpec};
 use crate::ports::ComponentCatalog;
 
-/// Embedded catalog directory.
-static CATALOG_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/catalog");
+/// Embedded setup component directory.
+static CATALOG_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/setup");
 
 /// Metadata parsed from meta.toml.
 #[derive(Debug, Deserialize)]
@@ -126,6 +126,7 @@ mod tests {
         let catalog = EmbeddedComponentCatalog::new().unwrap();
         let names = catalog.names();
 
+        assert!(names.contains(&"gh"), "should contain 'gh' component");
         assert!(names.contains(&"just"), "should contain 'just' component");
         assert!(names.contains(&"swift"), "should contain 'swift' component");
         assert!(names.contains(&"uv"), "should contain 'uv' component");
@@ -146,7 +147,7 @@ mod tests {
         let catalog = EmbeddedComponentCatalog::new().unwrap();
         let all = catalog.list_all();
 
-        assert!(all.len() >= 3);
+        assert!(all.len() >= 4);
         // BTreeMap maintains order
         let names: Vec<_> = all.iter().map(|c| c.name.as_str()).collect();
         let mut sorted = names.clone();
