@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "misint"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Undocumented Architectural Layer: Integrator"
+statement: |
+  The `Integrator` layer exists in the codebase as a single-role layer (`src/domain/workspace/layer.rs`) and has a dedicated directory (`src/domain/layers/integrator.rs`), but it is entirely absent from the architectural documentation in `AGENTS.md`. This violates "New concept introductions without integration (no canonical term, unclear boundary, missing glossary)".
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/workspace/layer.rs"
+    loc:
+      - "17"
+    note: "Layer definition includes Integrator."
+
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc:
+      - "1-100"
+    note: "Documentation lists all layers except Integrator."

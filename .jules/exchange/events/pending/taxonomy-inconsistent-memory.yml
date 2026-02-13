@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "incmem"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Inconsistent Memory Location: Workstations vs Exchange"
+statement: |
+  Role memory (perspective) is stored in inconsistent locations depending on the layer. Observers use `.jules/workstations/{role}/perspective.yml`, while Innovators use `.jules/exchange/innovators/{persona}/perspective.yml`. This violates "Naming shape consistency across boundaries". "Workstation" implies internal state, while "Exchange" implies public handoff. Placing private memory in the exchange directory blurs this boundary.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/workspace/paths/jules.rs"
+    loc:
+      - "124-126"
+    note: "Innovator perspective is in exchange/innovators."
+
+  - path: "src/domain/workspace/paths/jules.rs"
+    loc:
+      - "146-148"
+    note: "Observers (implied) use workstations directory."
+
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc:
+      - "108-109"
+    note: "Documentation confirms the split location."
