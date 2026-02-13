@@ -5,7 +5,3 @@
 pub mod comment_summary_request;
 pub mod enable_automerge;
 pub mod sync_category_label;
-
-pub use comment_summary_request::CommentSummaryRequestOptions;
-pub use enable_automerge::EnableAutomergeOptions;
-pub use sync_category_label::SyncCategoryLabelOptions;

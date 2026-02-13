@@ -90,11 +90,8 @@ Core domain logic located in `src/domain/`.
 | `jlo workflow workspace publish-proposals` | | Publish innovator proposals as GitHub issues |
 | `jlo workflow workspace clean requirement <file>` | | Remove a processed requirement and its source events |
 | `jlo workflow workspace clean mock --mock-tag <tag> [--pr-numbers-json <json>] [--branches-json <json>]` | | Cleanup mock artifacts |
-| `jlo workflow gh pr comment-summary-request <pr_number>` | | Post or update summary-request comment on a Jules PR |
-| `jlo workflow gh pr sync-category-label <pr_number>` | | Sync implementer category label from branch to PR |
-| `jlo workflow gh pr automerge <pr_number>` | | Enable auto-merge on an eligible PR |
-| `jlo workflow gh pr process <all|metadata|automerge> <pr_number> [--retry-attempts <n>] [--retry-delay-seconds <n>] [--fail-on-error]` | | Run PR event commands for the selected action |
-| `jlo workflow gh issue label-innovator <issue_number> <persona>` | | Apply innovator labels to a proposal issue |
+| `jlo workflow gh process pr <all\|metadata\|automerge> <pr_number> [--retry-attempts <n>] [--retry-delay-seconds <n>] [--fail-on-error]` | | Run PR process pipeline |
+| `jlo workflow gh process issue label-innovator <issue_number> <persona>` | | Apply innovator labels to a proposal issue |
 | `jlo setup gen [path]` | `s g` | Generate `.jlo/setup/install.sh`, `vars.toml`, and `secrets.toml` |
 | `jlo setup list [--detail <component>]` | `s ls` | List available components |
 | `jlo deinit` | | Remove all jlo-managed assets (`.jlo/`, branch, workflows) |
