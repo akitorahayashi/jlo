@@ -56,16 +56,12 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
     // Generate/merge vars.toml and secrets.toml
     let vars_toml_path = ".jlo/setup/vars.toml";
     let secrets_toml_path = ".jlo/setup/secrets.toml";
-    let existing_vars = if store.file_exists(vars_toml_path) {
-        Some(store.read_file(vars_toml_path)?)
-    } else {
-        None
-    };
-    let existing_secrets = if store.file_exists(secrets_toml_path) {
-        Some(store.read_file(secrets_toml_path)?)
-    } else {
-        None
-    };
+    let existing_vars =
+        store.file_exists(vars_toml_path).then(|| store.read_file(vars_toml_path)).transpose()?;
+    let existing_secrets = store
+        .file_exists(secrets_toml_path)
+        .then(|| store.read_file(secrets_toml_path))
+        .transpose()?;
     let env_artifacts = SetupScriptGenerator::merge_env_artifacts(
         &components,
         existing_vars.as_deref(),

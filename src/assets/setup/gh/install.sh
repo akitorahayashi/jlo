@@ -17,12 +17,26 @@ if ! command -v apt-get >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ "$(id -u)" -eq 0 ]]; then
+install_gh_from_official_repo() {
+  apt-get update
+  apt-get install -y --no-install-recommends ca-certificates curl gnupg
+
+  mkdir -p -m 755 /etc/apt/keyrings
+  curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+    -o /etc/apt/keyrings/githubcli-archive-keyring.gpg
+  chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+    > /etc/apt/sources.list.d/github-cli.list
+
   apt-get update
   apt-get install -y --no-install-recommends gh
+}
+
+if [[ "$(id -u)" -eq 0 ]]; then
+  install_gh_from_official_repo
 elif command -v sudo >/dev/null 2>&1; then
-  sudo apt-get update
-  sudo apt-get install -y --no-install-recommends gh
+  sudo bash -lc "$(declare -f install_gh_from_official_repo); install_gh_from_official_repo"
 else
   echo "Root or sudo is required to install gh with apt-get. Install gh manually." >&2
   exit 1
