@@ -161,9 +161,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
-    use std::fs;
-    use tempfile::tempdir;
+    use crate::testing::MockWorkspaceStore;
 
     #[test]
     fn test_generate_mock_id() {
@@ -185,17 +183,18 @@ mod tests {
 
     #[test]
     fn list_mock_tagged_files_returns_only_tagged_sorted_yml_files() {
-        let dir = tempdir().expect("tempdir");
-        let decided_dir = dir.path().join("decided");
-        fs::create_dir_all(&decided_dir).expect("mkdir");
+        let workspace = MockWorkspaceStore::new()
+            .with_file("decided/mock-run-123-bbbbbb.yml", "id: bbbbbb\n")
+            .with_file("decided/mock-run-123-aaaaaa.yml", "id: aaaaaa\n")
+            .with_file("decided/mock-other-run-cccccc.yml", "id: cccccc\n")
+            .with_file("decided/notes.txt", "ignored\n");
 
-        fs::write(decided_dir.join("mock-run-123-bbbbbb.yml"), "id: bbbbbb\n").expect("write");
-        fs::write(decided_dir.join("mock-run-123-aaaaaa.yml"), "id: aaaaaa\n").expect("write");
-        fs::write(decided_dir.join("mock-other-run-cccccc.yml"), "id: cccccc\n").expect("write");
-        fs::write(decided_dir.join("notes.txt"), "ignored\n").expect("write");
-
-        let workspace = FilesystemWorkspaceStore::new(dir.path().to_path_buf());
-        let files = list_mock_tagged_files(&workspace, &decided_dir, "mock-run-123").expect("list");
+        let files = list_mock_tagged_files(
+            &workspace,
+            Path::new("decided"),
+            "mock-run-123",
+        )
+        .expect("list");
 
         assert_eq!(files.len(), 2);
         assert!(files[0].to_string_lossy().ends_with("mock-run-123-aaaaaa.yml"));
