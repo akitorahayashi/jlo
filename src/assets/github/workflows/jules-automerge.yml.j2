@@ -43,6 +43,7 @@ jobs:
         id: discover
         env:
           GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+          GH_REPO: {{ gha_expr("github.repository") }}
         run: |
           set -euo pipefail
           pr_number=""
