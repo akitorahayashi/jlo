@@ -2,17 +2,17 @@ use std::path::Path;
 
 use chrono::Utc;
 
+use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
 use crate::domain::configuration::loader::detect_repository_source;
 use crate::domain::configuration::mock_loader::load_mock_config;
 use crate::domain::identifiers::validation::validate_safe_path_component;
-use crate::domain::layers::mock_utils::{MOCK_ASSETS, generate_mock_id};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
-use super::multi_role::{dispatch_session, print_role_preview, validate_role_exists};
-use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
+use super::super::role_session::{dispatch_session, print_role_preview, validate_role_exists};
+use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
 pub struct InnovatorsLayer;
 
@@ -35,11 +35,11 @@ where
             let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
-                super::mock_utils::write_github_output(&output).map_err(|e| {
+                super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
                     AppError::InternalError(format!("Failed to write GITHUB_OUTPUT: {}", e))
                 })?;
             } else {
-                super::mock_utils::print_local(&output);
+                super::super::mock::mock_execution::print_local(&output);
             }
             return Ok(RunResult {
                 roles: vec![options.role.clone().unwrap_or_else(|| "mock".to_string())],

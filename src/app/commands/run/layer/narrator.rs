@@ -9,7 +9,7 @@ use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
 use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
 
-use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
+use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
 pub struct NarratorLayer;
 
@@ -32,11 +32,11 @@ where
             let output = execute_mock(&mock_config)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
-                super::mock_utils::write_github_output(&output).map_err(|e| {
+                super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
                     AppError::InternalError(format!("Failed to write GITHUB_OUTPUT: {}", e))
                 })?;
             } else {
-                super::mock_utils::print_local(&output);
+                super::super::mock::mock_execution::print_local(&output);
             }
             return Ok(RunResult {
                 roles: vec!["narrator".to_string()],

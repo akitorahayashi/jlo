@@ -3,18 +3,18 @@ use std::path::{Path, PathBuf};
 
 use chrono::Utc;
 
-use crate::domain::configuration::loader::detect_repository_source;
-use crate::domain::configuration::mock_loader::load_mock_config;
-use crate::domain::layers::mock_utils::{
+use super::super::mock::mock_execution::{
     MOCK_ASSETS, MockExecutionService, generate_mock_id, list_mock_tagged_files,
     mock_event_id_from_path,
 };
+use crate::domain::configuration::loader::detect_repository_source;
+use crate::domain::configuration::mock_loader::load_mock_config;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
 use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
 
-use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
+use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
 pub struct DeciderLayer;
 

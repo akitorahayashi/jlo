@@ -4,7 +4,7 @@
 //! This command provides orchestration for GitHub Actions workflows.
 
 pub mod issue_routing;
-pub mod layer_executor;
+pub mod layer;
 pub mod options;
 
 use chrono::Utc;
@@ -12,7 +12,7 @@ use chrono::Utc;
 use crate::domain::AppError;
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
-use self::layer_executor::execute_layer;
+use self::layer::execute_layer;
 pub use self::options::{WorkflowRunOptions, WorkflowRunOutput};
 
 /// Execute workflow run command.

@@ -11,8 +11,8 @@ use crate::ports::{
     AutomationMode, GitHubPort, GitPort, JulesClient, SessionRequest, WorkspaceStore,
 };
 
-use super::requirement::validate_requirement_path;
-use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
+use super::super::requirement_path::validate_requirement_path;
+use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
 pub struct PlannerLayer;
 
@@ -35,11 +35,11 @@ where
             let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
-                super::mock_utils::write_github_output(&output).map_err(|e| {
+                super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
                     AppError::InternalError(format!("Failed to write GITHUB_OUTPUT: {}", e))
                 })?;
             } else {
-                super::mock_utils::print_local(&output);
+                super::super::mock::mock_execution::print_local(&output);
             }
             return Ok(RunResult {
                 roles: vec!["planner".to_string()],
