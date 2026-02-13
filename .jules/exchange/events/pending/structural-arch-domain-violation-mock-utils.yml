@@ -1,0 +1,13 @@
+schema_version: 1
+id: "domvio"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "structural_arch"
+confidence: "high"
+title: "Domain layer depends on filesystem adapter in tests"
+statement: |
+  The test module in src/domain/layers/mock_utils.rs imports crate::adapters::workspace_filesystem::FilesystemWorkspaceStore, violating the domain purity principle. Domain logic should only depend on ports/traits, not concrete adapters.
+evidence:
+  - path: "src/domain/layers/mock_utils.rs"
+    loc: ["crate::adapters::workspace_filesystem::FilesystemWorkspaceStore"]
+    note: "Importing concrete adapter in domain layer test"
