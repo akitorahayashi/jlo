@@ -17,6 +17,5 @@ output:
   - .jules/exchange/innovators/<persona>/perspective.yml (updated)
 
 constraints:
-  - "This task is self-contained: do not depend on observer comments"
   - "proposal.yml must be justified by repository evidence gathered in this run"
   - "recent_proposals must include the current proposal title and keep FIFO max 5"
