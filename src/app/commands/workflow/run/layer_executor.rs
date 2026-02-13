@@ -56,6 +56,9 @@ where
         Layer::Innovators => {
             execute_multi_role(store, options, &jules_path, git, github, run_layer)
         }
+        Layer::Integrator => {
+            execute_integrator(store, options, &jules_path, git, github, run_layer)
+        }
     }
 }
 
@@ -246,6 +249,37 @@ where
         );
         run_layer(jules_path, run_options, git, github, store)?;
     }
+
+    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+}
+
+/// Execute integrator (single-role, manual dispatch).
+fn execute_integrator<W, G, H, F>(
+    store: &W,
+    options: &WorkflowRunOptions,
+    jules_path: &Path,
+    git: &G,
+    github: &H,
+    run_layer: &mut F,
+) -> Result<RunResults, AppError>
+where
+    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    G: GitPort,
+    H: GitHubPort,
+    F: FnMut(&Path, RunOptions, &G, &H, &W) -> Result<(), AppError>,
+{
+    let run_options = RunOptions {
+        layer: Layer::Integrator,
+        role: None,
+        prompt_preview: false,
+        branch: None,
+        requirement: None,
+        mock: options.mock,
+        phase: None,
+    };
+
+    eprintln!("Executing: integrator");
+    run_layer(jules_path, run_options, git, github, store)?;
 
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
 }

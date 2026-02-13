@@ -63,7 +63,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
 
         // Check schemas/ directory (layers with output schemas)
         let schemas_dir = jules::schemas_dir(inputs.jules_path, layer);
-        let has_schemas = !matches!(layer, Layer::Implementer | Layer::Planner);
+        let has_schemas = !matches!(layer, Layer::Implementer | Layer::Planner | Layer::Integrator);
         if has_schemas && !schemas_dir.exists() {
             diagnostics.push_error(schemas_dir.display().to_string(), "Missing schemas/");
         }
@@ -339,7 +339,7 @@ mod tests {
             // Runtime artifacts (contracts, schemas, prompts) in .jules/roles
             let jules_layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
             jules_layer_dir.create_dir_all().unwrap();
-            if !matches!(layer, Layer::Implementer | Layer::Planner) {
+            if !matches!(layer, Layer::Implementer | Layer::Planner | Layer::Integrator) {
                 jules_layer_dir.child("schemas").create_dir_all().unwrap();
             }
             jules_layer_dir.child("tasks").create_dir_all().unwrap();

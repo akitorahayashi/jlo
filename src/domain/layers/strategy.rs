@@ -52,5 +52,6 @@ where
         Layer::Implementer => Box::new(super::implementer::ImplementerLayer),
         Layer::Observers => Box::new(super::observers::ObserversLayer),
         Layer::Innovators => Box::new(super::innovators::InnovatorsLayer),
+        Layer::Integrator => Box::new(super::integrator::IntegratorLayer),
     }
 }

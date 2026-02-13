@@ -370,6 +370,8 @@ mod tests {
             .expect("create implementer role dir");
         fs::create_dir_all(root.join(".jules/roles/innovators"))
             .expect("create innovators role dir");
+        fs::create_dir_all(root.join(".jules/roles/integrator"))
+            .expect("create integrator role dir");
         fs::create_dir_all(root.join(".jlo/roles/observers/taxonomy"))
             .expect("create observer role dir");
 
@@ -403,6 +405,7 @@ roles = [
             ("planner", "jules-planner-"),
             ("implementer", "jules-implementer-"),
             ("innovators", "jules-innovator-"),
+            ("integrator", "jules-integrator-"),
         ];
         for (layer, prefix) in contracts {
             fs::write(

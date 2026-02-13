@@ -101,7 +101,7 @@ pub enum AppError {
 
     /// Layer identifier is invalid.
     #[error(
-        "Invalid layer '{name}': must be one of Narrator, Observers, Decider, Planner, Implementer, Innovators"
+        "Invalid layer '{name}': must be one of Narrator, Observers, Decider, Planner, Implementer, Innovators, Integrator"
     )]
     InvalidLayer { name: String },
 

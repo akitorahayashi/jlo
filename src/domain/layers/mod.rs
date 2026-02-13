@@ -1,6 +1,7 @@
 pub mod decider;
 pub mod implementer;
 pub mod innovators;
+pub mod integrator;
 pub mod mock_utils;
 pub mod multi_role;
 pub mod narrator;

@@ -15,17 +15,20 @@ pub enum Layer {
     Implementer,
     /// Innovators: Generate improvement proposals through brainstorming and feedback cycles
     Innovators,
+    /// Integrator: Merge all implementer branches into one integration branch
+    Integrator,
 }
 
 impl Layer {
     /// All available layers in order.
-    pub const ALL: [Layer; 6] = [
+    pub const ALL: [Layer; 7] = [
         Layer::Narrator,
         Layer::Observers,
         Layer::Decider,
         Layer::Planner,
         Layer::Implementer,
         Layer::Innovators,
+        Layer::Integrator,
     ];
 
     /// Directory name for this layer.
@@ -37,6 +40,7 @@ impl Layer {
             Layer::Planner => "planner",
             Layer::Implementer => "implementer",
             Layer::Innovators => "innovators",
+            Layer::Integrator => "integrator",
         }
     }
 
@@ -52,6 +56,7 @@ impl Layer {
             Layer::Planner => "planner_prompt.j2",
             Layer::Implementer => "implementer_prompt.j2",
             Layer::Innovators => "innovators_prompt.j2",
+            Layer::Integrator => "integrator_prompt.j2",
         }
     }
 
@@ -64,6 +69,7 @@ impl Layer {
             Layer::Planner => "Planner",
             Layer::Implementer => "Implementer",
             Layer::Innovators => "Innovators",
+            Layer::Integrator => "Integrator",
         }
     }
 
@@ -76,6 +82,7 @@ impl Layer {
             "planners" | "planner" => Some(Layer::Planner),
             "implementers" | "implementer" => Some(Layer::Implementer),
             "innovators" | "innovator" => Some(Layer::Innovators),
+            "integrator" | "integrators" => Some(Layer::Integrator),
             _ => None,
         }
     }
@@ -91,6 +98,7 @@ impl Layer {
             Layer::Innovators => {
                 "Generate improvement proposals through brainstorming and feedback."
             }
+            Layer::Integrator => "Merge all implementer branches into one integration branch.",
         }
     }
 
@@ -100,7 +108,14 @@ impl Layer {
     /// directly in the layer directory rather than in role subdirectories. They do not
     /// support custom role creation or scheduled role lists.
     pub fn is_single_role(&self) -> bool {
-        matches!(self, Layer::Narrator | Layer::Decider | Layer::Planner | Layer::Implementer)
+        matches!(
+            self,
+            Layer::Narrator
+                | Layer::Decider
+                | Layer::Planner
+                | Layer::Implementer
+                | Layer::Integrator
+        )
     }
 
     /// Whether this layer uses innovator room exchange structure.
@@ -153,13 +168,14 @@ mod tests {
     }
 
     #[test]
-    fn single_role_layers_include_narrator_planner_implementer() {
+    fn single_role_layers_include_narrator_planner_implementer_integrator() {
         assert!(Layer::Narrator.is_single_role());
         assert!(!Layer::Observers.is_single_role());
         assert!(Layer::Decider.is_single_role());
         assert!(Layer::Planner.is_single_role());
         assert!(Layer::Implementer.is_single_role());
         assert!(!Layer::Innovators.is_single_role());
+        assert!(Layer::Integrator.is_single_role());
     }
 
     #[test]
@@ -170,6 +186,7 @@ mod tests {
         assert!(Layer::Planner.is_issue_driven());
         assert!(Layer::Implementer.is_issue_driven());
         assert!(!Layer::Innovators.is_issue_driven());
+        assert!(!Layer::Integrator.is_issue_driven());
     }
 
     #[test]
@@ -180,5 +197,6 @@ mod tests {
         assert!(!Layer::Planner.is_innovator());
         assert!(!Layer::Implementer.is_innovator());
         assert!(Layer::Innovators.is_innovator());
+        assert!(!Layer::Integrator.is_innovator());
     }
 }
