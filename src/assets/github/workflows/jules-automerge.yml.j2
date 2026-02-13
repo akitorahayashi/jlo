@@ -1,3 +1,4 @@
+# This file is auto-generated. Do not edit manually.
 name: Jules Auto-merge
 
 on:
@@ -48,6 +49,7 @@ jobs:
           for attempt in $(seq 1 12); do
             pr_number="$(gh pr list \
               --state open \
+              --repo "${GITHUB_REPOSITORY}" \
               --head "${GITHUB_REF_NAME}" \
               --base "${JULES_WORKER_BRANCH}" \
               --json number \

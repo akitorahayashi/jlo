@@ -1,3 +1,4 @@
+# This file is auto-generated. Do not edit manually.
 # Workflow Scaffold Template Pipeline
 
 ## Scope
@@ -10,6 +11,20 @@ This document describes how files under `src/assets/github/` are transformed int
 - Template engine (MiniJinja): `src/adapters/assets/workflow_scaffold_assets/template_engine.rs`
 - Render plan (partials exclusion): `src/adapters/assets/workflow_scaffold_assets/render_plan.rs`
 - Install/write to disk: `src/app/commands/init.rs`
+
+## Development Workflow
+
+**DO NOT EDIT files in `.github/` directly.** They are auto-generated artifacts.
+
+1. Edit the source templates in `src/assets/github/`.
+2. Regenerate the workflow files:
+   ```bash
+   # For hosted runners
+   jlo workflow generate remote
+
+   # For self-hosted runners
+   jlo workflow generate self-hosted
+   ```
 
 ## Transformation Rules
 - Every file under `src/assets/github/` is loaded by `include_dir!` in `WorkflowScaffoldAssets`.

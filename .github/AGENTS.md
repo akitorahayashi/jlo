@@ -35,7 +35,19 @@ Runtime orchestration is centralized in:
 
 Local composite actions are installed under `.github/actions/`.
 
-The source of truth is `src/assets/github/`; generated files under `.github/` are installation artifacts.
+## Development Workflow
+
+**DO NOT EDIT files in `.github/` directly.** They are auto-generated artifacts.
+
+1. Edit the source templates in `src/assets/github/`.
+2. Regenerate the workflow files:
+   ```bash
+   # For hosted runners
+   cargo run -- workflow generate remote
+
+   # For self-hosted runners
+   cargo run -- workflow generate self-hosted
+   ```
 
 ## Orchestration Commands
 

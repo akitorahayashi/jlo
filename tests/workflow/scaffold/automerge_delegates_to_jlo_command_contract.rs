@@ -14,6 +14,7 @@ fn automerge_path_delegates_policy_to_jlo_process_command() {
     assert!(workflow.contains("push:"));
     assert!(workflow.contains("github.event.deleted == false"));
     assert!(workflow.contains("Discover open PR for pushed branch"));
+    assert!(workflow.contains("--repo \"${GITHUB_REPOSITORY}\""));
     assert!(workflow.contains("--head \"${GITHUB_REF_NAME}\""));
     assert!(workflow.contains("--base \"${JULES_WORKER_BRANCH}\""));
     assert!(workflow.contains("for attempt in $(seq 1 12); do"));
