@@ -10,7 +10,6 @@ steps:
   - Update perspective.yml feedback_assimilation.next_focus with follow-up validation tasks.
   - Create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals.
   - Update perspective.yml recent_proposals (FIFO, max 5, newest first) with the proposal title.
-  - Delete idea.yml and comments/*.yml if present.
 
 output:
   - .jules/exchange/innovators/<persona>/proposal.yml

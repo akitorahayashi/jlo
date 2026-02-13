@@ -1,7 +1,7 @@
 schema_version: 1
 files:
 - path: .jlo/roles/innovators/recruiter/role.yml
-  sha256: ea6f29cde4f8d3c0b40801ad7178bb3dbdcc785010a3c3b72f3b8c4e7bb0b1fe
+  sha256: 0e12838901ea590373a1f4ac345683b9a8f12640ef519706824ca486693800e7
 - path: .jlo/roles/observers/consistency/role.yml
   sha256: 7d02bc682bcf01da480218ed0788090b1662ffdf21b4f56b04f71071c8b97790
 - path: .jlo/roles/observers/cov/role.yml
