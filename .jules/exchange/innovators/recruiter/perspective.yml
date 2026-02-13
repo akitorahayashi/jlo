@@ -1,0 +1,35 @@
+schema_version: 1
+
+persona: "recruiter"
+
+focus: "Increase proposal quality by identifying missing observer/innovator personas and contract boundaries."
+
+# Structured repository understanding updated every cycle.
+repository_observations:
+  codebase_state:
+    - "Role definitions exist in `.jlo/roles/` and `src/assets/roles/` but not in `.jules/roles/` as expected by `recruiter` analysis points."
+  startup_and_runtime_contracts:
+    - "`src/domain/configuration/loader.rs` confirms `.jlo/` is used for runtime configuration."
+    - "`AGENTS.md` states user configuration is in `.jlo/` and system definitions in `.jules/`."
+  decision_quality_gaps:
+    - "The `recruiter` role is currently unable to fulfill its mandate due to incorrect file path references in its own definition."
+  leverage_candidates:
+    - "Updating role definitions to point to the correct `.jlo/roles` or `src/assets/roles` paths will enable accurate gap analysis."
+
+# Thought process and hypothesis evolution.
+thinking_notes:
+  hypotheses:
+    - "Fixing the path references in `recruiter` role definition will allow it to correctly identify missing roles."
+  tradeoff_assessment:
+    - "Pointing to `.jlo/roles` analyzes the deployed instance; pointing to `src/assets/roles` analyzes the source of truth. Since `recruiter` suggests new roles, looking at `src/assets` might be more appropriate to avoid suggesting already-existing-but-undeployed roles, but `.jlo` shows what is active."
+  rejected_paths:
+    - "Moving role definitions to `.jules/` was rejected as `.jlo/` is the established pattern for instance configuration."
+
+# Observer feedback assimilation and next-cycle planning.
+feedback_assimilation:
+  observer_inputs: []
+  next_focus:
+    - "Verify if other roles have similar path reference issues."
+
+# Newest first; keep max 15 entries (FIFO).
+recent_proposals: []
