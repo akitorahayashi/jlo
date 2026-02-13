@@ -14,5 +14,3 @@ files:
   sha256: 21c93b08bd691231f80add4b3df3a5d7d5b2b849178735656e565a5ed5780040
 - path: .jlo/roles/observers/taxonomy/role.yml
   sha256: 6102e0f7db2f2f44dca6a8fee4f35795e4e08a9aa3d0bc6055da4b5f206fae99
-- path: .jlo/scheduled.toml
-  sha256: 383cd3d3f98f8907250c5daac665039fa02bd5aed571815007c9000fc6064ddd
