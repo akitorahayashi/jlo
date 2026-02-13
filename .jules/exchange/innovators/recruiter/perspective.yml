@@ -27,9 +27,13 @@ thinking_notes:
 
 # Observer feedback assimilation and next-cycle planning.
 feedback_assimilation:
-  observer_inputs: []
+  observer_inputs:
+    - "Consistency confirmed drift between documented architecture and recruiter instructions."
+    - "QA verified incorrect path references and suggested a schema validation test."
+    - "Structural Arch confirmed .jlo/roles/ is the correct location for instances."
   next_focus:
     - "Verify if other roles have similar path reference issues."
 
 # Newest first; keep max 15 entries (FIFO).
-recent_proposals: []
+recent_proposals:
+  - "Update Recruiter Role Definition Paths"
