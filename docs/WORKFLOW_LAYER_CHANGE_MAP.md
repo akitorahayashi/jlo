@@ -31,7 +31,7 @@ A layer-level change means one of the following:
 | Prompt and contracts | Layer assets are file-based and embedded with `include_dir` | `src/assets/scaffold/jules/roles/<layer>/**` |
 | Doctor validation | Structural/schema/semantic checks iterate layers and exchange data contracts | `src/app/commands/doctor/*.rs` |
 | Requirement routing | Workspace inspect provides requirement counts for planner/implementer gating | `src/app/commands/workflow/workspace/inspect.rs`, `src/app/commands/workflow/run/*.rs` |
-| Workflow orchestration | Layer sequence is defined in workflow templates | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2` |
+| Workflow orchestration | Layer sequence is defined in workflow templates; integrator has a dedicated manual-dispatch workflow | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`, `src/assets/github/workflows/jules-integrator.yml.j2` |
 | Auto-merge qualification | Branch prefix and scope policy gates are evaluated in `jlo workflow gh pr enable-automerge` | `src/app/commands/workflow/gh/pr/events/enable_automerge.rs` |
 | Mock behavior | Per-layer mock behavior is implemented in dedicated modules | `src/app/commands/run/mock/*.rs` |
 | Failure recovery | Mock residue cleanup scope is explicit and code-defined | `src/app/commands/workflow/workspace/clean/mock.rs` |

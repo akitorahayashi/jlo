@@ -81,6 +81,7 @@ Core domain logic located in `src/domain/`.
 | `jlo run decider [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
 | `jlo run planner <requirement> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (requirement-driven) |
 | `jlo run implementer <requirement> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (requirement-driven) |
+| `jlo run integrator [--prompt-preview] [--branch <branch>]` | `r g` | Run integrator (merges implementer branches) |
 | `jlo run innovators --role <role> --phase <creation\|refinement> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
 | `jlo doctor [--strict]` | | Validate .jules/ structure and content |
 | `jlo workflow doctor` | `wf` | Validate workspace for workflow use |
@@ -134,6 +135,7 @@ cargo test --test library
 | Decider | Single-role | `jlo run decider` | None |
 | Planner | Single-role | `jlo run planner <path>` | None (requirement path) |
 | Implementer | Single-role | `jlo run implementer <path>` | None (requirement path) |
+| Integrator | Single-role | `jlo run integrator` | None (manual, on-demand) |
 | Innovators | Multi-role | `jlo workflow run innovators` | `.jlo/scheduled.toml` |
 
 **Single-role layers**: Narrator, Decider, Planner, Implementer have a fixed role with a `<layer>_prompt.j2` template in the layer directory. Template creation not supported.

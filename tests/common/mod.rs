@@ -115,6 +115,7 @@ impl TestContext {
         assert!(roles_path.join("decider").exists(), "decider layer should exist");
         assert!(roles_path.join("planner").exists(), "planner layer should exist");
         assert!(roles_path.join("implementer").exists(), "implementer layer should exist");
+        assert!(roles_path.join("integrator").exists(), "integrator layer should exist");
     }
 
     /// Assert that the narrator layer exists with correct structure.
@@ -190,6 +191,10 @@ impl TestContext {
         assert!(
             roles_path.join("implementer/contracts.yml").exists(),
             "implementer/contracts.yml should exist"
+        );
+        assert!(
+            roles_path.join("integrator/contracts.yml").exists(),
+            "integrator/contracts.yml should exist"
         );
     }
 
