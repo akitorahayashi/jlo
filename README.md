@@ -41,7 +41,7 @@ jlo init --remote
 | `jlo workflow workspace publish-proposals` | | Publish innovator proposals as GitHub issues |
 | `jlo workflow workspace clean requirement <file>` | | Remove a processed requirement and its source events |
 | `jlo workflow workspace clean mock --mock-tag <tag>` | | Clean up mock artifacts |
-| `jlo workflow gh pr process <pr_number>` | | Run all event-level PR commands in order |
+| `jlo workflow gh pr process <all|metadata|automerge> <pr_number>` | | Run PR event commands for the selected action |
 | `jlo workflow gh pr automerge <pr>` | | Enable auto-merge on an eligible PR |
 | `jlo workflow gh pr comment-summary-request <pr>` | | Post or update summary-request comment on a Jules PR |
 | `jlo workflow gh pr sync-category-label <pr>` | | Sync implementer category label from branch to PR |

@@ -12,12 +12,14 @@ fn automerge_path_delegates_policy_to_jlo_process_command() {
 
     assert!(workflow.contains("validate-and-automerge:"));
     assert!(workflow.contains("push:"));
+    assert!(workflow.contains("github.event.deleted == false"));
     assert!(workflow.contains("Discover open PR for pushed branch"));
     assert!(workflow.contains("--head \"${GITHUB_REF_NAME}\""));
     assert!(workflow.contains("--base \"${JULES_WORKER_BRANCH}\""));
-    assert!(workflow.contains("jlo workflow gh pr process"));
+    assert!(workflow.contains("for attempt in $(seq 1 12); do"));
+    assert!(workflow.contains("after 12 attempts"));
+    assert!(workflow.contains("jlo workflow gh pr process automerge"));
     assert!(workflow.contains("steps.discover.outputs.pr_number"));
-    assert!(workflow.contains("--mode automerge"));
     assert!(workflow.contains("--retry-attempts 12"));
     assert!(workflow.contains("--retry-delay-seconds 10"));
     assert!(workflow.contains("--fail-on-error"));
@@ -25,6 +27,7 @@ fn automerge_path_delegates_policy_to_jlo_process_command() {
 
     assert!(!workflow.contains("pull_request:"));
     assert!(!workflow.contains("github.event.pull_request.number"));
+    assert!(!workflow.contains("--mode automerge"));
 
     assert!(!workflow.contains("enablePullRequestAutoMerge|mergePullRequest"));
     assert!(!workflow.contains("Auto-merge transient GitHub state detected"));

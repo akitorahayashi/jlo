@@ -103,18 +103,15 @@ pub enum WorkflowPrCommands {
         pr_number: u64,
     },
     /// Enable auto-merge on an eligible PR
-    #[command(alias = "enable-automerge")]
     Automerge {
         /// PR number
         pr_number: u64,
     },
     /// Run PR event commands in configured mode
     Process {
-        /// PR number
-        pr_number: u64,
-        /// Execution mode (all, metadata, automerge)
-        #[arg(long, default_value = "all", value_parser = ["all", "metadata", "automerge"])]
-        mode: String,
+        /// Process action
+        #[command(subcommand)]
+        command: WorkflowPrProcessCommands,
         /// Fail if any step returns an execution error
         #[arg(long)]
         fail_on_error: bool,
@@ -124,6 +121,26 @@ pub enum WorkflowPrCommands {
         /// Delay between retry attempts (seconds)
         #[arg(long, default_value_t = 0)]
         retry_delay_seconds: u64,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum WorkflowPrProcessCommands {
+    /// Run all PR event commands
+    All {
+        /// PR number
+        pr_number: u64,
+    },
+    /// Run metadata-only commands
+    Metadata {
+        /// PR number
+        pr_number: u64,
+    },
+    /// Run auto-merge command only
+    #[command(alias = "auto-merge")]
+    Automerge {
+        /// PR number
+        pr_number: u64,
     },
 }
 
@@ -269,21 +286,20 @@ fn run_workflow_gh_pr(
             workflow::write_workflow_output(&output)
         }
         WorkflowPrCommands::Process {
-            pr_number,
-            mode,
+            command,
             fail_on_error,
             retry_attempts,
             retry_delay_seconds,
         } => {
-            let mode = match mode.as_str() {
-                "all" => workflow::gh::pr::ProcessMode::All,
-                "metadata" => workflow::gh::pr::ProcessMode::Metadata,
-                "automerge" => workflow::gh::pr::ProcessMode::Automerge,
-                _ => {
-                    return Err(AppError::Validation(format!(
-                        "Invalid process mode '{}'. Expected one of: all, metadata, automerge",
-                        mode
-                    )));
+            let (pr_number, mode) = match command {
+                WorkflowPrProcessCommands::All { pr_number } => {
+                    (pr_number, workflow::gh::pr::ProcessMode::All)
+                }
+                WorkflowPrProcessCommands::Metadata { pr_number } => {
+                    (pr_number, workflow::gh::pr::ProcessMode::Metadata)
+                }
+                WorkflowPrProcessCommands::Automerge { pr_number } => {
+                    (pr_number, workflow::gh::pr::ProcessMode::Automerge)
                 }
             };
             let options = workflow::gh::pr::ProcessOptions {

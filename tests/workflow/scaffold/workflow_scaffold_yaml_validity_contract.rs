@@ -96,6 +96,8 @@ fn automerge_workflow_uses_push_scoped_trigger_contract() {
     let workflow_path = output_dir.join(".github/workflows/jules-automerge.yml");
     let content = fs::read_to_string(&workflow_path).expect("Failed to read workflow");
     let workflow: serde_yaml::Value = serde_yaml::from_str(&content).expect("Failed to parse YAML");
+    assert!(content.contains("github.event.deleted == false"));
+    assert!(content.contains("for attempt in $(seq 1 12); do"));
 
     let root = workflow.as_mapping().expect("Root should be a mapping");
     let on = root
