@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use serde::Deserialize;
+
 use crate::domain::configuration::loader::detect_repository_source;
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
@@ -8,6 +10,11 @@ use crate::domain::{AppError, Layer, RunConfig, RunOptions};
 use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
 
 use super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
+
+#[derive(Deserialize)]
+struct ContractFile {
+    branch_prefix: String,
+}
 
 pub struct IntegratorLayer;
 
@@ -74,6 +81,8 @@ where
     // Preflight: discover candidate branches before Jules API session creation
     let candidates = discover_candidate_branches(git, &implementer_prefix)?;
 
+    let source = detect_repository_source(git)?;
+
     if prompt_preview {
         println!("=== Prompt Preview: Integrator ===");
         println!("Starting branch: {}", starting_branch);
@@ -83,8 +92,13 @@ where
         }
         println!();
 
-        let prompt =
-            assemble_integrator_prompt(jules_path, &starting_branch, &candidates, git, workspace)?;
+        let prompt = assemble_integrator_prompt(
+            jules_path,
+            &starting_branch,
+            &candidates,
+            &source,
+            workspace,
+        )?;
         println!("{}", prompt);
 
         return Ok(RunResult {
@@ -95,11 +109,10 @@ where
         });
     }
 
-    let source = detect_repository_source(git)?;
     let client = client_factory.create()?;
 
     let prompt =
-        assemble_integrator_prompt(jules_path, &starting_branch, &candidates, git, workspace)?;
+        assemble_integrator_prompt(jules_path, &starting_branch, &candidates, &source, workspace)?;
 
     let request = SessionRequest {
         prompt,
@@ -136,19 +149,16 @@ fn load_implementer_branch_prefix<W: WorkspaceStore>(
         ))
     })?;
 
-    let value: serde_yaml::Value = serde_yaml::from_str(&content)
+    let contract: ContractFile = serde_yaml::from_str(&content)
         .map_err(|e| AppError::Validation(format!("Invalid implementer contracts YAML: {}", e)))?;
 
-    value
-        .get("branch_prefix")
-        .and_then(|v| v.as_str())
-        .filter(|s| !s.is_empty())
-        .map(|s| s.to_string())
-        .ok_or_else(|| {
-            AppError::Validation(
-                "Implementer contracts.yml missing required 'branch_prefix' field".to_string(),
-            )
-        })
+    if contract.branch_prefix.trim().is_empty() {
+        return Err(AppError::Validation(
+            "Implementer contracts.yml has an empty 'branch_prefix' field".to_string(),
+        ));
+    }
+
+    Ok(contract.branch_prefix)
 }
 
 /// Discover remote implementer branches matching the branch prefix policy.
@@ -169,10 +179,7 @@ fn discover_candidate_branches<G: GitPort + ?Sized>(
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
         .map(|line| line.strip_prefix("origin/").unwrap_or(line).to_string())
-        .filter(|name| {
-            name.chars()
-                .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '/')
-        })
+        .filter(|name| validate_safe_path_component(name))
         .collect();
 
     if candidates.is_empty() {
@@ -191,18 +198,13 @@ fn discover_candidate_branches<G: GitPort + ?Sized>(
     Ok(candidates)
 }
 
-fn assemble_integrator_prompt<
-    G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
->(
+fn assemble_integrator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
     jules_path: &Path,
     starting_branch: &str,
     candidates: &[String],
-    git: &G,
+    source: &str,
     workspace: &W,
 ) -> Result<String, AppError> {
-    let source = detect_repository_source(git)?;
-
     let candidate_list =
         candidates.iter().map(|b| format!("- {}", b)).collect::<Vec<_>>().join("\n");
 
