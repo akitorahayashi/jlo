@@ -1,0 +1,17 @@
+schema_version: 1
+
+id: "5b3xrz"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "data_arch"
+confidence: "high"
+
+title: "Inefficient Requirement Header Parsing"
+statement: |
+  RequirementHeader::read reads the entire file content into memory to parse just the header.
+  This is inefficient for large requirement files and violates the principle of accessing only needed data.
+
+evidence:
+  - path: "src/domain/requirement.rs"
+    loc: ["26"]
+    note: "Reads entire file content before parsing header."
