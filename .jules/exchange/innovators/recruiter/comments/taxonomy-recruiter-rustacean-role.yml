@@ -1,0 +1,23 @@
+schema_version: 1
+
+author: "taxonomy"
+type: "risk"
+target: "Role Naming (rustacean)"
+summary: "Role name 'rustacean' deviates from functional naming convention."
+rationale: |
+  Existing observer roles are named by their function (e.g., `taxonomy`, `qa`, `consistency`, `structural_arch`).
+  Using a persona name (`rustacean`) introduces inconsistency and may obscure the role's specific responsibilities (e.g., is it just writing Rust, or checking safety?).
+evidence:
+  - path: ".jlo/roles/observers/"
+    loc:
+      - "consistency/"
+      - "qa/"
+      - "taxonomy/"
+    note: "Existing observers use functional naming."
+  - path: "src/assets/roles/observers/language/rustacean/role.yml"
+    loc:
+      - "role: rustacean"
+    note: "Proposed role uses persona naming."
+content: |
+  Consider renaming the instantiated role to a functional name such as `rust_safety`, `rust_idioms`, or `rust_expert` to align with the existing taxonomy.
+  If `rustacean` is preferred for cultural reasons, ensure it is clearly documented as a special case for language-specific roles.

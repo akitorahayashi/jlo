@@ -1,0 +1,44 @@
+schema_version: 1
+
+# Metadata
+id: "tddup1"
+issue_id: "" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-13"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Duplicated Test Doubles (FakeGit/FakeGitHub)"
+statement: |
+  Multiple implementations of `FakeGit` and `FakeGitHub` exist across the codebase with identical or similar logic. This violates DRY and creates potential inconsistencies in mock behavior, making tests harder to maintain and reason about.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/workflow/workspace/publish_proposals.rs"
+    loc:
+      - "struct FakeGit;"
+      - "struct FakeGitHub {"
+    note: "Inline redefinition of FakeGit and FakeGitHub."
+
+  - path: "src/app/commands/workflow/gh/pr/process.rs"
+    loc:
+      - "struct FakeGitHub {"
+    note: "Inline redefinition of FakeGitHub."
+
+  - path: "src/app/commands/run/layer/decider.rs"
+    loc:
+      - "struct FakeGit {"
+      - "struct FakeGitHub;"
+    note: "Inline redefinition of FakeGit and FakeGitHub."
+
+  - path: "src/app/commands/run/layer/implementer.rs"
+    loc:
+      - "struct FakeGit {"
+      - "struct FakeGitHub;"
+    note: "Inline redefinition of FakeGit and FakeGitHub."
+
+  - path: "src/app/commands/run/layer/innovators.rs"
+    loc:
+      - "struct FakeGit {"
+      - "struct FakeGitHub;"
+    note: "Inline redefinition of FakeGit and FakeGitHub."
