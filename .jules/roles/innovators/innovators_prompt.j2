@@ -1,0 +1,6 @@
+{{ section("Layer Contracts", include_required(".jules/roles/innovators/contracts.yml")) }}
+{{ section("Role", include_required(".jlo/roles/innovators/" ~ role ~ "/role.yml")) }}
+{{ section("Task", task) }}
+{{ section("Persona Perspective", include_optional(".jules/exchange/innovators/" ~ role ~ "/perspective.yml")) }}
+{{ section("Current Idea", include_optional(".jules/exchange/innovators/" ~ role ~ "/idea.yml")) }}
+{{ section("Change Summary", include_optional(".jules/exchange/changes.yml")) }}
