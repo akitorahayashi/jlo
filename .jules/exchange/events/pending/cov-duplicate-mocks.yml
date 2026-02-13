@@ -1,0 +1,27 @@
+schema_version: 1
+
+# Metadata
+id: "d8f9g0"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "cov"
+confidence: "high"
+
+# Content
+title: "Duplicate mock implementations for Git/GitHub ports in domain layers"
+statement: |
+  The `FakeGit` and `FakeGitHub` structs are defined identically in both `src/domain/layers/implementer.rs` and `src/domain/layers/decider.rs`. This duplication violates DRY and increases the risk of inconsistent test behavior if one is updated but the other is not. They should be consolidated into a shared test utility module.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/layers/implementer.rs"
+    loc:
+      - "struct FakeGit"
+      - "struct FakeGitHub"
+    note: "Duplicate definition inside #[cfg(test)] module."
+
+  - path: "src/domain/layers/decider.rs"
+    loc:
+      - "struct FakeGit"
+      - "struct FakeGitHub"
+    note: "Duplicate definition inside #[cfg(test)] module."
