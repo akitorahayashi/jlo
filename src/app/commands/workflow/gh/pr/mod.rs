@@ -5,5 +5,4 @@
 pub mod events;
 pub mod process;
 
-pub use events::{CommentSummaryRequestOptions, EnableAutomergeOptions, SyncCategoryLabelOptions};
 pub use process::{ProcessMode, ProcessOptions};
