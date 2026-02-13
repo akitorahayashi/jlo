@@ -5,13 +5,10 @@ enabled = true
 roles = [
   { name = "consistency", enabled = true },
   { name = "taxonomy", enabled = true },
-  { name = "librarian", enabled = true },
-  { name = "tactician", enabled = true },
   { name = "data_arch", enabled = true },
+  { name = "structural_arch", enabled = true },
   { name = "qa", enabled = true },
   { name = "cov", enabled = true },
-  { name = "rustacean", enabled = true },
-  { name = "codifier", enabled = true },
 ]
 
 [innovators]
