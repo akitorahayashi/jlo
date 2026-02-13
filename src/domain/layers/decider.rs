@@ -134,7 +134,7 @@ where
     H: GitHubPort + ?Sized,
     W: WorkspaceStore,
 {
-    let service = MockExecutionService::new(jules_path, config, git, github, workspace);
+    let service = MockExecutionService::new(git, github);
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Decider, &timestamp)?;

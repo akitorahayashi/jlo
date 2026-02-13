@@ -224,7 +224,7 @@ fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
 }
 
 fn execute_mock<G, H, W>(
-    jules_path: &Path,
+    _jules_path: &Path,
     options: &RunOptions,
     config: &MockConfig,
     git: &G,
@@ -236,7 +236,7 @@ where
     H: GitHubPort + ?Sized,
     W: WorkspaceStore,
 {
-    let service = MockExecutionService::new(jules_path, config, git, github, workspace);
+    let service = MockExecutionService::new(git, github);
 
     let original_branch = git.get_current_branch()?;
 

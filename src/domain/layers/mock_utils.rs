@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use include_dir::{Dir, include_dir};
 
-use crate::domain::{AppError, IoErrorKind, MockConfig, MockOutput};
+use crate::domain::{AppError, IoErrorKind, MockOutput};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 
 /// Mock assets embedded in the binary.
@@ -83,31 +83,18 @@ pub fn list_mock_tagged_files<W: WorkspaceStore + ?Sized>(
 }
 
 /// Service for executing mock workflows.
-pub struct MockExecutionService<'a, G: ?Sized, H: ?Sized, W: ?Sized> {
-    #[allow(dead_code)]
-    pub jules_path: &'a Path,
-    #[allow(dead_code)]
-    pub config: &'a MockConfig,
+pub struct MockExecutionService<'a, G: ?Sized, H: ?Sized> {
     pub git: &'a G,
     pub github: &'a H,
-    #[allow(dead_code)]
-    pub workspace: &'a W,
 }
 
-impl<'a, G, H, W> MockExecutionService<'a, G, H, W>
+impl<'a, G, H> MockExecutionService<'a, G, H>
 where
     G: GitPort + ?Sized,
     H: GitHubPort + ?Sized,
-    W: WorkspaceStore + ?Sized,
 {
-    pub fn new(
-        jules_path: &'a Path,
-        config: &'a MockConfig,
-        git: &'a G,
-        github: &'a H,
-        workspace: &'a W,
-    ) -> Self {
-        Self { jules_path, config, git, github, workspace }
+    pub fn new(git: &'a G, github: &'a H) -> Self {
+        Self { git, github }
     }
 
     /// Fetch origin and checkout a base branch (detached HEAD).
