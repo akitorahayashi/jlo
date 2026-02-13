@@ -1,0 +1,13 @@
+schema_version: 1
+
+id: "rust01"
+persona: "recruiter"
+created_at: "2024-10-26"
+
+title: "Hire Rustacean Observer for Unsafe Code Monitoring"
+problem: |
+  The codebase contains `unsafe` blocks in tests (e.g., `src/domain/configuration/loader.rs`, `src/app/commands/workflow/output.rs`) and complex ownership patterns like `Arc<Mutex<T>>` in `src/domain/prompt_assembly/engine.rs`. However, the `rustacean` observer, which is defined in `src/assets/roles/observers/language/rustacean/role.yml`, is not currently instantiated in `.jlo/roles/observers/`. This leaves these safety-critical patterns without dedicated oversight or feedback loops.
+introduction: |
+  Instantiate the `rustacean` observer by deploying it from `src/assets/roles/observers/language/rustacean/role.yml` to `.jlo/roles/observers/rustacean/`. This role is already defined in the system's asset catalog and specializes in "concurrency safety (Send/Sync boundaries; minimize shared mutable state; avoid unsafe escapes)" and identifying anti-patterns like "Defaulting to Rc<RefCell<T>> / Arc<Mutex<T>>".
+expected_value: |
+  Deploying this role will introduce a boundary check for `unsafe` blocks and concurrency primitives, reducing the risk of undefined behavior, memory safety issues, and thread-safety violations. It fills a "cognitive capability" gap (Rust-specific safety analysis) identified by the Recruiter persona.
