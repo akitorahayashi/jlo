@@ -1,0 +1,49 @@
+
+running 29 tests
+test workflow_contracts::bootstrap::bootstrap_fails_without_control_plane_contract::bootstrap_fails_without_control_plane ... ok
+test workflow_contracts::scaffold::init_installs_workflow_scaffold_contract::init_requires_runner_mode ... ok
+test workflow_contracts::scaffold::implementer_pr_workflow_delegates_metadata_commands_contract::implementer_metadata_path_delegates_to_unified_process_command ... ok
+test workflow_contracts::scaffold::init_installs_workflow_scaffold_contract::init_installs_self_hosted_workflow_scaffold ... ok
+test workflow_contracts::scaffold::automerge_delegates_to_jlo_command_contract::automerge_path_delegates_policy_to_jlo_process_command ... ok
+test workflow_contracts::scaffold::init_installs_workflow_scaffold_contract::init_installs_remote_workflow_scaffold ... ok
+test workflow_contracts::scaffold::init_workflows_config_contract::init_workflows_fails_on_invalid_config ... ok
+test workflow_contracts::scaffold::init_workflows_config_contract::init_workflows_overwrites_invalid_existing_workflow ... FAILED
+test workflow_contracts::scaffold::init_workflows_config_contract::init_workflows_generates_timing_from_config ... FAILED
+test workflow_contracts::scaffold::init_workflows_config_contract::init_workflows_requires_config ... ok
+test workflow_contracts::bootstrap::bootstrap_materializes_expected_workspace_contract::bootstrap_materializes_expected_runtime_workspace ... ok
+test workflow_contracts::scaffold::init_workflows_preserves_unrelated_files_contract::init_workflows_preserves_unrelated_files ... FAILED
+test workflow_contracts::bootstrap::bootstrap_fails_without_version_pin_contract::bootstrap_fails_without_control_plane_version_pin ... ok
+test workflow_contracts::bootstrap::bootstrap_no_projection_contract::bootstrap_does_not_project_unknown_control_plane_directories ... ok
+test workflow_contracts::bootstrap::bootstrap_no_projection_contract::bootstrap_does_not_project_control_plane_roles ... ok
+test workflow_contracts::bootstrap::bootstrap_additive_contract::bootstrap_does_not_delete_unmanaged_files_in_runtime_plane ... ok
+test workflow_contracts::scaffold::init_workflows_preserves_unrelated_files_contract::init_workflows_removes_stale_jules_workflows ... FAILED
+test workflow_contracts::scaffold::workflow_generate_contract::workflow_generate_overwrites_by_default ... FAILED
+test workflow_contracts::scaffold::workflow_generate_contract::workflow_generate_uses_default_output_dir ... FAILED
+test workflow_contracts::scaffold::workflow_generate_contract::workflow_generate_writes_expected_files_to_custom_output_dir ... FAILED
+test workflow_contracts::scaffold::workflow_scaffold_yaml_validity_contract::workflow_templates_parse_with_serde_yaml ... FAILED
+test workflow_contracts::scaffold::workflow_scaffold_yaml_validity_contract::workflow_templates_pass_yaml_lint_remote ... FAILED
+test workflow_contracts::scaffold::sync_workflow_serializes_worker_branch_updates_contract::sync_path_serializes_worker_branch_updates_within_primary_workflow ... ok
+test workflow_contracts::scaffold::workflow_scaffold_yaml_validity_contract::workflow_templates_pass_yaml_lint_self_hosted ... FAILED
+test workflow_contracts::scaffold::workflow_scaffold_excludes_scripts_contract::installed_workflow_scaffold_has_no_script_references ... ok
+test workflow_contracts::scaffold::workflow_scaffold_yaml_validity_contract::workflow_templates_validate_structure ... FAILED
+test workflow_contracts::scaffold::workflow_scaffold_branch_contract::installed_workflow_scaffold_enforces_explicit_branch_contract ... ok
+test workflow_contracts::scaffold::workflow_scaffold_pause_variable_contract::installed_workflow_scaffold_uses_jlo_paused_variable ... ok
+test workflow_contracts::scaffold::workflow_scaffold_mock_support_contract::installed_workflow_scaffold_includes_mock_support ... ok
+
+failures:
+
+failures:
+    workflow_contracts::scaffold::init_workflows_config_contract::init_workflows_generates_timing_from_config
+    workflow_contracts::scaffold::init_workflows_config_contract::init_workflows_overwrites_invalid_existing_workflow
+    workflow_contracts::scaffold::init_workflows_preserves_unrelated_files_contract::init_workflows_preserves_unrelated_files
+    workflow_contracts::scaffold::init_workflows_preserves_unrelated_files_contract::init_workflows_removes_stale_jules_workflows
+    workflow_contracts::scaffold::workflow_generate_contract::workflow_generate_overwrites_by_default
+    workflow_contracts::scaffold::workflow_generate_contract::workflow_generate_uses_default_output_dir
+    workflow_contracts::scaffold::workflow_generate_contract::workflow_generate_writes_expected_files_to_custom_output_dir
+    workflow_contracts::scaffold::workflow_scaffold_yaml_validity_contract::workflow_templates_parse_with_serde_yaml
+    workflow_contracts::scaffold::workflow_scaffold_yaml_validity_contract::workflow_templates_pass_yaml_lint_remote
+    workflow_contracts::scaffold::workflow_scaffold_yaml_validity_contract::workflow_templates_pass_yaml_lint_self_hosted
+    workflow_contracts::scaffold::workflow_scaffold_yaml_validity_contract::workflow_templates_validate_structure
+
+test result: FAILED. 18 passed; 11 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.75s
+

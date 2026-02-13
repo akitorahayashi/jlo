@@ -55,18 +55,18 @@ where
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     // Validate branch override if provided
-    if let Some(b) = branch {
-        if !validate_safe_path_component(b) {
-            return Err(AppError::Validation(format!(
-                "Invalid branch '{}': must be a safe path component",
-                b,
-            )));
-        }
+    if let Some(b) = branch
+        && !validate_safe_path_component(b)
+    {
+        return Err(AppError::Validation(format!(
+            "Invalid branch '{}': must be a safe path component",
+            b,
+        )));
     }
 
     // Integrator starts from the target branch (same basis as implementer output routing)
     let starting_branch =
-        branch.map(String::from).unwrap_or_else(|| config.run.default_branch.clone());
+        branch.map(String::from).unwrap_or_else(|| config.run.jlo_target_branch.clone());
 
     // Resolve implementer branch prefix from its contracts for discovery
     let implementer_prefix = load_implementer_branch_prefix(jules_path, workspace)?;

@@ -84,7 +84,7 @@ where
     let requirement_content = workspace.read_file(&requirement_info.requirement_path_str)?;
 
     let starting_branch =
-        branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
+        branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
 
     if prompt_preview {
         execute_prompt_preview(
@@ -221,7 +221,7 @@ where
 
     // Fetch and checkout from jules branch
     git.fetch("origin")?;
-    git.checkout_branch(&format!("origin/{}", config.jules_branch), false)?;
+    git.checkout_branch(&format!("origin/{}", config.jules_worker_branch), false)?;
     git.checkout_branch(&branch_name, true)?;
 
     // Read and modify requirement file
@@ -264,7 +264,7 @@ analysis_details: |
     // Create PR
     let pr = github.create_pull_request(
         &branch_name,
-        &config.jules_branch,
+        &config.jules_worker_branch,
         &format!("[{}] Planner analysis", config.mock_tag),
         &format!(
             "Mock planner run for workflow validation.\n\nMock tag: `{}`\nRequirement: `{}`",

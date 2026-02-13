@@ -81,7 +81,7 @@ where
     let requirement_content = workspace.read_file(&requirement_info.requirement_path_str)?;
 
     let starting_branch =
-        branch.map(String::from).unwrap_or_else(|| config.run.default_branch.clone());
+        branch.map(String::from).unwrap_or_else(|| config.run.jlo_target_branch.clone());
 
     if prompt_preview {
         execute_prompt_preview(jules_path, &starting_branch, &requirement_content, workspace)?;
@@ -266,7 +266,7 @@ where
     println!("Mock implementer: creating branch {}", branch_name);
 
     // Fetch and checkout from default branch (not jules)
-    let base_branch = options.branch.as_deref().unwrap_or(&config.default_branch);
+    let base_branch = options.branch.as_deref().unwrap_or(&config.jlo_target_branch);
     service.fetch_and_checkout_base(base_branch)?;
     service.checkout_new_branch(&branch_name)?;
 
@@ -310,7 +310,7 @@ where
     // Restore original branch so post-run cleanup (requirement + source events) runs on
     // the exchange-bearing branch instead of the implementer branch.
     let restore_branch = if original_branch.trim().is_empty() {
-        config.jules_branch.as_str()
+        config.jules_worker_branch.as_str()
     } else {
         &original_branch
     };
@@ -508,8 +508,8 @@ mod tests {
         MockConfig {
             mock_tag: "mock-test-impl".to_string(),
             branch_prefixes: prefixes,
-            default_branch: "main".to_string(),
-            jules_branch: "jules".to_string(),
+            jlo_target_branch: "main".to_string(),
+            jules_worker_branch: "jules".to_string(),
             issue_labels: vec!["bugs".to_string()],
         }
     }

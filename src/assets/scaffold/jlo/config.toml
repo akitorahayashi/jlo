@@ -1,8 +1,8 @@
 # jlo execution configuration
 
 [run]
-default_branch = "main"
-jules_branch = "jules"
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
 parallel = true
 max_parallel = 3
 

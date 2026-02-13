@@ -69,7 +69,7 @@ where
     W: WorkspaceStore + Clone + Send + Sync + 'static,
 {
     let starting_branch =
-        branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
+        branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
 
     if prompt_preview {
         println!("=== Prompt Preview: Decider ===");
@@ -142,7 +142,7 @@ where
     println!("Mock decider: creating branch {}", branch_name);
 
     // Fetch and checkout from jules branch
-    service.fetch_and_checkout_base(&config.jules_branch)?;
+    service.fetch_and_checkout_base(&config.jules_worker_branch)?;
     service.checkout_new_branch(&branch_name)?;
 
     // Find and process pending events
@@ -411,7 +411,7 @@ where
     // Create PR
     let pr = service.create_pr(
         &branch_name,
-        &config.jules_branch,
+        &config.jules_worker_branch,
         &format!("[{}] Decider triage", config.mock_tag),
         &format!("Mock decider run for workflow validation.\n\nMock tag: `{}`\n\nCreated requirements:\n- `{}` (requires analysis)\n- `{}` (ready for impl)",
             config.mock_tag, planner_issue_id, impl_issue_id),
@@ -572,8 +572,8 @@ mod tests {
         MockConfig {
             mock_tag: "mock-test-decider".to_string(),
             branch_prefixes: prefixes,
-            default_branch: "main".to_string(),
-            jules_branch: "jules".to_string(),
+            jlo_target_branch: "main".to_string(),
+            jules_worker_branch: "jules".to_string(),
             issue_labels: vec!["bugs".to_string()],
         }
     }

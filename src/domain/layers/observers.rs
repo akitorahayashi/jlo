@@ -89,7 +89,7 @@ where
     validate_role_exists(jules_path, Layer::Observers, role_id.as_str(), workspace)?;
 
     let starting_branch =
-        branch.map(String::from).unwrap_or_else(|| config.run.jules_branch.clone());
+        branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
 
     let bridge_task = resolve_observer_bridge_task(jules_path, workspace)?;
 
@@ -202,7 +202,7 @@ where
 
     // Fetch and checkout from jules branch
     git.fetch("origin")?;
-    git.checkout_branch(&format!("origin/{}", config.jules_branch), false)?;
+    git.checkout_branch(&format!("origin/{}", config.jules_worker_branch), false)?;
     git.checkout_branch(&branch_name, true)?;
 
     // Create mock events
@@ -315,7 +315,7 @@ where
     // Create PR
     let pr = github.create_pull_request(
         &branch_name,
-        &config.jules_branch,
+        &config.jules_worker_branch,
         &format!("[{}] Observer findings", config.mock_tag),
         &format!("Mock observer run for workflow validation.\n\nMock tag: `{}`", config.mock_tag),
     )?;

@@ -120,7 +120,7 @@ Mock mode creates real branches and PRs with synthetic commit content, enabling 
 
 ```toml
 [run]
-default_branch = "main"
+jlo_target_branch = "main"
 
 [jules]
 # api_url = "https://jules.googleapis.com/v1alpha/sessions"
