@@ -1,0 +1,17 @@
+schema_version: 1
+
+id: "unufld"
+issue_id: ""
+created_at: "2026-02-13"
+author_role: "structural_arch"
+confidence: "medium"
+
+title: "Unused Fields in MockExecutionService"
+statement: |
+  The `MockExecutionService` struct in `src/domain/layers/mock_utils.rs` has fields `jules_path`, `config`, and `workspace` marked as `#[allow(dead_code)]`. This indicates incomplete implementation, maintenance debt, or over-engineering.
+
+evidence:
+  - path: "src/domain/layers/mock_utils.rs"
+    loc:
+      - "85-95"
+    note: "Struct definition with unused fields"
