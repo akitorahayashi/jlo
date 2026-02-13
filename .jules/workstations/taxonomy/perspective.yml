@@ -1,0 +1,13 @@
+schema_version: 2
+observer: taxonomy
+updated_at: "2026-02-05T12:05:00Z"
+goals:
+  - "Identify naming collisions between Layer definitions and Role instances"
+  - "Audit 'roles' directory usage across .jlo and .jules"
+rules: []
+ignore: []
+log:
+  - at: "2026-02-05T12:05:00Z"
+    summary: "Created event namc01: Terminology Collision in 'roles' directory"
+  - at: "2026-02-05T12:00:00Z"
+    summary: "Initialized workstation"

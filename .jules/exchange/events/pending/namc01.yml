@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "namc01"
+issue_id: ""
+created_at: "2026-02-05"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Terminology Collision: 'roles' directory used for Layer Definitions"
+statement: |
+  The `.jules/roles` directory contains Layer definitions (e.g. `observers`, `narrator`), while `.jlo/roles` contains Role instances. This violates "One Concept, One Preferred Term" and creates confusion about whether a directory contains architectural Layers or specific Role personas. Additionally, `AGENTS.md` incorrectly claims a "renaming (layers -> roles)" step that does not exist in the code (it is a direct copy).
+
+# Evidence supporting the observation
+evidence:
+  - path: ".jules/roles/observers/observers_prompt.j2"
+    loc:
+      - "1"
+    note: "Layer-level artifact found in 'roles' directory."
+
+  - path: ".jlo/roles/observers/taxonomy/role.yml"
+    loc:
+      - "1"
+    note: "Role-level artifact found in 'roles' directory."
+
+  - path: "AGENTS.md"
+    loc:
+      - "21-23"
+    note: "Section 2 claims 'renaming (layers -> roles)' occurs, but source structure already uses 'roles'."
