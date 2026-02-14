@@ -1,0 +1,25 @@
+schema_version: 2
+id: v4c82z
+source_events:
+  - str001
+  - tax002
+title: Standardize Command Module Structure
+label: refacts
+priority: medium
+summary: Inconsistent command module structure in `src/app/commands/`.
+goal: |
+  Standardize command modules to be either all file-based or all directory-based (preferably directory-based for scalability).
+problem: |
+  "`src/app/commands/` mixes file-based modules (`init.rs`) and directory-based modules (`add/`), violating structural consistency."
+impact: |
+  Reduced discoverability and maintainability.
+desired_outcome: |
+  Consistent module structure.
+affected_areas:
+  - src/app/commands/
+acceptance_criteria:
+  - All top-level commands follow the same structural pattern.
+verification_criteria:
+  - "Verify that all top-level command modules in src/app/commands/ share a consistent structure."
+requires_deep_analysis: false
+deep_analysis_reason: ""

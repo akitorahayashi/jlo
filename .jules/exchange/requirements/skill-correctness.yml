@@ -1,0 +1,24 @@
+schema_version: 2
+id: f5g18h
+source_events:
+  - p6y91m
+title: Skill jules-api-guide is Static
+label: refacts
+priority: medium
+summary: The `jules-api-guide` skill is implemented as a static reference instead of a procedure.
+goal: |
+  Refactor `jules-api-guide` to be a reusable procedure blueprint.
+problem: |
+  The skill at `.agents/skills/jules-api-guide/SKILL.md` is a static reference guide, violating the `codifier` principle that skills must be reusable procedure blueprints.
+impact: |
+  Reduced reusability and effectiveness of the skill.
+desired_outcome: |
+  The skill is refactored into a procedural format.
+affected_areas:
+  - .agents/skills/jules-api-guide/SKILL.md
+acceptance_criteria:
+  - Skill follows procedural format.
+verification_criteria:
+  - Review skill content.
+requires_deep_analysis: false
+deep_analysis_reason: ""

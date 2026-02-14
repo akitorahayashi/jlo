@@ -1,0 +1,27 @@
+schema_version: 2
+id: m1n58x
+source_events:
+  - d0c004
+  - ev1001
+title: Developer Documentation Inaccuracies
+label: docs
+priority: medium
+summary: "`src/AGENTS.md` and root `AGENTS.md` contain inaccuracies regarding commands and paths."
+goal: |
+  Correct `src/AGENTS.md` and `AGENTS.md` to reflect the actual codebase state.
+problem: |
+  `src/AGENTS.md` omits the `jlo add` command. The root `AGENTS.md` incorrectly states that `src/assets/scaffold/jules/layers` maps to `.jules/roles` (actual source is `roles`).
+impact: |
+  Confusion for developers and agents relying on documentation as SSOT.
+desired_outcome: |
+  Documentation accurately describes the codebase.
+affected_areas:
+  - src/AGENTS.md
+  - AGENTS.md
+acceptance_criteria:
+  - "`jlo add` is listed in `src/AGENTS.md`."
+  - "`AGENTS.md` correctly maps `src/assets/scaffold/jules/roles` to `.jules/roles`."
+verification_criteria:
+  - "Review `src/AGENTS.md` and `AGENTS.md`."
+requires_deep_analysis: false
+deep_analysis_reason: ""

@@ -2,7 +2,7 @@ schema_version: 1
 id: rust02
 author_role: rustacean
 confidence: medium
-issue_id: ""
+issue_id: "n7b31p"
 created_at: "2026-02-14"
 title: "Excessive cloning in ComponentGraph resolution."
 statement: |

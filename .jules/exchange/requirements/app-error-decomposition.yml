@@ -1,0 +1,29 @@
+schema_version: 2
+id: j3k72l
+source_events:
+  - dat001
+  - rust01
+  - str002
+  - tax003
+title: Decompose Monolithic AppError
+label: refacts
+priority: high
+summary: "`AppError` is a monolithic enum that should be decomposed into domain-specific errors."
+goal: |
+  Decompose `AppError` into domain-specific error types (e.g., `WorkflowError`, `ConfigError`, `VcsError`).
+problem: |
+  The `AppError` enum in `src/domain/error.rs` is a single monolithic type that handles infrastructure, configuration, and domain errors. This leaks transport details into core domain logic and violates Boundary Sovereignty.
+impact: |
+  Brittle error handling, tight coupling, and dilution of domain meaning.
+desired_outcome: |
+  Domain-specific error types are used. `thiserror` is used for library errors, `anyhow` for application entry points where appropriate.
+affected_areas:
+  - src/domain/error.rs
+  - src/
+acceptance_criteria:
+  - "`AppError` is decomposed."
+  - Domain modules use specific error types.
+verification_criteria:
+  - Code review.
+requires_deep_analysis: true
+deep_analysis_reason: "High impact refactoring affecting almost all modules in the codebase."

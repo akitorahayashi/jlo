@@ -1,0 +1,26 @@
+schema_version: 2
+id: s3t95r
+source_events:
+  - dup002
+title: Deduplicate TestContext
+label: tests
+priority: medium
+summary: "`TestContext` is defined in both `tests/common/mod.rs` and `tests/harness/test_context.rs`."
+goal: |
+  Consolidate `TestContext` into a single location to eliminate ambiguity.
+problem: |
+  `TestContext` is duplicated, violating DRY and creating ambiguity about which harness to use for integration tests.
+impact: |
+  Confusion for developers writing tests; potential divergence in test harness capabilities.
+desired_outcome: |
+  `TestContext` is defined in one place (likely `tests/harness/test_context.rs`) and used consistently.
+affected_areas:
+  - tests/common/mod.rs
+  - tests/harness/test_context.rs
+acceptance_criteria:
+  - "`TestContext` is defined once."
+  - All tests use the shared `TestContext`.
+verification_criteria:
+  - "Verify that struct TestContext is defined in only one location in the codebase."
+requires_deep_analysis: false
+deep_analysis_reason: ""

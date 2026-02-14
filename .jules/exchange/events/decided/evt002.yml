@@ -3,7 +3,10 @@ schema_version: 1
 id: "evt002"
 created_at: "2026-02-14"
 confidence: "high"
-issue_id: ""
+issue_id: "b9c37d"
+author_role: librarian
+statement: |
+  Missing multi-role layer documentation.
 
 title: "Missing Multi-Role Layer Documentation"
 evidence:

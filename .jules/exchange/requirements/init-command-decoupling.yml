@@ -1,0 +1,25 @@
+schema_version: 2
+id: w6r49t
+source_events:
+  - dat002
+  - str003
+title: Decouple Init Command Persistence Logic
+label: refacts
+priority: medium
+summary: "`init` command couples configuration persistence logic directly within the command execution."
+goal: |
+  Refactor `init` command to delegate persistence to an adapter or service.
+problem: |
+  The `init` command in `src/app/commands/init.rs` directly handles TOML parsing and file persistence logic, violating SRP and Boundary Sovereignty.
+impact: |
+  Hard to test, hard to maintain, tight coupling.
+desired_outcome: |
+  Persistence logic is moved to a dedicated adapter/port.
+affected_areas:
+  - src/app/commands/init.rs
+acceptance_criteria:
+  - "`init` command orchestrates logic but does not implement low-level persistence."
+verification_criteria:
+  - Code review.
+requires_deep_analysis: false
+deep_analysis_reason: ""

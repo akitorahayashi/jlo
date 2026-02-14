@@ -1,0 +1,27 @@
+schema_version: 2
+id: d9f56g
+source_events:
+  - ev1002
+  - tax001
+title: Resolve Update Command Ambiguity
+label: refacts
+priority: medium
+summary: "`jlo update` is overloaded for both workspace and binary updates."
+goal: |
+  Separate binary upgrade functionality from workspace update, or clarify the command interface.
+problem: |
+  "`jlo update` handles control-plane updates (`update.rs`) and CLI binary upgrades (`cli_upgrade.rs` via `--cli`), creating semantic collision."
+impact: |
+  User confusion about what "update" does.
+desired_outcome: |
+  Distinct commands or clear subcommands/flags for different update types.
+affected_areas:
+  - src/app/cli/mod.rs
+  - src/app/commands/update.rs
+  - src/app/commands/cli_upgrade.rs
+acceptance_criteria:
+  - Command interface is unambiguous.
+verification_criteria:
+  - Review CLI help and command structure.
+requires_deep_analysis: false
+deep_analysis_reason: ""

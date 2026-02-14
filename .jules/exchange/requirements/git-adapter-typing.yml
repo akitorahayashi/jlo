@@ -1,0 +1,24 @@
+schema_version: 2
+id: y2x85m
+source_events:
+  - dat003
+title: Strongly Typed Git Adapters
+label: refacts
+priority: medium
+summary: "`GitCommandAdapter` relies on brittle string construction and parsing."
+goal: |
+  Refactor `GitCommandAdapter` to use strong types and possibly a dedicated git library (like `git2`) instead of shell commands.
+problem: |
+  "`GitCommandAdapter` in `src/adapters/git_command.rs` relies on string construction for shell commands and parsing for results, which is error-prone."
+impact: |
+  Increased risk of runtime errors due to command formatting or output parsing issues.
+desired_outcome: |
+  Git interactions are type-safe and robust.
+affected_areas:
+  - src/adapters/git_command.rs
+acceptance_criteria:
+  - Git operations use structured arguments and return structured types.
+verification_criteria:
+  - Code review.
+requires_deep_analysis: false
+deep_analysis_reason: ""
