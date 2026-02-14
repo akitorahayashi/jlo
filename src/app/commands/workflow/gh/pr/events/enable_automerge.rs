@@ -111,131 +111,60 @@ fn skip(pr_number: u64, reason: String) -> EnableAutomergeOutput {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
-    use std::cell::RefCell;
-
-    struct FakeGitHub {
-        pr_detail: PullRequestDetail,
-        files: Vec<String>,
-        automerge_called: RefCell<bool>,
-    }
-
-    impl FakeGitHub {
-        fn eligible_pr() -> Self {
-            Self {
-                pr_detail: PullRequestDetail {
-                    number: 1,
-                    head: "jules-narrator-abc123".to_string(),
-                    base: "jules".to_string(),
-                    is_draft: false,
-                    auto_merge_enabled: false,
-                },
-                files: vec![".jules/exchange/events/pending/state.yml".to_string()],
-                automerge_called: RefCell::new(false),
-            }
-        }
-    }
-
-    impl GitHubPort for FakeGitHub {
-        fn create_pull_request(
-            &self,
-            h: &str,
-            b: &str,
-            _: &str,
-            _: &str,
-        ) -> Result<PullRequestInfo, AppError> {
-            Ok(PullRequestInfo { number: 1, url: String::new(), head: h.into(), base: b.into() })
-        }
-        fn close_pull_request(&self, _: u64) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn delete_branch(&self, _: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn create_issue(&self, _: &str, _: &str, _: &[&str]) -> Result<IssueInfo, AppError> {
-            Ok(IssueInfo { number: 1, url: String::new() })
-        }
-        fn get_pr_detail(&self, _: u64) -> Result<PullRequestDetail, AppError> {
-            Ok(self.pr_detail.clone())
-        }
-        fn list_pr_comments(&self, _: u64) -> Result<Vec<PrComment>, AppError> {
-            Ok(Vec::new())
-        }
-        fn create_pr_comment(&self, _: u64, _: &str) -> Result<u64, AppError> {
-            Ok(1)
-        }
-        fn update_pr_comment(&self, _: u64, _: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn ensure_label(&self, _: &str, _: Option<&str>) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn add_label_to_pr(&self, _: u64, _: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn add_label_to_issue(&self, _: u64, _: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn enable_automerge(&self, _: u64) -> Result<(), AppError> {
-            *self.automerge_called.borrow_mut() = true;
-            Ok(())
-        }
-        fn list_pr_files(&self, _: u64) -> Result<Vec<String>, AppError> {
-            Ok(self.files.clone())
-        }
-    }
+    use crate::testing::FakeGitHub;
+    use std::sync::atomic::Ordering;
 
     #[test]
     fn enables_automerge_on_eligible_pr() {
-        let gh = FakeGitHub::eligible_pr();
-        let out = execute(&gh, EnableAutomergeOptions { pr_number: 1 }).unwrap();
+        let gh = FakeGitHub::jules_runtime_pr();
+        let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
         assert!(out.applied);
         assert_eq!(out.automerge_state.as_deref(), Some("enabled"));
-        assert!(*gh.automerge_called.borrow());
+        assert!(gh.automerge_calls.load(Ordering::SeqCst) > 0);
     }
 
     #[test]
     fn enables_automerge_on_mock_cleanup_branch() {
-        let mut gh = FakeGitHub::eligible_pr();
-        gh.pr_detail.head = "jules-mock-cleanup-mock-run-123".to_string();
-        let out = execute(&gh, EnableAutomergeOptions { pr_number: 1 }).unwrap();
+        let gh = FakeGitHub::jules_runtime_pr();
+        gh.pr_detail.lock().unwrap().head = "jules-mock-cleanup-mock-run-123".to_string();
+        let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
         assert!(out.applied);
         assert_eq!(out.automerge_state.as_deref(), Some("enabled"));
-        assert!(*gh.automerge_called.borrow());
+        assert!(gh.automerge_calls.load(Ordering::SeqCst) > 0);
     }
 
     #[test]
     fn skips_non_jules_branch() {
-        let mut gh = FakeGitHub::eligible_pr();
-        gh.pr_detail.head = "feature/something".to_string();
-        let out = execute(&gh, EnableAutomergeOptions { pr_number: 1 }).unwrap();
+        let gh = FakeGitHub::jules_runtime_pr();
+        gh.pr_detail.lock().unwrap().head = "feature/something".to_string();
+        let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
         assert!(!out.applied);
         assert!(out.skipped_reason.unwrap().contains("does not match"));
     }
 
     #[test]
     fn skips_draft_pr() {
-        let mut gh = FakeGitHub::eligible_pr();
-        gh.pr_detail.is_draft = true;
-        let out = execute(&gh, EnableAutomergeOptions { pr_number: 1 }).unwrap();
+        let gh = FakeGitHub::jules_runtime_pr();
+        gh.pr_detail.lock().unwrap().is_draft = true;
+        let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
         assert!(!out.applied);
         assert!(out.skipped_reason.unwrap().contains("draft"));
     }
 
     #[test]
     fn skips_already_enabled() {
-        let mut gh = FakeGitHub::eligible_pr();
-        gh.pr_detail.auto_merge_enabled = true;
-        let out = execute(&gh, EnableAutomergeOptions { pr_number: 1 }).unwrap();
+        let gh = FakeGitHub::jules_runtime_pr();
+        gh.pr_detail.lock().unwrap().auto_merge_enabled = true;
+        let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
         assert!(!out.applied);
         assert_eq!(out.automerge_state.as_deref(), Some("already_enabled"));
     }
 
     #[test]
     fn skips_out_of_scope_files() {
-        let mut gh = FakeGitHub::eligible_pr();
-        gh.files = vec![".jules/state.yml".to_string(), "src/main.rs".to_string()];
-        let out = execute(&gh, EnableAutomergeOptions { pr_number: 1 }).unwrap();
+        let gh = FakeGitHub::jules_runtime_pr()
+            .with_files(vec![".jules/state.yml".to_string(), "src/main.rs".to_string()]);
+        let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
         assert!(!out.applied);
         assert!(out.skipped_reason.unwrap().contains("outside .jules/"));
     }

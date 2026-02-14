@@ -93,150 +93,54 @@ pub fn execute(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
-    use std::cell::RefCell;
-
-    struct FakeGitHub {
-        pr_detail: PullRequestDetail,
-        comments: RefCell<Vec<PrComment>>,
-        next_comment_id: RefCell<u64>,
-    }
-
-    impl FakeGitHub {
-        fn jules_pr() -> Self {
-            Self {
-                pr_detail: PullRequestDetail {
-                    number: 1,
-                    head: "jules-narrator-abc123".to_string(),
-                    base: "main".to_string(),
-                    is_draft: false,
-                    auto_merge_enabled: false,
-                },
-                comments: RefCell::new(Vec::new()),
-                next_comment_id: RefCell::new(100),
-            }
-        }
-
-        fn non_jules_pr() -> Self {
-            Self {
-                pr_detail: PullRequestDetail {
-                    number: 2,
-                    head: "feature/something".to_string(),
-                    base: "main".to_string(),
-                    is_draft: false,
-                    auto_merge_enabled: false,
-                },
-                comments: RefCell::new(Vec::new()),
-                next_comment_id: RefCell::new(100),
-            }
-        }
-    }
-
-    impl GitHubPort for FakeGitHub {
-        fn create_pull_request(
-            &self,
-            h: &str,
-            b: &str,
-            _: &str,
-            _: &str,
-        ) -> Result<PullRequestInfo, AppError> {
-            Ok(PullRequestInfo { number: 1, url: String::new(), head: h.into(), base: b.into() })
-        }
-        fn close_pull_request(&self, _: u64) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn delete_branch(&self, _: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn create_issue(&self, _: &str, _: &str, _: &[&str]) -> Result<IssueInfo, AppError> {
-            Ok(IssueInfo { number: 1, url: String::new() })
-        }
-        fn get_pr_detail(&self, _: u64) -> Result<PullRequestDetail, AppError> {
-            Ok(self.pr_detail.clone())
-        }
-        fn list_pr_comments(&self, _: u64) -> Result<Vec<PrComment>, AppError> {
-            Ok(self.comments.borrow().clone())
-        }
-        fn create_pr_comment(&self, _: u64, body: &str) -> Result<u64, AppError> {
-            let id = *self.next_comment_id.borrow();
-            *self.next_comment_id.borrow_mut() += 1;
-            self.comments.borrow_mut().push(PrComment { id, body: body.to_string() });
-            Ok(id)
-        }
-        fn update_pr_comment(&self, id: u64, body: &str) -> Result<(), AppError> {
-            let mut comments = self.comments.borrow_mut();
-            if let Some(c) = comments.iter_mut().find(|c| c.id == id) {
-                c.body = body.to_string();
-            }
-            Ok(())
-        }
-        fn ensure_label(&self, _: &str, _: Option<&str>) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn add_label_to_pr(&self, _: u64, _: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn add_label_to_issue(&self, _: u64, _: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn enable_automerge(&self, _: u64) -> Result<(), AppError> {
-            Ok(())
-        }
-        fn list_pr_files(&self, _: u64) -> Result<Vec<String>, AppError> {
-            Ok(Vec::new())
-        }
-    }
+    use crate::ports::PrComment;
+    use crate::testing::FakeGitHub;
 
     #[test]
     fn skips_non_jules_branch() {
         let gh = FakeGitHub::non_jules_pr();
-        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 2 }).unwrap();
+        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 99 }).unwrap();
         assert!(!out.applied);
         assert!(out.skipped_reason.unwrap().contains("does not start with 'jules-'"));
     }
 
     #[test]
     fn creates_comment_on_jules_pr() {
-        let gh = FakeGitHub::jules_pr();
-        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 1 }).unwrap();
+        let gh = FakeGitHub::jules_runtime_pr();
+        gh.pr_detail.lock().unwrap().head = "jules-narrator-abc123".to_string();
+        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 42 }).unwrap();
         assert!(out.applied);
         assert_eq!(out.comment_id, Some(100));
-        assert_eq!(gh.comments.borrow().len(), 1);
-        assert!(gh.comments.borrow()[0].body.contains(MANAGED_COMMENT_MARKER));
+        assert_eq!(gh.comments.lock().unwrap().len(), 1);
+        assert!(gh.comments.lock().unwrap()[0].body.contains(MANAGED_COMMENT_MARKER));
     }
 
     #[test]
     fn updates_existing_managed_comment() {
-        let gh = FakeGitHub::jules_pr();
+        let gh = FakeGitHub::jules_runtime_pr();
+        gh.pr_detail.lock().unwrap().head = "jules-narrator-abc123".to_string();
         // Seed an existing managed comment
         gh.comments
-            .borrow_mut()
+            .lock()
+            .unwrap()
             .push(PrComment { id: 50, body: format!("{}\nold content", MANAGED_COMMENT_MARKER) });
 
-        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 1 }).unwrap();
+        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 42 }).unwrap();
         assert!(out.applied);
         assert_eq!(out.comment_id, Some(50));
         // Should update, not create a new one
-        assert_eq!(gh.comments.borrow().len(), 1);
-        assert!(gh.comments.borrow()[0].body.contains("Summary of Changes"));
+        assert_eq!(gh.comments.lock().unwrap().len(), 1);
+        assert!(gh.comments.lock().unwrap()[0].body.contains("Summary of Changes"));
     }
 
     #[test]
     fn implementer_pr_uses_implementer_template() {
-        let gh = FakeGitHub {
-            pr_detail: PullRequestDetail {
-                number: 3,
-                head: "jules-implementer-bugs-abc123-fix-crash".to_string(),
-                base: "main".to_string(),
-                is_draft: false,
-                auto_merge_enabled: false,
-            },
-            comments: RefCell::new(Vec::new()),
-            next_comment_id: RefCell::new(100),
-        };
-        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 3 }).unwrap();
+        let gh = FakeGitHub::jules_runtime_pr();
+        gh.pr_detail.lock().unwrap().head = "jules-implementer-bugs-abc123-fix-crash".to_string();
+        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 42 }).unwrap();
         assert!(out.applied);
-        let body = &gh.comments.borrow()[0].body;
+        let comments = gh.comments.lock().unwrap();
+        let body = &comments[0].body;
         assert!(
             body.contains("Summary of Changes"),
             "implementer template should contain 'Summary of Changes'"
@@ -249,20 +153,12 @@ mod tests {
 
     #[test]
     fn integrator_pr_uses_integrator_template() {
-        let gh = FakeGitHub {
-            pr_detail: PullRequestDetail {
-                number: 4,
-                head: "jules-integrator-20260213-abc123".to_string(),
-                base: "main".to_string(),
-                is_draft: false,
-                auto_merge_enabled: false,
-            },
-            comments: RefCell::new(Vec::new()),
-            next_comment_id: RefCell::new(100),
-        };
-        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 4 }).unwrap();
+        let gh = FakeGitHub::jules_runtime_pr();
+        gh.pr_detail.lock().unwrap().head = "jules-integrator-20260213-abc123".to_string();
+        let out = execute(&gh, CommentSummaryRequestOptions { pr_number: 42 }).unwrap();
         assert!(out.applied);
-        let body = &gh.comments.borrow()[0].body;
+        let comments = gh.comments.lock().unwrap();
+        let body = &comments[0].body;
         assert!(
             body.contains("Integration Summary"),
             "integrator template should contain 'Integration Summary'"
