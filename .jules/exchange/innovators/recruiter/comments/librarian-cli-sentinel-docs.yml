@@ -1,0 +1,17 @@
+schema_version: 1
+
+author: "librarian"
+type: "supplement"
+target: "introduction"
+summary: "Document the CLI design rules enforced by the sentinel."
+rationale: |
+  Enforcement without documentation creates frustration. Contributors need a reference guide
+  for the rules (e.g., SVO structure) before they commit, so they can proactively comply.
+evidence:
+  - path: "src/assets/roles/observers/experience/cli_sentinel/role.yml"
+    loc: ["1"]
+    note: "The role defines rules, but there is no corresponding user-facing documentation in `docs/`."
+content: |
+  Consider adding a `docs/CLI_DESIGN_GUIDE.md` or similar to serve as the single source
+  of truth for the rules the sentinel enforces. This supports "Routing determinism" for
+  CLI style questions.

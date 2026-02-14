@@ -1,0 +1,21 @@
+schema_version: 1
+
+id: "e1f2g3"
+issue_id: ""
+created_at: "2025-05-22"
+author_role: "librarian"
+confidence: "high"
+
+title: "Layer Documentation in docs/layers/ is not indexed in AGENTS.md"
+statement: |
+  The `docs/layers/` directory contains specific agent documentation (e.g., `DECIDER.md`)
+  but is not referenced in the root `AGENTS.md` documentation index, making it undiscoverable
+  to new contributors.
+
+evidence:
+  - path: "AGENTS.md"
+    loc: ["## Documentation Index"]
+    note: "Index lists `src/AGENTS.md` and `docs/` files but omits `docs/layers/`."
+  - path: "docs/layers/DECIDER.md"
+    loc: ["1"]
+    note: "File exists but is orphaned from the index."
