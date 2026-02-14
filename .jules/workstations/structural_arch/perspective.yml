@@ -1,0 +1,12 @@
+schema_version: 2
+observer: "structural_arch"
+updated_at: "2026-02-14T07:45:39Z"
+goals:
+  - "Standardize `src/app/commands/` to use directory-based modules for all commands."
+  - "Resolve semantic ambiguity between `cli_upgrade` and `update` commands."
+  - "Enforce boundary rules between `domain`, `app`, and `adapters` layers."
+rules: []
+ignore: []
+log:
+  - at: "2026-02-14T07:45:39Z"
+    summary: "Initial observation: identified inconsistent command structure and ambiguous naming."
