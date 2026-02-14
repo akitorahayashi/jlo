@@ -1,0 +1,39 @@
+schema_version: 1
+
+id: "sent01"
+persona: "recruiter"
+
+created_at: "2026-02-14"
+
+title: "Activate cli_sentinel Observer"
+
+problem: |
+  The `src/app/commands/` directory exhibits structural inconsistency, mixing file-based modules (`init.rs`, `update.rs`) with directory-based modules (`add/`, `create/`). Furthermore, there is no active mechanism to enforce SVO (Subject-Verb-Object) design principles or audit option proliferation, leading to potential UX degradation as the CLI grows. Semantic ambiguity exists between `jlo update` (control-plane) and `jlo update --cli` (binary upgrade).
+
+introduction: |
+  Instantiate the `cli_sentinel` role from `src/assets/roles/observers/experience/cli_sentinel/role.yml` into `.jlo/roles/observers/cli_sentinel/`. This role is already defined but inactive. Its purpose is to audit CLI command designs for SVO consistency, option discipline, and I/O standards. This activation requires explicit scheduling in `.jlo/scheduled.toml` and documentation updates in `docs/layers/OBSERVERS.md`.
+
+importance: |
+  Activating this role is critical to prevent further structural entropy and UX debt. It ensures all future commands adhere to SVO principles, reducing cognitive load for users and maintainers. It also addresses the data architecture fragmentation highlighted by the inconsistent command structures.
+
+impact_surface:
+  - ".jlo/roles/observers/cli_sentinel/ (creation)"
+  - ".jlo/roles/observers/contracts.yml (update)"
+  - ".jlo/scheduled.toml (update - explicit scheduling)"
+  - "src/app/commands/run/layer/observers.rs (testing - cov)"
+  - "tests/workflow/ (integration tests - qa)"
+  - "docs/layers/OBSERVERS.md (documentation - librarian)"
+
+implementation_cost: |
+  Medium. Requires role instantiation, config updates, writing unit/integration tests for the observer runner and logic, and updating documentation.
+
+consistency_risks:
+  - "Risk of untested observer runner logic (highlighted by cov)."
+  - "Potential friction if existing commands violate new SVO rules immediately."
+
+verification_signals:
+  - "Role exists in .jlo/roles/observers/."
+  - "Role is scheduled in .jlo/scheduled.toml."
+  - "Unit tests for observer runner pass."
+  - "Integration tests verify observer execution."
+  - "jlo doctor passes with new role."

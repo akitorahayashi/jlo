@@ -20,16 +20,28 @@ repository_observations:
 thinking_notes:
   hypotheses:
     - "Activating cli_sentinel will drive the refactoring of src/app/commands into a consistent structure."
+    - "Observers require robust testing infrastructure to prevent regression."
   tradeoff_assessment:
     - "Adding a role increases compute/token cost but prevents long-term UX debt."
+    - "Implementation cost is increased by the need for new tests and documentation, but this ensures stability."
   rejected_paths:
     - "Proposed refactoring `src/app/commands` directly. Rejected: Recruiter role should propose the *capability* (the role), not the code change."
 
 # Observer feedback assimilation and next-cycle planning.
 feedback_assimilation:
-  observer_inputs: []
+  observer_inputs:
+    - "Consistency: Confirmed structural inconsistency and update/upgrade ambiguity."
+    - "Cov: Flagged lack of tests in observer runner (src/app/commands/run/layer/observers.rs)."
+    - "Data Arch: Confirmed correlation between command structure and data model fragmentation."
+    - "Librarian: Requested documentation in docs/layers/OBSERVERS.md."
+    - "QA: Requested unit and integration tests for the new observer."
+    - "Rustacean: Suggested checking for macro bloat and argument types."
+    - "Structural Arch: Strongly supported activation."
+    - "Tactician: Required explicit scheduling in .jlo/scheduled.toml."
+    - "Taxonomy: Suggested standardizing command terms."
   next_focus:
     - "Investigate potential gaps in the 'innovators' layer."
 
 # Newest first; keep max 15 entries (FIFO).
-recent_proposals: []
+recent_proposals:
+  - "Activate cli_sentinel Observer"
