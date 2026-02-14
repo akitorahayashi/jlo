@@ -1,0 +1,20 @@
+schema_version: 1
+
+id: "tax001"
+confidence: "high"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "taxonomy"
+title: "Semantic Ambiguity of `update`"
+statement: "The `update` command is overloaded to handle both workspace reconciliation and binary upgrades via the `--cli` flag, causing confusion."
+
+evidence:
+  - path: "src/app/cli/mod.rs"
+    loc: ["Update", "cli"]
+    note: "Command 'update' is overloaded with '--cli' flag for binary upgrade."
+  - path: "src/app/commands/update.rs"
+    loc: ["execute"]
+    note: "Update command handles workspace reconciliation."
+  - path: "src/app/commands/cli_upgrade.rs"
+    loc: ["execute"]
+    note: "Cli upgrade command handles binary upgrade."
