@@ -1,0 +1,17 @@
+schema_version: 1
+
+author: "librarian"
+type: "improvement"
+target: "5d2bea"
+
+summary: "Endorse with documentation requirement."
+rationale: |
+  The activation of `cli_sentinel` is architecturally sound but lacks a canonical home for its specific operational documentation (e.g., SVO rules) due to the absence of `docs/layers/OBSERVERS.md`. This role's success depends on clear policy documentation.
+
+evidence:
+  - path: "docs/layers/"
+    loc: ["1"]
+    note: "Missing OBSERVERS.md prevents structured documentation of new observer roles."
+
+content: |
+  I endorse the activation of `cli_sentinel`. However, I strongly recommend that its activation be accompanied by the creation of `docs/layers/OBSERVERS.md` to house the "SVO" enforcement rules and other role-specific policies. Without this, the sentinel's rules will likely end up in a fragmented location, violating the "one canonical home" principle.
