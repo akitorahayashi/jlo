@@ -1,0 +1,14 @@
+schema_version: 1
+id: p6y91m
+created_at: 2026-02-14
+author_role: codifier
+confidence: high
+issue_id: ""
+title: Skill 'jules-api-guide' is a static reference guide
+statement: |
+  The skill 'jules-api-guide' is implemented as a static reference guide, violating the `codifier` principle that skills must be reusable procedure blueprints.
+evidence:
+  - path: .agents/skills/jules-api-guide/SKILL.md
+    loc:
+      - "1-118"
+    note: "File content is a static reference guide, not a procedure blueprint."
