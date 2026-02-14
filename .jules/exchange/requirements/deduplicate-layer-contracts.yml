@@ -1,0 +1,47 @@
+schema_version: 2
+
+# Metadata
+id: "h1j2k3"
+source_events:
+  - "brn88b"
+  - "nrr99a"
+title: "Deduplicate Layer Contract Definitions"
+label: "docs"
+priority: "low"
+summary: "Remove duplicate rule definitions between `JULES.md` and layer `contracts.yml`."
+
+# Content
+goal: |
+  Consolidate branch naming conventions and the Narrator exclusion rule into a single authoritative location (likely `JULES.md` or the layer contracts, but not both) to eliminate redundancy and the risk of divergence.
+
+problem: |
+  Branch naming conventions (e.g., `branch_prefix`) and the Narrator exclusion rule are duplicated in `src/assets/scaffold/jules/JULES.md` (global) and individual layer `contracts.yml` (local). This violates DRY and creates potential for conflicting rules.
+
+impact: |
+  Maintenance burden: updating a rule requires changes in multiple places. Risk of inconsistency if one location is updated and the other is not.
+
+desired_outcome: |
+  - `JULES.md` references layer contracts for specific rules OR layer contracts reference `JULES.md` for shared rules.
+  - No duplication of rule text.
+  - Clear hierarchy of authority.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/assets/scaffold/jules/JULES.md"
+  - "src/assets/scaffold/jules/roles/narrator/contracts.yml"
+
+acceptance_criteria:
+  - "Branch naming conventions are defined in only one place."
+  - "Narrator exclusion rule is defined in only one place."
+  - "Documentation links to the authoritative source."
+
+verification_criteria:
+  - "Grep shows no duplicate text for these rules."
+  - "Manual review confirms clarity."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

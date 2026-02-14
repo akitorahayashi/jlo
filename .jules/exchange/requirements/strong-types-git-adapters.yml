@@ -1,0 +1,46 @@
+schema_version: 2
+
+# Metadata
+id: "r4e3w2"
+source_events:
+  - "arch01"
+title: "Strong Types for Git/GitHub Adapters"
+label: "refacts"
+priority: "medium"
+summary: "Refactor `GitCommandAdapter` and `GitHubCommandAdapter` to use strong types instead of strings."
+
+# Content
+goal: |
+  Replace the string-based command construction and output parsing in `GitCommandAdapter` and `GitHubCommandAdapter` with strongly typed structures and safer parsing mechanisms. This improves type safety and reduces the risk of injection or parsing errors.
+
+problem: |
+  The current implementation relies on constructing shell commands via string concatenation and parsing unstructured stdout/stderr. This is brittle, prone to errors, and difficult to maintain.
+
+impact: |
+  Increased risk of runtime errors due to malformed commands or unexpected output formats. Lack of compile-time safety for command arguments.
+
+desired_outcome: |
+  - Git and GitHub adapters use structured arguments (e.g., enums, structs) for commands.
+  - Output parsing is robust and handles errors gracefully.
+  - String manipulation for command construction is minimized.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/adapters/git_command.rs"
+  - "src/adapters/github_command.rs"
+
+acceptance_criteria:
+  - "`GitCommandAdapter` uses structured types for arguments."
+  - "`GitHubCommandAdapter` uses structured types/API for interactions."
+  - "Tests cover new typed implementations."
+
+verification_criteria:
+  - "Code review confirms strong typing usage."
+  - "Unit/Integration tests pass."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

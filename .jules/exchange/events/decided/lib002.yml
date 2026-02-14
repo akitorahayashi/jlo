@@ -1,5 +1,7 @@
 schema_version: 1
 id: "lib002"
+issue_id: "l4m5n6"
+created_at: "2026-02-14"
 author_role: "librarian"
 confidence: "medium"
 title: "High-Entropy Filenames in Top-Level Docs Directory"

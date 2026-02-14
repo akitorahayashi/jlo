@@ -1,0 +1,50 @@
+schema_version: 2
+
+# Metadata
+id: "k3l2mn"
+source_events:
+  - "ev0002"
+  - "evnt02"
+  - "stru02"
+title: "Resolve Update/Upgrade Semantic Ambiguity"
+label: "refacts"
+priority: "high"
+summary: "Rename `cli_upgrade` to `upgrade` and separate concerns from `update`."
+
+# Content
+goal: |
+  Resolve the semantic ambiguity between "update" (workspace control plane update) and "upgrade" (binary upgrade). Rename the `cli_upgrade` command module to `upgrade` and expose it as a distinct top-level command `jlo upgrade`, removing the overloading of `jlo update --cli`.
+
+problem: |
+  The term "update" is overloaded. `jlo update` handles workspace updates, while `jlo update --cli` handles binary upgrades. This conflates two distinct operations and makes the CLI interface confusing.
+
+impact: |
+  Users may accidentally upgrade their binary when they intended to update their workspace, or vice versa. It also complicates the implementation of both commands.
+
+desired_outcome: |
+  - `jlo update` strictly handles workspace/control-plane updates.
+  - `jlo upgrade` strictly handles binary upgrades.
+  - The `--cli` flag is removed from `jlo update`.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/app/commands/update.rs"
+  - "src/app/commands/cli_upgrade.rs"
+  - "src/app/cli/mod.rs"
+
+acceptance_criteria:
+  - "`jlo upgrade` command exists and performs binary upgrade."
+  - "`jlo update` command exists and performs workspace update."
+  - "`jlo update --cli` is removed or errors out."
+  - "`cli_upgrade.rs` is renamed/refactored to `upgrade` (following the directory structure from `r8s9df`)."
+
+verification_criteria:
+  - "`jlo --help` lists both `update` and `upgrade`."
+  - "`jlo update --help` does not show `--cli`."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

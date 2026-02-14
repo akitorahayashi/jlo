@@ -1,0 +1,47 @@
+schema_version: 2
+
+# Metadata
+id: "x7c8v9"
+source_events:
+  - "err001"
+title: "Decompose Monolithic AppError"
+label: "refacts"
+priority: "medium"
+summary: "Split the monolithic `AppError` enum into domain-specific error types."
+
+# Content
+goal: |
+  Refactor the error handling strategy to replace the monolithic `AppError` enum with more granular, domain-specific error types (e.g., `GitError`, `ConfigError`, `WorkflowError`). This improves error handling precision and avoids flattening distinct error domains into a single type.
+
+problem: |
+  The `AppError` enum aggregates errors from all domains (IO, Git, Config, etc.) into a single type, often flattening structured errors into strings. This "kitchen sink" approach dilutes semantic meaning and makes programmatic error handling difficult.
+
+impact: |
+  Difficult to handle specific errors programmatically. Loss of context when errors are propagated. Codebase becomes tightly coupled to a single error enum.
+
+desired_outcome: |
+  - Distinct error types for major domains (Git, Config, Workflow, etc.).
+  - `AppError` (if it remains) serves as a top-level aggregator, not a catch-all implementation.
+  - Errors retain structured data instead of being converted to strings immediately.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/error.rs"
+  - "src/adapters/"
+  - "src/app/commands/"
+
+acceptance_criteria:
+  - "`AppError` is decomposed or refactored."
+  - "Domain-specific error types are introduced."
+  - "Error handling throughout the application uses the new types."
+
+verification_criteria:
+  - "Code review confirms decomposition."
+  - "Unit tests verify specific error scenarios."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

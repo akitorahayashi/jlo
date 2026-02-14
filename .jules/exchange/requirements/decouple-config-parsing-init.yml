@@ -1,0 +1,47 @@
+schema_version: 2
+
+# Metadata
+id: "q1a2z3"
+source_events:
+  - "conf01"
+title: "Decouple Configuration Parsing from Init Command"
+label: "refacts"
+priority: "medium"
+summary: "Move configuration parsing and DTOs from `init.rs` to domain or adapter layers."
+
+# Content
+goal: |
+  Refactor the `init` command (`src/app/commands/init.rs`) to remove embedded TOML parsing logic and DTO definitions. These should be moved to a dedicated configuration service or adapter within the domain or adapters layer to enforce separation of concerns.
+
+problem: |
+  The `init` command directly implements TOML parsing and DTO definition for workflow configuration. This couples the CLI command to the configuration persistence format, violating 'Boundary Sovereignty' and making it harder to change the configuration format or reuse the parsing logic.
+
+impact: |
+  Code duplication if other commands need to read configuration. Difficult to test parsing logic in isolation. Violates clean architecture principles.
+
+desired_outcome: |
+  - `init.rs` delegates configuration loading to a service/adapter.
+  - Configuration DTOs and parsing logic reside in `src/domain/config/` or `src/adapters/config/`.
+  - The `init` command focuses on orchestration, not implementation details of configuration loading.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/app/commands/init.rs"
+  - "src/domain/config/"
+  - "src/adapters/config/"
+
+acceptance_criteria:
+  - "No TOML parsing or DTO structs in `init.rs`."
+  - "Configuration loading is performed via a clear interface."
+  - "Unit tests for configuration parsing exist in the new location."
+
+verification_criteria:
+  - "Code review confirms separation."
+  - "`cargo test` passes."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

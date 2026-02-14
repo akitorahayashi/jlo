@@ -1,0 +1,46 @@
+schema_version: 2
+
+# Metadata
+id: "u6y5t4"
+source_events:
+  - "dtxh3s"
+title: "Deduplicate TestContext Harness"
+label: "refacts"
+priority: "medium"
+summary: "Consolidate `TestContext` struct and implementation into a single shared module."
+
+# Content
+goal: |
+  Remove the duplicate `TestContext` struct and implementation by consolidating it into a single shared location (e.g., `tests/harness/test_context.rs` or `tests/common/mod.rs`) and updating all consumers to use the shared definition.
+
+problem: |
+  `TestContext` is duplicated in `tests/harness/test_context.rs` and `tests/common/mod.rs`. This violates the DRY principle and increases maintenance burden, as changes to the test harness must be applied in two places.
+
+impact: |
+  Increased maintenance effort and risk of divergence between test environments used by different tests.
+
+desired_outcome: |
+  - `TestContext` is defined in only one location.
+  - All tests import `TestContext` from the same location.
+  - Duplicate code is removed.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "tests/harness/test_context.rs"
+  - "tests/common/mod.rs"
+  - "tests/"
+
+acceptance_criteria:
+  - "Only one definition of `TestContext` exists."
+  - "All tests using `TestContext` compile and pass."
+
+verification_criteria:
+  - "Grep shows only one `struct TestContext` definition."
+  - "`cargo test` passes."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

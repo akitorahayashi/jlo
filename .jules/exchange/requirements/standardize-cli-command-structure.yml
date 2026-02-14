@@ -1,0 +1,53 @@
+schema_version: 2
+
+# Metadata
+id: "r8s9df"
+source_events:
+  - "ev0001"
+  - "evnt01"
+  - "stru01"
+  - "evnt03"
+title: "Standardize CLI Command Module Structure"
+label: "refacts"
+priority: "medium"
+summary: "Refactor CLI command modules to use a consistent directory-based structure."
+
+# Content
+goal: |
+  Standardize the structure of all CLI command modules in `src/app/commands/` to follow a consistent directory-based pattern (e.g., `src/app/commands/<command>/mod.rs`). Move shared utilities out of the top-level commands directory.
+
+problem: |
+  The current `src/app/commands/` directory mixes file-based command modules (e.g., `init.rs`, `update.rs`) with directory-based modules (e.g., `add/`, `create/`). This inconsistency makes the codebase harder to navigate and violates structural consistency principles. Additionally, `role_schedule.rs` resides in the commands directory but is a utility module, not a command.
+
+impact: |
+  Inconsistent structure increases cognitive load for developers and makes automated tooling (like the `cli_sentinel` observer) harder to implement. It also blurs the distinction between commands and utilities.
+
+desired_outcome: |
+  All CLI commands are implemented as directory-based modules (e.g., `src/app/commands/init/mod.rs`). Utility modules like `role_schedule.rs` are moved to a shared location or a utility module within `src/app/commands/utils/`.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/app/commands/"
+  - "src/app/commands/init.rs"
+  - "src/app/commands/update.rs"
+  - "src/app/commands/role_schedule.rs"
+  - "src/app/commands/mod.rs"
+
+acceptance_criteria:
+  - "All top-level items in `src/app/commands/` (except `mod.rs`) are directories."
+  - "`init` command is implemented in `src/app/commands/init/mod.rs`."
+  - "`update` command is implemented in `src/app/commands/update/mod.rs`."
+  - "`role_schedule.rs` is moved to an appropriate utility location."
+  - "`src/app/commands/mod.rs` exports only command modules."
+
+verification_criteria:
+  - "File listing of `src/app/commands/` shows only directories and `mod.rs`."
+  - "`cargo build` succeeds."
+  - "CLI commands `init` and `update` function correctly."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

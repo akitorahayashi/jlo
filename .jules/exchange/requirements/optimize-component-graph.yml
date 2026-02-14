@@ -1,0 +1,43 @@
+schema_version: 2
+
+# Metadata
+id: "b5n6m7"
+source_events:
+  - "perf01"
+title: "Optimize Component Graph Resolution"
+label: "refacts"
+priority: "low"
+summary: "Reduce unnecessary cloning of ComponentId and Component in `ComponentGraph::resolve`."
+
+# Content
+goal: |
+  Optimize the `ComponentGraph::resolve` function in `src/domain/component_graph.rs` to minimize or eliminate unnecessary cloning of `ComponentId` and `Component` structs during topological sorting.
+
+problem: |
+  The current implementation of Kahn's algorithm in `resolve` performs excessive cloning of map keys (`ComponentId`) and values (`Component`) to construct the result. This is inefficient and violates the principle that "Clone must pay rent".
+
+impact: |
+  Potential performance degradation for large graphs. Unnecessary memory allocation.
+
+desired_outcome: |
+  - `ComponentGraph::resolve` uses references or ownership transfer where appropriate.
+  - Cloning is minimized.
+  - Performance is improved (even if marginally for current graph sizes).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/component_graph.rs"
+
+acceptance_criteria:
+  - "Code review confirms reduced cloning."
+  - "Tests pass."
+
+verification_criteria:
+  - "Benchmarking (optional) or visual code inspection showing fewer `.clone()` calls."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

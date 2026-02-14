@@ -1,0 +1,52 @@
+schema_version: 2
+
+# Metadata
+id: "l4m5n6"
+source_events:
+  - "lib001"
+  - "lib002"
+  - "tch77c"
+title: "Refine Documentation Architecture"
+label: "docs"
+priority: "low"
+summary: "Reorganize the `docs/` directory, add missing multi-role layer documentation, and remove volatile tech stack details from `AGENTS.md`."
+
+# Content
+goal: |
+  Clean up the documentation information architecture. Specifically:
+  1. Add documentation for multi-role layers (`OBSERVERS.md`, `INNOVATORS.md`) to `docs/layers/`.
+  2. Organize high-entropy/specific operational maps (e.g., `WORKFLOW_BRANCH_IMPACT_MAP.md`) into subdirectories within `docs/` to reduce clutter.
+  3. Remove the volatile "Tech Stack" table from `src/AGENTS.md` to avoid manual maintenance of dependency lists.
+
+problem: |
+  The documentation structure is becoming cluttered and inconsistent. Missing layer documentation creates knowledge gaps. High-entropy filenames in the root `docs/` folder make navigation difficult. Manual dependency lists in `AGENTS.md` quickly become outdated.
+
+impact: |
+  Decreased discoverability of documentation. Maintenance burden for volatile docs. Incomplete architectural understanding.
+
+desired_outcome: |
+  - `docs/layers/` contains documentation for all layers (single and multi-role).
+  - `docs/` root is clean and contains only high-level guides or index files.
+  - `src/AGENTS.md` focuses on high-level architecture and agent instructions, not dependency lists.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "docs/layers/"
+  - "docs/"
+  - "src/AGENTS.md"
+
+acceptance_criteria:
+  - "`docs/layers/OBSERVERS.md` and `docs/layers/INNOVATORS.md` exist."
+  - "Specific maps in `docs/` are moved to appropriate subfolders (e.g., `docs/ops/` or `docs/reference/`)."
+  - "Tech Stack table is removed from `src/AGENTS.md`."
+
+verification_criteria:
+  - "File listing of `docs/` is cleaner."
+  - "Review of `src/AGENTS.md`."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

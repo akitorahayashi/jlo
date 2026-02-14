@@ -1,0 +1,52 @@
+schema_version: 2
+
+# Metadata
+id: "p9o8i7"
+source_events:
+  - "cov001"
+  - "cov002"
+  - "cov003"
+title: "Refactor and Test Observer Layer and Mock Infrastructure"
+label: "tests"
+priority: "high"
+summary: "Add tests for observer execution, unify mock logic, and deduplicate test doubles."
+
+# Content
+goal: |
+  Refactor the observer layer execution logic to be testable, add unit tests for `src/app/commands/run/layer/observers.rs`, and eliminate code duplication in mock infrastructure (`execute_mock`, `FakeGit`, `FakeGitHub`).
+
+problem: |
+  The observer execution logic is complex and untested, posing a high risk of regression. Furthermore, mock logic and test doubles are duplicated across `observers.rs`, `decider.rs`, and `implementer.rs`, violating DRY and increasing maintenance burden.
+
+impact: |
+  Regression risk when modifying observer logic. Inconsistent behavior across layers due to duplicated mocks. Maintenance overhead for test infrastructure.
+
+desired_outcome: |
+  - `src/app/commands/run/layer/observers.rs` has high unit test coverage.
+  - A shared `MockExecutionService` (or similar) is used by all layers.
+  - `FakeGit` and `FakeGitHub` are defined once in a shared test utility module and reused.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/app/commands/run/layer/observers.rs"
+  - "src/app/commands/run/layer/decider.rs"
+  - "src/app/commands/run/layer/implementer.rs"
+  - "tests/"
+
+acceptance_criteria:
+  - "Unit tests added for `observers.rs`."
+  - "`execute_mock` logic in `observers.rs` is replaced by shared implementation."
+  - "`FakeGit` and `FakeGitHub` structs are removed from layer files and imported from a shared location."
+  - "All tests pass."
+
+verification_criteria:
+  - "`cargo test` passes."
+  - "Code coverage for `observers.rs` increases."
+  - "Grep shows no duplicate `struct FakeGit` definitions in `src/app/commands/run/layer/`."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
