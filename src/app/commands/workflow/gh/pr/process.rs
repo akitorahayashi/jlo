@@ -16,7 +16,6 @@ const TRANSIENT_AUTOMERGE_ERROR_PATTERNS: &[&str] = &[
     "enablePullRequestAutoMerge",
     "mergePullRequest",
     "Base branch was modified",
-    "Protected branch rules not configured",
 ];
 const RETRY_FIRST_DELAYS_SECONDS: &[u64] = &[1, 2, 5];
 
@@ -241,6 +240,19 @@ fn run_enable_automerge(
                     };
                 }
 
+                // If branch protection rules are missing, treat as a non-fatal skip
+                if e.to_string().contains("Protected branch rules not configured") {
+                    return ProcessStepResult {
+                        command: "enable-automerge".to_string(),
+                        applied: false,
+                        skipped_reason: Some(
+                            "Protected branch rules not configured; skipping automerge".to_string(),
+                        ),
+                        error: None,
+                        attempts: attempt,
+                    };
+                }
+
                 if attempt < retry_attempts && is_transient_automerge_error(&e) {
                     let sleep_seconds = compute_retry_delay_seconds(attempt, retry_delay_seconds);
                     if sleep_seconds > 0 {
@@ -296,9 +308,10 @@ mod tests {
         pr_detail: RefCell<PullRequestDetail>,
         files: Vec<String>,
         remaining_transient_automerge_failures: Cell<u32>,
-        fatal_automerge_failure: Cell<bool>,
+        fatal_automerge_failure: RefCell<Option<String>>,
         set_automerge_enabled_on_first_error: Cell<bool>,
         enable_calls: Cell<u32>,
+        general_error: RefCell<Option<String>>,
     }
 
     impl FakeGitHub {
@@ -313,9 +326,10 @@ mod tests {
                 }),
                 files: vec![".jules/exchange/events/pending/state.yml".to_string()],
                 remaining_transient_automerge_failures: Cell::new(0),
-                fatal_automerge_failure: Cell::new(false),
+                fatal_automerge_failure: RefCell::new(None),
                 set_automerge_enabled_on_first_error: Cell::new(false),
                 enable_calls: Cell::new(0),
+                general_error: RefCell::new(None),
             }
         }
 
@@ -327,7 +341,13 @@ mod tests {
 
         fn with_fatal_automerge_failure() -> Self {
             let gh = Self::jules_runtime_pr();
-            gh.fatal_automerge_failure.set(true);
+            *gh.fatal_automerge_failure.borrow_mut() = Some("gh command failed: GraphQL: Validation failed: Pull request is not in a mergeable state".to_string());
+            gh
+        }
+
+        fn with_general_error() -> Self {
+            let gh = Self::jules_runtime_pr();
+            *gh.general_error.borrow_mut() = Some("Simulated API error".to_string());
             gh
         }
 
@@ -335,6 +355,12 @@ mod tests {
             let gh = Self::jules_runtime_pr();
             gh.remaining_transient_automerge_failures.set(1);
             gh.set_automerge_enabled_on_first_error.set(true);
+            gh
+        }
+
+        fn with_missing_branch_protection() -> Self {
+            let gh = Self::jules_runtime_pr();
+            *gh.fatal_automerge_failure.borrow_mut() = Some("gh command failed: GraphQL: Pull request Protected branch rules not configured for this branch (enablePullRequestAutoMerge)".to_string());
             gh
         }
 
@@ -349,9 +375,10 @@ mod tests {
                 }),
                 files: vec!["src/main.rs".to_string()],
                 remaining_transient_automerge_failures: Cell::new(0),
-                fatal_automerge_failure: Cell::new(false),
+                fatal_automerge_failure: RefCell::new(None),
                 set_automerge_enabled_on_first_error: Cell::new(false),
                 enable_calls: Cell::new(0),
+                general_error: RefCell::new(None),
             }
         }
     }
@@ -388,6 +415,12 @@ mod tests {
         }
 
         fn create_pr_comment(&self, _: u64, _: &str) -> Result<u64, AppError> {
+            if let Some(msg) = self.general_error.borrow().as_ref() {
+                return Err(AppError::ExternalToolError {
+                    tool: "gh".to_string(),
+                    error: msg.clone(),
+                });
+            }
             Ok(1)
         }
 
@@ -409,10 +442,10 @@ mod tests {
 
         fn enable_automerge(&self, _: u64) -> Result<(), AppError> {
             self.enable_calls.set(self.enable_calls.get() + 1);
-            if self.fatal_automerge_failure.get() {
+            if let Some(msg) = self.fatal_automerge_failure.borrow().as_ref() {
                 return Err(AppError::ExternalToolError {
                     tool: "gh".to_string(),
-                    error: "gh command failed: GraphQL: Validation failed: Pull request is not in a mergeable state".to_string(),
+                    error: msg.clone(),
                 });
             }
             let remaining = self.remaining_transient_automerge_failures.get();
@@ -434,6 +467,27 @@ mod tests {
         fn list_pr_files(&self, _: u64) -> Result<Vec<String>, AppError> {
             Ok(self.files.clone())
         }
+    }
+
+    #[test]
+    fn skips_automerge_on_missing_branch_protection() {
+        let gh = FakeGitHub::with_missing_branch_protection();
+        let out = execute(
+            &gh,
+            ProcessOptions {
+                pr_number: 42,
+                mode: ProcessMode::Automerge,
+                fail_on_error: true,
+                retry_attempts: 1,
+                retry_delay_seconds: 0,
+            },
+        )
+        .unwrap();
+
+        assert!(!out.had_errors);
+        assert_eq!(out.steps[0].attempts, 1);
+        assert!(out.steps[0].skipped_reason.as_deref().unwrap_or("").contains("skipping automerge"));
+        assert!(out.steps[0].error.is_none());
     }
 
     #[test]
@@ -522,7 +576,7 @@ mod tests {
 
     #[test]
     fn fail_on_error_returns_validation_error() {
-        let gh = FakeGitHub::jules_runtime_pr();
+        let gh = FakeGitHub::with_general_error();
         let err = execute(
             &gh,
             ProcessOptions {
@@ -535,12 +589,13 @@ mod tests {
         )
         .unwrap_err();
 
-        assert!(err.to_string().contains("sync-category-label"));
+        // `CommentSummaryRequest` runs first and fails due to general_error
+        assert!(err.to_string().contains("comment-summary-request"));
     }
 
     #[test]
     fn non_fail_mode_reports_step_error() {
-        let gh = FakeGitHub::jules_runtime_pr();
+        let gh = FakeGitHub::with_general_error();
         let out = execute(
             &gh,
             ProcessOptions {
@@ -555,7 +610,11 @@ mod tests {
 
         assert!(out.had_errors);
         assert_eq!(out.steps.len(), 2);
-        assert!(out.steps[1].error.is_some());
+        // Step 0: comment-summary-request (failed)
+        assert!(out.steps[0].error.is_some());
+        // Step 1: sync-category-label (skipped)
+        assert!(out.steps[1].error.is_none());
+        assert!(out.steps[1].skipped_reason.is_some());
     }
 
     #[test]
