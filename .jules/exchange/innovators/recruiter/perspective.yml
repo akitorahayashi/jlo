@@ -7,6 +7,7 @@ focus: "Increase proposal quality by identifying missing observer/innovator pers
 repository_observations:
   codebase_state:
     - "Inconsistent command structure between file-based (e.g., `init.rs`) and directory-based (e.g., `add/`) modules."
+    - "Documentation lags behind implementation, requiring an audit-first approach."
   startup_and_runtime_contracts:
     - "Role activation is manual via `.jlo/scheduled.toml`, not automatic."
   decision_quality_gaps:
@@ -16,14 +17,19 @@ repository_observations:
 
 thinking_notes:
   hypotheses:
-    - "Activation of `cli_sentinel` will reduce cognitive load and CLI inconsistency."
+    - "Audit-first activation of `cli_sentinel` will provide a safe path to SVO enforcement without disrupting workflows."
   tradeoff_assessment:
-    - "Adding another observer increases CI/CD time but reduces long-term maintenance cost."
+    - "Adding another observer increases CI/CD time but reduces long-term maintenance cost. Two-phase activation mitigates disruption risk."
   rejected_paths: []
 
 feedback_assimilation:
-  observer_inputs: []
+  observer_inputs:
+    - "Consistency: Recommended two-phase activation (Audit then Enforce)."
+    - "Librarian: Mandated creation of docs/layers/OBSERVERS.md for role policies."
+    - "CoV/QA: Required test coverage for role activation logic."
+    - "Taxonomy: Confirmed specific inconsistencies (update vs cli_upgrade) to be resolved."
   next_focus:
-    - "Investigate missing language-specific roles for future expansion."
+    - "Investigate `ui_designer` role or other missing language-specific roles."
 
-recent_proposals: []
+recent_proposals:
+  - "Activate `cli_sentinel` Observer Role"

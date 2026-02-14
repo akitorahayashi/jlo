@@ -1,0 +1,35 @@
+schema_version: 1
+
+id: "5d2bea"
+persona: recruiter
+created_at: "2026-02-14"
+
+title: "Activate `cli_sentinel` Observer Role"
+problem: |
+  The CLI implementation suffers from significant structural inconsistency, mixing file-based and directory-based command modules. This leads to fragmented user experience and higher cognitive load. Additionally, semantic ambiguities exist (e.g., `update` vs `cli_upgrade`), and there is no mechanism to enforce Subject-Verb-Object (SVO) consistency, risking "verb escape".
+
+introduction: |
+  Activate the `cli_sentinel` observer role to enforce CLI consistency and standardization. The activation will follow a two-phase strategy:
+  1. **Audit Phase:** The role will initially report on structural drift and SVO violations without blocking, establishing a baseline.
+  2. **Enforcement Phase:** Once critical documentation is updated and a baseline established, the role will enforce strict SVO compliance.
+
+  This proposal also mandates the creation of `docs/layers/OBSERVERS.md` to house the role's policies and SVO rules, addressing the "missing home" issue flagged by the Librarian.
+
+importance: High
+impact_surface:
+  - ".jlo/roles/observers/"
+  - ".jlo/scheduled.toml"
+  - "src/app/commands/"
+  - "docs/layers/OBSERVERS.md"
+  - "tests/doctor/"
+
+implementation_cost: Low (activation logic exists), Medium (auditing and subsequent fixes).
+
+consistency_risks: |
+  Immediate strict enforcement could disrupt workflows or generate excessive noise due to existing drift. This is mitigated by the proposed "Audit First" strategy. There is also a risk of the new role failing silently if not properly tested; this proposal requires adding specific test coverage for the role's activation.
+
+verification_signals:
+  - "`cli_sentinel` is active and listed in `jlo doctor` output."
+  - "`docs/layers/OBSERVERS.md` exists and documents SVO rules."
+  - "`jlo run` executes the role successfully without errors."
+  - "A new test case in `tests/doctor/` or `tests/cli/` verifies the role loading logic."
