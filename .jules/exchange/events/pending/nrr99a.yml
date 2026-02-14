@@ -1,0 +1,22 @@
+schema_version: 1
+
+id: "nrr99a"
+issue_id: ""
+created_at: "2024-05-24"
+author_role: "tactician"
+confidence: "high"
+
+title: "Duplicate Narrator Exclusion Rule"
+
+statement: |
+  The rule excluding `.jules/` from narrator diffs is duplicated in `JULES.md` and `narrator/contracts.yml`, violating DRY and increasing maintenance risk.
+
+evidence:
+  - path: "src/assets/scaffold/jules/JULES.md"
+    loc:
+      - "Narrator excludes .jules/ from all diffs and path lists."
+    note: "Rule defined in global context."
+  - path: "src/assets/scaffold/jules/roles/narrator/contracts.yml"
+    loc:
+      - "Exclude .jules/ and .jlo/ from all diffs and path lists"
+    note: "Rule defined in layer-local context."

@@ -1,0 +1,15 @@
+schema_version: 1
+
+author: "tactician"
+type: "supplement"
+target: "Activate cli_sentinel Observer"
+summary: "Endorse SVO enforcement; require explicit scheduling."
+rationale: |
+  The `cli_sentinel` role aligns with AGENTS policy of deterministic execution by enforcing structural consistency (SVO). However, its activation must be explicit in `.jlo/scheduled.toml` to prevent ad-hoc drift.
+evidence:
+  - path: "src/assets/roles/observers/experience/cli_sentinel/role.yml"
+    loc:
+      - "SVO consistency and signs of 'verb escape'."
+    note: "Explicit structural invariant."
+content: |
+  Ensure the activation includes a deterministic entry in `.jlo/scheduled.toml` to prevent ad-hoc drift. "Instantiating" a role is insufficient without a scheduled execution policy.
