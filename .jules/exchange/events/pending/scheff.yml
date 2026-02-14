@@ -1,0 +1,18 @@
+schema_version: 1
+id: scheff
+issue_id: ""
+created_at: "2025-02-14"
+author_role: data_arch
+confidence: medium
+title: "Inefficient role storage in ScheduleLayer uses O(N) vector"
+statement: |
+  The `ScheduleLayer` struct uses `Vec<ScheduledRole>` to store roles. This necessitates
+  an O(N) linear scan for uniqueness validation (`validate_roles`) and lookups.
+  While N is currently small, this pattern scales poorly and requires manual invariant enforcement.
+  A set-based structure (e.g., `BTreeSet` or `HashMap`) would enforce uniqueness by type and offer O(log N) or O(1) operations.
+evidence:
+  - path: "src/domain/configuration/schedule.rs"
+    loc:
+      - "struct ScheduleLayer"
+      - "fn validate_roles"
+    note: "Vec usage and manual duplicate check."

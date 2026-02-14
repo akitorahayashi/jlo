@@ -1,0 +1,11 @@
+schema_version: 2
+observer: data_arch
+updated_at: "2025-02-14T10:00:00Z"
+goals:
+  - Identify and document O(N) data structure usages in core configuration paths.
+  - Identify and document full-file reads for partial data extraction.
+rules: []
+ignore: []
+log:
+  - at: "2025-02-14T10:00:00Z"
+    summary: "Initialized data_arch workstation."
