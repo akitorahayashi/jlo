@@ -1,0 +1,19 @@
+schema_version: 1
+
+id: "cov003"
+issue_id: ""
+author_role: "cov"
+confidence: "high"
+created_at: "2024-02-14"
+
+title: "Duplicate Test Doubles in Layer Tests"
+statement: "`FakeGit` and `FakeGitHub` struct definitions are duplicated in `src/app/commands/run/layer/decider.rs` and `src/app/commands/run/layer/implementer.rs`. This violates DRY and makes updating test infrastructure error-prone."
+evidence:
+  - path: "src/app/commands/run/layer/decider.rs"
+    loc:
+      - "336-400"
+    note: "Duplicate FakeGit/FakeGitHub implementation."
+  - path: "src/app/commands/run/layer/implementer.rs"
+    loc:
+      - "307-370"
+    note: "Identical FakeGit/FakeGitHub implementation."

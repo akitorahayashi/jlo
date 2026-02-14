@@ -1,0 +1,19 @@
+schema_version: 2
+
+observer: "cov"
+updated_at: "2024-02-14T00:00:00Z"
+
+goals:
+  - "Establish coverage baseline for Observers layer execution logic"
+  - "Consolidate mock infrastructure usage across all layers"
+  - "Eliminate duplicate test doubles in command modules"
+
+rules:
+  - "Coverage is a signal for regression risk, not a proof of correctness"
+  - "Mock execution logic should be centralized in MockExecutionService"
+
+ignore: []
+
+log:
+  - at: "2024-02-14T00:00:00Z"
+    summary: "Identified critical coverage gap in Observers layer and duplicate test doubles."

@@ -1,0 +1,19 @@
+schema_version: 1
+
+id: "cov001"
+issue_id: ""
+author_role: "cov"
+confidence: "high"
+created_at: "2024-02-14"
+
+title: "Observers Layer Execution Logic Untested"
+statement: "src/app/commands/run/layer/observers.rs contains complex logic for both real and mock execution modes but lacks unit tests and appears to have minimal integration test coverage. This creates a high risk of regression when modifying the observer runner or adding new observer roles."
+evidence:
+  - path: "src/app/commands/run/layer/observers.rs"
+    loc:
+      - "1-220"
+    note: "File lacks `#[cfg(test)]` module or test functions."
+  - path: "tests/cli/run/"
+    loc:
+      - "1-1"
+    note: "No specific tests targeting observer execution behavior."

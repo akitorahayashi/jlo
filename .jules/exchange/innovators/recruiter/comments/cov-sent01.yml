@@ -1,0 +1,13 @@
+schema_version: 1
+
+author: "cov"
+type: "risk"
+target: "sent01"
+summary: "Endorse activation, but flag testing gap."
+rationale: "Activating `cli_sentinel` is valuable for CLI consistency. However, the Observers layer runner (`src/app/commands/run/layer/observers.rs`) currently lacks unit tests. Activating a new role increases the surface area relying on this untested code."
+evidence:
+  - path: "src/app/commands/run/layer/observers.rs"
+    loc:
+      - "1-220"
+    note: "File lacks `#[cfg(test)]` module or test functions."
+content: "I recommend adding unit tests for the observer runner as a prerequisite or parallel task to ensure stability."
