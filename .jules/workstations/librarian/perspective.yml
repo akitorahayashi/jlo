@@ -1,0 +1,17 @@
+schema_version: 2
+
+observer: "librarian"
+
+updated_at: "2025-05-22T12:00:00Z"
+
+goals:
+  - "Audit documentation navigation and index completeness"
+  - "Ensure structural separation of user guides and internal references"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2025-05-22T12:00:00Z"
+    summary: "Created workstation, emitted 2 findings about documentation structure, bridged 1 innovator comment."
