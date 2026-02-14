@@ -1,0 +1,18 @@
+schema_version: 1
+id: "arch01"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "rustacean"
+confidence: "high"
+title: "Stringly Typed Git and GitHub Adapters"
+statement: |
+  The `GitCommandAdapter` and `GitHubCommandAdapter` rely on constructing shell commands via strings and parsing stdout/stderr strings. This is brittle, prone to injection or parsing errors, and loses type safety.
+evidence:
+  - path: "src/adapters/git_command.rs"
+    loc:
+      - "run method"
+    note: "Constructs git commands from string slices and parses output as string."
+  - path: "src/adapters/github_command.rs"
+    loc:
+      - "create_pull_request method"
+    note: "Parses PR URL from stdout string to extract PR number, which is fragile."
