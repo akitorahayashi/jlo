@@ -55,11 +55,31 @@ fn installed_workflow_scaffold_includes_mock_support() {
     assert!(workflow.contains("publish-proposals:"), "Should have publish-proposals job");
     assert!(!workflow.contains("- innovators"), "Entry point choices should exclude innovators");
     assert!(
+        !workflow.contains("\n          - planner\n"),
+        "Entry point choices should exclude planner"
+    );
+    assert!(
+        !workflow.contains("\n          - implementer\n"),
+        "Entry point choices should exclude implementer"
+    );
+    assert!(
         workflow.contains("observers)\n              run_innovators_1=true"),
         "Observers entry-point should trigger innovators"
     );
     assert!(
+        workflow.contains("observers)\n              run_innovators_1=true\n              run_observers=true\n              run_innovators_2=true\n              run_publish_proposals=true\n              run_decider=true\n              run_planner=true\n              run_implementer=true"),
+        "Observers entry-point should continue downstream through decider/planner/implementer"
+    );
+    assert!(
         workflow.contains("decider)\n              run_decider=true"),
-        "Decider entry-point should not force innovators"
+        "Decider entry-point should start at decider"
+    );
+    assert!(
+        workflow.contains("decider)\n              run_decider=true\n              run_planner=true\n              run_implementer=true"),
+        "Decider entry-point should continue to planner/implementer without innovators"
+    );
+    assert!(
+        workflow.contains("always() &&\n      needs.check-schedule.result == 'success'"),
+        "wait-after-initial-requests should use always() to handle skipped upstream jobs"
     );
 }

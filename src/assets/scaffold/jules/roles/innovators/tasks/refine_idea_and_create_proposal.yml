@@ -9,6 +9,7 @@ objective:
 steps:
   - Read all feedback files in .jules/exchange/innovators/<persona>/comments/*.yml.
   - Re-check repository code behavior and runtime assumptions for claim validity before finalizing proposal.
+  - Re-evaluate the current direction against layer contract constraints before finalizing proposal.yml.
   - Update perspective.yml feedback_assimilation.observer_inputs with key feedback and directional impact.
   - Update perspective.yml thinking_notes and repository_observations to preserve what changed after feedback.
   - Refresh perspective.yml feedback_assimilation.next_focus for the next cycle.
@@ -23,3 +24,4 @@ output:
 constraints:
   - "idea.yml and comments/*.yml must be deleted after proposal creation"
   - "recent_proposals must include the current proposal title and keep FIFO max 5"
+  - "If the refined direction is equivalent to recent_proposals, fail explicitly instead of emitting proposal.yml"

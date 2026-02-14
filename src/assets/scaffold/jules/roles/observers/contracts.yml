@@ -11,3 +11,5 @@ constraints:
   - Workstation memory is perspective.yml only; do not create per-run history files
   - "Do not prioritize changes.yml over direct repository inspection; use it only as a secondary hint"
   - "Goals must be validated every run; replace stale or completed goals"
+  - "Branch names must start with the prefix jules-observer-"
+  - "Do not modify files outside of the .jules/ directory."

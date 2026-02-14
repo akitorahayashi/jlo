@@ -40,18 +40,17 @@
               run_observers=true
               run_innovators_2=true
               run_publish_proposals=true
+              run_decider=true
+              run_planner=true
+              run_implementer=true
               ;;
             decider)
               run_decider=true
-              ;;
-            planner)
               run_planner=true
-              ;;
-            implementer)
               run_implementer=true
               ;;
             *)
-              echo "::error::Unsupported entry_point '${ENTRY_POINT}'."
+              echo "::error::Unsupported entry_point '${ENTRY_POINT}'. Allowed values: narrator, observers, decider."
               exit 1
               ;;
           esac

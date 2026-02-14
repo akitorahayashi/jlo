@@ -1,6 +1,7 @@
   wait-after-initial-requests:
     needs: [check-schedule, run-narrator, run-innovators-1]
     if: |
+      always() &&
       needs.check-schedule.result == 'success' &&
       (
         (
