@@ -1,0 +1,12 @@
+schema_version: 2
+observer: codifier
+updated_at: "2026-02-14T11:15:00Z"
+goals:
+  - "Audit existing skills for adherence to procedure blueprint structure."
+rules: []
+ignore: []
+log:
+  - at: "2026-02-14T11:15:00Z"
+    summary: "Created event p6y91m regarding jules-api-guide."
+  - at: "2026-02-14T11:08:53Z"
+    summary: "Initial workstation bootstrap."
