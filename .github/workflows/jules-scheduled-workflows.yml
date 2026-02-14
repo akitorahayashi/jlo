@@ -193,7 +193,6 @@ jobs:
   wait-after-narrator:
     needs: run-narrator
     if: |
-      always() &&
       needs.run-narrator.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -246,10 +245,25 @@ jobs:
   check-schedule:
     needs: wait-after-narrator
     if: |
-      always() &&
       ((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule') &&
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') &&
-      (needs.wait-after-narrator.result == 'success' || needs.wait-after-narrator.result == 'skipped')
+      (
+        (
+          (
+            github.event_name == 'schedule' ||
+            (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') == 'narrator') ||
+            (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') == 'narrator')
+          ) &&
+          needs.wait-after-narrator.result == 'success'
+        ) ||
+        (
+          (
+            (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') != 'narrator') ||
+            (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') != 'narrator')
+          ) &&
+          needs.wait-after-narrator.result == 'skipped'
+        )
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -310,8 +324,7 @@ jobs:
   run-innovators-1:
     needs: [check-schedule]
     if: |
-      always() &&
-            needs.check-schedule.result == 'success' &&
+      needs.check-schedule.result == 'success' &&
             fromJSON(needs.check-schedule.outputs.json).run_innovators_1 == true
 
     runs-on: ubuntu-latest
@@ -346,9 +359,8 @@ jobs:
   run-observers:
     needs: ["check-schedule", "wait-after-innovators-1"]
     if: |
-      always() &&
-            fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
-            (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')
+      fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
+            needs.wait-after-innovators-1.result == 'success'
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -382,7 +394,6 @@ jobs:
   wait-after-observers:
     needs: run-observers
     if: |
-      always() &&
       needs.run-observers.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -436,7 +447,6 @@ jobs:
   wait-after-innovators-1:
     needs: run-innovators-1
     if: |
-      always() &&
       needs.run-innovators-1.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -490,9 +500,8 @@ jobs:
   run-innovators-2:
     needs: ["check-schedule", "wait-after-observers"]
     if: |
-      always() &&
-            fromJSON(needs.check-schedule.outputs.json).run_innovators_2 == true &&
-            (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
+      fromJSON(needs.check-schedule.outputs.json).run_innovators_2 == true &&
+            needs.wait-after-observers.result == 'success'
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -526,7 +535,6 @@ jobs:
   wait-after-innovators-2:
     needs: run-innovators-2
     if: |
-      always() &&
       needs.run-innovators-2.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -579,9 +587,9 @@ jobs:
   publish-proposals:
     needs: [check-schedule, wait-after-innovators-2]
     if: |
-      always() &&
+      needs.check-schedule.result == 'success' &&
       fromJSON(needs.check-schedule.outputs.json).run_publish_proposals == true &&
-      (needs.wait-after-innovators-2.result == 'success' || needs.wait-after-innovators-2.result == 'skipped')
+      needs.wait-after-innovators-2.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -609,9 +617,18 @@ jobs:
   generate-decider-matrix:
     needs: [check-schedule, wait-after-observers]
     if: |
-      always() &&
+      needs.check-schedule.result == 'success' &&
       fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
-      (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
+      (
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
+          needs.wait-after-observers.result == 'success'
+        ) ||
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_observers == false &&
+          needs.wait-after-observers.result == 'skipped'
+        )
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -646,8 +663,7 @@ jobs:
   run-decider:
     needs: [generate-decider-matrix]
     if: |
-      always() &&
-            needs.generate-decider-matrix.result == 'success' &&
+      needs.generate-decider-matrix.result == 'success' &&
             fromJSON(needs.generate-decider-matrix.outputs.json).run_decider == true
 
     runs-on: ubuntu-latest
@@ -682,7 +698,6 @@ jobs:
   wait-after-decider:
     needs: run-decider
     if: |
-      always() &&
       needs.run-decider.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -735,11 +750,30 @@ jobs:
   generate-routing-matrix:
     needs: [check-schedule, generate-decider-matrix, run-decider, wait-after-decider]
     if: |
-      always() &&
+      needs.check-schedule.result == 'success' &&
       (fromJSON(needs.check-schedule.outputs.json).run_planner == true || fromJSON(needs.check-schedule.outputs.json).run_implementer == true) &&
-      (needs.generate-decider-matrix.result == 'success' || needs.generate-decider-matrix.result == 'skipped') &&
-      (needs.run-decider.result == 'success' || needs.run-decider.result == 'skipped') &&
-      (needs.wait-after-decider.result == 'success' || needs.wait-after-decider.result == 'skipped')
+      (
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_decider == false &&
+          needs.generate-decider-matrix.result == 'skipped' &&
+          needs.run-decider.result == 'skipped' &&
+          needs.wait-after-decider.result == 'skipped'
+        ) ||
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
+          needs.generate-decider-matrix.result == 'success' &&
+          (
+            (
+              needs.run-decider.result == 'success' &&
+              needs.wait-after-decider.result == 'success'
+            ) ||
+            (
+              needs.run-decider.result == 'skipped' &&
+              needs.wait-after-decider.result == 'skipped'
+            )
+          )
+        )
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -762,8 +796,7 @@ jobs:
   run-planner:
     needs: [generate-routing-matrix]
     if: |
-      always() &&
-            needs.generate-routing-matrix.result == 'success' &&
+      needs.generate-routing-matrix.result == 'success' &&
             fromJSON(needs.generate-routing-matrix.outputs.json).run_planner == true
 
     runs-on: ubuntu-latest
@@ -798,7 +831,6 @@ jobs:
   wait-after-planner:
     needs: run-planner
     if: |
-      always() &&
       needs.run-planner.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -852,8 +884,7 @@ jobs:
   run-implementer:
     needs: [generate-routing-matrix]
     if: |
-      always() &&
-            needs.generate-routing-matrix.result == 'success' &&
+      needs.generate-routing-matrix.result == 'success' &&
             fromJSON(needs.generate-routing-matrix.outputs.json).run_implementer == true
 
     runs-on: ubuntu-latest
@@ -889,7 +920,6 @@ jobs:
   wait-after-implementer:
     needs: run-implementer
     if: |
-      always() &&
       needs.run-implementer.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
