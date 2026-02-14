@@ -1,0 +1,25 @@
+schema_version: 2
+id: b9c37d
+source_events:
+  - evt002
+title: Missing Multi-Role Layer Documentation
+label: docs
+priority: medium
+summary: "`docs/layers/` is missing documentation for Observers and Innovators."
+goal: |
+  Create documentation for Observers and Innovators layers in `docs/layers/`.
+problem: |
+  `docs/layers/` contains docs for single-role layers but lacks multi-role layers (`OBSERVERS.md`, `INNOVATORS.md`).
+impact: |
+  Incomplete documentation for key architectural components.
+desired_outcome: |
+  `docs/layers/OBSERVERS.md` and `docs/layers/INNOVATORS.md` exist and describe the layers.
+affected_areas:
+  - docs/layers/
+acceptance_criteria:
+  - "`docs/layers/OBSERVERS.md` exists."
+  - "`docs/layers/INNOVATORS.md` exists."
+verification_criteria:
+  - Check for file existence.
+requires_deep_analysis: false
+deep_analysis_reason: ""

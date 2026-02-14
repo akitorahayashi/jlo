@@ -2,7 +2,7 @@ schema_version: 1
 
 # Metadata
 id: str001
-issue_id: ""
+issue_id: "v4c82z"
 created_at: "2025-05-18"
 author_role: structural_arch
 confidence: high

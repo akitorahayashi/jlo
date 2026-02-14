@@ -1,0 +1,28 @@
+schema_version: 2
+id: q2z64v
+source_events:
+  - evt001
+title: Documentation Navigation Ambiguity
+label: docs
+priority: low
+summary: Confusing documentation structure with multiple `AGENTS.md` files.
+goal: |
+  Clarify documentation structure and reduce ambiguity.
+problem: |
+  "`docs/AGENTS.md` acts as an index, while root `AGENTS.md` and `src/AGENTS.md` both claim authority. `WORKFLOW_BRANCH_IMPACT_MAP.md` clutters the root `docs/` namespace."
+impact: |
+  Difficulty in finding relevant documentation.
+desired_outcome: |
+  Clear navigation structure. `docs/AGENTS.md` should probably be renamed or content consolidated.
+affected_areas:
+  - docs/AGENTS.md
+  - AGENTS.md
+  - src/AGENTS.md
+  - docs/WORKFLOW_BRANCH_IMPACT_MAP.md
+acceptance_criteria:
+  - Documentation roles are clearly defined.
+  - Navigation is intuitive.
+verification_criteria:
+  - Review documentation structure.
+requires_deep_analysis: false
+deep_analysis_reason: ""

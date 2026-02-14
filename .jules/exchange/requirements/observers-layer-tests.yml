@@ -1,0 +1,27 @@
+schema_version: 2
+id: r8k29s
+source_events:
+  - cov001
+  - mis001
+title: Missing Unit Tests for Observer Layer
+label: tests
+priority: high
+summary: The observers layer lacks unit tests and relies on duplicated mock logic.
+goal: |
+  Ensure the observers layer is covered by unit tests and remove duplicated mock logic.
+problem: |
+  The `src/app/commands/run/layer/observers.rs` module contains critical logic for executing observer roles but has no unit tests. It relies on `execute_mock` which is complex and duplicated across layers, conflating production and test concerns.
+impact: |
+  Lack of tests increases regression risk for observer execution. Embedded mock logic complicates the codebase and violates separation of concerns.
+desired_outcome: |
+  The observers layer has a dedicated test module covering its execution logic. Mock execution logic is refactored into a shared test utility or strategy.
+affected_areas:
+  - src/app/commands/run/layer/observers.rs
+  - src/app/commands/run/mock/
+acceptance_criteria:
+  - "Unit tests exist for `ObserversLayer::execute`."
+  - "`execute_mock` is refactored or moved to a shared location if possible, or at least tested."
+verification_criteria:
+  - "Verify that unit tests for the ObserversLayer execute function pass."
+requires_deep_analysis: false
+deep_analysis_reason: ""

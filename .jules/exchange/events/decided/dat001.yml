@@ -1,14 +1,14 @@
 schema_version: 1
 id: dat001
-author: data_arch
+author_role: data_arch
 created_at: "2026-02-14"
 title: "Monolithic AppError Violates Boundary Sovereignty"
-summary: |
+statement: |
   The `AppError` enum in `src/domain/error.rs` is a single monolithic type that handles
   infrastructure, configuration, and domain errors. This leaks transport details (e.g., GitError)
   into core domain logic, violating Boundary Sovereignty.
 confidence: "high"
-issue_id: ""
+issue_id: "j3k72l"
 evidence:
   - path: "src/domain/error.rs"
     loc: ["pub enum AppError {"]

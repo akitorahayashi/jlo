@@ -1,0 +1,26 @@
+schema_version: 2
+id: x7m31q
+source_events:
+  - cov002
+title: Dead Code CLI Sentinel Role Uninstantiated
+label: bugs
+priority: medium
+summary: The cli_sentinel role is defined but not instantiated or tested.
+goal: |
+  Instantiate the `cli_sentinel` role in the control plane and ensure it is covered by tests.
+problem: |
+  The role `cli_sentinel` is defined in `src/assets/roles/observers/experience/cli_sentinel/role.yml` but is not instantiated in `.jlo/roles/observers/`. It represents dead code and configuration risk.
+impact: |
+  The role is not performing its intended function (auditing CLI designs), leaving the CLI vulnerable to inconsistency.
+desired_outcome: |
+  The `cli_sentinel` role is active in `.jlo/roles/observers/` and scheduled for execution.
+affected_areas:
+  - .jlo/roles/observers/
+  - .jlo/scheduled.toml
+acceptance_criteria:
+  - "`cli_sentinel` role exists in `.jlo/roles/observers/`."
+  - "`cli_sentinel` is listed in `.jlo/scheduled.toml`."
+verification_criteria:
+  - "Verify that the cli_sentinel role is listed in the active roles configuration."
+requires_deep_analysis: false
+deep_analysis_reason: ""
