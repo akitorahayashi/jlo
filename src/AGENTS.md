@@ -51,7 +51,7 @@ tests/
 | **Control plane** | The `.jlo/` directory on the control branch (e.g. `main`). Source of truth for all configuration, role definitions, and version pins. |
 | **Runtime plane** | The `.jules/` directory on the `jules` branch. Materialized from `.jlo/` by workflow bootstrap; hosts agent exchange artifacts. |
 | **Scaffold** | Embedded static files in `src/assets/scaffold/` that seed `.jlo/` on init and are reconciled on update. |
-| **Projection** | Deterministic materialization of `.jules/` from `.jlo/` + scaffold assets during workflow bootstrap. See `docs/CONTROL_PLANE_OWNERSHIP.md`. |
+| **Projection** | Deterministic materialization of `.jules/` from `.jlo/` + scaffold assets during workflow bootstrap. See `docs/architecture/CONTROL_PLANE_OWNERSHIP.md`. |
 | **Exchange** | The flat handoff directory structure under `.jules/exchange/`. |
 | **Workflow scaffold** | `.github/` automation assets installed by `jlo init`. |
 | **Component** | Development tools managed by `jlo setup`, defined in `src/assets/setup/`. |

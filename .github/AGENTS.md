@@ -1,7 +1,7 @@
 # GitHub Actions Workflow Context
 
 See [root AGENTS.md](../AGENTS.md) for design principles.
-See [CONTROL_PLANE_OWNERSHIP.md](../docs/CONTROL_PLANE_OWNERSHIP.md) for the `.jlo/` vs `.jules/` ownership model and projection rules.
+See [CONTROL_PLANE_OWNERSHIP.md](../docs/architecture/CONTROL_PLANE_OWNERSHIP.md) for the `.jlo/` vs `.jules/` ownership model and projection rules.
 
 ## Branch Topology
 
@@ -110,5 +110,5 @@ Reinstalling the workflow kit overwrites rendered schedule/wait values with `.jl
 
 ## Relationship to REPRODUCTION_GUIDE.md
 
-[REPRODUCTION_GUIDE.md](../docs/REPRODUCTION_GUIDE.md) provides reproduction setup guidance.
+[REPRODUCTION_GUIDE.md](../docs/operations/REPRODUCTION_GUIDE.md) provides reproduction setup guidance.
 This file focuses on workflow development context.

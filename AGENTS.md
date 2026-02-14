@@ -1,4 +1,4 @@
-# jlo Design Overview
+# jlo Design Overview & Architecture
 
 `jlo` manages the `.jules/` scaffolding for agent configuration and assets, and orchestrates the complete autonomous lifecycle via GitHub Actions.
 
@@ -37,7 +37,8 @@ Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI deleg
 
 ## Development Context
 
-See [src/AGENTS.md](src/AGENTS.md) for development verification commands and CLI architecture details.
+This file (`AGENTS.md`) serves as the High-Level Design document.
+See [src/AGENTS.md](src/AGENTS.md) for the Implementation Guide, development verification commands, and CLI architecture details.
 
 ## Documentation Index
 
@@ -48,7 +49,9 @@ See [src/AGENTS.md](src/AGENTS.md) for development verification commands and CLI
 - [src/assets/templates/AGENTS.md](src/assets/templates/AGENTS.md) — Template system
 
 ### Operational Guides (docs/)
-- [Control Plane Ownership](docs/CONTROL_PLANE_OWNERSHIP.md) — `.jlo/` vs `.jules/` ownership model and projection rules
-- [Reproduction Guide](docs/REPRODUCTION_GUIDE.md) — How to reproduce the Jules workflow in other projects
-- [Workflow Branch Impact Map](docs/WORKFLOW_BRANCH_IMPACT_MAP.md) — Operational index for branch-contract changes
-- [Workflow Layer Change Map](docs/WORKFLOW_LAYER_CHANGE_MAP.md) — Repository touch points for layer-level changes
+See [docs/README.md](docs/README.md) for the full documentation index.
+
+- [Control Plane Ownership](docs/architecture/CONTROL_PLANE_OWNERSHIP.md) — `.jlo/` vs `.jules/` ownership model and projection rules
+- [Reproduction Guide](docs/operations/REPRODUCTION_GUIDE.md) — How to reproduce the Jules workflow in other projects
+- [Workflow Branch Impact Map](docs/operations/WORKFLOW_BRANCH_IMPACT_MAP.md) — Operational index for branch-contract changes
+- [Workflow Layer Change Map](docs/operations/WORKFLOW_LAYER_CHANGE_MAP.md) — Repository touch points for layer-level changes
