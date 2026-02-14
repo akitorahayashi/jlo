@@ -71,11 +71,11 @@ impl GitPort for GitCommandAdapter {
                     details: "HEAD has no shorthand".to_string(),
                 })?;
                 Ok(shorthand.to_string())
-            },
+            }
             Err(e) if e.code() == git2::ErrorCode::UnbornBranch => {
                 let head_ref = repo.find_reference("HEAD").map_err(|e| AppError::GitError {
-                     command: "git2::Repository::find_reference(HEAD)".to_string(),
-                     details: e.to_string(),
+                    command: "git2::Repository::find_reference(HEAD)".to_string(),
+                    details: e.to_string(),
                 })?;
 
                 if let Some(target) = head_ref.symbolic_target() {
@@ -86,7 +86,7 @@ impl GitPort for GitCommandAdapter {
                         details: "HEAD is detached and unborn".to_string(),
                     })
                 }
-            },
+            }
             Err(e) => Err(AppError::GitError {
                 command: "git2::Repository::head".to_string(),
                 details: e.to_string(),
@@ -140,24 +140,28 @@ impl GitPort for GitCommandAdapter {
             details: e.to_string(),
         })?;
 
-        let from_tree = repo.find_commit(from_oid).and_then(|c| c.tree()).map_err(|e| AppError::GitError {
-             command: "git2::Repository::find_commit/tree".to_string(),
-             details: e.to_string(),
-        })?;
-        let to_tree = repo.find_commit(to_oid).and_then(|c| c.tree()).map_err(|e| AppError::GitError {
-             command: "git2::Repository::find_commit/tree".to_string(),
-             details: e.to_string(),
-        })?;
+        let from_tree =
+            repo.find_commit(from_oid).and_then(|c| c.tree()).map_err(|e| AppError::GitError {
+                command: "git2::Repository::find_commit/tree".to_string(),
+                details: e.to_string(),
+            })?;
+        let to_tree =
+            repo.find_commit(to_oid).and_then(|c| c.tree()).map_err(|e| AppError::GitError {
+                command: "git2::Repository::find_commit/tree".to_string(),
+                details: e.to_string(),
+            })?;
 
         let mut opts = DiffOptions::new();
         for p in pathspec {
             opts.pathspec(p);
         }
 
-        let diff = repo.diff_tree_to_tree(Some(&from_tree), Some(&to_tree), Some(&mut opts)).map_err(|e| AppError::GitError {
-            command: "git2::Repository::diff_tree_to_tree".to_string(),
-            details: e.to_string(),
-        })?;
+        let diff = repo
+            .diff_tree_to_tree(Some(&from_tree), Some(&to_tree), Some(&mut opts))
+            .map_err(|e| AppError::GitError {
+                command: "git2::Repository::diff_tree_to_tree".to_string(),
+                details: e.to_string(),
+            })?;
 
         Ok(diff.deltas().len() > 0)
     }
@@ -166,34 +170,39 @@ impl GitPort for GitCommandAdapter {
         let repo = self.repo()?;
 
         if create {
-            let head_commit = repo.head().and_then(|h| h.peel_to_commit()).map_err(|e| AppError::GitError {
-                 command: "git2::Repository::head".to_string(),
-                 details: e.to_string(),
-            })?;
+            let head_commit =
+                repo.head().and_then(|h| h.peel_to_commit()).map_err(|e| AppError::GitError {
+                    command: "git2::Repository::head".to_string(),
+                    details: e.to_string(),
+                })?;
             repo.branch(branch, &head_commit, false).map_err(|e| AppError::GitError {
-                 command: "git2::Repository::branch".to_string(),
-                 details: e.to_string(),
+                command: "git2::Repository::branch".to_string(),
+                details: e.to_string(),
             })?;
         }
 
         let refname = format!("refs/heads/{}", branch);
 
         // Use checkout_tree before set_head to ensure safety
-        let obj = repo.find_reference(&refname).and_then(|r| r.peel_to_commit()).map_err(|e| AppError::GitError {
-             command: "git2::Repository::find_reference".to_string(),
-             details: e.to_string(),
+        let obj = repo.find_reference(&refname).and_then(|r| r.peel_to_commit()).map_err(|e| {
+            AppError::GitError {
+                command: "git2::Repository::find_reference".to_string(),
+                details: e.to_string(),
+            }
         })?;
 
         let mut builder = git2::build::CheckoutBuilder::new();
         // Safe checkout is default
-        repo.checkout_tree(obj.as_object(), Some(&mut builder)).map_err(|e| AppError::GitError {
-             command: "git2::Repository::checkout_tree".to_string(),
-             details: e.to_string(),
+        repo.checkout_tree(obj.as_object(), Some(&mut builder)).map_err(|e| {
+            AppError::GitError {
+                command: "git2::Repository::checkout_tree".to_string(),
+                details: e.to_string(),
+            }
         })?;
 
         repo.set_head(&refname).map_err(|e| AppError::GitError {
-             command: "git2::Repository::set_head".to_string(),
-             details: e.to_string(),
+            command: "git2::Repository::set_head".to_string(),
+            details: e.to_string(),
         })?;
 
         Ok(())
@@ -212,39 +221,44 @@ impl GitPort for GitCommandAdapter {
     fn commit_files(&self, message: &str, files: &[&Path]) -> Result<String, AppError> {
         let repo = self.repo()?;
         let mut index = repo.index().map_err(|e| AppError::GitError {
-             command: "git2::Repository::index".to_string(),
-             details: e.to_string(),
+            command: "git2::Repository::index".to_string(),
+            details: e.to_string(),
         })?;
 
         for file in files {
             let rel_path = if file.is_absolute() {
-                file.strip_prefix(&self.root).map_err(|_| AppError::Validation(format!("File {:?} is not inside repository root {:?}", file, self.root)))?
+                file.strip_prefix(&self.root).map_err(|_| {
+                    AppError::Validation(format!(
+                        "File {:?} is not inside repository root {:?}",
+                        file, self.root
+                    ))
+                })?
             } else {
                 file
             };
 
             index.add_path(rel_path).map_err(|e| AppError::GitError {
-                 command: format!("git2::Index::add_path {:?}", rel_path),
-                 details: e.to_string(),
+                command: format!("git2::Index::add_path {:?}", rel_path),
+                details: e.to_string(),
             })?;
         }
         index.write().map_err(|e| AppError::GitError {
-             command: "git2::Index::write".to_string(),
-             details: e.to_string(),
+            command: "git2::Index::write".to_string(),
+            details: e.to_string(),
         })?;
 
         let tree_id = index.write_tree().map_err(|e| AppError::GitError {
-             command: "git2::Index::write_tree".to_string(),
-             details: e.to_string(),
+            command: "git2::Index::write_tree".to_string(),
+            details: e.to_string(),
         })?;
         let tree = repo.find_tree(tree_id).map_err(|e| AppError::GitError {
-             command: "git2::Repository::find_tree".to_string(),
-             details: e.to_string(),
+            command: "git2::Repository::find_tree".to_string(),
+            details: e.to_string(),
         })?;
 
         let signature = repo.signature().map_err(|e| AppError::GitError {
-             command: "git2::Repository::signature".to_string(),
-             details: e.to_string(),
+            command: "git2::Repository::signature".to_string(),
+            details: e.to_string(),
         })?;
 
         let parents = match repo.head() {
@@ -254,20 +268,24 @@ impl GitPort for GitCommandAdapter {
                     details: e.to_string(),
                 })?;
                 vec![commit]
-            },
+            }
             Err(e) if e.code() == git2::ErrorCode::UnbornBranch => vec![],
-            Err(e) => return Err(AppError::GitError {
-                command: "git2::Repository::head".to_string(),
-                details: e.to_string(),
-            }),
+            Err(e) => {
+                return Err(AppError::GitError {
+                    command: "git2::Repository::head".to_string(),
+                    details: e.to_string(),
+                });
+            }
         };
 
         let parents_refs: Vec<&git2::Commit> = parents.iter().collect();
 
-        let oid = repo.commit(Some("HEAD"), &signature, &signature, message, &tree, &parents_refs).map_err(|e| AppError::GitError {
-             command: "git2::Repository::commit".to_string(),
-             details: e.to_string(),
-        })?;
+        let oid = repo
+            .commit(Some("HEAD"), &signature, &signature, message, &tree, &parents_refs)
+            .map_err(|e| AppError::GitError {
+                command: "git2::Repository::commit".to_string(),
+                details: e.to_string(),
+            })?;
 
         Ok(oid.to_string())
     }
@@ -285,36 +303,40 @@ impl GitPort for GitCommandAdapter {
         };
 
         if !force {
-             let branch_oid = branch_ref.get().target().ok_or_else(|| AppError::GitError {
-                 command: "delete_branch".to_string(),
-                 details: "Branch ref has no target".to_string(),
-             })?;
+            let branch_oid = branch_ref.get().target().ok_or_else(|| AppError::GitError {
+                command: "delete_branch".to_string(),
+                details: "Branch ref has no target".to_string(),
+            })?;
 
-             let head_oid = match repo.head() {
-                 Ok(h) => match h.target() {
-                     Some(target) => target,
-                     None => return Err(AppError::GitError {
-                         command: "delete_branch".to_string(),
-                         details: "HEAD has no target".to_string(),
-                     }),
-                 },
-                 Err(_) => return Err(AppError::GitError {
-                     command: "delete_branch".to_string(),
-                     details: "Cannot delete branch safely: HEAD not found".to_string(),
-                 }),
-             };
+            let head_oid = match repo.head() {
+                Ok(h) => match h.target() {
+                    Some(target) => target,
+                    None => {
+                        return Err(AppError::GitError {
+                            command: "delete_branch".to_string(),
+                            details: "HEAD has no target".to_string(),
+                        });
+                    }
+                },
+                Err(_) => {
+                    return Err(AppError::GitError {
+                        command: "delete_branch".to_string(),
+                        details: "Cannot delete branch safely: HEAD not found".to_string(),
+                    });
+                }
+            };
 
-             if !repo.graph_descendant_of(head_oid, branch_oid).unwrap_or(false) {
-                 return Err(AppError::GitError {
-                     command: "delete_branch".to_string(),
-                     details: "Branch is not fully merged (use force to delete)".to_string(),
-                 });
-             }
+            if !repo.graph_descendant_of(head_oid, branch_oid).unwrap_or(false) {
+                return Err(AppError::GitError {
+                    command: "delete_branch".to_string(),
+                    details: "Branch is not fully merged (use force to delete)".to_string(),
+                });
+            }
         }
 
         branch_ref.delete().map_err(|e| AppError::GitError {
-             command: "git2::Branch::delete".to_string(),
-             details: e.to_string(),
+            command: "git2::Branch::delete".to_string(),
+            details: e.to_string(),
         })?;
         Ok(true)
     }
@@ -323,8 +345,8 @@ impl GitPort for GitCommandAdapter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
     use std::fs;
+    use tempfile::TempDir;
 
     fn setup_repo() -> (TempDir, GitCommandAdapter) {
         let temp_dir = TempDir::new().unwrap();
@@ -342,22 +364,22 @@ mod tests {
         Command::new("git")
             .args(&["config", "user.name", "Test User"])
             .current_dir(&root)
-            .output().unwrap();
+            .output()
+            .unwrap();
         Command::new("git")
             .args(&["config", "user.email", "test@example.com"])
             .current_dir(&root)
-            .output().unwrap();
+            .output()
+            .unwrap();
 
         // Create an initial commit so HEAD exists
         fs::write(root.join("README.md"), "# Test").unwrap();
-        Command::new("git")
-            .args(&["add", "."])
-            .current_dir(&root)
-            .output().unwrap();
+        Command::new("git").args(&["add", "."]).current_dir(&root).output().unwrap();
         Command::new("git")
             .args(&["commit", "-m", "Initial commit"])
             .current_dir(&root)
-            .output().unwrap();
+            .output()
+            .unwrap();
 
         (temp_dir, GitCommandAdapter::new(root))
     }
@@ -394,8 +416,16 @@ mod tests {
         let root = temp_dir.path().to_path_buf();
         Command::new("git").arg("init").current_dir(&root).output().unwrap();
         // Configure user for commits
-        Command::new("git").args(&["config", "user.name", "Test User"]).current_dir(&root).output().unwrap();
-        Command::new("git").args(&["config", "user.email", "test@example.com"]).current_dir(&root).output().unwrap();
+        Command::new("git")
+            .args(&["config", "user.name", "Test User"])
+            .current_dir(&root)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .args(&["config", "user.email", "test@example.com"])
+            .current_dir(&root)
+            .output()
+            .unwrap();
 
         let git = GitCommandAdapter::new(root.clone());
         let file_path = root.join("new_file.txt");
@@ -421,7 +451,9 @@ mod tests {
         let current = git.get_current_branch().unwrap();
         assert_eq!(current, "new-branch");
 
-        git.checkout_branch("master", false).or_else(|_| git.checkout_branch("main", false)).expect("Failed to checkout original branch");
+        git.checkout_branch("master", false)
+            .or_else(|_| git.checkout_branch("main", false))
+            .expect("Failed to checkout original branch");
     }
 
     #[test]
@@ -481,7 +513,9 @@ mod tests {
         git.checkout_branch("to-delete", true).unwrap();
 
         // Checkout master/main again so we can delete the other branch
-        git.checkout_branch("master", false).or_else(|_| git.checkout_branch("main", false)).unwrap();
+        git.checkout_branch("master", false)
+            .or_else(|_| git.checkout_branch("main", false))
+            .unwrap();
 
         let deleted = git.delete_branch("to-delete", true).expect("Failed to delete branch");
         assert!(deleted);

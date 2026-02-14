@@ -18,7 +18,7 @@ toml = "0.8"
 url = { version = "2.5.8", features = ["serde"] }
 minijinja = "2"
 thiserror = "1.0"
-git2 = "0.20.4"
+git2 = { version = "0.20.4", features = ["vendored-openssl", "vendored-libgit2"] }
 
 [dev-dependencies]
 assert_cmd = "2.0"
