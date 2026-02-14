@@ -1,0 +1,16 @@
+schema_version: 2
+
+observer: librarian
+
+updated_at: "2026-02-14T10:00:00Z"
+
+goals:
+  - "Resolve documentation navigation ambiguity and establish missing layer documentation structure."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-14T10:00:00Z"
+    summary: "Initialized workstation memory for librarian role."
