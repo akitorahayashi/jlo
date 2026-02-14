@@ -1,0 +1,13 @@
+schema_version: 2
+observer: cov
+updated_at: "2026-02-14T12:05:00Z"
+goals:
+  - "Advocate for unit tests in `workflow/run/layer/` modules"
+  - "Support structural testing for CLI commands"
+rules: []
+ignore: []
+log:
+  - at: "2026-02-14T12:05:00Z"
+    summary: "Identified gaps in workflow layer tests and CLI structure"
+  - at: "2026-02-14T12:00:00Z"
+    summary: "Initialized workstation"

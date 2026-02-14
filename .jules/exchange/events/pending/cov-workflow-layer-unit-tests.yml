@@ -1,0 +1,13 @@
+schema_version: 1
+id: "cov-workflow-layer-unit-tests"
+author_role: "cov"
+confidence: "high"
+title: "Missing unit tests for workflow layer execution logic"
+statement: |
+  The `execute` functions in `src/app/commands/workflow/run/layer/*.rs` (specifically `implementer.rs` and `observers.rs`)
+  contain orchestration logic but lack direct unit tests. While `mod.rs` has an integration-style test, the individual
+  layer modules rely on external validation, increasing the risk of logic errors in role execution flow.
+evidence: |
+  - `src/app/commands/workflow/run/layer/implementer.rs`: Contains `execute` logic with requirement filtering but no `#[cfg(test)]` module.
+  - `src/app/commands/workflow/run/layer/observers.rs`: Contains `execute` logic with schedule loading but no `#[cfg(test)]` module.
+  - `src/app/commands/workflow/run/layer/mod.rs`: Contains `execute_layer_observers_reflects_enabled_roles_in_scheduled_toml` but does not cover all edge cases or other layers.

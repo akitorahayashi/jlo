@@ -1,0 +1,14 @@
+schema_version: 1
+id: "cov-cli-structure-tests"
+author_role: "cov"
+confidence: "high"
+title: "Lack of structural and consistency tests for CLI commands"
+statement: |
+  The CLI command suite is expanding (`jlo run`, `jlo workflow`, etc.) without a dedicated testing
+  layer for interface consistency. Tests in `tests/cli/` focus on functional correctness but do not
+  enforce standards for argument naming, help message formatting, or output structure (SVO).
+  This creates a risk of UX degradation and inconsistency as new commands are added.
+evidence: |
+  - `tests/cli/run/`: Contains functional integration tests but no structural assertions.
+  - `src/app/commands/`: No centralized test suite enforcing CLI design patterns.
+  - Absence of a `cli_sentinel` or similar mechanism in the test harness.
