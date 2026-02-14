@@ -1,0 +1,44 @@
+schema_version: 1
+
+# Metadata
+id: "e1qadp"
+issue_id: ""
+created_at: "2024-02-14"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Duplicate Test Doubles (FakeGit/FakeGitHub) Violate DRY"
+statement: |
+  The `FakeGit` and `FakeGitHub` test doubles are duplicated across multiple files in `src/app/commands/workflow/` and `src/app/commands/run/layer/`. This redundancy increases maintenance effort and risks divergence between test environments.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/workflow/workspace/publish_proposals.rs"
+    loc:
+      - "struct FakeGit"
+      - "struct FakeGitHub"
+    note: "Defines FakeGit and FakeGitHub locally."
+
+  - path: "src/app/commands/workflow/gh/pr/process.rs"
+    loc:
+      - "struct FakeGitHub"
+    note: "Defines FakeGitHub locally."
+
+  - path: "src/app/commands/run/layer/implementer.rs"
+    loc:
+      - "struct FakeGit"
+      - "struct FakeGitHub"
+    note: "Defines FakeGit and FakeGitHub locally."
+
+  - path: "src/app/commands/run/layer/innovators.rs"
+    loc:
+      - "struct FakeGit"
+      - "struct FakeGitHub"
+    note: "Defines FakeGit and FakeGitHub locally."
+
+  - path: "src/app/commands/run/layer/decider.rs"
+    loc:
+      - "struct FakeGit"
+      - "struct FakeGitHub"
+    note: "Defines FakeGit and FakeGitHub locally."

@@ -1,0 +1,20 @@
+schema_version: 2
+
+observer: "qa"
+
+updated_at: "2024-02-14T10:15:00Z"
+
+goals:
+  - "Identify and report duplicate test infrastructure (harnesses, doubles)."
+  - "Identify and report missing unit tests for core domain layers."
+  - "Evaluate new innovator ideas for testing risks."
+
+rules:
+  - "Prioritize finding duplicate test code to reduce maintenance burden."
+  - "Focus on test speed and diagnosability."
+
+ignore: []
+
+log:
+  - at: "2024-02-14T10:15:00Z"
+    summary: "Reported duplicate test doubles, duplicate test harness, and missing layer unit tests; provided feedback on cli_sentinel."
