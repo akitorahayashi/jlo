@@ -18,8 +18,9 @@ impl ComponentGraph {
         catalog: &C,
     ) -> Result<Vec<Component>, AppError> {
         // Collect all components needed (transitive closure)
-        let mut needed: BTreeMap<ComponentId, Component> = BTreeMap::new();
-        let mut visiting: BTreeSet<ComponentId> = BTreeSet::new();
+        // Store references to avoid cloning Components until the end
+        let mut needed: BTreeMap<&ComponentId, &Component> = BTreeMap::new();
+        let mut visiting: BTreeSet<&ComponentId> = BTreeSet::new();
 
         for name in requested {
             // Validate ID format first
@@ -29,39 +30,43 @@ impl ComponentGraph {
 
         // Build in-degree count
         // Edge A -> B means A depends on B (B must come before A)
-        let mut in_degree: BTreeMap<ComponentId, usize> =
-            needed.keys().map(|k| (k.clone(), 0)).collect();
-        let mut dependents: BTreeMap<ComponentId, Vec<ComponentId>> =
-            needed.keys().map(|k| (k.clone(), Vec::new())).collect();
+        let mut in_degree: BTreeMap<&ComponentId, usize> =
+            needed.keys().map(|&k| (k, 0)).collect();
+        let mut dependents: BTreeMap<&ComponentId, Vec<&ComponentId>> =
+            needed.keys().map(|&k| (k, Vec::new())).collect();
 
-        for (name, component) in &needed {
+        for (&name, &component) in &needed {
             for dep in &component.dependencies {
-                if needed.contains_key(dep) {
+                // Only consider dependencies that are part of the needed set.
+                // If a dependency is missing from 'needed', it means collect_dependencies failed
+                // (which shouldn't happen as it explores transitively) or logic error.
+                if let Some((dep_key, _)) = needed.get_key_value(dep) {
                     *in_degree.get_mut(name).unwrap() += 1;
-                    dependents.get_mut(dep).unwrap().push(name.clone());
+                    dependents.get_mut(dep_key).unwrap().push(name);
                 }
             }
         }
 
         // Kahn's algorithm
-        let mut queue: VecDeque<ComponentId> =
-            in_degree.iter().filter(|&(_, deg)| *deg == 0).map(|(k, _)| k.clone()).collect();
+        let mut queue: VecDeque<&ComponentId> =
+            in_degree.iter().filter(|&(_, deg)| *deg == 0).map(|(&k, _)| k).collect();
 
         // Sort for deterministic ordering
         let mut queue_vec: Vec<_> = queue.drain(..).collect();
         queue_vec.sort();
         queue = queue_vec.into_iter().collect();
 
-        let mut result: Vec<Component> = Vec::new();
+        let mut result: Vec<Component> = Vec::with_capacity(needed.len());
 
         while let Some(current) = queue.pop_front() {
-            result.push(needed.remove(&current).unwrap());
+            // Clone the component only when moving to result
+            result.push((*needed.get(current).unwrap()).clone());
 
-            let deps = dependents.get(&current).cloned().unwrap_or_default();
+            let deps = dependents.get(current).map(|v| v.as_slice()).unwrap_or_default();
             let mut next_batch = Vec::new();
 
-            for dependent in deps {
-                let deg = in_degree.get_mut(&dependent).unwrap();
+            for &dependent in deps {
+                let deg = in_degree.get_mut(dependent).unwrap();
                 *deg -= 1;
                 if *deg == 0 {
                     next_batch.push(dependent);
@@ -85,13 +90,21 @@ impl ComponentGraph {
         Ok(result)
     }
 
-    fn collect_dependencies<C: ComponentCatalog>(
+    fn collect_dependencies<'a, C: ComponentCatalog>(
         id: &ComponentId,
-        catalog: &C,
-        collected: &mut BTreeMap<ComponentId, Component>,
-        visiting: &mut BTreeSet<ComponentId>,
+        catalog: &'a C,
+        collected: &mut BTreeMap<&'a ComponentId, &'a Component>,
+        visiting: &mut BTreeSet<&'a ComponentId>,
         path: &mut Vec<String>,
     ) -> Result<(), AppError> {
+        // If already collected, return.
+        // We can query with `id` even if it has a different lifetime because
+        // BTreeMap keys are &ComponentId and &ComponentId implements Borrow<ComponentId> (transitively)
+        // actually BTreeMap stores `K`. Here K is `&'a ComponentId`.
+        // `collected.contains_key(id)` expects `&Q` where `K: Borrow<Q>`.
+        // `&'a ComponentId` borrows as `ComponentId`.
+        // So `Q` can be `ComponentId`.
+        // And we pass `&ComponentId`.
         if collected.contains_key(id) {
             return Ok(());
         }
@@ -108,7 +121,10 @@ impl ComponentGraph {
             available: catalog.names().iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", "),
         })?;
 
-        visiting.insert(id.clone());
+        // Use the component's name as the canonical key with lifetime 'a
+        let component_id = &component.name;
+
+        visiting.insert(component_id);
         path.push(name_str.to_string());
 
         for dep in &component.dependencies {
@@ -116,8 +132,8 @@ impl ComponentGraph {
         }
 
         path.pop();
-        visiting.remove(id);
-        collected.insert(id.clone(), component.clone());
+        visiting.remove(component_id);
+        collected.insert(component_id, component);
 
         Ok(())
     }
