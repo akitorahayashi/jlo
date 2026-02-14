@@ -1,0 +1,18 @@
+schema_version: 1
+id: "d0c002"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "consistency"
+confidence: "high"
+title: "Undocumented flags for `workflow gh process pr` in README.md"
+statement: |
+  The `--retry-attempts` and `--retry-delay-seconds` flags for the `jlo workflow gh process pr` command are implemented but not documented in `README.md`.
+evidence:
+  - path: "README.md"
+    loc:
+      - "jlo workflow gh process pr"
+    note: "Only mentions `--fail-on-error`, omits retry flags."
+  - path: "src/app/cli/workflow.rs"
+    loc:
+      - "ProcessPrArgs"
+    note: "Struct defines `retry_attempts` and `retry_delay_seconds`."

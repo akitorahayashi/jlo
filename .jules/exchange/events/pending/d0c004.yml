@@ -1,0 +1,18 @@
+schema_version: 1
+id: "d0c004"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "consistency"
+confidence: "high"
+title: "Missing `jlo add` command in `src/AGENTS.md`"
+statement: |
+  The `src/AGENTS.md` file, which claims to be the SSOT for verification, omits the `jlo add` command in its CLI Commands table, despite it being a core command for installing built-in roles.
+evidence:
+  - path: "src/AGENTS.md"
+    loc:
+      - "CLI Commands"
+    note: "Table lists `create` but omits `add`."
+  - path: "src/app/cli/mod.rs"
+    loc:
+      - "Commands::Add"
+    note: "Implementation of `jlo add`."

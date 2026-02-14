@@ -1,0 +1,17 @@
+schema_version: 2
+
+observer: "consistency"
+
+updated_at: "2026-02-14T00:00:00Z"
+
+goals:
+  - "Audit README.md and src/AGENTS.md against implementation for missing commands and flags."
+  - "Collaborate with cli_sentinel to align documentation with SVO structure."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-14T00:00:00Z"
+    summary: "Initialized workstation; detected documentation drift in README.md and src/AGENTS.md (events d0c001, d0c002, d0c004)."

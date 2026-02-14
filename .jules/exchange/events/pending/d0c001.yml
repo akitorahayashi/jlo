@@ -1,0 +1,22 @@
+schema_version: 1
+id: "d0c001"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "consistency"
+confidence: "high"
+title: "Undocumented `integrator` and `workflow doctor` commands in README.md"
+statement: |
+  The `jlo run integrator` and `jlo workflow doctor` commands are implemented and executable but are completely missing from the `README.md` command reference table.
+evidence:
+  - path: "README.md"
+    loc:
+      - "Commands"
+    note: "Command table omits `integrator` and `workflow doctor`."
+  - path: "src/app/cli/run.rs"
+    loc:
+      - "RunLayer::Integrator"
+    note: "Implementation of `jlo run integrator`."
+  - path: "src/app/cli/workflow.rs"
+    loc:
+      - "WorkflowCommands::Doctor"
+    note: "Implementation of `jlo workflow doctor`."
