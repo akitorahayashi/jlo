@@ -1,0 +1,12 @@
+schema_version: 2
+observer: "rustacean"
+updated_at: "2026-02-14T10:00:00Z"
+goals:
+  - "Refactor AppError into domain-specific error types."
+  - "Optimize ComponentGraph to reduce cloning."
+  - "Replace stringly-typed adapters with typed libraries (git2, octocrab)."
+rules: []
+ignore: []
+log:
+  - at: "2026-02-14T10:00:00Z"
+    summary: "Initial inspection revealed monolithic errors, graph cloning, and loose adapters."

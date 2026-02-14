@@ -1,0 +1,16 @@
+schema_version: 1
+author: "rustacean"
+type: "supplement"
+target: "cli structure"
+summary: "Ensure structural consistency does not ignore compile-time costs."
+rationale: |
+  Standardizing the CLI structure is beneficial, but the `cli_sentinel` should also monitor the complexity of the `clap` struct definitions to avoid generic explosion and bloated compile times.
+evidence:
+  - path: "src/app/commands/mod.rs"
+    loc:
+      - "module structure"
+    note: "Current mix of file/directory modules suggests inconsistent command definition strategies."
+content: |
+  I support the activation of `cli_sentinel`. In addition to SVO and UX consistency, I recommend adding a check for:
+  1.  **Macro Bloat**: excessive use of `#[derive(Parser)]` on large enums without boxing or restructuring can hurt compile times.
+  2.  **Argument Types**: ensuring arguments use strong types (e.g. `PathBuf`, `RoleId`) instead of `String` where possible to leverage `clap`'s parsing validation.

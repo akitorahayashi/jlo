@@ -1,0 +1,18 @@
+schema_version: 1
+id: "perf01"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "rustacean"
+confidence: "medium"
+title: "Excessive Cloning in Component Graph Resolution"
+statement: |
+  The `ComponentGraph::resolve` function performs unnecessary cloning of `ComponentId` and `Component` structs during topological sorting. This violates "Clone must pay rent" and potentially degrades performance for large graphs.
+evidence:
+  - path: "src/domain/component_graph.rs"
+    loc:
+      - "needed.keys().map(|k| (k.clone(), 0))"
+    note: "Clones ComponentId keys to build in_degree map."
+  - path: "src/domain/component_graph.rs"
+    loc:
+      - "collected.insert(id.clone(), component.clone())"
+    note: "Clones both ID and Component when collecting dependencies."

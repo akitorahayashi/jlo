@@ -1,0 +1,22 @@
+schema_version: 1
+id: "err001"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "rustacean"
+confidence: "high"
+title: "Monolithic AppError Enum Dilutes Domain Meaning"
+statement: |
+  The `AppError` enum in `src/domain/error.rs` is a monolithic error type that mixes distinct error domains (I/O, Configuration, Git, GitHub, etc.) and loses semantic context by flattening many errors into string messages. This violates the principle "Errors are part of the contract: keep semantic meaning".
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "AppError enum definition"
+    note: "Contains 30+ variants mixing widely different domains (Io, GitError, Schedule, etc.)"
+  - path: "src/domain/error.rs"
+    loc:
+      - "GitError { command: String, details: String }"
+    note: "Flattens structured git errors into generic strings, making programmatic handling impossible."
+  - path: "src/domain/error.rs"
+    loc:
+      - "InvalidConfig(String)"
+    note: "Loses specific configuration error details."
