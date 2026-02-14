@@ -30,8 +30,7 @@ impl ComponentGraph {
 
         // Build in-degree count
         // Edge A -> B means A depends on B (B must come before A)
-        let mut in_degree: BTreeMap<&ComponentId, usize> =
-            needed.keys().map(|&k| (k, 0)).collect();
+        let mut in_degree: BTreeMap<&ComponentId, usize> = needed.keys().map(|&k| (k, 0)).collect();
         let mut dependents: BTreeMap<&ComponentId, Vec<&ComponentId>> =
             needed.keys().map(|&k| (k, Vec::new())).collect();
 
