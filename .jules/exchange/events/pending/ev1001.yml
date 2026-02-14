@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "ev1001"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "tactician"
+confidence: "high"
+
+# Content
+title: "Ambiguous Directory Mapping in AGENTS.md"
+statement: |
+  The root `AGENTS.md` incorrectly states that `src/assets/scaffold/jules/layers` maps to `.jules/roles`, while the actual source directory is `src/assets/scaffold/jules/roles`. This creates ambiguity in ownership and structural understanding.
+
+# Evidence supporting the observation
+evidence:
+  - path: "AGENTS.md"
+    loc:
+      - "Line 26"
+    note: "Incorrectly states mapping from `layers` directory."
+  - path: "src/assets/scaffold/jules/roles"
+    loc:
+      - "Directory"
+    note: "Actual source directory is named `roles`."
