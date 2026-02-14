@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: "qa"
+
+updated_at: "2026-02-14T12:00:00Z"
+
+goals:
+  - "Monitor test duplication"
+  - "Verify observer test coverage"
+
+rules:
+  - "Evidence requires file paths and line numbers."
+
+ignore: []
+
+log:
+  - at: "2026-02-14T12:00:00Z"
+    summary: "Initialized QA workstation."
