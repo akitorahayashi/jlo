@@ -63,6 +63,9 @@ impl JulesApiConfig {
         if self.timeout_secs == 0 {
             return Err(AppError::InvalidConfig("timeout_secs must be greater than 0".to_string()));
         }
+        if self.max_retries == 0 {
+            return Err(AppError::InvalidConfig("max_retries must be greater than 0".to_string()));
+        }
         if self.retry_delay_ms == 0 {
             return Err(AppError::InvalidConfig(
                 "retry_delay_ms must be greater than 0".to_string(),
@@ -192,6 +195,12 @@ mod tests {
     #[test]
     fn validate_jules_config_invalid_timeout() {
         let config = JulesApiConfig { timeout_secs: 0, ..Default::default() };
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn validate_jules_config_invalid_max_retries() {
+        let config = JulesApiConfig { max_retries: 0, ..Default::default() };
         assert!(config.validate().is_err());
     }
 

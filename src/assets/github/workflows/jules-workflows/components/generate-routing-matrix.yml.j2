@@ -2,10 +2,30 @@
     needs: [check-schedule, generate-decider-matrix, run-decider, wait-after-decider]
     if: |
       always() &&
+      needs.check-schedule.result == 'success' &&
       (fromJSON(needs.check-schedule.outputs.json).run_planner == true || fromJSON(needs.check-schedule.outputs.json).run_implementer == true) &&
-      (needs.generate-decider-matrix.result == 'success' || needs.generate-decider-matrix.result == 'skipped') &&
-      (needs.run-decider.result == 'success' || needs.run-decider.result == 'skipped') &&
-      (needs.wait-after-decider.result == 'success' || needs.wait-after-decider.result == 'skipped')
+      (
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_decider == false &&
+          needs.generate-decider-matrix.result == 'skipped' &&
+          needs.run-decider.result == 'skipped' &&
+          needs.wait-after-decider.result == 'skipped'
+        ) ||
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
+          needs.generate-decider-matrix.result == 'success' &&
+          (
+            (
+              needs.run-decider.result == 'success' &&
+              needs.wait-after-decider.result == 'success'
+            ) ||
+            (
+              needs.run-decider.result == 'skipped' &&
+              needs.wait-after-decider.result == 'skipped'
+            )
+          )
+        )
+      )
     runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:

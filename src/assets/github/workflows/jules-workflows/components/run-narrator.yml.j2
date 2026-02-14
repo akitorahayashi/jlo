@@ -1,13 +1,8 @@
   run-narrator:
-    needs: [bootstrap]
+    needs: [check-schedule]
     if: >-
-      needs.bootstrap.result == 'success' &&
-      ((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule') &&
-      (
-        github.event_name == 'schedule' ||
-        (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') == 'narrator') ||
-        (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') == 'narrator')
-      )
+      needs.check-schedule.result == 'success' &&
+      fromJSON(needs.check-schedule.outputs.json).run_narrator == true
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:

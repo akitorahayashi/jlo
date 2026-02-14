@@ -7,7 +7,7 @@ objective:
   Update perspective.yml with structured repository findings and thought progression.
 
 steps:
-  - Inspect codebase behavior, startup/runtime assumptions, and open requirement context first; use changes.yml only as a secondary hint after baseline understanding is established.
+  - Inspect codebase behavior, startup/runtime assumptions, and open requirement context before drafting the idea.
   - Check perspective.yml recent_proposals to avoid repeating recently published proposal topics.
   - Update perspective.yml repository_observations and thinking_notes with current findings and direction rationale.
   - Refresh perspective.yml feedback_assimilation.next_focus with concrete next-cycle investigation angles.
