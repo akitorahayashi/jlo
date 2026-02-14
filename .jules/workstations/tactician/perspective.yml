@@ -1,0 +1,11 @@
+schema_version: 2
+observer: tactician
+updated_at: "2026-02-14T11:15:00Z"
+goals:
+  - "Ensure deterministic execution policy across scopes"
+  - "Validate precedence rules between global and scoped contracts"
+rules: []
+ignore: []
+log:
+  - at: "2026-02-14T11:15:00Z"
+    summary: "Initialized workstation, emitted events ev1001 & ev1002, and commented on recruiter idea."

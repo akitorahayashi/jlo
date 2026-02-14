@@ -1,0 +1,17 @@
+schema_version: 1
+
+author: "tactician"
+type: "supplement"
+target: "Introduction"
+summary: "Ensure strict scope boundaries during activation."
+rationale: |
+  Activation of new roles must respect the deterministic execution policy by ensuring explicit scheduling and configuration ownership.
+
+evidence:
+  - path: ".jlo/scheduled.toml"
+    loc:
+      - "Configuration"
+    note: "Required for deterministic execution of multi-role layers."
+
+content: |
+  Support activation of `cli_sentinel` provided it is instantiated in `.jlo/roles/observers/` and explicitly scheduled in `.jlo/scheduled.toml` to maintain deterministic execution. Verify that the new role contract does not introduce precedence conflicts with existing global rules.
