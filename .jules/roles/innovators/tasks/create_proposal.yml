@@ -1,0 +1,22 @@
+task: create_proposal
+mode: direct
+
+objective:
+  Create proposal.yml from repository context and persona perspective.
+
+steps:
+  - Inspect repository behavior, boundaries, and runtime assumptions before drafting conclusions.
+  - Check perspective.yml recent_proposals and reject equivalent proposal directions.
+  - Update perspective.yml repository_observations and thinking_notes with concise evidence and rationale.
+  - Update perspective.yml feedback_assimilation.next_focus with follow-up validation tasks.
+  - Create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals.
+  - Update perspective.yml recent_proposals (FIFO, max 5, newest first) with the proposal title.
+
+output:
+  - .jules/exchange/innovators/<persona>/proposal.yml
+  - .jules/exchange/innovators/<persona>/perspective.yml (updated)
+
+constraints:
+  - "proposal.yml must be justified by repository evidence gathered in this run"
+  - "recent_proposals must include the current proposal title and keep FIFO max 5"
+  - "If the direction is equivalent to recent_proposals, fail explicitly instead of emitting proposal.yml"

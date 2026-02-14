@@ -1,0 +1,27 @@
+task: refine_idea_and_create_proposal
+phase: refinement
+
+objective:
+  Refine the drafted idea into a finished proposal informed by observer feedback.
+  Evaluate feasibility, impact, and risks, then produce proposal.yml meeting
+  the quality bar defined in role.yml.
+
+steps:
+  - Read all feedback files in .jules/exchange/innovators/<persona>/comments/*.yml.
+  - Re-check repository code behavior and runtime assumptions for claim validity before finalizing proposal.
+  - Re-evaluate the current direction against layer contract constraints before finalizing proposal.yml.
+  - Update perspective.yml feedback_assimilation.observer_inputs with key feedback and directional impact.
+  - Update perspective.yml thinking_notes and repository_observations to preserve what changed after feedback.
+  - Refresh perspective.yml feedback_assimilation.next_focus for the next cycle.
+  - Create proposal.yml with importance, impact_surface, implementation_cost, consistency_risks, and verification_signals.
+  - Update perspective.yml recent_proposals (FIFO, max 5, newest first) with the proposal title.
+  - Delete idea.yml and all comments/*.yml.
+
+output:
+  - .jules/exchange/innovators/<persona>/proposal.yml
+  - .jules/exchange/innovators/<persona>/perspective.yml (updated)
+
+constraints:
+  - "idea.yml and comments/*.yml must be deleted after proposal creation"
+  - "recent_proposals must include the current proposal title and keep FIFO max 5"
+  - "If the refined direction is equivalent to recent_proposals, fail explicitly instead of emitting proposal.yml"

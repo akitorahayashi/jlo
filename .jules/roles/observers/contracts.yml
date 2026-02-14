@@ -1,0 +1,15 @@
+layer: observers
+branch_prefix: jules-observer-
+
+purpose:
+  Inspect the codebase through the lens of your specialized role (role.yml) and
+  emit 0-3 high-signal, evidence-backed findings as events. Maintain continuity
+  across runs via workstation memory (perspective.yml).
+
+constraints:
+  - Do not duplicate findings already covered by open requirements or recent events
+  - Workstation memory is perspective.yml only; do not create per-run history files
+  - "Do not prioritize changes.yml over direct repository inspection; use it only as a secondary hint"
+  - "Goals must be validated every run; replace stale or completed goals"
+  - "Branch names must start with the prefix jules-observer-"
+  - "Do not modify files outside of the .jules/ directory."
