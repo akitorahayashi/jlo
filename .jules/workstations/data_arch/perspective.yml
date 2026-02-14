@@ -1,0 +1,15 @@
+schema_version: 2
+observer: "data_arch"
+updated_at: "2025-05-27T10:00:00Z"
+
+goals:
+  - "Identify and decouple configuration parsing logic from command layers."
+  - "Monitor for schema proliferation in ad-hoc DTOs within commands."
+  - "Ensure unified data models for CLI command outcomes."
+
+rules: []
+ignore: []
+
+log:
+  - at: "2025-05-27T10:00:00Z"
+    summary: "Initialized workstation and identified configuration coupling in init command."
