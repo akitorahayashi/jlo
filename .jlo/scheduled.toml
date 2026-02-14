@@ -13,6 +13,7 @@ roles = [
   { name = "qa", enabled = true },
   { name = "cov", enabled = true },
   { name = "rustacean", enabled = true },
+  { name = "cli_sentinel", enabled = true },
 ]
 
 [innovators]

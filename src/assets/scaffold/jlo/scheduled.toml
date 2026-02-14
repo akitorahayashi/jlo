@@ -9,6 +9,7 @@ roles = [
   { name = "structural_arch", enabled = true },
   { name = "qa", enabled = true },
   { name = "cov", enabled = true },
+  { name = "cli_sentinel", enabled = true },
 ]
 
 [innovators]

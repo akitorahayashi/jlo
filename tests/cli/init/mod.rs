@@ -1,1 +1,2 @@
+mod cli_sentinel_instantiation_contract;
 mod rejects_when_already_initialized_contract;
