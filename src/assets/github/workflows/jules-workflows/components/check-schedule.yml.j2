@@ -49,8 +49,12 @@
               run_planner=true
               run_implementer=true
               ;;
+            requirements)
+              run_planner=true
+              run_implementer=true
+              ;;
             *)
-              echo "::error::Unsupported entry_point '${ENTRY_POINT}'. Allowed values: narrator, observers, decider."
+              echo "::error::Unsupported entry_point '${ENTRY_POINT}'. Allowed values: narrator, observers, decider, requirements."
               exit 1
               ;;
           esac

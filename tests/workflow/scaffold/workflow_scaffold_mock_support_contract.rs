@@ -55,6 +55,10 @@ fn installed_workflow_scaffold_includes_mock_support() {
     assert!(workflow.contains("publish-proposals:"), "Should have publish-proposals job");
     assert!(!workflow.contains("- innovators"), "Entry point choices should exclude innovators");
     assert!(
+        workflow.contains("\n          - requirements\n"),
+        "Entry point choices should include requirements routing start-point"
+    );
+    assert!(
         !workflow.contains("\n          - planner\n"),
         "Entry point choices should exclude planner"
     );
@@ -77,6 +81,10 @@ fn installed_workflow_scaffold_includes_mock_support() {
     assert!(
         workflow.contains("decider)\n              run_decider=true\n              run_planner=true\n              run_implementer=true"),
         "Decider entry-point should continue to planner/implementer without innovators"
+    );
+    assert!(
+        workflow.contains("requirements)\n              run_planner=true\n              run_implementer=true"),
+        "Requirements entry-point should start from planner/implementer routing"
     );
     assert!(
         workflow.contains("always() &&\n      needs.check-schedule.result == 'success'"),
