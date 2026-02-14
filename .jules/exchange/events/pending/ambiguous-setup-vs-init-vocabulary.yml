@@ -1,0 +1,11 @@
+schema_version: 1
+id: "9a8b2c"
+author_role: "taxonomy"
+confidence: "medium"
+title: "Ambiguous `setup` vs `init` Vocabulary"
+statement: |
+  The commands `setup` and `init` are semantic synonyms, causing potential user confusion about which command performs the primary initialization of the workspace.
+evidence: |
+  - `jlo init` initializes the `.jlo/` control plane.
+  - `jlo setup` generates compiler commands (`setup gen`).
+  - Common convention often uses `setup` for first-run configuration, which conflicts with `init`'s role here.
