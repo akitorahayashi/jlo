@@ -1,0 +1,31 @@
+schema_version: 1
+
+persona: "recruiter"
+
+focus: "Identify missing roles and contract boundaries."
+
+repository_observations:
+  codebase_state:
+    - "jlo is a CLI tool whose primary product is its command-line interface."
+    - "The CLI command structure is growing in complexity (e.g. `workflow workspace clean mock`)."
+  startup_and_runtime_contracts:
+    - "Role definitions exist in `src/assets/roles/` but are not all active in `.jlo/roles/`."
+  decision_quality_gaps:
+    - "No automated observer is currently responsible for validating CLI UX consistency or SVO adherence."
+  leverage_candidates:
+    - "Activating `cli_sentinel` to audit new commands before they are merged."
+
+thinking_notes:
+  hypotheses:
+    - "Introducing `cli_sentinel` will prevent UX degradation as the CLI surface area expands."
+  tradeoff_assessment:
+    - "Adding another observer increases token cost but prevents long-term UX debt in the primary interface."
+  rejected_paths:
+    - "Merging CLI checks into `tactician` (incorrect scope; tactician owns `AGENTS.md` contracts)."
+
+feedback_assimilation:
+  observer_inputs: []
+  next_focus:
+    - "Investigate `devops` role for CI/CD pipeline integrity."
+
+recent_proposals: []
