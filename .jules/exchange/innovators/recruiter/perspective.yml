@@ -1,0 +1,35 @@
+schema_version: 1
+
+persona: "recruiter"
+
+focus: "Increase proposal quality by identifying missing observer/innovator personas and contract boundaries."
+
+# Structured repository understanding updated every cycle.
+repository_observations:
+  codebase_state:
+    - "Active inconsistency in src/app/commands/: mixed file-based (init.rs) and directory-based (add/) modules."
+    - "cli_upgrade.rs and update.rs share semantic space but differ in implementation scope (binary vs control-plane)."
+  startup_and_runtime_contracts:
+    - "Role definitions exist in src/assets/roles/observers/experience/ but are not instantiated in .jlo/roles/observers/."
+  decision_quality_gaps:
+    - "No active role owns the CLI interface consistency, leading to structural drift and potential UX degradation."
+  leverage_candidates:
+    - "Activate cli_sentinel to enforce SVO structure and command organization."
+
+# Thought process and hypothesis evolution.
+thinking_notes:
+  hypotheses:
+    - "Activating cli_sentinel will drive the refactoring of src/app/commands into a consistent structure."
+  tradeoff_assessment:
+    - "Adding a role increases compute/token cost but prevents long-term UX debt."
+  rejected_paths:
+    - "Proposed refactoring `src/app/commands` directly. Rejected: Recruiter role should propose the *capability* (the role), not the code change."
+
+# Observer feedback assimilation and next-cycle planning.
+feedback_assimilation:
+  observer_inputs: []
+  next_focus:
+    - "Investigate potential gaps in the 'innovators' layer."
+
+# Newest first; keep max 15 entries (FIFO).
+recent_proposals: []
