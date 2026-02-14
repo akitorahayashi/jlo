@@ -1,0 +1,25 @@
+schema_version: 1
+
+id: "evnt03"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "taxonomy"
+confidence: "high"
+
+title: "Misplaced Utility Module in Commands"
+statement: |
+  `src/app/commands/role_schedule.rs` is a utility module used by `add` and `create` commands, but it is located in `src/app/commands/` as if it were a command itself. It is not exposed as a CLI command.
+
+evidence:
+  - path: "src/app/commands/role_schedule.rs"
+    loc:
+      - "pub fn ensure_role_scheduled"
+    note: "Utility function, not a command handler."
+  - path: "src/app/cli/mod.rs"
+    loc:
+      - "enum Commands {"
+    note: "Does not expose `role_schedule` command."
+  - path: "src/app/commands/create/role.rs"
+    loc:
+      - "use crate::app::commands::role_schedule::ensure_role_scheduled;"
+    note: "Imports it as a utility."
