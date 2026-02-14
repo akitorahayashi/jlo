@@ -215,14 +215,12 @@ fn read_error_body_limited(
 
 fn sanitize_and_truncate_error_text(input: &str) -> String {
     let mut output = String::new();
-    let mut count = 0usize;
 
-    for ch in input.chars() {
+    for (count, ch) in input.chars().enumerate() {
         if count >= MAX_ERROR_MESSAGE_CHARS {
             break;
         }
         output.push(if ch.is_control() { ' ' } else { ch });
-        count += 1;
     }
 
     let mut compact = output.split_whitespace().collect::<Vec<_>>().join(" ");
