@@ -1,17 +1,14 @@
 schema_version: 1
 
-id: "0le6yh"
+id: "d08437"
 persona: "recruiter"
-created_at: "2026-02-13"
+created_at: "2026-02-14"
 
-title: "Activate Rustacean Observer Role"
+title: "Mock idea for workflow validation"
 problem: |
-  The repository is primarily written in Rust, but the active observer set (in .jlo/roles/observers/) lacks a dedicated Rust language expert.
-  This results in code reviews that miss subtle ownership issues, non-idiomatic patterns, and potential safety violations that general-purpose reviewers might overlook.
+  This is a mock idea created by jlo --mock for workflow-scaffold validation.
+  Mock tag: mock-run-22008970751
 introduction: |
-  Introduce the `rustacean` observer role by instantiating it from `src/assets/roles/observers/language/rustacean/role.yml` into `.jlo/roles/observers/`.
-  This role specializes in enforcing Rust best practices, including ownership discipline, error handling semantics, and concurrency safety.
+  Introduce deterministic mock toggle semantics for innovator room lifecycle validation.
 expected_value: |
-  - Improved code quality through expert scrutiny of Rust-specific constructs.
-  - Reduction in technical debt related to memory safety and performance (e.g., unnecessary cloning).
-  - Consistent enforcement of idiomatic Rust patterns across the codebase.
+  Validates that mock innovator creation and cleanup behavior remains stable across workflow updates.
