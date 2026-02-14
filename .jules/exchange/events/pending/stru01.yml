@@ -1,0 +1,15 @@
+schema_version: 1
+id: "stru01"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "structural_arch"
+confidence: "high"
+title: "Inconsistent Command Module Structure"
+statement: "Top-level commands in `src/app/commands/` mix file-based modules (`init.rs`) and directory-based modules (`add/`), violating predictable discovery principles."
+evidence:
+  - path: "src/app/commands/init.rs"
+    loc: ["pub fn execute()"]
+    note: "File-based module for 'init' command."
+  - path: "src/app/commands/add/"
+    loc: ["mod.rs"]
+    note: "Directory-based module for 'add' command."

@@ -1,0 +1,15 @@
+schema_version: 1
+id: "stru02"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "structural_arch"
+confidence: "high"
+title: "Ambiguous Update Command Naming"
+statement: "`cli_upgrade.rs` (binary upgrade) and `update.rs` (workspace update) share semantic space, creating confusion about which command does what."
+evidence:
+  - path: "src/app/commands/cli_upgrade.rs"
+    loc: ["pub fn execute()"]
+    note: "Upgrades the CLI binary."
+  - path: "src/app/commands/update.rs"
+    loc: ["pub fn execute()"]
+    note: "Updates the .jules/ workspace."
