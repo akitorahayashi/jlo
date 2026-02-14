@@ -1,0 +1,20 @@
+schema_version: 1
+
+id: "nrr1a4"
+issue_id: ""
+created_at: "2026-02-15"
+author_role: "tactician"
+confidence: "high"
+
+title: "Rigid summary count constraint in narrator contract risks hallucination"
+statement: |
+  The narrator layer contract enforces "Exactly 5 summary entries". This rigid
+  constraint creates a plausible failure mode where the agent must hallucinate
+  or pad entries when fewer than 5 legitimate changes exist, violating the
+  principle of constraint discipline.
+
+evidence:
+  - path: "src/assets/scaffold/jules/roles/narrator/contracts.yml"
+    loc:
+      - "Exactly 5 summary entries"
+    note: "This hard constraint forces a fixed output quantity regardless of input volume."

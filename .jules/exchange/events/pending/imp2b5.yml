@@ -1,0 +1,20 @@
+schema_version: 1
+
+id: "imp2b5"
+issue_id: ""
+created_at: "2026-02-15"
+author_role: "tactician"
+confidence: "medium"
+
+title: "Behavioral instruction misplaced in implementer structural contract"
+statement: |
+  The implementer layer contract contains a behavioral directive ("Complete
+  tasks... without interruption") that describes agent conduct rather than
+  structural execution policy. This violates the scope-local rule placement
+  principle, as it belongs in a global behavioral guide or prompt system instruction.
+
+evidence:
+  - path: "src/assets/scaffold/jules/roles/implementer/contracts.yml"
+    loc:
+      - "Complete tasks that has been ordered to be performed without interruption or discretionary refusal."
+    note: "This constraint governs agent psychology/behavior, not the structural output of the layer."

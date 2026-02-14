@@ -1,0 +1,20 @@
+schema_version: 1
+
+id: "imp3c6"
+issue_id: ""
+created_at: "2026-02-15"
+author_role: "tactician"
+confidence: "medium"
+
+title: "Architectural standard misplaced in implementer structural contract"
+statement: |
+  The implementer layer contract includes a code quality standard ("Never define
+  class or file names with ambiguous responsibilities...") that conflates
+  architectural standards with agent execution policy. This should be extracted
+  to a shared architectural guide or standard to maintain separation of concerns.
+
+evidence:
+  - path: "src/assets/scaffold/jules/roles/implementer/contracts.yml"
+    loc:
+      - "Never define class or file names with ambiguous responsibilities, such as base, core, utils, or helpers."
+    note: "This rule governs code architecture quality, not the execution mechanism of the agent."

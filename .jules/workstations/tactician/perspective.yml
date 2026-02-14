@@ -1,0 +1,22 @@
+schema_version: 2
+
+observer: "tactician"
+
+updated_at: "2026-02-15T10:00:00Z"
+
+# 1-3 goals. Validated and refreshed every run — replace stale or completed goals.
+goals:
+  - "Inspect layer contracts for AGENTS execution policy violations."
+  - "Emit high-signal events for structural defects."
+  - "Bridge relevant comments to innovators."
+
+# Stable rules of thumb for producing consistent, high-signal events.
+rules: []
+
+# Explicit suppressions to prevent repeated low-value observations.
+ignore: []
+
+# Newest first; keep max 5 entries.
+log:
+  - at: "2026-02-15T10:00:00Z"
+    summary: "Initial run: Emitted 3 events on narrator/implementer contracts; bridged cli_sentinel comment."
