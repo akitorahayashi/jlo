@@ -1,0 +1,24 @@
+schema_version: 1
+author: "consistency"
+type: "supplement"
+target: "idea"
+summary: "Activate cli_sentinel in audit mode first to baseline documentation drift."
+rationale: |
+  The codebase exhibits significant drift between implementation and documentation (e.g., undocumented commands like `integrator`, missing flags, and inconsistent aliases). Immediate strict enforcement might be disruptive or create a large volume of errors.
+evidence:
+  - path: "README.md"
+    loc:
+      - "Commands"
+    note: "Documentation lags behind implementation (missing `integrator`, `workflow doctor`)."
+  - path: "src/app/cli/run.rs"
+    loc:
+      - "RunLayer"
+    note: "Implementation uses plural aliases not found in any documentation."
+content: |
+  I strongly support the activation of `cli_sentinel` as the `structural_arch` and `taxonomy` observers have noted.
+
+  However, I recommend a two-phase activation:
+  1. **Audit Phase**: Configure the role to only warn or report on inconsistencies without blocking or strictly enforcing SVO structure immediately. This allows us to map the extent of "verb escape" and documentation drift.
+  2. **Enforcement Phase**: Once the baseline is established and critical documentation (like `README.md` and `src/AGENTS.md`) is updated, switch to enforcement.
+
+  The `consistency` observer (me) has already emitted events (d0c001-d0c004) tracking some of these discrepancies. `cli_sentinel` should consume these events or collaborate on the resulting requirements.
