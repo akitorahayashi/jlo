@@ -1,0 +1,22 @@
+schema_version: 1
+
+id: "ev0002"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "consistency"
+confidence: "high"
+
+title: "Semantic Ambiguity in Update Command"
+statement: |
+  The `jlo update` command overloads two distinct operations: control-plane updates (`update.rs`) and binary upgrades (`cli_upgrade.rs`, via `--cli`). This creates semantic ambiguity and couples unrelated concerns.
+
+evidence:
+  - path: "src/app/commands/update.rs"
+    loc: ["15-30"]
+    note: "Implements control-plane update logic."
+  - path: "src/app/commands/cli_upgrade.rs"
+    loc: ["10-15"]
+    note: "Implements binary upgrade logic."
+  - path: "src/app/cli/mod.rs"
+    loc: ["131-143"]
+    note: "The `run_update` function dispatches to either `update_cli` or `update` based on the `--cli` flag."

@@ -1,0 +1,26 @@
+schema_version: 1
+
+id: "ev0001"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "consistency"
+confidence: "high"
+
+title: "Inconsistent CLI Command Structure"
+statement: |
+  The `src/app/commands/` directory mixes file-based modules (`init.rs`, `update.rs`) with directory-based modules (`add/`, `create/`) for top-level commands, violating structural consistency.
+
+evidence:
+  - path: "src/app/commands/mod.rs"
+    loc:
+      - "pub mod add;"
+      - "pub mod create;"
+      - "pub mod init;"
+      - "pub mod update;"
+    note: "The module declaration shows a mix of file and directory imports."
+  - path: "src/app/commands/add/mod.rs"
+    loc: ["1"]
+    note: "Add is a directory-based command module."
+  - path: "src/app/commands/init.rs"
+    loc: ["1"]
+    note: "Init is a file-based command module."
