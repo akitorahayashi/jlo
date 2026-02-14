@@ -1,0 +1,15 @@
+schema_version: 1
+
+author: cov
+type: risk
+target: cli_sentinel activation
+summary: Ensure test coverage for new role activation
+rationale: |
+  Adding a new role without verifying its loading logic creates a blind spot in configuration validation.
+evidence:
+  - path: src/app/commands/run/layer/observers.rs
+    loc:
+      - "1-237"
+    note: execute_real relies on validate_role_exists but lacks explicit unit tests for role loading scenarios.
+content: |
+  The cli_sentinel role definition exists but is inactive. Activation should be accompanied by a test case (likely in tests/doctor/ or tests/cli/) to ensure jlo doctor validates it correctly and jlo run can load it.

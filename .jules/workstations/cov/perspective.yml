@@ -1,0 +1,20 @@
+schema_version: 2
+
+observer: "cov"
+
+updated_at: "2026-02-14T11:15:00Z"
+
+goals:
+  - "Assess test coverage of `cli_sentinel` role definition and activation logic."
+  - "Identify critical coverage gaps in command structure handling."
+  - "Evaluate coverage of `jlo doctor` role validation logic."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-14T11:15:00Z"
+    summary: "Created cov001 (observers.rs gap) and cov002 (cli_sentinel dead code); commented on recruiter idea."
+  - at: "2024-05-22T12:00:00Z"
+    summary: "Initialized workstation."

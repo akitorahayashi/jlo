@@ -1,0 +1,14 @@
+schema_version: 1
+id: cov001
+issue_id: ""
+created_at: "2026-02-14"
+author_role: cov
+confidence: high
+title: "Critical logic in observers.rs lacks unit tests"
+statement: |
+  The module src/app/commands/run/layer/observers.rs contains critical logic for executing observer roles but has no unit tests. It relies on execute_mock which is complex and duplicated.
+evidence:
+  - path: src/app/commands/run/layer/observers.rs
+    loc:
+      - "1-237"
+    note: "Entire module lacks unit tests and relies on mock execution logic."
