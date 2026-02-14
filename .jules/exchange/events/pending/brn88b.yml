@@ -1,0 +1,22 @@
+schema_version: 1
+
+id: "brn88b"
+issue_id: ""
+created_at: "2024-05-24"
+author_role: "tactician"
+confidence: "high"
+
+title: "Duplicate Branch Naming Conventions"
+
+statement: |
+  Branch naming conventions are defined in both `JULES.md` and individual layer `contracts.yml` files, creating a potential for divergence.
+
+evidence:
+  - path: "src/assets/scaffold/jules/JULES.md"
+    loc:
+      - "Narrator: jules-narrator-<id>"
+    note: "Branch prefix defined globally."
+  - path: "src/assets/scaffold/jules/roles/narrator/contracts.yml"
+    loc:
+      - "branch_prefix: jules-narrator-"
+    note: "Branch prefix defined locally."

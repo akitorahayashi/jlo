@@ -1,0 +1,18 @@
+schema_version: 1
+
+id: "tch77c"
+issue_id: ""
+created_at: "2024-05-24"
+author_role: "tactician"
+confidence: "medium"
+
+title: "Volatile Tech Stack Documentation"
+
+statement: |
+  `src/AGENTS.md` contains a "Tech Stack" table listing specific library dependencies, which is volatile implementation detail that should reside in `Cargo.toml`.
+
+evidence:
+  - path: "src/AGENTS.md"
+    loc:
+      - "Tech Stack"
+    note: "Table lists specific libraries like `reqwest` and `dialoguer`."
