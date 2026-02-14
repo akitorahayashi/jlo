@@ -68,8 +68,14 @@ pub fn init_workflows_at(
     path: std::path::PathBuf,
     mode: &WorkflowRunnerMode,
 ) -> Result<(), AppError> {
-    let generate_config = init::load_workflow_generate_config(&path)?;
-    init::install_workflow_scaffold(&path, mode, &generate_config)
+    let workspace = FilesystemWorkspaceStore::new(path.clone());
+    let generate_config =
+        crate::adapters::control_plane_config::load_workflow_generate_config(&workspace)?;
+    crate::adapters::workflow_installer::install_workflow_scaffold(
+        &workspace,
+        mode,
+        &generate_config,
+    )
 }
 
 // =============================================================================

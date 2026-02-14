@@ -13,7 +13,6 @@
 
 use std::collections::BTreeMap;
 
-use crate::app::commands::init;
 use crate::domain::workspace::manifest::{
     MANIFEST_FILENAME, ScaffoldManifest, hash_content, is_control_plane_entity_file,
 };
@@ -242,9 +241,13 @@ where
     // Refresh workflow scaffold
     let mut workflow_refreshed = false;
     if let Some(mode) = workflow_mode {
-        let root = workspace.resolve_path("");
-        let generate_config = init::load_workflow_generate_config(&root)?;
-        init::install_workflow_scaffold(&root, &mode, &generate_config)?;
+        let generate_config =
+            crate::adapters::control_plane_config::load_workflow_generate_config(workspace)?;
+        crate::adapters::workflow_installer::install_workflow_scaffold(
+            workspace,
+            &mode,
+            &generate_config,
+        )?;
         workflow_refreshed = true;
     }
 
@@ -291,8 +294,7 @@ where
         return Ok(None);
     }
 
-    let root = workspace.resolve_path("");
-    Ok(Some(init::load_workflow_runner_mode(&root)?))
+    Ok(Some(crate::adapters::control_plane_config::load_workflow_runner_mode(workspace)?))
 }
 
 /// Compare two version arrays. Returns -1, 0, or 1.

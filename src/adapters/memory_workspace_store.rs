@@ -120,6 +120,13 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         Ok(())
     }
 
+    fn remove_dir_all(&self, path: &str) -> Result<(), AppError> {
+        let mut files = self.files.lock().unwrap();
+        let path = PathBuf::from(path);
+        files.retain(|k, _| !k.starts_with(&path));
+        Ok(())
+    }
+
     fn list_dir(&self, path: &str) -> Result<Vec<PathBuf>, AppError> {
         let files = self.files.lock().unwrap();
         let path = PathBuf::from(path);

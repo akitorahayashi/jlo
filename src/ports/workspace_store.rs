@@ -56,6 +56,9 @@ pub trait WorkspaceStore: PromptAssetLoader {
     /// Remove a file.
     fn remove_file(&self, path: &str) -> Result<(), AppError>;
 
+    /// Remove a directory and all its contents.
+    fn remove_dir_all(&self, path: &str) -> Result<(), AppError>;
+
     /// List files in a directory (returns full paths).
     fn list_dir(&self, path: &str) -> Result<Vec<PathBuf>, AppError>;
 
