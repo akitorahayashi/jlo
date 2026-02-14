@@ -28,7 +28,9 @@ struct WorkflowTimingDto {
     wait_minutes_default: Option<u32>,
 }
 
-fn load_workflow_config_dto(workspace: &impl WorkspaceStore) -> Result<WorkflowGenerateConfigDto, AppError> {
+fn load_workflow_config_dto(
+    workspace: &impl WorkspaceStore,
+) -> Result<WorkflowGenerateConfigDto, AppError> {
     let config_path = ".jlo/config.toml";
     if !workspace.file_exists(config_path) {
         return Err(AppError::Validation(
@@ -44,7 +46,9 @@ fn load_workflow_config_dto(workspace: &impl WorkspaceStore) -> Result<WorkflowG
 /// Read workflow generate configuration from `.jlo/config.toml`.
 ///
 /// Errors on missing or invalid configuration to avoid silent fallbacks.
-pub fn load_workflow_generate_config(workspace: &impl WorkspaceStore) -> Result<WorkflowGenerateConfig, AppError> {
+pub fn load_workflow_generate_config(
+    workspace: &impl WorkspaceStore,
+) -> Result<WorkflowGenerateConfig, AppError> {
     let dto = load_workflow_config_dto(workspace)?;
 
     let run = dto
@@ -98,7 +102,9 @@ pub fn load_workflow_generate_config(workspace: &impl WorkspaceStore) -> Result<
 ///
 /// The control-plane configuration is the authoritative source for selecting
 /// remote vs self-hosted workflow scaffolds.
-pub fn load_workflow_runner_mode(workspace: &impl WorkspaceStore) -> Result<WorkflowRunnerMode, AppError> {
+pub fn load_workflow_runner_mode(
+    workspace: &impl WorkspaceStore,
+) -> Result<WorkflowRunnerMode, AppError> {
     let dto = load_workflow_config_dto(workspace)?;
     let workflow = dto.workflow.ok_or_else(|| {
         AppError::Validation("Missing [workflow] section in .jlo/config.toml.".into())

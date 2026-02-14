@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::adapters::assets::workflow_scaffold_assets::{
-    WorkflowGenerateConfig, load_workflow_scaffold, WorkflowScaffoldAssets,
+    WorkflowGenerateConfig, WorkflowScaffoldAssets, load_workflow_scaffold,
 };
 use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::WorkspaceStore;
@@ -71,7 +71,7 @@ fn remove_stale_managed_workflows(
 
         // Remove file. Passing absolute path string works with WorkspaceStore implementations.
         if let Some(path_str) = path.to_str() {
-             workspace.remove_file(path_str)?;
+            workspace.remove_file(path_str)?;
         }
     }
 
