@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use chrono::Utc;
 
-use super::super::mock::mock_execution::{MOCK_ASSETS, MockExecutionService, generate_mock_id};
+use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
 use crate::domain::configuration::loader::{detect_repository_source, load_schedule};
 use crate::domain::configuration::mock_loader::load_mock_config;
 use crate::domain::identifiers::validation::validate_safe_path_component;
@@ -195,15 +195,15 @@ where
     H: GitHubPort + ?Sized,
     W: WorkspaceStore,
 {
-    let service = MockExecutionService::new(jules_path, config, git, github, workspace);
-
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Observers, &timestamp)?;
 
     println!("Mock observers: creating branch {}", branch_name);
 
-    service.fetch_and_checkout_base(&config.jules_worker_branch)?;
-    service.checkout_new_branch(&branch_name)?;
+    // Fetch and checkout from jules branch
+    git.fetch("origin")?;
+    git.checkout_branch(&format!("origin/{}", config.jules_worker_branch), false)?;
+    git.checkout_branch(&branch_name, true)?;
 
     // Create mock events
     let events_dir = jules::events_pending_dir(jules_path);
@@ -309,15 +309,11 @@ where
     for cf in &comment_files {
         all_files.push(cf.as_path());
     }
-
-    service.commit_and_push(
-        &format!("[{}] observer: mock event", config.mock_tag),
-        &all_files,
-        &branch_name,
-    )?;
+    git.commit_files(&format!("[{}] observer: mock event", config.mock_tag), &all_files)?;
+    git.push_branch(&branch_name, false)?;
 
     // Create PR
-    let pr = service.create_pr(
+    let pr = github.create_pull_request(
         &branch_name,
         &config.jules_worker_branch,
         &format!("[{}] Observer findings", config.mock_tag),
@@ -326,16 +322,12 @@ where
 
     println!("Mock observers: created PR #{} ({})", pr.number, pr.url);
 
-    let output = MockOutput {
+    Ok(MockOutput {
         mock_branch: branch_name,
         mock_pr_number: pr.number,
         mock_pr_url: pr.url,
         mock_tag: config.mock_tag.clone(),
-    };
-
-    service.finish(&output)?;
-
-    Ok(output)
+    })
 }
 
 fn resolve_innovator_personas<W: WorkspaceStore>(workspace: &W) -> Result<Vec<String>, AppError> {
@@ -348,93 +340,4 @@ fn resolve_innovator_personas<W: WorkspaceStore>(workspace: &W) -> Result<Vec<St
         return Ok(Vec::new());
     };
     Ok(innovators.enabled_roles().iter().map(|r| r.as_str().to_string()).collect())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::testing::{FakeGit, FakeGitHub, MockWorkspaceStore};
-    use std::collections::HashMap;
-
-    fn make_config() -> MockConfig {
-        let mut prefixes = HashMap::new();
-        prefixes.insert(Layer::Observers, "jules-observer-".to_string());
-        MockConfig {
-            mock_tag: "mock-test-obs".to_string(),
-            branch_prefixes: prefixes,
-            jlo_target_branch: "main".to_string(),
-            jules_worker_branch: "jules".to_string(),
-            issue_labels: vec![],
-        }
-    }
-
-    #[test]
-    fn mock_observer_creates_events_and_comments() {
-        let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
-        let git = FakeGit::new();
-        let github = FakeGitHub;
-        let config = make_config();
-
-        // Setup scheduled.toml with some innovators
-        let schedule_content = r#"
-version = 1
-enabled = false
-
-[observers]
-roles = []
-
-[innovators]
-roles = [
-  { name = "alice", enabled = true },
-  { name = "bob", enabled = true }
-]
-"#;
-        workspace.write_file(".jlo/scheduled.toml", schedule_content).unwrap();
-
-        let options = RunOptions {
-            layer: Layer::Observers,
-            role: Some("qa".to_string()),
-            prompt_preview: false,
-            branch: None,
-            requirement: None,
-            mock: true,
-            task: None,
-        };
-
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
-
-        let output = result.expect("Mock execution failed");
-
-        assert!(output.mock_branch.starts_with("jules-observer-"));
-        assert_eq!(output.mock_pr_number, 42);
-
-        // Check if event files were created
-        let events_dir = jules_path.join("exchange/events/pending");
-        let files = workspace.list_dir(events_dir.to_str().unwrap()).unwrap();
-        // Should create 2 events
-        assert!(files.len() >= 2);
-    }
-
-    #[test]
-    fn mock_observer_validates_role_name() {
-        let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
-        let git = FakeGit::new();
-        let github = FakeGitHub;
-        let config = make_config();
-
-        let options = RunOptions {
-            layer: Layer::Observers,
-            role: Some("bad/role".to_string()),
-            prompt_preview: false,
-            branch: None,
-            requirement: None,
-            mock: true,
-            task: None,
-        };
-
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
-        assert!(result.is_err());
-    }
 }

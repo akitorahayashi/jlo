@@ -332,9 +332,136 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{FakeGit, FakeGitHub, MockWorkspaceStore};
+    use crate::testing::MockWorkspaceStore;
     use std::collections::HashMap;
     use std::path::PathBuf;
+    use std::sync::Mutex;
+
+    struct FakeGit {
+        branches_created: Mutex<Vec<String>>,
+    }
+
+    impl FakeGit {
+        fn new() -> Self {
+            Self { branches_created: Mutex::new(vec![]) }
+        }
+    }
+
+    impl GitPort for FakeGit {
+        fn get_head_sha(&self) -> Result<String, AppError> {
+            Ok("abc123".into())
+        }
+        fn get_current_branch(&self) -> Result<String, AppError> {
+            Ok("jules".into())
+        }
+        fn commit_exists(&self, _sha: &str) -> bool {
+            true
+        }
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
+            Ok("parent".into())
+        }
+        fn has_changes(
+            &self,
+            _from: &str,
+            _to: &str,
+            _pathspec: &[&str],
+        ) -> Result<bool, AppError> {
+            Ok(false)
+        }
+        fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {
+            Ok(String::new())
+        }
+        fn fetch(&self, _remote: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn checkout_branch(&self, name: &str, create: bool) -> Result<(), AppError> {
+            if create {
+                self.branches_created.lock().unwrap().push(name.to_string());
+            }
+            Ok(())
+        }
+        fn commit_files(&self, _msg: &str, _files: &[&Path]) -> Result<String, AppError> {
+            Ok("fake-sha".into())
+        }
+        fn push_branch(&self, _name: &str, _force: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> {
+            Ok(true)
+        }
+    }
+
+    struct FakeGitHub;
+
+    impl GitHubPort for FakeGitHub {
+        fn create_pull_request(
+            &self,
+            head: &str,
+            base: &str,
+            _title: &str,
+            _body: &str,
+        ) -> Result<crate::ports::PullRequestInfo, AppError> {
+            Ok(crate::ports::PullRequestInfo {
+                number: 42,
+                url: "https://example.com/pr/42".into(),
+                head: head.to_string(),
+                base: base.to_string(),
+            })
+        }
+        fn close_pull_request(&self, _pr_number: u64) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn delete_branch(&self, _branch: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn create_issue(
+            &self,
+            _title: &str,
+            _body: &str,
+            _labels: &[&str],
+        ) -> Result<crate::ports::IssueInfo, AppError> {
+            Ok(crate::ports::IssueInfo { number: 1, url: "https://example.com/issues/1".into() })
+        }
+        fn get_pr_detail(
+            &self,
+            _pr_number: u64,
+        ) -> Result<crate::ports::PullRequestDetail, AppError> {
+            Ok(crate::ports::PullRequestDetail {
+                number: 42,
+                head: String::new(),
+                base: String::new(),
+                is_draft: false,
+                auto_merge_enabled: false,
+            })
+        }
+        fn list_pr_comments(
+            &self,
+            _pr_number: u64,
+        ) -> Result<Vec<crate::ports::PrComment>, AppError> {
+            Ok(Vec::new())
+        }
+        fn create_pr_comment(&self, _pr_number: u64, _body: &str) -> Result<u64, AppError> {
+            Ok(1)
+        }
+        fn update_pr_comment(&self, _comment_id: u64, _body: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn ensure_label(&self, _label: &str, _color: Option<&str>) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn add_label_to_pr(&self, _pr_number: u64, _label: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn add_label_to_issue(&self, _issue_number: u64, _label: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn enable_automerge(&self, _pr_number: u64) -> Result<(), AppError> {
+            Ok(())
+        }
+        fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> {
+            Ok(Vec::new())
+        }
+    }
 
     fn make_config() -> MockConfig {
         let mut prefixes = HashMap::new();
