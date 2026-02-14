@@ -194,23 +194,26 @@ impl GitHubPort for FakeGitHub {
         // Or simplified logic: check load, if > 0, dec and return error.
         let mut current = self.remaining_transient_automerge_failures.load(Ordering::SeqCst);
         while current > 0 {
-             match self.remaining_transient_automerge_failures.compare_exchange_weak(
-                 current, current - 1, Ordering::SeqCst, Ordering::SeqCst
-             ) {
-                 Ok(_) => {
-                     // Decremented successfully
-                     if self.set_automerge_enabled_on_first_error.load(Ordering::SeqCst) {
-                         // Simulate race condition where it got enabled despite error
-                         self.pr_detail.lock().unwrap().auto_merge_enabled = true;
-                         self.set_automerge_enabled_on_first_error.store(false, Ordering::SeqCst);
-                     }
-                     return Err(AppError::ExternalToolError {
-                         tool: "gh".to_string(),
-                         error: "gh command failed: GraphQL: Base branch was modified. Review and try the merge again. (mergePullRequest)".to_string(),
-                     });
-                 },
-                 Err(new_val) => current = new_val,
-             }
+            match self.remaining_transient_automerge_failures.compare_exchange_weak(
+                current,
+                current - 1,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
+            ) {
+                Ok(_) => {
+                    // Decremented successfully
+                    if self.set_automerge_enabled_on_first_error.load(Ordering::SeqCst) {
+                        // Simulate race condition where it got enabled despite error
+                        self.pr_detail.lock().unwrap().auto_merge_enabled = true;
+                        self.set_automerge_enabled_on_first_error.store(false, Ordering::SeqCst);
+                    }
+                    return Err(AppError::ExternalToolError {
+                        tool: "gh".to_string(),
+                        error: "gh command failed: GraphQL: Base branch was modified. Review and try the merge again. (mergePullRequest)".to_string(),
+                    });
+                }
+                Err(new_val) => current = new_val,
+            }
         }
 
         self.pr_detail.lock().unwrap().auto_merge_enabled = true;

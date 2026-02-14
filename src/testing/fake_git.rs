@@ -21,14 +21,6 @@ impl FakeGit {
             current_branch: Mutex::new("jules".to_string()),
         }
     }
-
-    pub fn set_head_sha(&self, sha: &str) {
-        *self.head_sha.lock().unwrap() = sha.to_string();
-    }
-
-    pub fn set_current_branch(&self, branch: &str) {
-        *self.current_branch.lock().unwrap() = branch.to_string();
-    }
 }
 
 impl GitPort for FakeGit {
