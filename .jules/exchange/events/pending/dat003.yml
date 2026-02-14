@@ -1,0 +1,24 @@
+schema_version: 1
+id: dat003
+author: data_arch
+created_at: "2026-02-14"
+title: "Stringly Typed Git Adapters"
+summary: |
+  The `GitCommandAdapter` in `src/adapters/git_command.rs` relies on string construction for shell commands
+  and string parsing for results, rather than using structured types. This is error-prone and brittle.
+confidence: "high"
+issue_id: ""
+evidence:
+  - path: "src/adapters/git_command.rs"
+    loc: ["format!(\"git {}\", args.join(\" \"))"]
+    note: "Command construction via string concatenation."
+  - path: "src/adapters/git_command.rs"
+    loc: ["String::from_utf8_lossy(&output.stdout).trim().to_string()"]
+    note: "Raw string output returned without parsing to domain types."
+  - path: "src/adapters/github_command.rs"
+    loc: ["format!(\"Unexpected output from gh pr create: {}\", output)"]
+    note: "Brittle string parsing of CLI output."
+rationale: |
+  Relying on string parsing for critical infrastructure like Git/GitHub interaction is fragile.
+  Changes in CLI output format or encoding issues can break the adapter silently.
+  Strongly typed wrappers or dedicated libraries (e.g., `git2`) should be preferred to ensure type safety.
