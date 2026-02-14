@@ -1,0 +1,17 @@
+schema_version: 1
+id: reqeff
+issue_id: ""
+created_at: "2025-02-14"
+author_role: data_arch
+confidence: high
+title: "Inefficient full file read for partial header extraction"
+statement: |
+  The `RequirementHeader::read` method reads the entire file content into memory
+  only to parse the header fields. For large requirement files, this is wasteful.
+  Data flow should support streaming or partial reads (e.g., reading only the first N bytes
+  or until a delimiter) to extract metadata efficiently without loading the full payload.
+evidence:
+  - path: "src/domain/requirement.rs"
+    loc:
+      - "fn read"
+    note: "Full file read for header parsing."
