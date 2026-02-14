@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "e2qath"
+issue_id: ""
+created_at: "2024-02-14"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Duplicate Test Harness (TestContext)"
+statement: |
+  The `TestContext` struct and its implementation are duplicated in `tests/common/mod.rs` and `tests/harness/test_context.rs`. This violates DRY and creates confusion about which harness to use.
+
+# Evidence supporting the observation
+evidence:
+  - path: "tests/common/mod.rs"
+    loc:
+      - "struct TestContext"
+    note: "Defines TestContext."
+
+  - path: "tests/harness/test_context.rs"
+    loc:
+      - "struct TestContext"
+    note: "Defines TestContext identically."

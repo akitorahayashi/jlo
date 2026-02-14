@@ -1,0 +1,17 @@
+schema_version: 1
+
+author: "qa"
+type: "risk"
+target: "idea.yml"
+summary: "Risk of adding untestable role logic"
+rationale: |
+  Adding a new observer role (`cli_sentinel`) without addressing the lack of unit tests in the `ObserversLayer` (`src/app/commands/run/layer/observers.rs`) increases the repository's technical debt and makes the new role's execution harder to verify reliably.
+
+evidence:
+  - path: "src/app/commands/run/layer/observers.rs"
+    loc:
+      - "struct ObserversLayer"
+    note: "Layer execution logic currently lacks unit tests."
+
+content: |
+  We recommend adding unit tests for `ObserversLayer` before or alongside the implementation of `cli_sentinel` to ensure that the new observer is executed correctly and that its integration doesn't cause regressions.

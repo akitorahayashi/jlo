@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "e3qaml"
+issue_id: ""
+created_at: "2024-02-14"
+author_role: "qa"
+confidence: "medium"
+
+# Content
+title: "Missing Unit Tests for Planner/Observers Layers"
+statement: |
+  `PlannerLayer` and `ObserversLayer` execution logic (`execute_real`, `execute_session`) lacks direct unit tests. They rely on CLI integration tests or manual verification, which increases feedback cycle time and risk of regressions.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/run/layer/planner.rs"
+    loc:
+      - "struct PlannerLayer"
+    note: "No #[cfg(test)] module or associated unit test file."
+
+  - path: "src/app/commands/run/layer/observers.rs"
+    loc:
+      - "struct ObserversLayer"
+    note: "No #[cfg(test)] module or associated unit test file."
