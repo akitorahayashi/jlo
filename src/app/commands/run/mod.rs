@@ -9,6 +9,7 @@ mod strategy;
 use std::path::Path;
 
 use crate::adapters::jules_client_http::HttpJulesClient;
+use crate::adapters::jules_client_retrying::{RetryPolicy, RetryingJulesClient};
 use crate::app::commands::run::strategy::{JulesClientFactory, get_layer_strategy};
 use crate::app::commands::workflow::workspace::{
     WorkspaceCleanRequirementOptions, clean_requirement_with_adapters,
@@ -28,8 +29,9 @@ struct LazyClientFactory {
 
 impl JulesClientFactory for LazyClientFactory {
     fn create(&self) -> Result<Box<dyn JulesClient>, AppError> {
-        let client = HttpJulesClient::from_env_with_config(&self.config)?;
-        Ok(Box::new(client))
+        let transport = HttpJulesClient::from_env_with_config(&self.config)?;
+        let retry_policy = RetryPolicy::from_config(&self.config);
+        Ok(Box::new(RetryingJulesClient::new(Box::new(transport), retry_policy)))
     }
 }
 

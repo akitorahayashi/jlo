@@ -1,9 +1,10 @@
 //! Jules API client implementation using reqwest.
 
+use std::io::Read;
 use std::time::Duration;
 
 use reqwest::blocking::Client;
-use reqwest::header::CONTENT_TYPE;
+use reqwest::header::{CONTENT_TYPE, HeaderValue, RETRY_AFTER};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -11,14 +12,18 @@ use crate::domain::{AppError, JulesApiConfig};
 use crate::ports::{JulesClient, SessionRequest, SessionResponse};
 
 const X_GOOG_API_KEY: &str = "X-Goog-Api-Key";
+const DEFAULT_STATUS_MESSAGE: &str = "Jules API request failed";
+const MAX_ERROR_BODY_BYTES: usize = 8 * 1024;
+const MAX_ERROR_MESSAGE_CHARS: usize = 1024;
 
-/// HTTP client for Jules API.
+/// HTTP transport for Jules API.
+///
+/// This client performs a single request per call. Retry behavior is implemented
+/// by a dedicated retry wrapper adapter.
 #[derive(Clone)]
 pub struct HttpJulesClient {
     api_key: String,
     api_url: Url,
-    max_retries: u32,
-    retry_delay_ms: u64,
     client: Client,
 }
 
@@ -26,8 +31,6 @@ impl std::fmt::Debug for HttpJulesClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("HttpJulesClient")
             .field("api_url", &self.api_url)
-            .field("max_retries", &self.max_retries)
-            .field("retry_delay_ms", &self.retry_delay_ms)
             .field("api_key", &"[REDACTED]")
             .finish()
     }
@@ -44,13 +47,7 @@ impl HttpJulesClient {
                 status: None,
             })?;
 
-        Ok(Self {
-            api_key,
-            api_url: config.api_url.clone(),
-            max_retries: config.max_retries,
-            retry_delay_ms: config.retry_delay_ms,
-            client,
-        })
+        Ok(Self { api_key, api_url: config.api_url.clone(), client })
     }
 
     /// Create from environment variable with default configuration.
@@ -68,6 +65,71 @@ impl HttpJulesClient {
             .map_err(|_| AppError::EnvironmentVariableMissing("JULES_API_KEY".into()))?;
 
         Self::new(api_key, config)
+    }
+
+    fn send_request(&self, request: &ApiRequest) -> Result<SessionResponse, AppError> {
+        let mut response = self
+            .client
+            .post(self.api_url.clone())
+            .header(X_GOOG_API_KEY, &self.api_key)
+            .header(CONTENT_TYPE, "application/json")
+            .json(request)
+            .send()
+            .map_err(|e| AppError::JulesApiError {
+                message: format!("HTTP request failed: {}", e),
+                status: None,
+            })?;
+
+        let status = response.status();
+        let retry_after_ms = response.headers().get(RETRY_AFTER).and_then(parse_retry_after_ms);
+
+        if status.is_success() {
+            let body_text = response.text().map_err(|e| AppError::JulesApiError {
+                message: format!("Failed to read response body: {}", e),
+                status: Some(status.as_u16()),
+            })?;
+
+            let api_response: ApiResponse =
+                serde_json::from_str(&body_text).map_err(|e| AppError::JulesApiError {
+                    message: format!("Failed to parse response: {}", e),
+                    status: Some(status.as_u16()),
+                })?;
+
+            let session_id = api_response.session_id.or(api_response.id).ok_or_else(|| {
+                AppError::JulesApiError {
+                    message: "No session ID in response".into(),
+                    status: Some(status.as_u16()),
+                }
+            })?;
+
+            return Ok(SessionResponse {
+                session_id,
+                status: api_response.status.unwrap_or_else(|| "created".to_string()),
+            });
+        }
+
+        let body_text = read_error_body_limited(&mut response, status)?;
+        let mut message = extract_error_message(&body_text)
+            .map(|msg| sanitize_and_truncate_error_text(&msg))
+            .filter(|msg| !msg.is_empty())
+            .unwrap_or_else(|| {
+                let sanitized_body = sanitize_and_truncate_error_text(&body_text);
+                if !sanitized_body.is_empty() {
+                    sanitized_body
+                } else if status.as_u16() == 429 {
+                    "Rate limited".to_string()
+                } else if status.is_server_error() {
+                    "Server error".to_string()
+                } else {
+                    DEFAULT_STATUS_MESSAGE.to_string()
+                }
+            });
+
+        if let Some(value) = retry_after_ms {
+            message.push_str(&format!(" (retry_after_ms={})", value));
+        }
+
+        Err(AppError::JulesApiError { message, status: Some(status.as_u16()) })
     }
 }
 
@@ -102,9 +164,70 @@ struct ApiResponse {
     id: Option<String>,
     #[serde(default)]
     status: Option<String>,
-    #[serde(default)]
-    #[allow(dead_code)]
-    error: Option<String>,
+}
+
+fn extract_error_message(body: &str) -> Option<String> {
+    if body.trim().is_empty() {
+        return None;
+    }
+
+    let parsed = serde_json::from_str::<serde_json::Value>(body).ok()?;
+
+    if let Some(msg) = parsed
+        .get("error")
+        .and_then(|error| error.get("message"))
+        .and_then(|message| message.as_str())
+    {
+        return Some(msg.to_string());
+    }
+
+    parsed.get("message").and_then(|message| message.as_str()).map(ToOwned::to_owned)
+}
+
+fn parse_retry_after_ms(value: &HeaderValue) -> Option<u64> {
+    let raw = value.to_str().ok()?.trim();
+    let seconds = raw.parse::<u64>().ok()?;
+    Some(seconds.saturating_mul(1000))
+}
+
+fn read_error_body_limited(
+    response: &mut reqwest::blocking::Response,
+    status: reqwest::StatusCode,
+) -> Result<String, AppError> {
+    let mut buffer = Vec::new();
+    let mut reader = response.take((MAX_ERROR_BODY_BYTES + 1) as u64);
+    reader.read_to_end(&mut buffer).map_err(|e| AppError::JulesApiError {
+        message: format!("Failed to read response body: {}", e),
+        status: Some(status.as_u16()),
+    })?;
+
+    let truncated = buffer.len() > MAX_ERROR_BODY_BYTES;
+    if truncated {
+        buffer.truncate(MAX_ERROR_BODY_BYTES);
+    }
+
+    let mut text = String::from_utf8_lossy(&buffer).to_string();
+    if truncated {
+        text.push_str(" [truncated]");
+    }
+    Ok(text)
+}
+
+fn sanitize_and_truncate_error_text(input: &str) -> String {
+    let mut output = String::new();
+
+    for (count, ch) in input.chars().enumerate() {
+        if count >= MAX_ERROR_MESSAGE_CHARS {
+            break;
+        }
+        output.push(if ch.is_control() { ' ' } else { ch });
+    }
+
+    let mut compact = output.split_whitespace().collect::<Vec<_>>().join(" ");
+    if input.chars().count() > MAX_ERROR_MESSAGE_CHARS {
+        compact.push_str(" [truncated]");
+    }
+    compact.trim().to_string()
 }
 
 impl JulesClient for HttpJulesClient {
@@ -119,93 +242,7 @@ impl JulesClient for HttpJulesClient {
             automation_mode: request.automation_mode.as_str().to_string(),
         };
 
-        let mut last_error = None;
-        let max_attempts = self.max_retries.max(1); // Ensure at least one attempt
-
-        for attempt in 0..max_attempts {
-            if attempt > 0 {
-                // Exponential backoff: base * 2^(attempt-1)
-                let delay = self.retry_delay_ms * 2_u64.pow(attempt.saturating_sub(1));
-                std::thread::sleep(Duration::from_millis(delay));
-                println!("Retrying... (attempt {}/{})", attempt + 1, max_attempts);
-            }
-
-            match self.send_request(&api_request) {
-                Ok(response) => return Ok(response),
-                Err(e) => {
-                    if Self::is_retryable(&e) {
-                        last_error = Some(e);
-                        continue;
-                    }
-                    return Err(e);
-                }
-            }
-        }
-
-        Err(last_error.unwrap_or_else(|| AppError::JulesApiError {
-            message: "Request failed after all retries".into(),
-            status: None,
-        }))
-    }
-}
-
-impl HttpJulesClient {
-    fn send_request(&self, request: &ApiRequest) -> Result<SessionResponse, AppError> {
-        let response = self
-            .client
-            .post(self.api_url.clone())
-            .header(X_GOOG_API_KEY, &self.api_key)
-            .header(CONTENT_TYPE, "application/json")
-            .json(request)
-            .send()
-            .map_err(|e| AppError::JulesApiError {
-                message: format!("HTTP request failed: {}", e),
-                status: None,
-            })?;
-
-        let status = response.status();
-
-        if status.is_success() {
-            let api_response: ApiResponse =
-                response.json().map_err(|e| AppError::JulesApiError {
-                    message: format!("Failed to parse response: {}", e),
-                    status: Some(status.as_u16()),
-                })?;
-
-            let session_id = api_response.session_id.or(api_response.id).ok_or_else(|| {
-                AppError::JulesApiError {
-                    message: "No session ID in response".into(),
-                    status: Some(status.as_u16()),
-                }
-            })?;
-
-            Ok(SessionResponse {
-                session_id,
-                status: api_response.status.unwrap_or_else(|| "created".to_string()),
-            })
-        } else if status.as_u16() == 429 {
-            Err(AppError::JulesApiError { message: "Rate limited".into(), status: Some(429) })
-        } else if status.is_server_error() {
-            Err(AppError::JulesApiError {
-                message: "Server error".into(),
-                status: Some(status.as_u16()),
-            })
-        } else {
-            let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
-            Err(AppError::JulesApiError { message: error_text, status: Some(status.as_u16()) })
-        }
-    }
-
-    fn is_retryable(error: &AppError) -> bool {
-        match error {
-            AppError::JulesApiError { message, status } => {
-                if status.is_some_and(|s| s == 429 || s >= 500) {
-                    return true;
-                }
-                message.contains("timeout") || message.contains("connect")
-            }
-            _ => false,
-        }
+        self.send_request(&api_request)
     }
 }
 
@@ -254,9 +291,9 @@ mod tests {
     }
 
     #[test]
-    fn create_session_retries_on_500() {
+    fn create_session_returns_server_error_on_500() {
         let mut server = mockito::Server::new();
-        let mock = server.mock("POST", "/").with_status(500).expect(3).create();
+        let mock = server.mock("POST", "/").with_status(500).expect(1).create();
 
         let config = JulesApiConfig {
             api_url: Url::parse(&server.url()).unwrap(),
@@ -280,9 +317,9 @@ mod tests {
     }
 
     #[test]
-    fn create_session_retries_on_429() {
+    fn create_session_returns_rate_limit_on_429() {
         let mut server = mockito::Server::new();
-        let mock = server.mock("POST", "/").with_status(429).expect(3).create();
+        let mock = server.mock("POST", "/").with_status(429).expect(1).create();
 
         let config = JulesApiConfig {
             api_url: Url::parse(&server.url()).unwrap(),
@@ -330,5 +367,82 @@ mod tests {
         let result = client.create_session(request);
         assert!(result.is_err());
         mock.assert();
+    }
+
+    #[test]
+    fn parses_nested_error_message() {
+        let mut server = mockito::Server::new();
+        let _mock = server
+            .mock("POST", "/")
+            .with_status(500)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"error":{"message":"transient upstream failure"}}"#)
+            .expect(1)
+            .create();
+
+        let config = JulesApiConfig {
+            api_url: Url::parse(&server.url()).unwrap(),
+            max_retries: 3,
+            retry_delay_ms: 1,
+            timeout_secs: 1,
+        };
+        let client = HttpJulesClient::new("fake-key".to_string(), &config).unwrap();
+
+        let request = SessionRequest {
+            prompt: "test".to_string(),
+            source: "github".to_string(),
+            starting_branch: "main".to_string(),
+            require_plan_approval: false,
+            automation_mode: AutomationMode::None,
+        };
+
+        let err = client.create_session(request).unwrap_err();
+        match err {
+            AppError::JulesApiError { message, status } => {
+                assert_eq!(status, Some(500));
+                assert_eq!(message, "transient upstream failure");
+            }
+            other => panic!("unexpected error variant: {}", other),
+        }
+    }
+
+    #[test]
+    fn sanitizes_and_truncates_raw_error_body_fallback() {
+        let mut server = mockito::Server::new();
+        let long_body = format!("{}\n\u{001b}[31msecret\u{001b}[0m", "x".repeat(2000));
+        let _mock = server
+            .mock("POST", "/")
+            .with_status(500)
+            .with_header("content-type", "text/plain")
+            .with_body(long_body)
+            .expect(1)
+            .create();
+
+        let config = JulesApiConfig {
+            api_url: Url::parse(&server.url()).unwrap(),
+            max_retries: 3,
+            retry_delay_ms: 1,
+            timeout_secs: 1,
+        };
+        let client = HttpJulesClient::new("fake-key".to_string(), &config).unwrap();
+
+        let request = SessionRequest {
+            prompt: "test".to_string(),
+            source: "github".to_string(),
+            starting_branch: "main".to_string(),
+            require_plan_approval: false,
+            automation_mode: AutomationMode::None,
+        };
+
+        let err = client.create_session(request).unwrap_err();
+        match err {
+            AppError::JulesApiError { message, status } => {
+                assert_eq!(status, Some(500));
+                assert!(message.contains("[truncated]"));
+                assert!(!message.contains('\n'));
+                assert!(!message.contains('\u{001b}'));
+            }
+            other => panic!("unexpected error variant: {}", other),
+        }
     }
 }

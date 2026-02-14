@@ -71,8 +71,7 @@ jobs:
   publish-proposals:
     needs: [wait-after-run-only-innovators]
     if: |
-      always() &&
-      (needs.wait-after-run-only-innovators.result == 'success' || needs.wait-after-run-only-innovators.result == 'skipped')
+      needs.wait-after-run-only-innovators.result == 'success'
     runs-on: {{ runner }}
     timeout-minutes: 30
     env:

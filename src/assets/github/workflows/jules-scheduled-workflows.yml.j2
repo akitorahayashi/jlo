@@ -70,21 +70,16 @@ jobs:
 {% include "workflows/jules-workflows/components/bootstrap.yml.j2" %}
 
   # ============================================================
-  # Phase 1: Run narrator (changes feed generation)
-  # ============================================================
-{% include "workflows/jules-workflows/components/run-narrator.yml.j2" %}
-
-  # ============================================================
-  # Phase 2: Wait for narrator processing
-  # ============================================================
-{{ wait_macro.wait_for_processing('wait-after-narrator', 'run-narrator', 'run-narrator', 'narrator') }}
-  # ============================================================
-  # Phase 3: Check schedule
+  # Phase 1: Check schedule
   # ============================================================
 {% include "workflows/jules-workflows/components/check-schedule.yml.j2" %}
 
   # ============================================================
-  # Phase 4: Run innovators (first pass - idea creation)
+  # Phase 2: Run narrator (changes feed generation)
+  # ============================================================
+{% include "workflows/jules-workflows/components/run-narrator.yml.j2" %}
+  # ============================================================
+  # Phase 3: Run innovators (first pass - idea creation)
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-innovators-1',
@@ -95,30 +90,29 @@ jobs:
     extra_run_args='--task create_idea'
 ) }}
   # ============================================================
+  # Phase 4: Wait for narrator + innovators (first pass)
+  # ============================================================
+{% include "workflows/jules-workflows/components/wait-after-initial-requests.yml.j2" %}
+  # ============================================================
   # Phase 5: Run observers
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-observers',
-    'wait-after-innovators-1',
+    'wait-after-initial-requests',
     'json',
     'observers',
     'Run observers',
     {},
-    ['check-schedule', 'wait-after-innovators-1'],
-    "always() &&
-      fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
-      (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')"
+    ['check-schedule', 'wait-after-initial-requests'],
+    "fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
+      needs.wait-after-initial-requests.result == 'success'"
 ) }}
   # ============================================================
   # Phase 6: Wait for observer processing
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-observers', 'run-observers', 'run-observers', 'observers') }}
   # ============================================================
-  # Phase 7: Wait for innovator processing (first pass)
-  # ============================================================
-{{ wait_macro.wait_for_processing('wait-after-innovators-1', 'run-innovators-1', 'run-innovators-1', 'innovators (first pass)') }}
-  # ============================================================
-  # Phase 8: Run innovators (second pass - proposal and cleanup)
+  # Phase 7: Run innovators (second pass - proposal and cleanup)
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-innovators-2',
@@ -128,27 +122,26 @@ jobs:
     'Run innovators (second pass)',
     {},
     ['check-schedule', 'wait-after-observers'],
-    "always() &&
-      fromJSON(needs.check-schedule.outputs.json).run_innovators_2 == true &&
-      (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')",
+    "fromJSON(needs.check-schedule.outputs.json).run_innovators_2 == true &&
+      needs.wait-after-observers.result == 'success'",
     extra_run_args='--task refine_idea_and_create_proposal'
 ) }}
   # ============================================================
-  # Phase 9: Wait for innovator processing (second pass)
+  # Phase 8: Wait for innovator processing (second pass)
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-innovators-2', 'run-innovators-2', 'run-innovators-2', 'innovators (second pass)') }}
   # ============================================================
-  # Phase 10: Publish innovator proposals as GitHub issues
+  # Phase 9: Publish innovator proposals as GitHub issues
   # ============================================================
 {% include "workflows/jules-workflows/components/publish-proposals.yml.j2" %}
 
   # ============================================================
-  # Phase 11: Check for pending events (decider gate)
+  # Phase 10: Check for pending events (decider gate)
   # ============================================================
 {% include "workflows/jules-workflows/components/generate-decider-matrix.yml.j2" %}
 
   # ============================================================
-  # Phase 12: Run decider
+  # Phase 11: Run decider
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-decider',
@@ -158,16 +151,16 @@ jobs:
     'Run decider'
 ) }}
   # ============================================================
-  # Phase 13: Wait for decider processing
+  # Phase 12: Wait for decider processing
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-decider', 'run-decider', 'run-decider', 'decider') }}
   # ============================================================
-  # Phase 14: Resolve planner/implementer run requests
+  # Phase 13: Resolve planner/implementer run requests
   # ============================================================
 {% include "workflows/jules-workflows/components/generate-routing-matrix.yml.j2" %}
 
   # ============================================================
-  # Phase 15: Run planner
+  # Phase 14: Run planner
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-planner',
@@ -177,11 +170,11 @@ jobs:
     'Run planner'
 ) }}
   # ============================================================
-  # Phase 16: Wait for planner PRs
+  # Phase 15: Wait for planner PRs
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-planner', 'run-planner', 'run-planner', 'planner') }}
   # ============================================================
-  # Phase 17: Run implementer
+  # Phase 16: Run implementer
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-implementer',
@@ -192,11 +185,11 @@ jobs:
   {'TARGET_BRANCH': "'" ~ target_branch ~ "'"}
 ) }}
   # ============================================================
-  # Phase 18: Wait for implementer labels
+  # Phase 17: Wait for implementer labels
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-implementer', 'run-implementer', 'run-implementer', 'implementer') }}
 
   # ============================================================
-  # Phase 19: Cleanup mock artifacts
+  # Phase 18: Cleanup mock artifacts
   # ============================================================
 {% include "workflows/jules-workflows/components/cleanup-mock-artifacts.yml.j2" %}
