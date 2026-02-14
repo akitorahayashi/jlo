@@ -362,21 +362,21 @@ mod tests {
 
         // Configure user for commits
         Command::new("git")
-            .args(&["config", "user.name", "Test User"])
+            .args(["config", "user.name", "Test User"])
             .current_dir(&root)
             .output()
             .unwrap();
         Command::new("git")
-            .args(&["config", "user.email", "test@example.com"])
+            .args(["config", "user.email", "test@example.com"])
             .current_dir(&root)
             .output()
             .unwrap();
 
         // Create an initial commit so HEAD exists
         fs::write(root.join("README.md"), "# Test").unwrap();
-        Command::new("git").args(&["add", "."]).current_dir(&root).output().unwrap();
+        Command::new("git").args(["add", "."]).current_dir(&root).output().unwrap();
         Command::new("git")
-            .args(&["commit", "-m", "Initial commit"])
+            .args(["commit", "-m", "Initial commit"])
             .current_dir(&root)
             .output()
             .unwrap();
@@ -417,12 +417,12 @@ mod tests {
         Command::new("git").arg("init").current_dir(&root).output().unwrap();
         // Configure user for commits
         Command::new("git")
-            .args(&["config", "user.name", "Test User"])
+            .args(["config", "user.name", "Test User"])
             .current_dir(&root)
             .output()
             .unwrap();
         Command::new("git")
-            .args(&["config", "user.email", "test@example.com"])
+            .args(["config", "user.email", "test@example.com"])
             .current_dir(&root)
             .output()
             .unwrap();
