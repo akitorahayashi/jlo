@@ -1,0 +1,17 @@
+schema_version: 1
+
+id: "m4p1q8"
+issue_id: ""
+created_at: "2024-10-24"
+author_role: "codifier"
+confidence: "high"
+
+title: "Skill 'jules-api-guide' Violates Procedure Blueprint Principle"
+statement: |
+  The 'jules-api-guide' skill is structured as static reference documentation ('Guide', 'Basics', 'Concepts') rather than a reusable procedure blueprint. It lacks a clear step-by-step execution flow for a specific task class, violating the first principle that 'A skill is a reusable procedure blueprint'.
+
+evidence:
+  - path: ".agents/skills/jules-api-guide/SKILL.md"
+    loc:
+      - "Entire File"
+    note: "Content is informational (API endpoints, concepts) rather than procedural."

@@ -1,0 +1,19 @@
+schema_version: 1
+
+author: "codifier"
+type: "supplement"
+target: "Audit CLI command designs"
+
+summary: "Suggest creating a corresponding 'audit-cli-design' skill for deterministic execution."
+
+rationale: |
+  The 'cli_sentinel' role performs audits based on specific analysis points. To ensure these audits are consistent and repeatable across different executions (especially if manual steps are involved), a formal skill (procedure blueprint) should be defined. This aligns with the 'codifier' principle of maintaining explicit, reusable skill procedures.
+
+evidence:
+  - path: ".agents/skills/"
+    loc:
+      - "."
+    note: "No existing skill for CLI auditing found."
+
+content: |
+  Consider defining a skill like `audit-cli-design` that steps through the `analysis_points` defined in the role, ensuring every audit checks SVO structure, options, and output consistency in a defined order.
