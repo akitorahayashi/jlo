@@ -146,124 +146,14 @@ jobs:
 
 
   # ============================================================
-  # Phase 1: Run narrator (changes feed generation)
-  # ============================================================
-  run-narrator:
-    needs: [bootstrap]
-    if: >-
-      needs.bootstrap.result == 'success' &&
-      ((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule') &&
-      (
-        github.event_name == 'schedule' ||
-        (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') == 'narrator') ||
-        (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') == 'narrator')
-      )
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    outputs:
-      json: ${{ steps.run.outputs.json }}
-    env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: 'jules'
-          fetch-depth: 0
-          token: ${{ secrets.JLO_BOT_TOKEN }}
-
-      - name: Configure Git
-        uses: ./.github/actions/configure-git
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Run narrator
-        id: run
-        run: jlo workflow run narrator ${{ env.JLO_RUN_FLAGS }}
-
-      - name: Validate workspace (fail-fast)
-        run: jlo doctor
-
-
-  # ============================================================
-  # Phase 2: Wait for narrator processing
-  # ============================================================
-
-  wait-after-narrator:
-    needs: run-narrator
-    if: |
-      needs.run-narrator.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    outputs:
-      json: ${{ steps.wait.outputs.json }}
-    steps:
-      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-        id: wait
-        shell: bash
-        run: |
-          set -euo pipefail
-          trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
-
-          if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=15
-            echo "Mock mode enabled: overriding wait to 15 seconds."
-          else
-            TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
-          fi
-
-          if [ "$TOTAL_SECONDS" -le 0 ]; then
-            echo "Wait skipped (TOTAL_SECONDS=$TOTAL_SECONDS)."
-            echo "json={}" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if [ -n "narrator" ]; then
-            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process narrator..."
-          else
-            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process..."
-          fi
-          ELAPSED=0
-          INTERVAL=5
-          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-            STEP=$INTERVAL
-            REMAINING=$((TOTAL_SECONDS - ELAPSED))
-            if [ "$REMAINING" -lt "$STEP" ]; then
-              STEP=$REMAINING
-            fi
-            sleep "$STEP" &
-            wait $!
-            ELAPSED=$((ELAPSED + STEP))
-            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-          done
-          echo "Wait complete."
-          echo "json={}" >> "$GITHUB_OUTPUT"
-  # ============================================================
-  # Phase 3: Check schedule
+  # Phase 1: Check schedule
   # ============================================================
   check-schedule:
-    needs: wait-after-narrator
+    needs: [bootstrap]
     if: |
+      needs.bootstrap.result == 'success' &&
       ((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule') &&
-      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') &&
-      (
-        (
-          (
-            github.event_name == 'schedule' ||
-            (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') == 'narrator') ||
-            (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') == 'narrator')
-          ) &&
-          needs.wait-after-narrator.result == 'success'
-        ) ||
-        (
-          (
-            (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') != 'narrator') ||
-            (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') != 'narrator')
-          ) &&
-          needs.wait-after-narrator.result == 'skipped'
-        )
-      )
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -275,6 +165,7 @@ jobs:
           ENTRY_POINT: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') || github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') || 'narrator' }}
         run: |
           set -euo pipefail
+          run_narrator=false
           run_innovators_1=false
           run_observers=false
           run_innovators_2=false
@@ -285,6 +176,7 @@ jobs:
 
           case "${ENTRY_POINT}" in
             narrator)
+              run_narrator=true
               run_innovators_1=true
               run_observers=true
               run_innovators_2=true
@@ -314,11 +206,46 @@ jobs:
               ;;
           esac
 
-          echo "json={\"should_run\":true,\"entry_point\":\"${ENTRY_POINT}\",\"run_innovators_1\":${run_innovators_1},\"run_observers\":${run_observers},\"run_innovators_2\":${run_innovators_2},\"run_publish_proposals\":${run_publish_proposals},\"run_decider\":${run_decider},\"run_planner\":${run_planner},\"run_implementer\":${run_implementer}}" >> "$GITHUB_OUTPUT"
+          echo "json={\"should_run\":true,\"entry_point\":\"${ENTRY_POINT}\",\"run_narrator\":${run_narrator},\"run_innovators_1\":${run_innovators_1},\"run_observers\":${run_observers},\"run_innovators_2\":${run_innovators_2},\"run_publish_proposals\":${run_publish_proposals},\"run_decider\":${run_decider},\"run_planner\":${run_planner},\"run_implementer\":${run_implementer}}" >> "$GITHUB_OUTPUT"
 
 
   # ============================================================
-  # Phase 4: Run innovators (first pass - idea creation)
+  # Phase 2: Run narrator (changes feed generation)
+  # ============================================================
+  run-narrator:
+    needs: [check-schedule]
+    if: >-
+      needs.check-schedule.result == 'success' &&
+      fromJSON(needs.check-schedule.outputs.json).run_narrator == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      json: ${{ steps.run.outputs.json }}
+    env:
+      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'jules'
+          fetch-depth: 0
+          token: ${{ secrets.JLO_BOT_TOKEN }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Run narrator
+        id: run
+        run: jlo workflow run narrator ${{ env.JLO_RUN_FLAGS }}
+
+      - name: Validate workspace (fail-fast)
+        run: jlo doctor
+
+  # ============================================================
+  # Phase 3: Run innovators (first pass - idea creation)
   # ============================================================
 
   run-innovators-1:
@@ -353,14 +280,83 @@ jobs:
           set -euo pipefail
           jlo workflow run innovators ${{ env.JLO_RUN_FLAGS }} --task create_idea
   # ============================================================
+  # Phase 4: Wait for narrator + innovators (first pass)
+  # ============================================================
+  wait-after-initial-requests:
+    needs: [check-schedule, run-narrator, run-innovators-1]
+    if: |
+      needs.check-schedule.result == 'success' &&
+      (
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_narrator == true &&
+          needs.run-narrator.result == 'success'
+        ) ||
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_narrator == false &&
+          needs.run-narrator.result == 'skipped'
+        )
+      ) &&
+      (
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_innovators_1 == true &&
+          needs.run-innovators-1.result == 'success'
+        ) ||
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_innovators_1 == false &&
+          needs.run-innovators-1.result == 'skipped'
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      json: ${{ steps.wait.outputs.json }}
+    steps:
+      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
+        id: wait
+        shell: bash
+        run: |
+          set -euo pipefail
+          trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
+
+          if [ "${{ env.MOCK_MODE }}" = "true" ]; then
+            TOTAL_SECONDS=15
+            echo "Mock mode enabled: overriding wait to 15 seconds."
+          else
+            TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
+          fi
+
+          if [ "$TOTAL_SECONDS" -le 0 ]; then
+            echo "Wait skipped (TOTAL_SECONDS=$TOTAL_SECONDS)."
+            echo "json={}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process narrator + innovators (first pass)..."
+          ELAPSED=0
+          INTERVAL=5
+          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
+            STEP=$INTERVAL
+            REMAINING=$((TOTAL_SECONDS - ELAPSED))
+            if [ "$REMAINING" -lt "$STEP" ]; then
+              STEP=$REMAINING
+            fi
+            sleep "$STEP" &
+            wait $!
+            ELAPSED=$((ELAPSED + STEP))
+            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
+          done
+          echo "Wait complete."
+          echo "json={}" >> "$GITHUB_OUTPUT"
+
+  # ============================================================
   # Phase 5: Run observers
   # ============================================================
 
   run-observers:
-    needs: ["check-schedule", "wait-after-innovators-1"]
+    needs: ["check-schedule", "wait-after-initial-requests"]
     if: |
       fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
-            needs.wait-after-innovators-1.result == 'success'
+            needs.wait-after-initial-requests.result == 'success'
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -441,60 +437,7 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 7: Wait for innovator processing (first pass)
-  # ============================================================
-
-  wait-after-innovators-1:
-    needs: run-innovators-1
-    if: |
-      needs.run-innovators-1.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    outputs:
-      json: ${{ steps.wait.outputs.json }}
-    steps:
-      - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
-        id: wait
-        shell: bash
-        run: |
-          set -euo pipefail
-          trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
-
-          if [ "${{ env.MOCK_MODE }}" = "true" ]; then
-            TOTAL_SECONDS=15
-            echo "Mock mode enabled: overriding wait to 15 seconds."
-          else
-            TOTAL_SECONDS=$((${{ env.WAIT_MINUTES }} * 60))
-          fi
-
-          if [ "$TOTAL_SECONDS" -le 0 ]; then
-            echo "Wait skipped (TOTAL_SECONDS=$TOTAL_SECONDS)."
-            echo "json={}" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if [ -n "innovators (first pass)" ]; then
-            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process innovators (first pass)..."
-          else
-            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process..."
-          fi
-          ELAPSED=0
-          INTERVAL=5
-          while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
-            STEP=$INTERVAL
-            REMAINING=$((TOTAL_SECONDS - ELAPSED))
-            if [ "$REMAINING" -lt "$STEP" ]; then
-              STEP=$REMAINING
-            fi
-            sleep "$STEP" &
-            wait $!
-            ELAPSED=$((ELAPSED + STEP))
-            echo "[$ELAPSED/$TOTAL_SECONDS seconds]"
-          done
-          echo "Wait complete."
-          echo "json={}" >> "$GITHUB_OUTPUT"
-  # ============================================================
-  # Phase 8: Run innovators (second pass - proposal and cleanup)
+  # Phase 7: Run innovators (second pass - proposal and cleanup)
   # ============================================================
 
   run-innovators-2:
@@ -529,7 +472,7 @@ jobs:
           set -euo pipefail
           jlo workflow run innovators ${{ env.JLO_RUN_FLAGS }} --task refine_idea_and_create_proposal
   # ============================================================
-  # Phase 9: Wait for innovator processing (second pass)
+  # Phase 8: Wait for innovator processing (second pass)
   # ============================================================
 
   wait-after-innovators-2:
@@ -582,7 +525,7 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 10: Publish innovator proposals as GitHub issues
+  # Phase 9: Publish innovator proposals as GitHub issues
   # ============================================================
   publish-proposals:
     needs: [check-schedule, wait-after-innovators-2]
@@ -612,7 +555,7 @@ jobs:
 
 
   # ============================================================
-  # Phase 11: Check for pending events (decider gate)
+  # Phase 10: Check for pending events (decider gate)
   # ============================================================
   generate-decider-matrix:
     needs: [check-schedule, wait-after-observers]
@@ -657,7 +600,7 @@ jobs:
 
 
   # ============================================================
-  # Phase 12: Run decider
+  # Phase 11: Run decider
   # ============================================================
 
   run-decider:
@@ -692,7 +635,7 @@ jobs:
           set -euo pipefail
           jlo workflow run decider ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
-  # Phase 13: Wait for decider processing
+  # Phase 12: Wait for decider processing
   # ============================================================
 
   wait-after-decider:
@@ -745,7 +688,7 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 14: Resolve planner/implementer run requests
+  # Phase 13: Resolve planner/implementer run requests
   # ============================================================
   generate-routing-matrix:
     needs: [check-schedule, generate-decider-matrix, run-decider, wait-after-decider]
@@ -790,7 +733,7 @@ jobs:
 
 
   # ============================================================
-  # Phase 15: Run planner
+  # Phase 14: Run planner
   # ============================================================
 
   run-planner:
@@ -825,7 +768,7 @@ jobs:
           set -euo pipefail
           jlo workflow run planner ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
-  # Phase 16: Wait for planner PRs
+  # Phase 15: Wait for planner PRs
   # ============================================================
 
   wait-after-planner:
@@ -878,7 +821,7 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 17: Run implementer
+  # Phase 16: Run implementer
   # ============================================================
 
   run-implementer:
@@ -914,7 +857,7 @@ jobs:
           set -euo pipefail
           jlo workflow run implementer ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
-  # Phase 18: Wait for implementer labels
+  # Phase 17: Wait for implementer labels
   # ============================================================
 
   wait-after-implementer:
@@ -968,7 +911,7 @@ jobs:
           echo "json={}" >> "$GITHUB_OUTPUT"
 
   # ============================================================
-  # Phase 19: Cleanup mock artifacts
+  # Phase 18: Cleanup mock artifacts
   # ============================================================
   cleanup-mock-artifacts:
     needs: [wait-after-implementer]
