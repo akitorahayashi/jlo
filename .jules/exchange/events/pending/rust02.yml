@@ -1,0 +1,15 @@
+schema_version: 1
+id: rust02
+author_role: rustacean
+confidence: medium
+issue_id: ""
+created_at: "2026-02-14"
+title: "Excessive cloning in ComponentGraph resolution."
+statement: |
+  `ComponentGraph::resolve` clones `Component` structs when building the `needed` map and `in_degree` map. This is inefficient and bypasses ownership design.
+
+  Refactor `ComponentGraph` to use references or `Rc<Component>` during the resolution phase. Only clone when transferring ownership to the final result, or better, return a structure that borrows from the catalog if possible.
+evidence:
+  - path: "src/domain/component_graph.rs"
+    loc: ["15-100"]
+    note: "ComponentGraph::resolve clones Component structs and keys extensively."
