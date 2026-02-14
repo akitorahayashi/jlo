@@ -25,5 +25,37 @@ acceptance_criteria:
   - Domain modules use specific error types.
 verification_criteria:
   - Code review.
-requires_deep_analysis: true
-deep_analysis_reason: "High impact refactoring affecting almost all modules in the codebase."
+requires_deep_analysis: false
+deep_analysis_reason: |
+  High impact refactoring affecting almost all modules in the codebase.
+
+  ### Detailed Analysis
+
+  **1. System Impact & Scope**
+  The monolithic `AppError` is currently the sole error type for the entire application, handling everything from CLI argument parsing to Git failures and Configuration errors. It has ~40 variants.
+  - **High Impact Modules:**
+    - `src/domain/error.rs`: This file will be significantly reduced or removed.
+    - `src/app/commands/`: All command handlers currently return `Result<..., AppError>`.
+    - `src/adapters/`: Adapters for Git (`src/adapters/github_command.rs`), Filesystem (`src/adapters/workspace_filesystem.rs`), and HTTP clients rely heavily on `AppError`.
+    - `src/domain/configuration/`: Configuration loading and parsing logic is tightly coupled to `AppError`.
+
+  **2. Dependency Analysis**
+  - **`thiserror`**: Already a dependency. It is suitable for defining the new, specific error types in domain modules (library-level errors).
+  - **`anyhow`**: Currently NOT a dependency. It is strongly recommended to add `anyhow` for the application layer (`src/app/`, `src/main.rs`) to provide context-rich error handling without defining custom error types for every possible failure mode at the top level.
+
+  **3. Risks**
+  - **Regression Risk**: High. Touching error handling paths across the entire codebase increases the risk of subtle bugs where errors are swallowed or misreported.
+  - **Migration Complexity**: Migrating incrementally might lead to a temporary state where both `AppError` and specific errors are used, potentially causing confusion. A "vertical slice" approach (per domain) is recommended over a "horizontal slice" (per layer).
+  - **Breaking Changes**: This refactor will break the internal API for any module consuming `jlo` as a library.
+
+  **4. Implementation Specifics**
+  - **New Error Types**:
+    - `ConfigError` (in `src/domain/configuration/error.rs`): For config loading, parsing, and validation.
+    - `VcsError` (in `src/domain/vcs/error.rs` or `src/adapters/error.rs`): For Git operations and repository detection.
+    - `WorkspaceError` (in `src/domain/workspace/error.rs`): For workspace integrity, structure, and file operations.
+    - `JulesApiError` (in `src/ports/api/error.rs`): For API client interactions.
+  - **Refactoring Strategy**:
+    1.  Introduce specific error types in their respective domain modules using `thiserror`.
+    2.  Update function signatures in domain modules to return `Result<T, SpecificError>`.
+    3.  Update the application layer (`src/app/`) to use `anyhow::Result` and handle/contextualize errors from the domain layer.
+    4.  Ideally, `AppError` should be deprecated or become a top-level enum strictly for the library boundary if needed.
