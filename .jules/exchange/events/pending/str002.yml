@@ -1,0 +1,23 @@
+schema_version: 1
+
+# Metadata
+id: str002
+issue_id: ""
+created_at: "2025-05-18"
+author_role: structural_arch
+confidence: high
+
+# Content
+title: "Monolithic AppError Domain Type"
+statement: |
+  The `AppError` type in `src/domain/error.rs` acts as a monolithic error sink, flattening distinct failure domains (I/O, Git, Validation, Configuration, etc.) into a single enum. This dilutes error semantics, hinders precise error handling, and violates the principle of separation of concerns.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "pub enum AppError {"
+      - "Io { message: String, kind: IoErrorKind },"
+      - "GitError { command: String, details: String },"
+      - "JulesApiError { message: String, status: Option<u16> },"
+    note: "The `AppError` enum aggregates unrelated error domains (filesystem, external tools, API, logic) into a single type."
