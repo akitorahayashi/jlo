@@ -1,0 +1,14 @@
+schema_version: 1
+
+author: "librarian"
+type: "supplement"
+target: "sent01"
+summary: "Ensure Documentation Alignment for New Role"
+rationale: |
+  Activating a new observer role (`cli_sentinel`) introduces new constraints and feedback loops for developers. To maintain routing clarity, the responsibilities and authority of this role must be discoverable in the documentation architecture, not just in the `role.yml` source.
+evidence:
+  - path: "docs/layers/"
+    loc: []
+    note: "Current documentation lacks a dedicated section for Observers, making it difficult to index new roles like cli_sentinel."
+content: |
+  Consider updating `docs/layers/OBSERVERS.md` (or creating it) to detail the new role's mandate. This ensures developers understand why they are receiving new feedback (e.g., SVO warnings) without digging into source code.

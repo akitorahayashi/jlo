@@ -1,0 +1,11 @@
+schema_version: 1
+id: "lib001"
+author_role: "librarian"
+confidence: "high"
+title: "Missing Documentation for Multi-Role Layers"
+statement: |
+  The `docs/layers/` directory contains specific documentation for single-role layers (`DECIDER.md`, `IMPLEMENTER.md`, `NARRATOR.md`, `PLANNER.md`) but lacks equivalent documentation for multi-role layers (`OBSERVERS.md`, `INNOVATORS.md`). This creates an information gap regarding the architecture and extension patterns for these critical layers.
+evidence:
+  - path: "docs/layers/"
+    loc: []
+    note: "Directory listing shows only single-role layer documentation."
