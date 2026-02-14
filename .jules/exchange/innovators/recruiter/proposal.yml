@@ -1,0 +1,45 @@
+schema_version: 1
+
+id: "a3f9e2"
+persona: "recruiter"
+created_at: "2026-02-14"
+
+title: "Activate cli_sentinel observer for CLI UX consistency"
+
+problem: |
+  The `jlo` CLI surface is expanding (e.g., `workflow` subcommands), but there is currently no
+  dedicated observer role responsible for maintaining semantic consistency (SVO structure),
+  option discipline, or output standards. This creates a risk of UX entropy where new commands
+  deviate from established patterns, increasing cognitive load for users.
+
+introduction: |
+  Instantiate the `cli_sentinel` role from `src/assets/roles/observers/experience/cli_sentinel` into
+  `.jlo/roles/observers/cli_sentinel`. This role will audit CLI command designs for SVO structure,
+  mandatory option dependence, and naming consistency. Additionally, a `docs/CLI_DESIGN_GUIDE.md`
+  will be created to serve as the single source of truth for the rules enforced by the sentinel.
+  The role's execution should prioritize auditing *changes* to command definitions to avoid noise
+  on stable legacy commands.
+
+importance: |
+  High. The CLI is the primary product interface. Inconsistent UX degrades user trust and increases
+  the learning curve. Automated auditing prevents long-term technical debt in the interface layer.
+
+impact_surface:
+  - "New role instance configuration at .jlo/roles/observers/cli_sentinel/role.yml"
+  - "Update .jlo/scheduled.toml to enable the new role"
+  - "New document docs/CLI_DESIGN_GUIDE.md defining CLI design rules (SVO, options, I/O)"
+  - "Potential update needed for src/app/commands/run/layer/observers.rs for test coverage (per QA feedback)"
+
+implementation_cost: |
+  Low. Primarily configuration (instantiating the role) and documentation.
+  Testing effort for `ObserversLayer` is moderate but necessary for robustness.
+
+consistency_risks:
+  - "Naming Collision: `cli_sentinel` vs `consistency`. Addressed by distinct scopes: `consistency` focuses on docs-code drift, while `cli_sentinel` focuses on structural/semantic quality of the CLI itself."
+  - "Role Name: `sentinel` differs from functional names like `taxonomy`. Kept as `cli_sentinel` to match the asset source, but acknowledges the deviation."
+  - "Execution Noise: Addressed by configuring the role to focus on diffs/changes."
+
+verification_signals:
+  - "`jlo run` executes `cli_sentinel` successfully."
+  - "New CLI commands trigger `cli_sentinel` comments if they violate SVO structure."
+  - "`docs/CLI_DESIGN_GUIDE.md` exists and aligns with the rules in `role.yml`."

@@ -1,9 +1,0 @@
-schema_version: 1
-type: "supplement"
-target: "idea"
-rationale: |
-  The `cli_sentinel` role addresses a critical gap in CLI consistency.
-  However, the name `sentinel` is unique among current observer roles, which typically use functional names like `taxonomy`, `qa`, `consistency`.
-evidence: |
-  - Existing observers: `taxonomy`, `qa`, `consistency`.
-  - Suggest considering `cli_consistency` or `ux_guardian` if `sentinel` feels inconsistent, though `sentinel` accurately describes the guarding function.

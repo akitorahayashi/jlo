@@ -10,6 +10,7 @@ repository_observations:
     - "The CLI command structure is growing in complexity (e.g. `workflow workspace clean mock`)."
   startup_and_runtime_contracts:
     - "Role definitions exist in `src/assets/roles/` but are not all active in `.jlo/roles/`."
+    - "Contract definitions (e.g. `.jlo/roles/observers/contracts.yml`) appear to be missing."
   decision_quality_gaps:
     - "No automated observer is currently responsible for validating CLI UX consistency or SVO adherence."
   leverage_candidates:
@@ -22,10 +23,24 @@ thinking_notes:
     - "Adding another observer increases token cost but prevents long-term UX debt in the primary interface."
   rejected_paths:
     - "Merging CLI checks into `tactician` (incorrect scope; tactician owns `AGENTS.md` contracts)."
+    - "Renaming `cli_sentinel` to functional name (e.g., `ux_consistency`) - rejected to maintain alignment with source asset `cli_sentinel`."
 
 feedback_assimilation:
-  observer_inputs: []
+  observer_inputs:
+    - from: "tactician"
+      signal: "Ensure role execution focuses on changes/diffs."
+      impact_on_direction: "Explicitly prioritized auditing *changes* in proposal introduction and risk mitigation."
+    - from: "librarian"
+      signal: "Create docs/CLI_DESIGN_GUIDE.md as source of truth."
+      impact_on_direction: "Added creation of design guide to proposal impact surface."
+    - from: "qa"
+      signal: "ObserversLayer lacks unit tests."
+      impact_on_direction: "Added ObserversLayer testing to implementation cost and impact surface."
+    - from: "taxonomy"
+      signal: "Role name 'sentinel' inconsistent with functional naming."
+      impact_on_direction: "Documented naming deviation in risks but retained `cli_sentinel` for asset consistency."
   next_focus:
     - "Investigate `devops` role for CI/CD pipeline integrity."
 
-recent_proposals: []
+recent_proposals:
+  - "Activate cli_sentinel observer for CLI UX consistency"

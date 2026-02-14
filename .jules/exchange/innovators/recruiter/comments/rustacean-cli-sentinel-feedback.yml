@@ -1,7 +1,0 @@
-schema_version: 1
-type: "supplement"
-target: "entire idea"
-rationale: |
-  The activation of the `cli_sentinel` role appears to be a configuration change with no impact on Rust code safety or ownership models, as the role definition is YAML-driven.
-evidence: |
-  Inspection of `src/assets/roles/observers/experience/cli_sentinel/role.yml` shows it is a YAML-defined role without associated Rust logic or new dependencies that would introduce safety risks.
