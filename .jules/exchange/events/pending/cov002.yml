@@ -1,0 +1,19 @@
+schema_version: 1
+
+id: "cov002"
+issue_id: ""
+author_role: "cov"
+confidence: "high"
+created_at: "2024-02-14"
+
+title: "Mock Logic Duplication in Observers Layer"
+statement: "The `execute_mock` function in `src/app/commands/run/layer/observers.rs` duplicates the Git and GitHub mock interaction logic found in `MockExecutionService` (used by Decider and Implementer layers). This increases maintenance burden and risks inconsistent mock behavior across layers."
+evidence:
+  - path: "src/app/commands/run/layer/observers.rs"
+    loc:
+      - "184-307"
+    note: "Manual implementation of git fetch, checkout, file writing, and PR creation."
+  - path: "src/app/commands/run/layer/decider.rs"
+    loc:
+      - "119-122"
+    note: "Decider layer uses `MockExecutionService`."
