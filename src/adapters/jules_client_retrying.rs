@@ -8,6 +8,7 @@ use crate::ports::{JulesClient, SessionRequest, SessionResponse};
 
 const DEFAULT_MAX_DELAY_MS: u64 = 30_000;
 const RETRY_AFTER_TOKEN: &str = "retry_after_ms=";
+const MAX_LOG_ERROR_CHARS: usize = 512;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RetryPolicy {
@@ -66,11 +67,12 @@ impl JulesClient for RetryingJulesClient {
                     }
 
                     let delay = self.policy.delay_for_retry(attempt, &error);
+                    let log_error = format_error_for_log(&error);
                     eprintln!(
                         "Jules create_session failed (attempt {}/{}): {}. Retrying in {} ms.",
                         attempt,
                         self.policy.max_attempts,
-                        error,
+                        log_error,
                         delay.as_millis()
                     );
                     last_error = Some(error);
@@ -136,6 +138,38 @@ fn compute_jitter_ms(backoff_ms: u64) -> u64 {
         .unwrap_or(0);
 
     nanos % jitter_cap
+}
+
+fn format_error_for_log(error: &AppError) -> String {
+    match error {
+        AppError::JulesApiError { message, status } => {
+            let sanitized = sanitize_and_truncate_for_log(message);
+            match status {
+                Some(code) => format!("JulesApiError(status={}): {}", code, sanitized),
+                None => format!("JulesApiError: {}", sanitized),
+            }
+        }
+        _ => sanitize_and_truncate_for_log(&error.to_string()),
+    }
+}
+
+fn sanitize_and_truncate_for_log(input: &str) -> String {
+    let mut output = String::new();
+    let mut count = 0usize;
+
+    for ch in input.chars() {
+        if count >= MAX_LOG_ERROR_CHARS {
+            break;
+        }
+        output.push(if ch.is_control() { ' ' } else { ch });
+        count += 1;
+    }
+
+    let mut compact = output.split_whitespace().collect::<Vec<_>>().join(" ");
+    if input.chars().count() > MAX_LOG_ERROR_CHARS {
+        compact.push_str(" [truncated]");
+    }
+    compact.trim().to_string()
 }
 
 #[cfg(test)]
@@ -227,5 +261,17 @@ mod tests {
 
         let result = client.create_session(test_request());
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn log_format_sanitizes_control_characters() {
+        let err = AppError::JulesApiError {
+            message: "bad\nerror\twith\rcontrols".to_string(),
+            status: Some(500),
+        };
+        let formatted = format_error_for_log(&err);
+        assert!(formatted.contains("JulesApiError(status=500):"));
+        assert!(!formatted.contains('\n'));
+        assert!(!formatted.contains('\r'));
     }
 }

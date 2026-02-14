@@ -560,6 +560,7 @@ jobs:
   generate-decider-matrix:
     needs: [check-schedule, wait-after-observers]
     if: |
+      always() &&
       needs.check-schedule.result == 'success' &&
       fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
       (
@@ -693,6 +694,7 @@ jobs:
   generate-routing-matrix:
     needs: [check-schedule, generate-decider-matrix, run-decider, wait-after-decider]
     if: |
+      always() &&
       needs.check-schedule.result == 'success' &&
       (fromJSON(needs.check-schedule.outputs.json).run_planner == true || fromJSON(needs.check-schedule.outputs.json).run_implementer == true) &&
       (

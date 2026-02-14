@@ -1,6 +1,7 @@
   generate-decider-matrix:
     needs: [check-schedule, wait-after-observers]
     if: |
+      always() &&
       needs.check-schedule.result == 'success' &&
       fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
       (

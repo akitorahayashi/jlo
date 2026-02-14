@@ -1,5 +1,6 @@
 //! Jules API client implementation using reqwest.
 
+use std::io::Read;
 use std::time::Duration;
 
 use reqwest::blocking::Client;
@@ -12,6 +13,8 @@ use crate::ports::{JulesClient, SessionRequest, SessionResponse};
 
 const X_GOOG_API_KEY: &str = "X-Goog-Api-Key";
 const DEFAULT_STATUS_MESSAGE: &str = "Jules API request failed";
+const MAX_ERROR_BODY_BYTES: usize = 8 * 1024;
+const MAX_ERROR_MESSAGE_CHARS: usize = 1024;
 
 /// HTTP transport for Jules API.
 ///
@@ -65,7 +68,7 @@ impl HttpJulesClient {
     }
 
     fn send_request(&self, request: &ApiRequest) -> Result<SessionResponse, AppError> {
-        let response = self
+        let mut response = self
             .client
             .post(self.api_url.clone())
             .header(X_GOOG_API_KEY, &self.api_key)
@@ -79,9 +82,13 @@ impl HttpJulesClient {
 
         let status = response.status();
         let retry_after_ms = response.headers().get(RETRY_AFTER).and_then(parse_retry_after_ms);
-        let body_text = response.text().unwrap_or_default();
 
         if status.is_success() {
+            let body_text = response.text().map_err(|e| AppError::JulesApiError {
+                message: format!("Failed to read response body: {}", e),
+                status: Some(status.as_u16()),
+            })?;
+
             let api_response: ApiResponse =
                 serde_json::from_str(&body_text).map_err(|e| AppError::JulesApiError {
                     message: format!("Failed to parse response: {}", e),
@@ -101,17 +108,22 @@ impl HttpJulesClient {
             });
         }
 
-        let mut message = extract_error_message(&body_text).unwrap_or_else(|| {
-            if !body_text.trim().is_empty() {
-                body_text.clone()
-            } else if status.as_u16() == 429 {
-                "Rate limited".to_string()
-            } else if status.is_server_error() {
-                "Server error".to_string()
-            } else {
-                DEFAULT_STATUS_MESSAGE.to_string()
-            }
-        });
+        let body_text = read_error_body_limited(&mut response, status)?;
+        let mut message = extract_error_message(&body_text)
+            .map(|msg| sanitize_and_truncate_error_text(&msg))
+            .filter(|msg| !msg.is_empty())
+            .unwrap_or_else(|| {
+                let sanitized_body = sanitize_and_truncate_error_text(&body_text);
+                if !sanitized_body.is_empty() {
+                    sanitized_body
+                } else if status.as_u16() == 429 {
+                    "Rate limited".to_string()
+                } else if status.is_server_error() {
+                    "Server error".to_string()
+                } else {
+                    DEFAULT_STATUS_MESSAGE.to_string()
+                }
+            });
 
         if let Some(value) = retry_after_ms {
             message.push_str(&format!(" (retry_after_ms={})", value));
@@ -176,6 +188,48 @@ fn parse_retry_after_ms(value: &HeaderValue) -> Option<u64> {
     let raw = value.to_str().ok()?.trim();
     let seconds = raw.parse::<u64>().ok()?;
     Some(seconds.saturating_mul(1000))
+}
+
+fn read_error_body_limited(
+    response: &mut reqwest::blocking::Response,
+    status: reqwest::StatusCode,
+) -> Result<String, AppError> {
+    let mut buffer = Vec::new();
+    let mut reader = response.take((MAX_ERROR_BODY_BYTES + 1) as u64);
+    reader.read_to_end(&mut buffer).map_err(|e| AppError::JulesApiError {
+        message: format!("Failed to read response body: {}", e),
+        status: Some(status.as_u16()),
+    })?;
+
+    let truncated = buffer.len() > MAX_ERROR_BODY_BYTES;
+    if truncated {
+        buffer.truncate(MAX_ERROR_BODY_BYTES);
+    }
+
+    let mut text = String::from_utf8_lossy(&buffer).to_string();
+    if truncated {
+        text.push_str(" [truncated]");
+    }
+    Ok(text)
+}
+
+fn sanitize_and_truncate_error_text(input: &str) -> String {
+    let mut output = String::new();
+    let mut count = 0usize;
+
+    for ch in input.chars() {
+        if count >= MAX_ERROR_MESSAGE_CHARS {
+            break;
+        }
+        output.push(if ch.is_control() { ' ' } else { ch });
+        count += 1;
+    }
+
+    let mut compact = output.split_whitespace().collect::<Vec<_>>().join(" ");
+    if input.chars().count() > MAX_ERROR_MESSAGE_CHARS {
+        compact.push_str(" [truncated]");
+    }
+    compact.trim().to_string()
 }
 
 impl JulesClient for HttpJulesClient {
@@ -349,6 +403,46 @@ mod tests {
             AppError::JulesApiError { message, status } => {
                 assert_eq!(status, Some(500));
                 assert_eq!(message, "transient upstream failure");
+            }
+            other => panic!("unexpected error variant: {}", other),
+        }
+    }
+
+    #[test]
+    fn sanitizes_and_truncates_raw_error_body_fallback() {
+        let mut server = mockito::Server::new();
+        let long_body = format!("{}\n\u{001b}[31msecret\u{001b}[0m", "x".repeat(2000));
+        let _mock = server
+            .mock("POST", "/")
+            .with_status(500)
+            .with_header("content-type", "text/plain")
+            .with_body(long_body)
+            .expect(1)
+            .create();
+
+        let config = JulesApiConfig {
+            api_url: Url::parse(&server.url()).unwrap(),
+            max_retries: 3,
+            retry_delay_ms: 1,
+            timeout_secs: 1,
+        };
+        let client = HttpJulesClient::new("fake-key".to_string(), &config).unwrap();
+
+        let request = SessionRequest {
+            prompt: "test".to_string(),
+            source: "github".to_string(),
+            starting_branch: "main".to_string(),
+            require_plan_approval: false,
+            automation_mode: AutomationMode::None,
+        };
+
+        let err = client.create_session(request).unwrap_err();
+        match err {
+            AppError::JulesApiError { message, status } => {
+                assert_eq!(status, Some(500));
+                assert!(message.contains("[truncated]"));
+                assert!(!message.contains('\n'));
+                assert!(!message.contains('\u{001b}'));
             }
             other => panic!("unexpected error variant: {}", other),
         }
