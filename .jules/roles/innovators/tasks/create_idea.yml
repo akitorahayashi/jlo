@@ -1,0 +1,23 @@
+task: create_idea
+phase: creation
+
+objective:
+  Draft one new idea (idea.yml) informed by codebase inspection and persona identity.
+  The idea is a hypothesis — refinement and feedback happen in the refinement phase.
+  Update perspective.yml with structured repository findings and thought progression.
+
+steps:
+  - Inspect codebase behavior, startup/runtime assumptions, and open requirement context before drafting the idea.
+  - Check perspective.yml recent_proposals and reject equivalent proposal directions.
+  - Update perspective.yml repository_observations and thinking_notes with current findings and direction rationale.
+  - Refresh perspective.yml feedback_assimilation.next_focus with concrete next-cycle investigation angles.
+  - Create idea.yml conforming to .jules/roles/innovators/schemas/idea.yml.
+
+output:
+  - .jules/exchange/innovators/<persona>/perspective.yml (updated)
+  - .jules/exchange/innovators/<persona>/idea.yml
+
+constraints:
+  - "Do not create proposal.yml during this phase"
+  - "Do not append to recent_proposals during this phase"
+  - "If the drafted direction is equivalent to recent_proposals, fail explicitly instead of emitting idea.yml"
