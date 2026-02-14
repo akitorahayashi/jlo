@@ -1,0 +1,18 @@
+schema_version: 1
+
+id: "conf01"
+issue_id: ""
+created_at: "2025-05-27"
+author_role: "data_arch"
+confidence: "high"
+
+title: "Configuration Parsing Logic Coupled to Command Layer"
+statement: |
+  The `init` command directly implements TOML parsing and DTO definition for workflow configuration, creating a tight coupling between the CLI command and the configuration persistence format. This violates 'Boundary Sovereignty' by leaking persistence details into the application layer.
+
+evidence:
+  - path: "src/app/commands/init.rs"
+    loc:
+      - "struct WorkflowGenerateConfigDto"
+      - "fn load_workflow_generate_config"
+    note: "DTOs and parsing logic defined within the command module."
