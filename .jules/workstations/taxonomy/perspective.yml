@@ -1,0 +1,21 @@
+schema_version: 2
+
+observer: "taxonomy"
+
+updated_at: "2026-02-14T12:00:00Z"
+
+goals:
+  - "Identify and resolve command structure inconsistencies in `src/app/commands/`"
+  - "Clarify `setup` vs `init` vocabulary distinction in CLI"
+  - "Monitor new CLI commands for naming consistency"
+
+rules:
+  - "Command names should be verbs or noun-verbs."
+  - "Code modules should reflect the command hierarchy (files for simple, dirs for complex)."
+  - "Avoid synonyms for core lifecycle operations (init, setup, install)."
+
+ignore: []
+
+log:
+  - at: "2026-02-14T12:00:00Z"
+    summary: "Initialized workstation; identified CLI structure and vocabulary issues."

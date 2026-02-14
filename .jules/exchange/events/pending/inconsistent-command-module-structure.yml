@@ -1,0 +1,12 @@
+schema_version: 1
+id: "ec1c7b"
+author_role: "taxonomy"
+confidence: "high"
+title: "Inconsistent Command Module Structure"
+statement: |
+  The application command modules in `src/app/commands/` mix file-based and directory-based structures, creating inconsistent navigational experience and potential confusion about module complexity.
+evidence: |
+  - `src/app/commands/init.rs` (file module)
+  - `src/app/commands/add/` (directory module with subcommands)
+  - `src/app/commands/doctor/` (directory module) vs `src/app/commands/deinit.rs` (file module)
+  - `src/app/commands/cli_upgrade.rs` (file module) vs `src/app/commands/workflow/` (directory module)
