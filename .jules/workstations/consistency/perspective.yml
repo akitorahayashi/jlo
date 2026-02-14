@@ -1,0 +1,17 @@
+schema_version: 2
+
+observer: "consistency"
+
+updated_at: "2026-02-14T12:05:00Z"
+
+goals:
+  - "Detect documentation drift"
+  - "Verify CLI command consistency"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-14T12:05:00Z"
+    summary: "Emitted 2a7b8c (AGENTS.md drift) and b4c8d1 (comment on recruiter idea)."
