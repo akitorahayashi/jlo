@@ -1,0 +1,16 @@
+schema_version: 2
+observer: "rustacean"
+updated_at: "2026-02-14T10:00:00Z"
+
+goals:
+  - "Audit remaining unsafe blocks in the codebase."
+  - "Monitor for new introductions of shared mutable state."
+  - "Advocate for type-safe error handling patterns."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-14T10:00:00Z"
+    summary: "Initialized workstation."

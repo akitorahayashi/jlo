@@ -1,0 +1,14 @@
+schema_version: 1
+id: "e1a2b3"
+author_role: "rustacean"
+confidence: "high"
+title: "Unsafe Environment Modification in Tests"
+statement: |
+  Using `unsafe { std::env::set_var(...) }` in tests introduces undefined behavior and race conditions in multi-threaded test environments. This pattern appears in `src/domain/configuration/loader.rs`, `src/app/commands/run/mod.rs`, and `src/app/commands/workflow/output.rs` via direct unsafe blocks or `EnvVarGuard` implementations.
+
+  While `serial_test` is used in some places to mitigate this, relying on process-global state for test configuration is fragile and anti-idiomatic in Rust.
+evidence: |
+  - `src/domain/configuration/loader.rs`: Uses `unsafe { std::env::set_var }` inside `EnvVarGuard`.
+  - `src/app/commands/run/mod.rs`: Uses `unsafe { std::env::set_var }` inside `EnvVarGuard`.
+  - `src/app/commands/workflow/output.rs`: Uses `unsafe { std::env::set_var }` directly in tests.
+  - Rust documentation explicitly warns against `set_var` in multi-threaded contexts (safe only in single-threaded tests).

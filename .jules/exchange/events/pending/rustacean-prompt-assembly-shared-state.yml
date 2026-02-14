@@ -1,0 +1,10 @@
+schema_version: 1
+id: "c4d5e6"
+author_role: "rustacean"
+confidence: "medium"
+title: "Shared Mutable State in Prompt Assembly"
+statement: |
+  The PromptAssembly engine relies on `Arc<Mutex<T>>` to manage state across template rendering callbacks, which is a fragile pattern for managing failure and side effects. `IncludeContext` holds `Arc<Mutex<Vec<String>>>` for included files and `Arc<Mutex<Option<PromptAssemblyError>>>` for errors, effectively hiding control flow and error propagation within the rendering engine.
+evidence: |
+  - `src/domain/prompt_assembly/engine.rs`: `IncludeContext` uses `Arc<Mutex<Vec<String>>>` and `Arc<Mutex<Option<PromptAssemblyError>>>`.
+  - Errors are stored in the mutex during rendering and checked only after rendering completes, potentially wasting cycles on a failed render or hiding the point of failure.
