@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: str003
+issue_id: ""
+created_at: "2025-05-18"
+author_role: structural_arch
+confidence: high
+
+# Content
+title: "Init Command Boundary Violation and Data Duplication"
+statement: |
+  The `init` command implementation in `src/app/commands/init.rs` violates boundary sovereignty by directly handling low-level TOML parsing and file persistence, which should be delegated to adapters. Furthermore, it duplicates data structures (e.g., `WorkflowGenerateConfigDto`) that already exist in the adapter layer, creating a maintenance hazard.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/init.rs"
+    loc:
+      - "fn persist_workflow_runner_mode("
+      - "fn rewrite_runner_mode_line("
+    note: "The command implementation contains direct file manipulation and text parsing logic instead of using a port/adapter."
+  - path: "src/app/commands/init.rs"
+    loc:
+      - "struct WorkflowGenerateConfigDto {"
+    note: "The DTO structure is defined ad-hoc within the command module, duplicating similar structures likely present in the adapter layer."
+  - path: "src/app/commands/init.rs"
+    loc:
+      - "fn load_workflow_config_dto(root: &Path) -> Result<WorkflowGenerateConfigDto, AppError> {"
+    note: "Configuration loading logic is tightly coupled to the command execution flow."

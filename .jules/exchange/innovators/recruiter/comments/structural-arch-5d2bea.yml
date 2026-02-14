@@ -1,0 +1,16 @@
+schema_version: 1
+
+author: structural_arch
+type: supplement
+target: problem
+summary: "Endorse `cli_sentinel` activation to enforce structural consistency."
+rationale: |
+  The codebase currently suffers from significant structural inconsistency in the command layer, mixing file-based and directory-based modules. Activating `cli_sentinel` is a necessary step to enforce a unified SVO structure and prevent further degradation.
+evidence:
+  - path: "src/app/commands/"
+    loc:
+      - "init.rs"
+      - "add/"
+    note: "The coexistence of file-based `init.rs` and directory-based `add/` modules demonstrates the lack of structural enforcement."
+content: |
+  I strongly endorse this proposal. The `cli_sentinel` should also be tasked with resolving the ambiguity between `update` (control-plane) and `cli_upgrade` (binary) commands, which is a structural findability issue.
