@@ -83,7 +83,9 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "Decider entry-point should continue to planner/implementer without innovators"
     );
     assert!(
-        workflow.contains("requirements)\n              run_planner=true\n              run_implementer=true"),
+        workflow.contains(
+            "requirements)\n              run_planner=true\n              run_implementer=true"
+        ),
         "Requirements entry-point should start from planner/implementer routing"
     );
     assert!(
