@@ -1,7 +1,7 @@
-use std::path::{Path, PathBuf};
-use std::sync::Mutex;
 use crate::domain::AppError;
 use crate::ports::GitPort;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 pub struct FakeGit {
     pub branches_created: Mutex<Vec<String>>,
@@ -16,10 +16,7 @@ impl Default for FakeGit {
 
 impl FakeGit {
     pub fn new() -> Self {
-        Self {
-            branches_created: Mutex::new(vec![]),
-            committed_files: Mutex::new(vec![]),
-        }
+        Self { branches_created: Mutex::new(vec![]), committed_files: Mutex::new(vec![]) }
     }
 }
 
@@ -36,12 +33,7 @@ impl GitPort for FakeGit {
     fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
         Ok("parent".into())
     }
-    fn has_changes(
-        &self,
-        _from: &str,
-        _to: &str,
-        _pathspec: &[&str],
-    ) -> Result<bool, AppError> {
+    fn has_changes(&self, _from: &str, _to: &str, _pathspec: &[&str]) -> Result<bool, AppError> {
         Ok(false)
     }
     fn run_command(&self, _args: &[&str], _cwd: Option<&Path>) -> Result<String, AppError> {

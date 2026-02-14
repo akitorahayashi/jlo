@@ -32,10 +32,7 @@ impl GitHubPort for FakeGitHub {
     ) -> Result<crate::ports::IssueInfo, AppError> {
         Ok(crate::ports::IssueInfo { number: 1, url: "https://example.com/issues/1".into() })
     }
-    fn get_pr_detail(
-        &self,
-        _pr_number: u64,
-    ) -> Result<crate::ports::PullRequestDetail, AppError> {
+    fn get_pr_detail(&self, _pr_number: u64) -> Result<crate::ports::PullRequestDetail, AppError> {
         Ok(crate::ports::PullRequestDetail {
             number: 42,
             head: String::new(),
@@ -44,10 +41,7 @@ impl GitHubPort for FakeGitHub {
             auto_merge_enabled: false,
         })
     }
-    fn list_pr_comments(
-        &self,
-        _pr_number: u64,
-    ) -> Result<Vec<crate::ports::PrComment>, AppError> {
+    fn list_pr_comments(&self, _pr_number: u64) -> Result<Vec<crate::ports::PrComment>, AppError> {
         Ok(Vec::new())
     }
     fn create_pr_comment(&self, _pr_number: u64, _body: &str) -> Result<u64, AppError> {
