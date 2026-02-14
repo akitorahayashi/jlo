@@ -1,0 +1,14 @@
+schema_version: 1
+id: cov002
+issue_id: ""
+created_at: "2026-02-14"
+author_role: cov
+confidence: medium
+title: "Dead code risk: cli_sentinel role uninstantiated and untested"
+statement: |
+  The role cli_sentinel is defined in src/assets/roles/observers/experience/cli_sentinel/role.yml but is not instantiated in .jlo/roles/observers/ and is not covered by any integration tests, representing dead code and configuration risk.
+evidence:
+  - path: src/assets/roles/observers/experience/cli_sentinel/role.yml
+    loc:
+      - "1-32"
+    note: "Role definition exists but is not instantiated or tested."
