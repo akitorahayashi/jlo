@@ -1,0 +1,17 @@
+schema_version: 2
+
+observer: "librarian"
+
+updated_at: "2024-05-22T12:00:00Z"
+
+goals:
+  - "Audit docs/layers/ for completeness."
+  - "Evaluate structure of root docs/ directory."
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2024-05-22T12:00:00Z"
+    summary: "Initial run. Detected missing layer docs and potential root doc clutter."

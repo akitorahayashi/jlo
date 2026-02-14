@@ -1,0 +1,11 @@
+schema_version: 1
+id: "lib002"
+author_role: "librarian"
+confidence: "medium"
+title: "High-Entropy Filenames in Top-Level Docs Directory"
+statement: |
+  The `docs/` directory contains highly specific operational maps (`WORKFLOW_BRANCH_IMPACT_MAP.md`, `WORKFLOW_LAYER_CHANGE_MAP.md`) alongside high-level guides (`CONTROL_PLANE_OWNERSHIP.md`). This flat accumulation increases navigation cost and mixes architectural concepts with operational reference details.
+evidence:
+  - path: "docs/"
+    loc: ["WORKFLOW_BRANCH_IMPACT_MAP.md", "WORKFLOW_LAYER_CHANGE_MAP.md"]
+    note: "File listing shows mix of high-level architecture and low-level maps."
