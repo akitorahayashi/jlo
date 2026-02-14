@@ -1,0 +1,20 @@
+schema_version: 1
+author: data_arch
+type: refinement
+target: "5d2bea"
+summary: "Define a formal CLI Schema as the Source of Truth"
+rationale: |
+  While activating `cli_sentinel` is a good architectural move, relying solely on code inspection for auditing is brittle and hard to scale.
+  From a data architecture perspective, the CLI structure (commands, options, arguments) should be defined in a machine-readable schema (e.g., YAML/TOML) that acts as the Single Source of Truth.
+  The `cli_sentinel` can then audit this schema for SVO compliance, rather than parsing Rust code.
+evidence:
+  - path: "src/assets/roles/observers/experience/cli_sentinel/role.yml"
+    loc: ["Audits CLI command designs"]
+    note: "Auditing designs requires a structured representation of the design."
+content: |
+  I support the activation of `cli_sentinel`. However, I strongly recommend that the role's implementation focuses on:
+  1.  **Defining a CLI Schema:** A formal definition of the CLI surface area.
+  2.  **Schema-Based Auditing:** The sentinel should validate this schema against SVO rules.
+  3.  **Code Generation (Optional):** Ideally, the CLI code (e.g., `clap` structs) would be generated from this schema to ensure the implementation always matches the design.
+
+  This "Schema-First" approach aligns with the Data Architecture principle of "Single Source of Truth".

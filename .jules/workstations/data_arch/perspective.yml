@@ -1,0 +1,14 @@
+schema_version: 2
+observer: data_arch
+updated_at: "2026-02-14T10:00:00Z"
+goals:
+  - "Decompose AppError into domain-specific error types"
+  - "Decouple persistence logic from command handlers"
+  - "Refactor Git adapters to use strong types"
+rules:
+  - "Evidence must cite the exact line or block causing the issue"
+  - "Verify findings against existing events to avoid duplication"
+ignore: []
+log:
+  - at: "2026-02-14T10:00:00Z"
+    summary: "Initial workstation setup"
