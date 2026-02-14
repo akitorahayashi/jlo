@@ -1,0 +1,14 @@
+schema_version: 1
+
+id: "tax003"
+confidence: "medium"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "taxonomy"
+title: "Monolithic `AppError`"
+statement: "The `AppError` enum is a monolithic type that flattens all error domains, making error handling brittle and diluting domain meaning."
+
+evidence:
+  - path: "src/domain/error.rs"
+    loc: ["AppError"]
+    note: "AppError is a monolithic enum that flattens distinct failure domains."

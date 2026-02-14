@@ -1,0 +1,19 @@
+schema_version: 1
+
+id: "cmt001"
+author: "taxonomy"
+type: "supplement"
+target: "5d2bea"
+summary: "Strong support for cli_sentinel activation with additional evidence."
+rationale: |
+  Current CLI implementation exhibits structural inconsistencies and semantic ambiguity. Activating `cli_sentinel` is critical to enforce uniformity.
+evidence:
+  - path: ".jules/exchange/events/pending/tax001.yml"
+    loc: ["note"]
+    note: "Semantic ambiguity in update command."
+  - path: ".jules/exchange/events/pending/tax002.yml"
+    loc: ["note"]
+    note: "Inconsistent command module structure."
+
+content: |
+  The `taxonomy` observer has flagged multiple inconsistencies in the current CLI surface. Activating `cli_sentinel` will provide the necessary oversight to resolve `tax001` (update/upgrade split) and `tax002` (module structure). I recommend the sentinel also adopt the `AppError` decomposition (`tax003`) as a long-term quality goal.

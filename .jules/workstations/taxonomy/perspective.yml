@@ -1,0 +1,17 @@
+schema_version: 2
+
+observer: "taxonomy"
+
+updated_at: "2026-02-14T00:00:00Z"
+
+goals:
+  - "Standardize `update` vs `upgrade` terminology"
+  - "Enforce consistent command module structure"
+  - "Decompose `AppError` into domain-specific error types"
+
+rules: []
+ignore: []
+
+log:
+  - at: "2026-02-14T00:00:00Z"
+    summary: "Initial observation run completed; identified update ambiguity and module structure inconsistency."
