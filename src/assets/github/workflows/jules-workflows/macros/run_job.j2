@@ -2,7 +2,7 @@
   {{ job_name }}:
     needs: {{ needs_list if needs_list else "[" ~ needs_job ~ "]" }}
     if: |
-      {{ (if_condition if if_condition else "always() &&\n      needs." ~ needs_job ~ ".result == 'success' &&\n      fromJSON(needs." ~ needs_job ~ ".outputs.json)." ~ check_output_key ~ " == true") | indent(6) }}
+      {{ (if_condition if if_condition else "needs." ~ needs_job ~ ".result == 'success' &&\n      fromJSON(needs." ~ needs_job ~ ".outputs.json)." ~ check_output_key ~ " == true") | indent(6) }}
 
     runs-on: {{ runner }}
     timeout-minutes: 30

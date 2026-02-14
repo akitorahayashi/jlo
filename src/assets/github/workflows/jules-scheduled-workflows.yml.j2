@@ -105,9 +105,8 @@ jobs:
     'Run observers',
     {},
     ['check-schedule', 'wait-after-innovators-1'],
-    "always() &&
-      fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
-      (needs.wait-after-innovators-1.result == 'success' || needs.wait-after-innovators-1.result == 'skipped')"
+    "fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
+      needs.wait-after-innovators-1.result == 'success'"
 ) }}
   # ============================================================
   # Phase 6: Wait for observer processing
@@ -128,9 +127,8 @@ jobs:
     'Run innovators (second pass)',
     {},
     ['check-schedule', 'wait-after-observers'],
-    "always() &&
-      fromJSON(needs.check-schedule.outputs.json).run_innovators_2 == true &&
-      (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')",
+    "fromJSON(needs.check-schedule.outputs.json).run_innovators_2 == true &&
+      needs.wait-after-observers.result == 'success'",
     extra_run_args='--task refine_idea_and_create_proposal'
 ) }}
   # ============================================================

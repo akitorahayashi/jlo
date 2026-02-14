@@ -1,10 +1,25 @@
   check-schedule:
     needs: wait-after-narrator
     if: |
-      always() &&
       ((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule') &&
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') &&
-      (needs.wait-after-narrator.result == 'success' || needs.wait-after-narrator.result == 'skipped')
+      (
+        (
+          (
+            github.event_name == 'schedule' ||
+            (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') == 'narrator') ||
+            (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') == 'narrator')
+          ) &&
+          needs.wait-after-narrator.result == 'success'
+        ) ||
+        (
+          (
+            (github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') != 'narrator') ||
+            (github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') != 'narrator')
+          ) &&
+          needs.wait-after-narrator.result == 'skipped'
+        )
+      )
     runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:

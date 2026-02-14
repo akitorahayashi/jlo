@@ -1,9 +1,18 @@
   generate-decider-matrix:
     needs: [check-schedule, wait-after-observers]
     if: |
-      always() &&
+      needs.check-schedule.result == 'success' &&
       fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
-      (needs.wait-after-observers.result == 'success' || needs.wait-after-observers.result == 'skipped')
+      (
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
+          needs.wait-after-observers.result == 'success'
+        ) ||
+        (
+          fromJSON(needs.check-schedule.outputs.json).run_observers == false &&
+          needs.wait-after-observers.result == 'skipped'
+        )
+      )
     runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:

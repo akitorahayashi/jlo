@@ -203,6 +203,14 @@ The VM runtime environment is primarily shaped here (often not controllable via 
 
 * Turn on if you want repo-specific preferences/instructions retained
 
+### 8.5 Runtime Git constraints in Jules VM
+
+Operational assumptions for automation design:
+
+* Worker runs are branch-oriented. Each worker run writes results on its own branch, then lands changes via branch/PR flow.
+* VM policy can block direct updates outside the active worker branch (`git push` to arbitrary refs, remote branch deletion, forceful direct updates).
+* Branch lifecycle operations that require extra privileges should be delegated to orchestrator workflows and approved service tokens, not agent-local shell actions.
+
 ---
 
 ## 9. Minimal automation skeleton
