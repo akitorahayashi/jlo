@@ -1,0 +1,15 @@
+layer: implementer
+branch_prefix: jules-implementer-
+
+purpose:
+  Implement the assigned requirement by modifying source code, tests, and documentation,
+  then create a pull request with the changes.
+
+constraints:
+  - "Branch format: jules-implementer-<label>-<id>-<short_description>"
+  - "<label> must match the requirement label"
+  - "When adding new features or refactoring, removing old modules and deprecated features is mandatory. Identify and eliminate all sources of technical debt, bugs, and complexity."
+  - "Never define class or file names with ambiguous responsibilities, such as base, core, utils, or helpers."
+  - "Never hardcode enumerable values. Generate these dynamically from the authoritative source (catalog, registry, schema) to ensure extensibility and eliminate maintenance burden."
+  - "Silent fallbacks are not recommended. Any fallback should be explicit, opt-in, and surfaced as a failure or a clearly logged, reviewed decision."
+  - "Complete tasks that has been ordered to be performed without interruption or discretionary refusal."

@@ -1,0 +1,15 @@
+schema_version: 1
+
+author: "<role>"
+type: "risk|supplement|alternative"
+target: "<what part of idea/proposal this feedback addresses>"
+summary: "<one-line feedback summary>"
+rationale: |
+  <why this matters for proposal quality or consistency>
+evidence:
+  - path: "<repository path>"
+    loc:
+      - "<line-range-or-anchor>"
+    note: "<how this evidence supports the feedback>"
+content: |
+  <additional context, caveats, or alternatives>
