@@ -1,0 +1,26 @@
+schema_version: 1
+
+id: "evnt02"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "taxonomy"
+confidence: "high"
+
+title: "Semantic Collision: Update vs Upgrade"
+statement: |
+  The term "update" is overloaded. `jlo update` (implemented in `src/app/commands/update.rs`) updates the workspace control plane. `jlo update --cli` (implemented in `src/app/commands/cli_upgrade.rs`) upgrades the binary. The internal module name `cli_upgrade` conflicts with the public command name `update`.
+
+evidence:
+  - path: "src/app/commands/update.rs"
+    loc:
+      - "pub fn execute"
+    note: "Implements workspace update logic."
+  - path: "src/app/commands/cli_upgrade.rs"
+    loc:
+      - "pub fn execute"
+    note: "Implements binary upgrade logic."
+  - path: "src/app/cli/mod.rs"
+    loc:
+      - "Update {"
+      - "cli: bool,"
+    note: "Overloads 'update' command to handle both concepts."

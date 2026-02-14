@@ -1,0 +1,26 @@
+schema_version: 1
+
+id: "evnt01"
+issue_id: ""
+created_at: "2026-02-14"
+author_role: "taxonomy"
+confidence: "high"
+
+title: "Inconsistent Command Module Structure"
+statement: |
+  The `src/app/commands/` directory mixes file-based command modules (`init.rs`, `update.rs`) with directory-based command modules (`add/`, `create/`). This violates the principle of "Naming shape consistency across boundaries".
+
+evidence:
+  - path: "src/app/commands/mod.rs"
+    loc:
+      - "pub mod add;"
+      - "pub mod init;"
+    note: "Simultaneous export of directory-based and file-based modules."
+  - path: "src/app/commands/init.rs"
+    loc:
+      - "pub fn execute"
+    note: "File-based command module."
+  - path: "src/app/commands/add/mod.rs"
+    loc:
+      - "mod role;"
+    note: "Directory-based command module."

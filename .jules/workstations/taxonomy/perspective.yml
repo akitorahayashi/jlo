@@ -1,0 +1,18 @@
+schema_version: 2
+
+observer: "taxonomy"
+
+updated_at: "2026-02-14T10:00:00Z"
+
+goals:
+  - "Standardize command module structure"
+  - "Resolve semantic collisions in update/upgrade terminology"
+  - "Enforce strict separation of commands and utilities"
+
+rules: []
+
+ignore: []
+
+log:
+  - at: "2026-02-14T10:00:00Z"
+    summary: "Identified command structure inconsistency, update semantic collision, and misplaced utility."
