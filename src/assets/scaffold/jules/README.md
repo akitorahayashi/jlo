@@ -46,12 +46,12 @@ Narrator -> Observer -> Decider -> [Planner] -> Implementer
 
 | Agent Type | Starting Branch | Output Branch | Auto-merge |
 |------------|-----------------|---------------|------------|
-| Narrator | `jules` | `jules-narrator-*` | ✅ (if `.jules/` only) |
-| Observer | `jules` | `jules-observer-*` | ✅ (if `.jules/` only) |
-| Decider | `jules` | `jules-decider-*` | ✅ (if `.jules/` only) |
-| Planner | `jules` | `jules-planner-*` | ✅ (if `.jules/` only) |
-| Implementer | `main` | `jules-implementer-*` | ❌ (human review) |
-| Integrator | `main` | `jules-integrator-*` | ❌ (human review) |
+| Narrator | `Worker Branch` | `jules-narrator-*` | ✅ (if `.jules/` only) |
+| Observer | `Worker Branch` | `jules-observer-*` | ✅ (if `.jules/` only) |
+| Decider | `Worker Branch` | `jules-decider-*` | ✅ (if `.jules/` only) |
+| Planner | `Worker Branch` | `jules-planner-*` | ✅ (if `.jules/` only) |
+| Implementer | `Target Branch` | `jules-implementer-*` | ❌ (human review) |
+| Integrator | `Target Branch` | `jules-integrator-*` | ❌ (human review) |
 
 Narrator, Observers, Decider, and Planner modify only `.jules/` and auto-merge after CI passes.
 Implementer modifies source code and requires human review.
@@ -60,89 +60,19 @@ Implementer modifies source code and requires human review.
 
 ```
 .jules/
-+-- README.md           # This file (jlo-managed)
-+-- JULES.md            # Agent contract (jlo-managed)
-+-- .jlo-version        # Version marker (jlo-managed)
-+-- github-labels.json  # GitHub labels definition
-|
-+-- exchange/           # Exchange container
-|   +-- changes.yml     # Narrator output (bounded changes summary)
-|   +-- events/         # Raw observations
-|   |   +-- <state>/
-|   |       +-- *.yml
-|   +-- requirements/   # Actionable requirements (flat)
-|   |   +-- *.yml
-|   +-- proposals/      # Innovator proposal queue
-|       +-- *.yml
-|
-+-- workstations/       # Observer state persistence
-|   +-- <role>/         # Role-specific workstation
-|       +-- perspective.yml   # Observer continuity (goals/rules/ignore/log)
-|
-+-- roles/              # Role definitions (global)
-    +-- narrator/       # Single-role layer
-    |   +-- narrator_prompt.j2 # Prompt construction rules
-    |   +-- contracts.yml    # Layer contract
-    |   +-- tasks/
-    |   |   +-- bootstrap_summary.yml
-    |   |   +-- overwrite_summary.yml
-    |   +-- schemas/
-    |       +-- changes.yml   # Schema template for changes.yml
-    |
-    +-- observers/      # Multi-role layer
-    |   +-- contracts.yml    # Shared observer contract
-    |   +-- observers_prompt.j2 # Prompt construction rules
-    |   +-- tasks/
-    |   |   +-- observe.yml
-    |   +-- schemas/
-    |       +-- event.yml    # Event template
-    |
-    +-- decider/       # Single-role layer
-    |   +-- contracts.yml    # Shared decider contract
-    |   +-- decider_prompt.j2 # Prompt construction rules
-    |   +-- tasks/
-    |   +-- schemas/
-    |   |   +-- requirements.yml    # Requirement template
-    |
-    +-- planner/       # Single-role layer (requirement-driven)
-    |   +-- planner_prompt.j2 # Prompt construction rules
-    |   +-- contracts.yml    # Shared planner contract
-    |   +-- tasks/
-    |
-    +-- implementer/   # Single-role layer (requirement-driven)
-    |   +-- implementer_prompt.j2 # Prompt construction rules
-    |   +-- contracts.yml    # Shared implementer contract
-    |   +-- tasks/
-    |   |   +-- bugs.yml
-    |   |   +-- docs.yml
-    |   |   +-- feats.yml
-    |   |   +-- refacts.yml
-    |   |   +-- tests.yml
-    |
-    +-- integrator/    # Single-role layer (manual, on-demand)
-    |   +-- integrator_prompt.j2 # Prompt construction rules
-    |   +-- contracts.yml    # Shared integrator contract
-    |   +-- tasks/
-    |   |   +-- integrate_implementer_branches.yml
-    |
-    +-- innovators/     # Multi-role layer
-        +-- innovators_prompt.j2      # Prompt construction
-        +-- contracts.yml             # Layer contract
-        +-- tasks/
-        |   +-- create_three_proposals.yml
-        +-- schemas/
-        |   +-- perspective.yml
-        |   +-- proposal.yml
-        +-- roles/
-            +-- <persona>/
-                +-- role.yml
-|
-+-- setup/
-    +-- tools.yml       # Tool selection
-    +-- vars.toml       # Non-secret environment variables (generated/merged)
-    +-- secrets.toml    # Secret environment variables (generated/merged)
-    +-- install.sh      # Installation script (generated)
-    +-- .gitignore      # Ignores secrets.toml only
+├── exchange/
+│   ├── events/
+│   ├── proposals/
+│   └── requirements/
+├── layers/
+│   ├── decider/
+│   ├── implementer/
+│   ├── innovators/
+│   ├── integrator/
+│   ├── narrator/
+│   ├── observers/
+│   └── planner/
+└── workstations/
 ```
 
 ## Layer Architecture
@@ -257,11 +187,11 @@ The implementer reads the requirement content (embedded in prompt) and produces 
 The requirement file must exist; missing files fail fast before agent execution.
 
 **Requirement Lifecycle**:
-1. A requirement file is selected from `.jules/exchange/requirements/` on the `jules` branch.
+1. A requirement file is selected from `.jules/exchange/requirements/` on the `Worker Branch`.
 2. `jlo run implementer` validates the file exists and passes content to the implementer.
 3. `jlo run implementer` deletes the requirement file and its source events after dispatching the session.
-4. The implementer works on the default code branch and creates a PR for human review.
-5. The `sync-jules.yml` workflow keeps `jules` in sync with the default branch after merges.
+4. The implementer works on the `Target Branch` and creates a PR for human review.
+5. The `sync-jules.yml` workflow keeps `Worker Branch` in sync with the `Target Branch` after merges.
 
 ## Observer Continuity
 
