@@ -38,7 +38,10 @@ pub fn generate_install_script(components: &[SetupComponent]) -> String {
         let content = component.script_content.trim();
         let cleaned_content = content
             .lines()
-            .filter(|line| !line.starts_with("#!/") && !line.starts_with("set -"))
+            .filter(|line| {
+                let trimmed = line.trim();
+                !trimmed.starts_with("#!/") && trimmed != "set -euo pipefail"
+            })
             .collect::<Vec<_>>()
             .join("\n");
 

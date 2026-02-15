@@ -51,7 +51,7 @@ pub fn execute_detail(component_name: &str) -> Result<SetupComponentDetail, AppE
     let component =
         catalog.get(component_name).ok_or_else(|| AppError::SetupComponentNotFound {
             name: component_name.to_string(),
-            available: catalog.names().iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", "),
+            available: catalog.names().join(", "),
         })?;
 
     Ok(SetupComponentDetail {

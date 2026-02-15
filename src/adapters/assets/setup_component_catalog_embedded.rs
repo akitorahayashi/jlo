@@ -81,8 +81,8 @@ impl EmbeddedSetupComponentCatalog {
                 }
             })?;
 
-            let name_str = meta.name.clone().unwrap_or_else(|| dir_name.to_string());
-            let name_id = SetupComponentId::new(&name_str).map_err(|_| {
+            let name_str = meta.name.as_deref().unwrap_or(dir_name);
+            let name_id = SetupComponentId::new(name_str).map_err(|_| {
                 AppError::InvalidSetupComponentMetadata {
                     component: dir_name.to_string(),
                     reason: format!("Invalid setup component name '{}'", name_str),
