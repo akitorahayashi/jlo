@@ -2,14 +2,14 @@ layer: innovators
 branch_prefix: jules-innovator-
 
 purpose:
-  Generate improvement proposals through persona-driven ideation and refinement.
-  Each persona inspects the codebase through its own lens, produces ideas, receives
-  observer feedback, and refines ideas into structured proposals.
+  Generate improvement proposals through persona-driven exploration.
+  Each persona inspects the codebase through its own lens and emits
+  multiple independent proposals in a single run.
 
 constraints:
   - "Do not duplicate items already listed in perspective.yml recent_proposals"
-  - "Do not create proposal.yml for any direction that is equivalent to entries in perspective.yml recent_proposals, even when not yet adopted"
-  - "Repository investigation is mandatory in both phases: codebase behavior, runtime assumptions, and open requirement context"
+  - "Do not create proposals for directions equivalent to entries in perspective.yml recent_proposals, even when not yet adopted"
+  - "Repository investigation is mandatory: codebase behavior, runtime assumptions, and open requirement context"
   - "All outputs must conform to the corresponding schema in .jules/layers/innovators/schemas/"
   - "Proposals must introduce boundary, behavior, or decision-quality changes — not local refactoring findings"
   - "Self-check against role.yml proposal_quality_bar and evidence_expectations"

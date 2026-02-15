@@ -1,8 +1,7 @@
 //! Publish innovator proposals as GitHub issues.
 //!
-//! Scans all innovator rooms for merged `proposal.yml` files,
-//! creates a GitHub issue from each proposal, and removes the proposal artifact
-//! to mark publication as complete.
+//! Scans `.jules/exchange/proposals/*.yml`, creates a GitHub issue from each
+//! proposal, and removes the proposal artifact to mark publication as complete.
 
 use std::path::{Path, PathBuf};
 
@@ -10,8 +9,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
-use crate::domain::AppError;
 use crate::domain::PromptAssetLoader;
+use crate::domain::{AppError, RoleId};
 use crate::ports::{Git, GitHub, IssueInfo, JloStore, JulesStore, RepositoryFilesystem};
 
 #[derive(Debug, Clone)]
@@ -38,6 +37,8 @@ pub struct PublishedProposal {
 struct ProposalData {
     #[serde(default)]
     id: String,
+    #[serde(default)]
+    persona: String,
     #[serde(default)]
     title: String,
     #[serde(default)]
@@ -94,9 +95,9 @@ where
     H: GitHub,
 {
     let jules_path = repository.jules_path();
-    let innovators_dir = crate::domain::exchange::innovators::paths::innovators_dir(&jules_path);
+    let proposals_dir = crate::domain::exchange::proposals::paths::proposals_dir(&jules_path);
 
-    let proposals = discover_proposals(&innovators_dir, repository)?;
+    let proposals = discover_proposals(&proposals_dir, repository)?;
 
     if proposals.is_empty() {
         return Ok(ExchangePublishProposalsOutput {
@@ -110,7 +111,7 @@ where
     // Pass 1: Validate all proposals before any side-effects (issue creation).
     // This prevents partial failure leaving orphaned issues on GitHub.
     let mut validated: Vec<(String, PathBuf, String, String)> = Vec::new();
-    for (persona, proposal_path) in &proposals {
+    for proposal_path in &proposals {
         let content = repository.read_file(
             proposal_path
                 .to_str()
@@ -124,6 +125,9 @@ where
                 e
             ))
         })?;
+
+        let persona = validate_persona(&data, proposal_path)?;
+        validate_proposal_filename_matches_persona(proposal_path, persona.as_str())?;
 
         if data.title.trim().is_empty() {
             return Err(AppError::Validation(format!(
@@ -153,15 +157,17 @@ where
         }
 
         // Verify perspective.yml exists and records this proposal
-        let perspective_path =
-            proposal_path.parent().unwrap_or(Path::new(".")).join("perspective.yml");
+        let perspective_path = crate::domain::workstations::paths::workstation_perspective(
+            &jules_path,
+            persona.as_str(),
+        );
         let perspective_path_str = perspective_path
             .to_str()
             .ok_or_else(|| AppError::Validation("Invalid perspective path".to_string()))?;
         if !repository.file_exists(perspective_path_str) {
             return Err(AppError::Validation(format!(
-                "perspective.yml missing for persona '{}': refinement must update perspective before publication",
-                persona
+                "perspective.yml missing for persona '{}': innovator run must update workstation perspective before publication",
+                persona.as_str()
             )));
         }
         let perspective_content = repository.read_file(perspective_path_str)?;
@@ -177,11 +183,12 @@ where
         if !perspective.recent_proposals.iter().any(|p| p.trim() == title_trimmed) {
             return Err(AppError::Validation(format!(
                 "perspective.yml for '{}' does not list proposal '{}' in recent_proposals: refinement contract violated",
-                persona, title_trimmed
+                persona.as_str(),
+                title_trimmed
             )));
         }
 
-        let issue_title = format!("[innovator/{}] {}", persona, data.title.trim());
+        let issue_title = format!("[innovator/{}] {}", persona.as_str(), data.title.trim());
         let impact_surface = render_list(&data.impact_surface);
         let consistency_risks = render_list(&data.consistency_risks);
         let verification_signals = render_list(&data.verification_signals);
@@ -196,10 +203,15 @@ where
             consistency_risks,
             verification_signals,
             data.id,
-            persona,
+            persona.as_str(),
         );
 
-        validated.push((persona.clone(), proposal_path.clone(), issue_title, issue_body));
+        validated.push((
+            persona.as_str().to_string(),
+            proposal_path.clone(),
+            issue_title,
+            issue_body,
+        ));
     }
 
     // Pass 2: Create issues and clean up artifacts (all proposals validated).
@@ -232,20 +244,6 @@ where
                 .ok_or_else(|| AppError::Validation("Invalid proposal path".to_string()))?,
         )?;
         deleted_paths.push(proposal_path.clone());
-
-        // Clean comments directory if present
-        let comments_dir = proposal_path.parent().unwrap_or(Path::new(".")).join("comments");
-        if let Some(comments_dir_str) = comments_dir.to_str()
-            && !comments_dir_str.is_empty()
-            && let Ok(entries) = repository.list_dir(comments_dir_str)
-        {
-            for entry in entries {
-                if let Some(path_str) = entry.to_str() {
-                    repository.remove_file(path_str)?;
-                    deleted_paths.push(entry);
-                }
-            }
-        }
     }
 
     // Commit and push the deletions
@@ -265,46 +263,76 @@ where
     })
 }
 
-/// Discover proposal.yml files across all innovator persona rooms.
+/// Discover proposal files under `.jules/exchange/proposals/`.
 fn discover_proposals<W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader>(
-    innovators_dir: &Path,
+    proposals_dir: &Path,
     repository: &W,
-) -> Result<Vec<(String, PathBuf)>, AppError> {
-    let dir_str = innovators_dir
+) -> Result<Vec<PathBuf>, AppError> {
+    let dir_str = proposals_dir
         .to_str()
-        .ok_or_else(|| AppError::Validation("Invalid innovators path".to_string()))?;
+        .ok_or_else(|| AppError::Validation("Invalid proposals path".to_string()))?;
 
-    let persona_dirs = match repository.list_dir(dir_str) {
-        Ok(dirs) => dirs,
-        Err(_) => return Ok(Vec::new()), // No innovators directory
+    let entries = match repository.list_dir(dir_str) {
+        Ok(entries) => entries,
+        Err(_) => return Ok(Vec::new()), // No proposals directory
     };
 
     let mut proposals = Vec::new();
-    for persona_dir in persona_dirs {
-        let Some(persona_dir_str) = persona_dir.to_str() else { continue };
-        if !repository.is_dir(persona_dir_str) {
+    for path in entries {
+        let Some(path_str) = path.to_str() else { continue };
+        if repository.is_dir(path_str) {
             continue;
         }
-
-        let Some(persona_name) = persona_dir.file_name().and_then(|n| n.to_str()) else {
-            continue;
-        };
-        if persona_name.is_empty() {
+        if path.extension().and_then(|ext| ext.to_str()) != Some("yml") {
             continue;
         }
-
-        let proposal_path = persona_dir.join("proposal.yml");
-        let Some(proposal_str) = proposal_path.to_str() else { continue };
-        if repository.file_exists(proposal_str) {
-            proposals.push((persona_name.to_string(), proposal_path));
-        }
+        proposals.push(path);
     }
 
+    proposals.sort();
     Ok(proposals)
 }
 
 fn render_list(items: &[String]) -> String {
     items.iter().map(|line| format!("- {}", line.trim())).collect::<Vec<_>>().join("\n")
+}
+
+fn validate_persona(data: &ProposalData, proposal_path: &Path) -> Result<RoleId, AppError> {
+    let persona = data.persona.trim();
+    if persona.is_empty() {
+        return Err(AppError::Validation(format!(
+            "Proposal missing 'persona': {}",
+            proposal_path.display()
+        )));
+    }
+
+    RoleId::new(persona).map_err(|_| {
+        AppError::Validation(format!(
+            "Invalid proposal persona '{}': expected safe role identifier in {}",
+            persona,
+            proposal_path.display()
+        ))
+    })
+}
+
+fn validate_proposal_filename_matches_persona(
+    proposal_path: &Path,
+    persona: &str,
+) -> Result<(), AppError> {
+    let Some(stem) = proposal_path.file_stem().and_then(|s| s.to_str()) else {
+        return Err(AppError::Validation(format!(
+            "Invalid proposal filename: {}",
+            proposal_path.display()
+        )));
+    };
+    if !stem.starts_with(&format!("{}-", persona)) {
+        return Err(AppError::Validation(format!(
+            "Proposal filename must start with '{}-': {}",
+            persona,
+            proposal_path.display()
+        )));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -339,8 +367,8 @@ verification_signals:
 
     #[test]
     fn publishes_proposal_and_removes_artifact() {
-        let proposal_path = ".jules/exchange/innovators/alice/proposal.yml";
-        let perspective_path = ".jules/exchange/innovators/alice/perspective.yml";
+        let proposal_path = ".jules/exchange/proposals/alice-improve-error-messages.yml";
+        let perspective_path = ".jules/workstations/alice/perspective.yml";
         let perspective_yaml =
             "persona: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
         let repository = TestStore::new()
@@ -387,5 +415,28 @@ verification_signals:
         assert!(output.published.is_empty());
         assert!(!output.committed);
         assert!(!output.pushed);
+    }
+
+    #[test]
+    fn rejects_invalid_persona_identifier() {
+        let proposal_path = ".jules/exchange/proposals/alice-improve-error-messages.yml";
+        let perspective_path = ".jules/workstations/alice/perspective.yml";
+        let invalid_persona_yaml =
+            proposal_yaml().replace("persona: \"alice\"", "persona: \"../../etc\"");
+        let perspective_yaml =
+            "persona: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let repository = TestStore::new()
+            .with_exists(true)
+            .with_file(proposal_path, &invalid_persona_yaml)
+            .with_file(perspective_path, perspective_yaml);
+
+        let git = FakeGit::new();
+        let github = FakeGitHub::new();
+        let options = ExchangePublishProposalsOptions {};
+
+        let result = execute_with(&repository, &options, &git, &github);
+        assert!(result.is_err());
+        let message = result.unwrap_err().to_string();
+        assert!(message.contains("Invalid proposal persona"));
     }
 }

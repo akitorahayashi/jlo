@@ -16,7 +16,7 @@ pub enum Layer {
     Planner,
     /// Implementer: Execute approved tasks, create PRs with code changes (executor_global)
     Implementer,
-    /// Innovators: Generate improvement proposals through brainstorming and feedback cycles
+    /// Innovators: Generate improvement proposals from persona workstations
     Innovators,
     /// Integrator: Merge all implementer branches into one integration branch
     Integrator,
@@ -99,7 +99,7 @@ impl Layer {
             Layer::Planner => "Read issues requiring deep analysis, expand them in-place.",
             Layer::Implementer => "Execute approved tasks, create PRs with code changes.",
             Layer::Innovators => {
-                "Generate improvement proposals through brainstorming and feedback."
+                "Generate improvement proposals from repository context and persona workstations."
             }
             Layer::Integrator => "Merge all implementer branches into one integration branch.",
         }
@@ -121,10 +121,7 @@ impl Layer {
         )
     }
 
-    /// Whether this layer uses innovator room exchange structure.
-    ///
-    /// Innovator layers have a persona-based exchange directory structure
-    /// under `exchange/innovators/<persona>/` instead of events/issues.
+    /// Whether this layer emits proposal artifacts.
     pub fn is_innovator(&self) -> bool {
         matches!(self, Layer::Innovators)
     }
@@ -135,6 +132,18 @@ impl Layer {
     /// Narrator is single-role but not issue-driven.
     pub fn is_issue_driven(&self) -> bool {
         matches!(self, Layer::Planner | Layer::Implementer)
+    }
+
+    /// Returns the YAML key used for the role identifier in a workstation perspective file.
+    pub fn perspective_role_key(&self) -> Result<&'static str, crate::domain::AppError> {
+        match self {
+            Layer::Innovators => Ok("persona"),
+            Layer::Observers => Ok("observer"),
+            _ => Err(crate::domain::AppError::RepositoryIntegrity(format!(
+                "Unsupported layer for workstation perspective materialization: '{}'",
+                self.dir_name()
+            ))),
+        }
     }
 }
 

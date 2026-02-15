@@ -6,11 +6,11 @@ This document describes how files under `src/assets/github/` are transformed int
 
 ## Authoritative Sources
 - Source assets (templates and static files): `src/assets/github/**`
-- Workflow scaffold loader: `src/adapters/assets/workflow_scaffold_assets/mod.rs`
-- Asset collection: `src/adapters/assets/workflow_scaffold_assets/asset_collect.rs`
-- Template engine (MiniJinja): `src/adapters/assets/workflow_scaffold_assets/template_engine.rs`
-- Render plan (partials exclusion): `src/adapters/assets/workflow_scaffold_assets/render_plan.rs`
-- Install/write to disk: `src/app/commands/init.rs`
+- Workflow scaffold loader: `src/adapters/catalogs/workflow_scaffold/mod.rs`
+- Asset collection: `src/adapters/catalogs/workflow_scaffold/asset_collect.rs`
+- Template engine (MiniJinja): `src/adapters/catalogs/workflow_scaffold/template_engine.rs`
+- Render plan (partials exclusion): `src/adapters/catalogs/workflow_scaffold/render_plan.rs`
+- Install/write to disk: `src/adapters/workflow_installer.rs`
 
 ## Development Workflow
 
@@ -46,8 +46,8 @@ This document describes how files under `src/assets/github/` are transformed int
 ## Installed Output Examples
 - `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`
   → `.github/workflows/jules-scheduled-workflows.yml`
-- `src/assets/github/workflows/jules-run-only-innovators.yml.j2`
-  → `.github/workflows/jules-run-only-innovators.yml`
+- `src/assets/github/workflows/jules-run-innovators.yml.j2`
+  → `.github/workflows/jules-run-innovators.yml`
 - `src/assets/github/workflows/jules-automerge.yml.j2`
   → `.github/workflows/jules-automerge.yml` (push-scoped trigger for Jules auto-merge branch families)
 - `src/assets/github/actions/install-jlo/action.yml`

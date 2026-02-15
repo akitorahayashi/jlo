@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use super::diagnostics::Diagnostics;
-use super::structure::list_subdirs;
 use super::yaml::is_kebab_case;
 
 pub fn naming_checks(jules_path: &Path, event_states: &[String], diagnostics: &mut Diagnostics) {
@@ -21,14 +20,54 @@ pub fn naming_checks(jules_path: &Path, event_states: &[String], diagnostics: &m
         validate_filename(&entry, diagnostics, "requirement");
     }
 
-    let innovators_dir = crate::domain::exchange::innovators::paths::innovators_dir(jules_path);
-    if innovators_dir.exists() {
-        for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
-            let comments_dir = persona_dir.join("comments");
-            for entry in list_files(&comments_dir, diagnostics) {
-                validate_filename(&entry, diagnostics, "innovator comment");
-            }
+    for entry in list_files(
+        &crate::domain::exchange::proposals::paths::proposals_dir(jules_path),
+        diagnostics,
+    ) {
+        validate_proposal_filename(&entry, diagnostics);
+    }
+}
+
+fn validate_proposal_filename(path: &Path, diagnostics: &mut Diagnostics) {
+    if path.file_name().and_then(|name| name.to_str()) == Some(".gitkeep") {
+        return;
+    }
+
+    if path.extension().and_then(|ext| ext.to_str()) != Some("yml") {
+        diagnostics.push_error(path.display().to_string(), "proposal file must be .yml");
+        return;
+    }
+
+    let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else {
+        diagnostics.push_error(path.display().to_string(), "proposal filename is invalid");
+        return;
+    };
+    if stem.is_empty() {
+        diagnostics.push_error(path.display().to_string(), "proposal filename must not be empty");
+        return;
+    }
+
+    if !stem.contains('-') {
+        diagnostics.push_error(
+            path.display().to_string(),
+            "proposal filename must include '<persona>-<slug>'",
+        );
+        return;
+    } else {
+        let parts: Vec<&str> = stem.splitn(2, '-').collect();
+        if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
+            diagnostics.push_error(
+                path.display().to_string(),
+                "proposal filename must be in the format '<persona>-<slug>'",
+            );
         }
+    }
+
+    if !stem.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-') {
+        diagnostics.push_error(
+            path.display().to_string(),
+            "proposal filename must use kebab-case (lowercase ASCII, digits, or '-')",
+        );
     }
 }
 
@@ -134,5 +173,28 @@ mod tests {
         validate_filename(&PathBuf::from("invalid@name.yml"), &mut diagnostics, "test");
         assert_eq!(diagnostics.error_count(), 1);
         assert!(diagnostics.errors()[0].message.contains("must be kebab-case"));
+    }
+
+    #[test]
+    fn test_validate_proposal_filename_requires_persona_and_slug() {
+        let mut diagnostics = Diagnostics::default();
+        validate_proposal_filename(&PathBuf::from("invalid-.yml"), &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 1);
+        assert!(diagnostics.errors()[0].message.contains("<persona>-<slug>"));
+    }
+
+    #[test]
+    fn test_validate_proposal_filename_accepts_valid_pattern() {
+        let mut diagnostics = Diagnostics::default();
+        validate_proposal_filename(&PathBuf::from("alice-proposal-one.yml"), &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_validate_proposal_filename_rejects_underscores() {
+        let mut diagnostics = Diagnostics::default();
+        validate_proposal_filename(&PathBuf::from("alice-proposal_one.yml"), &mut diagnostics);
+        assert!(diagnostics.error_count() > 0);
+        assert!(diagnostics.errors()[0].message.contains("kebab-case"));
     }
 }

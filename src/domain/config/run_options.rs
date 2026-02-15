@@ -17,6 +17,6 @@ pub struct RunOptions {
     pub requirement: Option<PathBuf>,
     /// Run in mock mode (no Jules API, real git/GitHub operations).
     pub mock: bool,
-    /// Task file selector for innovators (e.g. create_idea, refine_idea_and_create_proposal).
+    /// Task file selector for innovators (expected: create_three_proposals).
     pub task: Option<String>,
 }

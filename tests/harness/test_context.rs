@@ -185,7 +185,7 @@ impl TestContext {
         assert!(exchange.join("events/pending").exists(), "exchange/events/pending should exist");
         assert!(exchange.join("events/decided").exists(), "exchange/events/decided should exist");
         assert!(exchange.join("requirements").exists(), "exchange/requirements should exist");
-        assert!(exchange.join("innovators").exists(), "exchange/innovators should exist");
+        assert!(exchange.join("proposals").exists(), "exchange/proposals should exist");
     }
 
     /// Assert that `contracts.yml` exists in each layer directory.

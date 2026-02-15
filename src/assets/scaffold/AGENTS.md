@@ -72,16 +72,13 @@ See [root AGENTS.md](../../AGENTS.md) for critical design principles including P
 │   │   ├── contracts.yml      # Layer contract
 │   │   └── tasks/             # Action units
 │   └── innovators/
-│       ├── innovators_prompt.j2      # Prompt construction (uses {{phase}})
+│       ├── innovators_prompt.j2      # Prompt construction
 │       ├── contracts.yml             # Layer contract
 │       ├── tasks/
-│       │   ├── create_idea.yml       # Creation phase task
-│       │   └── refine_idea_and_create_proposal.yml   # Refinement phase task
+│       │   └── create_three_proposals.yml
 │       └── schemas/
 │           ├── perspective.yml
-│           ├── idea.yml
-│           ├── proposal.yml
-│           └── comment.yml
+│           └── proposal.yml
 ├── exchange/
 │   ├── events/
 │   │   ├── pending/
@@ -90,13 +87,8 @@ See [root AGENTS.md](../../AGENTS.md) for critical design principles including P
 │   │       └── .gitkeep
 │   ├── requirements/
 │   │   └── .gitkeep
-│   └── innovators/
-│       └── <persona>/
-│           ├── perspective.yml
-│           ├── idea.yml       # Temporary (creation phase)
-│           ├── proposal.yml   # Temporary (refinement output)
-│           └── comments/
-│               └── .gitkeep
+│   └── proposals/
+│       └── .gitkeep
 └── workstations/
     └── <role>/
         └── perspective.yml
@@ -134,9 +126,7 @@ Schemas define the structure for artifacts produced by agents.
 | `perspective.yml` | `.jules/layers/observers/schemas/` | Observer perspective structure |
 | `issue.yml` | `.jules/layers/decider/schemas/` | Issue structure |
 | `perspective.yml` | `.jules/layers/innovators/schemas/` | Innovator persona memory |
-| `idea.yml` | `.jules/layers/innovators/schemas/` | Idea draft structure |
 | `proposal.yml` | `.jules/layers/innovators/schemas/` | Finalized proposal structure |
-| `comment.yml` | `.jules/layers/innovators/schemas/` | Observer feedback on ideas |
 
 **Rule**: Agents copy the schema and fill its fields. Never invent structure.
 
@@ -151,7 +141,7 @@ Jules uses a flat exchange model for handing off events and requirements between
 | `.jules/exchange/changes.yml` | Narrator output (bounded changes summary) |
 | `.jules/exchange/events/<state>/` | Observer outputs |
 | `.jules/exchange/requirements/` | Decider outputs, Planner/Implementer inputs |
-| `.jules/exchange/innovators/<persona>/` | Innovator perspectives, ideas, proposals, comments |
+| `.jules/exchange/proposals/` | Innovator proposal queue |
 | `.jules/workstations/<role>/` | Role perspectives (memory) |
 
 ## Data Flow
@@ -163,7 +153,7 @@ narrator -> observers -> decider -> [planner] -> implementer
 (changes)   (events)    (requirements) (expand)  (code changes)
 
 innovators (independent cycle)
-perspective -> idea -> comments -> proposal
+workstation perspective -> three proposals
 ```
 
 1. **Narrator** runs first, producing `.jules/exchange/changes.yml` as a secondary hint for observer triage.
@@ -171,4 +161,4 @@ perspective -> idea -> comments -> proposal
 3. **Decider** reads events, emits requirements, and links related events via `source_events`.
 4. **Planner** expands requirements with `requires_deep_analysis: true`.
 5. **Implementer** executes approved tasks and creates PRs with code changes.
-6. **Innovators** run independently: each persona maintains a `perspective.yml`, drafts `idea.yml`, receives `comments/` from other personas, and produces `proposal.yml`.
+6. **Innovators** run independently: each persona updates `workstations/<persona>/perspective.yml` and emits three proposals into `exchange/proposals/`.

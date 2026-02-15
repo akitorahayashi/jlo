@@ -10,7 +10,7 @@ fn init_installs_remote_workflow_scaffold() {
 
     let root = ctx.work_dir();
     assert!(root.join(".github/workflows/jules-scheduled-workflows.yml").exists());
-    assert!(root.join(".github/workflows/jules-run-only-innovators.yml").exists());
+    assert!(root.join(".github/workflows/jules-run-innovators.yml").exists());
     assert!(root.join(".github/workflows/jules-implementer-pr.yml").exists());
     assert!(root.join(".github/workflows/jules-automerge.yml").exists());
     assert!(root.join(".github/workflows/jules-integrator.yml").exists());
@@ -35,9 +35,14 @@ fn init_installs_remote_workflow_scaffold() {
     assert!(workflow.contains("Run decider"), "Should run decider");
     assert!(workflow.contains("Run planner"), "Should run planner");
     assert!(workflow.contains("Run implementer"), "Should run implementer");
-    assert!(workflow.contains("Run innovators (first pass)"));
-    assert!(workflow.contains("Run innovators (second pass)"));
-    assert!(workflow.contains("Publish proposals"));
+    assert!(
+        workflow.contains("run-innovators:"),
+        "Should include run-innovators reusable workflow job"
+    );
+    assert!(
+        workflow.contains("uses: ./.github/workflows/jules-run-innovators.yml"),
+        "Scheduled workflow should call innovators reusable workflow"
+    );
     assert!(
         !workflow.contains(".github/scripts/"),
         "Workflow should not reference .github/scripts/"

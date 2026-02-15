@@ -1,0 +1,19 @@
+schema_version: 1
+id: "__ID__"
+persona: "__PERSONA__"
+created_at: "__DATE__"
+title: "__TITLE__"
+problem: |
+  Mock proposal direction __INDEX__ generated for workflow validation.
+  Mock tag: __TAG__
+introduction: |
+  Introduce mock proposal path __INDEX__ to verify multi-proposal publication.
+importance: |
+  Ensures innovators can emit multiple independent proposals in one run.
+impact_surface:
+  - "workflow"
+implementation_cost: "medium"
+consistency_risks:
+  - "Parallel proposal publication can create prioritization overhead"
+verification_signals:
+  - "Three proposal issues are created from a single innovators run"

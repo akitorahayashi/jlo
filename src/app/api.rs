@@ -137,7 +137,7 @@ pub fn builtin_role_catalog() -> Result<Vec<BuiltinRoleEntry>, AppError> {
 /// * `branch` - Override the starting branch
 /// * `requirement` - Local requirement file path (required for planner/implementer)
 /// * `mock` - Run in mock mode (no Jules API, tag from JULES_MOCK_TAG env)
-/// * `task` - Innovator task selector (e.g. create_idea, refine_idea_and_create_proposal)
+/// * `task` - Innovator task selector (expected: create_three_proposals)
 #[allow(clippy::too_many_arguments)]
 pub fn run(
     layer: Layer,

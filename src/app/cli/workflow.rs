@@ -16,7 +16,7 @@ pub enum WorkflowCommands {
         /// Run in mock mode (requires JULES_MOCK_TAG)
         #[arg(long)]
         mock: bool,
-        /// Task selector for innovators (e.g. create_idea, refine_idea_and_create_proposal, create_proposal)
+        /// Task selector for innovators (expected: create_three_proposals)
         #[arg(long)]
         task: Option<String>,
     },

@@ -88,50 +88,65 @@ fn mock_decider_issue_file_passes_doctor() {
 }
 
 #[test]
-fn mock_observer_comment_file_passes_doctor() {
+fn mock_innovator_proposal_file_passes_doctor() {
     let ctx = TestContext::new();
     setup_scaffold(&ctx);
 
-    let comments_dir = ctx.jules_path().join("exchange/innovators/alice/comments");
-    fs::create_dir_all(&comments_dir).expect("Failed to create comments directory");
-
-    let mock_comment = include_str!("../../src/assets/mock/observer_comment.yml");
-    let comment_content = mock_comment
-        .replace("mock-author", "taxonomy")
-        .replace("test-tag", "mock-local-20260205120000");
-
-    fs::write(comments_dir.join("observer-taxonomy-abc123.yml"), comment_content)
-        .expect("Failed to write comment file");
-
-    ctx.cli().args(["doctor"]).assert().success();
-}
-
-#[test]
-fn mock_innovator_idea_file_passes_doctor() {
-    let ctx = TestContext::new();
-    setup_scaffold(&ctx);
-
-    let room_dir = ctx.jules_path().join("exchange/innovators/alice");
-    fs::create_dir_all(room_dir.join("comments"))
-        .expect("Failed to create innovator comments directory");
+    let workstation_dir = ctx.jules_path().join("workstations/alice");
+    fs::create_dir_all(&workstation_dir).expect("Failed to create workstation directory");
 
     let perspective = r#"schema_version: 1
 persona: "alice"
 focus: "High-leverage improvements"
-current_view: |
-  Current architecture has repetitive workflow logic.
-historical_learnings: |
-  Role-level contracts reduce drift when coupled with doctor checks.
-recent_proposals: []
+repository_observations:
+  codebase_state:
+    - "Current architecture has repetitive workflow logic."
+  startup_and_runtime_contracts:
+    - "Bootstrap owns workstation lifecycle."
+  decision_quality_gaps:
+    - "Proposal alternatives are currently sparse."
+  leverage_candidates:
+    - "Generate three proposals per run."
+thinking_notes:
+  hypotheses:
+    - "Parallel ideation increases option quality."
+  tradeoff_assessment:
+    - "Broader option sets increase evaluation load."
+  rejected_paths:
+    - "Single-proposal-only execution."
+feedback_assimilation:
+  observer_inputs: []
+  next_focus:
+    - "Track proposal quality through issue outcomes."
+recent_proposals:
+  - "Improve workflow error messages"
 "#;
-    fs::write(room_dir.join("perspective.yml"), perspective).expect("Failed to write perspective");
+    fs::write(workstation_dir.join("perspective.yml"), perspective)
+        .expect("Failed to write perspective");
 
-    let mock_idea = include_str!("../../src/assets/mock/innovator_idea.yml");
-    let idea = mock_idea
-        .replace("mock01", "abc123")
-        .replace("mock-persona", "alice")
-        .replace("test-tag", "mock-local-20260205120000");
-    fs::write(room_dir.join("idea.yml"), idea).expect("Failed to write idea");
+    let proposals_dir = ctx.jules_path().join("exchange/proposals");
+    fs::create_dir_all(&proposals_dir).expect("Failed to create proposals directory");
+    let proposal = r#"schema_version: 1
+id: "abc123"
+persona: "alice"
+created_at: "2026-02-05"
+title: "Improve workflow error messages"
+problem: |
+  Error context is currently too terse.
+introduction: |
+  Introduce richer workflow error narratives with actionable hints.
+importance: |
+  Faster diagnosis improves iteration speed.
+impact_surface:
+  - "workflow"
+implementation_cost: "medium"
+consistency_risks:
+  - "Mixed error formats during rollout"
+verification_signals:
+  - "Fewer reruns due to ambiguous failures"
+"#;
+    fs::write(proposals_dir.join("alice-improve-workflow-error-messages.yml"), proposal)
+        .expect("Failed to write proposal");
 
     ctx.cli().args(["doctor"]).assert().success();
 }

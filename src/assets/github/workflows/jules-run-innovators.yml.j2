@@ -1,9 +1,9 @@
 # This file is auto-generated. Manual edits are strictly prohibited.
-# Jules Run Only Innovators Workflow
+# Jules Run Innovators Workflow
 #
 # Runs innovators and publishes proposals.
 
-name: Jules Run Only Innovators
+name: Jules Run Innovators
 
 on:
   workflow_dispatch:
@@ -16,6 +16,14 @@ on:
         description: 'Run in mock mode (creates branches/PRs without Jules API)'
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      wait_minutes:
+        type: number
+        default: {{ workflow_wait_minutes_default }}
+      mock:
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -23,7 +31,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: 'jules-run-only-innovators'
+  group: 'jules-run-innovators'
   cancel-in-progress: false
 
 env:
@@ -37,7 +45,7 @@ env:
 jobs:
 {% include "workflows/jules-workflows/components/bootstrap.yml.j2" %}
 
-  run-only-innovators:
+  run-innovators:
     needs: [bootstrap]
     if: needs.bootstrap.result == 'success'
     runs-on: {{ runner }}
@@ -60,18 +68,18 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run only innovators
+      - name: Run innovators
         id: run
         run: |
           set -euo pipefail
-          jlo workflow run innovators {{ gha_raw("env.JLO_RUN_FLAGS") }} --task create_proposal
+          jlo workflow run innovators {{ gha_raw("env.JLO_RUN_FLAGS") }} --task create_three_proposals
 
-{{ wait_macro.wait_for_processing('wait-after-run-only-innovators', 'run-only-innovators', 'run-only-innovators', 'only innovators') }}
+{{ wait_macro.wait_for_processing('wait-after-run-innovators', 'run-innovators', 'run-innovators', 'innovators') }}
 
   publish-proposals:
-    needs: [wait-after-run-only-innovators]
+    needs: [wait-after-run-innovators]
     if: |
-      needs.wait-after-run-only-innovators.result == 'success'
+      needs.wait-after-run-innovators.result == 'success'
     runs-on: {{ runner }}
     timeout-minutes: 30
     env:
@@ -93,11 +101,13 @@ jobs:
         run: jlo workflow exchange publish-proposals
 
   cleanup-mock-artifacts:
-    needs: [wait-after-run-only-innovators]
+    needs: [wait-after-run-innovators]
     if: |
       always() &&
-      github.event_name == 'workflow_dispatch' &&
-      github.event.inputs.mock == 'true'
+      (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true') ||
+        (github.event_name == 'workflow_call' && inputs.mock == true)
+      )
     runs-on: {{ runner }}
     timeout-minutes: 10
     env:

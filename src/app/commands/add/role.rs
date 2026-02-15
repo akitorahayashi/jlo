@@ -20,7 +20,7 @@ where
 {
     if !ctx.repository().jlo_exists() {
         return Err(AppError::Validation(
-            "workspace is not initialized. Run 'jlo init' first.".to_string(),
+            "repository is not initialized. Run 'jlo init' first.".to_string(),
         ));
     }
 

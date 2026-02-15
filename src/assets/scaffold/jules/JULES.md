@@ -43,8 +43,10 @@ Jules uses a flat exchange model for handing off events and requirements between
   - `.jules/exchange/events/<state>/*.yml` (states: `pending`, `decided`)
 - **Requirements** (Decider/Planner output, Implementer input):
   - `.jules/exchange/requirements/*.yml`
-- **Innovator Rooms**:
-  - `.jules/exchange/innovators/<persona>/` (contains proposals and comments)
+- **Innovator Proposals**:
+  - `.jules/exchange/proposals/*.yml`
+- **Workstations**:
+  - `.jules/workstations/<role>/perspective.yml`
 
 ## Repository Data Flow
 

@@ -85,7 +85,7 @@ pub enum RunLayer {
         /// Role (persona) to run
         #[arg(short = 'r', long)]
         role: String,
-        /// Task selector (e.g. create_idea, refine_idea_and_create_proposal, create_proposal)
+        /// Task selector (expected: create_three_proposals)
         #[arg(long)]
         task: Option<String>,
         /// Show assembled prompts without executing

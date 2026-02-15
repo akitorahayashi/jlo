@@ -1,9 +1,9 @@
 # This file is auto-generated. Manual edits are strictly prohibited.
-# Jules Run Only Innovators Workflow
+# Jules Run Innovators Workflow
 #
 # Runs innovators and publishes proposals.
 
-name: Jules Run Only Innovators
+name: Jules Run Innovators
 
 on:
   workflow_dispatch:
@@ -11,9 +11,17 @@ on:
       wait_minutes:
         description: 'Minutes to wait for Jules async processing time'
         type: number
-        default: 20
+        default: 30
       mock:
         description: 'Run in mock mode (creates branches/PRs without Jules API)'
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      wait_minutes:
+        type: number
+        default: 30
+      mock:
         type: boolean
         default: false
 
@@ -23,11 +31,11 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: 'jules-run-only-innovators'
+  group: 'jules-run-innovators'
   cancel-in-progress: false
 
 env:
-  WAIT_MINUTES: ${{ inputs.wait_minutes || 20 }}
+  WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
   MOCK_MODE: ${{ inputs.mock || false }}
   JULES_MOCK_TAG: ${{ format('mock-run-{0}', github.run_id) }}
   JLO_RUN_FLAGS: ${{ (inputs.mock || false) && '--mock' || '' }}
@@ -96,7 +104,7 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Bootstrap runtime workspace
+      - name: Bootstrap runtime repository
         run: jlo workflow bootstrap
 
       - name: Commit and push changes
@@ -105,7 +113,7 @@ jobs:
           set -euo pipefail
           if [ -n "$(git status --porcelain .jules)" ]; then
             git add .jules/
-            git commit -m "chore: bootstrap .jules/ runtime workspace [jlo $(jlo --version | awk '{print $2}')]"
+            git commit -m "chore: bootstrap .jules/ runtime repository [jlo $(jlo --version | awk '{print $2}')]"
             git push origin "${JULES_WORKER_BRANCH}"
             echo "committed=true" >> "$GITHUB_OUTPUT"
           else
@@ -113,7 +121,7 @@ jobs:
           fi
 
 
-  run-only-innovators:
+  run-innovators:
     needs: [bootstrap]
     if: needs.bootstrap.result == 'success'
     runs-on: ubuntu-latest
@@ -136,17 +144,17 @@ jobs:
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Run only innovators
+      - name: Run innovators
         id: run
         run: |
           set -euo pipefail
-          jlo workflow run innovators ${{ env.JLO_RUN_FLAGS }} --task create_proposal
+          jlo workflow run innovators ${{ env.JLO_RUN_FLAGS }} --task create_three_proposals
 
 
-  wait-after-run-only-innovators:
-    needs: run-only-innovators
+  wait-after-run-innovators:
+    needs: run-innovators
     if: |
-      needs.run-only-innovators.result == 'success'
+      needs.run-innovators.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -172,8 +180,8 @@ jobs:
             exit 0
           fi
 
-          if [ -n "only innovators" ]; then
-            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process only innovators..."
+          if [ -n "innovators" ]; then
+            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process innovators..."
           else
             echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process..."
           fi
@@ -194,9 +202,9 @@ jobs:
           echo "json={}" >> "$GITHUB_OUTPUT"
 
   publish-proposals:
-    needs: [wait-after-run-only-innovators]
+    needs: [wait-after-run-innovators]
     if: |
-      needs.wait-after-run-only-innovators.result == 'success'
+      needs.wait-after-run-innovators.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -218,11 +226,13 @@ jobs:
         run: jlo workflow exchange publish-proposals
 
   cleanup-mock-artifacts:
-    needs: [wait-after-run-only-innovators]
+    needs: [wait-after-run-innovators]
     if: |
       always() &&
-      github.event_name == 'workflow_dispatch' &&
-      github.event.inputs.mock == 'true'
+      (
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true') ||
+        (github.event_name == 'workflow_call' && inputs.mock == true)
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

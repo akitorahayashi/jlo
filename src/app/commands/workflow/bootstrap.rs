@@ -8,7 +8,7 @@
 //! - Missing `.jlo/.jlo-version` is a hard failure.
 //! - Managed framework files are always materialized from the embedded scaffold.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::Path;
 
 use serde::Serialize;
@@ -20,7 +20,7 @@ use crate::domain::PromptAssetLoader;
 use crate::domain::workstations::manifest::{
     MANIFEST_FILENAME, hash_content, is_default_role_file,
 };
-use crate::domain::{AppError, JLO_DIR, JULES_DIR, ScaffoldManifest, VERSION_FILE};
+use crate::domain::{AppError, JLO_DIR, JULES_DIR, Layer, ScaffoldManifest, VERSION_FILE};
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 /// Options for the bootstrap command.
@@ -96,7 +96,10 @@ where
     ctx.repository().jules_write_version(version)?;
     files_written += scaffold_files.len() + 1; // +1 for version
 
-    // 2. Write managed manifest
+    // 2. Ensure + prune workstation perspectives from schedule intent
+    files_written += reconcile_workstations(ctx.repository())?;
+
+    // 3. Write managed manifest
     let mut map = BTreeMap::new();
     for file in &scaffold_files {
         if is_default_role_file(&file.path) {
@@ -110,4 +113,148 @@ where
     files_written += 1;
 
     Ok(files_written)
+}
+
+fn reconcile_workstations<W>(repository: &W) -> Result<usize, AppError>
+where
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
+{
+    let schedule = crate::app::config::load_schedule(repository)?;
+    let jules_path = repository.jules_path();
+    let workstations_dir = crate::domain::workstations::paths::workstations_dir(&jules_path);
+    let workstations_dir_str = path_to_str(&workstations_dir, "workstations path")?;
+
+    let role_layers = collect_scheduled_role_layers(&schedule)?;
+    let mut expected_roles: BTreeSet<String> = BTreeSet::new();
+    let mut files_written = 0usize;
+
+    for (role, layer) in &role_layers {
+        expected_roles.insert(role.clone());
+
+        let perspective_path =
+            crate::domain::workstations::paths::workstation_perspective(&jules_path, role);
+        let perspective_path_str = path_to_str(&perspective_path, "workstation perspective path")?;
+        if repository.file_exists(perspective_path_str) {
+            continue;
+        }
+
+        let schema_path =
+            crate::domain::layers::paths::schemas_dir(&jules_path, *layer).join("perspective.yml");
+        let schema_path_str = path_to_str(&schema_path, "perspective schema path")?;
+        if !repository.file_exists(schema_path_str) {
+            return Err(AppError::RepositoryIntegrity(format!(
+                "Missing perspective schema for layer '{}': {}",
+                layer.dir_name(),
+                schema_path.display()
+            )));
+        }
+
+        let schema_content = repository.read_file(schema_path_str)?;
+        let rendered_perspective =
+            materialize_perspective_from_schema(&schema_content, *layer, role)?;
+        let workstation_dir =
+            crate::domain::workstations::paths::workstation_dir(&jules_path, role);
+        let workstation_dir_str = path_to_str(&workstation_dir, "workstation directory path")?;
+        repository.create_dir_all(workstation_dir_str)?;
+        repository.write_file(perspective_path_str, &rendered_perspective)?;
+        files_written += 1;
+    }
+
+    let entries = match repository.list_dir(workstations_dir_str) {
+        Ok(entries) => entries,
+        Err(AppError::Io { kind: crate::domain::IoErrorKind::NotFound, .. }) => {
+            return Ok(files_written);
+        }
+        Err(err) => return Err(err),
+    };
+
+    for entry in entries {
+        let Some(entry_str) = entry.to_str() else { continue };
+        if !repository.is_dir(entry_str) {
+            continue;
+        }
+        let Some(role_name) = entry.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        if expected_roles.contains(role_name) {
+            continue;
+        }
+        repository.remove_dir_all(entry_str)?;
+    }
+
+    Ok(files_written)
+}
+
+fn collect_scheduled_role_layers(
+    schedule: &crate::domain::Schedule,
+) -> Result<HashMap<String, Layer>, AppError> {
+    let mut map: HashMap<String, Layer> = HashMap::new();
+
+    for role in &schedule.observers.roles {
+        let name = role.name.as_str().to_string();
+        if let Some(previous) = map.insert(name.clone(), Layer::Observers) {
+            return Err(AppError::Validation(format!(
+                "Role '{}' is scheduled in both '{}' and '{}'; workstation ownership must be unique",
+                name,
+                previous.dir_name(),
+                Layer::Observers.dir_name()
+            )));
+        }
+    }
+
+    if let Some(innovators) = &schedule.innovators {
+        for role in &innovators.roles {
+            let name = role.name.as_str().to_string();
+            if let Some(previous) = map.insert(name.clone(), Layer::Innovators) {
+                return Err(AppError::Validation(format!(
+                    "Role '{}' is scheduled in both '{}' and '{}'; workstation ownership must be unique",
+                    name,
+                    previous.dir_name(),
+                    Layer::Innovators.dir_name()
+                )));
+            }
+        }
+    }
+
+    Ok(map)
+}
+
+fn path_to_str<'a>(path: &'a Path, label: &str) -> Result<&'a str, AppError> {
+    path.to_str().ok_or_else(|| {
+        AppError::InvalidPath(format!("Invalid unicode in {}: {}", label, path.display()))
+    })
+}
+
+fn materialize_perspective_from_schema(
+    schema_content: &str,
+    layer: Layer,
+    role: &str,
+) -> Result<String, AppError> {
+    let mut root: serde_yaml::Value = serde_yaml::from_str(schema_content).map_err(|err| {
+        AppError::RepositoryIntegrity(format!(
+            "Invalid perspective schema YAML for layer '{}': {}",
+            layer.dir_name(),
+            err
+        ))
+    })?;
+    let map = root.as_mapping_mut().ok_or_else(|| {
+        AppError::RepositoryIntegrity(format!(
+            "Perspective schema root must be a mapping for layer '{}'",
+            layer.dir_name()
+        ))
+    })?;
+
+    let key = layer.perspective_role_key()?;
+    map.insert(
+        serde_yaml::Value::String(key.to_string()),
+        serde_yaml::Value::String(role.to_string()),
+    );
+
+    serde_yaml::to_string(&root).map_err(|err| {
+        AppError::RepositoryIntegrity(format!(
+            "Failed to render perspective for layer '{}': {}",
+            layer.dir_name(),
+            err
+        ))
+    })
 }
