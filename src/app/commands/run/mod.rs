@@ -15,8 +15,7 @@ use crate::app::commands::workflow::workspace::{
     WorkspaceCleanRequirementOptions, clean_requirement_with_adapters,
 };
 pub use crate::domain::RunOptions;
-pub use crate::domain::configuration::parse_config_content;
-use crate::domain::configuration::{load_config, validate_mock_prerequisites};
+use crate::app::configuration::{load_config, validate_mock_prerequisites};
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::{AppError, JulesApiConfig};
 use crate::ports::{GitHubPort, GitPort, JulesClient, WorkspaceStore};

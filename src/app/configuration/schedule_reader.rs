@@ -1,3 +1,5 @@
+//! Schedule loading from repository.
+
 use std::path::{Path, PathBuf};
 
 use crate::domain::{AppError, IoErrorKind, Schedule};
@@ -18,14 +20,14 @@ pub fn load_schedule(store: &impl WorkspaceStore) -> Result<Schedule, AppError> 
     Ok(Schedule::parse_toml(&content)?)
 }
 
+/// List subdirectories of a directory via workspace store.
 pub fn list_subdirectories(
     store: &impl WorkspaceStore,
     dir: &Path,
 ) -> Result<Vec<PathBuf>, AppError> {
     let entries = store.list_dir(&dir.to_string_lossy())?;
-    let subdirs: Vec<PathBuf> =
+    let mut subdirs: Vec<PathBuf> =
         entries.into_iter().filter(|entry| store.is_dir(&entry.to_string_lossy())).collect();
-    let mut subdirs = subdirs;
     subdirs.sort();
     Ok(subdirs)
 }

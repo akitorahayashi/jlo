@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use serde_yaml::{Mapping, Value};
 
-use crate::adapters::schedule_filesystem::{list_subdirectories, load_schedule};
+use crate::app::configuration::{list_subdirectories, load_schedule};
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::domain::workspace::paths::jules;

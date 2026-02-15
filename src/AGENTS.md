@@ -10,7 +10,16 @@ src/
 ├── lib.rs             # Public API
 ├── domain/            # Pure types (Layer, RoleId, AppError, setup models)
 ├── ports/             # Trait boundaries
-├── services/          # I/O implementations
+│   ├── repository_filesystem.rs  # RepositoryFilesystemPort
+│   ├── jlo_store.rs              # JloStorePort (.jlo/ control-plane)
+│   ├── jules_store.rs            # JulesStorePort (.jules/ runtime)
+│   ├── workspace_store.rs        # WorkspaceStore (legacy monolithic)
+│   ├── git.rs                    # GitPort
+│   ├── github.rs                 # GitHubPort
+│   ├── jules_client.rs           # JulesClient
+│   ├── role_template_store.rs    # RoleTemplateStore
+│   └── setup_component_catalog.rs # SetupComponentCatalog
+├── adapters/          # I/O implementations
 ├── app/
 │   ├── context.rs     # AppContext (DI container)
 │   └── commands/      # Command implementations

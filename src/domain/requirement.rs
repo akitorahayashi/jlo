@@ -19,16 +19,21 @@ pub struct RequirementHeader {
 }
 
 impl RequirementHeader {
+    /// Parse a requirement header from YAML content.
+    pub fn parse(content: &str) -> Result<Self, AppError> {
+        serde_yaml::from_str(content).map_err(|e| AppError::ParseError {
+            what: "requirement".to_string(),
+            details: e.to_string(),
+        })
+    }
+
     /// Read requirement header from a file in the workspace.
     pub fn read(store: &impl WorkspaceStore, path: &Path) -> Result<Self, AppError> {
         let path_str = path
             .to_str()
             .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", path.display())))?;
         let content = store.read_file(path_str)?;
-        let header: RequirementHeader = serde_yaml::from_str(&content).map_err(|e| {
-            AppError::ParseError { what: path.display().to_string(), details: e.to_string() }
-        })?;
-        Ok(header)
+        Self::parse(&content)
     }
 }
 

@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use chrono::{NaiveDate, Utc};
 
-use crate::adapters::schedule_filesystem::load_schedule;
+use crate::app::configuration::load_schedule;
 use crate::domain::configuration::schedule::ScheduleLayer;
 use crate::domain::workspace::paths::{jlo, jules};
 use crate::domain::{AppError, Layer};

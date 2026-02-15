@@ -1,4 +1,4 @@
-use crate::adapters::schedule_filesystem::load_schedule;
+use crate::app::configuration::load_schedule;
 use crate::app::commands::run::RunOptions;
 use crate::domain::{AppError, Layer};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
