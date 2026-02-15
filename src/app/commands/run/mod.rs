@@ -418,11 +418,7 @@ mod tests {
         fs::write(root.join(".jlo/config.toml"), "").expect("write config");
         fs::write(
             root.join(".jlo/scheduled.toml"),
-            r#"
-version = 1
-enabled = true
-
-[observers]
+            r#"[observers]
 roles = [
   { name = "taxonomy", enabled = true },
 ]

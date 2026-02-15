@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-use crate::domain::RoleId;
 use super::error::ScheduleError;
+use crate::domain::RoleId;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -26,8 +26,6 @@ impl ScheduleLayer {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Schedule {
-    pub version: u32,
-    pub enabled: bool,
     pub observers: ScheduleLayer,
     #[serde(default)]
     pub innovators: Option<ScheduleLayer>,
@@ -41,19 +39,6 @@ impl Schedule {
     }
 
     fn validate(&self) -> Result<(), ScheduleError> {
-        if self.version != 1 {
-            return Err(ScheduleError::ConfigInvalid(format!(
-                "Unsupported scheduled.toml version: {} (expected 1)",
-                self.version
-            )));
-        }
-
-        if self.enabled && self.observers.roles.is_empty() {
-            return Err(ScheduleError::ConfigInvalid(
-                "scheduled.toml enabled=true requires at least one observer role".into(),
-            ));
-        }
-
         Self::validate_roles("observers", &self.observers)?;
         if let Some(ref innovators) = self.innovators {
             Self::validate_roles("innovators", innovators)?;
@@ -84,9 +69,6 @@ mod tests {
     #[test]
     fn parse_valid_schedule() {
         let content = r#"
-version = 1
-enabled = true
-
 [observers]
 roles = [
   { name = "taxonomy", enabled = true },
@@ -94,8 +76,6 @@ roles = [
 ]
 "#;
         let schedule = Schedule::parse_toml(content).unwrap();
-        assert_eq!(schedule.version, 1);
-        assert!(schedule.enabled);
         assert_eq!(schedule.observers.roles.len(), 2);
         assert_eq!(schedule.observers.roles[0].name.as_str(), "taxonomy");
         assert!(schedule.observers.roles[0].enabled);
@@ -110,8 +90,6 @@ roles = [
     #[test]
     fn missing_required_fields_fail() {
         let content = r#"
-version = 1
-enabled = true
 "#;
         let err = Schedule::parse_toml(content).unwrap_err();
         // toml error will complain about missing fields
@@ -119,24 +97,8 @@ enabled = true
     }
 
     #[test]
-    fn enabled_requires_observer_roles() {
-        let content = r#"
-version = 1
-enabled = true
-
-[observers]
-roles = []
-"#;
-        let err = Schedule::parse_toml(content).unwrap_err();
-        assert!(err.to_string().contains("requires at least one observer role"));
-    }
-
-    #[test]
     fn invalid_role_ids_fail() {
         let content = r#"
-version = 1
-enabled = false
-
 [observers]
 roles = [
   { name = "bad role", enabled = true },

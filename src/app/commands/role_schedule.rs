@@ -49,11 +49,7 @@ fn insert_role(layer: &mut ScheduleLayer, role: &RoleId) -> bool {
 }
 
 fn render_schedule_toml(schedule: &Schedule) -> String {
-    let mut lines = vec![
-        format!("version = {}", schedule.version),
-        format!("enabled = {}", schedule.enabled),
-        String::new(),
-    ];
+    let mut lines = Vec::new();
 
     append_layer_toml(&mut lines, "observers", &schedule.observers);
 
@@ -93,10 +89,7 @@ mod tests {
     fn ensure_role_scheduled_keeps_scaffold_style_for_observers() {
         let repository = TestStore::new().with_file(
             ".jlo/scheduled.toml",
-            r#"version = 1
-enabled = true
-
-[observers]
+            r#"[observers]
 roles = [
   { name = "consistency", enabled = true },
 ]
@@ -118,10 +111,7 @@ roles = [
 
         let actual =
             repository.read_file(".jlo/scheduled.toml").expect("written schedule should exist");
-        let expected = r#"version = 1
-enabled = true
-
-[observers]
+        let expected = r#"[observers]
 roles = [
   { name = "consistency", enabled = true },
   { name = "librarian", enabled = true },
@@ -142,10 +132,7 @@ roles = [
     fn ensure_role_scheduled_adds_innovators_section_in_scaffold_style() {
         let repository = TestStore::new().with_file(
             ".jlo/scheduled.toml",
-            r#"version = 1
-enabled = true
-
-[observers]
+            r#"[observers]
 roles = [
   { name = "consistency", enabled = true },
 ]
@@ -162,10 +149,7 @@ roles = [
 
         let actual =
             repository.read_file(".jlo/scheduled.toml").expect("written schedule should exist");
-        let expected = r#"version = 1
-enabled = true
-
-[observers]
+        let expected = r#"[observers]
 roles = [
   { name = "consistency", enabled = true },
 ]

@@ -31,11 +31,6 @@ where
     let mock_suffix = if options.mock { " (mock)" } else { "" };
     let schedule = load_schedule(store)?;
 
-    if !schedule.enabled {
-        eprintln!("Schedule is disabled, skipping");
-        return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
-    }
-
     let roles = schedule.innovators.as_ref().map(|l| l.enabled_roles()).unwrap_or_default();
     if roles.is_empty() {
         eprintln!("No enabled innovators roles");

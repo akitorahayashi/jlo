@@ -36,8 +36,6 @@ pub(super) fn inspect_at(
 
     let schedule = load_schedule(store)?;
     let schedule_summary = ScheduleSummary {
-        version: schedule.version,
-        enabled: schedule.enabled,
         observers: ScheduleLayerSummary {
             roles: schedule
                 .observers
@@ -355,8 +353,6 @@ requires_deep_analysis: false
         fs::write(
             jlo_path.join("scheduled.toml"),
             r#"
-version = 1
-enabled = true
 [observers]
 roles = [
   { name = "taxonomy", enabled = true },

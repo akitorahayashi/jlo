@@ -257,8 +257,6 @@ requires_deep_analysis: false
         fs::write(
             jlo_path.join("scheduled.toml"),
             r#"
-version = 1
-enabled = true
 [observers]
 roles = [
     { name = "taxonomy", enabled = true },

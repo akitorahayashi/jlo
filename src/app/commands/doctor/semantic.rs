@@ -297,11 +297,7 @@ mod tests {
             .expect("create observer role dir");
         fs::write(
             root.join(".jlo/scheduled.toml"),
-            r#"
-version = 1
-enabled = true
-
-[observers]
+            r#"[observers]
 roles = [
   { name = "taxonomy", enabled = true },
 ]

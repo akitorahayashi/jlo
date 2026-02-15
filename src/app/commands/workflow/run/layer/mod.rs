@@ -222,8 +222,6 @@ mod tests {
         let store = TestStore::new().with_exists(true).with_file(
             ".jlo/scheduled.toml",
             r#"
-version = 1
-enabled = true
 
 [observers]
 roles = [
