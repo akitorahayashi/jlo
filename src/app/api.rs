@@ -21,7 +21,9 @@ pub use crate::app::commands::create::CreateOutcome;
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
 pub use crate::app::commands::run::{RunOptions, RunResult};
-pub use crate::app::commands::setup::list::{ComponentDetail, ComponentSummary, EnvVarInfo};
+pub use crate::app::commands::setup::list::{
+    EnvVarInfo, SetupComponentDetail, SetupComponentSummary,
+};
 pub use crate::app::commands::update::{UpdateOptions, UpdateResult};
 pub use crate::app::commands::workflow::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
 pub use crate::domain::AppError;
@@ -195,12 +197,12 @@ pub fn setup_gen(path: Option<&Path>) -> Result<Vec<String>, AppError> {
 }
 
 /// List all available components.
-pub fn setup_list() -> Result<Vec<ComponentSummary>, AppError> {
+pub fn setup_list() -> Result<Vec<SetupComponentSummary>, AppError> {
     setup::list()
 }
 
 /// Get detailed information for a specific component.
-pub fn setup_detail(component: &str) -> Result<ComponentDetail, AppError> {
+pub fn setup_detail(component: &str) -> Result<SetupComponentDetail, AppError> {
     setup::list_detail(component)
 }
 

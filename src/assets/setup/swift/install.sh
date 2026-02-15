@@ -1,4 +1,6 @@
+# ==============================================================================
 # Install Swift via swiftly
+# ==============================================================================
 
 if command -v swift >/dev/null 2>&1; then
   if swift_version_line="$(swift --version 2>/dev/null | head -1)"; then

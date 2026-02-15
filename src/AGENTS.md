@@ -54,7 +54,7 @@ tests/
 | **Projection** | Deterministic materialization of `.jules/` from `.jlo/` + scaffold assets during workflow bootstrap. See `docs/CONTROL_PLANE_OWNERSHIP.md`. |
 | **Exchange** | The flat handoff directory structure under `.jules/exchange/`. |
 | **Workflow scaffold** | `.github/` automation assets installed by `jlo init`. |
-| **Component** | Development tools managed by `jlo setup`, defined in `src/assets/setup/`. |
+| **Setup component** | Development tools managed by `jlo setup`, defined in `src/assets/setup/`. |
 
 ## Domain Modules
 
@@ -179,11 +179,11 @@ SECRET_VAR = { description = "Secret used by runtime authentication" }
 
 ### Services
 
-| Service | Responsibility |
-|---------|----------------|
-| **CatalogService** | Loads components from embedded assets |
-| **ResolverService** | Topological sort with cycle detection |
-| **GeneratorService** | Produces install.sh and merges vars.toml + secrets.toml |
+| Module | Responsibility |
+|--------|----------------|
+| **setup_component_catalog_embedded** | Loads setup components from embedded assets |
+| **DependencyGraph** | Topological sort with cycle detection |
+| **artifact_generator** | Produces install.sh and merges vars.toml + secrets.toml |
 
 ### Environment Contract
 

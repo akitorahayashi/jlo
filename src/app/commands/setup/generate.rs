@@ -1,10 +1,10 @@
 //! Setup gen command - generates install.sh, vars.toml, and secrets.toml.
 
-use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
+use crate::adapters::assets::setup_component_catalog_embedded::EmbeddedSetupComponentCatalog;
 use crate::app::config::SetupConfig;
 use crate::domain::AppError;
-use crate::domain::component_graph::ComponentGraph;
-use crate::domain::provisioning::ArtifactFactory;
+use crate::domain::setup::artifact_generator;
+use crate::domain::setup::dependency_graph::DependencyGraph;
 use crate::ports::WorkspaceStore;
 
 /// Execute the setup gen command.
@@ -39,11 +39,11 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
     }
 
     // Resolve dependencies
-    let catalog = EmbeddedComponentCatalog::new()?;
-    let components = ComponentGraph::resolve(&config.tools, &catalog)?;
+    let catalog = EmbeddedSetupComponentCatalog::new()?;
+    let components = DependencyGraph::resolve(&config.tools, &catalog)?;
 
     // Generate install script
-    let script_content = ArtifactFactory::generate_install_script(&components);
+    let script_content = artifact_generator::generate_install_script(&components);
     let install_sh = ".jlo/setup/install.sh";
     store.write_file(install_sh, &script_content)?;
     store.set_executable(install_sh)?;
@@ -57,7 +57,7 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
         .file_exists(secrets_toml_path)
         .then(|| store.read_file(secrets_toml_path))
         .transpose()?;
-    let env_artifacts = ArtifactFactory::merge_env_artifacts(
+    let env_artifacts = artifact_generator::merge_env_artifacts(
         &components,
         existing_vars.as_deref(),
         existing_secrets.as_deref(),
