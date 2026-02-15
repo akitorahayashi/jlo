@@ -62,7 +62,7 @@ The following dependencies are prohibited:
 | `workstations/` | State schema, perspective constraints, and pure-policy lifecycle (Ensure/Prune). |
 | `layers/` | Layer identity, metadata, and contract semantics. |
 | `config/` | `config.toml` domain model, parser, and pure validation policies. |
-| `schedule/` | `scheduled.toml` domain model, parser, and pure validation policies. |
+| `schedule/` | Schedule domain model, parser, and pure validation policies consumed from `.jlo/config.toml`. |
 
 ### Domain Error Model
 

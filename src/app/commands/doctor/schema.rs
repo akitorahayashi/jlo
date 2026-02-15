@@ -514,24 +514,24 @@ fn ensure_date(map: &serde_yaml::Mapping, path: &Path, key: &str, diagnostics: &
 }
 
 fn scheduled_innovator_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<String> {
-    let schedule_path = crate::domain::schedule::paths::schedule(root);
-    let content = match fs::read_to_string(&schedule_path) {
+    let config_path = crate::domain::config::paths::config(root);
+    let content = match fs::read_to_string(&config_path) {
         Ok(content) => content,
         Err(err) => {
-            diagnostics.push_error(schedule_path.display().to_string(), err.to_string());
+            diagnostics.push_error(config_path.display().to_string(), err.to_string());
             return Vec::new();
         }
     };
 
-    let schedule = match crate::domain::Schedule::parse_toml(&content) {
-        Ok(schedule) => schedule,
+    let config = match crate::domain::config::parse::parse_config_content(&content) {
+        Ok(config) => config,
         Err(err) => {
-            diagnostics.push_error(schedule_path.display().to_string(), err.to_string());
+            diagnostics.push_error(config_path.display().to_string(), err.to_string());
             return Vec::new();
         }
     };
 
-    match schedule.innovators {
+    match config.innovators {
         Some(layer) => layer.roles.into_iter().map(|role| role.name.as_str().to_string()).collect(),
         None => Vec::new(),
     }

@@ -103,7 +103,7 @@ pub fn create_role_at(
 // Add Command API
 // =============================================================================
 
-/// Install a built-in role under `.jlo/roles/<layer>/<name>/`.
+/// Register a built-in role in `.jlo/config.toml`.
 pub fn add_role(layer: &str, name: &str) -> Result<AddOutcome, AppError> {
     add_role_at(layer, name, std::env::current_dir()?)
 }

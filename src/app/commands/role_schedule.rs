@@ -1,6 +1,6 @@
-use crate::domain::schedule::{ScheduleLayer, ScheduledRole};
-use crate::domain::{AppError, Layer, RoleId, Schedule};
+use crate::domain::{AppError, Layer, RoleId};
 use crate::ports::RepositoryFilesystem;
+use toml_edit::{Array, DocumentMut, InlineTable, Item, Table, Value};
 
 pub fn ensure_role_scheduled<W: RepositoryFilesystem>(
     repository: &W,
@@ -14,69 +14,70 @@ pub fn ensure_role_scheduled<W: RepositoryFilesystem>(
         )));
     }
 
-    let schedule_path = ".jlo/scheduled.toml";
-    let content = repository.read_file(schedule_path)?;
-    let mut schedule = Schedule::parse_toml(&content)?;
+    let config_path = ".jlo/config.toml";
+    let content = repository.read_file(config_path)?;
+    let mut doc = content.parse::<DocumentMut>().map_err(|err| {
+        AppError::Validation(format!("Failed to parse .jlo/config.toml: {}", err))
+    })?;
 
-    let updated = match layer {
-        Layer::Observers => insert_role(&mut schedule.observers, role),
-        Layer::Innovators => {
-            let target = schedule.innovators.get_or_insert_with(|| ScheduleLayer { roles: vec![] });
-            insert_role(target, role)
+    let roles = layer_roles_mut(&mut doc, layer.dir_name())?;
+    if contains_role(roles, role)? {
+        return Ok(false);
+    }
+
+    roles.push(Value::InlineTable(scheduled_role_entry(role)));
+    repository.write_file(config_path, &doc.to_string())?;
+    Ok(true)
+}
+
+fn layer_roles_mut<'a>(
+    doc: &'a mut DocumentMut,
+    layer_name: &str,
+) -> Result<&'a mut Array, AppError> {
+    let layer_table =
+        doc.entry(layer_name).or_insert(Item::Table(Table::new())).as_table_mut().ok_or_else(
+            || {
+                AppError::Validation(format!(
+                    "Expected [{}] to be a table in .jlo/config.toml",
+                    layer_name
+                ))
+            },
+        )?;
+
+    let roles_item = layer_table.entry("roles").or_insert(Item::Value(Value::Array(Array::new())));
+
+    roles_item
+        .as_value_mut()
+        .and_then(|v| v.as_array_mut())
+        .ok_or_else(|| AppError::Validation(format!("{}.roles must be an array", layer_name)))
+}
+
+fn contains_role(roles: &Array, role: &RoleId) -> Result<bool, AppError> {
+    for entry in roles.iter() {
+        let table = entry.as_inline_table().ok_or_else(|| {
+            AppError::Validation(
+                "Schedule role entry must be an inline table: { name = \"...\", enabled = ... }"
+                    .to_string(),
+            )
+        })?;
+        let Some(name) = table.get("name").and_then(|v| v.as_str()) else {
+            return Err(AppError::Validation(
+                "Schedule role entry is missing string field 'name'".to_string(),
+            ));
+        };
+        if name == role.as_str() {
+            return Ok(true);
         }
-        Layer::Narrator
-        | Layer::Decider
-        | Layer::Planner
-        | Layer::Implementer
-        | Layer::Integrator => false,
-    };
-
-    if updated {
-        let serialized = render_schedule_toml(&schedule);
-        repository.write_file(schedule_path, &serialized)?;
     }
 
-    Ok(updated)
+    Ok(false)
 }
 
-fn insert_role(layer: &mut ScheduleLayer, role: &RoleId) -> bool {
-    if layer.roles.iter().any(|entry| entry.name == *role) {
-        return false;
-    }
-
-    layer.roles.push(ScheduledRole { name: role.clone(), enabled: true });
-    true
-}
-
-fn render_schedule_toml(schedule: &Schedule) -> String {
-    let mut lines = Vec::new();
-
-    append_layer_toml(&mut lines, "observers", &schedule.observers);
-
-    if let Some(innovators) = &schedule.innovators {
-        lines.push(String::new());
-        append_layer_toml(&mut lines, "innovators", innovators);
-    }
-
-    lines.join("\n") + "\n"
-}
-
-fn append_layer_toml(lines: &mut Vec<String>, layer_name: &str, layer: &ScheduleLayer) {
-    lines.push(format!("[{}]", layer_name));
-    if layer.roles.is_empty() {
-        lines.push("roles = []".to_string());
-        return;
-    }
-
-    lines.push("roles = [".to_string());
-    for role in &layer.roles {
-        lines.push(format!(
-            "  {{ name = \"{}\", enabled = {} }},",
-            role.name.as_str(),
-            role.enabled
-        ));
-    }
-    lines.push("]".to_string());
+fn scheduled_role_entry(role: &RoleId) -> InlineTable {
+    let mut entry = InlineTable::new();
+    entry.insert("name", Value::from(role.as_str()));
+    entry.insert("enabled", Value::from(true));
+    entry
 }
 
 #[cfg(test)]
@@ -85,18 +86,32 @@ mod tests {
     use crate::ports::RepositoryFilesystem;
     use crate::testing::TestStore;
 
+    fn role_names(content: &str, layer: &str) -> Vec<String> {
+        let value: toml::Value = toml::from_str(content).expect("config should parse");
+        value
+            .get(layer)
+            .and_then(|layer_value| layer_value.get("roles"))
+            .and_then(|roles| roles.as_array())
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|role_value| {
+                role_value.get("name").and_then(|name| name.as_str()).map(|name| name.to_string())
+            })
+            .collect()
+    }
+
     #[test]
-    fn ensure_role_scheduled_keeps_scaffold_style_for_observers() {
+    fn ensure_role_scheduled_updates_observer_roster_in_config() {
         let repository = TestStore::new().with_file(
-            ".jlo/scheduled.toml",
-            r#"[observers]
+            ".jlo/config.toml",
+            r#"[run]
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
+
+[observers]
 roles = [
   { name = "consistency", enabled = true },
-]
-
-[innovators]
-roles = [
-  { name = "recruiter", enabled = false },
 ]
 "#,
         );
@@ -109,33 +124,18 @@ roles = [
         .expect("schedule update should succeed");
         assert!(updated);
 
-        let actual =
-            repository.read_file(".jlo/scheduled.toml").expect("written schedule should exist");
-        let expected = r#"[observers]
-roles = [
-  { name = "consistency", enabled = true },
-  { name = "librarian", enabled = true },
-]
-
-[innovators]
-roles = [
-  { name = "recruiter", enabled = false },
-]
-"#;
-
-        assert_eq!(actual, expected);
-        assert!(!actual.contains("[[observers.roles]]"));
-        assert!(!actual.contains("[[innovators.roles]]"));
+        let actual = repository.read_file(".jlo/config.toml").expect("written config should exist");
+        let roles = role_names(&actual, "observers");
+        assert_eq!(roles, vec!["consistency".to_string(), "librarian".to_string()]);
     }
 
     #[test]
-    fn ensure_role_scheduled_adds_innovators_section_in_scaffold_style() {
+    fn ensure_role_scheduled_adds_missing_innovators_section() {
         let repository = TestStore::new().with_file(
-            ".jlo/scheduled.toml",
-            r#"[observers]
-roles = [
-  { name = "consistency", enabled = true },
-]
+            ".jlo/config.toml",
+            r#"[run]
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
 "#,
         );
 
@@ -147,18 +147,8 @@ roles = [
         .expect("schedule update should succeed");
         assert!(updated);
 
-        let actual =
-            repository.read_file(".jlo/scheduled.toml").expect("written schedule should exist");
-        let expected = r#"[observers]
-roles = [
-  { name = "consistency", enabled = true },
-]
-
-[innovators]
-roles = [
-  { name = "librarian", enabled = true },
-]
-"#;
-        assert_eq!(actual, expected);
+        let actual = repository.read_file(".jlo/config.toml").expect("written config should exist");
+        let roles = role_names(&actual, "innovators");
+        assert_eq!(roles, vec!["librarian".to_string()]);
     }
 }

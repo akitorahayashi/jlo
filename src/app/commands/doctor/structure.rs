@@ -48,8 +48,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         crate::domain::layers::paths::layers_dir(inputs.jules_path),
         diagnostics,
     );
-    ensure_directory_exists(crate::domain::roles::paths::roles_dir(inputs.root), diagnostics);
-    ensure_file_exists(&crate::domain::schedule::paths::schedule(inputs.root), diagnostics);
 
     check_version_file(inputs.jules_path, env!("CARGO_PKG_VERSION"), diagnostics);
 
@@ -106,12 +104,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             // structure_checks needs to verify that for every role in .jlo/, it exists.
             let jlo_layer_dir = crate::domain::roles::paths::layer_dir(inputs.root, layer);
 
-            if !jlo_layer_dir.exists() {
-                diagnostics.push_error(
-                    jlo_layer_dir.display().to_string(),
-                    "Missing .jlo roles directory",
-                );
-            } else {
+            if jlo_layer_dir.exists() {
                 for entry in list_subdirs(&jlo_layer_dir, diagnostics) {
                     let role_file = entry.join("role.yml");
                     if !role_file.exists() {
@@ -369,9 +362,6 @@ mod tests {
                 jlo_role_dir.child("role.yml").touch().unwrap();
             }
         }
-
-        // Root schedule in .jlo/
-        temp.child(".jlo/scheduled.toml").touch().unwrap();
 
         // Flat exchange structure in .jules/
         let exchange = temp.child(".jules/exchange");

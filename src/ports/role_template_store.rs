@@ -35,7 +35,4 @@ pub trait RoleTemplateStore {
 
     /// Load the builtin role catalog.
     fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError>;
-
-    /// Read builtin role file content by catalog path.
-    fn builtin_role_content(&self, path: &str) -> Result<String, AppError>;
 }

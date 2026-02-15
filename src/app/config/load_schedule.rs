@@ -1,19 +1,28 @@
 //! Schedule loading from repository.
 
-use crate::domain::{AppError, IoErrorKind, Schedule};
+use crate::domain::config;
+use crate::domain::{AppError, Schedule};
 use crate::ports::{JloStore, RepositoryFilesystem};
 
-/// Load the root schedule from `.jlo/scheduled.toml`.
+/// Load role schedule from `.jlo/config.toml`.
 pub fn load_schedule(store: &(impl RepositoryFilesystem + JloStore)) -> Result<Schedule, AppError> {
-    let path = store.jlo_path().join("scheduled.toml");
-    let path_str = path.to_string_lossy();
-
-    let content = store.read_file(&path_str).map_err(|err| {
-        if matches!(err, AppError::Io { kind: IoErrorKind::NotFound, .. }) {
-            AppError::ScheduleConfigMissing(path.display().to_string())
-        } else {
-            err
-        }
+    let jlo_path = store.jlo_path();
+    let root = jlo_path.parent().ok_or_else(|| {
+        AppError::InvalidPath(format!("Invalid .jlo path (missing parent): {}", jlo_path.display()))
     })?;
-    Ok(Schedule::parse_toml(&content)?)
+    let config_path = config::paths::config(root);
+    let config_path_str = config_path.to_str().ok_or_else(|| {
+        AppError::InvalidPath(format!(
+            "Config path contains invalid unicode: {}",
+            config_path.display()
+        ))
+    })?;
+
+    if !store.file_exists(config_path_str) {
+        return Err(AppError::RunConfigMissing);
+    }
+
+    let content = store.read_file(config_path_str)?;
+    let run_config = config::parse::parse_config_content(&content)?;
+    Ok(run_config.schedule())
 }

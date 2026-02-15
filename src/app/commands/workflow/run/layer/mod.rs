@@ -218,10 +218,13 @@ mod tests {
     }
 
     #[test]
-    fn execute_layer_observers_reflects_enabled_roles_in_scheduled_toml() {
+    fn execute_layer_observers_reflects_enabled_roles_in_config() {
         let store = TestStore::new().with_exists(true).with_file(
-            ".jlo/scheduled.toml",
+            ".jlo/config.toml",
             r#"
+[run]
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
 
 [observers]
 roles = [

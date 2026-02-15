@@ -3,8 +3,8 @@ use std::path::Path;
 use toml::Value;
 
 pub(crate) fn read_scheduled_role_names(root: &Path, layer: &str) -> Vec<String> {
-    let content = fs::read_to_string(root.join(".jlo/scheduled.toml")).expect("read scheduled");
-    let value: Value = toml::from_str(&content).expect("parse scheduled");
+    let content = fs::read_to_string(root.join(".jlo/config.toml")).expect("read config");
+    let value: Value = toml::from_str(&content).expect("parse config");
 
     let roles = value
         .get(layer)

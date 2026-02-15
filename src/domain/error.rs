@@ -145,21 +145,17 @@ pub enum AppError {
     #[error("Malformed setup environment TOML: {0}")]
     MalformedEnvToml(String),
 
-    /// Run config file missing (.jules/config.toml).
-    #[error("Run config not found. Create .jules/config.toml first.")]
+    /// Run config file missing (.jlo/config.toml).
+    #[error("Run config not found. Create .jlo/config.toml first.")]
     RunConfigMissing,
 
     /// Role not found in config for layer.
     #[error("Role '{role}' not found in config for layer '{layer}'")]
     RoleNotInConfig { role: String, layer: String },
 
-    /// Exchange schedule file missing.
-    #[error("Schedule config not found: {0}")]
-    ScheduleConfigMissing(String),
-
     /// Exchange schedule error.
     #[error(transparent)]
-    Schedule(#[from] crate::domain::schedule::ScheduleError),
+    Schedule(#[from] crate::domain::config::schedule::ScheduleError),
 
     /// Requirement file not found at path.
     #[error("Requirement file not found: {0}")]

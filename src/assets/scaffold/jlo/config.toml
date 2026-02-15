@@ -20,3 +20,19 @@ timeout_secs = 30
 max_retries = 3
 # Delay between retries in milliseconds
 retry_delay_ms = 1000
+
+[observers]
+roles = [
+  { name = "consistency", enabled = true },
+  { name = "taxonomy", enabled = true },
+  { name = "data_arch", enabled = true },
+  { name = "structural_arch", enabled = true },
+  { name = "qa", enabled = true },
+  { name = "cov", enabled = true },
+]
+
+[innovators]
+roles = [
+  { name = "recruiter", enabled = true },
+  { name = "leverage_architect", enabled = true },
+]

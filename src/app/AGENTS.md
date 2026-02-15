@@ -58,16 +58,16 @@ src/app/
 | Layer | Type | Invocation | Config |
 |-------|------|------------|--------|
 | Narrator | Single-role | `jlo run narrator` | None (git-based) |
-| Observers | Multi-role | `jlo workflow run observers` | `.jlo/scheduled.toml` |
+| Observers | Multi-role | `jlo workflow run observers` | `.jlo/config.toml` (`[observers].roles`) |
 | Decider | Single-role | `jlo run decider` | None |
 | Planner | Single-role | `jlo run planner <path>` | None (requirement path) |
 | Implementer | Single-role | `jlo run implementer <path>` | None (requirement path) |
 | Integrator | Single-role | `jlo run integrator` | None (manual, on-demand) |
-| Innovators | Multi-role | `jlo workflow run innovators` | `.jlo/scheduled.toml` |
+| Innovators | Multi-role | `jlo workflow run innovators` | `.jlo/config.toml` (`[innovators].roles`) |
 
 **Single-role layers**: Narrator, Decider, Planner, Implementer have a fixed role with a `<layer>_prompt.j2` template in the layer directory. Template creation not supported.
 
-**Multi-role layers**: Observers and Innovators support multiple configurable roles listed in `.jlo/scheduled.toml`. Each role has its own subdirectory with `role.yml`.
+**Multi-role layers**: Observers and Innovators support multiple configurable roles listed in `.jlo/config.toml` (`[observers].roles`, `[innovators].roles`). Custom roles can have `role.yml` under `.jlo/roles/`; built-ins are resolved from embedded assets when no custom role file exists.
 
 ## Mock Mode
 

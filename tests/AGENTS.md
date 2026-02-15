@@ -18,7 +18,7 @@ tests/
         test_context.rs        # TestContext
         git_repository.rs      # git helpers (commits/remotes)
         jlo_config.rs          # .jlo/config.toml writers
-        scheduled_roles.rs     # scheduled.toml readers
+        scheduled_roles.rs     # config schedule readers
 
     cli.rs
     cli/                     # CLI behavior contracts (by command)

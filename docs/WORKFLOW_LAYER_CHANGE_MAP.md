@@ -27,7 +27,7 @@ A layer-level change means one of the following:
 | CLI command shape | `run` subcommands are explicit per layer | `src/app/cli/run.rs` |
 | Workflow command parsing | `workflow run <layer>` relies on `Layer::from_dir_name` | `src/app/cli/workflow.rs` |
 | Runtime execution branch | Main `run` path and workflow layer dispatcher match on layer enum | `src/app/commands/run/mod.rs`, `src/app/commands/workflow/run/layer/mod.rs` |
-| Multi-role scheduling | `scheduled.toml` models observer and innovator roles explicitly | `src/domain/schedule/model.rs` |
+| Multi-role scheduling | `.jlo/config.toml` models observer and innovator roles explicitly | `src/domain/schedule/model.rs`, `src/domain/config/run.rs` |
 | Prompt and contracts | Layer assets are file-based and embedded with `include_dir` | `src/assets/scaffold/jules/layers/<layer>/**` |
 | Doctor validation | Structural/schema/semantic checks iterate layers and exchange data contracts | `src/app/commands/doctor/*.rs` |
 | Requirement routing | Exchange inspect provides requirement counts for planner/implementer gating | `src/app/commands/workflow/exchange/inspect.rs`, `src/app/commands/workflow/run/*.rs` |

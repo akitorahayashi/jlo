@@ -1,8 +1,15 @@
+use crate::domain::RoleId;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-use super::error::ScheduleError;
-use crate::domain::RoleId;
+#[derive(Debug, thiserror::Error)]
+pub enum ScheduleError {
+    #[error("Schedule config invalid: {0}")]
+    ConfigInvalid(String),
+
+    #[error("TOML format error: {0}")]
+    Toml(#[from] toml::de::Error),
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -11,9 +18,10 @@ pub struct ScheduledRole {
     pub enabled: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ScheduleLayer {
+    #[serde(default)]
     pub roles: Vec<ScheduledRole>,
 }
 
@@ -23,22 +31,24 @@ impl ScheduleLayer {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct Schedule {
+    #[serde(default)]
     pub observers: ScheduleLayer,
     #[serde(default)]
     pub innovators: Option<ScheduleLayer>,
 }
 
 impl Schedule {
+    #[allow(dead_code)]
     pub fn parse_toml(content: &str) -> Result<Self, ScheduleError> {
         let schedule: Schedule = toml::from_str(content)?;
         schedule.validate()?;
         Ok(schedule)
     }
 
-    fn validate(&self) -> Result<(), ScheduleError> {
+    pub fn validate(&self) -> Result<(), ScheduleError> {
         Self::validate_roles("observers", &self.observers)?;
         if let Some(ref innovators) = self.innovators {
             Self::validate_roles("innovators", innovators)?;
@@ -88,12 +98,12 @@ roles = [
     }
 
     #[test]
-    fn missing_required_fields_fail() {
+    fn missing_required_fields_use_defaults() {
         let content = r#"
 "#;
-        let err = Schedule::parse_toml(content).unwrap_err();
-        // toml error will complain about missing fields
-        assert!(matches!(err, ScheduleError::Toml(_)));
+        let schedule = Schedule::parse_toml(content).unwrap();
+        assert!(schedule.observers.roles.is_empty());
+        assert!(schedule.innovators.is_none());
     }
 
     #[test]
