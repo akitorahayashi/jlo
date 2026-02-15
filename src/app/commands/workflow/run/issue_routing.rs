@@ -37,7 +37,14 @@ pub(crate) fn find_requirements(
             .to_str()
             .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", path.display())))?;
         let content = store.read_file(path_str)?;
-        let requires_deep_analysis = RequirementHeader::parse(&content)?.requires_deep_analysis;
+        let requires_deep_analysis = RequirementHeader::parse(&content)
+            .map_err(|err| match err {
+                AppError::ParseError { details, .. } => {
+                    AppError::ParseError { what: path_str.to_string(), details }
+                }
+                other => other,
+            })?
+            .requires_deep_analysis;
         let belongs_to_layer = match layer {
             Layer::Planner => requires_deep_analysis,
             Layer::Implementer => !requires_deep_analysis,
