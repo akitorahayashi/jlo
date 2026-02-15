@@ -289,152 +289,8 @@ fn is_transient_automerge_error(error: &AppError) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
-    use std::cell::{Cell, RefCell};
-
-    struct FakeGitHub {
-        pr_detail: RefCell<PullRequestDetail>,
-        files: Vec<String>,
-        remaining_transient_automerge_failures: Cell<u32>,
-        fatal_automerge_failure: Cell<bool>,
-        set_automerge_enabled_on_first_error: Cell<bool>,
-        enable_calls: Cell<u32>,
-    }
-
-    impl FakeGitHub {
-        fn jules_runtime_pr() -> Self {
-            Self {
-                pr_detail: RefCell::new(PullRequestDetail {
-                    number: 42,
-                    head: "jules-observer-abc123".to_string(),
-                    base: "jules".to_string(),
-                    is_draft: false,
-                    auto_merge_enabled: false,
-                }),
-                files: vec![".jules/exchange/events/pending/state.yml".to_string()],
-                remaining_transient_automerge_failures: Cell::new(0),
-                fatal_automerge_failure: Cell::new(false),
-                set_automerge_enabled_on_first_error: Cell::new(false),
-                enable_calls: Cell::new(0),
-            }
-        }
-
-        fn with_transient_automerge_failures(count: u32) -> Self {
-            let gh = Self::jules_runtime_pr();
-            gh.remaining_transient_automerge_failures.set(count);
-            gh
-        }
-
-        fn with_fatal_automerge_failure() -> Self {
-            let gh = Self::jules_runtime_pr();
-            gh.fatal_automerge_failure.set(true);
-            gh
-        }
-
-        fn with_race_automerge_state_after_first_failure() -> Self {
-            let gh = Self::jules_runtime_pr();
-            gh.remaining_transient_automerge_failures.set(1);
-            gh.set_automerge_enabled_on_first_error.set(true);
-            gh
-        }
-
-        fn non_jules_pr() -> Self {
-            Self {
-                pr_detail: RefCell::new(PullRequestDetail {
-                    number: 99,
-                    head: "feature/foo".to_string(),
-                    base: "main".to_string(),
-                    is_draft: false,
-                    auto_merge_enabled: false,
-                }),
-                files: vec!["src/main.rs".to_string()],
-                remaining_transient_automerge_failures: Cell::new(0),
-                fatal_automerge_failure: Cell::new(false),
-                set_automerge_enabled_on_first_error: Cell::new(false),
-                enable_calls: Cell::new(0),
-            }
-        }
-    }
-
-    impl GitHubPort for FakeGitHub {
-        fn create_pull_request(
-            &self,
-            h: &str,
-            b: &str,
-            _: &str,
-            _: &str,
-        ) -> Result<PullRequestInfo, AppError> {
-            Ok(PullRequestInfo { number: 1, url: String::new(), head: h.into(), base: b.into() })
-        }
-
-        fn close_pull_request(&self, _: u64) -> Result<(), AppError> {
-            Ok(())
-        }
-
-        fn delete_branch(&self, _: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-
-        fn create_issue(&self, _: &str, _: &str, _: &[&str]) -> Result<IssueInfo, AppError> {
-            Ok(IssueInfo { number: 1, url: String::new() })
-        }
-
-        fn get_pr_detail(&self, _: u64) -> Result<PullRequestDetail, AppError> {
-            Ok(self.pr_detail.borrow().clone())
-        }
-
-        fn list_pr_comments(&self, _: u64) -> Result<Vec<PrComment>, AppError> {
-            Ok(Vec::new())
-        }
-
-        fn create_pr_comment(&self, _: u64, _: &str) -> Result<u64, AppError> {
-            Ok(1)
-        }
-
-        fn update_pr_comment(&self, _: u64, _: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-
-        fn ensure_label(&self, _: &str, _: Option<&str>) -> Result<(), AppError> {
-            Ok(())
-        }
-
-        fn add_label_to_pr(&self, _: u64, _: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-
-        fn add_label_to_issue(&self, _: u64, _: &str) -> Result<(), AppError> {
-            Ok(())
-        }
-
-        fn enable_automerge(&self, _: u64) -> Result<(), AppError> {
-            self.enable_calls.set(self.enable_calls.get() + 1);
-            if self.fatal_automerge_failure.get() {
-                return Err(AppError::ExternalToolError {
-                    tool: "gh".to_string(),
-                    error: "gh command failed: GraphQL: Validation failed: Pull request is not in a mergeable state".to_string(),
-                });
-            }
-            let remaining = self.remaining_transient_automerge_failures.get();
-            if remaining > 0 {
-                self.remaining_transient_automerge_failures.set(remaining - 1);
-                if self.set_automerge_enabled_on_first_error.get() {
-                    self.pr_detail.borrow_mut().auto_merge_enabled = true;
-                    self.set_automerge_enabled_on_first_error.set(false);
-                }
-                return Err(AppError::ExternalToolError {
-                    tool: "gh".to_string(),
-                    error: "gh command failed: GraphQL: Base branch was modified. Review and try the merge again. (mergePullRequest)".to_string(),
-                });
-            }
-            self.pr_detail.borrow_mut().auto_merge_enabled = true;
-            Ok(())
-        }
-
-        fn list_pr_files(&self, _: u64) -> Result<Vec<String>, AppError> {
-            Ok(self.files.clone())
-        }
-    }
+    use crate::testing::FakeGitHub;
+    use std::sync::atomic::Ordering;
 
     #[test]
     fn automerge_mode_runs_only_enable_step() {
@@ -459,7 +315,7 @@ mod tests {
 
     #[test]
     fn retries_transient_automerge_errors() {
-        let gh = FakeGitHub::with_transient_automerge_failures(2);
+        let gh = FakeGitHub::jules_runtime_pr().with_transient_automerge_failures(2);
         let out = execute(
             &gh,
             ProcessOptions {
@@ -474,12 +330,12 @@ mod tests {
 
         assert!(!out.had_errors);
         assert_eq!(out.steps[0].attempts, 3);
-        assert_eq!(gh.enable_calls.get(), 3);
+        assert_eq!(gh.automerge_calls.load(Ordering::SeqCst), 3);
     }
 
     #[test]
     fn does_not_retry_non_transient_automerge_errors() {
-        let gh = FakeGitHub::with_fatal_automerge_failure();
+        let gh = FakeGitHub::jules_runtime_pr().with_fatal_automerge_failure();
         let out = execute(
             &gh,
             ProcessOptions {
@@ -494,13 +350,13 @@ mod tests {
 
         assert!(out.had_errors);
         assert_eq!(out.steps[0].attempts, 1);
-        assert_eq!(gh.enable_calls.get(), 1);
+        assert_eq!(gh.automerge_calls.load(Ordering::SeqCst), 1);
         assert!(out.steps[0].error.as_deref().unwrap_or("").contains("mergeable state"));
     }
 
     #[test]
     fn recheck_recovers_when_automerge_is_enabled_by_race() {
-        let gh = FakeGitHub::with_race_automerge_state_after_first_failure();
+        let gh = FakeGitHub::jules_runtime_pr().with_race_automerge_state_after_first_failure();
         let out = execute(
             &gh,
             ProcessOptions {
@@ -514,7 +370,7 @@ mod tests {
         .unwrap();
 
         assert!(!out.had_errors);
-        assert_eq!(gh.enable_calls.get(), 1);
+        assert_eq!(gh.automerge_calls.load(Ordering::SeqCst), 1);
         assert_eq!(out.steps[0].attempts, 1);
         assert_eq!(out.steps[0].skipped_reason.as_deref(), Some("auto-merge already enabled"));
         assert!(out.steps[0].error.is_none());
