@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
-use crate::domain::AppError;
 use crate::domain::PromptAssetLoader;
+use crate::domain::{AppError, RoleId};
 use crate::ports::{Git, GitHub, IssueInfo, JloStore, JulesStore, RepositoryFilesystem};
 
 #[derive(Debug, Clone)]
@@ -126,13 +126,8 @@ where
             ))
         })?;
 
-        let persona = data.persona.trim();
-        if persona.is_empty() {
-            return Err(AppError::Validation(format!(
-                "Proposal missing 'persona': {}",
-                proposal_path.display()
-            )));
-        }
+        let persona = validate_persona(&data, proposal_path)?;
+        validate_proposal_filename_matches_persona(proposal_path, persona.as_str())?;
 
         if data.title.trim().is_empty() {
             return Err(AppError::Validation(format!(
@@ -162,15 +157,17 @@ where
         }
 
         // Verify perspective.yml exists and records this proposal
-        let perspective_path =
-            crate::domain::workstations::paths::workstation_perspective(&jules_path, persona);
+        let perspective_path = crate::domain::workstations::paths::workstation_perspective(
+            &jules_path,
+            persona.as_str(),
+        );
         let perspective_path_str = perspective_path
             .to_str()
             .ok_or_else(|| AppError::Validation("Invalid perspective path".to_string()))?;
         if !repository.file_exists(perspective_path_str) {
             return Err(AppError::Validation(format!(
                 "perspective.yml missing for persona '{}': innovator run must update workstation perspective before publication",
-                persona
+                persona.as_str()
             )));
         }
         let perspective_content = repository.read_file(perspective_path_str)?;
@@ -186,11 +183,12 @@ where
         if !perspective.recent_proposals.iter().any(|p| p.trim() == title_trimmed) {
             return Err(AppError::Validation(format!(
                 "perspective.yml for '{}' does not list proposal '{}' in recent_proposals: refinement contract violated",
-                persona, title_trimmed
+                persona.as_str(),
+                title_trimmed
             )));
         }
 
-        let issue_title = format!("[innovator/{}] {}", persona, data.title.trim());
+        let issue_title = format!("[innovator/{}] {}", persona.as_str(), data.title.trim());
         let impact_surface = render_list(&data.impact_surface);
         let consistency_risks = render_list(&data.consistency_risks);
         let verification_signals = render_list(&data.verification_signals);
@@ -205,10 +203,15 @@ where
             consistency_risks,
             verification_signals,
             data.id,
-            persona,
+            persona.as_str(),
         );
 
-        validated.push((persona.to_string(), proposal_path.clone(), issue_title, issue_body));
+        validated.push((
+            persona.as_str().to_string(),
+            proposal_path.clone(),
+            issue_title,
+            issue_body,
+        ));
     }
 
     // Pass 2: Create issues and clean up artifacts (all proposals validated).
@@ -294,6 +297,44 @@ fn render_list(items: &[String]) -> String {
     items.iter().map(|line| format!("- {}", line.trim())).collect::<Vec<_>>().join("\n")
 }
 
+fn validate_persona(data: &ProposalData, proposal_path: &Path) -> Result<RoleId, AppError> {
+    let persona = data.persona.trim();
+    if persona.is_empty() {
+        return Err(AppError::Validation(format!(
+            "Proposal missing 'persona': {}",
+            proposal_path.display()
+        )));
+    }
+
+    RoleId::new(persona).map_err(|_| {
+        AppError::Validation(format!(
+            "Invalid proposal persona '{}': expected safe role identifier in {}",
+            persona,
+            proposal_path.display()
+        ))
+    })
+}
+
+fn validate_proposal_filename_matches_persona(
+    proposal_path: &Path,
+    persona: &str,
+) -> Result<(), AppError> {
+    let Some(stem) = proposal_path.file_stem().and_then(|s| s.to_str()) else {
+        return Err(AppError::Validation(format!(
+            "Invalid proposal filename: {}",
+            proposal_path.display()
+        )));
+    };
+    if !stem.starts_with(&format!("{}-", persona)) {
+        return Err(AppError::Validation(format!(
+            "Proposal filename must start with '{}-': {}",
+            persona,
+            proposal_path.display()
+        )));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -374,5 +415,28 @@ verification_signals:
         assert!(output.published.is_empty());
         assert!(!output.committed);
         assert!(!output.pushed);
+    }
+
+    #[test]
+    fn rejects_invalid_persona_identifier() {
+        let proposal_path = ".jules/exchange/proposals/alice-improve-error-messages.yml";
+        let perspective_path = ".jules/workstations/alice/perspective.yml";
+        let invalid_persona_yaml =
+            proposal_yaml().replace("persona: \"alice\"", "persona: \"../../etc\"");
+        let perspective_yaml =
+            "persona: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let repository = TestStore::new()
+            .with_exists(true)
+            .with_file(proposal_path, &invalid_persona_yaml)
+            .with_file(perspective_path, perspective_yaml);
+
+        let git = FakeGit::new();
+        let github = FakeGitHub::new();
+        let options = ExchangePublishProposalsOptions {};
+
+        let result = execute_with(&repository, &options, &git, &github);
+        assert!(result.is_err());
+        let message = result.unwrap_err().to_string();
+        assert!(message.contains("Invalid proposal persona"));
     }
 }

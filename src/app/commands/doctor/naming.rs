@@ -52,6 +52,14 @@ fn validate_proposal_filename(path: &Path, diagnostics: &mut Diagnostics) {
             path.display().to_string(),
             "proposal filename must include '<persona>-<slug>'",
         );
+    } else {
+        let parts: Vec<&str> = stem.splitn(2, '-').collect();
+        if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
+            diagnostics.push_error(
+                path.display().to_string(),
+                "proposal filename must be in the format '<persona>-<slug>'",
+            );
+        }
     }
 
     if !stem
@@ -167,5 +175,20 @@ mod tests {
         validate_filename(&PathBuf::from("invalid@name.yml"), &mut diagnostics, "test");
         assert_eq!(diagnostics.error_count(), 1);
         assert!(diagnostics.errors()[0].message.contains("must be kebab-case"));
+    }
+
+    #[test]
+    fn test_validate_proposal_filename_requires_persona_and_slug() {
+        let mut diagnostics = Diagnostics::default();
+        validate_proposal_filename(&PathBuf::from("invalid-.yml"), &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 1);
+        assert!(diagnostics.errors()[0].message.contains("<persona>-<slug>"));
+    }
+
+    #[test]
+    fn test_validate_proposal_filename_accepts_valid_pattern() {
+        let mut diagnostics = Diagnostics::default();
+        validate_proposal_filename(&PathBuf::from("alice-proposal-one.yml"), &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
     }
 }

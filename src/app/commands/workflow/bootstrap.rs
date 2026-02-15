@@ -150,11 +150,8 @@ where
         }
 
         let schema_content = repository.read_file(schema_path_str)?;
-        let rendered_perspective = match layer {
-            Layer::Innovators => schema_content.replace("<persona_id>", role),
-            Layer::Observers => schema_content.replace("<observer-id>", role),
-            _ => schema_content,
-        };
+        let rendered_perspective =
+            materialize_perspective_from_schema(&schema_content, *layer, role)?;
         let workstation_dir =
             crate::domain::workstations::paths::workstation_dir(&jules_path, role);
         let workstation_dir_str = path_to_str(&workstation_dir, "workstation directory path")?;
@@ -225,5 +222,48 @@ fn collect_scheduled_role_layers(
 fn path_to_str<'a>(path: &'a Path, label: &str) -> Result<&'a str, AppError> {
     path.to_str().ok_or_else(|| {
         AppError::InvalidPath(format!("Invalid unicode in {}: {}", label, path.display()))
+    })
+}
+
+fn materialize_perspective_from_schema(
+    schema_content: &str,
+    layer: Layer,
+    role: &str,
+) -> Result<String, AppError> {
+    let mut root: serde_yaml::Value = serde_yaml::from_str(schema_content).map_err(|err| {
+        AppError::RepositoryIntegrity(format!(
+            "Invalid perspective schema YAML for layer '{}': {}",
+            layer.dir_name(),
+            err
+        ))
+    })?;
+    let map = root.as_mapping_mut().ok_or_else(|| {
+        AppError::RepositoryIntegrity(format!(
+            "Perspective schema root must be a mapping for layer '{}'",
+            layer.dir_name()
+        ))
+    })?;
+
+    let key = match layer {
+        Layer::Innovators => "persona",
+        Layer::Observers => "observer",
+        _ => {
+            return Err(AppError::RepositoryIntegrity(format!(
+                "Unsupported layer for workstation perspective materialization: '{}'",
+                layer.dir_name()
+            )));
+        }
+    };
+    map.insert(
+        serde_yaml::Value::String(key.to_string()),
+        serde_yaml::Value::String(role.to_string()),
+    );
+
+    serde_yaml::to_string(&root).map_err(|err| {
+        AppError::RepositoryIntegrity(format!(
+            "Failed to render perspective for layer '{}': {}",
+            layer.dir_name(),
+            err
+        ))
     })
 }
