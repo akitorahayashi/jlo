@@ -3,10 +3,11 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
+use crate::adapters::filesystem::FilesystemStore;
 use crate::adapters::git::GitCommandAdapter;
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
-use crate::ports::{GitPort, WorkspaceStore};
+use crate::domain::PromptAssetLoader;
+use crate::ports::{GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
 
 use crate::app::commands::workflow::workspace::inspect::inspect_at;
 
@@ -27,13 +28,16 @@ pub struct WorkspaceCleanRequirementOutput {
 pub fn execute(
     options: WorkspaceCleanRequirementOptions,
 ) -> Result<WorkspaceCleanRequirementOutput, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
+    let workspace = FilesystemStore::current()?;
     let root = workspace_root(&workspace)?;
     let git = GitCommandAdapter::new(root);
     execute_with_adapters(options, &workspace, &git)
 }
 
-pub fn execute_with_adapters<G: GitPort, W: WorkspaceStore>(
+pub fn execute_with_adapters<
+    G: GitPort,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+>(
     options: WorkspaceCleanRequirementOptions,
     workspace: &W,
     git: &G,
@@ -132,7 +136,9 @@ pub fn execute_with_adapters<G: GitPort, W: WorkspaceStore>(
     })
 }
 
-fn resolve_requirement_path<W: WorkspaceStore + ?Sized>(
+fn resolve_requirement_path<
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader + ?Sized,
+>(
     canonical_jules: &Path,
     canonical_requirement: &Path,
     workspace: &W,
@@ -157,7 +163,11 @@ fn resolve_requirement_path<W: WorkspaceStore + ?Sized>(
     Ok(requirement_rel)
 }
 
-fn workspace_root<W: WorkspaceStore + ?Sized>(workspace: &W) -> Result<PathBuf, AppError> {
+fn workspace_root<
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader + ?Sized,
+>(
+    workspace: &W,
+) -> Result<PathBuf, AppError> {
     let jules_path = workspace.jules_path();
     let root = jules_path.parent().ok_or_else(|| {
         AppError::Validation(format!(

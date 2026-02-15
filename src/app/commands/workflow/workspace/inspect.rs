@@ -2,11 +2,11 @@ use std::path::{Path, PathBuf};
 
 use serde_yaml::{Mapping, Value};
 
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::adapters::filesystem::FilesystemStore;
 use crate::app::configuration::{list_subdirectories, load_schedule};
 use crate::domain::AppError;
 use crate::domain::workspace::paths::jules;
-use crate::ports::{JulesStorePort, WorkspaceStore};
+use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort};
 
 use super::model::{
     EventItem, EventStateSummary, EventSummary, RequirementItem, RequirementSummary, RoleSummary,
@@ -17,7 +17,7 @@ use super::model::{
 pub struct WorkspaceInspectOptions {}
 
 pub fn execute(_options: WorkspaceInspectOptions) -> Result<WorkspaceInspectOutput, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
+    let workspace = FilesystemStore::current()?;
 
     if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
@@ -26,7 +26,9 @@ pub fn execute(_options: WorkspaceInspectOptions) -> Result<WorkspaceInspectOutp
     inspect_at(&workspace)
 }
 
-pub(super) fn inspect_at(store: &impl WorkspaceStore) -> Result<WorkspaceInspectOutput, AppError> {
+pub(super) fn inspect_at(
+    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
+) -> Result<WorkspaceInspectOutput, AppError> {
     let jules_path = store.jules_path();
     let exchange_dir = jules::exchange_dir(&jules_path);
     if !store.file_exists(exchange_dir.to_str().unwrap()) {
@@ -60,7 +62,7 @@ pub(super) fn inspect_at(store: &impl WorkspaceStore) -> Result<WorkspaceInspect
 }
 
 fn summarize_events(
-    store: &impl WorkspaceStore,
+    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
     root: &Path,
     exchange_dir: &Path,
 ) -> Result<EventSummary, AppError> {
@@ -103,7 +105,7 @@ fn summarize_events(
 }
 
 fn summarize_requirements(
-    store: &impl WorkspaceStore,
+    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
     root: &Path,
     exchange_dir: &Path,
 ) -> Result<RequirementSummary, AppError> {
@@ -129,7 +131,10 @@ fn summarize_requirements(
     Ok(RequirementSummary { count, items })
 }
 
-fn list_yml_files(store: &impl WorkspaceStore, dir: &Path) -> Result<Vec<PathBuf>, AppError> {
+fn list_yml_files(
+    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
+    dir: &Path,
+) -> Result<Vec<PathBuf>, AppError> {
     let entries = store.list_dir(dir.to_str().unwrap())?;
     let mut files: Vec<PathBuf> = entries
         .into_iter()
@@ -144,7 +149,7 @@ fn to_repo_relative(root: &Path, path: &Path) -> String {
 }
 
 fn read_event_item(
-    store: &impl WorkspaceStore,
+    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
     root: &Path,
     path: &Path,
     state: &str,
@@ -156,7 +161,7 @@ fn read_event_item(
 }
 
 fn read_requirement_item(
-    store: &impl WorkspaceStore,
+    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
     root: &Path,
     path: &Path,
 ) -> Result<RequirementItem, AppError> {
@@ -175,7 +180,10 @@ fn read_requirement_item(
     })
 }
 
-fn read_yaml_mapping(store: &impl WorkspaceStore, path: &Path) -> Result<Mapping, AppError> {
+fn read_yaml_mapping(
+    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
+    path: &Path,
+) -> Result<Mapping, AppError> {
     let content = store.read_file(path.to_str().unwrap())?;
     let value: Value = serde_yaml::from_str(&content).map_err(|err| AppError::ParseError {
         what: path.display().to_string(),
@@ -347,7 +355,7 @@ roles = [
         )
         .unwrap();
 
-        let store = FilesystemWorkspaceStore::new(root.to_path_buf());
+        let store = FilesystemStore::new(root.to_path_buf());
         let output = inspect_at(&store).unwrap();
 
         let pending = output.events.states.iter().find(|state| state.name == "pending").unwrap();

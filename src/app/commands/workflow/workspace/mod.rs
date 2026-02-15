@@ -17,7 +17,8 @@ pub use model::WorkspaceInspectOutput;
 pub use publish_proposals::{WorkspacePublishProposalsOptions, WorkspacePublishProposalsOutput};
 
 use crate::domain::AppError;
-use crate::ports::{GitPort, WorkspaceStore};
+use crate::domain::PromptAssetLoader;
+use crate::ports::{GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
 
 /// Execute workspace inspect command.
 pub fn inspect(options: WorkspaceInspectOptions) -> Result<WorkspaceInspectOutput, AppError> {
@@ -39,7 +40,10 @@ pub fn clean_requirement(
 }
 
 /// Execute workspace clean requirement command with injected adapters.
-pub fn clean_requirement_with_adapters<G: GitPort, W: WorkspaceStore>(
+pub fn clean_requirement_with_adapters<
+    G: GitPort,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+>(
     options: WorkspaceCleanRequirementOptions,
     workspace: &W,
     git: &G,

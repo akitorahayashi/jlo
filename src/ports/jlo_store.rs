@@ -6,8 +6,15 @@
 
 use std::path::PathBuf;
 
-use crate::domain::{AppError, Layer};
-use crate::ports::DiscoveredRole;
+use crate::domain::{AppError, Layer, RoleId};
+
+/// A discovered role with its layer and ID.
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct DiscoveredRole {
+    pub layer: Layer,
+    pub id: RoleId,
+}
 
 /// Port for `.jlo/` control-plane store operations.
 #[allow(dead_code)]

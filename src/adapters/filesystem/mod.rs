@@ -4,11 +4,8 @@
 //! and `JulesStorePort`. All three are implemented on a single `FilesystemStore`
 //! struct that owns the repository root path and enforces path-traversal safety.
 
-#[allow(dead_code)] // Consumers will be migrated from FilesystemWorkspaceStore in later tasks.
 mod jlo_store;
-#[allow(dead_code)]
 mod jules_store;
-#[allow(dead_code)]
 mod repository_filesystem;
 
 use std::path::{Path, PathBuf};
@@ -21,12 +18,10 @@ use crate::domain::AppError;
 /// on a single struct. Path operations are validated against the root to prevent
 /// directory traversal.
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct FilesystemStore {
     root: PathBuf,
 }
 
-#[allow(dead_code)]
 impl FilesystemStore {
     /// Create a store rooted at the given directory.
     pub fn new(root: PathBuf) -> Self {
@@ -40,6 +35,7 @@ impl FilesystemStore {
     }
 
     /// The repository root.
+    #[allow(dead_code)]
     pub fn root(&self) -> &Path {
         &self.root
     }

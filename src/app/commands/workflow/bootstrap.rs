@@ -14,12 +14,13 @@ use std::path::Path;
 use serde::Serialize;
 
 use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::adapters::filesystem::FilesystemStore;
 use crate::app::AppContext;
+use crate::domain::PromptAssetLoader;
 use crate::domain::workspace::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};
 use crate::domain::workspace::paths::{JLO_DIR, JULES_DIR, VERSION_FILE};
 use crate::domain::{AppError, ScaffoldManifest};
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort, RoleTemplateStore};
 
 /// Options for the bootstrap command.
 #[derive(Debug)]
@@ -46,7 +47,7 @@ pub fn execute(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOut
     let current_version = env!("CARGO_PKG_VERSION");
     let root = &options.root;
 
-    let store = FilesystemWorkspaceStore::new(root.clone());
+    let store = FilesystemStore::new(root.clone());
     let templates = EmbeddedRoleTemplateStore::new();
 
     // --- Hard preconditions ---
@@ -82,7 +83,7 @@ fn project_runtime<W, R>(
     version: &str,
 ) -> Result<usize, AppError>
 where
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
     R: RoleTemplateStore,
 {
     // Counts write operations performed.

@@ -7,8 +7,10 @@ use crate::app::configuration::{detect_repository_source, load_mock_config};
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions};
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::domain::{
+    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RoleId, RunConfig, RunOptions,
+};
+use crate::ports::{GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
 
 use super::super::role_session::{dispatch_session, print_role_preview, validate_role_exists};
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -17,7 +19,14 @@ pub struct InnovatorsLayer;
 
 impl<W> LayerStrategy<W> for InnovatorsLayer
 where
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     fn execute(
         &self,
@@ -76,7 +85,14 @@ fn execute_real<G, W>(
 ) -> Result<RunResult, AppError>
 where
     G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     let role = role
         .ok_or_else(|| AppError::MissingArgument("Role is required for innovators".to_string()))?;
@@ -135,7 +151,16 @@ where
     })
 }
 
-fn assemble_innovator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+fn assemble_innovator_prompt<
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+>(
     jules_path: &Path,
     role: &str,
     task_name: &str,
@@ -152,7 +177,9 @@ fn assemble_innovator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
-fn resolve_innovator_task<W: WorkspaceStore>(
+fn resolve_innovator_task<
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+>(
     jules_path: &Path,
     task: &str,
     workspace: &W,
@@ -199,7 +226,7 @@ fn execute_mock<G, H, W>(
 where
     G: GitPort + ?Sized,
     H: GitHubPort + ?Sized,
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
 {
     let role = options.role.as_deref().ok_or_else(|| {
         AppError::MissingArgument("Role (persona) is required for innovators".to_string())

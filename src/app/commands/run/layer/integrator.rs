@@ -6,8 +6,11 @@ use crate::app::configuration::detect_repository_source;
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, RunConfig, RunOptions};
-use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
+use crate::domain::{AppError, Layer, PromptAssetLoader, RunConfig, RunOptions};
+use crate::ports::{
+    AutomationMode, GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort,
+    SessionRequest,
+};
 
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
@@ -20,7 +23,14 @@ pub struct IntegratorLayer;
 
 impl<W> LayerStrategy<W> for IntegratorLayer
 where
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     fn execute(
         &self,
@@ -59,7 +69,14 @@ fn execute_real<G, W>(
 ) -> Result<RunResult, AppError>
 where
     G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     // Validate branch override if provided
     if let Some(b) = branch
@@ -135,7 +152,9 @@ where
 }
 
 /// Read the implementer branch prefix from its contracts.yml to drive discovery.
-fn load_implementer_branch_prefix<W: WorkspaceStore>(
+fn load_implementer_branch_prefix<
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+>(
     jules_path: &Path,
     workspace: &W,
 ) -> Result<String, AppError> {
@@ -198,7 +217,16 @@ fn discover_candidate_branches<G: GitPort + ?Sized>(
     Ok(candidates)
 }
 
-fn assemble_integrator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+fn assemble_integrator_prompt<
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+>(
     jules_path: &Path,
     starting_branch: &str,
     candidates: &[String],

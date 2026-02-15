@@ -8,9 +8,9 @@ use std::process::Command;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::adapters::filesystem::FilesystemStore;
 use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::github::GitHubCommandAdapter;
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::{GitHubPort, GitPort, JulesStorePort};
 
@@ -40,7 +40,7 @@ pub struct WorkspaceCleanMockOutput {
 
 /// Execute cleanup mock command.
 pub fn execute(options: WorkspaceCleanMockOptions) -> Result<WorkspaceCleanMockOutput, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
+    let workspace = FilesystemStore::current()?;
 
     if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
@@ -146,7 +146,7 @@ fn delete_remote_branches(
 }
 
 fn delete_mock_files(
-    workspace: &FilesystemWorkspaceStore,
+    workspace: &FilesystemStore,
     git: &GitCommandAdapter,
     github: &GitHubCommandAdapter,
     mock_tag: &str,
@@ -340,7 +340,7 @@ fn run_command(program: &str, args: &[&str]) -> Result<String, AppError> {
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
-fn workspace_root(workspace: &FilesystemWorkspaceStore) -> Result<PathBuf, AppError> {
+fn workspace_root(workspace: &FilesystemStore) -> Result<PathBuf, AppError> {
     let root = workspace.jules_path().parent().unwrap_or(Path::new(".")).to_path_buf();
     root.canonicalize().map_err(|error| {
         AppError::InternalError(format!("Failed to resolve workspace root: {}", error))

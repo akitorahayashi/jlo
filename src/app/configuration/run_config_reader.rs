@@ -5,10 +5,10 @@ use std::path::Path;
 use crate::domain::configuration::run_config_parser;
 use crate::domain::workspace::paths::jlo;
 use crate::domain::{AppError, RunConfig};
-use crate::ports::WorkspaceStore;
+use crate::ports::RepositoryFilesystemPort;
 
 /// Load and parse the run configuration from `.jlo/config.toml`.
-pub fn load_config<W: WorkspaceStore>(
+pub fn load_config<W: RepositoryFilesystemPort>(
     jules_path: &Path,
     workspace: &W,
 ) -> Result<RunConfig, AppError> {

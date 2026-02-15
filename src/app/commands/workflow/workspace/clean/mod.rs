@@ -7,7 +7,8 @@ pub use mock::{WorkspaceCleanMockOptions, WorkspaceCleanMockOutput};
 pub use requirement::{WorkspaceCleanRequirementOptions, WorkspaceCleanRequirementOutput};
 
 use crate::domain::AppError;
-use crate::ports::{GitPort, WorkspaceStore};
+use crate::domain::PromptAssetLoader;
+use crate::ports::{GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
 
 /// Execute workspace clean requirement command.
 pub fn clean_requirement(
@@ -16,7 +17,10 @@ pub fn clean_requirement(
     requirement::execute(options)
 }
 
-pub fn clean_requirement_with_adapters<G: GitPort, W: WorkspaceStore>(
+pub fn clean_requirement_with_adapters<
+    G: GitPort,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+>(
     options: WorkspaceCleanRequirementOptions,
     workspace: &W,
     git: &G,

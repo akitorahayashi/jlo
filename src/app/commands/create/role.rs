@@ -1,8 +1,9 @@
 //! Create role under `.jlo/roles/<layer>/<name>/`.
 
 use crate::app::AppContext;
+use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort, RoleTemplateStore};
 
 use super::CreateOutcome;
 use crate::app::commands::role_schedule::ensure_role_scheduled;
@@ -13,7 +14,7 @@ pub fn execute<W, R>(
     name: &str,
 ) -> Result<CreateOutcome, AppError>
 where
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
     R: RoleTemplateStore,
 {
     if !ctx.workspace().jlo_exists() {

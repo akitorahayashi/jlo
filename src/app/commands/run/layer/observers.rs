@@ -4,13 +4,14 @@ use chrono::Utc;
 
 use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
 use crate::app::configuration::{detect_repository_source, load_mock_config, load_schedule};
+use crate::domain::PromptAssetLoader;
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
 use crate::domain::{
     AppError, IoErrorKind, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions,
 };
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::ports::{GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
 
 use super::super::role_session::{dispatch_session, print_role_preview, validate_role_exists};
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -19,7 +20,14 @@ pub struct ObserversLayer;
 
 impl<W> LayerStrategy<W> for ObserversLayer
 where
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     fn execute(
         &self,
@@ -79,7 +87,14 @@ fn execute_real<G, W>(
 ) -> Result<RunResult, AppError>
 where
     G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     let role = role
         .ok_or_else(|| AppError::MissingArgument("Role is required for observers".to_string()))?;
@@ -128,7 +143,16 @@ where
     })
 }
 
-fn assemble_observer_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+fn assemble_observer_prompt<
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+>(
     jules_path: &Path,
     role: &str,
     bridge_task: &str,
@@ -141,7 +165,9 @@ fn assemble_observer_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
-fn resolve_observer_bridge_task<W: WorkspaceStore>(
+fn resolve_observer_bridge_task<
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+>(
     jules_path: &Path,
     workspace: &W,
 ) -> Result<String, AppError> {
@@ -192,7 +218,7 @@ fn execute_mock<G, H, W>(
 where
     G: GitPort + ?Sized,
     H: GitHubPort + ?Sized,
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
 {
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Observers, &timestamp)?;
@@ -329,7 +355,11 @@ where
     })
 }
 
-fn resolve_innovator_personas<W: WorkspaceStore>(workspace: &W) -> Result<Vec<String>, AppError> {
+fn resolve_innovator_personas<
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+>(
+    workspace: &W,
+) -> Result<Vec<String>, AppError> {
     let schedule = match load_schedule(workspace) {
         Ok(schedule) => schedule,
         Err(AppError::ScheduleConfigMissing(_)) => return Ok(Vec::new()),

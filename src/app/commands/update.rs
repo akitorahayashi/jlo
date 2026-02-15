@@ -16,8 +16,8 @@ use std::collections::BTreeMap;
 use crate::domain::workspace::manifest::{
     MANIFEST_FILENAME, ScaffoldManifest, hash_content, is_control_plane_entity_file,
 };
-use crate::domain::{AppError, WorkflowRunnerMode};
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::domain::{AppError, PromptAssetLoader, WorkflowRunnerMode};
+use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort, RoleTemplateStore};
 
 /// Result of an update operation.
 #[derive(Debug)]
@@ -52,7 +52,7 @@ pub fn execute<W>(
     templates: &impl RoleTemplateStore,
 ) -> Result<UpdateResult, AppError>
 where
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
 {
     // Check if control plane exists
     if !workspace.jlo_exists() {
@@ -277,7 +277,7 @@ where
 
 fn configured_workflow_mode<W>(workspace: &W) -> Result<Option<WorkflowRunnerMode>, AppError>
 where
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
 {
     let has_managed_workflow = [
         ".github/workflows/jules-scheduled-workflows.yml",
@@ -315,7 +315,7 @@ fn compare_versions(a: &[u32], b: &[u32]) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+    use crate::adapters::filesystem::FilesystemStore;
     use std::fs;
 
     #[test]
@@ -403,7 +403,7 @@ wait_minutes_default = 30
         };
 
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let workspace = FilesystemStore::new(temp.path().to_path_buf());
         let result = execute(&workspace, options, &mock_store).unwrap();
 
         assert!(result.created.contains(&".jlo/config.toml".to_string()));
@@ -440,7 +440,7 @@ wait_minutes_default = 30
         };
 
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let workspace = FilesystemStore::new(temp.path().to_path_buf());
         let result = execute(&workspace, options, &mock_store).unwrap();
 
         // Should NOT overwrite user-owned file
@@ -480,7 +480,7 @@ wait_minutes_default = 30
 
         let mock_store = MockRoleTemplateStore { control_files: vec![] };
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let workspace = FilesystemStore::new(temp.path().to_path_buf());
         let err = execute(&workspace, options, &mock_store).unwrap_err();
         assert!(err.to_string().contains("workflow.runner_mode"));
     }
@@ -496,7 +496,7 @@ wait_minutes_default = 30
         let mock_store = MockRoleTemplateStore { control_files: vec![] };
 
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let workspace = FilesystemStore::new(temp.path().to_path_buf());
         let result = execute(&workspace, options, &mock_store).unwrap();
 
         assert_eq!(result.previous_version, "0.0.0");
@@ -515,7 +515,7 @@ wait_minutes_default = 30
         let mock_store = MockRoleTemplateStore { control_files: vec![] };
 
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let workspace = FilesystemStore::new(temp.path().to_path_buf());
         let result = execute(&workspace, options, &mock_store).unwrap();
 
         assert!(result.created.is_empty());
@@ -550,7 +550,7 @@ wait_minutes_default = 30
         };
 
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let workspace = FilesystemStore::new(temp.path().to_path_buf());
         let result = execute(&workspace, options, &mock_store).unwrap();
 
         // Skeleton file (config.toml) should be created

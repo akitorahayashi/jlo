@@ -1,8 +1,8 @@
 use crate::domain::configuration::schedule::{ScheduleLayer, ScheduledRole};
 use crate::domain::{AppError, Layer, RoleId, Schedule};
-use crate::ports::WorkspaceStore;
+use crate::ports::RepositoryFilesystemPort;
 
-pub fn ensure_role_scheduled<W: WorkspaceStore>(
+pub fn ensure_role_scheduled<W: RepositoryFilesystemPort>(
     workspace: &W,
     layer: Layer,
     role: &RoleId,

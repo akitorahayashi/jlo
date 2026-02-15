@@ -12,7 +12,7 @@ use crate::domain::configuration::mock_config_parser::{
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, RunOptions};
-use crate::ports::WorkspaceStore;
+use crate::ports::RepositoryFilesystemPort;
 
 /// Validate prerequisites for mock mode.
 pub fn validate_mock_prerequisites(_options: &RunOptions) -> Result<(), AppError> {
@@ -39,7 +39,7 @@ pub fn validate_mock_prerequisites(_options: &RunOptions) -> Result<(), AppError
     Ok(())
 }
 
-fn load_branch_prefix_for_layer<W: WorkspaceStore>(
+fn load_branch_prefix_for_layer<W: RepositoryFilesystemPort>(
     jules_path: &Path,
     layer: Layer,
     workspace: &W,
@@ -68,7 +68,7 @@ fn load_branch_prefix_for_layer<W: WorkspaceStore>(
 }
 
 /// Load mock configuration from workspace files.
-pub fn load_mock_config<W: WorkspaceStore>(
+pub fn load_mock_config<W: RepositoryFilesystemPort>(
     jules_path: &Path,
     _options: &RunOptions,
     workspace: &W,

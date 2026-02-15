@@ -10,14 +10,16 @@ pub mod options;
 use chrono::Utc;
 
 use crate::domain::AppError;
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::ports::{GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
 
 use self::layer::execute_layer;
 pub use self::options::{WorkflowRunOptions, WorkflowRunOutput};
 
 /// Execute workflow run command.
 pub fn execute<G, H>(
-    store: &(impl WorkspaceStore + Clone + Send + Sync + 'static),
+    store: &(
+         impl RepositoryFilesystemPort + JloStorePort + JulesStorePort + Clone + Send + Sync + 'static
+     ),
     options: WorkflowRunOptions,
     git: &G,
     github: &H,

@@ -183,8 +183,7 @@ pub fn semantic_checks(
     }
 
     let mut scheduled_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
-    let store =
-        crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::new(root.to_path_buf());
+    let store = crate::adapters::filesystem::FilesystemStore::new(root.to_path_buf());
 
     match load_schedule(&store) {
         Ok(schedule) => {

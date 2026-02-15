@@ -2,13 +2,13 @@ use std::path::Path;
 
 use crate::domain::AppError;
 use crate::domain::workspace::paths::jules;
-use crate::ports::WorkspaceStore;
+use crate::ports::{JulesStorePort, RepositoryFilesystemPort};
 
 pub struct RequirementPathInfo {
     pub requirement_path_str: String,
 }
 
-pub fn validate_requirement_path<W: WorkspaceStore + ?Sized>(
+pub fn validate_requirement_path<W: RepositoryFilesystemPort + JulesStorePort + ?Sized>(
     requirement_path: &Path,
     workspace: &W,
 ) -> Result<RequirementPathInfo, AppError> {

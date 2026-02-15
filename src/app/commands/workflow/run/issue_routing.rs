@@ -1,11 +1,11 @@
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, RequirementHeader};
-use crate::ports::WorkspaceStore;
+use crate::ports::{JulesStorePort, RepositoryFilesystemPort};
 use std::path::PathBuf;
 
 /// Find requirements for a layer in the flat exchange directory.
 pub(crate) fn find_requirements(
-    store: &impl WorkspaceStore,
+    store: &(impl RepositoryFilesystemPort + JulesStorePort),
     layer: Layer,
 ) -> Result<Vec<PathBuf>, AppError> {
     if layer != Layer::Planner && layer != Layer::Implementer {
@@ -33,7 +33,11 @@ pub(crate) fn find_requirements(
             continue;
         }
 
-        let requires_deep_analysis = RequirementHeader::read(store, &path)?.requires_deep_analysis;
+        let path_str = path
+            .to_str()
+            .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", path.display())))?;
+        let content = store.read_file(path_str)?;
+        let requires_deep_analysis = RequirementHeader::parse(&content)?.requires_deep_analysis;
         let belongs_to_layer = match layer {
             Layer::Planner => requires_deep_analysis,
             Layer::Implementer => !requires_deep_analysis,
@@ -51,16 +55,16 @@ pub(crate) fn find_requirements(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::memory_workspace_store::MemoryWorkspaceStore;
     use crate::ports::{JulesStorePort, RepositoryFilesystemPort};
+    use crate::testing::MockWorkspaceStore;
     use serial_test::serial;
 
-    fn setup_workspace(store: &MemoryWorkspaceStore) {
+    fn setup_workspace(store: &MockWorkspaceStore) {
         store.jules_write_version(env!("CARGO_PKG_VERSION")).unwrap();
     }
 
     fn write_requirement(
-        store: &MemoryWorkspaceStore,
+        store: &MockWorkspaceStore,
         name: &str,
         label: &str,
         requires_deep_analysis: bool,
@@ -76,7 +80,7 @@ mod tests {
     #[test]
     #[serial]
     fn planner_issue_discovery_filters_by_requires_deep_analysis() {
-        let store = MemoryWorkspaceStore::new();
+        let store = MockWorkspaceStore::new();
         setup_workspace(&store);
 
         write_requirement(&store, "requires-planning", "bugs", true);
@@ -93,7 +97,7 @@ mod tests {
     #[test]
     #[serial]
     fn implementer_issue_discovery_uses_non_deep_issues() {
-        let store = MemoryWorkspaceStore::new();
+        let store = MockWorkspaceStore::new();
         setup_workspace(&store);
 
         write_requirement(&store, "requires-planning", "bugs", true);

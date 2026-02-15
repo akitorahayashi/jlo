@@ -6,9 +6,9 @@
 use std::path::{Path, PathBuf};
 
 use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
+use crate::adapters::filesystem::FilesystemStore;
 use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::github::GitHubCommandAdapter;
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::{
     AppContext,
     commands::{add, cli_upgrade, create, deinit, doctor, init, run, setup, update},
@@ -33,8 +33,8 @@ pub use crate::domain::{BuiltinRoleEntry, Layer};
 /// Create an `AppContext` for a given path.
 fn create_context(
     path: std::path::PathBuf,
-) -> AppContext<FilesystemWorkspaceStore, EmbeddedRoleTemplateStore> {
-    let workspace = FilesystemWorkspaceStore::new(path);
+) -> AppContext<FilesystemStore, EmbeddedRoleTemplateStore> {
+    let workspace = FilesystemStore::new(path);
     let templates = EmbeddedRoleTemplateStore::new();
     AppContext::new(workspace, templates)
 }
@@ -70,7 +70,7 @@ pub fn init_workflows_at(
     path: std::path::PathBuf,
     mode: &WorkflowRunnerMode,
 ) -> Result<(), AppError> {
-    let workspace = FilesystemWorkspaceStore::new(path.clone());
+    let workspace = FilesystemStore::new(path.clone());
     let generate_config =
         crate::adapters::control_plane_config::load_workflow_generate_config(&workspace)?;
     crate::adapters::workflow_installer::install_workflow_scaffold(
@@ -163,7 +163,7 @@ pub fn run_at(
     root: impl Into<PathBuf>,
 ) -> Result<RunResult, AppError> {
     let root = root.into();
-    let workspace = FilesystemWorkspaceStore::new(root.clone());
+    let workspace = FilesystemStore::new(root.clone());
     if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
     }
@@ -189,9 +189,9 @@ pub fn run_at(
 /// Returns the list of resolved component names in installation order.
 pub fn setup_gen(path: Option<&Path>) -> Result<Vec<String>, AppError> {
     let store = if let Some(p) = path {
-        FilesystemWorkspaceStore::new(p.to_path_buf())
+        FilesystemStore::new(p.to_path_buf())
     } else {
-        FilesystemWorkspaceStore::current()?
+        FilesystemStore::current()?
     };
     setup::generate(&store)
 }
@@ -223,7 +223,7 @@ pub fn update(prompt_preview: bool) -> Result<UpdateResult, AppError> {
 
 /// Update workspace at the specified path.
 pub fn update_at(path: std::path::PathBuf, prompt_preview: bool) -> Result<UpdateResult, AppError> {
-    let workspace = FilesystemWorkspaceStore::new(path);
+    let workspace = FilesystemStore::new(path);
     let templates = EmbeddedRoleTemplateStore::new();
     let options = UpdateOptions { prompt_preview };
     update::execute(&workspace, options, &templates)
@@ -248,7 +248,7 @@ pub fn doctor_at(
     path: impl Into<PathBuf>,
     options: DoctorOptions,
 ) -> Result<DoctorOutcome, AppError> {
-    let workspace = FilesystemWorkspaceStore::new(path.into());
+    let workspace = FilesystemStore::new(path.into());
     doctor::execute(&workspace.jules_path(), options)
 }
 

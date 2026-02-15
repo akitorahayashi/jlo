@@ -4,7 +4,7 @@
 
 use serde::Serialize;
 
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::adapters::filesystem::FilesystemStore;
 use crate::domain::AppError;
 use crate::ports::JulesStorePort;
 
@@ -25,7 +25,7 @@ pub struct WorkflowDoctorOutput {
 ///
 /// Returns a machine-readable output indicating workspace health.
 pub fn execute(_options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
+    let workspace = FilesystemStore::current()?;
 
     if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);

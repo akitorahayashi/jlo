@@ -4,6 +4,4 @@ pub mod filesystem;
 pub mod git;
 pub mod github;
 pub mod jules_client;
-pub mod memory_workspace_store;
 pub mod workflow_installer;
-pub mod workspace_filesystem;

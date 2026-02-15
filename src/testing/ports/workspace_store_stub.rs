@@ -134,7 +134,13 @@ impl RepositoryFilesystemPort for MockWorkspaceStore {
     }
 
     fn file_exists(&self, path: &str) -> bool {
-        self.files.lock().unwrap().contains_key(path)
+        let files = self.files.lock().unwrap();
+        if files.contains_key(path) {
+            return true;
+        }
+        // Also return true if this path is a "directory" (any file has this as prefix)
+        let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
+        files.keys().any(|k| k.starts_with(&prefix))
     }
 
     fn is_dir(&self, path: &str) -> bool {

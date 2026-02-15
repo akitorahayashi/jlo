@@ -5,8 +5,13 @@ use chrono::DateTime;
 use crate::app::configuration::{detect_repository_source, load_mock_config};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
-use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
+use crate::domain::{
+    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
+};
+use crate::ports::{
+    AutomationMode, GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort,
+    SessionRequest,
+};
 
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
@@ -14,7 +19,14 @@ pub struct NarratorLayer;
 
 impl<W> LayerStrategy<W> for NarratorLayer
 where
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     fn execute(
         &self,
@@ -69,7 +81,14 @@ fn execute_real<G, W>(
 ) -> Result<RunResult, AppError>
 where
     G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     let changes_path = exchange_changes_path(jules_path)?;
     let had_previous_changes = workspace.file_exists(&changes_path);
@@ -159,7 +178,14 @@ fn execute_mock(config: &MockConfig) -> Result<MockOutput, AppError> {
 
 fn assemble_narrator_prompt<
     G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 >(
     jules_path: &Path,
     range: &RangeContext,
@@ -225,7 +251,7 @@ fn determine_range<G, W>(
 ) -> Result<RangeContext, AppError>
 where
     G: GitPort + ?Sized,
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
 {
     let head_sha = git.get_head_sha()?;
     let changes_content = if workspace.file_exists(changes_path) {

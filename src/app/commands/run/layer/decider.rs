@@ -10,8 +10,13 @@ use super::super::mock::mock_execution::{
 use crate::app::configuration::{detect_repository_source, load_mock_config};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
-use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
+use crate::domain::{
+    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
+};
+use crate::ports::{
+    AutomationMode, GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort,
+    SessionRequest,
+};
 
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
@@ -19,7 +24,14 @@ pub struct DeciderLayer;
 
 impl<W> LayerStrategy<W> for DeciderLayer
 where
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     fn execute(
         &self,
@@ -65,7 +77,14 @@ fn execute_real<G, W>(
 ) -> Result<RunResult, AppError>
 where
     G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
@@ -111,7 +130,16 @@ where
     })
 }
 
-fn assemble_decider_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+fn assemble_decider_prompt<
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+>(
     jules_path: &Path,
     workspace: &W,
 ) -> Result<String, AppError> {
@@ -131,7 +159,7 @@ fn execute_mock<G, H, W>(
 where
     G: GitPort + ?Sized,
     H: GitHubPort + ?Sized,
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
 {
     let service = MockExecutionService::new(jules_path, config, git, github, workspace);
 

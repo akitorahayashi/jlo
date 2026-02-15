@@ -5,9 +5,12 @@ use chrono::Utc;
 use crate::app::configuration::{detect_repository_source, load_mock_config};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
+use crate::domain::{
+    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
+};
 use crate::ports::{
-    AutomationMode, GitHubPort, GitPort, JulesClient, SessionRequest, WorkspaceStore,
+    AutomationMode, GitHubPort, GitPort, JloStorePort, JulesClient, JulesStorePort,
+    RepositoryFilesystemPort, SessionRequest,
 };
 
 use super::super::requirement_path::validate_requirement_path;
@@ -17,7 +20,14 @@ pub struct PlannerLayer;
 
 impl<W> LayerStrategy<W> for PlannerLayer
 where
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     fn execute(
         &self,
@@ -74,7 +84,14 @@ fn execute_real<G, W>(
 ) -> Result<RunResult, AppError>
 where
     G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     let requirement_path = requirement_path.ok_or_else(|| {
         AppError::MissingArgument("Requirement path is required for planner".to_string())
@@ -122,7 +139,17 @@ where
     })
 }
 
-fn execute_session<C: JulesClient + ?Sized, W: WorkspaceStore + Clone + Send + Sync + 'static>(
+fn execute_session<
+    C: JulesClient + ?Sized,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+>(
     jules_path: &Path,
     starting_branch: &str,
     source: &str,
@@ -153,7 +180,16 @@ fn execute_session<C: JulesClient + ?Sized, W: WorkspaceStore + Clone + Send + S
     Ok(response.session_id)
 }
 
-fn assemble_planner_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+fn assemble_planner_prompt<
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+>(
     jules_path: &Path,
     workspace: &W,
 ) -> Result<String, AppError> {
@@ -162,7 +198,16 @@ fn assemble_planner_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
-fn execute_prompt_preview<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+fn execute_prompt_preview<
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+>(
     jules_path: &Path,
     starting_branch: &str,
     requirement_content: &str,
@@ -207,7 +252,7 @@ fn execute_mock<G, H, W>(
 where
     G: GitPort + ?Sized,
     H: GitHubPort + ?Sized,
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
 {
     let requirement_path = options.requirement.as_ref().ok_or_else(|| {
         AppError::MissingArgument("Requirement path is required for planner".to_string())

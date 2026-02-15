@@ -8,11 +8,14 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+use crate::adapters::filesystem::FilesystemStore;
 use crate::adapters::git::GitCommandAdapter;
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
+use crate::domain::PromptAssetLoader;
 use crate::domain::workspace::paths::jules;
-use crate::ports::{GitHubPort, GitPort, IssueInfo, JulesStorePort, WorkspaceStore};
+use crate::ports::{
+    GitHubPort, GitPort, IssueInfo, JloStorePort, JulesStorePort, RepositoryFilesystemPort,
+};
 
 #[derive(Debug, Clone)]
 pub struct WorkspacePublishProposalsOptions {}
@@ -66,7 +69,7 @@ struct PerspectiveData {
 pub fn execute(
     options: WorkspacePublishProposalsOptions,
 ) -> Result<WorkspacePublishProposalsOutput, AppError> {
-    let workspace = FilesystemWorkspaceStore::current()?;
+    let workspace = FilesystemStore::current()?;
     if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
     }
@@ -89,7 +92,7 @@ fn execute_with<W, G, H>(
     github: &H,
 ) -> Result<WorkspacePublishProposalsOutput, AppError>
 where
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
     G: GitPort,
     H: GitHubPort,
 {
@@ -266,7 +269,9 @@ where
 }
 
 /// Discover proposal.yml files across all innovator persona rooms.
-fn discover_proposals<W: WorkspaceStore>(
+fn discover_proposals<
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+>(
     innovators_dir: &Path,
     workspace: &W,
 ) -> Result<Vec<(String, PathBuf)>, AppError> {

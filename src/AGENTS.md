@@ -13,29 +13,42 @@ src/
 │   ├── repository_filesystem.rs  # RepositoryFilesystemPort
 │   ├── jlo_store.rs              # JloStorePort (.jlo/ control-plane)
 │   ├── jules_store.rs            # JulesStorePort (.jules/ runtime)
-│   ├── workspace_store.rs        # WorkspaceStore (legacy monolithic)
+│   ├── workspace_store.rs        # WorkspaceStore (migration bridge supertrait)
 │   ├── git.rs                    # GitPort
 │   ├── github.rs                 # GitHubPort
 │   ├── jules_client.rs           # JulesClient
 │   ├── role_template_store.rs    # RoleTemplateStore
 │   └── setup_component_catalog.rs # SetupComponentCatalog
 ├── adapters/          # I/O implementations
+│   ├── git/                      # GitPort adapter (git CLI)
+│   ├── github/                   # GitHubPort adapter (gh CLI)
+│   ├── jules_client/             # JulesClient adapter (HTTP, retry)
+│   ├── catalogs/                 # Embedded asset catalogs (roles, scaffold, setup, workflow)
+│   ├── filesystem/               # FilesystemStore (3-port impl, not yet wired)
+│   ├── workspace_filesystem.rs   # FilesystemWorkspaceStore (legacy, active)
+│   ├── memory_workspace_store.rs # MemoryWorkspaceStore (in-memory, active)
+│   ├── control_plane_config.rs   # Config/schedule readers
+│   └── workflow_installer.rs     # Workflow scaffold installer
 ├── app/
 │   ├── context.rs     # AppContext (DI container)
 │   └── commands/      # Command implementations
 ├── assets/
 │   ├── scaffold/      # Embedded .jules/ structure
 │   ├── templates/     # Role templates by layer
-│   ├── workflows/     # Workflow scaffold assets
-│   └── setup/         # Setup component definitions
-└── testing/           # Mock implementations
+│   ├── roles/         # Built-in role definitions
+│   ├── setup/         # Setup component definitions
+│   └── github/        # Workflow scaffold assets
+└── testing/           # Test doubles
+    ├── ports/         # Port-aligned stubs
+    ├── app/           # App-layer test helpers
+    └── domain/        # Domain-layer test helpers
 tests/
 ├── harness/           # Shared fixtures (TestContext, git helpers, config writers)
 ├── cli.rs             # CLI behavior contracts
-├── workflow.rs         # Bootstrap + workflow-kit contracts
+├── workflow.rs        # Bootstrap + workflow-kit contracts
 ├── doctor.rs          # Doctor/schema + mock fixture validity contracts
 ├── mock.rs            # Mock mode CLI contracts
-└── library.rs          # Public library API lifecycle contract
+└── library.rs         # Public library API lifecycle contract
 ```
 
 ## Tech Stack
@@ -71,7 +84,7 @@ Core domain logic located in `src/domain/`.
 
 | Module | Purpose |
 |--------|---------|
-| `configuration` | Global configuration models (`config.toml`, `scheduled.toml`). |
+| `configuration` | Global configuration models (`config.toml`, `scheduled.toml`, `WorkflowGenerateConfig`). |
 | `identifiers` | Structural identifiers (`RoleId`, `Layer`). |
 | `prompt` | Prompt assembly and template rendering models. |
 | `workspace` | Filesystem abstraction and path management. |
