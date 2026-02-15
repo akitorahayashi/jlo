@@ -16,7 +16,7 @@ use crate::ports::{GitHubPort, GitPort, JulesStorePort};
 
 /// Options for workflow cleanup mock command.
 #[derive(Debug, Clone)]
-pub struct WorkspaceCleanMockOptions {
+pub struct ExchangeCleanMockOptions {
     /// Mock tag to identify artifacts.
     pub mock_tag: String,
     /// PR numbers to close (optional, discovered if not provided).
@@ -27,7 +27,7 @@ pub struct WorkspaceCleanMockOptions {
 
 /// Output of workflow cleanup mock command.
 #[derive(Debug, Clone, Serialize)]
-pub struct WorkspaceCleanMockOutput {
+pub struct ExchangeCleanMockOutput {
     /// Schema version for output format stability.
     pub schema_version: u32,
     /// Number of PRs closed.
@@ -39,7 +39,7 @@ pub struct WorkspaceCleanMockOutput {
 }
 
 /// Execute cleanup mock command.
-pub fn execute(options: WorkspaceCleanMockOptions) -> Result<WorkspaceCleanMockOutput, AppError> {
+pub fn execute(options: ExchangeCleanMockOptions) -> Result<ExchangeCleanMockOutput, AppError> {
     let workspace = FilesystemStore::current()?;
 
     if !workspace.jules_exists() {
@@ -101,7 +101,7 @@ pub fn execute(options: WorkspaceCleanMockOptions) -> Result<WorkspaceCleanMockO
         options.mock_tag, closed_prs_count, deleted_branches_count, deleted_files_count
     );
 
-    Ok(WorkspaceCleanMockOutput {
+    Ok(ExchangeCleanMockOutput {
         schema_version: 1,
         closed_prs_count,
         deleted_branches_count,
@@ -387,7 +387,7 @@ mod tests {
             std::env::set_var("GITHUB_REPOSITORY", "owner/repo");
         }
 
-        let result = execute(WorkspaceCleanMockOptions {
+        let result = execute(ExchangeCleanMockOptions {
             mock_tag: "invalid-tag".to_string(),
             pr_numbers_json: None,
             branches_json: None,

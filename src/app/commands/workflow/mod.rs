@@ -5,11 +5,11 @@
 
 pub mod bootstrap;
 mod doctor;
+pub mod exchange;
 pub mod generate;
 pub mod gh;
 mod output;
 mod run;
-pub mod workspace;
 
 pub use bootstrap::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};

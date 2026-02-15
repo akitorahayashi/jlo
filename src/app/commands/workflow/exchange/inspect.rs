@@ -9,14 +9,14 @@ use crate::domain::workspace::paths::jules;
 use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort};
 
 use super::model::{
-    EventItem, EventStateSummary, EventSummary, RequirementItem, RequirementSummary, RoleSummary,
-    ScheduleLayerSummary, ScheduleSummary, WorkspaceInspectOutput,
+    EventItem, EventStateSummary, EventSummary, ExchangeInspectOutput, RequirementItem,
+    RequirementSummary, RoleSummary, ScheduleLayerSummary, ScheduleSummary,
 };
 
 #[derive(Debug, Clone)]
-pub struct WorkspaceInspectOptions {}
+pub struct ExchangeInspectOptions {}
 
-pub fn execute(_options: WorkspaceInspectOptions) -> Result<WorkspaceInspectOutput, AppError> {
+pub fn execute(_options: ExchangeInspectOptions) -> Result<ExchangeInspectOutput, AppError> {
     let workspace = FilesystemStore::current()?;
 
     if !workspace.jules_exists() {
@@ -28,7 +28,7 @@ pub fn execute(_options: WorkspaceInspectOptions) -> Result<WorkspaceInspectOutp
 
 pub(super) fn inspect_at(
     store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
-) -> Result<WorkspaceInspectOutput, AppError> {
+) -> Result<ExchangeInspectOutput, AppError> {
     let jules_path = store.jules_path();
     let exchange_dir = jules::exchange_dir(&jules_path);
     if !store.file_exists(exchange_dir.to_str().unwrap()) {
@@ -53,7 +53,7 @@ pub(super) fn inspect_at(
     let events = summarize_events(store, root, &exchange_dir)?;
     let requirements = summarize_requirements(store, root, &exchange_dir)?;
 
-    Ok(WorkspaceInspectOutput {
+    Ok(ExchangeInspectOutput {
         schema_version: 1,
         schedule: schedule_summary,
         events,

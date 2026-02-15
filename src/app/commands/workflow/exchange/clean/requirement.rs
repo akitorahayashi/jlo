@@ -9,15 +9,15 @@ use crate::domain::AppError;
 use crate::domain::PromptAssetLoader;
 use crate::ports::{GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
 
-use crate::app::commands::workflow::workspace::inspect::inspect_at;
+use crate::app::commands::workflow::exchange::inspect::inspect_at;
 
 #[derive(Debug, Clone)]
-pub struct WorkspaceCleanRequirementOptions {
+pub struct ExchangeCleanRequirementOptions {
     pub requirement_file: String,
 }
 
 #[derive(Debug, Serialize)]
-pub struct WorkspaceCleanRequirementOutput {
+pub struct ExchangeCleanRequirementOutput {
     pub schema_version: u32,
     pub deleted_paths: Vec<String>,
     pub committed: bool,
@@ -26,8 +26,8 @@ pub struct WorkspaceCleanRequirementOutput {
 }
 
 pub fn execute(
-    options: WorkspaceCleanRequirementOptions,
-) -> Result<WorkspaceCleanRequirementOutput, AppError> {
+    options: ExchangeCleanRequirementOptions,
+) -> Result<ExchangeCleanRequirementOutput, AppError> {
     let workspace = FilesystemStore::current()?;
     let root = workspace_root(&workspace)?;
     let git = GitCommandAdapter::new(root);
@@ -38,10 +38,10 @@ pub fn execute_with_adapters<
     G: GitPort,
     W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
 >(
-    options: WorkspaceCleanRequirementOptions,
+    options: ExchangeCleanRequirementOptions,
     workspace: &W,
     git: &G,
-) -> Result<WorkspaceCleanRequirementOutput, AppError> {
+) -> Result<ExchangeCleanRequirementOutput, AppError> {
     if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
     }
@@ -127,7 +127,7 @@ pub fn execute_with_adapters<
 
     git.push_branch(&branch, false)?;
 
-    Ok(WorkspaceCleanRequirementOutput {
+    Ok(ExchangeCleanRequirementOutput {
         schema_version: 1,
         deleted_paths,
         committed: true,
@@ -275,7 +275,7 @@ roles = [
 
         std::env::set_current_dir(&repo_dir).unwrap();
 
-        let output = execute(WorkspaceCleanRequirementOptions {
+        let output = execute(ExchangeCleanRequirementOptions {
             requirement_file: ".jules/exchange/requirements/issue.yml".to_string(),
         })
         .unwrap();

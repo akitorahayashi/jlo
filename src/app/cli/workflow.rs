@@ -35,28 +35,28 @@ pub enum WorkflowCommands {
         #[command(subcommand)]
         command: WorkflowGhCommands,
     },
-    /// Workspace observation and cleanup operations
-    Workspace {
+    /// Exchange area observation and cleanup operations
+    Exchange {
         #[command(subcommand)]
-        command: WorkflowWorkspaceCommands,
+        command: WorkflowExchangeCommands,
     },
 }
 
 #[derive(Subcommand)]
-pub enum WorkflowWorkspaceCommands {
+pub enum WorkflowExchangeCommands {
     /// Inspect exchange and output JSON
     Inspect,
     /// Publish merged proposals as GitHub issues
     PublishProposals,
-    /// Clean workspace artifacts
+    /// Clean exchange artifacts
     Clean {
         #[command(subcommand)]
-        command: WorkflowWorkspaceCleanCommands,
+        command: WorkflowExchangeCleanCommands,
     },
 }
 
 #[derive(Subcommand)]
-pub enum WorkflowWorkspaceCleanCommands {
+pub enum WorkflowExchangeCleanCommands {
     /// Remove a processed requirement and its source events
     Requirement {
         /// Path to the requirement file
@@ -188,39 +188,38 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             workflow::write_workflow_output(&output)
         }
         WorkflowCommands::Gh { command } => run_workflow_gh(command),
-        WorkflowCommands::Workspace { command } => run_workflow_workspace(command),
+        WorkflowCommands::Exchange { command } => run_workflow_exchange(command),
     }
 }
 
-fn run_workflow_workspace(command: WorkflowWorkspaceCommands) -> Result<(), AppError> {
+fn run_workflow_exchange(command: WorkflowExchangeCommands) -> Result<(), AppError> {
     use crate::app::commands::workflow;
 
     match command {
-        WorkflowWorkspaceCommands::Inspect => {
-            let options = workflow::workspace::WorkspaceInspectOptions {};
-            let output = workflow::workspace::inspect(options)?;
+        WorkflowExchangeCommands::Inspect => {
+            let options = workflow::exchange::ExchangeInspectOptions {};
+            let output = workflow::exchange::inspect(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowWorkspaceCommands::PublishProposals => {
-            let options = workflow::workspace::WorkspacePublishProposalsOptions {};
-            let output = workflow::workspace::publish_proposals(options)?;
+        WorkflowExchangeCommands::PublishProposals => {
+            let options = workflow::exchange::ExchangePublishProposalsOptions {};
+            let output = workflow::exchange::publish_proposals(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowWorkspaceCommands::Clean { command } => run_workflow_workspace_clean(command),
+        WorkflowExchangeCommands::Clean { command } => run_workflow_exchange_clean(command),
     }
 }
 
-fn run_workflow_workspace_clean(command: WorkflowWorkspaceCleanCommands) -> Result<(), AppError> {
+fn run_workflow_exchange_clean(command: WorkflowExchangeCleanCommands) -> Result<(), AppError> {
     use crate::app::commands::workflow;
 
     match command {
-        WorkflowWorkspaceCleanCommands::Requirement { requirement_file } => {
-            let options =
-                workflow::workspace::WorkspaceCleanRequirementOptions { requirement_file };
-            let output = workflow::workspace::clean_requirement(options)?;
+        WorkflowExchangeCleanCommands::Requirement { requirement_file } => {
+            let options = workflow::exchange::ExchangeCleanRequirementOptions { requirement_file };
+            let output = workflow::exchange::clean_requirement(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowWorkspaceCleanCommands::Mock { mock_tag, pr_numbers_json, branches_json } => {
+        WorkflowExchangeCleanCommands::Mock { mock_tag, pr_numbers_json, branches_json } => {
             let pr_numbers_json = match pr_numbers_json {
                 Some(json_str) => {
                     let parsed: Vec<u64> = serde_json::from_str(&json_str).map_err(|e| {
@@ -239,12 +238,12 @@ fn run_workflow_workspace_clean(command: WorkflowWorkspaceCleanCommands) -> Resu
                 }
                 None => None,
             };
-            let options = workflow::workspace::WorkspaceCleanMockOptions {
+            let options = workflow::exchange::ExchangeCleanMockOptions {
                 mock_tag,
                 pr_numbers_json,
                 branches_json,
             };
-            let output = workflow::workspace::clean_mock(options)?;
+            let output = workflow::exchange::clean_mock(options)?;
             workflow::write_workflow_output(&output)
         }
     }

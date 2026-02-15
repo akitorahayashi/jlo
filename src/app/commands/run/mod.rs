@@ -11,8 +11,8 @@ use std::path::Path;
 use crate::adapters::jules_client::HttpJulesClient;
 use crate::adapters::jules_client::{RetryPolicy, RetryingJulesClient};
 use crate::app::commands::run::strategy::{JulesClientFactory, get_layer_strategy};
-use crate::app::commands::workflow::workspace::{
-    WorkspaceCleanRequirementOptions, clean_requirement_with_adapters,
+use crate::app::commands::workflow::exchange::{
+    ExchangeCleanRequirementOptions, clean_requirement_with_adapters,
 };
 use crate::app::configuration::{load_config, validate_mock_prerequisites};
 use crate::domain::PromptAssetLoader;
@@ -125,7 +125,7 @@ where
     if let Some(path) = result.cleanup_requirement.as_ref() {
         let path_str = path.to_string_lossy().to_string();
         match clean_requirement_with_adapters(
-            WorkspaceCleanRequirementOptions { requirement_file: path_str },
+            ExchangeCleanRequirementOptions { requirement_file: path_str },
             workspace,
             git,
         ) {

@@ -18,10 +18,10 @@ use crate::ports::{
 };
 
 #[derive(Debug, Clone)]
-pub struct WorkspacePublishProposalsOptions {}
+pub struct ExchangePublishProposalsOptions {}
 
 #[derive(Debug, Serialize)]
-pub struct WorkspacePublishProposalsOutput {
+pub struct ExchangePublishProposalsOutput {
     pub schema_version: u32,
     pub published: Vec<PublishedProposal>,
     pub committed: bool,
@@ -67,8 +67,8 @@ struct PerspectiveData {
 }
 
 pub fn execute(
-    options: WorkspacePublishProposalsOptions,
-) -> Result<WorkspacePublishProposalsOutput, AppError> {
+    options: ExchangePublishProposalsOptions,
+) -> Result<ExchangePublishProposalsOutput, AppError> {
     let workspace = FilesystemStore::current()?;
     if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
@@ -87,10 +87,10 @@ pub fn execute(
 /// Core logic, injectable for testing.
 fn execute_with<W, G, H>(
     workspace: &W,
-    _options: &WorkspacePublishProposalsOptions,
+    _options: &ExchangePublishProposalsOptions,
     git: &G,
     github: &H,
-) -> Result<WorkspacePublishProposalsOutput, AppError>
+) -> Result<ExchangePublishProposalsOutput, AppError>
 where
     W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
     G: GitPort,
@@ -102,7 +102,7 @@ where
     let proposals = discover_proposals(&innovators_dir, workspace)?;
 
     if proposals.is_empty() {
-        return Ok(WorkspacePublishProposalsOutput {
+        return Ok(ExchangePublishProposalsOutput {
             schema_version: 1,
             published: vec![],
             committed: false,
@@ -260,7 +260,7 @@ where
     let branch = git.get_current_branch()?;
     git.push_branch(branch.trim(), false)?;
 
-    Ok(WorkspacePublishProposalsOutput {
+    Ok(ExchangePublishProposalsOutput {
         schema_version: 1,
         published,
         committed: true,
@@ -356,7 +356,7 @@ verification_signals:
         let git = FakeGit::new();
         let github = FakeGitHub::new();
 
-        let options = WorkspacePublishProposalsOptions {};
+        let options = ExchangePublishProposalsOptions {};
 
         let output = execute_with(&workspace, &options, &git, &github).unwrap();
 
@@ -385,7 +385,7 @@ verification_signals:
         let git = FakeGit::new();
         let github = FakeGitHub::new();
 
-        let options = WorkspacePublishProposalsOptions {};
+        let options = ExchangePublishProposalsOptions {};
 
         let output = execute_with(&workspace, &options, &git, &github).unwrap();
 
