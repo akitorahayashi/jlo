@@ -1,5 +1,11 @@
+pub mod app;
+pub mod domain;
 pub mod ports;
 
+#[allow(unused_imports)]
+pub use app::RunOptionsBuilder;
+#[allow(unused_imports)]
+pub use domain::RequirementYamlBuilder;
 #[allow(unused_imports)]
 pub use ports::FakeGit;
 #[allow(unused_imports)]

@@ -4,15 +4,14 @@ use chrono::Utc;
 use serde::Deserialize;
 
 use super::super::mock::mock_execution::MockExecutionService;
-use crate::app::configuration::{detect_repository_source, load_mock_config};
-use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::workspace::paths::jules;
-use crate::domain::{
-    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
+use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
+use crate::domain::layers::prompt_assembly::{
+    AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
+use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
 use crate::ports::{
-    AutomationMode, GitHubPort, GitPort, JloStorePort, JulesClient, JulesStorePort,
-    RepositoryFilesystemPort, SessionRequest,
+    AutomationMode, Git, GitHub, JloStore, JulesClient, JulesStore, RepositoryFilesystem,
+    SessionRequest,
 };
 
 use super::super::requirement_path::validate_requirement_path;
@@ -22,9 +21,9 @@ pub struct ImplementerLayer;
 
 impl<W> LayerStrategy<W> for ImplementerLayer
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -36,14 +35,14 @@ where
         jules_path: &Path,
         options: &RunOptions,
         config: &RunConfig,
-        git: &dyn GitPort,
-        github: &dyn GitHubPort,
-        workspace: &W,
+        git: &dyn Git,
+        github: &dyn GitHub,
+        repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
         if options.mock {
-            let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let _output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let mock_config = load_mock_config(jules_path, options, repository)?;
+            let _output = execute_mock(jules_path, options, &mock_config, git, github, repository)?;
             let cleanup_requirement = options.requirement.clone();
             // Mock output is written by execute_mock's service.finish()
             return Ok(RunResult {
@@ -61,7 +60,7 @@ where
             options.requirement.as_deref(),
             config,
             git,
-            workspace,
+            repository,
             client_factory,
         )
     }
@@ -75,14 +74,14 @@ fn execute_real<G, W>(
     requirement_path: Option<&Path>,
     config: &RunConfig,
     git: &G,
-    workspace: &W,
+    repository: &W,
     client_factory: &dyn JulesClientFactory,
 ) -> Result<RunResult, AppError>
 where
-    G: GitPort + ?Sized,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    G: Git + ?Sized,
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -92,15 +91,15 @@ where
     let requirement_path = requirement_path.ok_or_else(|| {
         AppError::MissingArgument("Requirement path is required for implementer".to_string())
     })?;
-    let requirement_info = validate_requirement_path(requirement_path, workspace)?;
+    let requirement_info = validate_requirement_path(requirement_path, repository)?;
 
-    let requirement_content = workspace.read_file(&requirement_info.requirement_path_str)?;
+    let requirement_content = repository.read_file(&requirement_info.requirement_path_str)?;
 
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.jlo_target_branch.clone());
 
     if prompt_preview {
-        execute_prompt_preview(jules_path, &starting_branch, &requirement_content, workspace)?;
+        execute_prompt_preview(jules_path, &starting_branch, &requirement_content, repository)?;
         return Ok(RunResult {
             roles: vec!["implementer".to_string()],
             prompt_preview: true,
@@ -118,7 +117,7 @@ where
         &source,
         client.as_ref(),
         &requirement_content,
-        workspace,
+        repository,
     )?;
 
     // Return cleanup requirement path so caller can clean it up
@@ -132,9 +131,9 @@ where
 
 fn execute_session<
     C: JulesClient + ?Sized,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -146,11 +145,11 @@ fn execute_session<
     source: &str,
     client: &C,
     requirement_content: &str,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     println!("Executing {}...", Layer::Implementer.display_name());
 
-    let mut prompt = assemble_implementer_prompt(jules_path, requirement_content, workspace)?;
+    let mut prompt = assemble_implementer_prompt(jules_path, requirement_content, repository)?;
 
     prompt.push_str("\n---\n# Requirement Content\n");
     prompt.push_str(requirement_content);
@@ -170,9 +169,9 @@ fn execute_session<
 }
 
 fn assemble_implementer_prompt<
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -181,14 +180,14 @@ fn assemble_implementer_prompt<
 >(
     jules_path: &Path,
     requirement_content: &str,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     let label = extract_requirement_label(requirement_content)?;
-    let task_content = resolve_implementer_task(jules_path, &label, workspace)?;
+    let task_content = resolve_implementer_task(jules_path, &label, repository)?;
 
     let context = PromptContext::new().with_var("task", task_content);
 
-    assemble_prompt(jules_path, Layer::Implementer, &context, workspace)
+    assemble_prompt(jules_path, Layer::Implementer, &context, repository)
         .map(|p: AssembledPrompt| p.content)
         .map_err(|e| AppError::InternalError(e.to_string()))
 }
@@ -204,7 +203,7 @@ fn extract_requirement_label(requirement_content: &str) -> Result<String, AppErr
             )
         })?;
 
-    if !crate::domain::identifiers::validation::validate_safe_path_component(label) {
+    if !crate::domain::roles::validation::validate_safe_path_component(label) {
         return Err(AppError::Validation(format!(
             "Invalid label '{}': must be a safe path component",
             label
@@ -214,16 +213,15 @@ fn extract_requirement_label(requirement_content: &str) -> Result<String, AppErr
     Ok(label.to_string())
 }
 
-fn resolve_implementer_task<
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
->(
+fn resolve_implementer_task<W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader>(
     jules_path: &Path,
     label: &str,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
-    let task_path = jules::tasks_dir(jules_path, Layer::Implementer).join(format!("{}.yml", label));
+    let task_path = crate::domain::layers::paths::tasks_dir(jules_path, Layer::Implementer)
+        .join(format!("{}.yml", label));
 
-    workspace.read_file(&task_path.to_string_lossy()).map_err(|_| {
+    repository.read_file(&task_path.to_string_lossy()).map_err(|_| {
         AppError::Validation(format!(
             "No task file for label '{}': expected {}",
             label,
@@ -233,9 +231,9 @@ fn resolve_implementer_task<
 }
 
 fn execute_prompt_preview<
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -245,21 +243,21 @@ fn execute_prompt_preview<
     jules_path: &Path,
     starting_branch: &str,
     requirement_content: &str,
-    workspace: &W,
+    repository: &W,
 ) -> Result<(), AppError> {
     println!("=== Prompt Preview: {} ===", Layer::Implementer.display_name());
     println!("Starting branch: {}\n", starting_branch);
     println!("Requirement content: {} chars\n", requirement_content.len());
 
-    let prompt_path = jules::prompt_template(jules_path, Layer::Implementer);
-    let contracts_path = jules::contracts(jules_path, Layer::Implementer);
+    let prompt_path = crate::domain::layers::paths::prompt_template(jules_path, Layer::Implementer);
+    let contracts_path = crate::domain::layers::paths::contracts(jules_path, Layer::Implementer);
 
     println!("Prompt: {}", prompt_path.display());
     if contracts_path.exists() {
         println!("Contracts: {}", contracts_path.display());
     }
 
-    let mut prompt = assemble_implementer_prompt(jules_path, requirement_content, workspace)?;
+    let mut prompt = assemble_implementer_prompt(jules_path, requirement_content, repository)?;
     prompt.push_str("\n---\n# Requirement Content\n");
     prompt.push_str(requirement_content);
 
@@ -275,14 +273,14 @@ fn execute_mock<G, H, W>(
     config: &MockConfig,
     git: &G,
     github: &H,
-    workspace: &W,
+    repository: &W,
 ) -> Result<MockOutput, AppError>
 where
-    G: GitPort + ?Sized,
-    H: GitHubPort + ?Sized,
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    G: Git + ?Sized,
+    H: GitHub + ?Sized,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
-    let service = MockExecutionService::new(jules_path, config, git, github, workspace);
+    let service = MockExecutionService::new(jules_path, config, git, github, repository);
 
     let original_branch = git.get_current_branch()?;
 
@@ -295,7 +293,7 @@ where
         .to_str()
         .ok_or_else(|| AppError::InvalidPath("Invalid requirement path".to_string()))?;
 
-    let requirement_content = workspace.read_file(requirement_path_str)?;
+    let requirement_content = repository.read_file(requirement_path_str)?;
     let (label, issue_id) = parse_requirement_for_branch(&requirement_content, requirement_path)?;
     if !config.issue_labels.contains(&label) {
         return Err(AppError::InvalidConfig(format!(
@@ -325,7 +323,7 @@ where
         Utc::now().to_rfc3339()
     );
 
-    workspace.write_file(&mock_file_path, &mock_content)?;
+    repository.write_file(&mock_file_path, &mock_content)?;
 
     // Commit and push
     let mock_path = Path::new(&mock_file_path);
@@ -392,7 +390,7 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
     let label = parsed.label.filter(|value| !value.trim().is_empty()).ok_or_else(|| {
         AppError::InvalidConfig(format!("Requirement file missing label field: {}", path.display()))
     })?;
-    if !crate::domain::identifiers::validation::validate_safe_path_component(&label) {
+    if !crate::domain::roles::validation::validate_safe_path_component(&label) {
         return Err(AppError::InvalidConfig(format!(
             "Requirement label '{}' is not a safe path component: {}",
             label,
@@ -417,7 +415,7 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::RepositoryFilesystemPort;
+    use crate::ports::RepositoryFilesystem;
     use crate::testing::{FakeGit, FakeGitHub, TestStore};
     use std::collections::HashMap;
 
@@ -436,13 +434,13 @@ mod tests {
     #[test]
     fn mock_implementer_creates_pr_for_valid_requirement() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = TestStore::new().with_exists(true);
+        let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
 
         let req_path = PathBuf::from(".jules/exchange/requirements/req.yml");
-        workspace.write_file(req_path.to_str().unwrap(), "id: abc123\nlabel: bugs\n").unwrap();
+        repository.write_file(req_path.to_str().unwrap(), "id: abc123\nlabel: bugs\n").unwrap();
 
         let options = RunOptions {
             layer: Layer::Implementer,
@@ -454,7 +452,7 @@ mod tests {
             task: None,
         };
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
         assert!(result.is_ok());
         let output = result.unwrap();
 
@@ -465,13 +463,13 @@ mod tests {
     #[test]
     fn mock_implementer_fails_if_label_not_allowed() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = TestStore::new().with_exists(true);
+        let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config(); // Allows "bugs"
 
         let req_path = PathBuf::from(".jules/exchange/requirements/req.yml");
-        workspace.write_file(req_path.to_str().unwrap(), "id: abc123\nlabel: features\n").unwrap(); // "features" not allowed
+        repository.write_file(req_path.to_str().unwrap(), "id: abc123\nlabel: features\n").unwrap(); // "features" not allowed
 
         let options = RunOptions {
             layer: Layer::Implementer,
@@ -483,7 +481,7 @@ mod tests {
             task: None,
         };
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
         assert!(result.is_err());
         assert!(
             matches!(result, Err(AppError::InvalidConfig(msg)) if msg.contains("not defined in github-labels.json"))

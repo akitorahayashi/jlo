@@ -7,7 +7,7 @@
 use serde::Serialize;
 
 use crate::domain::AppError;
-use crate::ports::GitHubPort;
+use crate::ports::GitHub;
 
 /// Marker prefix embedded in the managed comment body for idempotent detection.
 const MANAGED_COMMENT_MARKER: &str = "<!-- jlo:summary-request -->";
@@ -50,7 +50,7 @@ fn summary_request_body(head_branch: &str) -> &'static str {
 
 /// Execute `pr comment-summary-request`.
 pub fn execute(
-    github: &impl GitHubPort,
+    github: &impl GitHub,
     options: CommentSummaryRequestOptions,
 ) -> Result<CommentSummaryRequestOutput, AppError> {
     let pr = github.get_pr_detail(options.pr_number)?;

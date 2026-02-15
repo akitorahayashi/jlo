@@ -3,6 +3,7 @@
 pub mod artifact_generator;
 pub mod dependency_graph;
 pub mod setup_component;
+pub mod tools_config;
 
 pub use artifact_generator::SetupEnvArtifacts;
 pub use dependency_graph::DependencyGraph;

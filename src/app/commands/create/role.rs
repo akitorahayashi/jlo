@@ -3,7 +3,7 @@
 use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort, RoleTemplateStore};
+use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 use super::CreateOutcome;
 use crate::app::commands::role_schedule::ensure_role_scheduled;
@@ -14,11 +14,13 @@ pub fn execute<W, R>(
     name: &str,
 ) -> Result<CreateOutcome, AppError>
 where
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
     R: RoleTemplateStore,
 {
-    if !ctx.workspace().jlo_exists() {
-        return Err(AppError::WorkspaceNotFound);
+    if !ctx.repository().jlo_exists() {
+        return Err(AppError::Validation(
+            "workspace is not initialized. Run 'jlo init' first.".to_string(),
+        ));
     }
 
     let layer_enum = Layer::from_dir_name(layer)
@@ -31,7 +33,7 @@ where
     let role_id = RoleId::new(name)?;
 
     let role_dir = ctx
-        .workspace()
+        .repository()
         .jlo_path()
         .join(super::role_relative_path(layer_enum.dir_name(), role_id.as_str()));
 
@@ -50,7 +52,7 @@ where
     std::fs::create_dir_all(&role_dir)?;
     std::fs::write(role_dir.join("role.yml"), role_content)?;
 
-    ensure_role_scheduled(ctx.workspace(), layer_enum, &role_id)?;
+    ensure_role_scheduled(ctx.repository(), layer_enum, &role_id)?;
 
     Ok(CreateOutcome::Role {
         layer: layer_enum.dir_name().to_string(),

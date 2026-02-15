@@ -6,14 +6,14 @@
 use std::path::{Path, PathBuf};
 
 use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
-use crate::adapters::filesystem::FilesystemStore;
 use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::github::GitHubCommandAdapter;
+use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::app::{
     AppContext,
     commands::{add, cli_upgrade, create, deinit, doctor, init, run, setup, update},
 };
-use crate::ports::{JulesStorePort, RoleTemplateStore};
+use crate::ports::{JulesStore, RoleTemplateStore};
 
 pub use crate::app::commands::add::AddOutcome;
 pub use crate::app::commands::cli_upgrade::CliUpgradeResult;
@@ -33,10 +33,10 @@ pub use crate::domain::{BuiltinRoleEntry, Layer};
 /// Create an `AppContext` for a given path.
 fn create_context(
     path: std::path::PathBuf,
-) -> AppContext<FilesystemStore, EmbeddedRoleTemplateStore> {
-    let workspace = FilesystemStore::new(path);
+) -> AppContext<LocalRepositoryAdapter, EmbeddedRoleTemplateStore> {
+    let repository = LocalRepositoryAdapter::new(path);
     let templates = EmbeddedRoleTemplateStore::new();
-    AppContext::new(workspace, templates)
+    AppContext::new(repository, templates)
 }
 
 /// Initialize a new `.jlo/` control plane and workflow scaffold in the current directory.
@@ -70,11 +70,11 @@ pub fn init_workflows_at(
     path: std::path::PathBuf,
     mode: &WorkflowRunnerMode,
 ) -> Result<(), AppError> {
-    let workspace = FilesystemStore::new(path.clone());
+    let repository = LocalRepositoryAdapter::new(path.clone());
     let generate_config =
-        crate::adapters::control_plane_config::load_workflow_generate_config(&workspace)?;
+        crate::adapters::control_plane_config::load_workflow_generate_config(&repository)?;
     crate::adapters::workflow_installer::install_workflow_scaffold(
-        &workspace,
+        &repository,
         mode,
         &generate_config,
     )
@@ -163,16 +163,16 @@ pub fn run_at(
     root: impl Into<PathBuf>,
 ) -> Result<RunResult, AppError> {
     let root = root.into();
-    let workspace = FilesystemStore::new(root.clone());
-    if !workspace.jules_exists() {
-        return Err(AppError::WorkspaceNotFound);
+    let repository = LocalRepositoryAdapter::new(root.clone());
+    if !repository.jules_exists() {
+        return Err(AppError::JulesNotFound);
     }
 
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
 
     let options = RunOptions { layer, role, prompt_preview, branch, requirement, mock, task };
-    run::execute(&workspace.jules_path(), options, &git, &github, &workspace)
+    run::execute(&repository.jules_path(), options, &git, &github, &repository)
 }
 
 // =============================================================================
@@ -189,9 +189,9 @@ pub fn run_at(
 /// Returns the list of resolved component names in installation order.
 pub fn setup_gen(path: Option<&Path>) -> Result<Vec<String>, AppError> {
     let store = if let Some(p) = path {
-        FilesystemStore::new(p.to_path_buf())
+        LocalRepositoryAdapter::new(p.to_path_buf())
     } else {
-        FilesystemStore::current()?
+        LocalRepositoryAdapter::current()?
     };
     setup::generate(&store)
 }
@@ -210,9 +210,9 @@ pub fn setup_detail(component: &str) -> Result<SetupComponentDetail, AppError> {
 // Update Command API
 // =============================================================================
 
-/// Update workspace to current jlo version.
+/// Update repository to current jlo version.
 ///
-/// Reconciles the existing workspace with the scaffold embedded in the jlo binary.
+/// Reconciles the existing repository with the scaffold embedded in the jlo binary.
 /// Only jlo-managed files are overwritten; repository-owned files are preserved.
 ///
 /// # Arguments
@@ -221,12 +221,12 @@ pub fn update(prompt_preview: bool) -> Result<UpdateResult, AppError> {
     update_at(std::env::current_dir()?, prompt_preview)
 }
 
-/// Update workspace at the specified path.
+/// Update repository at the specified path.
 pub fn update_at(path: std::path::PathBuf, prompt_preview: bool) -> Result<UpdateResult, AppError> {
-    let workspace = FilesystemStore::new(path);
+    let repository = LocalRepositoryAdapter::new(path);
     let templates = EmbeddedRoleTemplateStore::new();
     let options = UpdateOptions { prompt_preview };
-    update::execute(&workspace, options, &templates)
+    update::execute(&repository, options, &templates)
 }
 
 /// Update the installed jlo CLI binary from the upstream repository.
@@ -238,18 +238,18 @@ pub fn update_cli() -> Result<CliUpgradeResult, AppError> {
 // Doctor Command API
 // =============================================================================
 
-/// Validate the `.jules/` workspace structure and content.
+/// Validate the `.jules/` repository structure and content.
 pub fn doctor(options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
     doctor_at(std::env::current_dir()?, options)
 }
 
-/// Validate the `.jules/` workspace at the specified path.
+/// Validate the `.jules/` repository at the specified path.
 pub fn doctor_at(
     path: impl Into<PathBuf>,
     options: DoctorOptions,
 ) -> Result<DoctorOutcome, AppError> {
-    let workspace = FilesystemStore::new(path.into());
-    doctor::execute(&workspace.jules_path(), options)
+    let repository = LocalRepositoryAdapter::new(path.into());
+    doctor::execute(&repository.jules_path(), options)
 }
 
 // =============================================================================

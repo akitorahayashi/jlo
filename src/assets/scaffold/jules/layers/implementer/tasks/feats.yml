@@ -14,8 +14,12 @@ steps:
   - Create a pull request referencing the requirement.
 
 constraints:
-  - "New public interfaces must have documentation."
+  - "Remove obsolete and deprecated code during feature work."
+  - "Use names that express a single, unambiguous responsibility."
+  - "Enforce single ownership for each concern."
+  - "Keep layer responsibilities explicit and non-overlapping."
+  - "Preserve one-way dependency direction and block boundary violations."
+  - "Prevent semantic overlap in module vocabulary."
   - "All development-related documentation must be written in English."
-  - "Keep documentation for LLM (AGENTS.md, CLAUDE.md, etc.) concise for token efficiency. Focus on essential information only."
-  - "Documentation is written in a declarative style describing the current state. Imperative or changelog-style descriptions are avoided."
-  - "Declarative updates preserve existing, correct content and integrate new content where appropriate, without duplication. Avoid ripping and replacing everything."
+  - "Use declarative documentation that describes current state."
+  - "Preserve correct existing content while integrating updates without duplication."

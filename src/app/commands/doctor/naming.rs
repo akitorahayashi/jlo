@@ -1,23 +1,27 @@
 use std::path::Path;
 
-use crate::domain::workspace::paths::jules;
-
 use super::diagnostics::Diagnostics;
 use super::structure::list_subdirs;
 use super::yaml::is_kebab_case;
 
 pub fn naming_checks(jules_path: &Path, event_states: &[String], diagnostics: &mut Diagnostics) {
     for state in event_states {
-        for entry in list_files(&jules::events_state_dir(jules_path, state), diagnostics) {
+        for entry in list_files(
+            &crate::domain::exchange::events::paths::events_state_dir(jules_path, state),
+            diagnostics,
+        ) {
             validate_filename(&entry, diagnostics, "event");
         }
     }
 
-    for entry in list_files(&jules::requirements_dir(jules_path), diagnostics) {
+    for entry in list_files(
+        &crate::domain::exchange::requirements::paths::requirements_dir(jules_path),
+        diagnostics,
+    ) {
         validate_filename(&entry, diagnostics, "requirement");
     }
 
-    let innovators_dir = jules::innovators_dir(jules_path);
+    let innovators_dir = crate::domain::exchange::innovators::paths::innovators_dir(jules_path);
     if innovators_dir.exists() {
         for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
             let comments_dir = persona_dir.join("comments");

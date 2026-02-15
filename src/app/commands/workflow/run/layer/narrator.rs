@@ -1,7 +1,7 @@
 use crate::app::commands::run::RunOptions;
 use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, Layer};
-use crate::ports::{GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
+use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 use std::path::Path;
 
 use crate::app::commands::workflow::run::options::{RunResults, WorkflowRunOptions};
@@ -15,16 +15,16 @@ pub(super) fn execute<W, G, H, F>(
     run_layer: &mut F,
 ) -> Result<RunResults, AppError>
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
         + Sync
         + 'static,
-    G: GitPort,
-    H: GitHubPort,
+    G: Git,
+    H: GitHub,
     F: FnMut(&Path, RunOptions, &G, &H, &W) -> Result<(), AppError>,
 {
     let run_options = RunOptions {

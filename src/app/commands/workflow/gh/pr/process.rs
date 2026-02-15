@@ -8,7 +8,7 @@ use std::time::Duration;
 use serde::Serialize;
 
 use crate::domain::AppError;
-use crate::ports::GitHubPort;
+use crate::ports::GitHub;
 
 use super::events::{comment_summary_request, enable_automerge, sync_category_label};
 
@@ -79,10 +79,7 @@ pub struct ProcessOutput {
 }
 
 /// Execute `pr process`.
-pub fn execute(
-    github: &impl GitHubPort,
-    options: ProcessOptions,
-) -> Result<ProcessOutput, AppError> {
+pub fn execute(github: &impl GitHub, options: ProcessOptions) -> Result<ProcessOutput, AppError> {
     if options.retry_attempts == 0 {
         return Err(AppError::Validation("retry_attempts must be greater than zero".to_string()));
     }
@@ -147,7 +144,7 @@ enum ProcessStep {
     EnableAutomerge,
 }
 
-fn run_comment_summary_request(github: &impl GitHubPort, pr_number: u64) -> ProcessStepResult {
+fn run_comment_summary_request(github: &impl GitHub, pr_number: u64) -> ProcessStepResult {
     let opts = comment_summary_request::CommentSummaryRequestOptions { pr_number };
     match comment_summary_request::execute(github, opts) {
         Ok(out) => ProcessStepResult {
@@ -167,7 +164,7 @@ fn run_comment_summary_request(github: &impl GitHubPort, pr_number: u64) -> Proc
     }
 }
 
-fn run_sync_category_label(github: &impl GitHubPort, pr_number: u64) -> ProcessStepResult {
+fn run_sync_category_label(github: &impl GitHub, pr_number: u64) -> ProcessStepResult {
     let opts = sync_category_label::SyncCategoryLabelOptions { pr_number };
     match sync_category_label::execute(github, opts) {
         Ok(out) => ProcessStepResult {
@@ -188,7 +185,7 @@ fn run_sync_category_label(github: &impl GitHubPort, pr_number: u64) -> ProcessS
 }
 
 fn run_enable_automerge(
-    github: &impl GitHubPort,
+    github: &impl GitHub,
     pr_number: u64,
     retry_attempts: u32,
     retry_delay_seconds: u64,

@@ -3,7 +3,7 @@ use crate::domain::{AppError, BuiltinRoleEntry, Layer};
 /// A file embedded in the scaffold bundle.
 #[derive(Debug, Clone)]
 pub struct ScaffoldFile {
-    /// Path relative to the workspace root.
+    /// Path relative to the repository root.
     pub path: String,
     /// File content as UTF-8 text.
     pub content: String,
@@ -11,7 +11,7 @@ pub struct ScaffoldFile {
 
 /// Port for accessing role templates and scaffold content.
 pub trait RoleTemplateStore {
-    /// Get all scaffold files (for workspace initialization and bootstrap).
+    /// Get all scaffold files (for repository initialization and bootstrap).
     fn scaffold_files(&self) -> Vec<ScaffoldFile>;
 
     /// Get control-plane intent files for `.jlo/` initialization.

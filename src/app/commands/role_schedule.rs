@@ -1,9 +1,9 @@
-use crate::domain::configuration::schedule::{ScheduleLayer, ScheduledRole};
+use crate::domain::schedule::{ScheduleLayer, ScheduledRole};
 use crate::domain::{AppError, Layer, RoleId, Schedule};
-use crate::ports::RepositoryFilesystemPort;
+use crate::ports::RepositoryFilesystem;
 
-pub fn ensure_role_scheduled<W: RepositoryFilesystemPort>(
-    workspace: &W,
+pub fn ensure_role_scheduled<W: RepositoryFilesystem>(
+    repository: &W,
     layer: Layer,
     role: &RoleId,
 ) -> Result<bool, AppError> {
@@ -15,7 +15,7 @@ pub fn ensure_role_scheduled<W: RepositoryFilesystemPort>(
     }
 
     let schedule_path = ".jlo/scheduled.toml";
-    let content = workspace.read_file(schedule_path)?;
+    let content = repository.read_file(schedule_path)?;
     let mut schedule = Schedule::parse_toml(&content)?;
 
     let updated = match layer {
@@ -33,7 +33,7 @@ pub fn ensure_role_scheduled<W: RepositoryFilesystemPort>(
 
     if updated {
         let serialized = render_schedule_toml(&schedule);
-        workspace.write_file(schedule_path, &serialized)?;
+        repository.write_file(schedule_path, &serialized)?;
     }
 
     Ok(updated)
@@ -49,11 +49,7 @@ fn insert_role(layer: &mut ScheduleLayer, role: &RoleId) -> bool {
 }
 
 fn render_schedule_toml(schedule: &Schedule) -> String {
-    let mut lines = vec![
-        format!("version = {}", schedule.version),
-        format!("enabled = {}", schedule.enabled),
-        String::new(),
-    ];
+    let mut lines = Vec::new();
 
     append_layer_toml(&mut lines, "observers", &schedule.observers);
 
@@ -86,17 +82,14 @@ fn append_layer_toml(lines: &mut Vec<String>, layer_name: &str, layer: &Schedule
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::RepositoryFilesystemPort;
+    use crate::ports::RepositoryFilesystem;
     use crate::testing::TestStore;
 
     #[test]
     fn ensure_role_scheduled_keeps_scaffold_style_for_observers() {
-        let workspace = TestStore::new().with_file(
+        let repository = TestStore::new().with_file(
             ".jlo/scheduled.toml",
-            r#"version = 1
-enabled = true
-
-[observers]
+            r#"[observers]
 roles = [
   { name = "consistency", enabled = true },
 ]
@@ -109,7 +102,7 @@ roles = [
         );
 
         let updated = ensure_role_scheduled(
-            &workspace,
+            &repository,
             Layer::Observers,
             &RoleId::new("librarian").expect("valid role id"),
         )
@@ -117,11 +110,8 @@ roles = [
         assert!(updated);
 
         let actual =
-            workspace.read_file(".jlo/scheduled.toml").expect("written schedule should exist");
-        let expected = r#"version = 1
-enabled = true
-
-[observers]
+            repository.read_file(".jlo/scheduled.toml").expect("written schedule should exist");
+        let expected = r#"[observers]
 roles = [
   { name = "consistency", enabled = true },
   { name = "librarian", enabled = true },
@@ -140,12 +130,9 @@ roles = [
 
     #[test]
     fn ensure_role_scheduled_adds_innovators_section_in_scaffold_style() {
-        let workspace = TestStore::new().with_file(
+        let repository = TestStore::new().with_file(
             ".jlo/scheduled.toml",
-            r#"version = 1
-enabled = true
-
-[observers]
+            r#"[observers]
 roles = [
   { name = "consistency", enabled = true },
 ]
@@ -153,7 +140,7 @@ roles = [
         );
 
         let updated = ensure_role_scheduled(
-            &workspace,
+            &repository,
             Layer::Innovators,
             &RoleId::new("librarian").expect("valid role id"),
         )
@@ -161,11 +148,8 @@ roles = [
         assert!(updated);
 
         let actual =
-            workspace.read_file(".jlo/scheduled.toml").expect("written schedule should exist");
-        let expected = r#"version = 1
-enabled = true
-
-[observers]
+            repository.read_file(".jlo/scheduled.toml").expect("written schedule should exist");
+        let expected = r#"[observers]
 roles = [
   { name = "consistency", enabled = true },
 ]

@@ -46,7 +46,7 @@ Jules uses a flat exchange model for handing off events and requirements between
 - **Innovator Rooms**:
   - `.jules/exchange/innovators/<persona>/` (contains proposals and comments)
 
-## Workspace Data Flow
+## Repository Data Flow
 
 The pipeline is file-based and uses local requirements as the handoff point:
 

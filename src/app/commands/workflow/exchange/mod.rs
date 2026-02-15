@@ -18,7 +18,7 @@ pub use publish_proposals::{ExchangePublishProposalsOptions, ExchangePublishProp
 
 use crate::domain::AppError;
 use crate::domain::PromptAssetLoader;
-use crate::ports::{GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
+use crate::ports::{Git, JloStore, JulesStore, RepositoryFilesystem};
 
 /// Execute exchange inspect command.
 pub fn inspect(options: ExchangeInspectOptions) -> Result<ExchangeInspectOutput, AppError> {
@@ -41,14 +41,14 @@ pub fn clean_requirement(
 
 /// Execute exchange clean requirement command with injected adapters.
 pub fn clean_requirement_with_adapters<
-    G: GitPort,
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    G: Git,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 >(
     options: ExchangeCleanRequirementOptions,
-    workspace: &W,
+    repository: &W,
     git: &G,
 ) -> Result<ExchangeCleanRequirementOutput, AppError> {
-    clean::clean_requirement_with_adapters(options, workspace, git)
+    clean::clean_requirement_with_adapters(options, repository, git)
 }
 
 /// Execute exchange clean mock command.

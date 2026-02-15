@@ -1,7 +1,8 @@
 //! `.jlo/` control-plane store operations.
 //!
 //! This port encapsulates domain-facing operations on the `.jlo/` directory.
-//! Path semantics (which files live where) are owned by `domain::workspace::paths::jlo`;
+//! Path semantics (which files live where) are owned by `domain::roles::paths`,
+//! `domain::config::paths`, and `domain::schedule::paths`;
 //! this port owns only the I/O behavior.
 
 use std::path::PathBuf;
@@ -18,7 +19,7 @@ pub struct DiscoveredRole {
 
 /// Port for `.jlo/` control-plane store operations.
 #[allow(dead_code)]
-pub trait JloStorePort {
+pub trait JloStore {
     /// Check whether the `.jlo/` directory exists.
     fn jlo_exists(&self) -> bool;
 

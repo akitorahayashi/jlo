@@ -1,11 +1,10 @@
-use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, RequirementHeader};
-use crate::ports::{JulesStorePort, RepositoryFilesystemPort};
+use crate::ports::{JulesStore, RepositoryFilesystem};
 use std::path::PathBuf;
 
 /// Find requirements for a layer in the flat exchange directory.
 pub(crate) fn find_requirements(
-    store: &(impl RepositoryFilesystemPort + JulesStorePort),
+    store: &(impl RepositoryFilesystem + JulesStore),
     layer: Layer,
 ) -> Result<Vec<PathBuf>, AppError> {
     if layer != Layer::Planner && layer != Layer::Implementer {
@@ -13,7 +12,8 @@ pub(crate) fn find_requirements(
     }
 
     let jules_path = store.jules_path();
-    let requirements_dir = jules::requirements_dir(&jules_path);
+    let requirements_dir =
+        crate::domain::exchange::requirements::paths::requirements_dir(&jules_path);
 
     let requirements_dir_str = match requirements_dir.to_str() {
         Some(s) => s,
@@ -62,7 +62,7 @@ pub(crate) fn find_requirements(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::{JulesStorePort, RepositoryFilesystemPort};
+    use crate::ports::{JulesStore, RepositoryFilesystem};
     use crate::testing::TestStore;
     use serial_test::serial;
 

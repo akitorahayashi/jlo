@@ -30,7 +30,7 @@ pub struct DoctorOutcome {
 
 pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcome, AppError> {
     if !jules_path.exists() {
-        return Err(AppError::WorkspaceNotFound);
+        return Err(AppError::JulesNotFound);
     }
 
     let root = jules_path.parent().unwrap_or(Path::new(".")).to_path_buf();

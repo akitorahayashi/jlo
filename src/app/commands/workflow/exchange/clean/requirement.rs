@@ -3,11 +3,11 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::adapters::filesystem::FilesystemStore;
 use crate::adapters::git::GitCommandAdapter;
+use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::domain::AppError;
 use crate::domain::PromptAssetLoader;
-use crate::ports::{GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
+use crate::ports::{Git, JloStore, JulesStore, RepositoryFilesystem};
 
 use crate::app::commands::workflow::exchange::inspect::inspect_at;
 
@@ -28,31 +28,31 @@ pub struct ExchangeCleanRequirementOutput {
 pub fn execute(
     options: ExchangeCleanRequirementOptions,
 ) -> Result<ExchangeCleanRequirementOutput, AppError> {
-    let workspace = FilesystemStore::current()?;
-    let root = workspace_root(&workspace)?;
+    let repository = LocalRepositoryAdapter::current()?;
+    let root = workspace_root(&repository)?;
     let git = GitCommandAdapter::new(root);
-    execute_with_adapters(options, &workspace, &git)
+    execute_with_adapters(options, &repository, &git)
 }
 
 pub fn execute_with_adapters<
-    G: GitPort,
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    G: Git,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 >(
     options: ExchangeCleanRequirementOptions,
-    workspace: &W,
+    repository: &W,
     git: &G,
 ) -> Result<ExchangeCleanRequirementOutput, AppError> {
-    if !workspace.jules_exists() {
-        return Err(AppError::WorkspaceNotFound);
+    if !repository.jules_exists() {
+        return Err(AppError::JulesNotFound);
     }
 
-    let jules_path = workspace.jules_path();
-    let canonical_jules = workspace
+    let jules_path = repository.jules_path();
+    let canonical_jules = repository
         .canonicalize(path_to_str(&jules_path, "Invalid .jules path")?)
         .map_err(|e| AppError::InternalError(format!("Failed to resolve .jules path: {}", e)))?;
 
     let canonical_requirement =
-        workspace.canonicalize(&options.requirement_file).map_err(|_| {
+        repository.canonicalize(&options.requirement_file).map_err(|_| {
             AppError::Validation(format!(
                 "Requirement file does not exist: {}",
                 options.requirement_file
@@ -67,9 +67,9 @@ pub fn execute_with_adapters<
     }
 
     let requirement_rel =
-        resolve_requirement_path(&canonical_jules, &canonical_requirement, workspace)?;
+        resolve_requirement_path(&canonical_jules, &canonical_requirement, repository)?;
 
-    let inspect_output = inspect_at(workspace)?;
+    let inspect_output = inspect_at(repository)?;
 
     let requirement_item = inspect_output
         .requirements
@@ -137,11 +137,11 @@ pub fn execute_with_adapters<
 }
 
 fn resolve_requirement_path<
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader + ?Sized,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader + ?Sized,
 >(
     canonical_jules: &Path,
     canonical_requirement: &Path,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     let rel_to_jules = canonical_requirement
         .strip_prefix(canonical_jules)
@@ -157,18 +157,16 @@ fn resolve_requirement_path<
         )));
     }
 
-    let root = workspace_root(workspace)?;
+    let root = workspace_root(repository)?;
     let requirement_rel = to_repo_relative(&root, canonical_requirement);
 
     Ok(requirement_rel)
 }
 
-fn workspace_root<
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader + ?Sized,
->(
-    workspace: &W,
+fn workspace_root<W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader + ?Sized>(
+    repository: &W,
 ) -> Result<PathBuf, AppError> {
-    let jules_path = workspace.jules_path();
+    let jules_path = repository.jules_path();
     let root = jules_path.parent().ok_or_else(|| {
         AppError::Validation(format!(
             "Invalid .jules path (missing parent): {}",
@@ -176,10 +174,10 @@ fn workspace_root<
         ))
     })?;
     let root = root.to_path_buf();
-    let root_str = path_to_str(&root, "Workspace root contains invalid unicode")?;
-    workspace
+    let root_str = path_to_str(&root, "Repository root contains invalid unicode")?;
+    repository
         .canonicalize(root_str)
-        .map_err(|e| AppError::InternalError(format!("Failed to resolve workspace root: {}", e)))
+        .map_err(|e| AppError::InternalError(format!("Failed to resolve repository root: {}", e)))
 }
 
 fn to_repo_relative(root: &Path, path: &Path) -> String {
@@ -259,8 +257,6 @@ requires_deep_analysis: false
         fs::write(
             jlo_path.join("scheduled.toml"),
             r#"
-version = 1
-enabled = true
 [observers]
 roles = [
     { name = "taxonomy", enabled = true },

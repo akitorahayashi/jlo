@@ -10,8 +10,6 @@ pub struct ExchangeInspectOutput {
 
 #[derive(Debug, Serialize)]
 pub struct ScheduleSummary {
-    pub version: u32,
-    pub enabled: bool,
     pub observers: ScheduleLayerSummary,
 }
 

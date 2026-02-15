@@ -2,15 +2,14 @@ use std::path::Path;
 
 use chrono::Utc;
 
-use crate::app::configuration::{detect_repository_source, load_mock_config};
-use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::workspace::paths::jules;
-use crate::domain::{
-    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
+use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
+use crate::domain::layers::prompt_assembly::{
+    AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
+use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
 use crate::ports::{
-    AutomationMode, GitHubPort, GitPort, JloStorePort, JulesClient, JulesStorePort,
-    RepositoryFilesystemPort, SessionRequest,
+    AutomationMode, Git, GitHub, JloStore, JulesClient, JulesStore, RepositoryFilesystem,
+    SessionRequest,
 };
 
 use super::super::requirement_path::validate_requirement_path;
@@ -20,9 +19,9 @@ pub struct PlannerLayer;
 
 impl<W> LayerStrategy<W> for PlannerLayer
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -34,14 +33,14 @@ where
         jules_path: &Path,
         options: &RunOptions,
         config: &RunConfig,
-        git: &dyn GitPort,
-        github: &dyn GitHubPort,
-        workspace: &W,
+        git: &dyn Git,
+        github: &dyn GitHub,
+        repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
         if options.mock {
-            let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let mock_config = load_mock_config(jules_path, options, repository)?;
+            let output = execute_mock(jules_path, options, &mock_config, git, github, repository)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
@@ -65,7 +64,7 @@ where
             options.requirement.as_deref(),
             config,
             git,
-            workspace,
+            repository,
             client_factory,
         )
     }
@@ -79,14 +78,14 @@ fn execute_real<G, W>(
     requirement_path: Option<&Path>,
     config: &RunConfig,
     git: &G,
-    workspace: &W,
+    repository: &W,
     client_factory: &dyn JulesClientFactory,
 ) -> Result<RunResult, AppError>
 where
-    G: GitPort + ?Sized,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    G: Git + ?Sized,
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -96,8 +95,8 @@ where
     let requirement_path = requirement_path.ok_or_else(|| {
         AppError::MissingArgument("Requirement path is required for planner".to_string())
     })?;
-    let requirement_info = validate_requirement_path(requirement_path, workspace)?;
-    let requirement_content = workspace.read_file(&requirement_info.requirement_path_str)?;
+    let requirement_info = validate_requirement_path(requirement_path, repository)?;
+    let requirement_content = repository.read_file(&requirement_info.requirement_path_str)?;
 
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
@@ -108,7 +107,7 @@ where
             &starting_branch,
             &requirement_content,
             requirement_path,
-            workspace,
+            repository,
         )?;
         return Ok(RunResult {
             roles: vec!["planner".to_string()],
@@ -128,7 +127,7 @@ where
         client.as_ref(),
         &requirement_content,
         requirement_path,
-        workspace,
+        repository,
     )?;
 
     Ok(RunResult {
@@ -141,9 +140,9 @@ where
 
 fn execute_session<
     C: JulesClient + ?Sized,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -156,11 +155,11 @@ fn execute_session<
     client: &C,
     requirement_content: &str,
     requirement_path: &Path,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     println!("Executing {}...", Layer::Planner.display_name());
 
-    let mut prompt = assemble_planner_prompt(jules_path, workspace)?;
+    let mut prompt = assemble_planner_prompt(jules_path, repository)?;
 
     prompt.push_str("\n---\n# Requirement Content\n");
     prompt.push_str(&format!("File: {}\n\n", requirement_path.display()));
@@ -181,9 +180,9 @@ fn execute_session<
 }
 
 fn assemble_planner_prompt<
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -191,17 +190,17 @@ fn assemble_planner_prompt<
         + 'static,
 >(
     jules_path: &Path,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
-    assemble_prompt(jules_path, Layer::Planner, &PromptContext::new(), workspace)
+    assemble_prompt(jules_path, Layer::Planner, &PromptContext::new(), repository)
         .map(|p: AssembledPrompt| p.content)
         .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
 fn execute_prompt_preview<
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -212,21 +211,21 @@ fn execute_prompt_preview<
     starting_branch: &str,
     requirement_content: &str,
     requirement_path: &Path,
-    workspace: &W,
+    repository: &W,
 ) -> Result<(), AppError> {
     println!("=== Prompt Preview: {} ===", Layer::Planner.display_name());
     println!("Starting branch: {}\n", starting_branch);
     println!("Requirement content: {} chars\n", requirement_content.len());
 
-    let prompt_path = jules::prompt_template(jules_path, Layer::Planner);
-    let contracts_path = jules::contracts(jules_path, Layer::Planner);
+    let prompt_path = crate::domain::layers::paths::prompt_template(jules_path, Layer::Planner);
+    let contracts_path = crate::domain::layers::paths::contracts(jules_path, Layer::Planner);
 
     println!("Prompt: {}", prompt_path.display());
     if contracts_path.exists() {
         println!("Contracts: {}", contracts_path.display());
     }
 
-    if let Ok(mut prompt) = assemble_planner_prompt(jules_path, workspace) {
+    if let Ok(mut prompt) = assemble_planner_prompt(jules_path, repository) {
         prompt.push_str("\n---\n# Requirement Content\n");
         prompt.push_str(&format!("File: {}\n\n", requirement_path.display()));
         prompt.push_str(requirement_content);
@@ -247,12 +246,12 @@ fn execute_mock<G, H, W>(
     config: &MockConfig,
     git: &G,
     github: &H,
-    workspace: &W,
+    repository: &W,
 ) -> Result<MockOutput, AppError>
 where
-    G: GitPort + ?Sized,
-    H: GitHubPort + ?Sized,
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    G: Git + ?Sized,
+    H: GitHub + ?Sized,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
     let requirement_path = options.requirement.as_ref().ok_or_else(|| {
         AppError::MissingArgument("Requirement path is required for planner".to_string())
@@ -273,7 +272,7 @@ where
         .to_str()
         .ok_or_else(|| AppError::Validation("Invalid requirement path".to_string()))?;
 
-    let requirement_content = workspace.read_file(requirement_path_str)?;
+    let requirement_content = repository.read_file(requirement_path_str)?;
 
     // Update requirement: expand analysis and set requires_deep_analysis to false
     let updated_content = requirement_content
@@ -298,7 +297,7 @@ analysis_details: |
             config.mock_tag
         );
 
-    workspace.write_file(requirement_path_str, &updated_content)?;
+    repository.write_file(requirement_path_str, &updated_content)?;
 
     // Commit and push
     let files: Vec<&Path> = vec![requirement_path.as_path()];

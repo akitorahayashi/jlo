@@ -1,11 +1,11 @@
 //! Setup gen command - generates install.sh, vars.toml, and secrets.toml.
 
 use crate::adapters::catalogs::EmbeddedSetupComponentCatalog;
-use crate::app::config::SetupConfig;
+use crate::app::config::load_setup_config;
 use crate::domain::AppError;
 use crate::domain::setup::artifact_generator;
 use crate::domain::setup::dependency_graph::DependencyGraph;
-use crate::ports::RepositoryFilesystemPort;
+use crate::ports::RepositoryFilesystem;
 
 /// Execute the setup gen command.
 ///
@@ -15,28 +15,14 @@ use crate::ports::RepositoryFilesystemPort;
 /// - `.jlo/setup/secrets.toml` - Secret environment variables
 ///
 /// Returns the list of resolved component names in installation order.
-pub fn execute(store: &impl RepositoryFilesystemPort) -> Result<Vec<String>, AppError> {
+pub fn execute(store: &impl RepositoryFilesystem) -> Result<Vec<String>, AppError> {
     let jlo_setup = ".jlo/setup";
-    let tools_yml = ".jlo/setup/tools.yml";
-
     if !store.file_exists(jlo_setup) {
         return Err(AppError::SetupNotInitialized);
     }
 
-    if !store.file_exists(tools_yml) {
-        return Err(AppError::SetupConfigMissing);
-    }
-
     // Load configuration
-    let content = store.read_file(tools_yml)?;
-    let config: SetupConfig = serde_yaml::from_str(&content)
-        .map_err(|e| AppError::ParseError { what: "tools.yml".into(), details: e.to_string() })?;
-
-    if config.tools.is_empty() {
-        return Err(AppError::Validation(
-            "No tools specified in tools.yml. Add tools to the 'tools' list.".into(),
-        ));
-    }
+    let config = load_setup_config(store)?;
 
     // Resolve dependencies
     let catalog = EmbeddedSetupComponentCatalog::new()?;
@@ -71,7 +57,7 @@ pub fn execute(store: &impl RepositoryFilesystemPort) -> Result<Vec<String>, App
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::RepositoryFilesystemPort;
+    use crate::ports::RepositoryFilesystem;
     use crate::testing::TestStore;
 
     #[test]

@@ -4,7 +4,6 @@ use std::path::{Path, PathBuf};
 use chrono::NaiveDate;
 use serde_yaml::Mapping;
 
-use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer};
 
 use super::diagnostics::Diagnostics;
@@ -37,7 +36,7 @@ pub fn collect_prompt_entries(
     let mut entries = Vec::new();
 
     for layer in Layer::ALL {
-        let layer_dir = jules::layer_dir(jules_path, layer);
+        let layer_dir = crate::domain::layers::paths::layer_dir(jules_path, layer);
         if !layer_dir.exists() {
             continue;
         }
@@ -46,7 +45,8 @@ pub fn collect_prompt_entries(
             // Single-role layers use <layer>_prompt.j2 (Jinja2 template),
             // not the legacy prompt.yml (YAML) format. No prompt entry to parse.
         } else {
-            let roles_container = jules::layer_roles_container(jules_path, layer);
+            let roles_container =
+                crate::domain::layers::paths::layer_roles_container(jules_path, layer);
             if roles_container.exists() {
                 for role_dir in list_subdirs(&roles_container, diagnostics) {
                     let role_path = role_dir.join("role.yml");
@@ -76,24 +76,25 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         }
     }
 
-    let changes_path = jules::exchange_changes(inputs.jules_path);
+    let changes_path = crate::domain::exchange::paths::exchange_changes(inputs.jules_path);
     if changes_path.exists() {
         validate_exchange_changes(&changes_path, diagnostics);
     }
 
     for layer in Layer::ALL {
-        let layer_dir = jules::layer_dir(inputs.jules_path, layer);
+        let layer_dir = crate::domain::layers::paths::layer_dir(inputs.jules_path, layer);
         if !layer_dir.exists() {
             continue;
         }
 
-        let contracts_path = jules::contracts(inputs.jules_path, layer);
+        let contracts_path = crate::domain::layers::paths::contracts(inputs.jules_path, layer);
         if contracts_path.exists() {
             validate_contracts_file(&contracts_path, layer, diagnostics);
         }
 
         if layer == Layer::Observers {
-            let roles_container = jules::layer_roles_container(inputs.jules_path, layer);
+            let roles_container =
+                crate::domain::layers::paths::layer_roles_container(inputs.jules_path, layer);
             if roles_container.exists() {
                 for role_dir in list_subdirs(&roles_container, diagnostics) {
                     let role_path = role_dir.join("role.yml");
@@ -105,7 +106,8 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         }
 
         if layer == Layer::Innovators {
-            let roles_container = jules::layer_roles_container(inputs.jules_path, layer);
+            let roles_container =
+                crate::domain::layers::paths::layer_roles_container(inputs.jules_path, layer);
             if roles_container.exists() {
                 for role_dir in list_subdirs(&roles_container, diagnostics) {
                     let role_path = role_dir.join("role.yml");
@@ -120,7 +122,8 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
     // Validate flat exchange directory
     {
         for state in inputs.event_states {
-            let state_dir = jules::events_state_dir(inputs.jules_path, state);
+            let state_dir =
+                crate::domain::exchange::events::paths::events_state_dir(inputs.jules_path, state);
             for entry in read_yaml_files(&state_dir, diagnostics) {
                 validate_event_file(&entry, state, inputs.event_confidence, diagnostics);
                 check_placeholders_file(&entry, diagnostics);
@@ -128,7 +131,8 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         }
 
         {
-            let requirements_dir = jules::requirements_dir(inputs.jules_path);
+            let requirements_dir =
+                crate::domain::exchange::requirements::paths::requirements_dir(inputs.jules_path);
             for entry in read_yaml_files(&requirements_dir, diagnostics) {
                 validate_requirement_file(
                     &entry,
@@ -140,31 +144,45 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             }
         }
 
-        let innovators_dir = jules::innovators_dir(inputs.jules_path);
+        let innovators_dir =
+            crate::domain::exchange::innovators::paths::innovators_dir(inputs.jules_path);
         if innovators_dir.exists() {
             for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
                 let persona_name =
                     persona_dir.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
 
                 let perspective_path =
-                    jules::innovator_perspective(inputs.jules_path, &persona_name);
+                    crate::domain::exchange::innovators::paths::innovator_perspective(
+                        inputs.jules_path,
+                        &persona_name,
+                    );
                 if perspective_path.exists() {
                     validate_innovator_perspective(&perspective_path, &persona_name, diagnostics);
                 }
 
-                let idea_path = jules::innovator_idea(inputs.jules_path, &persona_name);
+                let idea_path = crate::domain::exchange::innovators::paths::innovator_idea(
+                    inputs.jules_path,
+                    &persona_name,
+                );
                 if idea_path.exists() {
                     validate_innovator_idea(&idea_path, diagnostics);
                     check_placeholders_file(&idea_path, diagnostics);
                 }
 
-                let proposal_path = jules::innovator_proposal(inputs.jules_path, &persona_name);
+                let proposal_path = crate::domain::exchange::innovators::paths::innovator_proposal(
+                    inputs.jules_path,
+                    &persona_name,
+                );
                 if proposal_path.exists() {
                     validate_innovator_proposal(&proposal_path, diagnostics);
                     check_placeholders_file(&proposal_path, diagnostics);
                 }
 
-                let comments_dir = jules::innovator_comments_dir(inputs.jules_path, &persona_name);
+                let comments_dir =
+                    crate::domain::exchange::innovators::paths::innovator_comments_dir(
+                        inputs.jules_path,
+                        &persona_name,
+                    );
                 if comments_dir.exists() {
                     for entry in read_yaml_files(&comments_dir, diagnostics) {
                         validate_innovator_comment(&entry, diagnostics);

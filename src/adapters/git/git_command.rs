@@ -1,5 +1,5 @@
 use crate::domain::AppError;
-use crate::ports::GitPort;
+use crate::ports::Git;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -35,7 +35,7 @@ impl GitCommandAdapter {
     }
 }
 
-impl GitPort for GitCommandAdapter {
+impl Git for GitCommandAdapter {
     fn run_command(&self, args: &[&str], cwd: Option<&Path>) -> Result<String, AppError> {
         self.run(args, cwd)
     }

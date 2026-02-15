@@ -1,8 +1,7 @@
 use crate::app::commands::run::RunOptions;
 use crate::domain::PromptAssetLoader;
-use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer};
-use crate::ports::{GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
+use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 use std::path::Path;
 
 use crate::app::commands::workflow::run::options::{RunResults, WorkflowRunOptions};
@@ -16,16 +15,16 @@ pub(super) fn execute<W, G, H, F>(
     run_layer: &mut F,
 ) -> Result<RunResults, AppError>
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
         + Sync
         + 'static,
-    G: GitPort,
-    H: GitHubPort,
+    G: Git,
+    H: GitHub,
     F: FnMut(&Path, RunOptions, &G, &H, &W) -> Result<(), AppError>,
 {
     if !options.mock && !has_pending_events(jules_path)? {
@@ -50,7 +49,8 @@ where
 }
 
 fn has_pending_events(jules_path: &Path) -> Result<bool, AppError> {
-    let pending_dir = jules::exchange_dir(jules_path).join("events/pending");
+    let pending_dir =
+        crate::domain::exchange::paths::exchange_dir(jules_path).join("events/pending");
     if !pending_dir.exists() {
         return Ok(false);
     }

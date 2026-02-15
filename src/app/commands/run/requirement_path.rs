@@ -1,33 +1,32 @@
 use std::path::Path;
 
 use crate::domain::AppError;
-use crate::domain::workspace::paths::jules;
-use crate::ports::{JulesStorePort, RepositoryFilesystemPort};
+use crate::ports::{JulesStore, RepositoryFilesystem};
 
 pub struct RequirementPathInfo {
     pub requirement_path_str: String,
 }
 
-pub fn validate_requirement_path<W: RepositoryFilesystemPort + JulesStorePort + ?Sized>(
+pub fn validate_requirement_path<W: RepositoryFilesystem + JulesStore + ?Sized>(
     requirement_path: &Path,
-    workspace: &W,
+    repository: &W,
 ) -> Result<RequirementPathInfo, AppError> {
     let path_str = requirement_path.to_str().ok_or_else(|| {
         AppError::Validation("Requirement path contains invalid unicode".to_string())
     })?;
 
-    if !workspace.file_exists(path_str) {
+    if !repository.file_exists(path_str) {
         return Err(AppError::RequirementFileNotFound(path_str.to_string()));
     }
 
-    let canonical_path = workspace.canonicalize(path_str)?;
+    let canonical_path = repository.canonicalize(path_str)?;
 
-    let exchange_dir = jules::exchange_dir(&workspace.jules_path());
+    let exchange_dir = crate::domain::exchange::paths::exchange_dir(&repository.jules_path());
     let exchange_dir_str = exchange_dir.to_str().ok_or_else(|| {
         AppError::Validation("Exchange path contains invalid unicode".to_string())
     })?;
 
-    let canonical_exchange_dir = workspace
+    let canonical_exchange_dir = repository
         .canonicalize(exchange_dir_str)
         .map_err(|_| AppError::ExchangeDirectoryNotFound)?;
 

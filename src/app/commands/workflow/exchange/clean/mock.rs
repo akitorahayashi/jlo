@@ -8,11 +8,11 @@ use std::process::Command;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::adapters::filesystem::FilesystemStore;
 use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::github::GitHubCommandAdapter;
+use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::domain::AppError;
-use crate::ports::{GitHubPort, GitPort, JulesStorePort};
+use crate::ports::{Git, GitHub, JulesStore};
 
 /// Options for workflow cleanup mock command.
 #[derive(Debug, Clone)]
@@ -40,10 +40,10 @@ pub struct ExchangeCleanMockOutput {
 
 /// Execute cleanup mock command.
 pub fn execute(options: ExchangeCleanMockOptions) -> Result<ExchangeCleanMockOutput, AppError> {
-    let workspace = FilesystemStore::current()?;
+    let repository = LocalRepositoryAdapter::current()?;
 
-    if !workspace.jules_exists() {
-        return Err(AppError::WorkspaceNotFound);
+    if !repository.jules_exists() {
+        return Err(AppError::JulesNotFound);
     }
 
     // Require GH_TOKEN and GITHUB_REPOSITORY.
@@ -63,12 +63,12 @@ pub fn execute(options: ExchangeCleanMockOptions) -> Result<ExchangeCleanMockOut
         return Err(AppError::Validation("mock_tag must contain 'mock' substring".to_string()));
     }
 
-    let repository = std::env::var("GITHUB_REPOSITORY").map_err(|_| {
+    let github_repository = std::env::var("GITHUB_REPOSITORY").map_err(|_| {
         AppError::Validation("GITHUB_REPOSITORY environment variable is required".to_string())
     })?;
     let worker_branch = resolve_worker_branch(std::env::var("JULES_WORKER_BRANCH").ok())?;
 
-    let root = workspace_root(&workspace)?;
+    let root = repository_root(&repository)?;
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
     ensure_worker_branch_checked_out(&git, &worker_branch)?;
@@ -83,7 +83,7 @@ pub fn execute(options: ExchangeCleanMockOptions) -> Result<ExchangeCleanMockOut
 
     let pr_numbers = match options.pr_numbers_json {
         Some(values) => sort_and_dedup(values),
-        None => discover_mock_pr_numbers(&repository, &options.mock_tag)?,
+        None => discover_mock_pr_numbers(&github_repository, &options.mock_tag)?,
     };
 
     let branches = match options.branches_json {
@@ -94,7 +94,7 @@ pub fn execute(options: ExchangeCleanMockOptions) -> Result<ExchangeCleanMockOut
     let closed_prs_count = close_pull_requests(&github, &pr_numbers)?;
     let deleted_branches_count = delete_remote_branches(&github, &branches)?;
     let deleted_files_count =
-        delete_mock_files(&workspace, &git, &github, &options.mock_tag, &worker_branch)?;
+        delete_mock_files(&repository, &git, &github, &options.mock_tag, &worker_branch)?;
 
     eprintln!(
         "Cleaned mock artifacts for tag '{}': {} PRs, {} branches, {} files",
@@ -146,14 +146,14 @@ fn delete_remote_branches(
 }
 
 fn delete_mock_files(
-    workspace: &FilesystemStore,
+    repository: &LocalRepositoryAdapter,
     git: &GitCommandAdapter,
     github: &GitHubCommandAdapter,
     mock_tag: &str,
     worker_branch: &str,
 ) -> Result<usize, AppError> {
-    let root = workspace_root(workspace)?;
-    let jules_path = workspace.jules_path();
+    let root = repository_root(repository)?;
+    let jules_path = repository.jules_path();
 
     let files = collect_mock_files(&jules_path, mock_tag)?;
     if files.is_empty() {
@@ -340,10 +340,10 @@ fn run_command(program: &str, args: &[&str]) -> Result<String, AppError> {
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
-fn workspace_root(workspace: &FilesystemStore) -> Result<PathBuf, AppError> {
-    let root = workspace.jules_path().parent().unwrap_or(Path::new(".")).to_path_buf();
+fn repository_root(repository: &LocalRepositoryAdapter) -> Result<PathBuf, AppError> {
+    let root = repository.jules_path().parent().unwrap_or(Path::new(".")).to_path_buf();
     root.canonicalize().map_err(|error| {
-        AppError::InternalError(format!("Failed to resolve workspace root: {}", error))
+        AppError::InternalError(format!("Failed to resolve repository root: {}", error))
     })
 }
 

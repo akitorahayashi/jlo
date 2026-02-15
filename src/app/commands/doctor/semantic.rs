@@ -3,9 +3,8 @@ use std::path::{Path, PathBuf};
 
 use chrono::{NaiveDate, Utc};
 
-use crate::app::configuration::load_schedule;
-use crate::domain::configuration::schedule::ScheduleLayer;
-use crate::domain::workspace::paths::{jlo, jules};
+use crate::app::config::load_schedule;
+use crate::domain::schedule::ScheduleLayer;
 use crate::domain::{AppError, Layer};
 
 use super::diagnostics::Diagnostics;
@@ -24,7 +23,7 @@ pub struct SemanticContext {
 pub fn semantic_context(jules_path: &Path, diagnostics: &mut Diagnostics) -> SemanticContext {
     let mut context = SemanticContext::default();
 
-    let decided_dir = jules::events_decided_dir(jules_path);
+    let decided_dir = crate::domain::exchange::events::paths::events_decided_dir(jules_path);
     for entry in read_yaml_files(&decided_dir, diagnostics) {
         if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
             context.decided_events.insert(id.clone(), entry.clone());
@@ -36,7 +35,8 @@ pub fn semantic_context(jules_path: &Path, diagnostics: &mut Diagnostics) -> Sem
         }
     }
 
-    let requirements_dir = jules::requirements_dir(jules_path);
+    let requirements_dir =
+        crate::domain::exchange::requirements::paths::requirements_dir(jules_path);
     for entry in read_yaml_files(&requirements_dir, diagnostics) {
         if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
             context.issues.insert(id.clone(), entry.clone());
@@ -158,7 +158,7 @@ pub fn semantic_checks(
     let mut existing_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
     // Only validate multi-role layers that are scheduled (Observers, Innovators)
     for layer in [Layer::Observers, Layer::Innovators] {
-        let layer_dir = jlo::layer_dir(root, layer);
+        let layer_dir = crate::domain::roles::paths::layer_dir(root, layer);
         if layer_dir.exists() {
             let mut role_set = HashSet::new();
             match std::fs::read_dir(&layer_dir) {
@@ -183,7 +183,7 @@ pub fn semantic_checks(
     }
 
     let mut scheduled_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
-    let store = crate::adapters::filesystem::FilesystemStore::new(root.to_path_buf());
+    let store = crate::adapters::local_repository::LocalRepositoryAdapter::new(root.to_path_buf());
 
     match load_schedule(&store) {
         Ok(schedule) => {
@@ -297,11 +297,7 @@ mod tests {
             .expect("create observer role dir");
         fs::write(
             root.join(".jlo/scheduled.toml"),
-            r#"
-version = 1
-enabled = true
-
-[observers]
+            r#"[observers]
 roles = [
   { name = "taxonomy", enabled = true },
 ]

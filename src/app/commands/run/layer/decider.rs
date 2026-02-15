@@ -7,15 +7,13 @@ use super::super::mock::mock_execution::{
     MOCK_ASSETS, MockExecutionService, generate_mock_id, list_mock_tagged_files,
     mock_event_id_from_path,
 };
-use crate::app::configuration::{detect_repository_source, load_mock_config};
-use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::workspace::paths::jules;
-use crate::domain::{
-    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
+use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
+use crate::domain::layers::prompt_assembly::{
+    AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
+use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
 use crate::ports::{
-    AutomationMode, GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort,
-    SessionRequest,
+    AutomationMode, Git, GitHub, JloStore, JulesStore, RepositoryFilesystem, SessionRequest,
 };
 
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -24,9 +22,9 @@ pub struct DeciderLayer;
 
 impl<W> LayerStrategy<W> for DeciderLayer
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -38,14 +36,14 @@ where
         jules_path: &Path,
         options: &RunOptions,
         config: &RunConfig,
-        git: &dyn GitPort,
-        github: &dyn GitHubPort,
-        workspace: &W,
+        git: &dyn Git,
+        github: &dyn GitHub,
+        repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
         if options.mock {
-            let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let _output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let mock_config = load_mock_config(jules_path, options, repository)?;
+            let _output = execute_mock(jules_path, options, &mock_config, git, github, repository)?;
             return Ok(RunResult {
                 roles: vec!["decider".to_string()],
                 prompt_preview: false,
@@ -60,7 +58,7 @@ where
             options.branch.as_deref(),
             config,
             git,
-            workspace,
+            repository,
             client_factory,
         )
     }
@@ -72,14 +70,14 @@ fn execute_real<G, W>(
     branch: Option<&str>,
     config: &RunConfig,
     git: &G,
-    workspace: &W,
+    repository: &W,
     client_factory: &dyn JulesClientFactory,
 ) -> Result<RunResult, AppError>
 where
-    G: GitPort + ?Sized,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    G: Git + ?Sized,
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -93,7 +91,7 @@ where
         println!("=== Prompt Preview: Decider ===");
         println!("Starting branch: {}\n", starting_branch);
 
-        let prompt = assemble_decider_prompt(jules_path, workspace)?;
+        let prompt = assemble_decider_prompt(jules_path, repository)?;
         println!("  Assembled prompt: {} chars", prompt.len());
 
         println!("\nWould dispatch workflow");
@@ -108,7 +106,7 @@ where
     let source = detect_repository_source(git)?;
     let client = client_factory.create()?;
 
-    let prompt = assemble_decider_prompt(jules_path, workspace)?;
+    let prompt = assemble_decider_prompt(jules_path, repository)?;
 
     let request = SessionRequest {
         prompt,
@@ -131,9 +129,9 @@ where
 }
 
 fn assemble_decider_prompt<
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -141,9 +139,9 @@ fn assemble_decider_prompt<
         + 'static,
 >(
     jules_path: &Path,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
-    assemble_prompt(jules_path, Layer::Decider, &PromptContext::new(), workspace)
+    assemble_prompt(jules_path, Layer::Decider, &PromptContext::new(), repository)
         .map(|p: AssembledPrompt| p.content)
         .map_err(|e| AppError::InternalError(e.to_string()))
 }
@@ -154,14 +152,14 @@ fn execute_mock<G, H, W>(
     config: &MockConfig,
     git: &G,
     github: &H,
-    workspace: &W,
+    repository: &W,
 ) -> Result<MockOutput, AppError>
 where
-    G: GitPort + ?Sized,
-    H: GitHubPort + ?Sized,
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    G: Git + ?Sized,
+    H: GitHub + ?Sized,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
-    let service = MockExecutionService::new(jules_path, config, git, github, workspace);
+    let service = MockExecutionService::new(jules_path, config, git, github, repository);
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Decider, &timestamp)?;
@@ -173,15 +171,16 @@ where
     service.checkout_new_branch(&branch_name)?;
 
     // Find and process pending events
-    let pending_dir = jules::events_pending_dir(jules_path);
-    let decided_dir = jules::events_decided_dir(jules_path);
-    let requirements_dir = jules::requirements_dir(jules_path);
+    let pending_dir = crate::domain::exchange::events::paths::events_pending_dir(jules_path);
+    let decided_dir = crate::domain::exchange::events::paths::events_decided_dir(jules_path);
+    let requirements_dir =
+        crate::domain::exchange::requirements::paths::requirements_dir(jules_path);
 
     // Ensure directories exist.
-    workspace.create_dir_all(
+    repository.create_dir_all(
         decided_dir.to_str().ok_or_else(|| AppError::InvalidPath("Invalid decided dir".into()))?,
     )?;
-    workspace.create_dir_all(
+    repository.create_dir_all(
         requirements_dir
             .to_str()
             .ok_or_else(|| AppError::InvalidPath("Invalid requirements dir".into()))?,
@@ -203,24 +202,24 @@ where
 
     // Move any mock pending events to decided first
     let mut moved_src_files: Vec<PathBuf> = Vec::new();
-    for path in list_mock_tagged_files(workspace, &pending_dir, &config.mock_tag)? {
+    for path in list_mock_tagged_files(repository, &pending_dir, &config.mock_tag)? {
         let source = path
             .to_str()
             .ok_or_else(|| AppError::InvalidPath("Invalid pending event path".into()))?;
-        let content = workspace.read_file(source)?;
+        let content = repository.read_file(source)?;
         let dest = decided_dir.join(path.file_name().ok_or_else(|| {
             AppError::InvalidPath(format!("Pending event missing filename: {}", path.display()))
         })?);
-        workspace.write_file(
+        repository.write_file(
             dest.to_str()
                 .ok_or_else(|| AppError::InvalidPath("Invalid decided event path".into()))?,
             &content,
         )?;
-        workspace.remove_file(source)?;
+        repository.remove_file(source)?;
         moved_src_files.push(path);
     }
 
-    let decided_mock_files = list_mock_tagged_files(workspace, &decided_dir, &config.mock_tag)?;
+    let decided_mock_files = list_mock_tagged_files(repository, &decided_dir, &config.mock_tag)?;
     let source_event_ids: Vec<String> = decided_mock_files
         .iter()
         .filter_map(|path| mock_event_id_from_path(path, &config.mock_tag))
@@ -276,7 +275,7 @@ where
         );
     }
 
-    workspace.write_file(
+    repository.write_file(
         planner_issue_file.to_str().ok_or_else(|| {
             AppError::InvalidPath(format!(
                 "Invalid planner requirement path: {}",
@@ -325,7 +324,7 @@ where
         mapping.insert("requires_deep_analysis".into(), false.into());
     }
 
-    workspace.write_file(
+    repository.write_file(
         impl_issue_file.to_str().ok_or_else(|| {
             AppError::InvalidPath(format!(
                 "Invalid implementer requirement path: {}",
@@ -362,7 +361,7 @@ where
                 }
             };
 
-            let content = match workspace.read_file(decided_file_str) {
+            let content = match repository.read_file(decided_file_str) {
                 Ok(content) => content,
                 Err(err) => {
                     println!(
@@ -411,7 +410,7 @@ where
                 }
             };
 
-            if let Err(err) = workspace.write_file(decided_file_str, &updated_content) {
+            if let Err(err) = repository.write_file(decided_file_str, &updated_content) {
                 println!(
                     "::warning::Failed to write decided event file {}: {}",
                     decided_file.display(),
@@ -461,7 +460,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::RepositoryFilesystemPort;
+    use crate::ports::RepositoryFilesystem;
     use crate::testing::{FakeGit, FakeGitHub, TestStore};
     use std::collections::HashMap;
     use std::path::PathBuf;
@@ -481,18 +480,18 @@ mod tests {
     #[test]
     fn mock_decider_processes_events_and_creates_requirements() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = TestStore::new().with_exists(true);
+        let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
 
-        workspace
+        repository
             .write_file(
                 ".jules/exchange/events/pending/mock-test-decider-event1.yml",
                 "id: event1\nsummary: s1",
             )
             .unwrap();
-        workspace
+        repository
             .write_file(
                 ".jules/exchange/events/pending/mock-test-decider-event2.yml",
                 "id: event2\nsummary: s2",
@@ -509,14 +508,14 @@ mod tests {
             task: None,
         };
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
         assert!(result.is_ok());
         let output = result.unwrap();
         assert!(output.mock_branch.starts_with("jules-decider-"));
         assert_eq!(output.mock_pr_number, 101);
 
         let req_dir = ".jules/exchange/requirements";
-        let req_files = workspace.list_dir(req_dir).unwrap();
+        let req_files = repository.list_dir(req_dir).unwrap();
         let planner_req = req_files
             .iter()
             .find(|p| p.to_string_lossy().contains("planner-mock-test-decider"))
@@ -526,25 +525,25 @@ mod tests {
             .find(|p| p.to_string_lossy().contains("impl-mock-test-decider"))
             .expect("implementer req missing");
 
-        assert!(workspace.file_exists(&planner_req.to_string_lossy()));
-        assert!(workspace.file_exists(&impl_req.to_string_lossy()));
+        assert!(repository.file_exists(&planner_req.to_string_lossy()));
+        assert!(repository.file_exists(&impl_req.to_string_lossy()));
         assert!(
-            !workspace.file_exists(".jules/exchange/events/pending/mock-test-decider-event1.yml")
+            !repository.file_exists(".jules/exchange/events/pending/mock-test-decider-event1.yml")
         );
         assert!(
-            workspace.file_exists(".jules/exchange/events/decided/mock-test-decider-event1.yml")
+            repository.file_exists(".jules/exchange/events/decided/mock-test-decider-event1.yml")
         );
     }
 
     #[test]
     fn mock_decider_fails_with_insufficient_events() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = TestStore::new().with_exists(true);
+        let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
 
-        workspace
+        repository
             .write_file(".jules/exchange/events/pending/mock-test-decider-event1.yml", "id: event1")
             .unwrap();
 
@@ -558,7 +557,7 @@ mod tests {
             task: None,
         };
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
         assert!(result.is_err());
         assert!(
             matches!(result, Err(AppError::InvalidConfig(msg)) if msg.contains("requires at least 2 decided events"))

@@ -10,20 +10,20 @@ src/
 ├── lib.rs             # Public API
 ├── domain/            # Pure types (Layer, RoleId, AppError, setup models)
 ├── ports/             # Trait boundaries
-│   ├── repository_filesystem.rs  # RepositoryFilesystemPort
-│   ├── jlo_store.rs              # JloStorePort (.jlo/ control-plane)
-│   ├── jules_store.rs            # JulesStorePort (.jules/ runtime)
-│   ├── git.rs                    # GitPort
-│   ├── github.rs                 # GitHubPort
+│   ├── repository_filesystem.rs  # RepositoryFilesystem
+│   ├── jlo_store.rs              # JloStore (.jlo/ control-plane)
+│   ├── jules_store.rs            # JulesStore (.jules/ runtime)
+│   ├── git.rs                    # Git
+│   ├── github.rs                 # GitHub
 │   ├── jules_client.rs           # JulesClient
 │   ├── role_template_store.rs    # RoleTemplateStore
 │   └── setup_component_catalog.rs # SetupComponentCatalog
 ├── adapters/          # I/O implementations
-│   ├── git/                      # GitPort adapter (git CLI)
-│   ├── github/                   # GitHubPort adapter (gh CLI)
+│   ├── git/                      # Git adapter (git CLI)
+│   ├── github/                   # GitHub adapter (gh CLI)
 │   ├── jules_client/             # JulesClient adapter (HTTP, retry)
 │   ├── catalogs/                 # Embedded asset catalogs (roles, scaffold, setup, workflow)
-│   ├── filesystem/               # FilesystemStore (RepositoryFilesystemPort + JloStorePort + JulesStorePort)
+│   ├── local_repository/         # LocalRepositoryAdapter (RepositoryFilesystem + JloStore + JulesStore)
 │   ├── control_plane_config.rs   # Config/schedule readers
 │   └── workflow_installer.rs     # Workflow scaffold installer
 ├── app/
@@ -35,8 +35,10 @@ src/
 │   ├── roles/         # Built-in role definitions
 │   ├── setup/         # Setup component definitions
 │   └── github/        # Workflow scaffold assets
-└── testing/           # Test doubles
-    └── ports/         # Port-scoped doubles (MockRepositoryFs, MockJloStore, MockJulesStore, TestStore)
+└── testing/           # Unit-test support
+    ├── ports/         # Port-scoped doubles (MockRepositoryFs, MockJloStore, MockJulesStore, TestStore)
+    ├── app/           # App-layer test builders (RunOptionsBuilder)
+    └── domain/        # Domain test data builders (RequirementYamlBuilder)
 tests/
 ├── harness/           # Shared fixtures (TestContext, git helpers, config writers)
 ├── cli.rs             # CLI behavior contracts
@@ -79,12 +81,13 @@ Core domain logic located in `src/domain/`.
 
 | Module | Purpose |
 |--------|---------|
-| `configuration` | Global configuration models (`config.toml`, `scheduled.toml`, `WorkflowGenerateConfig`). |
-| `identifiers` | Structural identifiers (`RoleId`, `Layer`). |
-| `prompt` | Prompt assembly and template rendering models. |
-| `workspace` | Filesystem abstraction and path management. |
+| `config` | `config.toml` models and parser (`RunConfig`, `WorkflowGenerateConfig`, mock config). |
+| `schedule` | `scheduled.toml` model and validation. |
+| `layers` | Layer taxonomy, `.jules/layers` path semantics, and prompt assembly models. |
+| `roles` | `RoleId`, builtin role entries, and `.jlo/roles` path semantics. |
+| `exchange` | `.jules/exchange` path semantics and exchange-domain schemas. |
+| `workstations` | Top-level `.jlo/.jules` paths and managed manifest model. |
 | `error` | `AppError` and error handling types. |
-| `issue` | Requirement parsing and schema validation. |
 
 ## CLI Commands
 
@@ -102,7 +105,7 @@ Core domain logic located in `src/domain/`.
 | `jlo run integrator [--prompt-preview] [--branch <branch>]` | `r g` | Run integrator (merges implementer branches) |
 | `jlo run innovators --role <role> --task <task_name> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
 | `jlo doctor [--strict]` | | Validate .jules/ structure and content |
-| `jlo workflow doctor` | `wf` | Validate workspace for workflow use |
+| `jlo workflow doctor` | `wf` | Validate runtime repository for workflow use |
 | `jlo workflow run <layer> [--mock]` | | Run layer and return wait-gating metadata |
 | `jlo workflow exchange inspect` | | Inspect exchange state |
 | `jlo workflow exchange publish-proposals` | | Publish innovator proposals as GitHub issues |

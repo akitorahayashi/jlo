@@ -1,14 +1,14 @@
-//! Test double for `JulesStorePort` and `PromptAssetLoader`.
+//! Test double for `JulesStore` and `PromptAssetLoader`.
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use crate::domain::{AppError, PromptAssetLoader};
-use crate::ports::{JulesStorePort, ScaffoldFile};
+use crate::ports::{JulesStore, ScaffoldFile};
 
 use super::test_files::TestFiles;
 
-/// In-memory implementation of `JulesStorePort` + `PromptAssetLoader` for unit tests.
+/// In-memory implementation of `JulesStore` + `PromptAssetLoader` for unit tests.
 ///
 /// Holds `.jules/`-scoped state (existence, version, structure creation)
 /// independently from `.jlo/`-scoped state in `MockJloStore`.
@@ -70,7 +70,7 @@ impl PromptAssetLoader for MockJulesStore {
     }
 }
 
-impl JulesStorePort for MockJulesStore {
+impl JulesStore for MockJulesStore {
     fn jules_exists(&self) -> bool {
         *self.exists.lock().unwrap()
     }

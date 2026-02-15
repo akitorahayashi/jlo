@@ -1,9 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use crate::domain::{AppError, Layer, PromptAssetLoader, RunConfig, RunOptions};
-use crate::ports::{
-    GitHubPort, GitPort, JloStorePort, JulesClient, JulesStorePort, RepositoryFilesystemPort,
-};
+use crate::ports::{Git, GitHub, JloStore, JulesClient, JulesStore, RepositoryFilesystem};
 
 /// Result of a run execution.
 #[derive(Debug)]
@@ -26,7 +24,7 @@ pub trait JulesClientFactory {
 /// A strategy for executing a specific layer.
 pub trait LayerStrategy<W>
 where
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
     /// Execute the layer.
     #[allow(clippy::too_many_arguments)]
@@ -35,9 +33,9 @@ where
         jules_path: &Path,
         options: &RunOptions,
         config: &RunConfig,
-        git: &dyn GitPort,
-        github: &dyn GitHubPort,
-        workspace: &W,
+        git: &dyn Git,
+        github: &dyn GitHub,
+        repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError>;
 }
@@ -45,9 +43,9 @@ where
 /// Get the strategy for a specific layer.
 pub fn get_layer_strategy<W>(layer: Layer) -> Box<dyn LayerStrategy<W>>
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send

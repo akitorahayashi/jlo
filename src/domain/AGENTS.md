@@ -27,14 +27,14 @@ Strict dependency rules apply to maintain architectural purity:
 
 | Module | Purpose |
 |--------|---------|
-| `configuration` | Global configuration models (`config.toml`, `scheduled.toml`, `WorkflowGenerateConfig`). |
-| `identifiers` | Shared strongly-typed IDs (`RoleId`) and validation utilities. |
-| `prompt_assembly` | Logic for assembling prompt contexts for different layers. |
+| `config` | `config.toml` models and parsing (`RunConfig`, `WorkflowGenerateConfig`, mock config). |
+| `schedule` | `scheduled.toml` model and validation. |
+| `layers` | Layer taxonomy (`Layer`), `.jules/layers` path semantics, and prompt assembly logic. |
+| `roles` | Role identifiers, builtin role entries, and `.jlo/roles` path semantics. |
+| `exchange` | `.jules/exchange` structure (`events`, `requirements`, `innovators`) and requirement schema. |
+| `workstations` | `.jlo/.jules` top-level path semantics and managed manifest model. |
 | `setup` | Setup component model, dependency resolution, and artifact generation. |
-| `workspace` | Logical paths and layer structures. |
 | `error` | Domain-level error types (`AppError`). |
-| `requirement` | Requirement file parsing and schema validation. |
-| `builtin_role` | Definitions for built-in roles. |
 
 ## Testing
 

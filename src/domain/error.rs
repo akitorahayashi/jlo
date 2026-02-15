@@ -59,15 +59,15 @@ pub enum AppError {
     #[error("Exchange directory not found")]
     ExchangeDirectoryNotFound,
 
-    /// Workspace integrity issue (e.g. missing version file).
-    #[error("Workspace integrity error: {0}")]
-    WorkspaceIntegrity(String),
+    /// Runtime repository integrity issue (e.g. missing version file).
+    #[error("Repository integrity error: {0}")]
+    RepositoryIntegrity(String),
 
-    /// Workspace version mismatch.
+    /// Runtime repository version mismatch.
     #[error(
-        "Workspace version ({workspace}) is newer than binary version ({binary}). Update the jlo binary."
+        "Repository version ({repository}) is newer than binary version ({binary}). Update the jlo binary."
     )]
-    WorkspaceVersionMismatch { workspace: String, binary: String },
+    RepositoryVersionMismatch { repository: String, binary: String },
 
     /// Repository detection failed.
     #[error("Repository detection failed. Set GITHUB_REPOSITORY or run from a git repository.")]
@@ -81,13 +81,13 @@ pub enum AppError {
     #[error("Asset error: {0}")]
     AssetError(String),
 
-    /// Workspace already exists at the target location.
-    #[error(".jlo/ workspace already exists")]
-    WorkspaceExists,
+    /// `.jlo/` already exists at the target location.
+    #[error(".jlo/ already exists")]
+    JloAlreadyExists,
 
-    /// No .jules/ workspace found in the current directory.
-    #[error("No .jules/ workspace found in current directory")]
-    WorkspaceNotFound,
+    /// No `.jules/` runtime repository found in the current directory.
+    #[error("No .jules/ repository found in current directory")]
+    JulesNotFound,
 
     /// Role identifier is invalid.
     #[error("Invalid role identifier '{0}': must be alphanumeric with hyphens or underscores")]
@@ -117,7 +117,7 @@ pub enum AppError {
     #[error("Duplicate role '{0}' specified")]
     DuplicateRoleRequest(String),
 
-    /// Setup workspace not initialized (.jlo/setup/ missing).
+    /// Setup repository not initialized (.jlo/setup/ missing).
     #[error("Setup not initialized. Run 'jlo init --remote' or 'jlo init --self-hosted' first.")]
     SetupNotInitialized,
 
@@ -134,7 +134,7 @@ pub enum AppError {
     SetupComponentNotFound { name: String, available: String },
 
     /// Path traversal attempt detected.
-    #[error("Path traversal detected: '{0}' escapes workspace root")]
+    #[error("Path traversal detected: '{0}' escapes repository root")]
     PathTraversal(String),
 
     /// Invalid setup component metadata.
@@ -159,7 +159,7 @@ pub enum AppError {
 
     /// Exchange schedule error.
     #[error(transparent)]
-    Schedule(#[from] crate::domain::configuration::schedule::ScheduleError),
+    Schedule(#[from] crate::domain::schedule::ScheduleError),
 
     /// Requirement file not found at path.
     #[error("Requirement file not found: {0}")]
@@ -171,7 +171,7 @@ pub enum AppError {
 
     /// Prompt assembly failed.
     #[error(transparent)]
-    PromptAssembly(#[from] crate::domain::PromptAssemblyError),
+    PromptAssembly(#[from] crate::domain::layers::prompt_assembly::PromptAssemblyError),
 
     /// Git execution failed.
     #[error("Git error running '{command}': {details}")]

@@ -1,5 +1,6 @@
 //! Run command implementation for executing Jules agents.
 
+mod input;
 mod layer;
 mod mock;
 mod requirement_path;
@@ -10,18 +11,16 @@ use std::path::Path;
 
 use crate::adapters::jules_client::HttpJulesClient;
 use crate::adapters::jules_client::{RetryPolicy, RetryingJulesClient};
+use crate::app::commands::run::input::{load_run_config, validate_mock_prerequisites};
 use crate::app::commands::run::strategy::{JulesClientFactory, get_layer_strategy};
 use crate::app::commands::workflow::exchange::{
     ExchangeCleanRequirementOptions, clean_requirement_with_adapters,
 };
-use crate::app::configuration::{load_config, validate_mock_prerequisites};
 use crate::domain::PromptAssetLoader;
 pub use crate::domain::RunOptions;
-use crate::domain::identifiers::validation::validate_safe_path_component;
+use crate::domain::roles::validation::validate_safe_path_component;
 use crate::domain::{AppError, JulesApiConfig};
-use crate::ports::{
-    GitHubPort, GitPort, JloStorePort, JulesClient, JulesStorePort, RepositoryFilesystemPort,
-};
+use crate::ports::{Git, GitHub, JloStore, JulesClient, JulesStore, RepositoryFilesystem};
 
 pub use strategy::RunResult;
 
@@ -43,14 +42,14 @@ pub fn execute<G, H, W>(
     options: RunOptions,
     git: &G,
     github: &H,
-    workspace: &W,
+    repository: &W,
 ) -> Result<RunResult, AppError>
 where
-    G: GitPort,
-    H: GitHubPort,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    G: Git,
+    H: GitHub,
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -62,7 +61,7 @@ where
         options,
         git,
         github,
-        workspace,
+        repository,
         validate_mock_prerequisites,
     )
 }
@@ -72,15 +71,15 @@ fn execute_with_mock_prerequisite_validator<G, H, W, F>(
     options: RunOptions,
     git: &G,
     github: &H,
-    workspace: &W,
+    repository: &W,
     validate_mock: F,
 ) -> Result<RunResult, AppError>
 where
-    G: GitPort,
-    H: GitHubPort,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    G: Git,
+    H: GitHub,
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -105,7 +104,7 @@ where
     }
 
     // Load configuration
-    let config = load_config(jules_path, workspace)?;
+    let config = load_run_config(jules_path, repository)?;
 
     if options.mock {
         validate_mock(&options)?;
@@ -118,15 +117,22 @@ where
     let strategy = get_layer_strategy(options.layer);
 
     // Execute strategy
-    let result =
-        strategy.execute(jules_path, &options, &config, git, github, workspace, &client_factory)?;
+    let result = strategy.execute(
+        jules_path,
+        &options,
+        &config,
+        git,
+        github,
+        repository,
+        &client_factory,
+    )?;
 
     // Handle post-execution cleanup (e.g. Implementer requirement)
     if let Some(path) = result.cleanup_requirement.as_ref() {
         let path_str = path.to_string_lossy().to_string();
         match clean_requirement_with_adapters(
             ExchangeCleanRequirementOptions { requirement_file: path_str },
-            workspace,
+            repository,
             git,
         ) {
             Ok(cleanup_res) => {
@@ -148,9 +154,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::filesystem::FilesystemStore;
+    use crate::adapters::local_repository::LocalRepositoryAdapter;
     use crate::ports::{
-        GitHubPort, IssueInfo, JulesStorePort, PrComment, PullRequestDetail, PullRequestInfo,
+        GitHub, IssueInfo, JulesStore, PrComment, PullRequestDetail, PullRequestInfo,
     };
     use serial_test::serial;
     use std::collections::HashMap;
@@ -182,7 +188,7 @@ mod tests {
         }
     }
 
-    impl GitPort for TestGit {
+    impl Git for TestGit {
         fn get_head_sha(&self) -> Result<String, AppError> {
             let counter = *self.commit_counter.lock().expect("counter lock poisoned");
             Ok(format!("mocksha{:06}", counter))
@@ -265,7 +271,7 @@ mod tests {
         }
     }
 
-    impl GitHubPort for TestGitHub {
+    impl GitHub for TestGitHub {
         fn create_pull_request(
             &self,
             head: &str,
@@ -412,11 +418,7 @@ mod tests {
         fs::write(root.join(".jlo/config.toml"), "").expect("write config");
         fs::write(
             root.join(".jlo/scheduled.toml"),
-            r#"
-version = 1
-enabled = true
-
-[observers]
+            r#"[observers]
 roles = [
   { name = "taxonomy", enabled = true },
 ]
@@ -479,12 +481,12 @@ roles = [
 
         let _mock_tag_env = EnvVarGuard::set("JULES_MOCK_TAG", mock_tag);
 
-        let workspace = FilesystemStore::new(root.clone());
+        let repository = LocalRepositoryAdapter::new(root.clone());
         let github = TestGitHub::new();
 
         let decider_git = TestGit::new(root.clone(), "jules");
         execute_with_mock_prerequisite_validator(
-            &workspace.jules_path(),
+            &repository.jules_path(),
             RunOptions {
                 layer: crate::domain::Layer::Decider,
                 role: None,
@@ -496,7 +498,7 @@ roles = [
             },
             &decider_git,
             &github,
-            &workspace,
+            &repository,
             |_options| Ok(()),
         )
         .expect("decider run should succeed");
@@ -579,7 +581,7 @@ roles = [
 
         let implementer_git = TestGit::new(root.clone(), "jules");
         execute_with_mock_prerequisite_validator(
-            &workspace.jules_path(),
+            &repository.jules_path(),
             RunOptions {
                 layer: crate::domain::Layer::Implementer,
                 role: None,
@@ -591,7 +593,7 @@ roles = [
             },
             &implementer_git,
             &github,
-            &workspace,
+            &repository,
             |_options| Ok(()),
         )
         .expect("implementer run should succeed");
