@@ -13,7 +13,7 @@ use std::path::Path;
 
 use serde::Serialize;
 
-use crate::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
+use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::AppContext;
 use crate::domain::workspace::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};

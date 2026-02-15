@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::adapters::assets::workflow_scaffold_assets::load_workflow_scaffold;
+use crate::adapters::catalogs::workflow_scaffold::load_workflow_scaffold;
 use crate::adapters::control_plane_config::load_workflow_generate_config;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::{AppError, WorkflowRunnerMode};
@@ -107,7 +107,7 @@ fn prepare_output_dir(output_dir: &Path) -> Result<(), AppError> {
 
 fn write_workflow_scaffold(
     output_dir: &Path,
-    scaffold: &crate::adapters::assets::workflow_scaffold_assets::WorkflowScaffoldAssets,
+    scaffold: &crate::adapters::catalogs::workflow_scaffold::WorkflowScaffoldAssets,
 ) -> Result<(), AppError> {
     for file in &scaffold.files {
         let destination = output_dir.join(&file.path);

@@ -251,7 +251,7 @@ fn run_workflow_workspace_clean(command: WorkflowWorkspaceCleanCommands) -> Resu
 }
 
 fn run_workflow_gh(command: WorkflowGhCommands) -> Result<(), AppError> {
-    let github = crate::adapters::github_command::GitHubCommandAdapter::new();
+    let github = crate::adapters::github::GitHubCommandAdapter::new();
     match command {
         WorkflowGhCommands::Process { command } => match command {
             WorkflowProcessCommands::Pr { command } => run_workflow_gh_process_pr(&github, command),

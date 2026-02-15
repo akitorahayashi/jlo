@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::adapters::assets::workflow_scaffold_assets::WorkflowGenerateConfig;
+use crate::domain::configuration::WorkflowGenerateConfig;
 use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::WorkspaceStore;
 

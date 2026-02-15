@@ -5,9 +5,9 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::adapters::embedded_role_template_store::EmbeddedRoleTemplateStore;
-use crate::adapters::git_command::GitCommandAdapter;
-use crate::adapters::github_command::GitHubCommandAdapter;
+use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
+use crate::adapters::git::GitCommandAdapter;
+use crate::adapters::github::GitHubCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::{
     AppContext,

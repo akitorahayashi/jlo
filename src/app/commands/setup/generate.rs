@@ -1,6 +1,6 @@
 //! Setup gen command - generates install.sh, vars.toml, and secrets.toml.
 
-use crate::adapters::assets::setup_component_catalog_embedded::EmbeddedSetupComponentCatalog;
+use crate::adapters::catalogs::EmbeddedSetupComponentCatalog;
 use crate::app::config::SetupConfig;
 use crate::domain::AppError;
 use crate::domain::setup::artifact_generator;

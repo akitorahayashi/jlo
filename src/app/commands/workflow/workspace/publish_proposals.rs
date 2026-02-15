@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::adapters::git_command::GitCommandAdapter;
+use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::domain::workspace::paths::jules;
@@ -76,7 +76,7 @@ pub fn execute(
     let git = GitCommandAdapter::new(root.canonicalize().map_err(|e| {
         AppError::InternalError(format!("Failed to resolve workspace root: {}", e))
     })?);
-    let github = crate::adapters::github_command::GitHubCommandAdapter::new();
+    let github = crate::adapters::github::GitHubCommandAdapter::new();
 
     execute_with(&workspace, &options, &git, &github)
 }

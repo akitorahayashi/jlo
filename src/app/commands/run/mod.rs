@@ -8,8 +8,8 @@ mod strategy;
 
 use std::path::Path;
 
-use crate::adapters::jules_client_http::HttpJulesClient;
-use crate::adapters::jules_client_retrying::{RetryPolicy, RetryingJulesClient};
+use crate::adapters::jules_client::HttpJulesClient;
+use crate::adapters::jules_client::{RetryPolicy, RetryingJulesClient};
 use crate::app::commands::run::strategy::{JulesClientFactory, get_layer_strategy};
 use crate::app::commands::workflow::workspace::{
     WorkspaceCleanRequirementOptions, clean_requirement_with_adapters,

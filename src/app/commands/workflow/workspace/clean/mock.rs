@@ -8,8 +8,8 @@ use std::process::Command;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::adapters::git_command::GitCommandAdapter;
-use crate::adapters::github_command::GitHubCommandAdapter;
+use crate::adapters::git::GitCommandAdapter;
+use crate::adapters::github::GitHubCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::ports::{GitHubPort, GitPort, JulesStorePort};

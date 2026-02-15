@@ -2,9 +2,8 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
-use crate::adapters::assets::workflow_scaffold_assets::{
-    WorkflowGenerateConfig, load_workflow_scaffold,
-};
+use crate::adapters::catalogs::workflow_scaffold::load_workflow_scaffold;
+use crate::domain::configuration::WorkflowGenerateConfig;
 use crate::domain::workspace::paths::JLO_DIR;
 use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::GitPort;

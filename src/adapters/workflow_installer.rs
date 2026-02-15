@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
-use crate::adapters::assets::workflow_scaffold_assets::{
-    WorkflowGenerateConfig, WorkflowScaffoldAssets, load_workflow_scaffold,
+use crate::adapters::catalogs::workflow_scaffold::{
+    WorkflowScaffoldAssets, load_workflow_scaffold,
 };
+use crate::domain::configuration::WorkflowGenerateConfig;
 use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::WorkspaceStore;
 

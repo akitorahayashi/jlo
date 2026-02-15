@@ -1,6 +1,6 @@
 use include_dir::{Dir, DirEntry, include_dir};
 
-use crate::adapters::assets::builtin_role_assets::{
+use crate::adapters::catalogs::builtin_role_assets::{
     load_builtin_role_catalog, read_builtin_role_file,
 };
 use crate::domain::workspace::paths::jlo;
@@ -14,9 +14,10 @@ const INTERNAL_DOC_FILE: &str = "AGENTS.md";
 
 /// Role templates for multi-role layers
 mod templates {
-    pub static OBSERVER_ROLE: &str = include_str!("../assets/templates/layers/observers/role.yml");
+    pub static OBSERVER_ROLE: &str =
+        include_str!("../../assets/templates/layers/observers/role.yml");
     pub static INNOVATOR_ROLE: &str =
-        include_str!("../assets/templates/layers/innovators/role.yml");
+        include_str!("../../assets/templates/layers/innovators/role.yml");
 }
 
 /// Embedded role template store implementation.
