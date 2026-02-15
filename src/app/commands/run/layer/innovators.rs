@@ -4,11 +4,11 @@ use chrono::Utc;
 
 use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
-use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::roles::validation::validate_safe_path_component;
-use crate::domain::{
-    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RoleId, RunConfig, RunOptions,
+use crate::domain::layers::prompt_assembly::{
+    AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
+use crate::domain::roles::validation::validate_safe_path_component;
+use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 
 use super::super::role_session::{dispatch_session, print_role_preview, validate_role_exists};

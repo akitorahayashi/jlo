@@ -4,8 +4,9 @@ use chrono::Utc;
 
 use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config, load_schedule};
-use crate::domain::PromptAssetLoader;
-use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
+use crate::domain::layers::prompt_assembly::{
+    AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
+};
 use crate::domain::roles::validation::validate_safe_path_component;
 use crate::domain::{
     AppError, IoErrorKind, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions,

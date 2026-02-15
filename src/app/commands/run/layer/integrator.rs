@@ -3,9 +3,11 @@ use std::path::Path;
 use serde::Deserialize;
 
 use crate::app::commands::run::input::detect_repository_source;
-use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
+use crate::domain::layers::prompt_assembly::{
+    AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
+};
 use crate::domain::roles::validation::validate_safe_path_component;
-use crate::domain::{AppError, Layer, PromptAssetLoader, RunConfig, RunOptions};
+use crate::domain::{AppError, Layer, RunConfig, RunOptions};
 use crate::ports::{
     AutomationMode, Git, GitHub, JloStore, JulesStore, RepositoryFilesystem, SessionRequest,
 };

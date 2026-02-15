@@ -29,11 +29,10 @@ Strict dependency rules apply to maintain architectural purity:
 |--------|---------|
 | `config` | `config.toml` models and parsing (`RunConfig`, `WorkflowGenerateConfig`, mock config). |
 | `schedule` | `scheduled.toml` model and validation. |
-| `layers` | Layer taxonomy (`Layer`) and `.jules/layers` path semantics. |
+| `layers` | Layer taxonomy (`Layer`), `.jules/layers` path semantics, and prompt assembly logic. |
 | `roles` | Role identifiers, builtin role entries, and `.jlo/roles` path semantics. |
 | `exchange` | `.jules/exchange` structure (`events`, `requirements`, `innovators`) and requirement schema. |
 | `workstations` | `.jlo/.jules` top-level path semantics and managed manifest model. |
-| `prompt_assembly` | Logic for assembling prompt contexts for different layers. |
 | `setup` | Setup component model, dependency resolution, and artifact generation. |
 | `error` | Domain-level error types (`AppError`). |
 

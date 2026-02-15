@@ -5,10 +5,10 @@ use serde::Deserialize;
 
 use super::super::mock::mock_execution::MockExecutionService;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
-use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::{
-    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
+use crate::domain::layers::prompt_assembly::{
+    AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
+use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
 use crate::ports::{
     AutomationMode, Git, GitHub, JloStore, JulesClient, JulesStore, RepositoryFilesystem,
     SessionRequest,

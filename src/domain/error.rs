@@ -171,7 +171,7 @@ pub enum AppError {
 
     /// Prompt assembly failed.
     #[error(transparent)]
-    PromptAssembly(#[from] crate::domain::PromptAssemblyError),
+    PromptAssembly(#[from] crate::domain::layers::prompt_assembly::PromptAssemblyError),
 
     /// Git execution failed.
     #[error("Git error running '{command}': {details}")]

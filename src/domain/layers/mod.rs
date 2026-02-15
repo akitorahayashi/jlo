@@ -1,4 +1,5 @@
 pub mod paths;
+pub mod prompt_assembly;
 
 use std::fmt;
 

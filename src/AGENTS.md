@@ -83,11 +83,10 @@ Core domain logic located in `src/domain/`.
 |--------|---------|
 | `config` | `config.toml` models and parser (`RunConfig`, `WorkflowGenerateConfig`, mock config). |
 | `schedule` | `scheduled.toml` model and validation. |
-| `layers` | Layer taxonomy and `.jules/layers` path semantics. |
+| `layers` | Layer taxonomy, `.jules/layers` path semantics, and prompt assembly models. |
 | `roles` | `RoleId`, builtin role entries, and `.jlo/roles` path semantics. |
 | `exchange` | `.jules/exchange` path semantics and exchange-domain schemas. |
 | `workstations` | Top-level `.jlo/.jules` paths and managed manifest model. |
-| `prompt_assembly` | Prompt assembly and template rendering models. |
 | `error` | `AppError` and error handling types. |
 
 ## CLI Commands

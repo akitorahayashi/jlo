@@ -5,7 +5,6 @@ pub mod layers;
 pub mod roles;
 pub mod schedule;
 
-pub mod prompt_assembly;
 pub mod setup;
 pub mod workstations;
 
@@ -19,10 +18,11 @@ pub use config::{
 pub use error::{AppError, IoErrorKind};
 pub use exchange::requirements::RequirementHeader;
 pub use layers::Layer;
+#[allow(unused_imports)]
+pub use layers::prompt_assembly::{PromptAssemblyError, PromptAssetLoader};
 pub use roles::{BuiltinRoleEntry, RoleId};
 pub use schedule::Schedule;
 
-pub use prompt_assembly::{PromptAssemblyError, PromptAssetLoader};
 #[allow(unused_imports)]
 pub use setup::{DependencyGraph, EnvSpec, SetupComponent, SetupComponentId, SetupEnvArtifacts};
 pub use workstations::{JLO_DIR, JULES_DIR, ScaffoldManifest, VERSION_FILE};
