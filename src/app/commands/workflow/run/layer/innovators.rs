@@ -1,5 +1,5 @@
-use crate::app::configuration::load_schedule;
 use crate::app::commands::run::RunOptions;
+use crate::app::configuration::load_schedule;
 use crate::domain::{AppError, Layer};
 use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
 use std::path::Path;

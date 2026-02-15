@@ -6,7 +6,9 @@ use std::path::Path;
 use chrono::Utc;
 
 use crate::app::configuration::run_config_reader::load_config;
-use crate::domain::configuration::mock_config_parser::{extract_branch_prefix, extract_issue_labels};
+use crate::domain::configuration::mock_config_parser::{
+    extract_branch_prefix, extract_issue_labels,
+};
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::workspace::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, RunOptions};

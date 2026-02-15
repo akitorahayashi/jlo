@@ -12,7 +12,7 @@ pub use git::GitPort;
 pub use github::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
 pub use jlo_store::JloStorePort;
 pub use jules_client::{AutomationMode, JulesClient, SessionRequest, SessionResponse};
-pub use jules_store::{JulesStorePort, PromptAssetLoaderPort};
+pub use jules_store::JulesStorePort;
 pub use repository_filesystem::RepositoryFilesystemPort;
 pub use role_template_store::{RoleTemplateStore, ScaffoldFile};
 pub use setup_component_catalog::SetupComponentCatalog;

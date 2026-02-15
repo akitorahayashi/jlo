@@ -14,8 +14,8 @@ use crate::app::commands::run::strategy::{JulesClientFactory, get_layer_strategy
 use crate::app::commands::workflow::workspace::{
     WorkspaceCleanRequirementOptions, clean_requirement_with_adapters,
 };
-pub use crate::domain::RunOptions;
 use crate::app::configuration::{load_config, validate_mock_prerequisites};
+pub use crate::domain::RunOptions;
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::{AppError, JulesApiConfig};
 use crate::ports::{GitHubPort, GitPort, JulesClient, WorkspaceStore};

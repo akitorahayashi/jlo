@@ -1,17 +1,17 @@
 //! Repository source detection from git remote.
 
-use crate::domain::configuration::run_config_parser;
 use crate::domain::AppError;
+use crate::domain::configuration::run_config_parser;
 use crate::ports::GitPort;
 
 /// Detect the repository source from git remote or `GITHUB_REPOSITORY` env var.
 pub fn detect_repository_source(git: &(impl GitPort + ?Sized)) -> Result<String, AppError> {
     let output = git.run_command(&["remote", "get-url", "origin"], None);
 
-    if let Ok(url) = output {
-        if let Some(repo) = run_config_parser::parse_github_url(url.trim()) {
-            return Ok(format!("sources/github/{}", repo));
-        }
+    if let Ok(url) = output
+        && let Some(repo) = run_config_parser::parse_github_url(url.trim())
+    {
+        return Ok(format!("sources/github/{}", repo));
     }
 
     if let Ok(repo) = std::env::var("GITHUB_REPOSITORY") {
@@ -61,10 +61,9 @@ mod tests {
                 && args[0] == "remote"
                 && args[1] == "get-url"
                 && args[2] == "origin"
+                && let Some(ref url) = self.remote_url
             {
-                if let Some(ref url) = self.remote_url {
-                    return Ok(url.clone());
-                }
+                return Ok(url.clone());
             }
             Ok(String::new())
         }
