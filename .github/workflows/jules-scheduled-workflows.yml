@@ -837,7 +837,7 @@ jobs:
   # Phase 17: Cleanup mock artifacts
   # ============================================================
   cleanup-mock-artifacts:
-    needs: [wait-after-implementer]
+    needs: [wait-after-run-innovators, wait-after-planner, wait-after-implementer]
     if: |
       always() &&
       (github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true')
