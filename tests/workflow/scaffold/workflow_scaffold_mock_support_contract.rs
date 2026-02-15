@@ -21,6 +21,10 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "Should include integrated mock cleanup job"
     );
     assert!(
+        workflow.contains("needs: [publish-proposals, wait-after-planner, wait-after-implementer]"),
+        "Cleanup must wait for publish-proposals to avoid issue-close race"
+    );
+    assert!(
         workflow.contains(
             "github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true'"
         ),
