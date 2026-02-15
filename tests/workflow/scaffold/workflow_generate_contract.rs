@@ -19,7 +19,6 @@ fn workflow_generate_writes_expected_files_to_custom_output_dir() {
         output_dir.join(".github/workflows/jules-scheduled-workflows.yml").exists(),
         "Generated workflow file should exist"
     );
-    assert!(output_dir.join(".github/workflows/jules-run-innovators.yml").exists());
     assert!(output_dir.join(".github/workflows/jules-implementer-pr.yml").exists());
     assert!(output_dir.join(".github/workflows/jules-automerge.yml").exists());
     assert!(output_dir.join(".github/workflows/jules-integrator.yml").exists());

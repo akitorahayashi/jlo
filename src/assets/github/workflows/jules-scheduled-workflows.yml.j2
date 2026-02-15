@@ -19,6 +19,7 @@ on:
         type: choice
         options:
           - narrator
+          - innovators
           - observers
           - decider
           - requirements
@@ -32,18 +33,6 @@ on:
         type: boolean
         default: false
 
-  workflow_call:
-    inputs:
-      entry_point:
-        type: string
-        default: narrator
-      wait_minutes:
-        type: number
-        default: {{ workflow_wait_minutes_default }}
-      mock:
-        type: boolean
-        default: false
-
 permissions:
   contents: write
   issues: write
@@ -54,10 +43,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  WAIT_MINUTES: {{ gha_expr("inputs.wait_minutes || " ~ workflow_wait_minutes_default) }}
-  MOCK_MODE: {{ gha_expr("inputs.mock || false") }}
+  WAIT_MINUTES: {{ gha_expr("github.event_name == 'workflow_dispatch' && (github.event.inputs.wait_minutes || " ~ workflow_wait_minutes_default ~ ") || " ~ workflow_wait_minutes_default) }}
+  MOCK_MODE: {{ gha_expr("github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true' || false") }}
   JULES_MOCK_TAG: {{ gha_expr("format('mock-run-{0}', github.run_id)") }}
-  JLO_RUN_FLAGS: {{ gha_expr("(inputs.mock || false) && '--mock' || ''") }}
+  JLO_RUN_FLAGS: {{ gha_expr("github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true' && '--mock' || ''") }}
   JLO_TARGET_BRANCH: '{{ target_branch }}'
   JULES_WORKER_BRANCH: '{{ worker_branch }}'
 {% import "workflows/jules-workflows/macros/wait_job.j2" as wait_macro %}
@@ -78,24 +67,23 @@ jobs:
   # ============================================================
 {% include "workflows/jules-workflows/components/run-narrator.yml.j2" %}
   # ============================================================
-  # Phase 3: Run innovators workflow in parallel (proposal generation + publish)
+  # Phase 3: Run innovators (proposal generation)
   # ============================================================
-  run-innovators:
-    needs: [check-schedule]
-    if: |
-      needs.check-schedule.result == 'success' &&
-      fromJSON(needs.check-schedule.outputs.json).run_innovators == true
-    uses: ./.github/workflows/jules-run-innovators.yml
-    with:
-      wait_minutes: {{ gha_expr("inputs.wait_minutes || " ~ workflow_wait_minutes_default) }}
-      mock: {{ gha_expr("inputs.mock || false") }}
-    secrets: inherit
+{% include "workflows/jules-workflows/components/run-innovators.yml.j2" %}
   # ============================================================
-  # Phase 4: Wait for narrator processing
+  # Phase 4: Wait for innovators processing
+  # ============================================================
+{% include "workflows/jules-workflows/components/wait-after-run-innovators.yml.j2" %}
+  # ============================================================
+  # Phase 5: Publish innovators proposals
+  # ============================================================
+{% include "workflows/jules-workflows/components/publish-proposals.yml.j2" %}
+  # ============================================================
+  # Phase 6: Wait for narrator processing
   # ============================================================
 {% include "workflows/jules-workflows/components/wait-after-initial-requests.yml.j2" %}
   # ============================================================
-  # Phase 5: Run observers
+  # Phase 7: Run observers
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-observers',
@@ -109,16 +97,16 @@ jobs:
       needs.wait-after-initial-requests.result == 'success'"
 ) }}
   # ============================================================
-  # Phase 6: Wait for observer processing
+  # Phase 8: Wait for observer processing
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-observers', 'run-observers', 'run-observers', 'observers') }}
   # ============================================================
-  # Phase 7: Check for pending events (decider gate)
+  # Phase 9: Check for pending events (decider gate)
   # ============================================================
 {% include "workflows/jules-workflows/components/generate-decider-matrix.yml.j2" %}
 
   # ============================================================
-  # Phase 8: Run decider
+  # Phase 10: Run decider
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-decider',
@@ -128,16 +116,16 @@ jobs:
     'Run decider'
 ) }}
   # ============================================================
-  # Phase 9: Wait for decider processing
+  # Phase 11: Wait for decider processing
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-decider', 'run-decider', 'run-decider', 'decider') }}
   # ============================================================
-  # Phase 10: Resolve planner/implementer run requests
+  # Phase 12: Resolve planner/implementer run requests
   # ============================================================
 {% include "workflows/jules-workflows/components/generate-routing-matrix.yml.j2" %}
 
   # ============================================================
-  # Phase 11: Run planner
+  # Phase 13: Run planner
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-planner',
@@ -147,11 +135,11 @@ jobs:
     'Run planner'
 ) }}
   # ============================================================
-  # Phase 12: Wait for planner PRs
+  # Phase 14: Wait for planner PRs
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-planner', 'run-planner', 'run-planner', 'planner') }}
   # ============================================================
-  # Phase 13: Run implementer
+  # Phase 15: Run implementer
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-implementer',
@@ -162,11 +150,11 @@ jobs:
   {'TARGET_BRANCH': "'" ~ target_branch ~ "'"}
 ) }}
   # ============================================================
-  # Phase 14: Wait for implementer labels
+  # Phase 16: Wait for implementer labels
   # ============================================================
 {{ wait_macro.wait_for_processing('wait-after-implementer', 'run-implementer', 'run-implementer', 'implementer') }}
 
   # ============================================================
-  # Phase 15: Cleanup mock artifacts
+  # Phase 17: Cleanup mock artifacts
   # ============================================================
 {% include "workflows/jules-workflows/components/cleanup-mock-artifacts.yml.j2" %}

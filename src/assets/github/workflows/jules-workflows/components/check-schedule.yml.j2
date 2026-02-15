@@ -3,7 +3,7 @@
     if: |
       needs.bootstrap.result == 'success' &&
       ((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule') &&
-      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call')
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: {{ runner }}
     timeout-minutes: 10
     outputs:
@@ -12,7 +12,7 @@
       - name: Check schedule
         id: check
         env:
-          ENTRY_POINT: {{ gha_expr("github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') || github.event_name == 'workflow_call' && (inputs.entry_point || 'narrator') || 'narrator'") }}
+          ENTRY_POINT: {{ gha_expr("github.event_name == 'workflow_dispatch' && (github.event.inputs.entry_point || 'narrator') || 'narrator'") }}
         run: |
           set -euo pipefail
           run_narrator=false
@@ -25,14 +25,15 @@
           case "${ENTRY_POINT}" in
             narrator)
               run_narrator=true
-              run_innovators=true
               run_observers=true
               run_decider=true
               run_planner=true
               run_implementer=true
               ;;
-            observers)
+            innovators)
               run_innovators=true
+              ;;
+            observers)
               run_observers=true
               run_decider=true
               run_planner=true
@@ -48,7 +49,7 @@
               run_implementer=true
               ;;
             *)
-              echo "::error::Unsupported entry_point '${ENTRY_POINT}'. Allowed values: narrator, observers, decider, requirements."
+              echo "::error::Unsupported entry_point '${ENTRY_POINT}'. Allowed values: narrator, innovators, observers, decider, requirements."
               exit 1
               ;;
           esac

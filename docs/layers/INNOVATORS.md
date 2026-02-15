@@ -34,7 +34,7 @@ Workstation state (`perspective.yml`) is managed by the `bootstrap` command. Ind
 
 Innovators run independently from the main decision flow (Narrator -> Observers -> Decider).
 
-- **Workflow Trigger**: `jules-run-innovators.yml` supports both `workflow_dispatch` and `workflow_call`.
+- **Workflow Trigger**: `jules-scheduled-workflows.yml` runs innovators directly.
 - **Concurrency**: Innovator jobs run in parallel with the Narrator phase to maximize throughput.
 
 ### Task Contract

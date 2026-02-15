@@ -56,6 +56,22 @@ where
         });
     }
 
+    let jlo_path = ctx.repository().jlo_path();
+    let root = jlo_path.parent().ok_or_else(|| {
+        AppError::InvalidPath(format!("Invalid .jlo path (missing parent): {}", jlo_path.display()))
+    })?;
+    let role_path = crate::domain::roles::paths::role_yml(root, layer_enum, role_id.as_str());
+    let role_path_str = role_path.to_str().ok_or_else(|| {
+        AppError::InvalidPath(format!(
+            "Role path contains invalid unicode: {}",
+            role_path.display()
+        ))
+    })?;
+    if !ctx.repository().file_exists(role_path_str) {
+        let content = ctx.templates().builtin_role_content(layer_enum, role_id.as_str())?;
+        ctx.repository().write_role(layer_enum, role_id.as_str(), &content)?;
+    }
+
     Ok(AddOutcome::Role {
         layer: layer_enum.dir_name().to_string(),
         role: role_id.as_str().to_string(),

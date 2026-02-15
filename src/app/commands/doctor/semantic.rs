@@ -3,11 +3,9 @@ use std::path::{Path, PathBuf};
 
 use chrono::{NaiveDate, Utc};
 
-use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
 use crate::app::config::load_schedule;
 use crate::domain::config::schedule::ScheduleLayer;
 use crate::domain::{AppError, Layer};
-use crate::ports::RoleTemplateStore;
 
 use super::diagnostics::Diagnostics;
 use super::yaml::{read_yaml_bool, read_yaml_files, read_yaml_string, read_yaml_strings};
@@ -169,7 +167,9 @@ pub fn semantic_checks(
                         let path = entry.path();
                         if path.is_dir() {
                             let name = entry.file_name().to_string_lossy().to_string();
-                            role_set.insert(name);
+                            if path.join("role.yml").exists() {
+                                role_set.insert(name);
+                            }
                         }
                     }
                 }
@@ -184,7 +184,6 @@ pub fn semantic_checks(
         }
     }
 
-    let builtin_roles = load_builtin_roles_by_layer(diagnostics);
     let store = crate::adapters::local_repository::LocalRepositoryAdapter::new(root.to_path_buf());
 
     match load_schedule(&store) {
@@ -193,7 +192,6 @@ pub fn semantic_checks(
                 Layer::Observers,
                 &schedule.observers,
                 &existing_roles,
-                &builtin_roles,
                 diagnostics,
             );
             if let Some(ref innovators) = schedule.innovators {
@@ -201,7 +199,6 @@ pub fn semantic_checks(
                     Layer::Innovators,
                     innovators,
                     &existing_roles,
-                    &builtin_roles,
                     diagnostics,
                 );
             }
@@ -253,48 +250,25 @@ fn validate_scheduled_layer(
     layer: Layer,
     schedule_layer: &ScheduleLayer,
     existing_roles: &HashMap<Layer, HashSet<String>>,
-    builtin_roles: &HashMap<Layer, HashSet<String>>,
     diagnostics: &mut Diagnostics,
 ) {
     for role in &schedule_layer.roles {
         let role_name = role.name.as_str();
         let exists_as_custom =
             existing_roles.get(&layer).is_some_and(|roles| roles.contains(role_name));
-        let exists_as_builtin =
-            builtin_roles.get(&layer).is_some_and(|roles| roles.contains(role_name));
 
-        if !exists_as_custom && !exists_as_builtin {
+        if !exists_as_custom {
             diagnostics.push_error(
                 role_name.to_string(),
                 format!(
-                    "{} role listed in .jlo/config.toml schedule but missing from both custom roles and built-in catalog",
+                    "{} role listed in .jlo/config.toml schedule but missing from .jlo/roles/{}/<role>/role.yml",
                     layer.display_name()
+                    ,
+                    layer.dir_name()
                 ),
             );
         }
     }
-}
-
-fn load_builtin_roles_by_layer(diagnostics: &mut Diagnostics) -> HashMap<Layer, HashSet<String>> {
-    let mut roles_by_layer: HashMap<Layer, HashSet<String>> = HashMap::new();
-    let templates = EmbeddedRoleTemplateStore::new();
-    match templates.builtin_role_catalog() {
-        Ok(catalog) => {
-            for entry in catalog {
-                roles_by_layer
-                    .entry(entry.layer)
-                    .or_default()
-                    .insert(entry.name.as_str().to_string());
-            }
-        }
-        Err(err) => {
-            diagnostics.push_error(
-                ".jlo/config.toml".to_string(),
-                format!("Failed to load built-in role catalog: {}", err),
-            );
-        }
-    }
-    roles_by_layer
 }
 
 fn build_event_source_index(context: &SemanticContext) -> HashMap<String, Vec<String>> {
@@ -324,6 +298,11 @@ mod tests {
             .expect("create requirements dir");
         fs::create_dir_all(root.join(".jlo/roles/observers/taxonomy"))
             .expect("create observer role dir");
+        fs::write(
+            root.join(".jlo/roles/observers/taxonomy/role.yml"),
+            "role: taxonomy\nlayer: observers\nprofile:\n  focus: test\n",
+        )
+        .expect("write observer role");
         fs::write(
             root.join(".jlo/config.toml"),
             r#"[run]

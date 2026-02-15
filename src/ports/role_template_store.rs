@@ -35,4 +35,7 @@ pub trait RoleTemplateStore {
 
     /// Load the builtin role catalog.
     fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError>;
+
+    /// Load embedded builtin role.yml content for a specific layer/role.
+    fn builtin_role_content(&self, layer: Layer, role_id: &str) -> Result<String, AppError>;
 }

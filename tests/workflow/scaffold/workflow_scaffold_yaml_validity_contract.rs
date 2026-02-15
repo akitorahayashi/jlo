@@ -58,7 +58,7 @@ fn workflow_templates_validate_structure() {
         .expect("'on' should be mapping");
     assert!(on.contains_key(serde_yaml::Value::from("schedule")));
     assert!(on.contains_key(serde_yaml::Value::from("workflow_dispatch")));
-    assert!(on.contains_key(serde_yaml::Value::from("workflow_call")));
+    assert!(!on.contains_key(serde_yaml::Value::from("workflow_call")));
     assert!(
         !on.contains_key(serde_yaml::Value::from("push")),
         "scheduled workflow should not include push trigger"

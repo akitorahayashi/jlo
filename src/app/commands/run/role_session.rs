@@ -17,9 +17,7 @@ pub fn print_role_preview<W: RepositoryFilesystem + PromptAssetLoader + ?Sized>(
     let root = jules_path.parent().unwrap_or(Path::new("."));
     let role_yml_path = crate::domain::roles::paths::role_yml(root, layer, role.as_str());
     let custom_role_exists = repository.file_exists(&role_yml_path.to_string_lossy());
-    let resolved_role_exists = repository.asset_exists(&role_yml_path);
-
-    if !resolved_role_exists {
+    if !custom_role_exists {
         println!("  ⚠️  role.yml not found at {}\n", role_yml_path.display());
         return;
     }
@@ -29,11 +27,7 @@ pub fn print_role_preview<W: RepositoryFilesystem + PromptAssetLoader + ?Sized>(
         println!("  Contracts: {}", contracts_path.display());
     }
 
-    if custom_role_exists {
-        println!("  Role config: {}", role_yml_path.display());
-    } else {
-        println!("  Role config: embedded builtin ({}/{})", layer.dir_name(), role.as_str());
-    }
+    println!("  Role config: {}", role_yml_path.display());
 }
 
 pub fn validate_role_exists<W: RepositoryFilesystem + PromptAssetLoader + ?Sized>(
@@ -45,12 +39,8 @@ pub fn validate_role_exists<W: RepositoryFilesystem + PromptAssetLoader + ?Sized
     let root = jules_path.parent().unwrap_or(Path::new("."));
     let role_yml_path = crate::domain::roles::paths::role_yml(root, layer, role);
 
-    if !repository.asset_exists(&role_yml_path) {
-        return Err(AppError::RoleNotFound(format!(
-            "{}/{} (custom role.yml and embedded builtin not found)",
-            layer.dir_name(),
-            role
-        )));
+    if !repository.file_exists(&role_yml_path.to_string_lossy()) {
+        return Err(AppError::RoleNotFound(format!("{}/{}", layer.dir_name(), role)));
     }
 
     Ok(())

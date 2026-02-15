@@ -2,10 +2,7 @@
     needs: [wait-after-implementer]
     if: |
       always() &&
-      (
-        (github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true') ||
-        (github.event_name == 'workflow_call' && inputs.mock == true)
-      )
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.mock == 'true')
     runs-on: {{ runner }}
     timeout-minutes: 10
     env:

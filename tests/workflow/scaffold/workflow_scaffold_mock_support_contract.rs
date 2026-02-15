@@ -12,7 +12,7 @@ fn installed_workflow_scaffold_includes_mock_support() {
         fs::read_to_string(root.join(".github/workflows/jules-scheduled-workflows.yml")).unwrap();
 
     assert!(workflow.contains("mock:"), "Should have mock input");
-    assert!(workflow.contains("workflow_call:"), "Should support workflow_call trigger");
+    assert!(!workflow.contains("workflow_call:"), "Should not support workflow_call trigger");
     assert!(workflow.contains("MOCK_MODE:"), "Should set MOCK_MODE env var");
     assert!(workflow.contains("JULES_MOCK_TAG:"), "Should set JULES_MOCK_TAG env var");
     assert!(workflow.contains("JLO_RUN_FLAGS:"), "Should set JLO_RUN_FLAGS env var");
@@ -26,10 +26,7 @@ fn installed_workflow_scaffold_includes_mock_support() {
         ),
         "Cleanup job should gate on workflow_dispatch mock input"
     );
-    assert!(
-        workflow.contains("github.event_name == 'workflow_call' && inputs.mock == true"),
-        "Cleanup job should gate on workflow_call mock input"
-    );
+    assert!(!workflow.contains("inputs.mock == true"));
     assert!(
         !workflow.contains("Skip when not mock mode"),
         "Cleanup gating should be handled at job-level condition"
@@ -50,12 +47,15 @@ fn installed_workflow_scaffold_includes_mock_support() {
         workflow.contains("authority is centralized in jules-automerge workflow"),
         "Cleanup flow should explain centralized auto-merge ownership"
     );
-    assert!(workflow.contains("run-innovators:"), "Should have innovators reusable workflow job");
+    assert!(workflow.contains("run-innovators:"), "Should have integrated innovators job");
     assert!(
-        workflow.contains("uses: ./.github/workflows/jules-run-innovators.yml"),
-        "Scheduled workflow should call innovators reusable workflow"
+        workflow.contains("jlo workflow run innovators"),
+        "Scheduled workflow should run innovators directly"
     );
-    assert!(!workflow.contains("- innovators"), "Entry point choices should exclude innovators");
+    assert!(
+        workflow.contains("\n          - innovators\n"),
+        "Entry point choices should include innovators"
+    );
     assert!(
         workflow.contains("\n          - requirements\n"),
         "Entry point choices should include requirements routing start-point"
@@ -69,12 +69,12 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "Entry point choices should exclude implementer"
     );
     assert!(
-        workflow.contains("observers)\n              run_innovators=true"),
-        "Observers entry-point should trigger innovators"
+        workflow.contains("observers)\n              run_observers=true\n              run_decider=true\n              run_planner=true\n              run_implementer=true"),
+        "Observers entry-point should continue downstream without innovators"
     );
     assert!(
-        workflow.contains("observers)\n              run_innovators=true\n              run_observers=true\n              run_decider=true\n              run_planner=true\n              run_implementer=true"),
-        "Observers entry-point should continue downstream through decider/planner/implementer"
+        workflow.contains("(github.event.inputs.entry_point || 'narrator') == 'innovators'"),
+        "Integrated run-innovators job should run only for innovators entry-point in dispatch"
     );
     assert!(
         workflow.contains("decider)\n              run_decider=true"),

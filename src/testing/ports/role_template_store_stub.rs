@@ -45,4 +45,8 @@ impl RoleTemplateStore for MockRoleTemplateStore {
     fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError> {
         Ok(vec![])
     }
+
+    fn builtin_role_content(&self, layer: Layer, role_id: &str) -> Result<String, AppError> {
+        Ok(format!("role: {}\nlayer: {}\nprofile:\n  focus: test\n", role_id, layer.dir_name()))
+    }
 }

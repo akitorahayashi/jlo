@@ -16,15 +16,12 @@ fn add_registers_multiple_roles_and_updates_schedule() {
 
     let rustacean_path = ctx.jlo_path().join("roles/observers/rustacean/role.yml");
     assert!(
-        !rustacean_path.exists(),
-        "Built-in role should not be materialized under .jlo/roles by add"
+        rustacean_path.exists(),
+        "Built-in role should be materialized under .jlo/roles by add"
     );
 
     let gopher_path = ctx.jlo_path().join("roles/observers/gopher/role.yml");
-    assert!(
-        !gopher_path.exists(),
-        "Built-in role should not be materialized under .jlo/roles by add"
-    );
+    assert!(gopher_path.exists(), "Built-in role should be materialized under .jlo/roles by add");
 
     let roles = read_scheduled_role_names(ctx.work_dir(), "observers");
     assert!(roles.contains(&"rustacean".to_string()));

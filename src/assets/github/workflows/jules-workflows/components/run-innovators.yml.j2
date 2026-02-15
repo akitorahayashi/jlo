@@ -1,0 +1,37 @@
+  run-innovators:
+    needs: [bootstrap]
+    if: |
+      needs.bootstrap.result == 'success' &&
+      ((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule') &&
+      (
+        github.event_name == 'schedule' ||
+        (
+          github.event_name == 'workflow_dispatch' &&
+          (github.event.inputs.entry_point || 'narrator') == 'innovators'
+        )
+      )
+    runs-on: {{ runner }}
+    timeout-minutes: 30
+    outputs:
+      json: {{ gha_expr("steps.run.outputs.json") }}
+    env:
+      JULES_API_KEY: {{ gha_expr("secrets.JULES_API_KEY") }}
+      GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: '{{ worker_branch }}'
+          fetch-depth: 0
+          token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
+
+      - name: Configure Git
+        uses: ./.github/actions/configure-git
+
+      - name: Install jlo
+        uses: ./.github/actions/install-jlo
+
+      - name: Run innovators
+        id: run
+        run: |
+          set -euo pipefail
+          jlo workflow run innovators {{ gha_raw("env.JLO_RUN_FLAGS") }} --task create_three_proposals

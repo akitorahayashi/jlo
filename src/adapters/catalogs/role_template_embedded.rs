@@ -1,6 +1,8 @@
 use include_dir::{Dir, DirEntry, include_dir};
 
-use crate::adapters::catalogs::builtin_role_assets::load_builtin_role_catalog;
+use crate::adapters::catalogs::builtin_role_assets::{
+    load_builtin_role_catalog, read_builtin_role_file,
+};
 use crate::domain::{AppError, BuiltinRoleEntry, Layer};
 use crate::ports::{RoleTemplateStore, ScaffoldFile};
 
@@ -68,6 +70,20 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
 
     fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError> {
         load_builtin_role_catalog()
+    }
+
+    fn builtin_role_content(&self, layer: Layer, role_id: &str) -> Result<String, AppError> {
+        let entry = load_builtin_role_catalog()?
+            .into_iter()
+            .find(|entry| entry.layer == layer && entry.name.as_str() == role_id)
+            .ok_or_else(|| {
+                AppError::Validation(format!(
+                    "Builtin role '{}' not found in layer '{}'",
+                    role_id,
+                    layer.dir_name()
+                ))
+            })?;
+        read_builtin_role_file(&entry.path)
     }
 }
 

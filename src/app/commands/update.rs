@@ -273,6 +273,10 @@ wait_minutes_default = 30
         fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError> {
             Ok(vec![])
         }
+
+        fn builtin_role_content(&self, _layer: Layer, _role_id: &str) -> Result<String, AppError> {
+            Err(AppError::Validation("builtin role content not available in mock".to_string()))
+        }
     }
 
     #[test]
