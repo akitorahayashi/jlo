@@ -39,8 +39,13 @@ The following dependencies are prohibited:
 
 ## jlo/jules Ownership
 
-`jlo` and `jules` structure semantics are owned by `src/domain/repository/`.
-Path construction and ownership rules are defined there as the single source of truth.
+`jlo` and `jules` structure semantics are owned by capability-focused modules under `src/domain/`:
+
+- `src/domain/workstations/` for top-level `.jlo/.jules` constants and managed manifests.
+- `src/domain/config/` and `src/domain/schedule/` for control-plane config/schedule paths and models.
+- `src/domain/roles/` for `.jlo/roles/...` path semantics and role identifiers.
+- `src/domain/layers/` for `.jules/layers/...` path semantics and prompt assembly.
+- `src/domain/exchange/` for `.jules/exchange/...` path semantics.
 
 Adapters do not own `jlo`/`jules` layout semantics.
 Adapters implement I/O behavior only.
@@ -72,5 +77,6 @@ Each serves a distinct test layer.
 
 - One responsibility has one owner module.
 - Duplicate loaders/parsers across `domain`, `app`, and `adapters` are not allowed.
-- New filesystem layout logic for `.jlo/` or `.jules/` is added only in `src/domain/repository/`.
+- New filesystem layout logic for `.jlo/` or `.jules/` is added only in the corresponding
+  `src/domain/{workstations,config,schedule,roles,layers,exchange}/` owner module.
 - Migration steps may be incremental, but each step preserves these boundaries.

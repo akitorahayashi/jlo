@@ -27,7 +27,7 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 
 ### `.jules/` — Runtime Data Plane (worker branch)
 
-`.jules/` is the complete runtime workspace materialized by workflow bootstrap. It combines scaffold framework assets (for the pinned version) with user intent overlays from `.jlo/` on `JLO_TARGET_BRANCH`.
+`.jules/` is the complete runtime workspace materialized by workflow bootstrap from embedded scaffold assets for the pinned version. Control intent stays in `.jlo/` and is read directly when needed.
 
 | Path | Owner | Written by | Description |
 |------|-------|------------|-------------|
@@ -39,8 +39,8 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 | `.jules/exchange/innovators/<persona>/**` | Agent | Agent execution | Innovator artifacts |
 | `.jules/workstations/<role>/**` | Agent | Agent execution | Role perspectives (memory) |
 | `.jules/exchange/changes.yml` | Agent | Narrator execution | Changes summary |
-| `.jules/setup/**` | Bootstrap | Workflow bootstrap | Materialized from `.jlo/setup/` + scaffold |
-| `.jules/.managed-defaults.yml` | Bootstrap | Workflow bootstrap | Materialized manifest |
+| `.jules/setup/**` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
+| `.jules/.jlo-managed.yml` | Bootstrap | Workflow bootstrap | Materialized managed-file manifest |
 
 ### `.github/` — Workflow Kit (control branch)
 
@@ -69,9 +69,9 @@ Workflow bootstrap is the sole authority for producing `.jules/` on `JULES_WORKE
 2. Load embedded scaffold assets for the pinned version.
 3. Checkout `JULES_WORKER_BRANCH` (create from `JLO_TARGET_BRANCH` history if absent).
 4. Write all managed framework files from embedded scaffold to `.jules/`.
-5. (Removed) User intent overlay is no longer projected to `.jules/`. Agents read directly from `.jlo/`.
-6. (Removed) Pruning is no longer performed.
-7. (Removed) Pruning of projected roles is no longer performed.
+5. Do not project user intent files from `.jlo/` into `.jules/`; agents read control intent directly.
+6. Do not prune unmanaged runtime artifacts.
+7. Do not perform projected-role pruning.
 8. Write managed manifest (if applicable) and version file.
 9. Commit changes (if any) to `JULES_WORKER_BRANCH` with a deterministic message.
 

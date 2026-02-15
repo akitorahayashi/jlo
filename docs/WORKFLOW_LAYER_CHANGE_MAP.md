@@ -9,11 +9,11 @@ A layer-level change means one of the following:
 - Changing layer artifacts used by workflow execution and validation.
 
 ## Authoritative Sources
-- Layer model: `src/domain/repository/layer.rs`
+- Layer model: `src/domain/layers/mod.rs`
 - Control-plane ownership: `docs/CONTROL_PLANE_OWNERSHIP.md`
 - CLI entry points: `src/app/cli/run.rs`, `src/app/cli/workflow.rs`
 - Runtime dispatch: `src/app/commands/run/mod.rs`, `src/app/commands/workflow/run/layer/mod.rs`
-- Schedule model: `src/domain/configuration/schedule.rs`
+- Schedule model: `src/domain/schedule/model.rs`
 - Scaffold assets: `src/assets/scaffold/jules/**`
 - Workflow templates: `src/assets/github/workflows/*.j2`
 - Mock execution: `src/app/commands/run/mock/**`
@@ -23,11 +23,11 @@ A layer-level change means one of the following:
 
 | Surface | Current coupling | Main files |
 |---|---|---|
-| Layer identity and parsing | `Layer::ALL`, `dir_name`, `from_dir_name`, type flags are hard-coded | `src/domain/repository/layer.rs` |
+| Layer identity and parsing | `Layer::ALL`, `dir_name`, `from_dir_name`, type flags are hard-coded | `src/domain/layers/mod.rs` |
 | CLI command shape | `run` subcommands are explicit per layer | `src/app/cli/run.rs` |
 | Workflow command parsing | `workflow run <layer>` relies on `Layer::from_dir_name` | `src/app/cli/workflow.rs` |
 | Runtime execution branch | Main `run` path and workflow layer dispatcher match on layer enum | `src/app/commands/run/mod.rs`, `src/app/commands/workflow/run/layer/mod.rs` |
-| Multi-role scheduling | `scheduled.toml` models observer and innovator roles explicitly | `src/domain/configuration/schedule.rs` |
+| Multi-role scheduling | `scheduled.toml` models observer and innovator roles explicitly | `src/domain/schedule/model.rs` |
 | Prompt and contracts | Layer assets are file-based and embedded with `include_dir` | `src/assets/scaffold/jules/layers/<layer>/**` |
 | Doctor validation | Structural/schema/semantic checks iterate layers and exchange data contracts | `src/app/commands/doctor/*.rs` |
 | Requirement routing | Exchange inspect provides requirement counts for planner/implementer gating | `src/app/commands/workflow/exchange/inspect.rs`, `src/app/commands/workflow/run/*.rs` |
@@ -50,7 +50,7 @@ A layer-level change means one of the following:
 ## Adding a Layer: Change Order
 
 1. Domain model and parsing
-- Add enum variant and all layer metadata in `src/domain/repository/layer.rs`.
+- Add enum variant and all layer metadata in `src/domain/layers/mod.rs`.
 - Keep classification (`is_single_role`, `is_issue_driven`) coherent.
 
 2. Scaffold and contracts
@@ -63,7 +63,7 @@ A layer-level change means one of the following:
 - Wire execution in `src/app/commands/run/mod.rs` and `src/app/commands/workflow/run/layer/mod.rs`.
 
 4. Schedule and role selection (if multi-role)
-- Extend `Schedule` in `src/domain/configuration/schedule.rs`.
+- Extend `Schedule` in `src/domain/schedule/model.rs`.
 - Keep absent/empty schedule semantics explicit and deterministic.
 
 5. Doctor and runtime contracts
@@ -108,7 +108,7 @@ A layer-level change means one of the following:
 - `.jules/`-only scope remains the automerge safety boundary.
 - Control-plane files live under `.jlo/` on the control branch; `.jules/` is materialized by workflow bootstrap.
 - `install-jlo` reads the version pin from `JLO_TARGET_BRANCH` `.jlo/.jlo-version`, not from `origin/JULES_WORKER_BRANCH`.
-- Projection from `.jlo/` to `.jules/` never overwrites agent-generated exchange artifacts.
+- Bootstrap materialization of `.jules/` never overwrites agent-generated exchange artifacts.
 
 ## Mock Maintenance Invariants
 - Mock mode is a first-class execution path, not a test stub.

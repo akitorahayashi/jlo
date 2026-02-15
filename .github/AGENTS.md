@@ -11,7 +11,7 @@ See [CONTROL_PLANE_OWNERSHIP.md](../docs/CONTROL_PLANE_OWNERSHIP.md) for the `.j
 | `JULES_WORKER_BRANCH` | `.jules/` (runtime scaffold, materialized by bootstrap) | Workflow automation |
 
 The `JULES_WORKER_BRANCH` branch is never edited directly by users.
-Its `.jules/` directory is assembled by `jlo workflow bootstrap` from embedded scaffold assets and `.jlo/` intent overlay.
+Its `.jules/` directory is assembled by `jlo workflow bootstrap` from embedded scaffold assets for the pinned version.
 
 ## Branch Strategy
 
