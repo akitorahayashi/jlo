@@ -554,7 +554,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Publish proposals
-        run: jlo workflow workspace publish-proposals
+        run: jlo workflow exchange publish-proposals
 
 
   # ============================================================
@@ -595,7 +595,7 @@ jobs:
           REQUEST_DECIDER: ${{ fromJSON(needs.check-schedule.outputs.json).run_decider }}
         run: |
           set -euo pipefail
-          HAS_PENDING=$(jlo workflow workspace inspect | jq '(.events.pending_files | length) > 0')
+          HAS_PENDING=$(jlo workflow exchange inspect | jq '(.events.pending_files | length) > 0')
           RUN_DECIDER=false
           if [ "$REQUEST_DECIDER" = "true" ] && [ "$HAS_PENDING" = "true" ]; then
             RUN_DECIDER=true
@@ -960,5 +960,5 @@ jobs:
         run: |
           # Cleanup uses a PR merge path to satisfy branch protection and preserve auditable history.
           # Auto-merge is not enabled here; authority is centralized in jules-automerge workflow.
-          jlo workflow workspace clean mock --mock-tag "$JULES_MOCK_TAG"
+          jlo workflow exchange clean mock --mock-tag "$JULES_MOCK_TAG"
 

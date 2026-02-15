@@ -54,10 +54,10 @@ Local composite actions are installed under `.github/actions/`.
 Workflow orchestration delegates to `jlo workflow` commands:
 
 - `jlo workflow run <layer>`
-- `jlo workflow workspace inspect`
-- `jlo workflow workspace publish-proposals`
-- `jlo workflow workspace clean requirement <file>`
-- `jlo workflow workspace clean mock --mock-tag <tag>`
+- `jlo workflow exchange inspect`
+- `jlo workflow exchange publish-proposals`
+- `jlo workflow exchange clean requirement <file>`
+- `jlo workflow exchange clean mock --mock-tag <tag>`
 - `jlo workflow gh pr comment-summary-request <pr_number>`
 - `jlo workflow gh pr sync-category-label <pr_number>`
 - `jlo workflow gh pr automerge <pr_number>`
