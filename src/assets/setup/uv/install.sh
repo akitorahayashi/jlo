@@ -1,4 +1,6 @@
+# ==============================================================================
 # Install uv - Python package installer
+# ==============================================================================
 
 if command -v uv >/dev/null 2>&1; then
   echo "uv already installed: $(uv --version)"
