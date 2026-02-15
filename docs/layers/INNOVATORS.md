@@ -17,24 +17,36 @@ The **Innovators** layer generates improvement proposals from repository context
 
 Idea/comment intermediate artifacts are not used.
 
-## Execution
+## Execution & Lifecycle
+
+### Workstation Management
+
+Workstation state (`perspective.yml`) is managed by the `bootstrap` command. Individual agents are prohibited from self-initializing their perspectives.
+
+- **Authority**: `src/app/commands/workflow/bootstrap.rs`
+- **Policy**: "Every scheduled role has an environment; no unscheduled role environment remains."
+- **Workflow**: 
+  1. `bootstrap` reads `.jlo/scheduled.toml` as the Source of Truth.
+  2. **Ensure**: Missing workstation directories/perspectives are created from layer schemas.
+  3. **Prune**: Workstation directories for roles no longer in the schedule are recursively deleted.
+
+### Parallel Execution
+
+Innovators run independently from the main decision flow (Narrator -> Observers -> Decider).
+
+- **Workflow Trigger**: `jules-run-innovators.yml` supports both `workflow_dispatch` and `workflow_call`.
+- **Concurrency**: Innovator jobs run in parallel with the Narrator phase to maximize throughput.
+
+### Task Contract
 
 ```bash
 jlo run innovators --role <persona> --task create_three_proposals
 ```
 
-Example:
-
-```bash
-jlo run innovators --role recruiter --task create_three_proposals
-```
-
-## Task Contract
-
-- Task file: `.jules/layers/innovators/tasks/create_three_proposals.yml`
-- Each run must emit three directionally distinct proposals.
-- Proposal filenames must include persona prefix + slug to avoid collisions.
-- `recent_proposals` in workstation perspective must be updated with emitted titles.
+- **Task file**: `.jules/layers/innovators/tasks/create_three_proposals.yml`
+- **Output**: Each run emits **three** directionally distinct proposals to `.jules/exchange/proposals/<persona>-<slug>.yml`.
+- **Collisions**: Filenames MUST use the persona-slug combination.
+- **Memory**: The persona's `perspective.yml` must be updated with emitted proposal metadata.
 
 ## Proposal Schema
 
