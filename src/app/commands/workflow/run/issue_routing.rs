@@ -56,19 +56,14 @@ pub(crate) fn find_requirements(
 mod tests {
     use super::*;
     use crate::ports::{JulesStorePort, RepositoryFilesystemPort};
-    use crate::testing::MockWorkspaceStore;
+    use crate::testing::TestStore;
     use serial_test::serial;
 
-    fn setup_workspace(store: &MockWorkspaceStore) {
+    fn setup_workspace(store: &TestStore) {
         store.jules_write_version(env!("CARGO_PKG_VERSION")).unwrap();
     }
 
-    fn write_requirement(
-        store: &MockWorkspaceStore,
-        name: &str,
-        label: &str,
-        requires_deep_analysis: bool,
-    ) {
+    fn write_requirement(store: &TestStore, name: &str, label: &str, requires_deep_analysis: bool) {
         let content = format!(
             "id: test01\nlabel: {}\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n",
             label, requires_deep_analysis
@@ -80,7 +75,7 @@ mod tests {
     #[test]
     #[serial]
     fn planner_issue_discovery_filters_by_requires_deep_analysis() {
-        let store = MockWorkspaceStore::new();
+        let store = TestStore::new();
         setup_workspace(&store);
 
         write_requirement(&store, "requires-planning", "bugs", true);
@@ -97,7 +92,7 @@ mod tests {
     #[test]
     #[serial]
     fn implementer_issue_discovery_uses_non_deep_issues() {
-        let store = MockWorkspaceStore::new();
+        let store = TestStore::new();
         setup_workspace(&store);
 
         write_requirement(&store, "requires-planning", "bugs", true);

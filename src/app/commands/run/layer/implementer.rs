@@ -418,7 +418,7 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
 mod tests {
     use super::*;
     use crate::ports::RepositoryFilesystemPort;
-    use crate::testing::{FakeGit, FakeGitHub, MockWorkspaceStore};
+    use crate::testing::{FakeGit, FakeGitHub, TestStore};
     use std::collections::HashMap;
 
     fn make_config() -> MockConfig {
@@ -436,7 +436,7 @@ mod tests {
     #[test]
     fn mock_implementer_creates_pr_for_valid_requirement() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -465,7 +465,7 @@ mod tests {
     #[test]
     fn mock_implementer_fails_if_label_not_allowed() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config(); // Allows "bugs"

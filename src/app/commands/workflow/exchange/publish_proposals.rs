@@ -316,7 +316,7 @@ fn render_list(items: &[String]) -> String {
 mod tests {
     use super::*;
     use crate::ports::RepositoryFilesystemPort;
-    use crate::testing::{FakeGit, FakeGitHub, MockWorkspaceStore};
+    use crate::testing::{FakeGit, FakeGitHub, TestStore};
 
     fn proposal_yaml() -> &'static str {
         r#"schema_version: 1
@@ -348,7 +348,7 @@ verification_signals:
         let perspective_path = ".jules/exchange/innovators/alice/perspective.yml";
         let perspective_yaml =
             "persona: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
-        let workspace = MockWorkspaceStore::new()
+        let workspace = TestStore::new()
             .with_exists(true)
             .with_file(proposal_path, proposal_yaml())
             .with_file(perspective_path, perspective_yaml);
@@ -381,7 +381,7 @@ verification_signals:
 
     #[test]
     fn no_proposals_returns_empty_output() {
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
 

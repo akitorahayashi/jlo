@@ -87,11 +87,11 @@ fn append_layer_toml(lines: &mut Vec<String>, layer_name: &str, layer: &Schedule
 mod tests {
     use super::*;
     use crate::ports::RepositoryFilesystemPort;
-    use crate::testing::MockWorkspaceStore;
+    use crate::testing::TestStore;
 
     #[test]
     fn ensure_role_scheduled_keeps_scaffold_style_for_observers() {
-        let workspace = MockWorkspaceStore::new().with_file(
+        let workspace = TestStore::new().with_file(
             ".jlo/scheduled.toml",
             r#"version = 1
 enabled = true
@@ -140,7 +140,7 @@ roles = [
 
     #[test]
     fn ensure_role_scheduled_adds_innovators_section_in_scaffold_style() {
-        let workspace = MockWorkspaceStore::new().with_file(
+        let workspace = TestStore::new().with_file(
             ".jlo/scheduled.toml",
             r#"version = 1
 enabled = true

@@ -130,11 +130,11 @@ pub fn load_mock_config<W: RepositoryFilesystemPort>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::MockWorkspaceStore;
+    use crate::testing::TestStore;
 
     #[test]
     fn load_branch_prefix_for_innovators_uses_contracts_yml() {
-        let workspace = MockWorkspaceStore::new().with_file(
+        let workspace = TestStore::new().with_file(
             ".jules/layers/innovators/contracts.yml",
             "branch_prefix: jules-innovator-\n",
         );

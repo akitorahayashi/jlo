@@ -72,11 +72,11 @@ pub fn execute(store: &impl RepositoryFilesystemPort) -> Result<Vec<String>, App
 mod tests {
     use super::*;
     use crate::ports::RepositoryFilesystemPort;
-    use crate::testing::MockWorkspaceStore;
+    use crate::testing::TestStore;
 
     #[test]
     fn fails_if_not_initialized() {
-        let store = MockWorkspaceStore::new();
+        let store = TestStore::new();
 
         let result = execute(&store);
 
@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn fails_if_tools_yml_missing() {
-        let store = MockWorkspaceStore::new();
+        let store = TestStore::new();
         store.write_file(".jlo/setup/placeholder", "").unwrap();
 
         let result = execute(&store);
@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn fails_if_no_tools_specified() {
-        let store = MockWorkspaceStore::new();
+        let store = TestStore::new();
         store.write_file(".jlo/setup/tools.yml", "tools: []").unwrap();
 
         let result = execute(&store);
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn generates_install_script_and_env_files_in_control_plane() {
-        let store = MockWorkspaceStore::new();
+        let store = TestStore::new();
         store.write_file(".jlo/setup/tools.yml", "tools:\n  - just").unwrap();
 
         let result = execute(&store).unwrap();

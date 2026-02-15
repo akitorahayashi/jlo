@@ -359,7 +359,7 @@ where
 mod tests {
     use super::*;
     use crate::ports::RepositoryFilesystemPort;
-    use crate::testing::{FakeGit, FakeGitHub, MockWorkspaceStore};
+    use crate::testing::{FakeGit, FakeGitHub, TestStore};
     use std::collections::HashMap;
     use std::path::PathBuf;
 
@@ -378,7 +378,7 @@ mod tests {
     #[test]
     fn mock_innovator_creates_idea_with_create_idea_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -407,7 +407,7 @@ mod tests {
     #[test]
     fn mock_innovator_removes_idea_with_refine_idea_and_create_proposal_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -436,7 +436,7 @@ mod tests {
     #[test]
     fn mock_innovator_create_then_refine_is_deterministic() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -475,7 +475,7 @@ mod tests {
     #[test]
     fn mock_innovator_direct_task_creates_proposal() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -500,7 +500,7 @@ mod tests {
     #[test]
     fn mock_innovator_rejects_missing_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -522,7 +522,7 @@ mod tests {
     #[test]
     fn mock_innovator_rejects_invalid_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();

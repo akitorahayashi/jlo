@@ -462,7 +462,7 @@ where
 mod tests {
     use super::*;
     use crate::ports::RepositoryFilesystemPort;
-    use crate::testing::{FakeGit, FakeGitHub, MockWorkspaceStore};
+    use crate::testing::{FakeGit, FakeGitHub, TestStore};
     use std::collections::HashMap;
     use std::path::PathBuf;
 
@@ -481,7 +481,7 @@ mod tests {
     #[test]
     fn mock_decider_processes_events_and_creates_requirements() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -539,7 +539,7 @@ mod tests {
     #[test]
     fn mock_decider_fails_with_insufficient_events() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();

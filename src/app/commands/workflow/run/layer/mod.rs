@@ -84,7 +84,7 @@ where
 mod tests {
     use super::*;
     use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
-    use crate::testing::MockWorkspaceStore;
+    use crate::testing::TestStore;
 
     struct NoopGit;
 
@@ -219,7 +219,7 @@ mod tests {
 
     #[test]
     fn execute_layer_observers_reflects_enabled_roles_in_scheduled_toml() {
-        let store = MockWorkspaceStore::new().with_exists(true).with_file(
+        let store = TestStore::new().with_exists(true).with_file(
             ".jlo/scheduled.toml",
             r#"
 version = 1
@@ -248,7 +248,7 @@ roles = [
                              run_options: RunOptions,
                              _git: &NoopGit,
                              _gh: &NoopGitHub,
-                             _store: &MockWorkspaceStore| {
+                             _store: &TestStore| {
             executed_roles.push(run_options.role.expect("role should be present"));
             Ok(())
         };
