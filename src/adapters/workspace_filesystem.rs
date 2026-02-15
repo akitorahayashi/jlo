@@ -190,6 +190,15 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
         Ok(())
     }
 
+    fn remove_dir_all(&self, path: &str) -> Result<(), AppError> {
+        let full_path = self.resolve_path(path);
+        self.validate_path_within_root(&full_path)?;
+        if full_path.exists() {
+            fs::remove_dir_all(full_path).map_err(AppError::from)?;
+        }
+        Ok(())
+    }
+
     fn list_dir(&self, path: &str) -> Result<Vec<PathBuf>, AppError> {
         let full_path = self.resolve_path(path);
         self.validate_path_within_root(&full_path)?;

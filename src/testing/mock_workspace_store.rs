@@ -165,6 +165,12 @@ impl WorkspaceStore for MockWorkspaceStore {
         Ok(())
     }
 
+    fn remove_dir_all(&self, path: &str) -> Result<(), AppError> {
+        let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
+        self.files.lock().unwrap().retain(|key, _| !key.starts_with(&prefix));
+        Ok(())
+    }
+
     fn list_dir(&self, path: &str) -> Result<Vec<PathBuf>, AppError> {
         // Find direct children (files and directories)
         let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };

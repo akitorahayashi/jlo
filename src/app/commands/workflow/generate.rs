@@ -10,7 +10,8 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 
 use crate::adapters::assets::workflow_scaffold_assets::load_workflow_scaffold;
-use crate::app::commands::init::load_workflow_generate_config;
+use crate::adapters::control_plane_config::load_workflow_generate_config;
+use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::{AppError, WorkflowRunnerMode};
 
 const SCHEMA_VERSION: u32 = 1;
@@ -40,7 +41,8 @@ pub struct WorkflowGenerateOutput {
 /// Execute workflow generate command.
 pub fn execute(options: WorkflowGenerateOptions) -> Result<WorkflowGenerateOutput, AppError> {
     let repo_root = find_repo_root(&std::env::current_dir()?)?;
-    let generate_config = load_workflow_generate_config(&repo_root)?;
+    let workspace = FilesystemWorkspaceStore::new(repo_root.clone());
+    let generate_config = load_workflow_generate_config(&workspace)?;
     let output_dir = resolve_output_dir(&options, &repo_root)?;
 
     prepare_output_dir(&output_dir)?;

@@ -673,6 +673,10 @@ created_at: "2026-02-05 00:00:00"
             panic!("mock narrator no-op must not call remove_file");
         }
 
+        fn remove_dir_all(&self, _path: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call remove_dir_all");
+        }
+
         fn list_dir(&self, _path: &str) -> Result<Vec<PathBuf>, AppError> {
             panic!("mock narrator no-op must not call list_dir");
         }
