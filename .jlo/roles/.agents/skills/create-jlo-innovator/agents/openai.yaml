@@ -1,0 +1,5 @@
+---
+interface:
+  display_name: "Create JLO Innovator"
+  short_description: "Design or review innovator role.yml with strategic-lens quality and explicit proposal standards"
+  default_prompt: "Use $create-jlo-innovator to create or review an innovator role.yml."

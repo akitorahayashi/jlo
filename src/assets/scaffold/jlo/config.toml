@@ -11,15 +11,11 @@ runner_mode = "remote"
 cron = ["0 19 * * *"]
 wait_minutes_default = 30
 
-[jules]
-# Jules API endpoint
-api_url = "https://jules.googleapis.com/v1alpha/sessions"
-# Request timeout in seconds
-timeout_secs = 30
-# Maximum retry attempts on transient failures
-max_retries = 3
-# Delay between retries in milliseconds
-retry_delay_ms = 1000
+[innovators]
+roles = [
+  { name = "recruiter", enabled = true },
+  { name = "leverage_architect", enabled = true },
+]
 
 [observers]
 roles = [
@@ -31,8 +27,12 @@ roles = [
   { name = "cov", enabled = true },
 ]
 
-[innovators]
-roles = [
-  { name = "recruiter", enabled = true },
-  { name = "leverage_architect", enabled = true },
-]
+[jules]
+# Jules API endpoint
+api_url = "https://jules.googleapis.com/v1alpha/sessions"
+# Request timeout in seconds
+timeout_secs = 30
+# Maximum retry attempts on transient failures
+max_retries = 3
+# Delay between retries in milliseconds
+retry_delay_ms = 1000

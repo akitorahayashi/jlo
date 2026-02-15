@@ -6,7 +6,7 @@ set -euo pipefail
 
 
 # ==============================================================================
-# gh: GitHub CLI for repository automation and PR discussion workflows
+# Install GitHub CLI
 # ==============================================================================
 
 if command -v gh >/dev/null 2>&1; then
@@ -50,4 +50,3 @@ else
 fi
 
 gh --version
-

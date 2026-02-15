@@ -8,8 +8,25 @@ max_parallel = 3
 
 [workflow]
 runner_mode = "remote"
-cron = ["0 20 * * *"]
+cron = ["0 19 * * *"]
 wait_minutes_default = 30
+
+[innovators]
+roles = [
+  { name = "recruiter", enabled = true },
+  { name = "leverage_architect", enabled = true },
+]
+
+[observers]
+roles = [
+  { name = "consistency", enabled = true },
+  { name = "taxonomy", enabled = true },
+  { name = "data_arch", enabled = true },
+  { name = "structural_arch", enabled = true },
+  { name = "qa", enabled = true },
+  { name = "cov", enabled = true },
+  { name = "rustacean", enabled = true },
+]
 
 [jules]
 # Jules API endpoint
