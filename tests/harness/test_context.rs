@@ -256,10 +256,13 @@ impl TestContext {
                 role.get("name").and_then(|name| name.as_str()).map(|name| name.to_string())
             })
             .collect();
-        assert!(
-            innovator_names.iter().any(|name| name == "recruiter"),
-            "missing default innovator role 'recruiter' in .jlo/config.toml"
-        );
+        for expected in ["recruiter", "leverage_architect"] {
+            assert!(
+                innovator_names.iter().any(|name| name == expected),
+                "missing default innovator role '{}' in .jlo/config.toml",
+                expected
+            );
+        }
 
         // Single-role layers have contracts.yml directly in layer directory.
         self.assert_single_role_layer_exists("narrator");

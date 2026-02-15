@@ -34,25 +34,17 @@ fn layer_roles_mut<'a>(
     doc: &'a mut DocumentMut,
     layer_name: &str,
 ) -> Result<&'a mut Array, AppError> {
-    if !doc.as_table().contains_key(layer_name) {
-        doc[layer_name] = Item::Table(Table::new());
-    }
+    let layer_table =
+        doc.entry(layer_name).or_insert(Item::Table(Table::new())).as_table_mut().ok_or_else(
+            || {
+                AppError::Validation(format!(
+                    "Expected [{}] to be a table in .jlo/config.toml",
+                    layer_name
+                ))
+            },
+        )?;
 
-    let layer_item = &mut doc[layer_name];
-    let layer_table = layer_item.as_table_mut().ok_or_else(|| {
-        AppError::Validation(format!("Expected [{}] to be a table in .jlo/config.toml", layer_name))
-    })?;
-
-    if !layer_table.contains_key("roles") {
-        layer_table.insert("roles", Item::Value(Value::Array(Array::new())));
-    }
-
-    let roles_item = layer_table.get_mut("roles").ok_or_else(|| {
-        AppError::Validation(format!(
-            "Missing {}.roles in .jlo/config.toml after initialization",
-            layer_name
-        ))
-    })?;
+    let roles_item = layer_table.entry("roles").or_insert(Item::Value(Value::Array(Array::new())));
 
     roles_item
         .as_value_mut()
