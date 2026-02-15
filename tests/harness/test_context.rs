@@ -128,7 +128,7 @@ impl TestContext {
 
     /// Assert that layer directories exist.
     pub(crate) fn assert_layer_structure_exists(&self) {
-        let roles_path = self.jules_path().join("roles");
+        let roles_path = self.jules_path().join("layers");
         assert!(roles_path.join("narrator").exists(), "narrator layer should exist");
         assert!(roles_path.join("observers").exists(), "observers layer should exist");
         assert!(roles_path.join("decider").exists(), "decider layer should exist");
@@ -140,7 +140,7 @@ impl TestContext {
     /// Assert that the narrator layer exists with correct structure.
     pub(crate) fn assert_narrator_exists(&self) {
         self.assert_single_role_layer_exists("narrator");
-        let narrator_path = self.jules_path().join("roles").join("narrator");
+        let narrator_path = self.jules_path().join("layers").join("narrator");
         assert!(
             narrator_path.join("schemas").join("changes.yml").exists(),
             "narrator schemas/changes.yml should exist"
@@ -190,7 +190,7 @@ impl TestContext {
 
     /// Assert that `contracts.yml` exists in each layer directory.
     pub(crate) fn assert_contracts_exist(&self) {
-        let roles_path = self.jules_path().join("roles");
+        let roles_path = self.jules_path().join("layers");
         assert!(
             roles_path.join("narrator/contracts.yml").exists(),
             "narrator/contracts.yml should exist"
@@ -236,7 +236,7 @@ impl TestContext {
 
     /// Assert that a single-role layer exists with the correct structure.
     pub(crate) fn assert_single_role_layer_exists(&self, layer: &str) {
-        let layer_path = self.jules_path().join("roles").join(layer);
+        let layer_path = self.jules_path().join("layers").join(layer);
         assert!(layer_path.exists(), "Layer directory should exist at {}", layer_path.display());
 
         assert!(

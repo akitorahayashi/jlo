@@ -9,4 +9,4 @@ steps:
   - "For each persona with a .jules/exchange/innovators/<persona>/idea.yml:"
   - "  Evaluate the idea from your role's perspective."
   - "  Create .jules/exchange/innovators/<persona>/comments/<role>_<id>.yml
-    per .jules/roles/observers/schemas/comment.yml with constructive, evidence-backed feedback."
+    per .jules/layers/observers/schemas/comment.yml with constructive, evidence-backed feedback."

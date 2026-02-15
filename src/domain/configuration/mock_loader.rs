@@ -214,7 +214,7 @@ constraints:
         use crate::testing::MockWorkspaceStore;
 
         let workspace = MockWorkspaceStore::new().with_file(
-            ".jules/roles/innovators/contracts.yml",
+            ".jules/layers/innovators/contracts.yml",
             "branch_prefix: jules-innovator-\n",
         );
 

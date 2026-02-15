@@ -7,7 +7,7 @@ objective: >-
 inputs:
   - "Remote branches matching jules-implementer-* (candidate set provided in prompt context)"
   - "PR discussion for each candidate branch (retrieved at runtime via gh)"
-  - ".jules/roles/integrator/contracts.yml (integration contracts)"
+  - ".jules/layers/integrator/contracts.yml (integration contracts)"
 
 prerequisite_validation:
   - "Verify gh CLI is available and authenticated."

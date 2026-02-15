@@ -129,14 +129,14 @@ Schemas define the structure for artifacts produced by agents.
 
 | Schema | Location | Purpose |
 |--------|----------|---------|
-| `changes.yml` | `.jules/roles/narrator/schemas/` | Changes summary structure |
-| `event.yml` | `.jules/roles/observers/schemas/` | Observer event structure |
-| `perspective.yml` | `.jules/roles/observers/schemas/` | Observer perspective structure |
-| `issue.yml` | `.jules/roles/decider/schemas/` | Issue structure |
-| `perspective.yml` | `.jules/roles/innovators/schemas/` | Innovator persona memory |
-| `idea.yml` | `.jules/roles/innovators/schemas/` | Idea draft structure |
-| `proposal.yml` | `.jules/roles/innovators/schemas/` | Finalized proposal structure |
-| `comment.yml` | `.jules/roles/innovators/schemas/` | Observer feedback on ideas |
+| `changes.yml` | `.jules/layers/narrator/schemas/` | Changes summary structure |
+| `event.yml` | `.jules/layers/observers/schemas/` | Observer event structure |
+| `perspective.yml` | `.jules/layers/observers/schemas/` | Observer perspective structure |
+| `issue.yml` | `.jules/layers/decider/schemas/` | Issue structure |
+| `perspective.yml` | `.jules/layers/innovators/schemas/` | Innovator persona memory |
+| `idea.yml` | `.jules/layers/innovators/schemas/` | Idea draft structure |
+| `proposal.yml` | `.jules/layers/innovators/schemas/` | Finalized proposal structure |
+| `comment.yml` | `.jules/layers/innovators/schemas/` | Observer feedback on ideas |
 
 **Rule**: Agents copy the schema and fill its fields. Never invent structure.
 

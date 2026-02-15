@@ -28,47 +28,47 @@ pub fn github_labels(jules_path: &Path) -> PathBuf {
 
 // ── Roles layer structure ──────────────────────────────────────────────
 
-/// `.jules/roles/`
-pub fn roles_dir(jules_path: &Path) -> PathBuf {
-    jules_path.join("roles")
+/// `.jules/layers/`
+pub fn layers_dir(jules_path: &Path) -> PathBuf {
+    jules_path.join(super::LAYERS_DIR)
 }
 
-/// `.jules/roles/<layer>/`
+/// `.jules/layers/<layer>/`
 pub fn layer_dir(jules_path: &Path, layer: Layer) -> PathBuf {
-    jules_path.join("roles").join(layer.dir_name())
+    jules_path.join(super::LAYERS_DIR).join(layer.dir_name())
 }
 
-/// `.jules/roles/<layer>/<layer>_prompt.j2`
+/// `.jules/layers/<layer>/<layer>_prompt.j2`
 pub fn prompt_template(jules_path: &Path, layer: Layer) -> PathBuf {
     layer_dir(jules_path, layer).join(layer.prompt_template_name())
 }
 
-/// `.jules/roles/<layer>/contracts.yml`
+/// `.jules/layers/<layer>/contracts.yml`
 pub fn contracts(jules_path: &Path, layer: Layer) -> PathBuf {
     layer_dir(jules_path, layer).join("contracts.yml")
 }
 
-/// `.jules/roles/<layer>/schemas/`
+/// `.jules/layers/<layer>/schemas/`
 pub fn schemas_dir(jules_path: &Path, layer: Layer) -> PathBuf {
     layer_dir(jules_path, layer).join("schemas")
 }
 
-/// `.jules/roles/<layer>/tasks/`
+/// `.jules/layers/<layer>/tasks/`
 pub fn tasks_dir(jules_path: &Path, layer: Layer) -> PathBuf {
     layer_dir(jules_path, layer).join("tasks")
 }
 
-/// `.jules/roles/<layer>/schemas/<filename>`
+/// `.jules/layers/<layer>/schemas/<filename>`
 pub fn schema_file(jules_path: &Path, layer: Layer, filename: &str) -> PathBuf {
     schemas_dir(jules_path, layer).join(filename)
 }
 
-/// `.jules/roles/<layer>/roles/` (multi-role container)
+/// `.jules/layers/<layer>/roles/` (multi-role container)
 pub fn layer_roles_container(jules_path: &Path, layer: Layer) -> PathBuf {
     layer_dir(jules_path, layer).join("roles")
 }
 
-/// `.jules/roles/narrator/schemas/changes.yml`
+/// `.jules/layers/narrator/schemas/changes.yml`
 pub fn narrator_change_schema(jules_path: &Path) -> PathBuf {
     schema_file(jules_path, Layer::Narrator, "changes.yml")
 }
@@ -164,18 +164,18 @@ mod tests {
     #[test]
     fn layer_structure() {
         let jp = Path::new("/ws/.jules");
-        assert_eq!(layer_dir(jp, Layer::Narrator), PathBuf::from("/ws/.jules/roles/narrator"));
+        assert_eq!(layer_dir(jp, Layer::Narrator), PathBuf::from("/ws/.jules/layers/narrator"));
         assert_eq!(
             prompt_template(jp, Layer::Observers),
-            PathBuf::from("/ws/.jules/roles/observers/observers_prompt.j2")
+            PathBuf::from("/ws/.jules/layers/observers/observers_prompt.j2")
         );
         assert_eq!(
             contracts(jp, Layer::Innovators),
-            PathBuf::from("/ws/.jules/roles/innovators/contracts.yml")
+            PathBuf::from("/ws/.jules/layers/innovators/contracts.yml")
         );
         assert_eq!(
             tasks_dir(jp, Layer::Observers),
-            PathBuf::from("/ws/.jules/roles/observers/tasks")
+            PathBuf::from("/ws/.jules/layers/observers/tasks")
         );
     }
 
@@ -211,7 +211,7 @@ mod tests {
         assert_eq!(exchange_changes(jp), PathBuf::from("/ws/.jules/exchange/changes.yml"));
         assert_eq!(
             narrator_change_schema(jp),
-            PathBuf::from("/ws/.jules/roles/narrator/schemas/changes.yml")
+            PathBuf::from("/ws/.jules/layers/narrator/schemas/changes.yml")
         );
     }
 

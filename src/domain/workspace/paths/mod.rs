@@ -15,8 +15,8 @@ pub const JULES_DIR: &str = ".jules";
 /// The `.jlo/` control-plane directory name.
 pub const JLO_DIR: &str = ".jlo";
 
-/// The roles directory name.
-pub const ROLES_DIR: &str = "roles";
+/// The layers directory name.
+pub const LAYERS_DIR: &str = "layers";
 
 /// The role definition file name.
 pub const ROLE_FILENAME: &str = "role.yml";
