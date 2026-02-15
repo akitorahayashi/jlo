@@ -143,7 +143,7 @@ impl WorkspaceStore for MockWorkspaceStore {
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
         if self.roles.lock().unwrap().contains_key(&(role.layer, role.id.clone())) {
-            Some(PathBuf::from(format!(".jules/roles/{}/{}", role.layer.dir_name(), role.id)))
+            Some(PathBuf::from(format!(".jules/layers/{}/{}", role.layer.dir_name(), role.id)))
         } else {
             None
         }

@@ -11,7 +11,7 @@ steps:
   - Check perspective.yml recent_proposals and reject equivalent proposal directions.
   - Update perspective.yml repository_observations and thinking_notes with current findings and direction rationale.
   - Refresh perspective.yml feedback_assimilation.next_focus with concrete next-cycle investigation angles.
-  - Create idea.yml conforming to .jules/roles/innovators/schemas/idea.yml.
+  - Create idea.yml conforming to .jules/layers/innovators/schemas/idea.yml.
 
 output:
   - .jules/exchange/innovators/<persona>/perspective.yml (updated)

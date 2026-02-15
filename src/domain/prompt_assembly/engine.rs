@@ -429,11 +429,11 @@ mod tests {
 
         // Setup mock files for Planner layer
         mock_loader.add_file(
-            ".jules/roles/planner/planner_prompt.j2",
-            r#"{{ section("Contracts", include_required(".jules/roles/planner/contracts.yml")) }}"#,
+            ".jules/layers/planner/planner_prompt.j2",
+            r#"{{ section("Contracts", include_required(".jules/layers/planner/contracts.yml")) }}"#,
         );
         mock_loader
-            .add_file(".jules/roles/planner/contracts.yml", "layer: planner\nconstraints: []");
+            .add_file(".jules/layers/planner/contracts.yml", "layer: planner\nconstraints: []");
 
         let result =
             assemble_prompt(jules_path, Layer::Planner, &PromptContext::new(), &mock_loader);
@@ -450,7 +450,7 @@ mod tests {
         let jules_path = Path::new(".jules");
 
         mock_loader.add_file(
-            ".jules/roles/observers/observers_prompt.j2",
+            ".jules/layers/observers/observers_prompt.j2",
             r#"{{ section("Optional", include_optional(".jules/exchange/changes.yml")) }}"#,
         );
 
@@ -467,8 +467,8 @@ mod tests {
         let jules_path = Path::new(".jules");
 
         mock_loader.add_file(
-            ".jules/roles/planner/planner_prompt.j2",
-            r#"{{ section("Missing", include_required(".jules/roles/planner/contracts.yml")) }}"#,
+            ".jules/layers/planner/planner_prompt.j2",
+            r#"{{ section("Missing", include_required(".jules/layers/planner/contracts.yml")) }}"#,
         );
 
         let result =
@@ -483,11 +483,11 @@ mod tests {
         let jules_path = Path::new(".jules");
 
         mock_loader.add_file(
-            ".jules/roles/observers/observers_prompt.j2",
+            ".jules/layers/observers/observers_prompt.j2",
             r#"{{ section("Perspective", include_required(".jules/workstations/taxonomy/perspective.yml")) }}"#,
         );
         mock_loader
-            .add_file(".jules/roles/observers/schemas/perspective.yml", "schema: perspective");
+            .add_file(".jules/layers/observers/schemas/perspective.yml", "schema: perspective");
 
         let ctx = PromptContext::new().with_var("role", "taxonomy");
         let result = assemble_prompt(jules_path, Layer::Observers, &ctx, &mock_loader).unwrap();

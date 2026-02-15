@@ -58,7 +58,7 @@ pub fn scaffold_file_content(path: &str) -> Option<String> {
 /// Convert a deployment path (`.jules/...`, `.jlo/...`) back to the embedded
 /// source path (`jules/...`, `jlo/...`) for `include_dir!` lookups.
 ///
-/// Also maps `.jules/roles/` → `jules/roles/` (implicitly via `jules/` prefix).
+/// Also maps `.jules/layers/` → `jules/layers/` (implicitly via `jules/` prefix).
 fn unmap_scaffold_path(path: &str) -> String {
     if let Some(rest) = path.strip_prefix(".jlo/") {
         format!("jlo/{}", rest)

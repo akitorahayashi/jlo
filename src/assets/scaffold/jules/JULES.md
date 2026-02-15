@@ -6,13 +6,13 @@ This file defines the binding rules for Jules agents operating in this repositor
 
 - This file is authoritative for global rules and shared conventions.
 - Each layer contract is authoritative for layer-specific rules and schemas:
-  - `.jules/roles/narrator/contracts.yml`
-  - `.jules/roles/observers/contracts.yml`
-  - `.jules/roles/decider/contracts.yml`
-  - `.jules/roles/planner/contracts.yml`
-  - `.jules/roles/implementer/contracts.yml`
-  - `.jules/roles/integrator/contracts.yml`
-  - `.jules/roles/innovators/contracts.yml`
+  - `.jules/layers/narrator/contracts.yml`
+  - `.jules/layers/observers/contracts.yml`
+  - `.jules/layers/decider/contracts.yml`
+  - `.jules/layers/planner/contracts.yml`
+  - `.jules/layers/implementer/contracts.yml`
+  - `.jules/layers/integrator/contracts.yml`
+  - `.jules/layers/innovators/contracts.yml`
 
 - **Role Definitions**: Defined in `.jlo/` (Control Plane).
   - `.jlo/roles/<layer>/roles/<role>/role.yml`
@@ -33,7 +33,7 @@ The Narrator layer produces `.jules/exchange/changes.yml`, summarizing recent co
 - `.jules/exchange/changes.yml` is overwritten in-place (no time-series).
 - Narrator excludes `.jules/` from all diffs and path lists.
 - Observers may use this only as a secondary hint after baseline repository inspection.
-- Schema is defined by `.jules/roles/narrator/schemas/changes.yml`.
+- Schema is defined by `.jules/layers/narrator/schemas/changes.yml`.
 
 ## Exchange Model
 
@@ -77,9 +77,9 @@ When a requirement requires deep analysis:
 
 - YAML only (`.yml`) and English only.
 - Artifacts are created by copying the corresponding schema and filling its fields:
-  - Changes: `.jules/roles/narrator/schemas/changes.yml`
-  - Events: `.jules/roles/observers/schemas/event.yml`
-  - Requirements: `.jules/roles/decider/schemas/requirements.yml`
+  - Changes: `.jules/layers/narrator/schemas/changes.yml`
+  - Events: `.jules/layers/observers/schemas/event.yml`
+  - Requirements: `.jules/layers/decider/schemas/requirements.yml`
 
 ## Git And Branch Rules
 

@@ -6,14 +6,14 @@ purpose:
   changes for downstream layers.
 
 inputs:
-  - .jules/roles/narrator/schemas/changes.yml (authoritative output schema)
+  - .jules/layers/narrator/schemas/changes.yml (authoritative output schema)
   - Git history within the commit range described in Run Context
 
 output:
   - .jules/exchange/changes.yml (created or overwritten in-place)
 
 constraints:
-  - "Output must match .jules/roles/narrator/schemas/changes.yml exactly"
+  - "Output must match .jules/layers/narrator/schemas/changes.yml exactly"
   - "Exclude .jules/ and .jlo/ from all diffs and path lists"
   - "Exactly 5 summary entries — each with title, scope, and impact"
   - "created_at must be set to the current UTC time in RFC3339 format"

@@ -17,7 +17,7 @@ The Narrator reads the git history since the last run and produces a high-level 
 
 ### Schema (`changes.yml`)
 
-The output adheres to the schema defined in `.jules/roles/narrator/schemas/changes.yml`. It typically includes:
+The output adheres to the schema defined in `.jules/layers/narrator/schemas/changes.yml`. It typically includes:
 
 - `created_at`: Timestamp of the run.
 - `from_commit`: Starting commit hash of the range.
@@ -50,7 +50,7 @@ jlo run narrator
 
 ## Tasks
 
-The Narrator performs specific tasks defined in `.jules/roles/narrator/tasks/`. The main prompt, `narrator_prompt.j2`, dynamically includes a task based on the run mode:
+The Narrator performs specific tasks defined in `.jules/layers/narrator/tasks/`. The main prompt, `narrator_prompt.j2`, dynamically includes a task based on the run mode:
 
 - `bootstrap_summary`: Used when no previous history exists.
 - `overwrite_summary`: Used to update the existing summary with new changes (incremental).

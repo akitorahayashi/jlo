@@ -336,8 +336,8 @@ mod tests {
 
         // Layers
         for layer in Layer::ALL {
-            // Runtime artifacts (contracts, schemas, prompts) in .jules/roles
-            let jules_layer_dir = temp.child(format!(".jules/roles/{}", layer.dir_name()));
+            // Runtime artifacts (contracts, schemas, prompts) in .jules/layers
+            let jules_layer_dir = temp.child(format!(".jules/layers/{}", layer.dir_name()));
             jules_layer_dir.create_dir_all().unwrap();
             if !matches!(layer, Layer::Implementer | Layer::Planner | Layer::Integrator) {
                 jules_layer_dir.child("schemas").create_dir_all().unwrap();
@@ -433,7 +433,7 @@ mod tests {
         create_valid_workspace(&temp);
 
         // Remove implementer contracts
-        std::fs::remove_file(temp.path().join(".jules/roles/implementer/contracts.yml")).unwrap();
+        std::fs::remove_file(temp.path().join(".jules/layers/implementer/contracts.yml")).unwrap();
 
         let mut diagnostics = Diagnostics::default();
         let event_states = vec!["pending".to_string()];

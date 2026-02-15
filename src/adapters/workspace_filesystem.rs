@@ -342,7 +342,7 @@ mod tests {
         ws.create_structure(&files).expect("create_structure should succeed");
 
         assert!(ws.jules_path().exists());
-        assert!(ws.jules_path().join("roles").exists());
+        assert!(ws.jules_path().join("layers").exists());
         assert!(ws.jules_path().join("README.md").exists());
     }
 
@@ -353,7 +353,7 @@ mod tests {
 
         for layer in Layer::ALL {
             assert!(
-                ws.jules_path().join("roles").join(layer.dir_name()).exists(),
+                ws.jules_path().join("layers").join(layer.dir_name()).exists(),
                 "Layer directory {:?} should exist",
                 layer
             );

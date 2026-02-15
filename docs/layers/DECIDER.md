@@ -50,11 +50,11 @@ jlo run decider
 
 ## Schema (`issue.yml`)
 
-The requirement output follows the schema defined in `.jules/roles/decider/schemas/issue.yml`.
+The requirement output follows the schema defined in `.jules/layers/decider/schemas/issue.yml`.
 
 ## Tasks
 
-The Decider uses tasks defined in `.jules/roles/decider/tasks/` to structure its reasoning. The main prompt, `decider_prompt.j2`, includes these tasks to guide the agent.
+The Decider uses tasks defined in `.jules/layers/decider/tasks/` to structure its reasoning. The main prompt, `decider_prompt.j2`, includes these tasks to guide the agent.
 
 ## Troubleshooting
 

@@ -377,15 +377,15 @@ mod tests {
             .expect("create pending dir");
         fs::create_dir_all(root.join(".jules/exchange/requirements"))
             .expect("create requirements dir");
-        fs::create_dir_all(root.join(".jules/roles/narrator")).expect("create narrator role dir");
-        fs::create_dir_all(root.join(".jules/roles/observers")).expect("create observers role dir");
-        fs::create_dir_all(root.join(".jules/roles/decider")).expect("create decider role dir");
-        fs::create_dir_all(root.join(".jules/roles/planner")).expect("create planner role dir");
-        fs::create_dir_all(root.join(".jules/roles/implementer"))
+        fs::create_dir_all(root.join(".jules/layers/narrator")).expect("create narrator role dir");
+        fs::create_dir_all(root.join(".jules/layers/observers")).expect("create observers role dir");
+        fs::create_dir_all(root.join(".jules/layers/decider")).expect("create decider role dir");
+        fs::create_dir_all(root.join(".jules/layers/planner")).expect("create planner role dir");
+        fs::create_dir_all(root.join(".jules/layers/implementer"))
             .expect("create implementer role dir");
-        fs::create_dir_all(root.join(".jules/roles/innovators"))
+        fs::create_dir_all(root.join(".jules/layers/innovators"))
             .expect("create innovators role dir");
-        fs::create_dir_all(root.join(".jules/roles/integrator"))
+        fs::create_dir_all(root.join(".jules/layers/integrator"))
             .expect("create integrator role dir");
         fs::create_dir_all(root.join(".jlo/roles/observers/taxonomy"))
             .expect("create observer role dir");
@@ -424,7 +424,7 @@ roles = [
         ];
         for (layer, prefix) in contracts {
             fs::write(
-                root.join(format!(".jules/roles/{}/contracts.yml", layer)),
+                root.join(format!(".jules/layers/{}/contracts.yml", layer)),
                 format!("branch_prefix: {}\n", prefix),
             )
             .expect("write contracts");

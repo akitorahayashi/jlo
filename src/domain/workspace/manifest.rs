@@ -59,11 +59,11 @@ pub fn is_default_role_file(path: &str) -> bool {
         return false;
     };
 
-    // .jules/roles/<layer>/<role>/role.yml (multi-role layers: observers, innovators)
-    // Example: .jules/roles/observers/taxonomy/role.yml
+    // .jules/layers/<layer>/<role>/role.yml (multi-role layers: observers, innovators)
+    // Example: .jules/layers/observers/taxonomy/role.yml
     if parts.len() == 5
         && parts[0] == paths::JULES_DIR
-        && parts[1] == paths::ROLES_DIR
+        && parts[1] == "layers"
         && matches!(parts[2], "observers" | "innovators")
         && parts[4] == paths::ROLE_FILENAME
     {
@@ -137,16 +137,16 @@ mod tests {
 
     #[test]
     fn test_is_default_role_file() {
-        // Multi-role layers: .jules/roles/<layer>/<role>/role.yml
-        assert!(is_default_role_file(".jules/roles/observers/taxonomy/role.yml"));
-        assert!(is_default_role_file(".jules/roles/innovators/leverage_architect/role.yml"));
+        // Multi-role layers: .jules/layers/<layer>/<role>/role.yml
+        assert!(is_default_role_file(".jules/layers/observers/taxonomy/role.yml"));
+        assert!(is_default_role_file(".jules/layers/innovators/leverage_architect/role.yml"));
 
         // Decider is single-role — not a default role file in this sense
-        assert!(!is_default_role_file(".jules/roles/decider/role.yml"));
+        assert!(!is_default_role_file(".jules/layers/decider/role.yml"));
 
         // Not default role files
-        assert!(!is_default_role_file(".jules/roles/planner/contracts.yml"));
+        assert!(!is_default_role_file(".jules/layers/planner/contracts.yml"));
         assert!(!is_default_role_file("src/main.rs"));
-        assert!(!is_default_role_file(".jules/roles/observers/qa/other.yml"));
+        assert!(!is_default_role_file(".jules/layers/observers/qa/other.yml"));
     }
 }

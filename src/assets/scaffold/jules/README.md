@@ -32,9 +32,9 @@ Narrator -> Observer -> Decider -> [Planner] -> Implementer
 
 | Role Type | Role(s) | Transformation |
 |-----------|---------|----------------|
-| Narrator | `.jules/roles/narrator/` | Git history -> Changes summary |
+| Narrator | `.jules/layers/narrator/` | Git history -> Changes summary |
 | Observer | directories under `.jlo/roles/observers/` | Source -> Events (domain-specialized observations) |
-| Decider | `.jules/roles/decider/` | Events -> Requirements (validation + consolidation) |
+| Decider | `.jules/layers/decider/` | Events -> Requirements (validation + consolidation) |
 | Planner | (Single-role; no `.jlo/` role definitions) | Requirements -> Expanded Requirements (deep analysis, optional) |
 | Implementer | (Single-role; no `.jlo/` role definitions) | Requirements -> Code changes |
 
@@ -200,7 +200,7 @@ Agents `cp` these files and fill them out.
 ### 0. Narrator Agent (Scheduled, runs first)
 
 Narrator summarizes codebase changes as secondary hint context for observer triage:
-1. Reads `.jules/roles/narrator/schemas/changes.yml` for schema
+1. Reads `.jules/layers/narrator/schemas/changes.yml` for schema
 2. Determines commit range (previous `to_commit` or bootstrap)
 3. Collects commits and changed paths (excluding `.jules/`)
 4. Writes `.jules/exchange/changes.yml`
