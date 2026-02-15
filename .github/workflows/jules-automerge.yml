@@ -9,6 +9,7 @@ on:
       - 'jules-decider-*'
       - 'jules-planner-*'
       - 'jules-innovator-*'
+      - 'jules-publish-proposals-*'
       - 'jules-mock-cleanup-*'
 
 permissions:

@@ -19,6 +19,7 @@ const ALLOWED_PREFIXES: &[&str] = &[
     "jules-decider-",
     "jules-planner-",
     "jules-innovator-",
+    "jules-publish-proposals-",
     "jules-mock-cleanup-",
 ];
 
@@ -127,6 +128,16 @@ mod tests {
     fn enables_automerge_on_mock_cleanup_branch() {
         let gh = FakeGitHub::jules_runtime_pr();
         gh.pr_detail.lock().unwrap().head = "jules-mock-cleanup-mock-run-123".to_string();
+        let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
+        assert!(out.applied);
+        assert_eq!(out.automerge_state.as_deref(), Some("enabled"));
+        assert!(gh.automerge_calls.load(Ordering::SeqCst) > 0);
+    }
+
+    #[test]
+    fn enables_automerge_on_publish_proposals_branch() {
+        let gh = FakeGitHub::jules_runtime_pr();
+        gh.pr_detail.lock().unwrap().head = "jules-publish-proposals-20260215120000".to_string();
         let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
         assert!(out.applied);
         assert_eq!(out.automerge_state.as_deref(), Some("enabled"));
