@@ -171,7 +171,11 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
         WorkflowCommands::Doctor => {
             let options = workflow::WorkflowDoctorOptions {};
             let output = workflow::doctor(options)?;
-            workflow::write_workflow_output(&output)
+            workflow::write_workflow_output(&output)?;
+            if !output.ok {
+                return Err(AppError::Validation("Workflow doctor checks failed".to_string()));
+            }
+            Ok(())
         }
         WorkflowCommands::Run { layer, mock, task } => {
             let layer = parse_layer(&layer)?;

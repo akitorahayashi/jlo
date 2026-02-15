@@ -5,9 +5,9 @@
 //! This command provides orchestration for GitHub Actions workflows.
 
 mod input;
-pub mod issue_routing;
 pub mod layer;
 pub mod options;
+pub mod requirements_routing;
 
 use chrono::Utc;
 
