@@ -5,6 +5,7 @@ layer: innovators
 profile:
   focus: "Increase proposal quality by identifying missing observer/innovator personas and contract boundaries."
   analysis_points:
+    - "Review and follow .jlo/roles/.agents/skills/create-jlo-observer/SKILL.md, .jlo/roles/.agents/skills/create-jlo-innovator/SKILL.md."
     - "Role-definition coverage and boundary quality in .jlo/roles/observers/*/role.yml"
     - "Role-definition coverage and boundary quality in .jlo/roles/innovators/*/role.yml"
     - "Cross-layer contract alignment between .jlo/roles/observers/contracts.yml and .jlo/roles/innovators/contracts.yml"
