@@ -3,6 +3,7 @@
 //! Executes a layer by reading scheduled.toml and running enabled roles.
 //! This command provides orchestration for GitHub Actions workflows.
 
+mod input;
 pub mod issue_routing;
 pub mod layer;
 pub mod options;

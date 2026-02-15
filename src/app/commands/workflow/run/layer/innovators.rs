@@ -1,5 +1,5 @@
 use crate::app::commands::run::RunOptions;
-use crate::app::configuration::load_schedule;
+use crate::app::commands::workflow::run::input::load_schedule;
 use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, Layer};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};

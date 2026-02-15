@@ -1,5 +1,6 @@
 //! Run command implementation for executing Jules agents.
 
+mod input;
 mod layer;
 mod mock;
 mod requirement_path;
@@ -10,11 +11,11 @@ use std::path::Path;
 
 use crate::adapters::jules_client::HttpJulesClient;
 use crate::adapters::jules_client::{RetryPolicy, RetryingJulesClient};
+use crate::app::commands::run::input::{load_run_config, validate_mock_prerequisites};
 use crate::app::commands::run::strategy::{JulesClientFactory, get_layer_strategy};
 use crate::app::commands::workflow::exchange::{
     ExchangeCleanRequirementOptions, clean_requirement_with_adapters,
 };
-use crate::app::configuration::{load_config, validate_mock_prerequisites};
 use crate::domain::PromptAssetLoader;
 pub use crate::domain::RunOptions;
 use crate::domain::identifiers::validation::validate_safe_path_component;
@@ -103,7 +104,7 @@ where
     }
 
     // Load configuration
-    let config = load_config(jules_path, repository)?;
+    let config = load_run_config(jules_path, repository)?;
 
     if options.mock {
         validate_mock(&options)?;

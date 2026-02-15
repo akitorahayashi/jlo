@@ -3,7 +3,7 @@ use std::path::Path;
 use chrono::Utc;
 
 use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
-use crate::app::configuration::{detect_repository_source, load_mock_config};
+use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::repository::paths::jules;

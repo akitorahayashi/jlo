@@ -4,7 +4,7 @@ use chrono::Utc;
 use serde::Deserialize;
 
 use super::super::mock::mock_execution::MockExecutionService;
-use crate::app::configuration::{detect_repository_source, load_mock_config};
+use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::repository::paths::jules;
 use crate::domain::{

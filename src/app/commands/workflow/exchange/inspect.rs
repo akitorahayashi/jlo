@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use serde_yaml::{Mapping, Value};
 
 use crate::adapters::local_repository::LocalRepositoryAdapter;
-use crate::app::configuration::{list_subdirectories, load_schedule};
+use crate::app::config::load_schedule;
 use crate::domain::AppError;
 use crate::domain::repository::paths::jules;
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem};
@@ -142,6 +142,17 @@ fn list_yml_files(
         .collect();
     files.sort();
     Ok(files)
+}
+
+fn list_subdirectories(
+    store: &(impl RepositoryFilesystem + JloStore + JulesStore),
+    dir: &Path,
+) -> Result<Vec<PathBuf>, AppError> {
+    let entries = store.list_dir(dir.to_str().unwrap())?;
+    let mut subdirs: Vec<PathBuf> =
+        entries.into_iter().filter(|entry| store.is_dir(&entry.to_string_lossy())).collect();
+    subdirs.sort();
+    Ok(subdirs)
 }
 
 fn to_repo_relative(root: &Path, path: &Path) -> String {
