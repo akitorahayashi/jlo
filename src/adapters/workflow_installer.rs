@@ -35,13 +35,10 @@ fn remove_stale_managed_workflows(
     scaffold: &WorkflowScaffoldAssets,
 ) -> Result<(), AppError> {
     let workflows_dir = ".github/workflows";
-    // Check if workflows dir exists (either as file or dir, though should be dir)
-    if !workspace.file_exists(workflows_dir) && !workspace.is_dir(workflows_dir) {
+    if !workspace.is_dir(workflows_dir) {
         return Ok(());
     }
 
-    // rendered_paths are relative paths in scaffold.files (e.g. .github/workflows/foo.yml)
-    // We construct absolute paths for comparison with list_dir results.
     let rendered_paths: HashSet<_> =
         scaffold.files.iter().map(|file| workspace.resolve_path(&file.path)).collect();
 
@@ -52,7 +49,12 @@ fn remove_stale_managed_workflows(
             None => continue,
         };
 
-        if !path.is_file() {
+        // Skip directories via workspace abstraction (not std::path::Path::is_file)
+        let path_str = match path.to_str() {
+            Some(s) => s,
+            None => continue,
+        };
+        if workspace.is_dir(path_str) {
             continue;
         }
 
@@ -69,10 +71,9 @@ fn remove_stale_managed_workflows(
             continue;
         }
 
-        // Remove file. Passing absolute path string works with WorkspaceStore implementations.
-        if let Some(path_str) = path.to_str() {
-            workspace.remove_file(path_str)?;
-        }
+        // Use relative path: list_dir returns absolute paths but remove_file expects relative.
+        let relative_path = format!("{}/{}", workflows_dir, file_name);
+        workspace.remove_file(&relative_path)?;
     }
 
     Ok(())

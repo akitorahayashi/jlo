@@ -125,82 +125,32 @@ pub fn persist_workflow_runner_mode(
 ) -> Result<(), AppError> {
     let config_path = ".jlo/config.toml";
     let content = workspace.read_file(config_path)?;
+    let mut doc = content
+        .parse::<toml_edit::DocumentMut>()
+        .map_err(|e| AppError::Validation(format!("Failed to parse .jlo/config.toml: {}", e)))?;
+
     let desired_value = mode.label();
 
-    let mut updated = String::with_capacity(content.len());
-    let mut in_workflow_table = false;
-    let mut saw_workflow_table = false;
-    let mut updated_runner_mode = false;
+    let workflow_table = doc["workflow"].as_table_mut().ok_or_else(|| {
+        AppError::Validation("Missing [workflow] section in .jlo/config.toml.".into())
+    })?;
 
-    for line in content.split_inclusive('\n') {
-        let line_without_newline = line.trim_end_matches('\n');
-        let trimmed = line_without_newline.trim();
-
-        if trimmed.starts_with('[') && trimmed.ends_with(']') {
-            in_workflow_table = trimmed == "[workflow]";
-            if in_workflow_table {
-                saw_workflow_table = true;
-            }
-            updated.push_str(line);
-            continue;
-        }
-
-        if in_workflow_table
-            && !updated_runner_mode
-            && let Some(rewritten) = rewrite_runner_mode_line(line, desired_value)
-        {
-            updated.push_str(&rewritten);
-            updated_runner_mode = true;
-            continue;
-        }
-
-        updated.push_str(line);
-    }
-
-    if !saw_workflow_table {
+    if !workflow_table.contains_key("runner_mode") {
         return Err(AppError::Validation(
-            "Missing [workflow] section in scaffold .jlo/config.toml.".into(),
-        ));
-    }
-    if !updated_runner_mode {
-        return Err(AppError::Validation(
-            "Missing workflow.runner_mode in scaffold .jlo/config.toml.".into(),
+            "Missing workflow.runner_mode in .jlo/config.toml.".into(),
         ));
     }
 
-    workspace.write_file(config_path, &updated)
-}
-
-fn rewrite_runner_mode_line(line: &str, desired_value: &str) -> Option<String> {
-    let (body, newline) =
-        line.strip_suffix('\n').map_or((line, ""), |line_without_nl| (line_without_nl, "\n"));
-
-    let trimmed_start = body.trim_start();
-    if !trimmed_start.starts_with("runner_mode") {
-        return None;
+    let item = &mut workflow_table["runner_mode"];
+    if let Some(current_val) = item.as_value_mut() {
+        let mut new_val = toml_edit::Value::from(desired_value);
+        *new_val.decor_mut() = current_val.decor().clone();
+        *current_val = new_val;
+    } else {
+        *item = toml_edit::value(desired_value);
     }
 
-    let remainder = &trimmed_start["runner_mode".len()..];
-    if !remainder.trim_start().starts_with('=') {
-        return None;
-    }
-
-    let indent_len = body.len() - trimmed_start.len();
-    let indent = &body[..indent_len];
-
-    let comment_suffix = body
-        .find('#')
-        .map(|idx| &body[idx..])
-        .filter(|comment| !comment.trim().is_empty())
-        .unwrap_or("");
-
-    let mut rewritten = format!("{indent}runner_mode = \"{desired_value}\"");
-    if !comment_suffix.is_empty() {
-        rewritten.push(' ');
-        rewritten.push_str(comment_suffix.trim_start());
-    }
-    rewritten.push_str(newline);
-    Some(rewritten)
+    workspace.write_file(config_path, &doc.to_string())
 }
 
 #[cfg(test)]
