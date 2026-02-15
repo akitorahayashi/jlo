@@ -5,7 +5,6 @@ use serde_yaml::{Mapping, Value};
 use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::app::config::load_schedule;
 use crate::domain::AppError;
-use crate::domain::repository::paths::jules;
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem};
 
 use super::model::{
@@ -30,7 +29,7 @@ pub(super) fn inspect_at(
     store: &(impl RepositoryFilesystem + JloStore + JulesStore),
 ) -> Result<ExchangeInspectOutput, AppError> {
     let jules_path = store.jules_path();
-    let exchange_dir = jules::exchange_dir(&jules_path);
+    let exchange_dir = crate::domain::exchange::paths::exchange_dir(&jules_path);
     if !store.file_exists(exchange_dir.to_str().unwrap()) {
         return Err(AppError::JulesNotFound);
     }

@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::adapters::catalogs::workflow_scaffold::{
     WorkflowScaffoldAssets, load_workflow_scaffold,
 };
-use crate::domain::configuration::WorkflowGenerateConfig;
+use crate::domain::config::WorkflowGenerateConfig;
 use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::RepositoryFilesystem;
 

@@ -1,7 +1,7 @@
 //! Repository source detection from git remote.
 
 use crate::domain::AppError;
-use crate::domain::configuration::run_config_parser;
+use crate::domain::config;
 use crate::ports::Git;
 
 /// Detect the repository source from git remote or `GITHUB_REPOSITORY` env var.
@@ -9,7 +9,7 @@ pub fn detect_repository_source(git: &(impl Git + ?Sized)) -> Result<String, App
     let output = git.run_command(&["remote", "get-url", "origin"], None);
 
     if let Ok(url) = output
-        && let Some(repo) = run_config_parser::parse_github_url(url.trim())
+        && let Some(repo) = config::parse::parse_github_url(url.trim())
     {
         return Ok(format!("sources/github/{}", repo));
     }

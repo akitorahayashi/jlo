@@ -3,7 +3,6 @@ use include_dir::{Dir, DirEntry, include_dir};
 use crate::adapters::catalogs::builtin_role_assets::{
     load_builtin_role_catalog, read_builtin_role_file,
 };
-use crate::domain::repository::paths::jlo;
 use crate::domain::{AppError, BuiltinRoleEntry, Layer};
 use crate::ports::{RoleTemplateStore, ScaffoldFile};
 
@@ -120,7 +119,7 @@ fn map_scaffold_path(path: &str) -> String {
 fn is_entity_file(path: &str) -> bool {
     // Role file: .jlo/roles/<layer>/<role>/role.yml or .jlo/roles/<layer>/role.yml (single-role)
     let is_role = path.ends_with("/role.yml") && path.starts_with(".jlo/roles/");
-    let is_schedule = path == jlo::schedule_relative();
+    let is_schedule = path == crate::domain::schedule::paths::schedule_relative();
     is_role || is_schedule
 }
 

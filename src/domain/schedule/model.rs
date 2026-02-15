@@ -2,14 +2,25 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 use crate::domain::RoleId;
+use super::error::ScheduleError;
 
-#[derive(Debug, thiserror::Error)]
-pub enum ScheduleError {
-    #[error("Schedule config invalid: {0}")]
-    ConfigInvalid(String),
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScheduledRole {
+    pub name: RoleId,
+    pub enabled: bool,
+}
 
-    #[error("TOML format error: {0}")]
-    Toml(#[from] toml::de::Error),
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScheduleLayer {
+    pub roles: Vec<ScheduledRole>,
+}
+
+impl ScheduleLayer {
+    pub fn enabled_roles(&self) -> Vec<RoleId> {
+        self.roles.iter().filter(|r| r.enabled).map(|r| r.name.clone()).collect()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -20,25 +31,6 @@ pub struct Schedule {
     pub observers: ScheduleLayer,
     #[serde(default)]
     pub innovators: Option<ScheduleLayer>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ScheduleLayer {
-    pub roles: Vec<ScheduledRole>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ScheduledRole {
-    pub name: RoleId,
-    pub enabled: bool,
-}
-
-impl ScheduleLayer {
-    pub fn enabled_roles(&self) -> Vec<RoleId> {
-        self.roles.iter().filter(|r| r.enabled).map(|r| r.name.clone()).collect()
-    }
 }
 
 impl Schedule {
@@ -73,8 +65,6 @@ impl Schedule {
     fn validate_roles(layer: &str, schedule_layer: &ScheduleLayer) -> Result<(), ScheduleError> {
         let mut seen = HashSet::new();
         for role in &schedule_layer.roles {
-            // RoleId is already validated by deserialization.
-            // Check for duplicates.
             if !seen.insert(role.name.clone()) {
                 return Err(ScheduleError::ConfigInvalid(format!(
                     "Duplicate role id '{}' in {} schedule",

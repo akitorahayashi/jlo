@@ -17,9 +17,10 @@ use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
-use crate::domain::repository::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};
-use crate::domain::repository::paths::{JLO_DIR, JULES_DIR, VERSION_FILE};
-use crate::domain::{AppError, ScaffoldManifest};
+use crate::domain::workstations::manifest::{
+    MANIFEST_FILENAME, hash_content, is_default_role_file,
+};
+use crate::domain::{AppError, JLO_DIR, JULES_DIR, ScaffoldManifest, VERSION_FILE};
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 /// Options for the bootstrap command.

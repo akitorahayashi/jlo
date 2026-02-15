@@ -13,7 +13,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::domain::repository::manifest::{
+use crate::domain::workstations::manifest::{
     MANIFEST_FILENAME, ScaffoldManifest, hash_content, is_control_plane_entity_file,
 };
 use crate::domain::{AppError, PromptAssetLoader, WorkflowRunnerMode};

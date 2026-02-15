@@ -4,11 +4,9 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use crate::app::config::load_config;
-use crate::domain::configuration::mock_config_parser::{
-    extract_branch_prefix, extract_issue_labels,
-};
-use crate::domain::repository::paths::jules;
+use crate::domain::config::mock_parse::{extract_branch_prefix, extract_issue_labels};
 use crate::domain::{AppError, Layer, MockConfig, RunOptions};
+use crate::domain::{layers, workstations};
 use crate::ports::RepositoryFilesystem;
 
 use super::mock_tag::resolve_mock_tag;
@@ -18,7 +16,7 @@ fn load_branch_prefix_for_layer<W: RepositoryFilesystem>(
     layer: Layer,
     repository: &W,
 ) -> Result<String, AppError> {
-    let contracts_path = jules::contracts(jules_path, layer);
+    let contracts_path = layers::paths::contracts(jules_path, layer);
     let contracts_path_str = contracts_path
         .to_str()
         .ok_or_else(|| AppError::InvalidPath("Invalid contracts path".to_string()))?;
@@ -55,7 +53,7 @@ pub fn load_mock_config<W: RepositoryFilesystem>(
         branch_prefixes.insert(layer, prefix);
     }
 
-    let labels_path = jules::github_labels(jules_path);
+    let labels_path = workstations::paths::github_labels(jules_path);
     let labels_path_str = labels_path
         .to_str()
         .ok_or_else(|| AppError::InvalidPath("Invalid labels path".to_string()))?;

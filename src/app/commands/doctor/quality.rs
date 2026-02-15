@@ -2,7 +2,6 @@ use std::path::Path;
 
 use super::diagnostics::Diagnostics;
 use super::yaml::{read_yaml_files, read_yaml_string, read_yaml_strings};
-use crate::domain::repository::paths::jules;
 
 const MIN_STATEMENT_LEN: usize = 20;
 const MIN_PROBLEM_LEN: usize = 20;
@@ -11,7 +10,7 @@ const MIN_DESIRED_OUTCOME_LEN: usize = 20;
 const MIN_ACCEPTANCE_CRITERIA_LEN: usize = 8;
 
 pub fn quality_checks(jules_path: &Path, event_states: &[String], diagnostics: &mut Diagnostics) {
-    let events_dir = jules::events_dir(jules_path);
+    let events_dir = crate::domain::exchange::events::paths::events_dir(jules_path);
     for state in event_states {
         for entry in read_yaml_files(&events_dir.join(state), diagnostics) {
             if let Some(statement) = read_yaml_string(&entry, "statement", diagnostics)
@@ -23,7 +22,8 @@ pub fn quality_checks(jules_path: &Path, event_states: &[String], diagnostics: &
         }
     }
 
-    let requirements_dir = jules::requirements_dir(jules_path);
+    let requirements_dir =
+        crate::domain::exchange::requirements::paths::requirements_dir(jules_path);
     for entry in read_yaml_files(&requirements_dir, diagnostics) {
         if let Some(problem) = read_yaml_string(&entry, "problem", diagnostics)
             && problem.trim().len() < MIN_PROBLEM_LEN

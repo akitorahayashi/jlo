@@ -12,7 +12,6 @@ use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::domain::AppError;
 use crate::domain::PromptAssetLoader;
-use crate::domain::repository::paths::jules;
 use crate::ports::{Git, GitHub, IssueInfo, JloStore, JulesStore, RepositoryFilesystem};
 
 #[derive(Debug, Clone)]
@@ -95,7 +94,7 @@ where
     H: GitHub,
 {
     let jules_path = repository.jules_path();
-    let innovators_dir = jules::innovators_dir(&jules_path);
+    let innovators_dir = crate::domain::exchange::innovators::paths::innovators_dir(&jules_path);
 
     let proposals = discover_proposals(&innovators_dir, repository)?;
 

@@ -9,7 +9,6 @@ use super::super::mock::mock_execution::{
 };
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::repository::paths::jules;
 use crate::domain::{
     AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
 };
@@ -172,9 +171,10 @@ where
     service.checkout_new_branch(&branch_name)?;
 
     // Find and process pending events
-    let pending_dir = jules::events_pending_dir(jules_path);
-    let decided_dir = jules::events_decided_dir(jules_path);
-    let requirements_dir = jules::requirements_dir(jules_path);
+    let pending_dir = crate::domain::exchange::events::paths::events_pending_dir(jules_path);
+    let decided_dir = crate::domain::exchange::events::paths::events_decided_dir(jules_path);
+    let requirements_dir =
+        crate::domain::exchange::requirements::paths::requirements_dir(jules_path);
 
     // Ensure directories exist.
     repository.create_dir_all(

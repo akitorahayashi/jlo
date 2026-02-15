@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use crate::domain::AppError;
-use crate::domain::repository::paths::jules;
 use crate::ports::{JulesStore, RepositoryFilesystem};
 
 pub struct RequirementPathInfo {
@@ -22,7 +21,7 @@ pub fn validate_requirement_path<W: RepositoryFilesystem + JulesStore + ?Sized>(
 
     let canonical_path = repository.canonicalize(path_str)?;
 
-    let exchange_dir = jules::exchange_dir(&repository.jules_path());
+    let exchange_dir = crate::domain::exchange::paths::exchange_dir(&repository.jules_path());
     let exchange_dir_str = exchange_dir.to_str().ok_or_else(|| {
         AppError::Validation("Exchange path contains invalid unicode".to_string())
     })?;

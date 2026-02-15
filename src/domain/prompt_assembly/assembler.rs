@@ -4,7 +4,6 @@ use std::sync::{Arc, Mutex};
 use minijinja::{Environment, UndefinedBehavior};
 
 use crate::domain::Layer;
-use crate::domain::repository::paths::jules;
 
 use super::error::PromptAssemblyError;
 use super::loader::PromptAssetLoader;
@@ -27,11 +26,11 @@ pub fn assemble_prompt<L>(
 where
     L: PromptAssetLoader + Clone + Send + Sync + 'static,
 {
-    let layer_dir = jules::layer_dir(jules_path, layer);
+    let layer_dir = crate::domain::layers::paths::layer_dir(jules_path, layer);
     let root = jules_path.parent().unwrap_or(Path::new("."));
 
     // Load prompt template
-    let assembly_path = jules::prompt_template(jules_path, layer);
+    let assembly_path = crate::domain::layers::paths::prompt_template(jules_path, layer);
     if !loader.asset_exists(&assembly_path) {
         return Err(PromptAssemblyError::AssemblyTemplateNotFound(
             assembly_path.display().to_string(),

@@ -1,4 +1,4 @@
-use crate::domain::configuration::schedule::{ScheduleLayer, ScheduledRole};
+use crate::domain::schedule::{ScheduleLayer, ScheduledRole};
 use crate::domain::{AppError, Layer, RoleId, Schedule};
 use crate::ports::RepositoryFilesystem;
 

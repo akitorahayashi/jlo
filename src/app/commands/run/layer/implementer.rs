@@ -6,7 +6,6 @@ use serde::Deserialize;
 use super::super::mock::mock_execution::MockExecutionService;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::repository::paths::jules;
 use crate::domain::{
     AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
 };
@@ -204,7 +203,7 @@ fn extract_requirement_label(requirement_content: &str) -> Result<String, AppErr
             )
         })?;
 
-    if !crate::domain::identifiers::validation::validate_safe_path_component(label) {
+    if !crate::domain::roles::validation::validate_safe_path_component(label) {
         return Err(AppError::Validation(format!(
             "Invalid label '{}': must be a safe path component",
             label
@@ -219,7 +218,8 @@ fn resolve_implementer_task<W: RepositoryFilesystem + JloStore + JulesStore + Pr
     label: &str,
     repository: &W,
 ) -> Result<String, AppError> {
-    let task_path = jules::tasks_dir(jules_path, Layer::Implementer).join(format!("{}.yml", label));
+    let task_path = crate::domain::layers::paths::tasks_dir(jules_path, Layer::Implementer)
+        .join(format!("{}.yml", label));
 
     repository.read_file(&task_path.to_string_lossy()).map_err(|_| {
         AppError::Validation(format!(
@@ -249,8 +249,8 @@ fn execute_prompt_preview<
     println!("Starting branch: {}\n", starting_branch);
     println!("Requirement content: {} chars\n", requirement_content.len());
 
-    let prompt_path = jules::prompt_template(jules_path, Layer::Implementer);
-    let contracts_path = jules::contracts(jules_path, Layer::Implementer);
+    let prompt_path = crate::domain::layers::paths::prompt_template(jules_path, Layer::Implementer);
+    let contracts_path = crate::domain::layers::paths::contracts(jules_path, Layer::Implementer);
 
     println!("Prompt: {}", prompt_path.display());
     if contracts_path.exists() {
@@ -390,7 +390,7 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
     let label = parsed.label.filter(|value| !value.trim().is_empty()).ok_or_else(|| {
         AppError::InvalidConfig(format!("Requirement file missing label field: {}", path.display()))
     })?;
-    if !crate::domain::identifiers::validation::validate_safe_path_component(&label) {
+    if !crate::domain::roles::validation::validate_safe_path_component(&label) {
         return Err(AppError::InvalidConfig(format!(
             "Requirement label '{}' is not a safe path component: {}",
             label,

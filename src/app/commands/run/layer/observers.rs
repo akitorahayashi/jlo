@@ -5,9 +5,8 @@ use chrono::Utc;
 use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config, load_schedule};
 use crate::domain::PromptAssetLoader;
-use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::repository::paths::jules;
+use crate::domain::roles::validation::validate_safe_path_component;
 use crate::domain::{
     AppError, IoErrorKind, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions,
 };
@@ -171,7 +170,7 @@ fn resolve_observer_bridge_task<
     jules_path: &Path,
     repository: &W,
 ) -> Result<String, AppError> {
-    let innovators = jules::innovators_dir(jules_path);
+    let innovators = crate::domain::exchange::innovators::paths::innovators_dir(jules_path);
     let innovators_str = innovators.to_string_lossy();
 
     let entries = match repository.list_dir(&innovators_str) {
@@ -189,7 +188,8 @@ fn resolve_observer_bridge_task<
         return Ok(String::new());
     }
 
-    let bridge_path = jules::tasks_dir(jules_path, Layer::Observers).join("bridge_comments.yml");
+    let bridge_path = crate::domain::layers::paths::tasks_dir(jules_path, Layer::Observers)
+        .join("bridge_comments.yml");
     repository.read_file(&bridge_path.to_string_lossy()).map_err(|_| {
         AppError::Validation(format!(
             "Innovator ideas exist, but observer bridge task file is missing: expected {}",
@@ -231,7 +231,7 @@ where
     git.checkout_branch(&branch_name, true)?;
 
     // Create mock events
-    let events_dir = jules::events_pending_dir(jules_path);
+    let events_dir = crate::domain::exchange::events::paths::events_pending_dir(jules_path);
 
     let mock_event_template = MOCK_ASSETS
         .get_file("observer_event.yml")
@@ -301,7 +301,9 @@ where
             })?;
 
         for persona in &innovator_personas {
-            let comments_dir = jules::innovator_comments_dir(jules_path, persona);
+            let comments_dir = crate::domain::exchange::innovators::paths::innovator_comments_dir(
+                jules_path, persona,
+            );
 
             let comments_dir_str = comments_dir
                 .to_str()

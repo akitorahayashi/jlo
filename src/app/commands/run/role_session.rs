@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use crate::domain::repository::paths::{jlo, jules};
 use crate::domain::{AppError, Layer, RoleId};
 use crate::ports::{AutomationMode, JulesClient, RepositoryFilesystem, SessionRequest};
 
@@ -16,14 +15,14 @@ pub fn print_role_preview<W: RepositoryFilesystem + ?Sized>(
     println!("Role: {}\n", role);
 
     let root = jules_path.parent().unwrap_or(Path::new("."));
-    let role_yml_path = jlo::role_yml(root, layer, role.as_str());
+    let role_yml_path = crate::domain::roles::paths::role_yml(root, layer, role.as_str());
 
     if !repository.file_exists(&role_yml_path.to_string_lossy()) {
         println!("  ⚠️  role.yml not found at {}\n", role_yml_path.display());
         return;
     }
 
-    let contracts_path = jules::contracts(jules_path, layer);
+    let contracts_path = crate::domain::layers::paths::contracts(jules_path, layer);
     if repository.file_exists(&contracts_path.to_string_lossy()) {
         println!("  Contracts: {}", contracts_path.display());
     }
@@ -37,7 +36,7 @@ pub fn validate_role_exists<W: RepositoryFilesystem + ?Sized>(
     repository: &W,
 ) -> Result<(), AppError> {
     let root = jules_path.parent().unwrap_or(Path::new("."));
-    let role_yml_path = jlo::role_yml(root, layer, role);
+    let role_yml_path = crate::domain::roles::paths::role_yml(root, layer, role);
 
     if !repository.file_exists(&role_yml_path.to_string_lossy()) {
         return Err(AppError::RoleNotFound(format!(

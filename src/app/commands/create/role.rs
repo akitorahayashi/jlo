@@ -18,7 +18,9 @@ where
     R: RoleTemplateStore,
 {
     if !ctx.repository().jlo_exists() {
-        return Err(AppError::JulesNotFound);
+        return Err(AppError::Validation(
+            "workspace is not initialized. Run 'jlo init' first.".to_string(),
+        ));
     }
 
     let layer_enum = Layer::from_dir_name(layer)

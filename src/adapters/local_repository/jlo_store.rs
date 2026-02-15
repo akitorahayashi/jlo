@@ -3,7 +3,6 @@
 use std::fs;
 use std::path::PathBuf;
 
-use crate::domain::repository::paths::jlo;
 use crate::domain::{AppError, JLO_DIR, Layer, RoleId};
 use crate::ports::{DiscoveredRole, JloStore, RepositoryFilesystem};
 
@@ -39,7 +38,7 @@ impl JloStore for LocalRepositoryAdapter {
             if layer.is_single_role() {
                 continue;
             }
-            let layer_dir = jlo::layer_dir(&self.root, layer);
+            let layer_dir = crate::domain::roles::paths::layer_dir(&self.root, layer);
             if !layer_dir.exists() {
                 continue;
             }
@@ -93,12 +92,12 @@ impl JloStore for LocalRepositoryAdapter {
     }
 
     fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        let path = jlo::role_dir(&self.root, role.layer, role.id.as_str());
+        let path = crate::domain::roles::paths::role_dir(&self.root, role.layer, role.id.as_str());
         if path.exists() { Some(path) } else { None }
     }
 
     fn write_role(&self, layer: Layer, role_id: &str, content: &str) -> Result<(), AppError> {
-        let path = jlo::role_yml(&self.root, layer, role_id);
+        let path = crate::domain::roles::paths::role_yml(&self.root, layer, role_id);
         let rel = path.strip_prefix(&self.root).unwrap_or(&path);
         self.write_file(&rel.to_string_lossy(), content)
     }

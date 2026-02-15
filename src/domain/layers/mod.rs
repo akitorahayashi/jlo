@@ -1,3 +1,5 @@
+pub mod paths;
+
 use std::fmt;
 
 /// The architectural layers for agent roles.

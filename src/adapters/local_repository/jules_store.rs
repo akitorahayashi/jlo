@@ -3,7 +3,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::domain::repository::paths::jules;
 use crate::domain::{AppError, JULES_DIR, Layer, PromptAssetLoader, VERSION_FILE};
 use crate::ports::{JulesStore, RepositoryFilesystem, ScaffoldFile};
 
@@ -50,7 +49,7 @@ impl JulesStore for LocalRepositoryAdapter {
 
         // Create layer directories
         for layer in Layer::ALL {
-            let layer_dir = jules::layer_dir(&jules_path, layer);
+            let layer_dir = crate::domain::layers::paths::layer_dir(&jules_path, layer);
             fs::create_dir_all(&layer_dir)?;
         }
 

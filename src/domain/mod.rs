@@ -1,25 +1,28 @@
-pub mod configuration;
+pub mod config;
 pub mod error;
-pub mod identifiers;
-pub mod requirement;
+pub mod exchange;
+pub mod layers;
+pub mod roles;
+pub mod schedule;
 
 pub mod prompt_assembly;
-pub mod repository;
 pub mod setup;
+pub mod workstations;
 
-pub mod builtin_role;
-
-pub use builtin_role::BuiltinRoleEntry;
 #[allow(unused_imports)]
-pub use configuration::{ExecutionConfig, WorkflowTimingConfig};
-pub use configuration::{
-    JulesApiConfig, MockConfig, MockOutput, RunConfig, RunOptions, Schedule, WorkflowRunnerMode,
+pub use config::WorkflowGenerateConfig;
+#[allow(unused_imports)]
+pub use config::{ExecutionConfig, WorkflowTimingConfig};
+pub use config::{
+    JulesApiConfig, MockConfig, MockOutput, RunConfig, RunOptions, WorkflowRunnerMode,
 };
 pub use error::{AppError, IoErrorKind};
-pub use identifiers::RoleId;
-pub use requirement::RequirementHeader;
+pub use exchange::requirements::RequirementHeader;
+pub use layers::Layer;
+pub use roles::{BuiltinRoleEntry, RoleId};
+pub use schedule::Schedule;
 
 pub use prompt_assembly::{PromptAssemblyError, PromptAssetLoader};
-pub use repository::{JLO_DIR, JULES_DIR, Layer, ScaffoldManifest, VERSION_FILE};
 #[allow(unused_imports)]
 pub use setup::{DependencyGraph, EnvSpec, SetupComponent, SetupComponentId, SetupEnvArtifacts};
+pub use workstations::{JLO_DIR, JULES_DIR, ScaffoldManifest, VERSION_FILE};

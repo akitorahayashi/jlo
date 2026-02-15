@@ -4,7 +4,7 @@
 //! - repository/environment/system-backed loading
 //! - conversion to domain models
 //!
-//! Pure schema/model parsing lives in `domain::configuration` and
+//! Pure schema/model parsing lives in `domain::config` and
 //! `domain::setup`.
 
 mod detect_repository_source;

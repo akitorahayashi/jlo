@@ -1,14 +1,13 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::domain::configuration::run_config_parser::parse_config_content;
-use crate::domain::repository::paths::{self, jlo, jules};
+use crate::domain::config::parse::parse_config_content;
 use crate::domain::{AppError, Layer, RunConfig};
 
 use super::diagnostics::Diagnostics;
 
 pub fn read_run_config(root: &Path, diagnostics: &mut Diagnostics) -> Result<RunConfig, AppError> {
-    let config_path = jlo::config(root);
+    let config_path = crate::domain::config::paths::config(root);
     if !config_path.exists() {
         diagnostics.push_error(config_path.display().to_string(), "Missing .jlo/config.toml");
         return Ok(RunConfig::default());
@@ -38,44 +37,51 @@ pub struct StructuralInputs<'a> {
 }
 
 pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnostics) {
-    ensure_file_exists(&jules::readme(inputs.root), diagnostics);
-    ensure_file_exists(&jules::project_readme(inputs.root), diagnostics);
-    ensure_file_exists(&jlo::config(inputs.root), diagnostics);
-    ensure_file_exists(&jules::version_file(inputs.root), diagnostics);
-    ensure_directory_exists(jules::layers_dir(inputs.jules_path), diagnostics);
-    ensure_directory_exists(jlo::roles_dir(inputs.root), diagnostics);
-    ensure_file_exists(&jlo::schedule(inputs.root), diagnostics);
+    ensure_file_exists(&crate::domain::workstations::paths::jules_readme(inputs.root), diagnostics);
+    ensure_file_exists(
+        &crate::domain::workstations::paths::project_readme(inputs.root),
+        diagnostics,
+    );
+    ensure_file_exists(&crate::domain::config::paths::config(inputs.root), diagnostics);
+    ensure_file_exists(&crate::domain::workstations::paths::version_file(inputs.root), diagnostics);
+    ensure_directory_exists(
+        crate::domain::layers::paths::layers_dir(inputs.jules_path),
+        diagnostics,
+    );
+    ensure_directory_exists(crate::domain::roles::paths::roles_dir(inputs.root), diagnostics);
+    ensure_file_exists(&crate::domain::schedule::paths::schedule(inputs.root), diagnostics);
 
     check_version_file(inputs.jules_path, env!("CARGO_PKG_VERSION"), diagnostics);
 
     for layer in Layer::ALL {
-        let layer_dir = jules::layer_dir(inputs.jules_path, layer);
+        let layer_dir = crate::domain::layers::paths::layer_dir(inputs.jules_path, layer);
         if !layer_dir.exists() {
             diagnostics.push_error(layer_dir.display().to_string(), "Missing layer directory");
             continue;
         }
 
         // Phase-specific contracts for layers that use them; single contracts.yml for others
-        let contracts = jules::contracts(inputs.jules_path, layer);
+        let contracts = crate::domain::layers::paths::contracts(inputs.jules_path, layer);
         if !contracts.exists() {
             diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
         }
 
         // Check schemas/ directory (layers with output schemas)
-        let schemas_dir = jules::schemas_dir(inputs.jules_path, layer);
+        let schemas_dir = crate::domain::layers::paths::schemas_dir(inputs.jules_path, layer);
         let has_schemas = !matches!(layer, Layer::Implementer | Layer::Planner | Layer::Integrator);
         if has_schemas && !schemas_dir.exists() {
             diagnostics.push_error(schemas_dir.display().to_string(), "Missing schemas/");
         }
 
         // Check tasks/ directory (all layers have this)
-        let tasks_dir = jules::tasks_dir(inputs.jules_path, layer);
+        let tasks_dir = crate::domain::layers::paths::tasks_dir(inputs.jules_path, layer);
         if !tasks_dir.exists() {
             diagnostics.push_error(tasks_dir.display().to_string(), "Missing tasks/");
         }
 
         // Check prompt template (all layers have one)
-        let prompt_template = jules::prompt_template(inputs.jules_path, layer);
+        let prompt_template =
+            crate::domain::layers::paths::prompt_template(inputs.jules_path, layer);
         if !prompt_template.exists() {
             diagnostics.push_error(
                 prompt_template.display().to_string(),
@@ -86,7 +92,8 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         if layer.is_single_role() {
             // Narrator requires changes.yml schema template
             if layer == Layer::Narrator {
-                let change_template = jules::narrator_change_schema(inputs.jules_path);
+                let change_template =
+                    crate::domain::layers::paths::narrator_change_schema(inputs.jules_path);
                 if !change_template.exists() {
                     diagnostics
                         .push_error(change_template.display().to_string(), "Missing changes.yml");
@@ -97,7 +104,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             // The .jules/ structure for multi-role layers (roles/ container) might technically exist from scaffold
             // but the actual role definitions are in .jlo/.
             // structure_checks needs to verify that for every role in .jlo/, it exists.
-            let jlo_layer_dir = jlo::layer_dir(inputs.root, layer);
+            let jlo_layer_dir = crate::domain::roles::paths::layer_dir(inputs.root, layer);
 
             if !jlo_layer_dir.exists() {
                 diagnostics.push_error(
@@ -117,24 +124,44 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
 
     // Flat exchange directory structure
     {
-        ensure_directory_exists(jules::exchange_dir(inputs.jules_path), diagnostics);
+        ensure_directory_exists(
+            crate::domain::exchange::paths::exchange_dir(inputs.jules_path),
+            diagnostics,
+        );
 
-        ensure_directory_exists(jules::events_dir(inputs.jules_path), diagnostics);
+        ensure_directory_exists(
+            crate::domain::exchange::events::paths::events_dir(inputs.jules_path),
+            diagnostics,
+        );
         for state in inputs.event_states {
-            ensure_directory_exists(jules::events_state_dir(inputs.jules_path, state), diagnostics);
+            ensure_directory_exists(
+                crate::domain::exchange::events::paths::events_state_dir(inputs.jules_path, state),
+                diagnostics,
+            );
         }
 
-        ensure_directory_exists(jules::requirements_dir(inputs.jules_path), diagnostics);
+        ensure_directory_exists(
+            crate::domain::exchange::requirements::paths::requirements_dir(inputs.jules_path),
+            diagnostics,
+        );
 
-        ensure_directory_exists(jules::workstations_dir(inputs.jules_path), diagnostics);
+        ensure_directory_exists(
+            crate::domain::workstations::paths::workstations_dir(inputs.jules_path),
+            diagnostics,
+        );
 
-        let innovators_dir = jules::innovators_dir(inputs.jules_path);
+        let innovators_dir =
+            crate::domain::exchange::innovators::paths::innovators_dir(inputs.jules_path);
         ensure_directory_exists(innovators_dir.clone(), diagnostics);
 
         if innovators_dir.exists() {
             for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
                 let persona = persona_dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                let comments_dir = jules::innovator_comments_dir(inputs.jules_path, persona);
+                let comments_dir =
+                    crate::domain::exchange::innovators::paths::innovator_comments_dir(
+                        inputs.jules_path,
+                        persona,
+                    );
                 if !comments_dir.exists() {
                     diagnostics.push_error(
                         comments_dir.display().to_string(),
@@ -147,7 +174,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
 }
 
 fn check_version_file(jules_path: &Path, current_version: &str, diagnostics: &mut Diagnostics) {
-    let version_path = jules_path.join(paths::VERSION_FILE);
+    let version_path = jules_path.join(crate::domain::VERSION_FILE);
     if !version_path.exists() {
         return;
     }

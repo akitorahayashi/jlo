@@ -6,7 +6,7 @@ mod template_engine;
 use include_dir::{Dir, include_dir};
 use minijinja::context;
 
-use crate::domain::configuration::WorkflowGenerateConfig;
+use crate::domain::config::WorkflowGenerateConfig;
 use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::ports::ScaffoldFile;
 

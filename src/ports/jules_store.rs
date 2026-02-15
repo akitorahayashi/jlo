@@ -1,7 +1,8 @@
 //! `.jules/` runtime data-plane store operations.
 //!
 //! This port encapsulates domain-facing operations on the `.jules/` directory.
-//! Path semantics are owned by `domain::repository::paths::jules`;
+//! Path semantics are owned by `domain::layers::paths`, `domain::exchange::*`,
+//! and `domain::workstations::paths`;
 //! this port owns only the I/O behavior.
 
 use std::path::PathBuf;

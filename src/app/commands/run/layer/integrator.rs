@@ -3,9 +3,8 @@ use std::path::Path;
 use serde::Deserialize;
 
 use crate::app::commands::run::input::detect_repository_source;
-use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::repository::paths::jules;
+use crate::domain::roles::validation::validate_safe_path_component;
 use crate::domain::{AppError, Layer, PromptAssetLoader, RunConfig, RunOptions};
 use crate::ports::{
     AutomationMode, Git, GitHub, JloStore, JulesStore, RepositoryFilesystem, SessionRequest,
@@ -157,7 +156,7 @@ fn load_implementer_branch_prefix<
     jules_path: &Path,
     repository: &W,
 ) -> Result<String, AppError> {
-    let contracts_path = jules::contracts(jules_path, Layer::Implementer);
+    let contracts_path = crate::domain::layers::paths::contracts(jules_path, Layer::Implementer);
     let contracts_path_str = contracts_path.to_string_lossy();
 
     let content = repository.read_file(&contracts_path_str).map_err(|_| {

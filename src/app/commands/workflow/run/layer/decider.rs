@@ -1,6 +1,5 @@
 use crate::app::commands::run::RunOptions;
 use crate::domain::PromptAssetLoader;
-use crate::domain::repository::paths::jules;
 use crate::domain::{AppError, Layer};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 use std::path::Path;
@@ -50,7 +49,8 @@ where
 }
 
 fn has_pending_events(jules_path: &Path) -> Result<bool, AppError> {
-    let pending_dir = jules::exchange_dir(jules_path).join("events/pending");
+    let pending_dir =
+        crate::domain::exchange::paths::exchange_dir(jules_path).join("events/pending");
     if !pending_dir.exists() {
         return Ok(false);
     }

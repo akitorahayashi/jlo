@@ -4,7 +4,6 @@ use chrono::Utc;
 
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::repository::paths::jules;
 use crate::domain::{
     AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
 };
@@ -218,8 +217,8 @@ fn execute_prompt_preview<
     println!("Starting branch: {}\n", starting_branch);
     println!("Requirement content: {} chars\n", requirement_content.len());
 
-    let prompt_path = jules::prompt_template(jules_path, Layer::Planner);
-    let contracts_path = jules::contracts(jules_path, Layer::Planner);
+    let prompt_path = crate::domain::layers::paths::prompt_template(jules_path, Layer::Planner);
+    let contracts_path = crate::domain::layers::paths::contracts(jules_path, Layer::Planner);
 
     println!("Prompt: {}", prompt_path.display());
     if contracts_path.exists() {

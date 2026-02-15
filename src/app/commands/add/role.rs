@@ -2,7 +2,6 @@
 
 use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
-use crate::domain::repository::paths::jlo;
 use crate::domain::{AppError, Layer, RoleId};
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
@@ -20,7 +19,9 @@ where
     R: RoleTemplateStore,
 {
     if !ctx.repository().jlo_exists() {
-        return Err(AppError::JulesNotFound);
+        return Err(AppError::Validation(
+            "workspace is not initialized. Run 'jlo init' first.".to_string(),
+        ));
     }
 
     let layer_enum = Layer::from_dir_name(layer)
@@ -48,7 +49,11 @@ where
             ))
         })?;
 
-    let role_dir = jlo::role_dir(&ctx.repository().resolve_path(""), layer_enum, role_id.as_str());
+    let role_dir = crate::domain::roles::paths::role_dir(
+        &ctx.repository().resolve_path(""),
+        layer_enum,
+        role_id.as_str(),
+    );
 
     if role_dir.exists() {
         return Err(AppError::RoleExists {

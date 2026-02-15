@@ -6,13 +6,17 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::domain::AppError;
-use crate::domain::repository::paths;
+use crate::domain::{AppError, layers, roles, schedule, workstations};
 
 const MANIFEST_SCHEMA_VERSION: u32 = 1;
 
 /// The filename of the managed scaffold manifest.
 pub const MANIFEST_FILENAME: &str = ".jlo-managed.yml";
+
+/// `.jlo/.jlo-managed.yml` relative path string.
+pub fn manifest_relative() -> String {
+    format!("{}/{}", workstations::paths::JLO_DIR, MANIFEST_FILENAME)
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScaffoldManifest {
@@ -62,10 +66,10 @@ pub fn is_default_role_file(path: &str) -> bool {
     // .jules/layers/<layer>/<role>/role.yml (multi-role layers: observers, innovators)
     // Example: .jules/layers/observers/taxonomy/role.yml
     if parts.len() == 5
-        && parts[0] == paths::JULES_DIR
-        && parts[1] == paths::LAYERS_DIR
+        && parts[0] == workstations::paths::JULES_DIR
+        && parts[1] == layers::paths::LAYERS_DIR
         && matches!(parts[2], "observers" | "innovators")
-        && parts[4] == paths::ROLE_FILENAME
+        && parts[4] == roles::paths::ROLE_FILENAME
     {
         return true;
     }
@@ -83,17 +87,17 @@ pub fn is_control_plane_entity_file(path: &str) -> bool {
 
     // .jlo/roles/<layer>/<role>/role.yml
     if components.len() == 5
-        && components[0] == paths::JLO_DIR
+        && components[0] == workstations::paths::JLO_DIR
         && components[1] == "roles"
-        && components[4] == paths::ROLE_FILENAME
+        && components[4] == roles::paths::ROLE_FILENAME
     {
         return true;
     }
 
     // .jlo/scheduled.toml (root schedule)
     if components.len() == 2
-        && components[0] == paths::JLO_DIR
-        && components[1] == paths::SCHEDULED_FILENAME
+        && components[0] == workstations::paths::JLO_DIR
+        && components[1] == schedule::paths::SCHEDULED_FILENAME
     {
         return true;
     }

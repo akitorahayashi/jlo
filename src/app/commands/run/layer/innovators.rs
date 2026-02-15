@@ -4,9 +4,8 @@ use chrono::Utc;
 
 use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
-use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::repository::paths::jules;
+use crate::domain::roles::validation::validate_safe_path_component;
 use crate::domain::{
     AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RoleId, RunConfig, RunOptions,
 };
@@ -190,7 +189,8 @@ fn resolve_innovator_task<W: RepositoryFilesystem + JloStore + JulesStore + Prom
             return Err(AppError::Validation(format!("Invalid innovator task '{}'", task)));
         }
     };
-    let task_path = jules::tasks_dir(jules_path, Layer::Innovators).join(filename);
+    let task_path =
+        crate::domain::layers::paths::tasks_dir(jules_path, Layer::Innovators).join(filename);
     repository.read_file(&task_path.to_string_lossy()).map_err(|_| {
         AppError::Validation(format!(
             "No task file for innovators task '{}': expected {}",
@@ -253,7 +253,8 @@ where
         )));
     }
 
-    let room_dir = jules::innovator_persona_dir(jules_path, role);
+    let room_dir =
+        crate::domain::exchange::innovators::paths::innovator_persona_dir(jules_path, role);
 
     let idea_path = room_dir.join("idea.yml");
     let idea_path_str = idea_path

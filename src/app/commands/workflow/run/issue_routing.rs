@@ -1,4 +1,3 @@
-use crate::domain::repository::paths::jules;
 use crate::domain::{AppError, Layer, RequirementHeader};
 use crate::ports::{JulesStore, RepositoryFilesystem};
 use std::path::PathBuf;
@@ -13,7 +12,8 @@ pub(crate) fn find_requirements(
     }
 
     let jules_path = store.jules_path();
-    let requirements_dir = jules::requirements_dir(&jules_path);
+    let requirements_dir =
+        crate::domain::exchange::requirements::paths::requirements_dir(&jules_path);
 
     let requirements_dir_str = match requirements_dir.to_str() {
         Some(s) => s,

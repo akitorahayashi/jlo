@@ -3,9 +3,8 @@ use std::fs;
 use std::path::Path;
 
 use crate::adapters::catalogs::workflow_scaffold::load_workflow_scaffold;
-use crate::domain::configuration::WorkflowGenerateConfig;
-use crate::domain::repository::paths::JLO_DIR;
-use crate::domain::{AppError, WorkflowRunnerMode};
+use crate::domain::config::WorkflowGenerateConfig;
+use crate::domain::{AppError, JLO_DIR, WorkflowRunnerMode};
 use crate::ports::Git;
 
 #[derive(Debug, Default)]

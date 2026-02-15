@@ -18,7 +18,7 @@ use crate::app::commands::workflow::exchange::{
 };
 use crate::domain::PromptAssetLoader;
 pub use crate::domain::RunOptions;
-use crate::domain::identifiers::validation::validate_safe_path_component;
+use crate::domain::roles::validation::validate_safe_path_component;
 use crate::domain::{AppError, JulesApiConfig};
 use crate::ports::{Git, GitHub, JloStore, JulesClient, JulesStore, RepositoryFilesystem};
 

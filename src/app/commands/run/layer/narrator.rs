@@ -4,7 +4,6 @@ use chrono::DateTime;
 
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::repository::paths::jules;
 use crate::domain::{
     AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
 };
@@ -386,7 +385,7 @@ fn build_range_description(range: &RangeContext) -> String {
 }
 
 fn exchange_changes_path(jules_path: &Path) -> Result<String, AppError> {
-    jules::exchange_changes(jules_path)
+    crate::domain::exchange::paths::exchange_changes(jules_path)
         .to_str()
         .map(|s| s.to_string())
         .ok_or_else(|| AppError::Validation("Jules path contains invalid unicode".to_string()))
