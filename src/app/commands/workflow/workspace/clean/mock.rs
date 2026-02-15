@@ -12,7 +12,7 @@ use crate::adapters::git_command::GitCommandAdapter;
 use crate::adapters::github_command::GitHubCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::ports::{GitHubPort, GitPort, JulesStorePort};
 
 /// Options for workflow cleanup mock command.
 #[derive(Debug, Clone)]
@@ -42,7 +42,7 @@ pub struct WorkspaceCleanMockOutput {
 pub fn execute(options: WorkspaceCleanMockOptions) -> Result<WorkspaceCleanMockOutput, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
 
-    if !workspace.exists() {
+    if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 

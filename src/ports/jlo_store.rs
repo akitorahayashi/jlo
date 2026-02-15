@@ -10,18 +10,19 @@ use crate::domain::{AppError, Layer};
 use crate::ports::DiscoveredRole;
 
 /// Port for `.jlo/` control-plane store operations.
+#[allow(dead_code)]
 pub trait JloStorePort {
     /// Check whether the `.jlo/` directory exists.
-    fn exists(&self) -> bool;
+    fn jlo_exists(&self) -> bool;
 
     /// Absolute path to the `.jlo/` directory.
-    fn path(&self) -> PathBuf;
+    fn jlo_path(&self) -> PathBuf;
 
     /// Write the `.jlo/.jlo-version` version pin.
-    fn write_version(&self, version: &str) -> Result<(), AppError>;
+    fn jlo_write_version(&self, version: &str) -> Result<(), AppError>;
 
     /// Read the `.jlo/.jlo-version` version pin, if present.
-    fn read_version(&self) -> Result<Option<String>, AppError>;
+    fn jlo_read_version(&self) -> Result<Option<String>, AppError>;
 
     /// Discover all roles with a valid `role.yml` across multi-role layers.
     fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError>;

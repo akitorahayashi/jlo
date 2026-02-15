@@ -13,7 +13,7 @@ use crate::app::{
     AppContext,
     commands::{add, cli_upgrade, create, deinit, doctor, init, run, setup, update},
 };
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::ports::{JulesStorePort, RoleTemplateStore};
 
 pub use crate::app::commands::add::AddOutcome;
 pub use crate::app::commands::cli_upgrade::CliUpgradeResult;
@@ -164,7 +164,7 @@ pub fn run_at(
 ) -> Result<RunResult, AppError> {
     let root = root.into();
     let workspace = FilesystemWorkspaceStore::new(root.clone());
-    if !workspace.exists() {
+    if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 

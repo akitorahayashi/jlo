@@ -86,6 +86,7 @@ fn append_layer_toml(lines: &mut Vec<String>, layer_name: &str, layer: &Schedule
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ports::RepositoryFilesystemPort;
     use crate::testing::MockWorkspaceStore;
 
     #[test]

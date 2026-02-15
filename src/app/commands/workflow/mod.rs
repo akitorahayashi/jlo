@@ -18,7 +18,7 @@ pub use output::write_workflow_output;
 pub use run::{WorkflowRunOptions, WorkflowRunOutput};
 
 use crate::domain::AppError;
-use crate::ports::WorkspaceStore;
+use crate::ports::JulesStorePort;
 
 /// Execute workflow bootstrap.
 pub fn bootstrap(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOutput, AppError> {

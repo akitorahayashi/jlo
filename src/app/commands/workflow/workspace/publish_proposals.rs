@@ -12,7 +12,7 @@ use crate::adapters::git_command::GitCommandAdapter;
 use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::domain::AppError;
 use crate::domain::workspace::paths::jules;
-use crate::ports::{GitHubPort, GitPort, IssueInfo, WorkspaceStore};
+use crate::ports::{GitHubPort, GitPort, IssueInfo, JulesStorePort, WorkspaceStore};
 
 #[derive(Debug, Clone)]
 pub struct WorkspacePublishProposalsOptions {}
@@ -67,7 +67,7 @@ pub fn execute(
     options: WorkspacePublishProposalsOptions,
 ) -> Result<WorkspacePublishProposalsOutput, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
-    if !workspace.exists() {
+    if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 
@@ -310,6 +310,7 @@ fn render_list(items: &[String]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ports::RepositoryFilesystemPort;
     use crate::testing::{FakeGit, FakeGitHub, MockWorkspaceStore};
 
     fn proposal_yaml() -> &'static str {

@@ -370,7 +370,10 @@ fn exchange_changes_path(jules_path: &Path) -> Result<String, AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::{DiscoveredRole, PullRequestInfo, ScaffoldFile};
+    use crate::ports::{
+        DiscoveredRole, JloStorePort, JulesStorePort, PullRequestInfo, RepositoryFilesystemPort,
+        ScaffoldFile,
+    };
     use std::collections::HashMap;
     use std::path::PathBuf;
 
@@ -619,47 +622,7 @@ created_at: "2026-02-05 00:00:00"
         }
     }
 
-    impl WorkspaceStore for DummyWorkspace {
-        fn exists(&self) -> bool {
-            panic!("mock narrator no-op must not call exists");
-        }
-
-        fn jlo_exists(&self) -> bool {
-            panic!("mock narrator no-op must not call jlo_exists");
-        }
-
-        fn jules_path(&self) -> PathBuf {
-            panic!("mock narrator no-op must not call jules_path");
-        }
-
-        fn jlo_path(&self) -> PathBuf {
-            panic!("mock narrator no-op must not call jlo_path");
-        }
-
-        fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
-            panic!("mock narrator no-op must not call create_structure");
-        }
-
-        fn write_version(&self, _version: &str) -> Result<(), AppError> {
-            panic!("mock narrator no-op must not call write_version");
-        }
-
-        fn read_version(&self) -> Result<Option<String>, AppError> {
-            panic!("mock narrator no-op must not call read_version");
-        }
-
-        fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
-            panic!("mock narrator no-op must not call discover_roles");
-        }
-
-        fn find_role_fuzzy(&self, _query: &str) -> Result<Option<DiscoveredRole>, AppError> {
-            panic!("mock narrator no-op must not call find_role_fuzzy");
-        }
-
-        fn role_path(&self, _role: &DiscoveredRole) -> Option<PathBuf> {
-            panic!("mock narrator no-op must not call role_path");
-        }
-
+    impl RepositoryFilesystemPort for DummyWorkspace {
         fn read_file(&self, _path: &str) -> Result<String, AppError> {
             panic!("mock narrator no-op must not call read_file");
         }
@@ -702,6 +665,67 @@ created_at: "2026-02-05 00:00:00"
 
         fn canonicalize(&self, _path: &str) -> Result<PathBuf, AppError> {
             panic!("mock narrator no-op must not call canonicalize");
+        }
+    }
+
+    impl JloStorePort for DummyWorkspace {
+        fn jlo_exists(&self) -> bool {
+            panic!("mock narrator no-op must not call jlo_exists");
+        }
+
+        fn jlo_path(&self) -> PathBuf {
+            panic!("mock narrator no-op must not call jlo_path");
+        }
+
+        fn jlo_write_version(&self, _version: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call jlo_write_version");
+        }
+
+        fn jlo_read_version(&self) -> Result<Option<String>, AppError> {
+            panic!("mock narrator no-op must not call jlo_read_version");
+        }
+
+        fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
+            panic!("mock narrator no-op must not call discover_roles");
+        }
+
+        fn find_role_fuzzy(&self, _query: &str) -> Result<Option<DiscoveredRole>, AppError> {
+            panic!("mock narrator no-op must not call find_role_fuzzy");
+        }
+
+        fn role_path(&self, _role: &DiscoveredRole) -> Option<PathBuf> {
+            panic!("mock narrator no-op must not call role_path");
+        }
+
+        fn write_role(
+            &self,
+            _layer: Layer,
+            _role_id: &str,
+            _content: &str,
+        ) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call write_role");
+        }
+    }
+
+    impl JulesStorePort for DummyWorkspace {
+        fn jules_exists(&self) -> bool {
+            panic!("mock narrator no-op must not call jules_exists");
+        }
+
+        fn jules_path(&self) -> PathBuf {
+            panic!("mock narrator no-op must not call jules_path");
+        }
+
+        fn jules_write_version(&self, _version: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call jules_write_version");
+        }
+
+        fn jules_read_version(&self) -> Result<Option<String>, AppError> {
+            panic!("mock narrator no-op must not call jules_read_version");
+        }
+
+        fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call create_structure");
         }
     }
 

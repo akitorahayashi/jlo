@@ -52,11 +52,11 @@ pub(crate) fn find_requirements(
 mod tests {
     use super::*;
     use crate::adapters::memory_workspace_store::MemoryWorkspaceStore;
-    use crate::ports::WorkspaceStore;
+    use crate::ports::{JulesStorePort, RepositoryFilesystemPort};
     use serial_test::serial;
 
     fn setup_workspace(store: &MemoryWorkspaceStore) {
-        store.write_version(env!("CARGO_PKG_VERSION")).unwrap();
+        store.jules_write_version(env!("CARGO_PKG_VERSION")).unwrap();
     }
 
     fn write_requirement(

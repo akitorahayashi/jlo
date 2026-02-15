@@ -91,7 +91,7 @@ where
     // 1. Materialize managed framework files from embedded scaffold
     let scaffold_files = ctx.templates().scaffold_files();
     ctx.workspace().create_structure(&scaffold_files)?;
-    ctx.workspace().write_version(version)?;
+    ctx.workspace().jules_write_version(version)?;
     files_written += scaffold_files.len() + 1; // +1 for version
 
     // 2. Write managed manifest

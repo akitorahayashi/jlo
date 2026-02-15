@@ -72,7 +72,7 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
 mod tests {
     use super::*;
     use crate::adapters::memory_workspace_store::MemoryWorkspaceStore;
-    use crate::ports::WorkspaceStore;
+    use crate::ports::RepositoryFilesystemPort;
 
     #[test]
     fn fails_if_not_initialized() {

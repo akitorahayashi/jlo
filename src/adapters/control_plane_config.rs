@@ -157,6 +157,7 @@ pub fn persist_workflow_runner_mode(
 mod tests {
     use super::*;
     use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+    use crate::ports::RepositoryFilesystemPort;
     use assert_fs::TempDir;
     use std::fs;
 

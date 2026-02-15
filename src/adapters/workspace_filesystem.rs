@@ -3,7 +3,9 @@ use std::path::{Path, PathBuf};
 
 use crate::domain::workspace::paths::{jlo, jules};
 use crate::domain::{AppError, JLO_DIR, JULES_DIR, Layer, PromptAssetLoader, RoleId, VERSION_FILE};
-use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
+use crate::ports::{
+    DiscoveredRole, JloStorePort, JulesStorePort, RepositoryFilesystemPort, ScaffoldFile,
+};
 
 /// Filesystem-based workspace store implementation.
 #[derive(Debug, Clone)]
@@ -46,126 +48,7 @@ impl PromptAssetLoader for FilesystemWorkspaceStore {
     }
 }
 
-impl WorkspaceStore for FilesystemWorkspaceStore {
-    fn exists(&self) -> bool {
-        self.jules_path().exists()
-    }
-
-    fn jlo_exists(&self) -> bool {
-        self.jlo_path().exists()
-    }
-
-    fn jules_path(&self) -> PathBuf {
-        self.root.join(JULES_DIR)
-    }
-
-    fn jlo_path(&self) -> PathBuf {
-        self.root.join(JLO_DIR)
-    }
-
-    fn create_structure(&self, scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
-        fs::create_dir_all(self.jules_path())?;
-
-        // Write scaffold files
-        for entry in scaffold_files {
-            let path = self.root.join(&entry.path);
-            if let Some(parent) = path.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            fs::write(&path, &entry.content)?;
-        }
-
-        // Create layer directories
-        for layer in Layer::ALL {
-            let layer_dir = jules::layer_dir(&self.jules_path(), layer);
-            fs::create_dir_all(&layer_dir)?;
-        }
-
-        Ok(())
-    }
-
-    fn write_version(&self, version: &str) -> Result<(), AppError> {
-        fs::write(self.version_path(), format!("{}\n", version))?;
-        Ok(())
-    }
-
-    fn read_version(&self) -> Result<Option<String>, AppError> {
-        let path = self.version_path();
-        if !path.exists() {
-            return Ok(None);
-        }
-        let content = fs::read_to_string(&path)?;
-        Ok(Some(content.trim().to_string()))
-    }
-
-    fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
-        let mut roles = Vec::new();
-
-        for layer in Layer::ALL {
-            if layer.is_single_role() {
-                continue;
-            }
-            // Convention: .jlo/roles/<layer>/<role>/ (see also role_path)
-            let layer_dir = jlo::layer_dir(&self.root, layer);
-            if !layer_dir.exists() {
-                continue;
-            }
-
-            for entry in fs::read_dir(&layer_dir)? {
-                let entry = entry?;
-                if !entry.path().is_dir() {
-                    continue;
-                }
-                let role_id_str = entry.file_name().to_string_lossy().to_string();
-                if let Ok(role_id) = RoleId::new(&role_id_str)
-                    && entry.path().join("role.yml").exists()
-                {
-                    roles.push(DiscoveredRole { layer, id: role_id });
-                }
-            }
-        }
-
-        roles.sort_by(|a, b| {
-            let layer_cmp = a.layer.dir_name().cmp(b.layer.dir_name());
-            if layer_cmp == std::cmp::Ordering::Equal { a.id.cmp(&b.id) } else { layer_cmp }
-        });
-
-        Ok(roles)
-    }
-
-    fn find_role_fuzzy(&self, query: &str) -> Result<Option<DiscoveredRole>, AppError> {
-        let roles = self.discover_roles()?;
-
-        // Check for exact match first
-        if let Some(role) = roles.iter().find(|r| r.id.as_str() == query) {
-            return Ok(Some(role.clone()));
-        }
-
-        // Check for layer/role format (e.g., "observers/taxonomy")
-        if let Some((layer_part, role_part)) = query.split_once('/')
-            && let Some(layer) = Layer::from_dir_name(layer_part)
-            && let Some(role) =
-                roles.iter().find(|r| r.layer == layer && r.id.as_str() == role_part)
-        {
-            return Ok(Some(role.clone()));
-        }
-
-        // Check for prefix match
-        let matches: Vec<_> = roles.iter().filter(|r| r.id.as_str().starts_with(query)).collect();
-
-        match matches.len() {
-            1 => Ok(Some(matches[0].clone())),
-            0 => Ok(None),
-            _ => Ok(None), // Ambiguous matches
-        }
-    }
-
-    fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        // Convention: .jlo/roles/<layer>/<id> (see also discover_roles)
-        let path = jlo::role_dir(&self.root, role.layer, role.id.as_str());
-        if path.exists() { Some(path) } else { None }
-    }
-
+impl RepositoryFilesystemPort for FilesystemWorkspaceStore {
     fn read_file(&self, path: &str) -> Result<String, AppError> {
         let full_path = self.resolve_path(path);
         self.validate_path_within_root(&full_path)?;
@@ -208,7 +91,6 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
             let entry = entry.map_err(AppError::from)?;
             paths.push(entry.path());
         }
-        // sort for determinism
         paths.sort();
         Ok(paths)
     }
@@ -228,7 +110,6 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
 
     fn file_exists(&self, path: &str) -> bool {
         let full_path = self.resolve_path(path);
-        // For existence checks, allow traversal detection to fail silently
         if self.validate_path_within_root(&full_path).is_err() {
             return false;
         }
@@ -237,7 +118,6 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
 
     fn is_dir(&self, path: &str) -> bool {
         let full_path = self.resolve_path(path);
-        // For existence checks, allow traversal detection to fail silently
         if self.validate_path_within_root(&full_path).is_err() {
             return false;
         }
@@ -255,16 +135,147 @@ impl WorkspaceStore for FilesystemWorkspaceStore {
     }
 
     fn canonicalize(&self, path: &str) -> Result<PathBuf, AppError> {
-        // Since we assume CWD is root, passing path (relative or absolute) to fs::canonicalize should work.
-        // But if path is relative, fs::canonicalize resolves against CWD.
-        // We want to resolve against self.root?
-        // If self.root is absolute, and path is relative...
         let p = if PathBuf::from(path).is_absolute() {
             PathBuf::from(path)
         } else {
             self.root.join(path)
         };
         fs::canonicalize(p).map_err(AppError::from)
+    }
+}
+
+impl JloStorePort for FilesystemWorkspaceStore {
+    fn jlo_exists(&self) -> bool {
+        self.jlo_path().exists()
+    }
+
+    fn jlo_path(&self) -> PathBuf {
+        self.root.join(JLO_DIR)
+    }
+
+    fn jlo_write_version(&self, version: &str) -> Result<(), AppError> {
+        let path = format!("{}/{}", JLO_DIR, VERSION_FILE);
+        self.write_file(&path, &format!("{}\n", version))
+    }
+
+    fn jlo_read_version(&self) -> Result<Option<String>, AppError> {
+        let path = format!("{}/{}", JLO_DIR, VERSION_FILE);
+        if !self.file_exists(&path) {
+            return Ok(None);
+        }
+        let content = self.read_file(&path)?;
+        Ok(Some(content.trim().to_string()))
+    }
+
+    fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
+        let mut roles = Vec::new();
+
+        for layer in Layer::ALL {
+            if layer.is_single_role() {
+                continue;
+            }
+            let layer_dir = jlo::layer_dir(&self.root, layer);
+            if !layer_dir.exists() {
+                continue;
+            }
+
+            for entry in fs::read_dir(&layer_dir)? {
+                let entry = entry?;
+                if !entry.path().is_dir() {
+                    continue;
+                }
+                let role_id_str = entry.file_name().to_string_lossy().to_string();
+                if let Ok(role_id) = RoleId::new(&role_id_str)
+                    && entry.path().join("role.yml").exists()
+                {
+                    roles.push(DiscoveredRole { layer, id: role_id });
+                }
+            }
+        }
+
+        roles.sort_by(|a, b| {
+            let layer_cmp = a.layer.dir_name().cmp(b.layer.dir_name());
+            if layer_cmp == std::cmp::Ordering::Equal { a.id.cmp(&b.id) } else { layer_cmp }
+        });
+
+        Ok(roles)
+    }
+
+    fn find_role_fuzzy(&self, query: &str) -> Result<Option<DiscoveredRole>, AppError> {
+        let roles = self.discover_roles()?;
+
+        if let Some(role) = roles.iter().find(|r| r.id.as_str() == query) {
+            return Ok(Some(role.clone()));
+        }
+
+        if let Some((layer_part, role_part)) = query.split_once('/')
+            && let Some(layer) = Layer::from_dir_name(layer_part)
+            && let Some(role) =
+                roles.iter().find(|r| r.layer == layer && r.id.as_str() == role_part)
+        {
+            return Ok(Some(role.clone()));
+        }
+
+        let matches: Vec<_> = roles.iter().filter(|r| r.id.as_str().starts_with(query)).collect();
+
+        match matches.len() {
+            1 => Ok(Some(matches[0].clone())),
+            _ => Ok(None),
+        }
+    }
+
+    fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
+        let path = jlo::role_dir(&self.root, role.layer, role.id.as_str());
+        if path.exists() { Some(path) } else { None }
+    }
+
+    fn write_role(&self, layer: Layer, role_id: &str, content: &str) -> Result<(), AppError> {
+        let path = jlo::role_yml(&self.root, layer, role_id);
+        let rel = path.strip_prefix(&self.root).unwrap_or(&path);
+        self.write_file(&rel.to_string_lossy(), content)
+    }
+}
+
+impl JulesStorePort for FilesystemWorkspaceStore {
+    fn jules_exists(&self) -> bool {
+        self.jules_path().exists()
+    }
+
+    fn jules_path(&self) -> PathBuf {
+        self.root.join(JULES_DIR)
+    }
+
+    fn create_structure(&self, scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
+        fs::create_dir_all(self.jules_path())?;
+
+        for entry in scaffold_files {
+            let path = self.root.join(&entry.path);
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::write(&path, &entry.content)?;
+        }
+
+        for layer in Layer::ALL {
+            let layer_dir = jules::layer_dir(&self.jules_path(), layer);
+            fs::create_dir_all(&layer_dir)?;
+        }
+
+        Ok(())
+    }
+
+    fn jules_write_version(&self, version: &str) -> Result<(), AppError> {
+        fs::write(self.version_path(), format!("{}\n", version))?;
+        Ok(())
+    }
+
+    fn jules_read_version(&self) -> Result<Option<String>, AppError> {
+        let path = self.version_path();
+        if !path.exists() {
+            return Ok(None);
+        }
+        let content = fs::read_to_string(&path)?;
+        Ok(Some(content.trim().to_string()))
     }
 }
 
@@ -374,8 +385,8 @@ mod tests {
         let (_dir, ws) = test_workspace();
         ws.create_structure(&[]).unwrap();
 
-        ws.write_version("0.1.0").unwrap();
-        let version = ws.read_version().unwrap();
+        ws.jules_write_version("0.1.0").unwrap();
+        let version = ws.jules_read_version().unwrap();
         assert_eq!(version, Some("0.1.0".to_string()));
     }
 

@@ -38,7 +38,7 @@ pub fn execute_with_adapters<G: GitPort, W: WorkspaceStore>(
     workspace: &W,
     git: &G,
 ) -> Result<WorkspaceCleanRequirementOutput, AppError> {
-    if !workspace.exists() {
+    if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 

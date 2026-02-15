@@ -331,6 +331,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ports::RepositoryFilesystemPort;
     use crate::testing::{FakeGit, FakeGitHub, MockWorkspaceStore};
     use std::collections::HashMap;
     use std::path::PathBuf;

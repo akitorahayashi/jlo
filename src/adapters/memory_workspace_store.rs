@@ -3,13 +3,14 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, JLO_DIR, JULES_DIR, PromptAssetLoader, VERSION_FILE};
-use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
+use crate::domain::{AppError, JLO_DIR, JULES_DIR, Layer, PromptAssetLoader, VERSION_FILE};
+use crate::ports::{
+    DiscoveredRole, JloStorePort, JulesStorePort, RepositoryFilesystemPort, ScaffoldFile,
+};
 
 /// In-memory workspace store for testing.
 #[derive(Debug, Clone)]
 pub struct MemoryWorkspaceStore {
-    // Using Arc<Mutex> to allow cloning and shared state modification
     files: Arc<Mutex<HashMap<PathBuf, Vec<u8>>>>,
 }
 
@@ -39,61 +40,7 @@ impl PromptAssetLoader for MemoryWorkspaceStore {
     }
 }
 
-impl WorkspaceStore for MemoryWorkspaceStore {
-    fn exists(&self) -> bool {
-        let files = self.files.lock().unwrap();
-        files.keys().any(|p| p.starts_with(JULES_DIR))
-    }
-
-    fn jlo_exists(&self) -> bool {
-        let files = self.files.lock().unwrap();
-        files.keys().any(|p| p.starts_with(JLO_DIR))
-    }
-
-    fn jules_path(&self) -> PathBuf {
-        PathBuf::from(JULES_DIR)
-    }
-
-    fn jlo_path(&self) -> PathBuf {
-        PathBuf::from(JLO_DIR)
-    }
-
-    fn create_structure(&self, scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
-        let mut files = self.files.lock().unwrap();
-        for file in scaffold_files {
-            files.insert(PathBuf::from(&file.path), file.content.as_bytes().to_vec());
-        }
-        Ok(())
-    }
-
-    fn write_version(&self, version: &str) -> Result<(), AppError> {
-        self.write_file(&format!("{}/{}", JULES_DIR, VERSION_FILE), &format!("{}\n", version))
-    }
-
-    fn read_version(&self) -> Result<Option<String>, AppError> {
-        let path = format!("{}/{}", JULES_DIR, VERSION_FILE);
-        if let Ok(content) = self.read_file(&path) {
-            Ok(Some(content.trim().to_string()))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
-        // Rudimentary implementation for testing
-        Ok(vec![])
-    }
-
-    fn find_role_fuzzy(&self, _query: &str) -> Result<Option<DiscoveredRole>, AppError> {
-        Ok(None)
-    }
-
-    fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        let path =
-            jules::layer_roles_container(&self.jules_path(), role.layer).join(role.id.as_str());
-        Some(path)
-    }
-
+impl RepositoryFilesystemPort for MemoryWorkspaceStore {
     fn read_file(&self, path: &str) -> Result<String, AppError> {
         let files = self.files.lock().unwrap();
         let path = PathBuf::from(path);
@@ -153,7 +100,6 @@ impl WorkspaceStore for MemoryWorkspaceStore {
         if files.contains_key(&path_buf) {
             return true;
         }
-        // Check if it is a directory (prefix of any file)
         files.keys().any(|k| k.starts_with(&path_buf) && k != &path_buf)
     }
 
@@ -178,5 +124,80 @@ impl WorkspaceStore for MemoryWorkspaceStore {
 
     fn canonicalize(&self, path: &str) -> Result<PathBuf, AppError> {
         Ok(PathBuf::from(path))
+    }
+}
+
+impl JloStorePort for MemoryWorkspaceStore {
+    fn jlo_exists(&self) -> bool {
+        let files = self.files.lock().unwrap();
+        files.keys().any(|p| p.starts_with(JLO_DIR))
+    }
+
+    fn jlo_path(&self) -> PathBuf {
+        PathBuf::from(JLO_DIR)
+    }
+
+    fn jlo_write_version(&self, version: &str) -> Result<(), AppError> {
+        self.write_file(&format!("{}/{}", JLO_DIR, VERSION_FILE), &format!("{}\n", version))
+    }
+
+    fn jlo_read_version(&self) -> Result<Option<String>, AppError> {
+        let path = format!("{}/{}", JLO_DIR, VERSION_FILE);
+        if let Ok(content) = self.read_file(&path) {
+            Ok(Some(content.trim().to_string()))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
+        Ok(vec![])
+    }
+
+    fn find_role_fuzzy(&self, _query: &str) -> Result<Option<DiscoveredRole>, AppError> {
+        Ok(None)
+    }
+
+    fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
+        let path =
+            jules::layer_roles_container(&self.jules_path(), role.layer).join(role.id.as_str());
+        Some(path)
+    }
+
+    fn write_role(&self, layer: Layer, role_id: &str, content: &str) -> Result<(), AppError> {
+        let path = format!(".jlo/roles/{}/{}/role.yml", layer.dir_name(), role_id);
+        self.write_file(&path, content)
+    }
+}
+
+impl JulesStorePort for MemoryWorkspaceStore {
+    fn jules_exists(&self) -> bool {
+        let files = self.files.lock().unwrap();
+        files.keys().any(|p| p.starts_with(JULES_DIR))
+    }
+
+    fn jules_path(&self) -> PathBuf {
+        PathBuf::from(JULES_DIR)
+    }
+
+    fn create_structure(&self, scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
+        let mut files = self.files.lock().unwrap();
+        for file in scaffold_files {
+            files.insert(PathBuf::from(&file.path), file.content.as_bytes().to_vec());
+        }
+        Ok(())
+    }
+
+    fn jules_write_version(&self, version: &str) -> Result<(), AppError> {
+        self.write_file(&format!("{}/{}", JULES_DIR, VERSION_FILE), &format!("{}\n", version))
+    }
+
+    fn jules_read_version(&self) -> Result<Option<String>, AppError> {
+        let path = format!("{}/{}", JULES_DIR, VERSION_FILE);
+        if let Ok(content) = self.read_file(&path) {
+            Ok(Some(content.trim().to_string()))
+        } else {
+            Ok(None)
+        }
     }
 }

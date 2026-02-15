@@ -132,7 +132,9 @@ where
 mod tests {
     use super::*;
     use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
-    use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
+    use crate::ports::{
+        GitHubPort, IssueInfo, JulesStorePort, PrComment, PullRequestDetail, PullRequestInfo,
+    };
     use serial_test::serial;
     use std::collections::HashMap;
     use std::fs;

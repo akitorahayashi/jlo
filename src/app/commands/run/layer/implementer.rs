@@ -370,6 +370,7 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ports::RepositoryFilesystemPort;
     use crate::testing::{FakeGit, FakeGitHub, MockWorkspaceStore};
     use std::collections::HashMap;
 

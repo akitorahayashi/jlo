@@ -13,12 +13,13 @@ use crate::ports::ScaffoldFile;
 ///
 /// Extends `PromptAssetLoader` (defined in domain) so that any
 /// `JulesStorePort` implementation also satisfies prompt assembly.
+#[allow(dead_code)]
 pub trait JulesStorePort: PromptAssetLoader {
     /// Check whether the `.jules/` directory exists.
-    fn exists(&self) -> bool;
+    fn jules_exists(&self) -> bool;
 
     /// Absolute path to the `.jules/` directory.
-    fn path(&self) -> PathBuf;
+    fn jules_path(&self) -> PathBuf;
 
     /// Create the `.jules/` directory structure from scaffold files.
     ///
@@ -26,8 +27,8 @@ pub trait JulesStorePort: PromptAssetLoader {
     fn create_structure(&self, scaffold_files: &[ScaffoldFile]) -> Result<(), AppError>;
 
     /// Write the `.jules/.jlo-version` version marker.
-    fn write_version(&self, version: &str) -> Result<(), AppError>;
+    fn jules_write_version(&self, version: &str) -> Result<(), AppError>;
 
     /// Read the `.jules/.jlo-version` version marker, if present.
-    fn read_version(&self) -> Result<Option<String>, AppError>;
+    fn jules_read_version(&self) -> Result<Option<String>, AppError>;
 }

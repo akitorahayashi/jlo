@@ -26,7 +26,7 @@ where
     G: GitPort,
     H: GitHubPort,
 {
-    if !store.exists() {
+    if !store.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 

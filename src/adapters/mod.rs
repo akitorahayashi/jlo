@@ -1,6 +1,7 @@
 pub mod assets;
 pub mod control_plane_config;
 pub mod embedded_role_template_store;
+pub mod filesystem;
 pub mod git_command;
 pub mod github_command;
 

@@ -6,7 +6,7 @@ use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
 use crate::app::configuration::{list_subdirectories, load_schedule};
 use crate::domain::AppError;
 use crate::domain::workspace::paths::jules;
-use crate::ports::WorkspaceStore;
+use crate::ports::{JulesStorePort, WorkspaceStore};
 
 use super::model::{
     EventItem, EventStateSummary, EventSummary, RequirementItem, RequirementSummary, RoleSummary,
@@ -19,7 +19,7 @@ pub struct WorkspaceInspectOptions {}
 pub fn execute(_options: WorkspaceInspectOptions) -> Result<WorkspaceInspectOutput, AppError> {
     let workspace = FilesystemWorkspaceStore::current()?;
 
-    if !workspace.exists() {
+    if !workspace.jules_exists() {
         return Err(AppError::WorkspaceNotFound);
     }
 

@@ -3,7 +3,9 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use crate::domain::{AppError, Layer, PromptAssetLoader, RoleId};
-use crate::ports::{DiscoveredRole, ScaffoldFile, WorkspaceStore};
+use crate::ports::{
+    DiscoveredRole, JloStorePort, JulesStorePort, RepositoryFilesystemPort, ScaffoldFile,
+};
 
 /// Mock workspace store for testing.
 #[derive(Clone)]
@@ -82,73 +84,7 @@ impl PromptAssetLoader for MockWorkspaceStore {
     }
 }
 
-impl WorkspaceStore for MockWorkspaceStore {
-    fn exists(&self) -> bool {
-        *self.exists.lock().unwrap()
-    }
-
-    fn jlo_exists(&self) -> bool {
-        *self.exists.lock().unwrap()
-    }
-
-    fn jules_path(&self) -> PathBuf {
-        PathBuf::from(".jules")
-    }
-
-    fn jlo_path(&self) -> PathBuf {
-        PathBuf::from(".jlo")
-    }
-
-    fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
-        *self.created_structure.lock().unwrap() = true;
-        *self.exists.lock().unwrap() = true;
-        Ok(())
-    }
-
-    fn write_version(&self, version: &str) -> Result<(), AppError> {
-        *self.version.lock().unwrap() = Some(version.to_string());
-        Ok(())
-    }
-
-    fn read_version(&self) -> Result<Option<String>, AppError> {
-        Ok(self.version.lock().unwrap().clone())
-    }
-
-    fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
-        let roles: Vec<DiscoveredRole> = self
-            .roles
-            .lock()
-            .unwrap()
-            .keys()
-            .map(|(layer, id)| DiscoveredRole { layer: *layer, id: id.clone() })
-            .collect();
-        Ok(roles)
-    }
-
-    fn find_role_fuzzy(&self, query: &str) -> Result<Option<DiscoveredRole>, AppError> {
-        let roles = self.discover_roles()?;
-
-        // Exact match
-        if let Some(role) = roles.iter().find(|r| r.id.as_str() == query) {
-            return Ok(Some(role.clone()));
-        }
-
-        // Prefix match
-        let matches: Vec<_> = roles.iter().filter(|r| r.id.as_str().starts_with(query)).collect();
-        match matches.len() {
-            1 => Ok(Some(matches[0].clone())),
-            _ => Ok(None),
-        }
-    }
-
-    fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
-        if self.roles.lock().unwrap().contains_key(&(role.layer, role.id.clone())) {
-            Some(PathBuf::from(format!(".jules/layers/{}/{}", role.layer.dir_name(), role.id)))
-        } else {
-            None
-        }
-    }
-
+impl RepositoryFilesystemPort for MockWorkspaceStore {
     fn read_file(&self, path: &str) -> Result<String, AppError> {
         self.files.lock().unwrap().get(path).cloned().ok_or_else(|| {
             AppError::from(std::io::Error::new(std::io::ErrorKind::NotFound, "Mock file not found"))
@@ -172,7 +108,6 @@ impl WorkspaceStore for MockWorkspaceStore {
     }
 
     fn list_dir(&self, path: &str) -> Result<Vec<PathBuf>, AppError> {
-        // Find direct children (files and directories)
         let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
         let path_obj = Path::new(path);
         let mut results = std::collections::HashSet::new();
@@ -181,11 +116,9 @@ impl WorkspaceStore for MockWorkspaceStore {
             if key.starts_with(&prefix) {
                 let suffix = &key[prefix.len()..];
                 if let Some(slash_idx) = suffix.find('/') {
-                    // It's a subdirectory
                     let dir_name = &suffix[..slash_idx];
                     results.insert(path_obj.join(dir_name));
                 } else {
-                    // It's a file directly in this directory
                     results.insert(PathBuf::from(key));
                 }
             }
@@ -205,7 +138,6 @@ impl WorkspaceStore for MockWorkspaceStore {
     }
 
     fn is_dir(&self, path: &str) -> bool {
-        // Check if it is a prefix of any file
         let prefix = if path.ends_with('/') { path.to_string() } else { format!("{}/", path) };
         self.files.lock().unwrap().keys().any(|k| k.starts_with(&prefix))
     }
@@ -219,7 +151,88 @@ impl WorkspaceStore for MockWorkspaceStore {
     }
 
     fn canonicalize(&self, path: &str) -> Result<PathBuf, AppError> {
-        // Mock canonicalization: just return path if it looks valid
         Ok(PathBuf::from(path))
+    }
+}
+
+impl JloStorePort for MockWorkspaceStore {
+    fn jlo_exists(&self) -> bool {
+        *self.exists.lock().unwrap()
+    }
+
+    fn jlo_path(&self) -> PathBuf {
+        PathBuf::from(".jlo")
+    }
+
+    fn jlo_write_version(&self, version: &str) -> Result<(), AppError> {
+        *self.version.lock().unwrap() = Some(version.to_string());
+        Ok(())
+    }
+
+    fn jlo_read_version(&self) -> Result<Option<String>, AppError> {
+        Ok(self.version.lock().unwrap().clone())
+    }
+
+    fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
+        let roles: Vec<DiscoveredRole> = self
+            .roles
+            .lock()
+            .unwrap()
+            .keys()
+            .map(|(layer, id)| DiscoveredRole { layer: *layer, id: id.clone() })
+            .collect();
+        Ok(roles)
+    }
+
+    fn find_role_fuzzy(&self, query: &str) -> Result<Option<DiscoveredRole>, AppError> {
+        let roles = self.discover_roles()?;
+
+        if let Some(role) = roles.iter().find(|r| r.id.as_str() == query) {
+            return Ok(Some(role.clone()));
+        }
+
+        let matches: Vec<_> = roles.iter().filter(|r| r.id.as_str().starts_with(query)).collect();
+        match matches.len() {
+            1 => Ok(Some(matches[0].clone())),
+            _ => Ok(None),
+        }
+    }
+
+    fn role_path(&self, role: &DiscoveredRole) -> Option<PathBuf> {
+        if self.roles.lock().unwrap().contains_key(&(role.layer, role.id.clone())) {
+            Some(PathBuf::from(format!(".jules/layers/{}/{}", role.layer.dir_name(), role.id)))
+        } else {
+            None
+        }
+    }
+
+    fn write_role(&self, layer: Layer, role_id: &str, content: &str) -> Result<(), AppError> {
+        let path = format!(".jlo/roles/{}/{}/role.yml", layer.dir_name(), role_id);
+        self.write_file(&path, content)
+    }
+}
+
+impl JulesStorePort for MockWorkspaceStore {
+    fn jules_exists(&self) -> bool {
+        *self.exists.lock().unwrap()
+    }
+
+    fn jules_path(&self) -> PathBuf {
+        PathBuf::from(".jules")
+    }
+
+    fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
+        *self.created_structure.lock().unwrap() = true;
+        *self.exists.lock().unwrap() = true;
+        Ok(())
+    }
+
+    fn jules_write_version(&self, version: &str) -> Result<(), AppError> {
+        *self.version.lock().unwrap() = Some(version.to_string());
+        Ok(())
+    }
+
+    fn jules_read_version(&self) -> Result<Option<String>, AppError> {
+        Ok(self.version.lock().unwrap().clone())
     }
 }
