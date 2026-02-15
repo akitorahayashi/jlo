@@ -42,7 +42,7 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
     ensure_file_exists(&jules::project_readme(inputs.root), diagnostics);
     ensure_file_exists(&jlo::config(inputs.root), diagnostics);
     ensure_file_exists(&jules::version_file(inputs.root), diagnostics);
-    ensure_directory_exists(jules::roles_dir(inputs.jules_path), diagnostics);
+    ensure_directory_exists(jules::layers_dir(inputs.jules_path), diagnostics);
     ensure_directory_exists(jlo::roles_dir(inputs.root), diagnostics);
     ensure_file_exists(&jlo::schedule(inputs.root), diagnostics);
 

@@ -378,7 +378,8 @@ mod tests {
         fs::create_dir_all(root.join(".jules/exchange/requirements"))
             .expect("create requirements dir");
         fs::create_dir_all(root.join(".jules/layers/narrator")).expect("create narrator role dir");
-        fs::create_dir_all(root.join(".jules/layers/observers")).expect("create observers role dir");
+        fs::create_dir_all(root.join(".jules/layers/observers"))
+            .expect("create observers role dir");
         fs::create_dir_all(root.join(".jules/layers/decider")).expect("create decider role dir");
         fs::create_dir_all(root.join(".jules/layers/planner")).expect("create planner role dir");
         fs::create_dir_all(root.join(".jules/layers/implementer"))

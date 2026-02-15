@@ -19,7 +19,7 @@ All scaffold files, workflow kits, configurations, and prompts must exist as rea
 - **How**: Use `include_dir!` to load `src/assets/scaffold` and `src/assets/github` as authoritative sources of truth.
 
 ### 2. Scaffold Mapping
-The directory `src/assets/scaffold/jules/layers` in the source code maps directly to `.jules/layers` in the deployed environment. This renaming (roles -> layers) aligns the internal architecture with the "layered" pipeline concept.
+The directory `src/assets/scaffold/jules/layers` in the source code maps directly to `.jules/layers` in the deployed environment. This structure aligns the internal source organization with the deployed "layered" pipeline concept.
 
 ### 3. Prompt Hierarchy (No Duplication)
 Prompts are constructed by layer-specific `<layer>_prompt.j2` templates, which render prompt sections via explicit include helpers. Each layer has a single prompt template that references contracts, role definitions, and exchange data.

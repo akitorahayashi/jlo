@@ -63,7 +63,7 @@ pub fn is_default_role_file(path: &str) -> bool {
     // Example: .jules/layers/observers/taxonomy/role.yml
     if parts.len() == 5
         && parts[0] == paths::JULES_DIR
-        && parts[1] == "layers"
+        && parts[1] == paths::LAYERS_DIR
         && matches!(parts[2], "observers" | "innovators")
         && parts[4] == paths::ROLE_FILENAME
     {
@@ -84,7 +84,7 @@ pub fn is_control_plane_entity_file(path: &str) -> bool {
     // .jlo/roles/<layer>/<role>/role.yml
     if components.len() == 5
         && components[0] == paths::JLO_DIR
-        && components[1] == paths::ROLES_DIR
+        && components[1] == "roles"
         && components[4] == paths::ROLE_FILENAME
     {
         return true;

@@ -8,7 +8,7 @@ rationale: |
   Proposal quality depends on observable outcomes. Without explicit signals,
   reviewers cannot evaluate whether the proposed introduction improved reliability.
 evidence:
-  - path: "src/assets/scaffold/.jules/layers/innovators/schemas/proposal.yml"
+  - path: ".jules/layers/innovators/schemas/proposal.yml"
     loc:
       - "25"
     note: "verification_signals field is the expected location for observable success criteria."

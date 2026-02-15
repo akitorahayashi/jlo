@@ -29,13 +29,13 @@ pub fn github_labels(jules_path: &Path) -> PathBuf {
 // ── Roles layer structure ──────────────────────────────────────────────
 
 /// `.jules/layers/`
-pub fn roles_dir(jules_path: &Path) -> PathBuf {
-    jules_path.join("layers")
+pub fn layers_dir(jules_path: &Path) -> PathBuf {
+    jules_path.join(super::LAYERS_DIR)
 }
 
 /// `.jules/layers/<layer>/`
 pub fn layer_dir(jules_path: &Path, layer: Layer) -> PathBuf {
-    jules_path.join("layers").join(layer.dir_name())
+    jules_path.join(super::LAYERS_DIR).join(layer.dir_name())
 }
 
 /// `.jules/layers/<layer>/<layer>_prompt.j2`
