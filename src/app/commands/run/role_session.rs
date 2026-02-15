@@ -1,9 +1,9 @@
 use std::path::Path;
 
-use crate::domain::{AppError, Layer, RoleId};
+use crate::domain::{AppError, Layer, PromptAssetLoader, RoleId};
 use crate::ports::{AutomationMode, JulesClient, RepositoryFilesystem, SessionRequest};
 
-pub fn print_role_preview<W: RepositoryFilesystem + ?Sized>(
+pub fn print_role_preview<W: RepositoryFilesystem + PromptAssetLoader + ?Sized>(
     jules_path: &Path,
     layer: Layer,
     role: &RoleId,
@@ -16,8 +16,10 @@ pub fn print_role_preview<W: RepositoryFilesystem + ?Sized>(
 
     let root = jules_path.parent().unwrap_or(Path::new("."));
     let role_yml_path = crate::domain::roles::paths::role_yml(root, layer, role.as_str());
+    let custom_role_exists = repository.file_exists(&role_yml_path.to_string_lossy());
+    let resolved_role_exists = repository.asset_exists(&role_yml_path);
 
-    if !repository.file_exists(&role_yml_path.to_string_lossy()) {
+    if !resolved_role_exists {
         println!("  ⚠️  role.yml not found at {}\n", role_yml_path.display());
         return;
     }
@@ -26,10 +28,15 @@ pub fn print_role_preview<W: RepositoryFilesystem + ?Sized>(
     if repository.file_exists(&contracts_path.to_string_lossy()) {
         println!("  Contracts: {}", contracts_path.display());
     }
-    println!("  Role config: {}", role_yml_path.display());
+
+    if custom_role_exists {
+        println!("  Role config: {}", role_yml_path.display());
+    } else {
+        println!("  Role config: embedded builtin ({}/{})", layer.dir_name(), role.as_str());
+    }
 }
 
-pub fn validate_role_exists<W: RepositoryFilesystem + ?Sized>(
+pub fn validate_role_exists<W: RepositoryFilesystem + PromptAssetLoader + ?Sized>(
     jules_path: &Path,
     layer: Layer,
     role: &str,
@@ -38,9 +45,9 @@ pub fn validate_role_exists<W: RepositoryFilesystem + ?Sized>(
     let root = jules_path.parent().unwrap_or(Path::new("."));
     let role_yml_path = crate::domain::roles::paths::role_yml(root, layer, role);
 
-    if !repository.file_exists(&role_yml_path.to_string_lossy()) {
+    if !repository.asset_exists(&role_yml_path) {
         return Err(AppError::RoleNotFound(format!(
-            "{}/{} (role.yml not found)",
+            "{}/{} (custom role.yml and embedded builtin not found)",
             layer.dir_name(),
             role
         )));

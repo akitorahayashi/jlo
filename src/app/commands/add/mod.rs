@@ -1,4 +1,4 @@
-//! Add command: install built-in roles under `.jlo/`.
+//! Add command: register built-in roles in `.jlo/config.toml`.
 
 mod role;
 
@@ -16,9 +16,7 @@ pub enum AddOutcome {
 impl AddOutcome {
     pub fn display_path(&self) -> String {
         match self {
-            AddOutcome::Role { layer, role } => {
-                format!(".jlo/roles/{}/{}/", layer, role)
-            }
+            AddOutcome::Role { .. } => ".jlo/config.toml".to_string(),
         }
     }
 

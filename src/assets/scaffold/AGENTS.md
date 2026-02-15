@@ -24,7 +24,6 @@ See [root AGENTS.md](../../AGENTS.md) for critical design principles including P
 ```
 .jlo/ (Configuration & Instance)
 ├── config.toml           # Repository configuration
-├── scheduled.toml        # Scheduled tasks
 ├── roles/                # Role instance configurations
 │   ├── <layer>/
 │   │   ├── role.yml      # Role-specific configuration

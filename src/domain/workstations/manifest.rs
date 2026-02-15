@@ -6,17 +6,12 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::domain::{AppError, layers, roles, schedule, workstations};
+use crate::domain::{AppError, layers, roles, workstations};
 
 const MANIFEST_SCHEMA_VERSION: u32 = 1;
 
 /// The filename of the managed scaffold manifest.
 pub const MANIFEST_FILENAME: &str = ".jlo-managed.yml";
-
-/// `.jlo/.jlo-managed.yml` relative path string.
-pub fn manifest_relative() -> String {
-    format!("{}/{}", workstations::paths::JLO_DIR, MANIFEST_FILENAME)
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScaffoldManifest {
@@ -37,10 +32,12 @@ impl ScaffoldManifest {
         Self { schema_version: MANIFEST_SCHEMA_VERSION, files }
     }
 
+    #[allow(dead_code)]
     pub fn to_map(&self) -> BTreeMap<String, String> {
         self.files.iter().map(|entry| (entry.path.clone(), entry.sha256.clone())).collect()
     }
 
+    #[allow(dead_code)]
     pub fn from_yaml(content: &str) -> Result<Self, AppError> {
         serde_yaml::from_str(content).map_err(|err| AppError::ParseError {
             what: "manifest".to_string(),
@@ -70,34 +67,6 @@ pub fn is_default_role_file(path: &str) -> bool {
         && parts[1] == layers::paths::LAYERS_DIR
         && matches!(parts[2], "observers" | "innovators")
         && parts[4] == roles::paths::ROLE_FILENAME
-    {
-        return true;
-    }
-
-    false
-}
-
-pub fn is_control_plane_entity_file(path: &str) -> bool {
-    let path_obj = Path::new(path);
-    let Some(components) =
-        path_obj.components().map(|c| c.as_os_str().to_str()).collect::<Option<Vec<_>>>()
-    else {
-        return false;
-    };
-
-    // .jlo/roles/<layer>/<role>/role.yml
-    if components.len() == 5
-        && components[0] == workstations::paths::JLO_DIR
-        && components[1] == "roles"
-        && components[4] == roles::paths::ROLE_FILENAME
-    {
-        return true;
-    }
-
-    // .jlo/scheduled.toml (root schedule)
-    if components.len() == 2
-        && components[0] == workstations::paths::JLO_DIR
-        && components[1] == schedule::paths::SCHEDULED_FILENAME
     {
         return true;
     }

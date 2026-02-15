@@ -415,16 +415,19 @@ mod tests {
         fs::create_dir_all(root.join(".jlo/roles/observers/taxonomy"))
             .expect("create observer role dir");
 
-        fs::write(root.join(".jlo/config.toml"), "").expect("write config");
         fs::write(
-            root.join(".jlo/scheduled.toml"),
-            r#"[observers]
+            root.join(".jlo/config.toml"),
+            r#"[run]
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
+
+[observers]
 roles = [
   { name = "taxonomy", enabled = true },
 ]
 "#,
         )
-        .expect("write schedule");
+        .expect("write config");
         fs::write(root.join(".jlo/roles/observers/taxonomy/role.yml"), "id: taxonomy\n")
             .expect("write observer role");
 

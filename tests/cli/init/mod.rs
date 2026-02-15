@@ -1,1 +1,2 @@
+mod expands_skill_role_templates_contract;
 mod rejects_when_already_initialized_contract;

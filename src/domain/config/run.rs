@@ -4,8 +4,9 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::domain::AppError;
+use crate::domain::schedule::{Schedule, ScheduleLayer};
 
-/// Configuration for agent execution loaded from `.jules/config.toml`.
+/// Configuration for agent execution loaded from `.jlo/config.toml`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RunConfig {
@@ -19,13 +20,24 @@ pub struct RunConfig {
     #[serde(default)]
     #[allow(dead_code)]
     pub workflow: WorkflowTimingConfig,
+    /// Observer role roster and enablement.
+    #[serde(default)]
+    pub observers: ScheduleLayer,
+    /// Innovator role roster and enablement.
+    #[serde(default)]
+    pub innovators: Option<ScheduleLayer>,
 }
 
 impl RunConfig {
     pub fn validate(&self) -> Result<(), AppError> {
         self.run.validate()?;
         self.jules.validate()?;
+        self.schedule().validate()?;
         Ok(())
+    }
+
+    pub fn schedule(&self) -> Schedule {
+        Schedule { observers: self.observers.clone(), innovators: self.innovators.clone() }
     }
 }
 

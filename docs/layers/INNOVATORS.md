@@ -26,7 +26,7 @@ Workstation state (`perspective.yml`) is managed by the `bootstrap` command. Ind
 - **Authority**: `src/app/commands/workflow/bootstrap.rs`
 - **Policy**: "Every scheduled role has an environment; no unscheduled role environment remains."
 - **Workflow**: 
-  1. `bootstrap` reads `.jlo/scheduled.toml` as the Source of Truth.
+  1. `bootstrap` reads `.jlo/config.toml` (`[observers].roles`, `[innovators].roles`) as the Source of Truth.
   2. **Ensure**: Missing workstation directories/perspectives are created from layer schemas.
   3. **Prune**: Workstation directories for roles no longer in the schedule are recursively deleted.
 

@@ -1,15 +1,9 @@
-use std::collections::{BTreeMap, HashMap};
-
 use crate::adapters::control_plane_config;
 use crate::adapters::workflow_installer;
 use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
-use crate::domain::workstations::manifest::{
-    hash_content, is_control_plane_entity_file, manifest_relative,
-};
-use crate::domain::{AppError, Layer, ScaffoldManifest, Schedule, WorkflowRunnerMode};
+use crate::domain::{AppError, WorkflowRunnerMode};
 use crate::domain::{JLO_DIR, VERSION_FILE};
-use crate::ports::ScaffoldFile;
 use crate::ports::{Git, JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 /// Execute the unified init command.
@@ -48,23 +42,9 @@ where
     // Delegate config persistence
     control_plane_config::persist_workflow_runner_mode(ctx.repository(), mode)?;
 
-    let seeded_roles = seed_scheduled_roles(ctx)?;
-
     // Write version pin to .jlo/
     let jlo_version_path = format!("{}/{}", JLO_DIR, VERSION_FILE);
     ctx.repository().write_file(&jlo_version_path, &format!("{}\n", env!("CARGO_PKG_VERSION")))?;
-
-    // Create managed manifest for .jlo/ default entity files
-    let mut map = BTreeMap::new();
-    for file in control_plane_files.iter().chain(seeded_roles.iter()) {
-        if is_control_plane_entity_file(&file.path) {
-            map.insert(file.path.clone(), hash_content(&file.content));
-        }
-    }
-    let managed_manifest = ScaffoldManifest::from_map(map);
-    let manifest_content = managed_manifest.to_yaml()?;
-    let manifest_path = manifest_relative();
-    ctx.repository().write_file(&manifest_path, &manifest_content)?;
 
     // Install workflow scaffold
     let generate_config = control_plane_config::load_workflow_generate_config(ctx.repository())?;
@@ -75,56 +55,4 @@ where
     crate::app::commands::setup::generate(ctx.repository())?;
 
     Ok(())
-}
-
-fn seed_scheduled_roles<W, R>(ctx: &AppContext<W, R>) -> Result<Vec<ScaffoldFile>, AppError>
-where
-    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
-    R: RoleTemplateStore,
-{
-    let schedule_content = ctx.repository().read_file(".jlo/scheduled.toml")?;
-    let schedule = Schedule::parse_toml(&schedule_content)?;
-
-    let catalog = ctx.templates().builtin_role_catalog()?;
-    let mut catalog_index: HashMap<(String, String), ScaffoldFile> = HashMap::new();
-
-    for entry in catalog {
-        let content = ctx.templates().builtin_role_content(&entry.path)?;
-        let path =
-            format!(".jlo/roles/{}/{}/role.yml", entry.layer.dir_name(), entry.name.as_str());
-        catalog_index.insert(
-            (entry.layer.dir_name().to_string(), entry.name.as_str().to_string()),
-            ScaffoldFile { path, content },
-        );
-    }
-
-    let mut seeded = Vec::new();
-
-    for role in &schedule.observers.roles {
-        let key = (Layer::Observers.dir_name().to_string(), role.name.as_str().to_string());
-        let file = catalog_index.get(&key).ok_or_else(|| {
-            AppError::Validation(format!(
-                "Scheduled observer role '{}' is missing from builtin catalog",
-                role.name.as_str()
-            ))
-        })?;
-        ctx.repository().write_file(&file.path, &file.content)?;
-        seeded.push(file.clone());
-    }
-
-    if let Some(ref innovators) = schedule.innovators {
-        for role in &innovators.roles {
-            let key = (Layer::Innovators.dir_name().to_string(), role.name.as_str().to_string());
-            let file = catalog_index.get(&key).ok_or_else(|| {
-                AppError::Validation(format!(
-                    "Scheduled innovator role '{}' is missing from builtin catalog",
-                    role.name.as_str()
-                ))
-            })?;
-            ctx.repository().write_file(&file.path, &file.content)?;
-            seeded.push(file.clone());
-        }
-    }
-
-    Ok(seeded)
 }

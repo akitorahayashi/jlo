@@ -14,16 +14,14 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 
 ### `.jlo/` — Intent Overlay (control branch)
 
-`.jlo/` is a minimal directory containing only the version pin and durable user intent inputs. Managed framework assets (contracts, schemas, prompts, global documents) are **not** stored in `.jlo/`; they are materialized by workflow bootstrap from the embedded scaffold for the pinned version. Built-in role definitions are embedded in the jlo binary under `src/assets/roles/` and installed into `.jlo/roles/` only when explicitly scheduled or added.
+`.jlo/` is a minimal directory containing only the version pin and durable user intent inputs. Managed framework assets (contracts, schemas, prompts, global documents) are **not** stored in `.jlo/`; they are materialized by workflow bootstrap from the embedded scaffold for the pinned version. Built-in role definitions are embedded in the jlo binary under `src/assets/roles/` and resolved at runtime when a matching custom role file is absent.
 
 | Path | Owner | Description |
 |------|-------|-------------|
 | `.jlo/.jlo-version` | jlo | Pinned jlo binary version. Written by `init`, advanced by `update`. |
-| `.jlo/config.toml` | User | Workspace configuration. Created by `init`; never overwritten. |
-| `.jlo/roles/<layer>/<role>/role.yml` | User | Role-specific customizations. Created by `create` or installed by `add`; never overwritten. |
-| `.jlo/scheduled.toml` | User | Schedule and role roster. Created by `init`; never overwritten. |
+| `.jlo/config.toml` | User | Workspace configuration and schedule roster (`[observers].roles`, `[innovators].roles`). Created by `init`; never overwritten. |
+| `.jlo/roles/<layer>/<role>/role.yml` | User | Role-specific customizations. Created by `create`; custom roles override built-ins at runtime. |
 | `.jlo/setup/tools.yml` | User | Tool selection. Created by `init`; never overwritten. |
-| `.jlo/.jlo-managed.yml` | jlo | Managed-defaults manifest for role.yml and scheduled.toml. Used by `update` to refresh unchanged defaults safely. |
 
 ### `.jules/` — Runtime Data Plane (worker branch)
 
@@ -55,7 +53,7 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 | Classification | Definition | Lives in |
 |----------------|------------|----------|
 | **Version pin** | The `.jlo-version` file that locks the jlo binary version. Advanced by `jlo update`. | `.jlo/` |
-| **User intent** | Configuration, schedules, role customizations, tool selections. Created once by `init` or `template`; owned by the user thereafter. | `.jlo/` |
+| **User intent** | Configuration, schedule rosters, role customizations, tool selections. Created once by `init` or `template`; owned by the user thereafter. | `.jlo/` |
 | **Managed framework** | Contracts, schemas, prompts, global documents. Content is determined entirely by the jlo version. | Embedded scaffold → materialized to `.jules/` by bootstrap |
 | **Agent-generated** | Runtime artifacts written by agent execution. Never touched by bootstrap, update, or projection. | `.jules/` exchange paths |
 
@@ -81,13 +79,12 @@ Running bootstrap twice with the same `.jlo/` inputs and jlo version produces no
 
 ## Update Semantics
 
-`jlo update` is a control-plane maintenance operation that advances the version pin, refreshes the workflow kit, and safely refreshes default entity files that have not been customized.
+`jlo update` is a control-plane maintenance operation that advances the version pin and refreshes the workflow kit.
 
 | Action | Description |
 |--------|-------------|
 | Advance `.jlo/.jlo-version` | Write the current binary version to the version pin. |
 | Reconcile control-plane skeleton | Create missing control-plane files from scaffold defaults without overwriting existing ones. |
-| Refresh managed defaults | Update role.yml and scheduled.toml only when they match the managed-defaults manifest. |
 | Refresh workflow kit | Reinstall `.github/` workflows using `.jlo/config.toml` `workflow.runner_mode`. |
 | **Not in scope** | Patching managed framework files (that is bootstrap's responsibility on `JULES_WORKER_BRANCH`). |
 | **Not in scope** | Reading or writing `.jules/` or any runtime artifacts. |

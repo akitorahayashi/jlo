@@ -1,8 +1,6 @@
 use include_dir::{Dir, DirEntry, include_dir};
 
-use crate::adapters::catalogs::builtin_role_assets::{
-    load_builtin_role_catalog, read_builtin_role_file,
-};
+use crate::adapters::catalogs::builtin_role_assets::load_builtin_role_catalog;
 use crate::domain::{AppError, BuiltinRoleEntry, Layer};
 use crate::ports::{RoleTemplateStore, ScaffoldFile};
 
@@ -71,10 +69,6 @@ impl RoleTemplateStore for EmbeddedRoleTemplateStore {
     fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError> {
         load_builtin_role_catalog()
     }
-
-    fn builtin_role_content(&self, path: &str) -> Result<String, AppError> {
-        read_builtin_role_file(path)
-    }
 }
 
 fn collect_files(dir: &'static Dir, files: &mut Vec<ScaffoldFile>) {
@@ -114,13 +108,11 @@ fn map_scaffold_path(path: &str) -> String {
     }
 }
 
-/// Returns true for user-authored entity files (role definitions and the root schedule).
-/// These are mutable intent files that should not be recreated by `update` if deleted.
+/// Returns true for user-authored entity files.
+/// These files should not be recreated by `update` if deleted.
 fn is_entity_file(path: &str) -> bool {
     // Role file: .jlo/roles/<layer>/<role>/role.yml or .jlo/roles/<layer>/role.yml (single-role)
-    let is_role = path.ends_with("/role.yml") && path.starts_with(".jlo/roles/");
-    let is_schedule = path == crate::domain::schedule::paths::schedule_relative();
-    is_role || is_schedule
+    path.ends_with("/role.yml") && path.starts_with(".jlo/roles/")
 }
 
 #[cfg(test)]
@@ -171,13 +163,6 @@ mod tests {
     }
 
     #[test]
-    fn control_plane_files_include_schedule() {
-        let store = EmbeddedRoleTemplateStore::new();
-        let files = store.control_plane_files();
-        assert!(files.iter().any(|f| f.path.ends_with("/scheduled.toml")));
-    }
-
-    #[test]
     fn control_plane_files_exclude_managed_framework() {
         let store = EmbeddedRoleTemplateStore::new();
         let files = store.control_plane_files();
@@ -193,9 +178,8 @@ mod tests {
     fn skeleton_files_exclude_entities() {
         let store = EmbeddedRoleTemplateStore::new();
         let skeleton = store.control_plane_skeleton_files();
-        // Skeleton must not contain role definitions or schedules
+        // Skeleton must not contain role definitions
         assert!(skeleton.iter().all(|f| !f.path.ends_with("/role.yml")));
-        assert!(skeleton.iter().all(|f| !f.path.ends_with("/scheduled.toml")));
         // But must contain infrastructure
         assert!(skeleton.iter().any(|f| f.path == ".jlo/config.toml"));
         assert!(skeleton.iter().any(|f| f.path == ".jlo/setup/tools.yml"));

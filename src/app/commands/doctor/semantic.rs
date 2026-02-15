@@ -3,9 +3,11 @@ use std::path::{Path, PathBuf};
 
 use chrono::{NaiveDate, Utc};
 
+use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
 use crate::app::config::load_schedule;
 use crate::domain::schedule::ScheduleLayer;
 use crate::domain::{AppError, Layer};
+use crate::ports::RoleTemplateStore;
 
 use super::diagnostics::Diagnostics;
 use super::yaml::{read_yaml_bool, read_yaml_files, read_yaml_string, read_yaml_strings};
@@ -140,7 +142,7 @@ pub fn semantic_checks(
         }
     }
 
-    // Exchange-prompt relationship is now managed through scheduled.toml
+    // Exchange-prompt relationship is managed through config schedule sections.
     // Roles are generic and assigned to the exchange via the schedule, not the role.yml
 
     // Collect existing roles from filesystem for each layer
@@ -182,7 +184,7 @@ pub fn semantic_checks(
         }
     }
 
-    let mut scheduled_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
+    let builtin_roles = load_builtin_roles_by_layer(diagnostics);
     let store = crate::adapters::local_repository::LocalRepositoryAdapter::new(root.to_path_buf());
 
     match load_schedule(&store) {
@@ -191,7 +193,7 @@ pub fn semantic_checks(
                 Layer::Observers,
                 &schedule.observers,
                 &existing_roles,
-                &mut scheduled_roles,
+                &builtin_roles,
                 diagnostics,
             );
             if let Some(ref innovators) = schedule.innovators {
@@ -199,22 +201,22 @@ pub fn semantic_checks(
                     Layer::Innovators,
                     innovators,
                     &existing_roles,
-                    &mut scheduled_roles,
+                    &builtin_roles,
                     diagnostics,
                 );
             }
         }
-        Err(AppError::ScheduleConfigMissing(_)) => {
-            // structural checks handle missing scheduled.toml
+        Err(AppError::RunConfigMissing) => {
+            // structural checks handle missing config.toml
         }
         Err(AppError::Schedule(err)) => {
             diagnostics.push_error(
-                "scheduled.toml".to_string(),
-                format!("Invalid scheduled.toml: {}", err),
+                "config.toml".to_string(),
+                format!("Invalid schedule in .jlo/config.toml: {}", err),
             );
         }
         Err(err) => {
-            diagnostics.push_error("scheduled.toml".to_string(), err.to_string());
+            diagnostics.push_error("config.toml".to_string(), err.to_string());
         }
     }
 
@@ -251,21 +253,48 @@ fn validate_scheduled_layer(
     layer: Layer,
     schedule_layer: &ScheduleLayer,
     existing_roles: &HashMap<Layer, HashSet<String>>,
-    scheduled_roles: &mut HashMap<Layer, HashSet<String>>,
+    builtin_roles: &HashMap<Layer, HashSet<String>>,
     diagnostics: &mut Diagnostics,
 ) {
     for role in &schedule_layer.roles {
-        scheduled_roles.entry(layer).or_default().insert(role.name.as_str().to_string());
-        if !existing_roles.get(&layer).is_some_and(|roles| roles.contains(role.name.as_str())) {
+        let role_name = role.name.as_str();
+        let exists_as_custom =
+            existing_roles.get(&layer).is_some_and(|roles| roles.contains(role_name));
+        let exists_as_builtin =
+            builtin_roles.get(&layer).is_some_and(|roles| roles.contains(role_name));
+
+        if !exists_as_custom && !exists_as_builtin {
             diagnostics.push_error(
-                role.name.as_str().to_string(),
+                role_name.to_string(),
                 format!(
-                    "{} role listed in scheduled.toml but missing from filesystem",
+                    "{} role listed in .jlo/config.toml schedule but missing from both custom roles and built-in catalog",
                     layer.display_name()
                 ),
             );
         }
     }
+}
+
+fn load_builtin_roles_by_layer(diagnostics: &mut Diagnostics) -> HashMap<Layer, HashSet<String>> {
+    let mut roles_by_layer: HashMap<Layer, HashSet<String>> = HashMap::new();
+    let templates = EmbeddedRoleTemplateStore::new();
+    match templates.builtin_role_catalog() {
+        Ok(catalog) => {
+            for entry in catalog {
+                roles_by_layer
+                    .entry(entry.layer)
+                    .or_default()
+                    .insert(entry.name.as_str().to_string());
+            }
+        }
+        Err(err) => {
+            diagnostics.push_error(
+                ".jlo/config.toml".to_string(),
+                format!("Failed to load built-in role catalog: {}", err),
+            );
+        }
+    }
+    roles_by_layer
 }
 
 fn build_event_source_index(context: &SemanticContext) -> HashMap<String, Vec<String>> {
@@ -296,14 +325,18 @@ mod tests {
         fs::create_dir_all(root.join(".jlo/roles/observers/taxonomy"))
             .expect("create observer role dir");
         fs::write(
-            root.join(".jlo/scheduled.toml"),
-            r#"[observers]
+            root.join(".jlo/config.toml"),
+            r#"[run]
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
+
+[observers]
 roles = [
   { name = "taxonomy", enabled = true },
 ]
 "#,
         )
-        .expect("write schedule");
+        .expect("write config");
     }
 
     #[test]

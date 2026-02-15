@@ -1,6 +1,7 @@
 //! Workflow run command implementation.
 //!
-//! Executes a layer by reading scheduled.toml and running enabled roles.
+//! Executes a layer by reading schedule settings from `.jlo/config.toml`
+//! and running enabled roles.
 //! This command provides orchestration for GitHub Actions workflows.
 
 mod input;

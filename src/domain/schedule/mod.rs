@@ -1,6 +1,6 @@
 pub mod error;
 pub mod model;
-pub mod paths;
 
 pub use error::ScheduleError;
+#[allow(unused_imports)]
 pub use model::{Schedule, ScheduleLayer, ScheduledRole};

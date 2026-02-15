@@ -4,6 +4,7 @@ use assert_cmd::Command;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
+use toml::Value;
 
 /// Testing harness providing an isolated environment for CLI exercises.
 pub(crate) struct TestContext {
@@ -217,15 +218,48 @@ impl TestContext {
         );
     }
 
-    /// Assert that default scheduled roles exist in their correct layers.
+    /// Assert that default scheduled roles exist in `.jlo/config.toml`.
     pub(crate) fn assert_default_scheduled_roles_exist(&self) {
-        self.assert_role_in_layer_exists("observers", "taxonomy");
-        self.assert_role_in_layer_exists("observers", "data_arch");
-        self.assert_role_in_layer_exists("observers", "structural_arch");
-        self.assert_role_in_layer_exists("observers", "qa");
-        self.assert_role_in_layer_exists("observers", "cov");
-        self.assert_role_in_layer_exists("observers", "consistency");
-        self.assert_role_in_layer_exists("innovators", "recruiter");
+        let content =
+            fs::read_to_string(self.jlo_path().join("config.toml")).expect("read .jlo/config.toml");
+        let value: Value = toml::from_str(&content).expect("parse .jlo/config.toml");
+
+        let observers = value
+            .get("observers")
+            .and_then(|section| section.get("roles"))
+            .and_then(|roles| roles.as_array())
+            .cloned()
+            .unwrap_or_default();
+        let observer_names: Vec<String> = observers
+            .into_iter()
+            .filter_map(|role| {
+                role.get("name").and_then(|name| name.as_str()).map(|name| name.to_string())
+            })
+            .collect();
+        for expected in ["taxonomy", "data_arch", "structural_arch", "qa", "cov", "consistency"] {
+            assert!(
+                observer_names.iter().any(|name| name == expected),
+                "missing default observer role '{}' in .jlo/config.toml",
+                expected
+            );
+        }
+
+        let innovators = value
+            .get("innovators")
+            .and_then(|section| section.get("roles"))
+            .and_then(|roles| roles.as_array())
+            .cloned()
+            .unwrap_or_default();
+        let innovator_names: Vec<String> = innovators
+            .into_iter()
+            .filter_map(|role| {
+                role.get("name").and_then(|name| name.as_str()).map(|name| name.to_string())
+            })
+            .collect();
+        assert!(
+            innovator_names.iter().any(|name| name == "recruiter"),
+            "missing default innovator role 'recruiter' in .jlo/config.toml"
+        );
 
         // Single-role layers have contracts.yml directly in layer directory.
         self.assert_single_role_layer_exists("narrator");

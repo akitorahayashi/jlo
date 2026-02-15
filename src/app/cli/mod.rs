@@ -192,7 +192,13 @@ fn run_add(layer: Option<String>, roles: Vec<String>) -> Result<(), AppError> {
 
     for role in roles {
         let outcome = crate::app::api::add_role(&layer, &role)?;
-        println!("✅ Added new {} at {}/", outcome.entity_type(), outcome.display_path());
+        println!(
+            "✅ Added {} '{}' in layer '{}' to {}",
+            outcome.entity_type(),
+            role,
+            layer,
+            outcome.display_path()
+        );
     }
     Ok(())
 }

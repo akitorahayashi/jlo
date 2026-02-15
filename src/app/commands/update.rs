@@ -3,19 +3,13 @@
 //!
 //! Update is a control-plane operation. It:
 //! 1. Advances `.jlo/.jlo-version` to the current binary version.
-//! 2. Creates any missing user intent files in `.jlo/` from scaffold defaults
-//!    (config, schedules, role customizations, setup) without overwriting
-//!    existing files.
+//! 2. Creates any missing control-plane skeleton files in `.jlo/` from scaffold
+//!    defaults without overwriting existing files.
 //!
 //! Update never reads or writes `.jules/` or runtime exchange artifacts.
 //! Managed framework files (contracts, schemas, prompts) are materialized by
 //! workflow bootstrap from the embedded scaffold for the pinned version.
 
-use std::collections::BTreeMap;
-
-use crate::domain::workstations::manifest::{
-    MANIFEST_FILENAME, ScaffoldManifest, hash_content, is_control_plane_entity_file,
-};
 use crate::domain::{AppError, PromptAssetLoader, WorkflowRunnerMode};
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
@@ -24,7 +18,7 @@ use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore
 pub struct UpdateResult {
     /// Files that were created (missing user intent files filled in).
     pub created: Vec<String>,
-    /// Files that were updated (managed defaults refreshed).
+    /// Files that were updated (reserved for backward-compatible output shape).
     pub updated: Vec<String>,
     /// Whether workflow scaffold was refreshed.
     pub workflow_refreshed: bool,
@@ -32,7 +26,7 @@ pub struct UpdateResult {
     pub prompt_preview: bool,
     /// Previous version before the update (empty if same-version).
     pub previous_version: String,
-    /// Non-fatal warnings encountered during update.
+    /// Non-fatal warnings encountered during update (currently unused).
     pub warnings: Vec<String>,
 }
 
@@ -91,8 +85,7 @@ where
         });
     }
 
-    // Load control-plane skeleton files only — entity files (roles, schedules)
-    // are not recreated during update to respect intentional deletions.
+    // Load control-plane skeleton files only.
     let control_plane_files = templates.control_plane_skeleton_files();
     let mut to_create: Vec<(String, String)> = Vec::new();
 
@@ -107,79 +100,8 @@ where
         }
     }
 
-    // Build entity default map for controlled refresh
-    let mut entity_defaults = BTreeMap::new();
-    for file in templates.control_plane_files() {
-        if is_control_plane_entity_file(&file.path) {
-            entity_defaults.insert(file.path.clone(), file.content.clone());
-        }
-    }
-
-    for entry in templates.builtin_role_catalog()? {
-        let path =
-            format!(".jlo/roles/{}/{}/role.yml", entry.layer.dir_name(), entry.name.as_str());
-        if entity_defaults.contains_key(&path) {
-            return Err(AppError::AssetError(format!(
-                "Duplicate builtin role path '{}' in control-plane defaults",
-                path
-            )));
-        }
-        let content = templates.builtin_role_content(&entry.path)?;
-        entity_defaults.insert(path, content);
-    }
-
-    let manifest_path = format!(".jlo/{}", MANIFEST_FILENAME);
-    let mut warnings = Vec::new();
-    let mut manifest_map: BTreeMap<String, String> = if repository.file_exists(&manifest_path) {
-        let content = repository.read_file(&manifest_path)?;
-        ScaffoldManifest::from_yaml(&content)?.to_map()
-    } else {
-        warnings.push(
-            "Missing .jlo-managed.yml; defaults will only be recorded when files already match current embedded templates."
-                .to_string(),
-        );
-        BTreeMap::new()
-    };
-
-    let mut to_update: Vec<(String, String)> = Vec::new();
-    let mut manifest_changed = false;
-
-    for (path, default_content) in &entity_defaults {
-        if !repository.file_exists(path) {
-            if manifest_map.remove(path).is_some() {
-                manifest_changed = true;
-            }
-            continue;
-        }
-
-        let current_content = repository.read_file(path)?;
-        let current_hash = hash_content(&current_content);
-        let default_hash = hash_content(default_content);
-
-        match manifest_map.get(path) {
-            Some(stored_hash) if stored_hash == &current_hash => {
-                if current_content != *default_content {
-                    to_update.push((path.clone(), default_content.clone()));
-                }
-                if stored_hash != &default_hash {
-                    manifest_map.insert(path.clone(), default_hash);
-                    manifest_changed = true;
-                }
-            }
-            Some(_) => {
-                // User-customized; stop managing this file.
-                manifest_map.remove(path);
-                manifest_changed = true;
-            }
-            None => {
-                // Record only when it already matches current defaults.
-                if current_content == *default_content {
-                    manifest_map.insert(path.clone(), default_hash);
-                    manifest_changed = true;
-                }
-            }
-        }
-    }
+    let to_update: Vec<(String, String)> = Vec::new();
+    let warnings = Vec::new();
 
     let workflow_mode = configured_workflow_mode(repository)?;
     let workflow_will_refresh = workflow_mode.is_some();
@@ -199,14 +121,7 @@ where
             }
         }
 
-        if to_update.is_empty() {
-            println!("No managed defaults to refresh.");
-        } else {
-            println!("Managed defaults to refresh:");
-            for (path, _) in &to_update {
-                println!("  • {}", path);
-            }
-        }
+        println!("No managed defaults to refresh.");
 
         if workflow_will_refresh {
             println!("Workflow scaffold will be refreshed.");
@@ -233,11 +148,6 @@ where
         repository.write_file(rel_path, content)?;
     }
 
-    // Refresh managed defaults
-    for (rel_path, content) in &to_update {
-        repository.write_file(rel_path, content)?;
-    }
-
     // Refresh workflow scaffold
     let mut workflow_refreshed = false;
     if let Some(mode) = workflow_mode {
@@ -251,23 +161,15 @@ where
         workflow_refreshed = true;
     }
 
-    if manifest_changed {
-        let manifest = ScaffoldManifest::from_map(manifest_map);
-        let manifest_content = manifest.to_yaml()?;
-        repository.write_file(&manifest_path, &manifest_content)?;
-    }
-
     // Advance version pin if needed
     if version_cmp > 0 {
         repository.write_file(version_path, &format!("{}\n", binary_version))?;
     }
 
     let created_paths: Vec<String> = to_create.into_iter().map(|(p, _)| p).collect();
-    let updated_paths: Vec<String> = to_update.into_iter().map(|(p, _)| p).collect();
-
     Ok(UpdateResult {
         created: created_paths,
-        updated: updated_paths,
+        updated: Vec::new(),
         workflow_refreshed,
         prompt_preview: false,
         previous_version: runtime_version,
@@ -357,11 +259,7 @@ wait_minutes_default = 30
         }
 
         fn control_plane_skeleton_files(&self) -> Vec<ScaffoldFile> {
-            self.control_files
-                .iter()
-                .filter(|f| !(f.path.ends_with("/role.yml") || f.path.ends_with("/scheduled.toml")))
-                .cloned()
-                .collect()
+            self.control_files.iter().filter(|f| !f.path.ends_with("/role.yml")).cloned().collect()
         }
 
         fn layer_template(&self, _layer: Layer) -> &str {
@@ -374,10 +272,6 @@ wait_minutes_default = 30
 
         fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError> {
             Ok(vec![])
-        }
-
-        fn builtin_role_content(&self, path: &str) -> Result<String, AppError> {
-            Err(AppError::AssetError(format!("Missing builtin role asset in mock store: {}", path)))
         }
     }
 
@@ -542,10 +436,6 @@ wait_minutes_default = 30
                     path: ".jlo/roles/observers/default/role.yml".to_string(),
                     content: "role: default".to_string(),
                 },
-                ScaffoldFile {
-                    path: ".jlo/scheduled.toml".to_string(),
-                    content: "enabled = true".to_string(),
-                },
             ],
         };
 
@@ -558,11 +448,9 @@ wait_minutes_default = 30
 
         // Entity files should NOT be created — user may have intentionally deleted them
         assert!(!result.created.contains(&".jlo/roles/observers/default/role.yml".to_string()));
-        assert!(!result.created.contains(&".jlo/scheduled.toml".to_string()));
 
         // Verify files on disk
         assert!(temp.path().join(".jlo/config.toml").exists());
         assert!(!temp.path().join(".jlo/roles/observers/default/role.yml").exists());
-        assert!(!temp.path().join(".jlo/scheduled.toml").exists());
     }
 }

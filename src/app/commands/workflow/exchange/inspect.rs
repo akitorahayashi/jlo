@@ -351,8 +351,12 @@ requires_deep_analysis: false
 
         fs::create_dir_all(&jlo_path).unwrap();
         fs::write(
-            jlo_path.join("scheduled.toml"),
+            jlo_path.join("config.toml"),
             r#"
+[run]
+jlo_target_branch = "main"
+jules_worker_branch = "jules"
+
 [observers]
 roles = [
   { name = "taxonomy", enabled = true },

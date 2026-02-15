@@ -1,4 +1,4 @@
-//! Add a builtin role under `.jlo/roles/<layer>/<name>/`.
+//! Register a builtin role in `.jlo/config.toml`.
 
 use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
@@ -34,40 +34,27 @@ where
     let role_id = RoleId::new(role)?;
 
     let catalog = ctx.templates().builtin_role_catalog()?;
-    let entry =
-        catalog.iter().find(|entry| entry.matches(layer_enum, &role_id)).ok_or_else(|| {
-            let available: Vec<String> = catalog
-                .iter()
-                .filter(|entry| entry.layer == layer_enum)
-                .map(|entry| entry.name.as_str().to_string())
-                .collect();
-            AppError::Validation(format!(
-                "Builtin role '{}' not found in layer '{}'. Available: {}",
-                role_id.as_str(),
-                layer_enum.dir_name(),
-                available.join(", ")
-            ))
-        })?;
+    if catalog.iter().all(|entry| !entry.matches(layer_enum, &role_id)) {
+        let available: Vec<String> = catalog
+            .iter()
+            .filter(|entry| entry.layer == layer_enum)
+            .map(|entry| entry.name.as_str().to_string())
+            .collect();
+        return Err(AppError::Validation(format!(
+            "Builtin role '{}' not found in layer '{}'. Available: {}",
+            role_id.as_str(),
+            layer_enum.dir_name(),
+            available.join(", ")
+        )));
+    }
 
-    let role_dir = crate::domain::roles::paths::role_dir(
-        &ctx.repository().resolve_path(""),
-        layer_enum,
-        role_id.as_str(),
-    );
-
-    if role_dir.exists() {
+    let inserted = ensure_role_scheduled(ctx.repository(), layer_enum, &role_id)?;
+    if !inserted {
         return Err(AppError::RoleExists {
             role: role_id.as_str().to_string(),
             layer: layer_enum.dir_name().to_string(),
         });
     }
-
-    let role_content = ctx.templates().builtin_role_content(&entry.path)?;
-
-    std::fs::create_dir_all(&role_dir)?;
-    std::fs::write(role_dir.join("role.yml"), role_content)?;
-
-    ensure_role_scheduled(ctx.repository(), layer_enum, &role_id)?;
 
     Ok(AddOutcome::Role {
         layer: layer_enum.dir_name().to_string(),

@@ -31,10 +31,7 @@ impl RoleTemplateStore for MockRoleTemplateStore {
     }
 
     fn control_plane_skeleton_files(&self) -> Vec<ScaffoldFile> {
-        self.control_plane_files()
-            .into_iter()
-            .filter(|f| !(f.path.ends_with("/role.yml") || f.path.ends_with("/scheduled.toml")))
-            .collect()
+        self.control_plane_files().into_iter().filter(|f| !f.path.ends_with("/role.yml")).collect()
     }
 
     fn layer_template(&self, _layer: Layer) -> &str {
@@ -47,9 +44,5 @@ impl RoleTemplateStore for MockRoleTemplateStore {
 
     fn builtin_role_catalog(&self) -> Result<Vec<BuiltinRoleEntry>, AppError> {
         Ok(vec![])
-    }
-
-    fn builtin_role_content(&self, path: &str) -> Result<String, AppError> {
-        Err(AppError::AssetError(format!("Missing builtin role asset in mock store: {}", path)))
     }
 }
