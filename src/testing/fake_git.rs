@@ -4,12 +4,17 @@ use std::sync::Mutex;
 use crate::domain::AppError;
 use crate::ports::GitPort;
 
-#[derive(Default)]
 pub struct FakeGit {
     pub committed_files: Mutex<Vec<PathBuf>>,
     pub branches_created: Mutex<Vec<String>>,
     pub head_sha: Mutex<String>,
     pub current_branch: Mutex<String>,
+}
+
+impl Default for FakeGit {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FakeGit {
