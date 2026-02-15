@@ -32,6 +32,8 @@ pub struct ExchangeCleanMockOutput {
     pub schema_version: u32,
     /// Number of PRs closed.
     pub closed_prs_count: usize,
+    /// Number of issues closed.
+    pub closed_issues_count: usize,
     /// Number of branches deleted.
     pub deleted_branches_count: usize,
     /// Number of mock files deleted from jules branch.
@@ -90,20 +92,27 @@ pub fn execute(options: ExchangeCleanMockOptions) -> Result<ExchangeCleanMockOut
         Some(values) => sort_and_dedup(values),
         None => discover_mock_branches(&git, &options.mock_tag)?,
     };
+    let issue_numbers = discover_mock_issue_numbers(&github_repository, &options.mock_tag)?;
 
     let closed_prs_count = close_pull_requests(&github, &pr_numbers)?;
+    let closed_issues_count = close_issues(&issue_numbers)?;
     let deleted_branches_count = delete_remote_branches(&github, &branches)?;
     let deleted_files_count =
         delete_mock_files(&repository, &git, &github, &options.mock_tag, &worker_branch)?;
 
     eprintln!(
-        "Cleaned mock artifacts for tag '{}': {} PRs, {} branches, {} files",
-        options.mock_tag, closed_prs_count, deleted_branches_count, deleted_files_count
+        "Cleaned mock artifacts for tag '{}': {} PRs, {} issues, {} branches, {} files",
+        options.mock_tag,
+        closed_prs_count,
+        closed_issues_count,
+        deleted_branches_count,
+        deleted_files_count
     );
 
     Ok(ExchangeCleanMockOutput {
         schema_version: 1,
         closed_prs_count,
+        closed_issues_count,
         deleted_branches_count,
         deleted_files_count,
     })
@@ -143,6 +152,18 @@ fn delete_remote_branches(
         deleted_count += 1;
     }
     Ok(deleted_count)
+}
+
+fn close_issues(issue_numbers: &[u64]) -> Result<usize, AppError> {
+    let mut closed_count = 0;
+    for issue_number in issue_numbers {
+        run_command(
+            "gh",
+            &["issue", "close", &issue_number.to_string(), "--comment", "Closing mock issue"],
+        )?;
+        closed_count += 1;
+    }
+    Ok(closed_count)
 }
 
 fn delete_mock_files(
@@ -318,6 +339,47 @@ fn parse_mock_branches(ls_remote_output: &str, mock_tag: &str) -> Vec<String> {
     branches
 }
 
+fn discover_mock_issue_numbers(repository: &str, mock_tag: &str) -> Result<Vec<u64>, AppError> {
+    let output = run_command(
+        "gh",
+        &[
+            "issue",
+            "list",
+            "--state",
+            "open",
+            "--limit",
+            "200",
+            "--json",
+            "number,title,body",
+            "--repo",
+            repository,
+        ],
+    )?;
+    parse_mock_issue_numbers(&output, mock_tag)
+}
+
+fn parse_mock_issue_numbers(json: &str, mock_tag: &str) -> Result<Vec<u64>, AppError> {
+    let issues: Vec<IssueSummary> =
+        serde_json::from_str(json).map_err(|error| AppError::ParseError {
+            what: "gh issue list output".to_string(),
+            details: error.to_string(),
+        })?;
+
+    let mut numbers: Vec<u64> = issues
+        .into_iter()
+        .filter(|item| {
+            item.title.starts_with("[innovator/")
+                && (item.title.contains(mock_tag)
+                    || item.body.as_deref().is_some_and(|body| body.contains(mock_tag)))
+        })
+        .map(|item| item.number)
+        .collect();
+
+    numbers.sort_unstable();
+    numbers.dedup();
+    Ok(numbers)
+}
+
 fn run_command(program: &str, args: &[&str]) -> Result<String, AppError> {
     let output =
         Command::new(program).args(args).output().map_err(|error| AppError::ExternalToolError {
@@ -363,6 +425,14 @@ struct PullRequestSummary {
     #[serde(rename = "headRefName")]
     head_ref_name: String,
     title: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct IssueSummary {
+    number: u64,
+    title: String,
+    #[serde(default)]
+    body: Option<String>,
 }
 
 #[cfg(test)]
@@ -432,6 +502,21 @@ def456	refs/heads/main
                 "jules-implementer-bugs-a1b2c3-mock-run-1".to_string()
             ]
         );
+    }
+
+    #[test]
+    fn parse_mock_issue_numbers_filters_innovator_issues_by_tag() {
+        let json = r#"
+[
+  {"number": 21, "title": "[innovator/alice] Mock proposal", "body": "Mock tag: mock-run-1"},
+  {"number": 22, "title": "[innovator/bob] Proposal", "body": "No mock tag"},
+  {"number": 23, "title": "[decider] something", "body": "Mock tag: mock-run-1"},
+  {"number": 24, "title": "[innovator/charlie] mock-run-1 from title", "body": ""}
+]
+"#;
+
+        let numbers = parse_mock_issue_numbers(json, "mock-run-1").unwrap();
+        assert_eq!(numbers, vec![21, 24]);
     }
 
     #[test]
