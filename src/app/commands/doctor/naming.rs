@@ -52,6 +52,7 @@ fn validate_proposal_filename(path: &Path, diagnostics: &mut Diagnostics) {
             path.display().to_string(),
             "proposal filename must include '<persona>-<slug>'",
         );
+        return;
     } else {
         let parts: Vec<&str> = stem.splitn(2, '-').collect();
         if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {

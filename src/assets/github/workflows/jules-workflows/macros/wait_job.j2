@@ -28,11 +28,11 @@
             exit 0
           fi
 
-          if [ -n "{{ process_name }}" ]; then
+          {%- if process_name %}
             echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process {{ process_name }}..."
-          else
+          {%- else %}
             echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process..."
-          fi
+          {%- endif %}
           ELAPSED=0
           INTERVAL=5
           while [ $ELAPSED -lt $TOTAL_SECONDS ]; do

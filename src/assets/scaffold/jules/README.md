@@ -93,9 +93,9 @@ Implementer modifies source code and requires human review.
     |   +-- contracts.yml    # Shared observer contract
     |   +-- observers_prompt.j2 # Prompt construction rules
     |   +-- tasks/
-|   |   +-- observe.yml
+    |   |   +-- observe.yml
     |   +-- schemas/
-    |   |   +-- event.yml    # Event template
+    |       +-- event.yml    # Event template
     |
     +-- decider/       # Single-role layer
     |   +-- contracts.yml    # Shared decider contract
@@ -173,6 +173,7 @@ Implementer modifies source code and requires human review.
  - Events and requirements are global to the repository.
  - `roles/` remains global.
  - Observers and Decider operate on the single `exchange/` directory.
+ - Innovators submit proposals to the `exchange/proposals/` directory.
  - Event state directories are defined by the scaffold templates.
 
 ## Configuration Files

@@ -11,7 +11,7 @@ on:
       wait_minutes:
         description: 'Minutes to wait for Jules async processing time'
         type: number
-        default: 20
+        default: 30
       mock:
         description: 'Run in mock mode (creates branches/PRs without Jules API)'
         type: boolean
@@ -20,7 +20,7 @@ on:
     inputs:
       wait_minutes:
         type: number
-        default: 20
+        default: 30
       mock:
         type: boolean
         default: false
@@ -35,7 +35,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  WAIT_MINUTES: ${{ inputs.wait_minutes || 20 }}
+  WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
   MOCK_MODE: ${{ inputs.mock || false }}
   JULES_MOCK_TAG: ${{ format('mock-run-{0}', github.run_id) }}
   JLO_RUN_FLAGS: ${{ (inputs.mock || false) && '--mock' || '' }}

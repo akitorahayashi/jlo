@@ -26,7 +26,7 @@ on:
       wait_minutes:
         description: 'Minutes to wait between layers (Jules async processing time)'
         type: number
-        default: 20
+        default: 30
       mock:
         description: 'Run in mock mode (creates branches/PRs without Jules API)'
         type: boolean
@@ -39,7 +39,7 @@ on:
         default: narrator
       wait_minutes:
         type: number
-        default: 20
+        default: 30
       mock:
         type: boolean
         default: false
@@ -54,7 +54,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  WAIT_MINUTES: ${{ inputs.wait_minutes || 20 }}
+  WAIT_MINUTES: ${{ inputs.wait_minutes || 30 }}
   MOCK_MODE: ${{ inputs.mock || false }}
   JULES_MOCK_TAG: ${{ format('mock-run-{0}', github.run_id) }}
   JLO_RUN_FLAGS: ${{ (inputs.mock || false) && '--mock' || '' }}
@@ -250,7 +250,7 @@ jobs:
       fromJSON(needs.check-schedule.outputs.json).run_innovators == true
     uses: ./.github/workflows/jules-run-innovators.yml
     with:
-      wait_minutes: ${{ inputs.wait_minutes || 20 }}
+      wait_minutes: ${{ inputs.wait_minutes || 30 }}
       mock: ${{ inputs.mock || false }}
     secrets: inherit
   # ============================================================
