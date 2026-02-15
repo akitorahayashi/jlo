@@ -25,7 +25,6 @@ roles = [
   { name = "structural_arch", enabled = true },
   { name = "qa", enabled = true },
   { name = "cov", enabled = true },
-  { name = "rustacean", enabled = true },
 ]
 
 [jules]
