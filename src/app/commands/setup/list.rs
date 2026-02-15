@@ -1,19 +1,19 @@
 //! Setup list command - lists available components.
 
-use crate::adapters::assets::component_catalog_embedded::EmbeddedComponentCatalog;
+use crate::adapters::assets::setup_component_catalog_embedded::EmbeddedSetupComponentCatalog;
 use crate::domain::AppError;
-use crate::ports::ComponentCatalog;
+use crate::ports::SetupComponentCatalog;
 
 /// Summary information for a component.
 #[derive(Debug, Clone)]
-pub struct ComponentSummary {
+pub struct SetupComponentSummary {
     pub name: String,
     pub summary: String,
 }
 
 /// Detailed information for a component.
 #[derive(Debug, Clone)]
-pub struct ComponentDetail {
+pub struct SetupComponentDetail {
     pub name: String,
     pub summary: String,
     pub dependencies: Vec<String>,
@@ -32,28 +32,29 @@ pub struct EnvVarInfo {
 /// Execute the setup list command.
 ///
 /// Returns summaries of all available components.
-pub fn execute() -> Result<Vec<ComponentSummary>, AppError> {
-    let catalog = EmbeddedComponentCatalog::new()?;
+pub fn execute() -> Result<Vec<SetupComponentSummary>, AppError> {
+    let catalog = EmbeddedSetupComponentCatalog::new()?;
     let components = catalog.list_all();
 
     Ok(components
         .into_iter()
-        .map(|c| ComponentSummary { name: c.name.to_string(), summary: c.summary.clone() })
+        .map(|c| SetupComponentSummary { name: c.name.to_string(), summary: c.summary.clone() })
         .collect())
 }
 
 /// Execute the setup list --detail command.
 ///
 /// Returns detailed information for a specific component.
-pub fn execute_detail(component_name: &str) -> Result<ComponentDetail, AppError> {
-    let catalog = EmbeddedComponentCatalog::new()?;
+pub fn execute_detail(component_name: &str) -> Result<SetupComponentDetail, AppError> {
+    let catalog = EmbeddedSetupComponentCatalog::new()?;
 
-    let component = catalog.get(component_name).ok_or_else(|| AppError::ComponentNotFound {
-        name: component_name.to_string(),
-        available: catalog.names().iter().map(|s| s.to_string()).collect(),
-    })?;
+    let component =
+        catalog.get(component_name).ok_or_else(|| AppError::SetupComponentNotFound {
+            name: component_name.to_string(),
+            available: catalog.names().iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", "),
+        })?;
 
-    Ok(ComponentDetail {
+    Ok(SetupComponentDetail {
         name: component.name.to_string(),
         summary: component.summary.clone(),
         dependencies: component.dependencies.iter().map(|d| d.to_string()).collect(),
@@ -98,6 +99,6 @@ mod tests {
     fn detail_not_found() {
         let result = execute_detail("nonexistent");
 
-        assert!(matches!(result, Err(AppError::ComponentNotFound { .. })));
+        assert!(matches!(result, Err(AppError::SetupComponentNotFound { .. })));
     }
 }

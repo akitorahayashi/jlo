@@ -93,11 +93,11 @@ pub enum AppError {
     #[error("Invalid role identifier '{0}': must be alphanumeric with hyphens or underscores")]
     InvalidRoleId(String),
 
-    /// Component identifier is invalid.
+    /// Setup component identifier is invalid.
     #[error(
-        "Invalid component identifier '{0}': must be alphanumeric with hyphens, underscores, or periods"
+        "Invalid setup component identifier '{0}': must be alphanumeric with hyphens, underscores, or periods"
     )]
-    InvalidComponentId(String),
+    InvalidSetupComponentId(String),
 
     /// Layer identifier is invalid.
     #[error(
@@ -129,17 +129,17 @@ pub enum AppError {
     #[error("Circular dependency detected: {0}")]
     CircularDependency(String),
 
-    /// Component not found in catalog.
-    #[error("Component '{name}' not found. Available: {available}")]
-    ComponentNotFound { name: String, available: String },
+    /// Setup component not found in catalog.
+    #[error("Setup component '{name}' not found. Available: {available}")]
+    SetupComponentNotFound { name: String, available: String },
 
     /// Path traversal attempt detected.
     #[error("Path traversal detected: '{0}' escapes workspace root")]
     PathTraversal(String),
 
-    /// Invalid component metadata.
-    #[error("Invalid metadata for '{component}': {reason}")]
-    InvalidComponentMetadata { component: String, reason: String },
+    /// Invalid setup component metadata.
+    #[error("Invalid setup component metadata for '{component}': {reason}")]
+    InvalidSetupComponentMetadata { component: String, reason: String },
 
     /// Malformed setup environment TOML file.
     #[error("Malformed setup environment TOML: {0}")]

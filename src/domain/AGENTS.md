@@ -29,13 +29,12 @@ Strict dependency rules apply to maintain architectural purity:
 | Module | Purpose |
 |--------|---------|
 | `configuration` | Global configuration models (`config.toml`, `scheduled.toml`). |
-| `identifiers` | Strongly-typed IDs (`RoleId`, `ComponentId`). |
+| `identifiers` | Shared strongly-typed IDs (`RoleId`) and validation utilities. |
 | `prompt_assembly` | Logic for assembling prompt contexts for different layers. |
+| `setup` | Setup component model, dependency resolution, and artifact generation. |
 | `workspace` | Logical paths and layer structures. |
 | `error` | Domain-level error types (`AppError`). |
 | `requirement` | Requirement file parsing and schema validation. |
-| `component_graph` | Component dependency resolution logic. |
-| `setup_artifacts` | Setup script generation models. |
 | `builtin_role` | Definitions for built-in roles. |
 
 ## Testing

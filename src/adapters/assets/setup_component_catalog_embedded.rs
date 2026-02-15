@@ -1,19 +1,18 @@
-//! Setup component catalog service - loads components from embedded assets.
+//! Setup component catalog service - loads setup components from embedded assets.
 
 use include_dir::{Dir, include_dir};
 use serde::Deserialize;
-
 use std::collections::BTreeMap;
 
-use crate::domain::{AppError, Component, ComponentId, EnvSpec};
-use crate::ports::ComponentCatalog;
+use crate::domain::{AppError, EnvSpec, SetupComponent, SetupComponentId};
+use crate::ports::SetupComponentCatalog;
 
 /// Embedded setup component directory.
 static CATALOG_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/setup");
 
 /// Metadata parsed from meta.toml.
 #[derive(Debug, Deserialize)]
-struct ComponentMeta {
+struct SetupComponentMeta {
     /// Component name (defaults to directory name if missing).
     pub name: Option<String>,
     /// Short summary.
@@ -41,13 +40,13 @@ struct EnvValueSpec {
     pub default: Option<String>,
 }
 
-/// Service for managing the component catalog.
-pub struct EmbeddedComponentCatalog {
-    components: BTreeMap<String, Component>,
+/// Service for managing the setup component catalog.
+pub struct EmbeddedSetupComponentCatalog {
+    components: BTreeMap<String, SetupComponent>,
 }
 
-impl EmbeddedComponentCatalog {
-    /// Create a new catalog by loading all embedded components.
+impl EmbeddedSetupComponentCatalog {
+    /// Create a new catalog by loading all embedded setup components.
     pub fn new() -> Result<Self, AppError> {
         let mut components = BTreeMap::new();
 
@@ -61,35 +60,39 @@ impl EmbeddedComponentCatalog {
                 continue;
             };
 
-            let meta_content =
-                meta_file.contents_utf8().ok_or_else(|| AppError::InvalidComponentMetadata {
+            let meta_content = meta_file.contents_utf8().ok_or_else(|| {
+                AppError::InvalidSetupComponentMetadata {
                     component: dir_name.to_string(),
                     reason: "meta.toml is not valid UTF-8".to_string(),
-                })?;
+                }
+            })?;
 
-            let script_content =
-                script_file.contents_utf8().ok_or_else(|| AppError::InvalidComponentMetadata {
+            let script_content = script_file.contents_utf8().ok_or_else(|| {
+                AppError::InvalidSetupComponentMetadata {
                     component: dir_name.to_string(),
                     reason: "install.sh is not valid UTF-8".to_string(),
-                })?;
+                }
+            })?;
 
-            let meta: ComponentMeta =
-                toml::from_str(meta_content).map_err(|e| AppError::InvalidComponentMetadata {
+            let meta: SetupComponentMeta = toml::from_str(meta_content).map_err(|e| {
+                AppError::InvalidSetupComponentMetadata {
                     component: dir_name.to_string(),
                     reason: e.to_string(),
-                })?;
+                }
+            })?;
 
             let name_str = meta.name.clone().unwrap_or_else(|| dir_name.to_string());
-            let name_id =
-                ComponentId::new(&name_str).map_err(|_| AppError::InvalidComponentMetadata {
+            let name_id = SetupComponentId::new(&name_str).map_err(|_| {
+                AppError::InvalidSetupComponentMetadata {
                     component: dir_name.to_string(),
-                    reason: format!("Invalid component name '{}'", name_str),
-                })?;
+                    reason: format!("Invalid setup component name '{}'", name_str),
+                }
+            })?;
 
             let mut dependencies = Vec::new();
             for dep in &meta.dependencies {
-                dependencies.push(ComponentId::new(dep).map_err(|_| {
-                    AppError::InvalidComponentMetadata {
+                dependencies.push(SetupComponentId::new(dep).map_err(|_| {
+                    AppError::InvalidSetupComponentMetadata {
                         component: dir_name.to_string(),
                         reason: format!("Invalid dependency name '{}'", dep),
                     }
@@ -99,7 +102,7 @@ impl EmbeddedComponentCatalog {
             if let Some(duplicate_key) =
                 meta.vars.keys().find(|key| meta.secrets.contains_key(*key))
             {
-                return Err(AppError::InvalidComponentMetadata {
+                return Err(AppError::InvalidSetupComponentMetadata {
                     component: dir_name.to_string(),
                     reason: format!(
                         "Environment key '{}' is declared in both [vars] and [secrets]",
@@ -126,7 +129,7 @@ impl EmbeddedComponentCatalog {
                 });
             }
 
-            let component = Component {
+            let component = SetupComponent {
                 name: name_id,
                 summary: meta.summary,
                 dependencies,
@@ -141,18 +144,18 @@ impl EmbeddedComponentCatalog {
     }
 }
 
-impl Default for EmbeddedComponentCatalog {
+impl Default for EmbeddedSetupComponentCatalog {
     fn default() -> Self {
-        Self::new().expect("Failed to load embedded catalog")
+        Self::new().expect("Failed to load embedded setup component catalog")
     }
 }
 
-impl ComponentCatalog for EmbeddedComponentCatalog {
-    fn get(&self, name: &str) -> Option<&Component> {
+impl SetupComponentCatalog for EmbeddedSetupComponentCatalog {
+    fn get(&self, name: &str) -> Option<&SetupComponent> {
         self.components.get(name)
     }
 
-    fn list_all(&self) -> Vec<&Component> {
+    fn list_all(&self) -> Vec<&SetupComponent> {
         self.components.values().collect()
     }
 
@@ -167,7 +170,7 @@ mod tests {
 
     #[test]
     fn loads_embedded_components() {
-        let catalog = EmbeddedComponentCatalog::new().unwrap();
+        let catalog = EmbeddedSetupComponentCatalog::new().unwrap();
         let names = catalog.names();
 
         assert!(names.contains(&"gh"), "should contain 'gh' component");
@@ -178,7 +181,7 @@ mod tests {
 
     #[test]
     fn get_component_by_name() {
-        let catalog = EmbeddedComponentCatalog::new().unwrap();
+        let catalog = EmbeddedSetupComponentCatalog::new().unwrap();
         let just = catalog.get("just").expect("just should exist");
 
         assert_eq!(just.name.as_str(), "just");
@@ -188,11 +191,11 @@ mod tests {
 
     #[test]
     fn list_all_returns_sorted() {
-        let catalog = EmbeddedComponentCatalog::new().unwrap();
+        let catalog = EmbeddedSetupComponentCatalog::new().unwrap();
         let all = catalog.list_all();
 
         assert!(all.len() >= 4);
-        // BTreeMap maintains order
+        // BTreeMap maintains order.
         let names: Vec<_> = all.iter().map(|c| c.name.as_str()).collect();
         let mut sorted = names.clone();
         sorted.sort();
