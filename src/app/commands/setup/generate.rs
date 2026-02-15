@@ -1,11 +1,11 @@
 //! Setup gen command - generates install.sh, vars.toml, and secrets.toml.
 
-use crate::adapters::assets::setup_component_catalog_embedded::EmbeddedSetupComponentCatalog;
+use crate::adapters::catalogs::EmbeddedSetupComponentCatalog;
 use crate::app::config::SetupConfig;
 use crate::domain::AppError;
 use crate::domain::setup::artifact_generator;
 use crate::domain::setup::dependency_graph::DependencyGraph;
-use crate::ports::WorkspaceStore;
+use crate::ports::RepositoryFilesystemPort;
 
 /// Execute the setup gen command.
 ///
@@ -15,7 +15,7 @@ use crate::ports::WorkspaceStore;
 /// - `.jlo/setup/secrets.toml` - Secret environment variables
 ///
 /// Returns the list of resolved component names in installation order.
-pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
+pub fn execute(store: &impl RepositoryFilesystemPort) -> Result<Vec<String>, AppError> {
     let jlo_setup = ".jlo/setup";
     let tools_yml = ".jlo/setup/tools.yml";
 
@@ -71,12 +71,12 @@ pub fn execute(store: &impl WorkspaceStore) -> Result<Vec<String>, AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::memory_workspace_store::MemoryWorkspaceStore;
-    use crate::ports::WorkspaceStore;
+    use crate::ports::RepositoryFilesystemPort;
+    use crate::testing::TestStore;
 
     #[test]
     fn fails_if_not_initialized() {
-        let store = MemoryWorkspaceStore::new();
+        let store = TestStore::new();
 
         let result = execute(&store);
 
@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn fails_if_tools_yml_missing() {
-        let store = MemoryWorkspaceStore::new();
+        let store = TestStore::new();
         store.write_file(".jlo/setup/placeholder", "").unwrap();
 
         let result = execute(&store);
@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn fails_if_no_tools_specified() {
-        let store = MemoryWorkspaceStore::new();
+        let store = TestStore::new();
         store.write_file(".jlo/setup/tools.yml", "tools: []").unwrap();
 
         let result = execute(&store);
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn generates_install_script_and_env_files_in_control_plane() {
-        let store = MemoryWorkspaceStore::new();
+        let store = TestStore::new();
         store.write_file(".jlo/setup/tools.yml", "tools:\n  - just").unwrap();
 
         let result = execute(&store).unwrap();

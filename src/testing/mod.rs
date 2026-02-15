@@ -1,13 +1,18 @@
-mod fake_git;
-mod fake_github;
-mod mock_role_template_store;
-mod mock_workspace_store;
+pub mod ports;
 
 #[allow(unused_imports)]
-pub use fake_git::FakeGit;
+pub use ports::FakeGit;
 #[allow(unused_imports)]
-pub use fake_github::FakeGitHub;
+pub use ports::FakeGitHub;
 #[allow(unused_imports)]
-pub use mock_role_template_store::MockRoleTemplateStore;
+pub use ports::MockJloStore;
 #[allow(unused_imports)]
-pub use mock_workspace_store::MockWorkspaceStore;
+pub use ports::MockJulesStore;
+#[allow(unused_imports)]
+pub use ports::MockRepositoryFs;
+#[allow(unused_imports)]
+pub use ports::MockRoleTemplateStore;
+#[allow(unused_imports)]
+pub use ports::TestFiles;
+#[allow(unused_imports)]
+pub use ports::TestStore;

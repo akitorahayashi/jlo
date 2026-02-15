@@ -21,14 +21,13 @@ Strict dependency rules apply to maintain architectural purity:
 - **Forbidden**:
   - `crate::adapters` (Infrastructure implementations)
   - `crate::app` (Application wiring and CLI commands)
-  - `crate::services` (Service implementations)
   - `crate::assets` (Embedded assets, unless accessed via a domain trait)
 
 ## Modules
 
 | Module | Purpose |
 |--------|---------|
-| `configuration` | Global configuration models (`config.toml`, `scheduled.toml`). |
+| `configuration` | Global configuration models (`config.toml`, `scheduled.toml`, `WorkflowGenerateConfig`). |
 | `identifiers` | Shared strongly-typed IDs (`RoleId`) and validation utilities. |
 | `prompt_assembly` | Logic for assembling prompt contexts for different layers. |
 | `setup` | Setup component model, dependency resolution, and artifact generation. |

@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 
 use crate::domain::AppError;
-use crate::ports::WorkspaceStore;
 
 /// Header fields for a requirement.
 ///
@@ -19,16 +17,12 @@ pub struct RequirementHeader {
 }
 
 impl RequirementHeader {
-    /// Read requirement header from a file in the workspace.
-    pub fn read(store: &impl WorkspaceStore, path: &Path) -> Result<Self, AppError> {
-        let path_str = path
-            .to_str()
-            .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", path.display())))?;
-        let content = store.read_file(path_str)?;
-        let header: RequirementHeader = serde_yaml::from_str(&content).map_err(|e| {
-            AppError::ParseError { what: path.display().to_string(), details: e.to_string() }
-        })?;
-        Ok(header)
+    /// Parse a requirement header from YAML content.
+    pub fn parse(content: &str) -> Result<Self, AppError> {
+        serde_yaml::from_str(content).map_err(|e| AppError::ParseError {
+            what: "requirement".to_string(),
+            details: e.to_string(),
+        })
     }
 }
 
@@ -36,38 +30,24 @@ impl RequirementHeader {
 mod tests {
     use super::*;
     use crate::domain::AppError;
-    use crate::testing::MockWorkspaceStore;
 
     #[test]
-    fn read_requirement_header_success() {
-        let store = MockWorkspaceStore::new()
-            .with_file("req.yml", "label: bugs\nrequires_deep_analysis: true");
-
-        let header = RequirementHeader::read(&store, Path::new("req.yml")).unwrap();
+    fn parse_requirement_header_success() {
+        let header = RequirementHeader::parse("label: bugs\nrequires_deep_analysis: true").unwrap();
         assert_eq!(header.label, "bugs");
         assert!(header.requires_deep_analysis);
     }
 
     #[test]
-    fn read_requirement_header_default_values() {
-        let store = MockWorkspaceStore::new().with_file("req.yml", "label: features"); // Missing requires_deep_analysis
-
-        let header = RequirementHeader::read(&store, Path::new("req.yml")).unwrap();
+    fn parse_requirement_header_default_values() {
+        let header = RequirementHeader::parse("label: features").unwrap(); // Missing requires_deep_analysis
         assert_eq!(header.label, "features");
         assert!(!header.requires_deep_analysis); // Default should be false
     }
 
     #[test]
-    fn read_requirement_header_file_not_found() {
-        let store = MockWorkspaceStore::new();
-        let result = RequirementHeader::read(&store, Path::new("nonexistent.yml"));
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn read_requirement_header_parse_error() {
-        let store = MockWorkspaceStore::new().with_file("req.yml", "invalid: [ yaml");
-        let result = RequirementHeader::read(&store, Path::new("req.yml"));
+    fn parse_requirement_header_parse_error() {
+        let result = RequirementHeader::parse("invalid: [ yaml");
         assert!(matches!(result, Err(AppError::ParseError { .. })));
     }
 }

@@ -1,14 +1,15 @@
 use std::collections::HashSet;
 
-use crate::adapters::assets::workflow_scaffold_assets::{
-    WorkflowGenerateConfig, WorkflowScaffoldAssets, load_workflow_scaffold,
+use crate::adapters::catalogs::workflow_scaffold::{
+    WorkflowScaffoldAssets, load_workflow_scaffold,
 };
+use crate::domain::configuration::WorkflowGenerateConfig;
 use crate::domain::{AppError, WorkflowRunnerMode};
-use crate::ports::WorkspaceStore;
+use crate::ports::RepositoryFilesystemPort;
 
 /// Execute the workflow scaffold installation.
 pub fn install_workflow_scaffold(
-    workspace: &impl WorkspaceStore,
+    workspace: &impl RepositoryFilesystemPort,
     mode: &WorkflowRunnerMode,
     generate_config: &WorkflowGenerateConfig,
 ) -> Result<(), AppError> {
@@ -31,7 +32,7 @@ pub fn install_workflow_scaffold(
 }
 
 fn remove_stale_managed_workflows(
-    workspace: &impl WorkspaceStore,
+    workspace: &impl RepositoryFilesystemPort,
     scaffold: &WorkflowScaffoldAssets,
 ) -> Result<(), AppError> {
     let workflows_dir = ".github/workflows";

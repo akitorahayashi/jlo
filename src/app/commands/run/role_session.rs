@@ -2,9 +2,9 @@ use std::path::Path;
 
 use crate::domain::workspace::paths::{jlo, jules};
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{AutomationMode, JulesClient, SessionRequest, WorkspaceStore};
+use crate::ports::{AutomationMode, JulesClient, RepositoryFilesystemPort, SessionRequest};
 
-pub fn print_role_preview<W: WorkspaceStore + ?Sized>(
+pub fn print_role_preview<W: RepositoryFilesystemPort + ?Sized>(
     jules_path: &Path,
     layer: Layer,
     role: &RoleId,
@@ -30,7 +30,7 @@ pub fn print_role_preview<W: WorkspaceStore + ?Sized>(
     println!("  Role config: {}", role_yml_path.display());
 }
 
-pub fn validate_role_exists<W: WorkspaceStore + ?Sized>(
+pub fn validate_role_exists<W: RepositoryFilesystemPort + ?Sized>(
     jules_path: &Path,
     layer: Layer,
     role: &str,

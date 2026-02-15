@@ -8,18 +8,20 @@ mod strategy;
 
 use std::path::Path;
 
-use crate::adapters::jules_client_http::HttpJulesClient;
-use crate::adapters::jules_client_retrying::{RetryPolicy, RetryingJulesClient};
+use crate::adapters::jules_client::HttpJulesClient;
+use crate::adapters::jules_client::{RetryPolicy, RetryingJulesClient};
 use crate::app::commands::run::strategy::{JulesClientFactory, get_layer_strategy};
-use crate::app::commands::workflow::workspace::{
-    WorkspaceCleanRequirementOptions, clean_requirement_with_adapters,
+use crate::app::commands::workflow::exchange::{
+    ExchangeCleanRequirementOptions, clean_requirement_with_adapters,
 };
+use crate::app::configuration::{load_config, validate_mock_prerequisites};
+use crate::domain::PromptAssetLoader;
 pub use crate::domain::RunOptions;
-pub use crate::domain::configuration::parse_config_content;
-use crate::domain::configuration::{load_config, validate_mock_prerequisites};
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::{AppError, JulesApiConfig};
-use crate::ports::{GitHubPort, GitPort, JulesClient, WorkspaceStore};
+use crate::ports::{
+    GitHubPort, GitPort, JloStorePort, JulesClient, JulesStorePort, RepositoryFilesystemPort,
+};
 
 pub use strategy::RunResult;
 
@@ -46,7 +48,14 @@ pub fn execute<G, H, W>(
 where
     G: GitPort,
     H: GitHubPort,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     execute_with_mock_prerequisite_validator(
         jules_path,
@@ -69,7 +78,14 @@ fn execute_with_mock_prerequisite_validator<G, H, W, F>(
 where
     G: GitPort,
     H: GitHubPort,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
     F: Fn(&RunOptions) -> Result<(), AppError>,
 {
     // Validate task selector if provided (prevents path traversal)
@@ -109,7 +125,7 @@ where
     if let Some(path) = result.cleanup_requirement.as_ref() {
         let path_str = path.to_string_lossy().to_string();
         match clean_requirement_with_adapters(
-            WorkspaceCleanRequirementOptions { requirement_file: path_str },
+            ExchangeCleanRequirementOptions { requirement_file: path_str },
             workspace,
             git,
         ) {
@@ -132,8 +148,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
-    use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
+    use crate::adapters::filesystem::FilesystemStore;
+    use crate::ports::{
+        GitHubPort, IssueInfo, JulesStorePort, PrComment, PullRequestDetail, PullRequestInfo,
+    };
     use serial_test::serial;
     use std::collections::HashMap;
     use std::fs;
@@ -461,7 +479,7 @@ roles = [
 
         let _mock_tag_env = EnvVarGuard::set("JULES_MOCK_TAG", mock_tag);
 
-        let workspace = FilesystemWorkspaceStore::new(root.clone());
+        let workspace = FilesystemStore::new(root.clone());
         let github = TestGitHub::new();
 
         let decider_git = TestGit::new(root.clone(), "jules");

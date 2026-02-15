@@ -1,8 +1,8 @@
 use serde::Deserialize;
 
-use crate::adapters::assets::workflow_scaffold_assets::WorkflowGenerateConfig;
+use crate::domain::configuration::WorkflowGenerateConfig;
 use crate::domain::{AppError, WorkflowRunnerMode};
-use crate::ports::WorkspaceStore;
+use crate::ports::RepositoryFilesystemPort;
 
 #[derive(Deserialize)]
 struct WorkflowGenerateConfigDto {
@@ -29,7 +29,7 @@ struct WorkflowTimingDto {
 }
 
 fn load_workflow_config_dto(
-    workspace: &impl WorkspaceStore,
+    workspace: &impl RepositoryFilesystemPort,
 ) -> Result<WorkflowGenerateConfigDto, AppError> {
     let config_path = ".jlo/config.toml";
     if !workspace.file_exists(config_path) {
@@ -47,7 +47,7 @@ fn load_workflow_config_dto(
 ///
 /// Errors on missing or invalid configuration to avoid silent fallbacks.
 pub fn load_workflow_generate_config(
-    workspace: &impl WorkspaceStore,
+    workspace: &impl RepositoryFilesystemPort,
 ) -> Result<WorkflowGenerateConfig, AppError> {
     let dto = load_workflow_config_dto(workspace)?;
 
@@ -103,7 +103,7 @@ pub fn load_workflow_generate_config(
 /// The control-plane configuration is the authoritative source for selecting
 /// remote vs self-hosted workflow scaffolds.
 pub fn load_workflow_runner_mode(
-    workspace: &impl WorkspaceStore,
+    workspace: &impl RepositoryFilesystemPort,
 ) -> Result<WorkflowRunnerMode, AppError> {
     let dto = load_workflow_config_dto(workspace)?;
     let workflow = dto.workflow.ok_or_else(|| {
@@ -120,7 +120,7 @@ fn parse_workflow_runner_mode(raw: Option<&str>) -> Result<WorkflowRunnerMode, A
 }
 
 pub fn persist_workflow_runner_mode(
-    workspace: &impl WorkspaceStore,
+    workspace: &impl RepositoryFilesystemPort,
     mode: &WorkflowRunnerMode,
 ) -> Result<(), AppError> {
     let config_path = ".jlo/config.toml";
@@ -156,14 +156,15 @@ pub fn persist_workflow_runner_mode(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+    use crate::adapters::filesystem::FilesystemStore;
+    use crate::ports::RepositoryFilesystemPort;
     use assert_fs::TempDir;
     use std::fs;
 
     #[test]
     fn persist_workflow_runner_mode_updates_only_workflow_value() {
         let temp = TempDir::new().unwrap();
-        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let workspace = FilesystemStore::new(temp.path().to_path_buf());
         let config = r#"# heading
 [run]
 jlo_target_branch = "main"
@@ -187,7 +188,7 @@ wait_minutes_default = 30
     #[test]
     fn persist_workflow_runner_mode_fails_without_workflow_section() {
         let temp = TempDir::new().unwrap();
-        let workspace = FilesystemWorkspaceStore::new(temp.path().to_path_buf());
+        let workspace = FilesystemStore::new(temp.path().to_path_buf());
         workspace
             .write_file(
                 ".jlo/config.toml",

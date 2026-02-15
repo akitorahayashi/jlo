@@ -2,12 +2,16 @@ use std::path::Path;
 
 use chrono::DateTime;
 
-use crate::domain::configuration::loader::detect_repository_source;
-use crate::domain::configuration::mock_loader::load_mock_config;
+use crate::app::configuration::{detect_repository_source, load_mock_config};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
-use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
+use crate::domain::{
+    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
+};
+use crate::ports::{
+    AutomationMode, GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort,
+    SessionRequest,
+};
 
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
@@ -15,7 +19,14 @@ pub struct NarratorLayer;
 
 impl<W> LayerStrategy<W> for NarratorLayer
 where
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     fn execute(
         &self,
@@ -70,7 +81,14 @@ fn execute_real<G, W>(
 ) -> Result<RunResult, AppError>
 where
     G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     let changes_path = exchange_changes_path(jules_path)?;
     let had_previous_changes = workspace.file_exists(&changes_path);
@@ -160,7 +178,14 @@ fn execute_mock(config: &MockConfig) -> Result<MockOutput, AppError> {
 
 fn assemble_narrator_prompt<
     G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 >(
     jules_path: &Path,
     range: &RangeContext,
@@ -226,7 +251,7 @@ fn determine_range<G, W>(
 ) -> Result<RangeContext, AppError>
 where
     G: GitPort + ?Sized,
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
 {
     let head_sha = git.get_head_sha()?;
     let changes_content = if workspace.file_exists(changes_path) {
@@ -371,7 +396,10 @@ fn exchange_changes_path(jules_path: &Path) -> Result<String, AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::{DiscoveredRole, PullRequestInfo, ScaffoldFile};
+    use crate::ports::{
+        DiscoveredRole, JloStorePort, JulesStorePort, PullRequestInfo, RepositoryFilesystemPort,
+        ScaffoldFile,
+    };
     use std::collections::HashMap;
     use std::path::PathBuf;
 
@@ -620,47 +648,7 @@ created_at: "2026-02-05 00:00:00"
         }
     }
 
-    impl WorkspaceStore for DummyWorkspace {
-        fn exists(&self) -> bool {
-            panic!("mock narrator no-op must not call exists");
-        }
-
-        fn jlo_exists(&self) -> bool {
-            panic!("mock narrator no-op must not call jlo_exists");
-        }
-
-        fn jules_path(&self) -> PathBuf {
-            panic!("mock narrator no-op must not call jules_path");
-        }
-
-        fn jlo_path(&self) -> PathBuf {
-            panic!("mock narrator no-op must not call jlo_path");
-        }
-
-        fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
-            panic!("mock narrator no-op must not call create_structure");
-        }
-
-        fn write_version(&self, _version: &str) -> Result<(), AppError> {
-            panic!("mock narrator no-op must not call write_version");
-        }
-
-        fn read_version(&self) -> Result<Option<String>, AppError> {
-            panic!("mock narrator no-op must not call read_version");
-        }
-
-        fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
-            panic!("mock narrator no-op must not call discover_roles");
-        }
-
-        fn find_role_fuzzy(&self, _query: &str) -> Result<Option<DiscoveredRole>, AppError> {
-            panic!("mock narrator no-op must not call find_role_fuzzy");
-        }
-
-        fn role_path(&self, _role: &DiscoveredRole) -> Option<PathBuf> {
-            panic!("mock narrator no-op must not call role_path");
-        }
-
+    impl RepositoryFilesystemPort for DummyWorkspace {
         fn read_file(&self, _path: &str) -> Result<String, AppError> {
             panic!("mock narrator no-op must not call read_file");
         }
@@ -703,6 +691,67 @@ created_at: "2026-02-05 00:00:00"
 
         fn canonicalize(&self, _path: &str) -> Result<PathBuf, AppError> {
             panic!("mock narrator no-op must not call canonicalize");
+        }
+    }
+
+    impl JloStorePort for DummyWorkspace {
+        fn jlo_exists(&self) -> bool {
+            panic!("mock narrator no-op must not call jlo_exists");
+        }
+
+        fn jlo_path(&self) -> PathBuf {
+            panic!("mock narrator no-op must not call jlo_path");
+        }
+
+        fn jlo_write_version(&self, _version: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call jlo_write_version");
+        }
+
+        fn jlo_read_version(&self) -> Result<Option<String>, AppError> {
+            panic!("mock narrator no-op must not call jlo_read_version");
+        }
+
+        fn discover_roles(&self) -> Result<Vec<DiscoveredRole>, AppError> {
+            panic!("mock narrator no-op must not call discover_roles");
+        }
+
+        fn find_role_fuzzy(&self, _query: &str) -> Result<Option<DiscoveredRole>, AppError> {
+            panic!("mock narrator no-op must not call find_role_fuzzy");
+        }
+
+        fn role_path(&self, _role: &DiscoveredRole) -> Option<PathBuf> {
+            panic!("mock narrator no-op must not call role_path");
+        }
+
+        fn write_role(
+            &self,
+            _layer: Layer,
+            _role_id: &str,
+            _content: &str,
+        ) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call write_role");
+        }
+    }
+
+    impl JulesStorePort for DummyWorkspace {
+        fn jules_exists(&self) -> bool {
+            panic!("mock narrator no-op must not call jules_exists");
+        }
+
+        fn jules_path(&self) -> PathBuf {
+            panic!("mock narrator no-op must not call jules_path");
+        }
+
+        fn jules_write_version(&self, _version: &str) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call jules_write_version");
+        }
+
+        fn jules_read_version(&self) -> Result<Option<String>, AppError> {
+            panic!("mock narrator no-op must not call jules_read_version");
+        }
+
+        fn create_structure(&self, _scaffold_files: &[ScaffoldFile]) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call create_structure");
         }
     }
 

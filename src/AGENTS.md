@@ -10,23 +10,40 @@ src/
 ├── lib.rs             # Public API
 ├── domain/            # Pure types (Layer, RoleId, AppError, setup models)
 ├── ports/             # Trait boundaries
-├── services/          # I/O implementations
+│   ├── repository_filesystem.rs  # RepositoryFilesystemPort
+│   ├── jlo_store.rs              # JloStorePort (.jlo/ control-plane)
+│   ├── jules_store.rs            # JulesStorePort (.jules/ runtime)
+│   ├── git.rs                    # GitPort
+│   ├── github.rs                 # GitHubPort
+│   ├── jules_client.rs           # JulesClient
+│   ├── role_template_store.rs    # RoleTemplateStore
+│   └── setup_component_catalog.rs # SetupComponentCatalog
+├── adapters/          # I/O implementations
+│   ├── git/                      # GitPort adapter (git CLI)
+│   ├── github/                   # GitHubPort adapter (gh CLI)
+│   ├── jules_client/             # JulesClient adapter (HTTP, retry)
+│   ├── catalogs/                 # Embedded asset catalogs (roles, scaffold, setup, workflow)
+│   ├── filesystem/               # FilesystemStore (RepositoryFilesystemPort + JloStorePort + JulesStorePort)
+│   ├── control_plane_config.rs   # Config/schedule readers
+│   └── workflow_installer.rs     # Workflow scaffold installer
 ├── app/
 │   ├── context.rs     # AppContext (DI container)
 │   └── commands/      # Command implementations
 ├── assets/
 │   ├── scaffold/      # Embedded .jules/ structure
 │   ├── templates/     # Role templates by layer
-│   ├── workflows/     # Workflow scaffold assets
-│   └── setup/         # Setup component definitions
-└── testing/           # Mock implementations
+│   ├── roles/         # Built-in role definitions
+│   ├── setup/         # Setup component definitions
+│   └── github/        # Workflow scaffold assets
+└── testing/           # Test doubles
+    └── ports/         # Port-scoped doubles (MockRepositoryFs, MockJloStore, MockJulesStore, TestStore)
 tests/
 ├── harness/           # Shared fixtures (TestContext, git helpers, config writers)
 ├── cli.rs             # CLI behavior contracts
-├── workflow.rs         # Bootstrap + workflow-kit contracts
+├── workflow.rs        # Bootstrap + workflow-kit contracts
 ├── doctor.rs          # Doctor/schema + mock fixture validity contracts
 ├── mock.rs            # Mock mode CLI contracts
-└── library.rs          # Public library API lifecycle contract
+└── library.rs         # Public library API lifecycle contract
 ```
 
 ## Tech Stack
@@ -62,7 +79,7 @@ Core domain logic located in `src/domain/`.
 
 | Module | Purpose |
 |--------|---------|
-| `configuration` | Global configuration models (`config.toml`, `scheduled.toml`). |
+| `configuration` | Global configuration models (`config.toml`, `scheduled.toml`, `WorkflowGenerateConfig`). |
 | `identifiers` | Structural identifiers (`RoleId`, `Layer`). |
 | `prompt` | Prompt assembly and template rendering models. |
 | `workspace` | Filesystem abstraction and path management. |
@@ -87,10 +104,10 @@ Core domain logic located in `src/domain/`.
 | `jlo doctor [--strict]` | | Validate .jules/ structure and content |
 | `jlo workflow doctor` | `wf` | Validate workspace for workflow use |
 | `jlo workflow run <layer> [--mock]` | | Run layer and return wait-gating metadata |
-| `jlo workflow workspace inspect` | | Inspect exchange state |
-| `jlo workflow workspace publish-proposals` | | Publish innovator proposals as GitHub issues |
-| `jlo workflow workspace clean requirement <file>` | | Remove a processed requirement and its source events |
-| `jlo workflow workspace clean mock --mock-tag <tag> [--pr-numbers-json <json>] [--branches-json <json>]` | | Cleanup mock artifacts |
+| `jlo workflow exchange inspect` | | Inspect exchange state |
+| `jlo workflow exchange publish-proposals` | | Publish innovator proposals as GitHub issues |
+| `jlo workflow exchange clean requirement <file>` | | Remove a processed requirement and its source events |
+| `jlo workflow exchange clean mock --mock-tag <tag> [--pr-numbers-json <json>] [--branches-json <json>]` | | Cleanup mock artifacts |
 | `jlo workflow gh process pr <all\|metadata\|automerge> <pr_number> [--retry-attempts <n>] [--retry-delay-seconds <n>] [--fail-on-error]` | | Run PR process pipeline |
 | `jlo workflow gh process issue label-innovator <issue_number> <persona>` | | Apply innovator labels to a proposal issue |
 | `jlo setup gen [path]` | `s g` | Generate `.jlo/setup/install.sh`, `vars.toml`, and `secrets.toml` |

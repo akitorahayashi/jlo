@@ -44,7 +44,7 @@ pub fn role_yml(root: &Path, layer: Layer, role: &str) -> PathBuf {
     role_dir(root, layer, role).join("role.yml")
 }
 
-// ── Relative path helpers for WorkspaceStore string-based operations ───
+// ── Relative path helpers for store port string-based operations ───
 
 /// `.jlo/scheduled.toml` — relative path string.
 pub fn schedule_relative() -> &'static str {

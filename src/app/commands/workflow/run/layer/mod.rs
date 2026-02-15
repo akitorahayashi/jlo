@@ -1,6 +1,7 @@
 use crate::app::commands::run::{self, RunOptions};
+use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, Layer};
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::ports::{GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
 use std::path::Path;
 
 use super::options::{RunResults, WorkflowRunOptions};
@@ -21,7 +22,14 @@ pub(crate) fn execute_layer<W, G, H>(
     github: &H,
 ) -> Result<RunResults, AppError>
 where
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
     G: GitPort,
     H: GitHubPort,
 {
@@ -41,7 +49,14 @@ fn execute_layer_with_runner<W, G, H, F>(
     run_layer: &mut F,
 ) -> Result<RunResults, AppError>
 where
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
     G: GitPort,
     H: GitHubPort,
     F: FnMut(&Path, RunOptions, &G, &H, &W) -> Result<(), AppError>,
@@ -69,7 +84,7 @@ where
 mod tests {
     use super::*;
     use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
-    use crate::testing::MockWorkspaceStore;
+    use crate::testing::TestStore;
 
     struct NoopGit;
 
@@ -204,7 +219,7 @@ mod tests {
 
     #[test]
     fn execute_layer_observers_reflects_enabled_roles_in_scheduled_toml() {
-        let store = MockWorkspaceStore::new().with_exists(true).with_file(
+        let store = TestStore::new().with_exists(true).with_file(
             ".jlo/scheduled.toml",
             r#"
 version = 1
@@ -233,7 +248,7 @@ roles = [
                              run_options: RunOptions,
                              _git: &NoopGit,
                              _gh: &NoopGitHub,
-                             _store: &MockWorkspaceStore| {
+                             _store: &TestStore| {
             executed_roles.push(run_options.role.expect("role should be present"));
             Ok(())
         };

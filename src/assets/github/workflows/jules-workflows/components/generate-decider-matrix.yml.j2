@@ -33,7 +33,7 @@
           REQUEST_DECIDER: {{ gha_expr("fromJSON(needs.check-schedule.outputs.json).run_decider") }}
         run: |
           set -euo pipefail
-          HAS_PENDING=$(jlo workflow workspace inspect | jq '(.events.pending_files | length) > 0')
+          HAS_PENDING=$(jlo workflow exchange inspect | jq '(.events.pending_files | length) > 0')
           RUN_DECIDER=false
           if [ "$REQUEST_DECIDER" = "true" ] && [ "$HAS_PENDING" = "true" ]; then
             RUN_DECIDER=true

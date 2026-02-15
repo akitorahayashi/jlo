@@ -3,12 +3,15 @@ use std::collections::{BTreeMap, HashMap};
 use crate::adapters::control_plane_config;
 use crate::adapters::workflow_installer;
 use crate::app::AppContext;
+use crate::domain::PromptAssetLoader;
 use crate::domain::workspace::manifest::{hash_content, is_control_plane_entity_file};
 use crate::domain::workspace::paths::jlo;
 use crate::domain::workspace::{JLO_DIR, VERSION_FILE};
 use crate::domain::{AppError, Layer, ScaffoldManifest, Schedule, WorkflowRunnerMode};
 use crate::ports::ScaffoldFile;
-use crate::ports::{GitPort, RoleTemplateStore, WorkspaceStore};
+use crate::ports::{
+    GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort, RoleTemplateStore,
+};
 
 /// Execute the unified init command.
 ///
@@ -20,7 +23,7 @@ pub fn execute<W, R, G>(
     mode: &WorkflowRunnerMode,
 ) -> Result<(), AppError>
 where
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
     R: RoleTemplateStore,
     G: GitPort,
 {
@@ -77,7 +80,7 @@ where
 
 fn seed_scheduled_roles<W, R>(ctx: &AppContext<W, R>) -> Result<Vec<ScaffoldFile>, AppError>
 where
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
     R: RoleTemplateStore,
 {
     let schedule_content = ctx.workspace().read_file(".jlo/scheduled.toml")?;

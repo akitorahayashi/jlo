@@ -3,13 +3,14 @@ use std::path::Path;
 use chrono::Utc;
 
 use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
-use crate::domain::configuration::loader::detect_repository_source;
-use crate::domain::configuration::mock_loader::load_mock_config;
+use crate::app::configuration::{detect_repository_source, load_mock_config};
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions};
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::domain::{
+    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RoleId, RunConfig, RunOptions,
+};
+use crate::ports::{GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
 
 use super::super::role_session::{dispatch_session, print_role_preview, validate_role_exists};
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -18,7 +19,14 @@ pub struct InnovatorsLayer;
 
 impl<W> LayerStrategy<W> for InnovatorsLayer
 where
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     fn execute(
         &self,
@@ -77,7 +85,14 @@ fn execute_real<G, W>(
 ) -> Result<RunResult, AppError>
 where
     G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     let role = role
         .ok_or_else(|| AppError::MissingArgument("Role is required for innovators".to_string()))?;
@@ -136,7 +151,16 @@ where
     })
 }
 
-fn assemble_innovator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+fn assemble_innovator_prompt<
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+>(
     jules_path: &Path,
     role: &str,
     task_name: &str,
@@ -153,7 +177,9 @@ fn assemble_innovator_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
         .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
-fn resolve_innovator_task<W: WorkspaceStore>(
+fn resolve_innovator_task<
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+>(
     jules_path: &Path,
     task: &str,
     workspace: &W,
@@ -200,7 +226,7 @@ fn execute_mock<G, H, W>(
 where
     G: GitPort + ?Sized,
     H: GitHubPort + ?Sized,
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
 {
     let role = options.role.as_deref().ok_or_else(|| {
         AppError::MissingArgument("Role (persona) is required for innovators".to_string())
@@ -332,7 +358,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{FakeGit, FakeGitHub, MockWorkspaceStore};
+    use crate::ports::RepositoryFilesystemPort;
+    use crate::testing::{FakeGit, FakeGitHub, TestStore};
     use std::collections::HashMap;
     use std::path::PathBuf;
 
@@ -351,7 +378,7 @@ mod tests {
     #[test]
     fn mock_innovator_creates_idea_with_create_idea_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -380,7 +407,7 @@ mod tests {
     #[test]
     fn mock_innovator_removes_idea_with_refine_idea_and_create_proposal_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -409,7 +436,7 @@ mod tests {
     #[test]
     fn mock_innovator_create_then_refine_is_deterministic() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -448,7 +475,7 @@ mod tests {
     #[test]
     fn mock_innovator_direct_task_creates_proposal() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -473,7 +500,7 @@ mod tests {
     #[test]
     fn mock_innovator_rejects_missing_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -495,7 +522,7 @@ mod tests {
     #[test]
     fn mock_innovator_rejects_invalid_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();

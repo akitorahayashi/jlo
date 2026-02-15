@@ -7,12 +7,16 @@ use super::super::mock::mock_execution::{
     MOCK_ASSETS, MockExecutionService, generate_mock_id, list_mock_tagged_files,
     mock_event_id_from_path,
 };
-use crate::domain::configuration::loader::detect_repository_source;
-use crate::domain::configuration::mock_loader::load_mock_config;
+use crate::app::configuration::{detect_repository_source, load_mock_config};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
 use crate::domain::workspace::paths::jules;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
-use crate::ports::{AutomationMode, GitHubPort, GitPort, SessionRequest, WorkspaceStore};
+use crate::domain::{
+    AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
+};
+use crate::ports::{
+    AutomationMode, GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort,
+    SessionRequest,
+};
 
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
@@ -20,7 +24,14 @@ pub struct DeciderLayer;
 
 impl<W> LayerStrategy<W> for DeciderLayer
 where
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     fn execute(
         &self,
@@ -66,7 +77,14 @@ fn execute_real<G, W>(
 ) -> Result<RunResult, AppError>
 where
     G: GitPort + ?Sized,
-    W: WorkspaceStore + Clone + Send + Sync + 'static,
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
@@ -112,7 +130,16 @@ where
     })
 }
 
-fn assemble_decider_prompt<W: WorkspaceStore + Clone + Send + Sync + 'static>(
+fn assemble_decider_prompt<
+    W: RepositoryFilesystemPort
+        + JloStorePort
+        + JulesStorePort
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+>(
     jules_path: &Path,
     workspace: &W,
 ) -> Result<String, AppError> {
@@ -132,7 +159,7 @@ fn execute_mock<G, H, W>(
 where
     G: GitPort + ?Sized,
     H: GitHubPort + ?Sized,
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
 {
     let service = MockExecutionService::new(jules_path, config, git, github, workspace);
 
@@ -434,7 +461,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::{FakeGit, FakeGitHub, MockWorkspaceStore};
+    use crate::ports::RepositoryFilesystemPort;
+    use crate::testing::{FakeGit, FakeGitHub, TestStore};
     use std::collections::HashMap;
     use std::path::PathBuf;
 
@@ -453,7 +481,7 @@ mod tests {
     #[test]
     fn mock_decider_processes_events_and_creates_requirements() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -511,7 +539,7 @@ mod tests {
     #[test]
     fn mock_decider_fails_with_insufficient_events() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = MockWorkspaceStore::new().with_exists(true);
+        let workspace = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();

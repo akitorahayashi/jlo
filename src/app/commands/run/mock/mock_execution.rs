@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use include_dir::{Dir, include_dir};
 
 use crate::domain::{AppError, IoErrorKind, MockConfig, MockOutput};
-use crate::ports::{GitHubPort, GitPort, WorkspaceStore};
+use crate::ports::{GitHubPort, GitPort, RepositoryFilesystemPort};
 
 /// Mock assets embedded in the binary.
 pub static MOCK_ASSETS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/mock");
@@ -57,7 +57,7 @@ pub fn mock_event_id_from_path(path: &Path, mock_tag: &str) -> Option<String> {
 }
 
 /// List files in directory matching the mock tag pattern.
-pub fn list_mock_tagged_files<W: WorkspaceStore + ?Sized>(
+pub fn list_mock_tagged_files<W: RepositoryFilesystemPort + ?Sized>(
     workspace: &W,
     dir: &Path,
     mock_tag: &str,
@@ -98,7 +98,7 @@ impl<'a, G, H, W> MockExecutionService<'a, G, H, W>
 where
     G: GitPort + ?Sized,
     H: GitHubPort + ?Sized,
-    W: WorkspaceStore + ?Sized,
+    W: RepositoryFilesystemPort + ?Sized,
 {
     pub fn new(
         jules_path: &'a Path,
@@ -161,7 +161,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+    use crate::adapters::filesystem::FilesystemStore;
     use std::fs;
     use tempfile::tempdir;
 
@@ -194,7 +194,7 @@ mod tests {
         fs::write(decided_dir.join("mock-other-run-cccccc.yml"), "id: cccccc\n").expect("write");
         fs::write(decided_dir.join("notes.txt"), "ignored\n").expect("write");
 
-        let workspace = FilesystemWorkspaceStore::new(dir.path().to_path_buf());
+        let workspace = FilesystemStore::new(dir.path().to_path_buf());
         let files = list_mock_tagged_files(&workspace, &decided_dir, "mock-run-123").expect("list");
 
         assert_eq!(files.len(), 2);

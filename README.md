@@ -37,10 +37,10 @@ jlo init --remote
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo doctor [--strict]` | | Validate `.jules/` structure and content |
 | `jlo workflow run <layer>` | `wf` | Run layer and return orchestration metadata |
-| `jlo workflow workspace inspect` | | Inspect exchange state for automation |
-| `jlo workflow workspace publish-proposals` | | Publish innovator proposals as GitHub issues |
-| `jlo workflow workspace clean requirement <file>` | | Remove a processed requirement and its source events |
-| `jlo workflow workspace clean mock --mock-tag <tag>` | | Clean up mock artifacts |
+| `jlo workflow exchange inspect` | | Inspect exchange state for automation |
+| `jlo workflow exchange publish-proposals` | | Publish innovator proposals as GitHub issues |
+| `jlo workflow exchange clean requirement <file>` | | Remove a processed requirement and its source events |
+| `jlo workflow exchange clean mock --mock-tag <tag>` | | Clean up mock artifacts |
 | `jlo workflow gh process pr <all\|metadata\|automerge> <pr_number>` | | Run PR process pipeline (add `--fail-on-error` to fail on step errors) |
 | `jlo workflow gh process issue label-innovator <issue> <persona>` | | Apply innovator labels to a proposal issue |
 | `jlo workflow generate <mode> [--output-dir <dir>]` | `g [-o]` | Generate workflow scaffold files to an output directory |

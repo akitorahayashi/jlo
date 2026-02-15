@@ -8,7 +8,7 @@ mod yaml;
 
 use std::path::Path;
 
-use crate::adapters::assets::scaffold_assets::{
+use crate::adapters::catalogs::scaffold_assets::{
     list_event_states, list_issue_labels, read_enum_values,
 };
 use crate::domain::AppError;

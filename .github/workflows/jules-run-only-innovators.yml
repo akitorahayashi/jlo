@@ -215,7 +215,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Publish proposals
-        run: jlo workflow workspace publish-proposals
+        run: jlo workflow exchange publish-proposals
 
   cleanup-mock-artifacts:
     needs: [wait-after-run-only-innovators]
@@ -255,4 +255,4 @@ jobs:
 
       - name: Cleanup mock artifacts for this run
         run: |
-          jlo workflow workspace clean mock --mock-tag "$JULES_MOCK_TAG"
+          jlo workflow exchange clean mock --mock-tag "$JULES_MOCK_TAG"

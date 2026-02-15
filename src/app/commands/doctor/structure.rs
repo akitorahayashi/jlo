@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::app::commands::run::parse_config_content;
+use crate::domain::configuration::run_config_parser::parse_config_content;
 use crate::domain::workspace::paths::{self, jlo, jules};
 use crate::domain::{AppError, Layer, RunConfig};
 

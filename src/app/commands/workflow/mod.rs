@@ -5,11 +5,11 @@
 
 pub mod bootstrap;
 mod doctor;
+pub mod exchange;
 pub mod generate;
 pub mod gh;
 mod output;
 mod run;
-pub mod workspace;
 
 pub use bootstrap::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
@@ -18,7 +18,7 @@ pub use output::write_workflow_output;
 pub use run::{WorkflowRunOptions, WorkflowRunOutput};
 
 use crate::domain::AppError;
-use crate::ports::WorkspaceStore;
+use crate::ports::JulesStorePort;
 
 /// Execute workflow bootstrap.
 pub fn bootstrap(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOutput, AppError> {
@@ -32,12 +32,12 @@ pub fn doctor(options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, Ap
 
 /// Execute workflow run command.
 pub fn run(options: WorkflowRunOptions) -> Result<WorkflowRunOutput, AppError> {
-    let store = crate::adapters::workspace_filesystem::FilesystemWorkspaceStore::current()?;
+    let store = crate::adapters::filesystem::FilesystemStore::current()?;
 
     let jules_path = store.jules_path();
     let git_root = jules_path.parent().unwrap_or(&jules_path).to_path_buf();
-    let git = crate::adapters::git_command::GitCommandAdapter::new(git_root);
-    let github = crate::adapters::github_command::GitHubCommandAdapter::new();
+    let git = crate::adapters::git::GitCommandAdapter::new(git_root);
+    let github = crate::adapters::github::GitHubCommandAdapter::new();
 
     run::execute(&store, options, &git, &github)
 }

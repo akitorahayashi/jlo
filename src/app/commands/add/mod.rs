@@ -4,7 +4,8 @@ mod role;
 
 use crate::app::AppContext;
 use crate::domain::AppError;
-use crate::ports::{RoleTemplateStore, WorkspaceStore};
+use crate::domain::PromptAssetLoader;
+use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort, RoleTemplateStore};
 
 /// Outcome of an add operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,7 +35,7 @@ pub fn add_role<W, R>(
     role: &str,
 ) -> Result<AddOutcome, AppError>
 where
-    W: WorkspaceStore,
+    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
     R: RoleTemplateStore,
 {
     role::execute(ctx, layer, role)

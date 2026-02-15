@@ -9,9 +9,9 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::adapters::assets::workflow_scaffold_assets::load_workflow_scaffold;
+use crate::adapters::catalogs::workflow_scaffold::load_workflow_scaffold;
 use crate::adapters::control_plane_config::load_workflow_generate_config;
-use crate::adapters::workspace_filesystem::FilesystemWorkspaceStore;
+use crate::adapters::filesystem::FilesystemStore;
 use crate::domain::{AppError, WorkflowRunnerMode};
 
 const SCHEMA_VERSION: u32 = 1;
@@ -41,7 +41,7 @@ pub struct WorkflowGenerateOutput {
 /// Execute workflow generate command.
 pub fn execute(options: WorkflowGenerateOptions) -> Result<WorkflowGenerateOutput, AppError> {
     let repo_root = find_repo_root(&std::env::current_dir()?)?;
-    let workspace = FilesystemWorkspaceStore::new(repo_root.clone());
+    let workspace = FilesystemStore::new(repo_root.clone());
     let generate_config = load_workflow_generate_config(&workspace)?;
     let output_dir = resolve_output_dir(&options, &repo_root)?;
 
@@ -107,7 +107,7 @@ fn prepare_output_dir(output_dir: &Path) -> Result<(), AppError> {
 
 fn write_workflow_scaffold(
     output_dir: &Path,
-    scaffold: &crate::adapters::assets::workflow_scaffold_assets::WorkflowScaffoldAssets,
+    scaffold: &crate::adapters::catalogs::workflow_scaffold::WorkflowScaffoldAssets,
 ) -> Result<(), AppError> {
     for file in &scaffold.files {
         let destination = output_dir.join(&file.path);
