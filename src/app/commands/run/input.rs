@@ -7,8 +7,8 @@
 use std::path::Path;
 
 use crate::app::config;
-use crate::domain::{AppError, MockConfig, RunConfig, RunOptions, Schedule};
-use crate::ports::{Git, JloStore, RepositoryFilesystem};
+use crate::domain::{AppError, MockConfig, RunConfig, RunOptions};
+use crate::ports::{Git, RepositoryFilesystem};
 
 /// Load run configuration from `.jlo/config.toml`.
 pub fn load_run_config<W: RepositoryFilesystem>(
@@ -30,11 +30,6 @@ pub fn load_mock_config<W: RepositoryFilesystem>(
     repository: &W,
 ) -> Result<MockConfig, AppError> {
     config::load_mock_config(jules_path, options, repository)
-}
-
-/// Load role schedule from control-plane configuration.
-pub fn load_schedule(store: &(impl RepositoryFilesystem + JloStore)) -> Result<Schedule, AppError> {
-    config::load_schedule(store)
 }
 
 /// Detect repository source used by session dispatch.

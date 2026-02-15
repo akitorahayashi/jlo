@@ -50,9 +50,11 @@ fn installed_workflow_scaffold_includes_mock_support() {
         workflow.contains("authority is centralized in jules-automerge workflow"),
         "Cleanup flow should explain centralized auto-merge ownership"
     );
-    assert!(workflow.contains("run-innovators-1:"), "Should have first innovator pass job");
-    assert!(workflow.contains("run-innovators-2:"), "Should have second innovator pass job");
-    assert!(workflow.contains("publish-proposals:"), "Should have publish-proposals job");
+    assert!(workflow.contains("run-innovators:"), "Should have innovators reusable workflow job");
+    assert!(
+        workflow.contains("uses: ./.github/workflows/jules-run-innovators.yml"),
+        "Scheduled workflow should call innovators reusable workflow"
+    );
     assert!(!workflow.contains("- innovators"), "Entry point choices should exclude innovators");
     assert!(
         workflow.contains("\n          - requirements\n"),
@@ -67,11 +69,11 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "Entry point choices should exclude implementer"
     );
     assert!(
-        workflow.contains("observers)\n              run_innovators_1=true"),
+        workflow.contains("observers)\n              run_innovators=true"),
         "Observers entry-point should trigger innovators"
     );
     assert!(
-        workflow.contains("observers)\n              run_innovators_1=true\n              run_observers=true\n              run_innovators_2=true\n              run_publish_proposals=true\n              run_decider=true\n              run_planner=true\n              run_implementer=true"),
+        workflow.contains("observers)\n              run_innovators=true\n              run_observers=true\n              run_decider=true\n              run_planner=true\n              run_implementer=true"),
         "Observers entry-point should continue downstream through decider/planner/implementer"
     );
     assert!(

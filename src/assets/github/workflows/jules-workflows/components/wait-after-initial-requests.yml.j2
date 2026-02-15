@@ -1,5 +1,5 @@
   wait-after-initial-requests:
-    needs: [check-schedule, run-narrator, run-innovators-1]
+    needs: [check-schedule, run-narrator]
     if: |
       always() &&
       needs.check-schedule.result == 'success' &&
@@ -11,16 +11,6 @@
         (
           fromJSON(needs.check-schedule.outputs.json).run_narrator == false &&
           needs.run-narrator.result == 'skipped'
-        )
-      ) &&
-      (
-        (
-          fromJSON(needs.check-schedule.outputs.json).run_innovators_1 == true &&
-          needs.run-innovators-1.result == 'success'
-        ) ||
-        (
-          fromJSON(needs.check-schedule.outputs.json).run_innovators_1 == false &&
-          needs.run-innovators-1.result == 'skipped'
         )
       )
     runs-on: {{ runner }}
@@ -48,7 +38,7 @@
             exit 0
           fi
 
-          echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process narrator + innovators (first pass)..."
+          echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process narrator..."
           ELAPSED=0
           INTERVAL=5
           while [ $ELAPSED -lt $TOTAL_SECONDS ]; do

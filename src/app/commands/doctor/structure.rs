@@ -146,30 +146,14 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
         );
 
         ensure_directory_exists(
-            crate::domain::workstations::paths::workstations_dir(inputs.jules_path),
+            crate::domain::exchange::proposals::paths::proposals_dir(inputs.jules_path),
             diagnostics,
         );
 
-        let innovators_dir =
-            crate::domain::exchange::innovators::paths::innovators_dir(inputs.jules_path);
-        ensure_directory_exists(innovators_dir.clone(), diagnostics);
-
-        if innovators_dir.exists() {
-            for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
-                let persona = persona_dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                let comments_dir =
-                    crate::domain::exchange::innovators::paths::innovator_comments_dir(
-                        inputs.jules_path,
-                        persona,
-                    );
-                if !comments_dir.exists() {
-                    diagnostics.push_error(
-                        comments_dir.display().to_string(),
-                        "Missing comments/ directory in innovator room",
-                    );
-                }
-            }
-        }
+        ensure_directory_exists(
+            crate::domain::workstations::paths::workstations_dir(inputs.jules_path),
+            diagnostics,
+        );
     }
 }
 
@@ -397,8 +381,8 @@ mod tests {
         // We need to match inputs for event states
         exchange.child("events/pending").create_dir_all().unwrap();
 
-        // Innovator rooms directory
-        exchange.child("innovators").create_dir_all().unwrap();
+        // Proposal exchange directory
+        exchange.child("proposals").create_dir_all().unwrap();
 
         temp.child(".jules/workstations").create_dir_all().unwrap();
     }

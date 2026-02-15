@@ -33,8 +33,9 @@ steps:
     Keep source ownership exclusive: each event ID appears in source_events of
     only one requirement at any time.
   - >-
-    For genuinely new problems, create a new requirement file using
-    .jules/layers/decider/schemas/requirements.yml with a label from .jules/github-labels.json.
+    For genuinely new problems, copy schema with
+    cp .jules/layers/decider/schemas/requirements.yml .jules/exchange/requirements/<kebab-case-title>.yml,
+    then fill all fields using a label from .jules/github-labels.json.
   - "Place requirement files in .jules/exchange/requirements/<kebab-case-title>.yml."
 
   # 4. Transition event state

@@ -43,3 +43,13 @@ pub fn github_labels(jules_path: &Path) -> PathBuf {
 pub fn workstations_dir(jules_path: &Path) -> PathBuf {
     jules_path.join("workstations")
 }
+
+/// `.jules/workstations/<role>/`
+pub fn workstation_dir(jules_path: &Path, role: &str) -> PathBuf {
+    workstations_dir(jules_path).join(role)
+}
+
+/// `.jules/workstations/<role>/perspective.yml`
+pub fn workstation_perspective(jules_path: &Path, role: &str) -> PathBuf {
+    workstation_dir(jules_path, role).join("perspective.yml")
+}

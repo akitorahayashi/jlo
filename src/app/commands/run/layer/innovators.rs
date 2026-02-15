@@ -2,7 +2,7 @@ use std::path::Path;
 
 use chrono::Utc;
 
-use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
+use super::super::mock::mock_execution::generate_mock_id;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::prompt_assembly::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
@@ -104,7 +104,7 @@ where
 
     let task = task.ok_or_else(|| {
         AppError::MissingArgument(
-            "--task is required for innovators (e.g. create_idea, refine_idea_and_create_proposal, create_proposal)".to_string(),
+            "--task is required for innovators (expected: create_three_proposals)".to_string(),
         )
     })?;
     let task_content = resolve_innovator_task(jules_path, task, repository)?;
@@ -182,9 +182,7 @@ fn resolve_innovator_task<W: RepositoryFilesystem + JloStore + JulesStore + Prom
     repository: &W,
 ) -> Result<String, AppError> {
     let filename = match task {
-        "create_idea" => "create_idea.yml",
-        "refine_idea_and_create_proposal" => "refine_idea_and_create_proposal.yml",
-        "create_proposal" => "create_proposal.yml",
+        "create_three_proposals" => "create_three_proposals.yml",
         _ => {
             return Err(AppError::Validation(format!("Invalid innovator task '{}'", task)));
         }
@@ -199,12 +197,6 @@ fn resolve_innovator_task<W: RepositoryFilesystem + JloStore + JulesStore + Prom
         ))
     })
 }
-
-// Template placeholder constants (must match src/assets/mock/innovator_idea.yml)
-const TMPL_ID: &str = "mock01";
-const TMPL_PERSONA: &str = "mock-persona";
-const TMPL_DATE: &str = "2026-02-05";
-const TMPL_TAG: &str = "test-tag";
 
 fn sanitize_yaml_value(value: &str) -> String {
     value
@@ -232,16 +224,13 @@ where
 
     let task = options.task.as_deref().ok_or_else(|| {
         AppError::MissingArgument(
-            "--task is required for innovators (create_idea, refine_idea_and_create_proposal, create_proposal)".to_string(),
+            "--task is required for innovators (create_three_proposals)".to_string(),
         )
     })?;
 
-    if task != "create_idea"
-        && task != "refine_idea_and_create_proposal"
-        && task != "create_proposal"
-    {
+    if task != "create_three_proposals" {
         return Err(AppError::Validation(format!(
-            "Invalid innovator task '{}': expected create_idea, refine_idea_and_create_proposal, or create_proposal",
+            "Invalid innovator task '{}': expected create_three_proposals",
             task
         )));
     }
@@ -253,13 +242,11 @@ where
         )));
     }
 
-    let room_dir =
-        crate::domain::exchange::innovators::paths::innovator_persona_dir(jules_path, role);
-
-    let idea_path = room_dir.join("idea.yml");
-    let idea_path_str = idea_path
+    let proposals_dir = crate::domain::exchange::proposals::paths::proposals_dir(jules_path);
+    let proposals_dir_str = proposals_dir
         .to_str()
-        .ok_or_else(|| AppError::Validation("Invalid idea.yml path".to_string()))?;
+        .ok_or_else(|| AppError::Validation("Invalid proposals path".to_string()))?;
+    repository.create_dir_all(proposals_dir_str)?;
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Innovators, &timestamp)?;
@@ -268,68 +255,56 @@ where
     git.checkout_branch(&format!("origin/{}", config.jules_worker_branch), false)?;
     git.checkout_branch(&branch_name, true)?;
 
-    let room_dir_str =
-        room_dir.to_str().ok_or_else(|| AppError::Validation("Invalid room path".to_string()))?;
-    repository.create_dir_all(room_dir_str)?;
-
     println!("Mock innovators: task={} for {}", task, role);
 
-    if task == "create_idea" {
-        let mock_idea_template = MOCK_ASSETS
-            .get_file("innovator_idea.yml")
-            .ok_or_else(|| {
-                AppError::InternalError("Mock asset missing: innovator_idea.yml".to_string())
-            })?
-            .contents_utf8()
-            .ok_or_else(|| {
-                AppError::InternalError("Invalid UTF-8 in innovator_idea.yml".to_string())
-            })?;
+    let safe_tag = sanitize_yaml_value(&config.mock_tag);
+    let today = Utc::now().format("%Y-%m-%d").to_string();
+    let mut created_paths = Vec::new();
+    let mut proposal_titles = Vec::new();
 
-        let idea_id = generate_mock_id();
-        let safe_tag = sanitize_yaml_value(&config.mock_tag);
-        let idea_content = mock_idea_template
-            .replace(TMPL_ID, &idea_id)
-            .replace(TMPL_PERSONA, role)
-            .replace(TMPL_DATE, &Utc::now().format("%Y-%m-%d").to_string())
-            .replace(TMPL_TAG, &safe_tag);
-
-        repository.write_file(idea_path_str, &idea_content)?;
-        let files: Vec<&Path> = vec![idea_path.as_path()];
-        git.commit_files(
-            &format!("[{}] innovator: mock creation (create idea)", config.mock_tag),
-            &files,
-        )?;
-    } else if task == "refine_idea_and_create_proposal" {
-        if repository.file_exists(idea_path_str) {
-            repository.remove_file(idea_path_str)?;
-            let files: Vec<&Path> = vec![idea_path.as_path()];
-            git.commit_files(
-                &format!("[{}] innovator: mock refinement (remove idea)", config.mock_tag),
-                &files,
-            )?;
-        }
-    } else {
-        let proposal_path = room_dir.join("proposal.yml");
+    for index in 1..=3 {
+        let slug = format!("mock-proposal-{}", index);
+        let proposal_path =
+            crate::domain::exchange::proposals::paths::proposal_file(jules_path, role, &slug);
         let proposal_path_str = proposal_path
             .to_str()
-            .ok_or_else(|| AppError::Validation("Invalid proposal.yml path".to_string()))?;
-        let proposal_id = generate_mock_id();
-        let safe_tag = sanitize_yaml_value(&config.mock_tag);
+            .ok_or_else(|| AppError::Validation("Invalid proposal path".to_string()))?;
+        let proposal_title = format!("Mock proposal {} for {}", index, role);
         let proposal_content = format!(
-            "schema_version: 1\nid: \"{}\"\npersona: \"{}\"\ncreated_at: \"{}\"\ntitle: \"Mock direct proposal for {}\"\nproblem: |\n  Mock direct proposal generated without observer pass.\n  Mock tag: {}\nintroduction: |\n  Direct path for innovators entry-point execution.\nimportance: |\n  Validate single-pass proposal publication behavior.\nimpact_surface:\n  - \"workflow\"\nimplementation_cost: \"medium\"\nconsistency_risks:\n  - \"Bypasses observer feedback loop by design for direct mode\"\nverification_signals:\n  - \"Issue is created from proposal.yml in the same run\"\n",
-            proposal_id,
+            "schema_version: 1\nid: \"{}\"\npersona: \"{}\"\ncreated_at: \"{}\"\ntitle: \"{}\"\nproblem: |\n  Mock proposal direction {} generated for workflow validation.\n  Mock tag: {}\nintroduction: |\n  Introduce mock proposal path {} to verify multi-proposal publication.\nimportance: |\n  Ensures innovators can emit multiple independent proposals in one run.\nimpact_surface:\n  - \"workflow\"\nimplementation_cost: \"medium\"\nconsistency_risks:\n  - \"Parallel proposal publication can create prioritization overhead\"\nverification_signals:\n  - \"Three proposal issues are created from a single innovators run\"\n",
+            generate_mock_id(),
             role,
-            Utc::now().format("%Y-%m-%d"),
-            role,
-            safe_tag
+            today,
+            proposal_title,
+            index,
+            safe_tag,
+            index,
         );
         repository.write_file(proposal_path_str, &proposal_content)?;
-        let files: Vec<&Path> = vec![proposal_path.as_path()];
-        git.commit_files(
-            &format!("[{}] innovator: mock direct proposal", config.mock_tag),
-            &files,
-        )?;
+        created_paths.push(proposal_path);
+        proposal_titles.push(proposal_title);
     }
+
+    let perspective_path =
+        crate::domain::workstations::paths::workstation_perspective(jules_path, role);
+    let perspective_path_str = perspective_path
+        .to_str()
+        .ok_or_else(|| AppError::Validation("Invalid perspective path".to_string()))?;
+    let workstation_dir = crate::domain::workstations::paths::workstation_dir(jules_path, role);
+    let workstation_dir_str = workstation_dir
+        .to_str()
+        .ok_or_else(|| AppError::Validation("Invalid workstation path".to_string()))?;
+    repository.create_dir_all(workstation_dir_str)?;
+
+    let perspective_content = format!(
+        "schema_version: 1\npersona: \"{}\"\nfocus: \"Mock innovators perspective\"\nrepository_observations:\n  codebase_state:\n    - \"Mock run validates three-proposal generation pipeline\"\n  startup_and_runtime_contracts:\n    - \"Workflow publish step consumes .jules/exchange/proposals/*.yml\"\n  decision_quality_gaps:\n    - \"Pending proposal prioritization strategy is unresolved\"\n  leverage_candidates:\n    - \"Increase proposal diversity per innovators run\"\nthinking_notes:\n  hypotheses:\n    - \"Multiple independent proposals improve option quality\"\n  tradeoff_assessment:\n    - \"Higher breadth can raise review overhead\"\n  rejected_paths:\n    - \"Idea/comment intermediate loop for this mock scenario\"\nfeedback_assimilation:\n  observer_inputs: []\n  next_focus:\n    - \"Validate proposal publication and cleanup behavior\"\nrecent_proposals:\n  - \"{}\"\n  - \"{}\"\n  - \"{}\"\n",
+        role, proposal_titles[2], proposal_titles[1], proposal_titles[0],
+    );
+    repository.write_file(perspective_path_str, &perspective_content)?;
+    created_paths.push(perspective_path);
+
+    let files: Vec<&Path> = created_paths.iter().map(|path| path.as_path()).collect();
+    git.commit_files(&format!("[{}] innovator: mock three proposals", config.mock_tag), &files)?;
 
     git.push_branch(&branch_name, false)?;
 
@@ -375,7 +350,7 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_creates_idea_with_create_idea_task() {
+    fn mock_innovator_creates_three_proposals_and_updates_perspective() {
         let jules_path = PathBuf::from(".jules");
         let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
@@ -389,7 +364,7 @@ mod tests {
             branch: None,
             requirement: None,
             mock: true,
-            task: Some("create_idea".to_string()),
+            task: Some("create_three_proposals".to_string()),
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
@@ -398,102 +373,15 @@ mod tests {
         assert!(output.mock_branch.starts_with("jules-innovator-"));
         assert_eq!(output.mock_pr_number, 101);
 
-        // idea.yml should now exist
-        let idea_path = jules_path.join("exchange/innovators/alice/idea.yml");
-        assert!(repository.file_exists(idea_path.to_str().unwrap()));
-    }
+        let p1 = jules_path.join("exchange/proposals/alice-mock-proposal-1.yml");
+        let p2 = jules_path.join("exchange/proposals/alice-mock-proposal-2.yml");
+        let p3 = jules_path.join("exchange/proposals/alice-mock-proposal-3.yml");
+        assert!(repository.file_exists(p1.to_str().unwrap()));
+        assert!(repository.file_exists(p2.to_str().unwrap()));
+        assert!(repository.file_exists(p3.to_str().unwrap()));
 
-    #[test]
-    fn mock_innovator_removes_idea_with_refine_idea_and_create_proposal_task() {
-        let jules_path = PathBuf::from(".jules");
-        let repository = TestStore::new().with_exists(true);
-        let git = FakeGit::new();
-        let github = FakeGitHub::new();
-        let config = make_config();
-
-        // Pre-populate idea.yml
-        let idea_path = jules_path.join("exchange/innovators/alice/idea.yml");
-        repository.write_file(idea_path.to_str().unwrap(), "existing idea").unwrap();
-
-        let options = RunOptions {
-            layer: Layer::Innovators,
-            role: Some("alice".to_string()),
-            prompt_preview: false,
-            branch: None,
-            requirement: None,
-            mock: true,
-            task: Some("refine_idea_and_create_proposal".to_string()),
-        };
-
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
-        assert!(result.is_ok());
-
-        // idea.yml should be removed
-        assert!(!repository.file_exists(idea_path.to_str().unwrap()));
-    }
-
-    #[test]
-    fn mock_innovator_create_then_refine_is_deterministic() {
-        let jules_path = PathBuf::from(".jules");
-        let repository = TestStore::new().with_exists(true);
-        let git = FakeGit::new();
-        let github = FakeGitHub::new();
-        let config = make_config();
-
-        let idea_path = jules_path.join("exchange/innovators/alice/idea.yml");
-
-        // create_idea task: creates idea.yml
-        let create_options = RunOptions {
-            layer: Layer::Innovators,
-            role: Some("alice".to_string()),
-            prompt_preview: false,
-            branch: None,
-            requirement: None,
-            mock: true,
-            task: Some("create_idea".to_string()),
-        };
-        let _ = execute_mock(&jules_path, &create_options, &config, &git, &github, &repository)
-            .unwrap();
-        assert!(repository.file_exists(idea_path.to_str().unwrap()));
-
-        // refine_proposal task: removes idea.yml
-        let refine_options = RunOptions {
-            layer: Layer::Innovators,
-            role: Some("alice".to_string()),
-            prompt_preview: false,
-            branch: None,
-            requirement: None,
-            mock: true,
-            task: Some("refine_idea_and_create_proposal".to_string()),
-        };
-        let _ = execute_mock(&jules_path, &refine_options, &config, &git, &github, &repository)
-            .unwrap();
-        assert!(!repository.file_exists(idea_path.to_str().unwrap()));
-    }
-
-    #[test]
-    fn mock_innovator_direct_task_creates_proposal() {
-        let jules_path = PathBuf::from(".jules");
-        let repository = TestStore::new().with_exists(true);
-        let git = FakeGit::new();
-        let github = FakeGitHub::new();
-        let config = make_config();
-
-        let options = RunOptions {
-            layer: Layer::Innovators,
-            role: Some("alice".to_string()),
-            prompt_preview: false,
-            branch: None,
-            requirement: None,
-            mock: true,
-            task: Some("create_proposal".to_string()),
-        };
-
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
-        assert!(result.is_ok());
-
-        let proposal_path = jules_path.join("exchange/innovators/alice/proposal.yml");
-        assert!(repository.file_exists(proposal_path.to_str().unwrap()));
+        let perspective_path = jules_path.join("workstations/alice/perspective.yml");
+        assert!(repository.file_exists(perspective_path.to_str().unwrap()));
     }
 
     #[test]

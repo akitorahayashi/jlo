@@ -9,5 +9,5 @@ fn create_requires_initialized_workspace() {
         .args(["create", "observers", "test"])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("workspace"));
+        .stderr(predicate::str::contains("jlo init"));
 }

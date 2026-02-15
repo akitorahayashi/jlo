@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use super::diagnostics::Diagnostics;
-use super::structure::list_subdirs;
 use super::yaml::is_kebab_case;
 
 pub fn naming_checks(jules_path: &Path, event_states: &[String], diagnostics: &mut Diagnostics) {
@@ -21,14 +20,48 @@ pub fn naming_checks(jules_path: &Path, event_states: &[String], diagnostics: &m
         validate_filename(&entry, diagnostics, "requirement");
     }
 
-    let innovators_dir = crate::domain::exchange::innovators::paths::innovators_dir(jules_path);
-    if innovators_dir.exists() {
-        for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
-            let comments_dir = persona_dir.join("comments");
-            for entry in list_files(&comments_dir, diagnostics) {
-                validate_filename(&entry, diagnostics, "innovator comment");
-            }
-        }
+    for entry in list_files(
+        &crate::domain::exchange::proposals::paths::proposals_dir(jules_path),
+        diagnostics,
+    ) {
+        validate_proposal_filename(&entry, diagnostics);
+    }
+}
+
+fn validate_proposal_filename(path: &Path, diagnostics: &mut Diagnostics) {
+    if path.file_name().and_then(|name| name.to_str()) == Some(".gitkeep") {
+        return;
+    }
+
+    if path.extension().and_then(|ext| ext.to_str()) != Some("yml") {
+        diagnostics.push_error(path.display().to_string(), "proposal file must be .yml");
+        return;
+    }
+
+    let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else {
+        diagnostics.push_error(path.display().to_string(), "proposal filename is invalid");
+        return;
+    };
+    if stem.is_empty() {
+        diagnostics.push_error(path.display().to_string(), "proposal filename must not be empty");
+        return;
+    }
+
+    if !stem.contains('-') {
+        diagnostics.push_error(
+            path.display().to_string(),
+            "proposal filename must include '<persona>-<slug>'",
+        );
+    }
+
+    if !stem
+        .chars()
+        .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-' || ch == '_')
+    {
+        diagnostics.push_error(
+            path.display().to_string(),
+            "proposal filename must use lowercase ASCII, digits, '-', or '_'",
+        );
     }
 }
 

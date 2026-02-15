@@ -92,7 +92,7 @@ where
         && !validate_safe_path_component(task)
     {
         return Err(AppError::Validation(format!(
-            "Invalid task '{}': must be a safe path component (e.g. 'create_idea')",
+            "Invalid task '{}': must be a safe path component (e.g. 'create_three_proposals')",
             task,
         )));
     }

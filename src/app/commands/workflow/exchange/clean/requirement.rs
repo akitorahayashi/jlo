@@ -29,7 +29,7 @@ pub fn execute(
     options: ExchangeCleanRequirementOptions,
 ) -> Result<ExchangeCleanRequirementOutput, AppError> {
     let repository = LocalRepositoryAdapter::current()?;
-    let root = workspace_root(&repository)?;
+    let root = repository_root(&repository)?;
     let git = GitCommandAdapter::new(root);
     execute_with_adapters(options, &repository, &git)
 }
@@ -157,13 +157,13 @@ fn resolve_requirement_path<
         )));
     }
 
-    let root = workspace_root(repository)?;
+    let root = repository_root(repository)?;
     let requirement_rel = to_repo_relative(&root, canonical_requirement);
 
     Ok(requirement_rel)
 }
 
-fn workspace_root<W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader + ?Sized>(
+fn repository_root<W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader + ?Sized>(
     repository: &W,
 ) -> Result<PathBuf, AppError> {
     let jules_path = repository.jules_path();

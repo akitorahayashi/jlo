@@ -10,7 +10,7 @@ pub struct WorkflowRunOptions {
     pub mock: bool,
     /// Mock tag (required if mock is true).
     pub mock_tag: Option<String>,
-    /// Task selector for innovators (e.g. create_idea, refine_idea_and_create_proposal).
+    /// Task selector for innovators (expected: create_three_proposals).
     pub task: Option<String>,
 }
 

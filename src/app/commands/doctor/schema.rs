@@ -144,51 +144,26 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
             }
         }
 
-        let innovators_dir =
-            crate::domain::exchange::innovators::paths::innovators_dir(inputs.jules_path);
-        if innovators_dir.exists() {
-            for persona_dir in list_subdirs(&innovators_dir, diagnostics) {
-                let persona_name =
-                    persona_dir.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
-
-                let perspective_path =
-                    crate::domain::exchange::innovators::paths::innovator_perspective(
-                        inputs.jules_path,
-                        &persona_name,
-                    );
-                if perspective_path.exists() {
-                    validate_innovator_perspective(&perspective_path, &persona_name, diagnostics);
-                }
-
-                let idea_path = crate::domain::exchange::innovators::paths::innovator_idea(
-                    inputs.jules_path,
-                    &persona_name,
+        for role_name in scheduled_innovator_roles(inputs.root, diagnostics) {
+            let perspective_path = crate::domain::workstations::paths::workstation_perspective(
+                inputs.jules_path,
+                &role_name,
+            );
+            if !perspective_path.exists() {
+                diagnostics.push_error(
+                    perspective_path.display().to_string(),
+                    "Missing innovator workstation perspective.yml",
                 );
-                if idea_path.exists() {
-                    validate_innovator_idea(&idea_path, diagnostics);
-                    check_placeholders_file(&idea_path, diagnostics);
-                }
-
-                let proposal_path = crate::domain::exchange::innovators::paths::innovator_proposal(
-                    inputs.jules_path,
-                    &persona_name,
-                );
-                if proposal_path.exists() {
-                    validate_innovator_proposal(&proposal_path, diagnostics);
-                    check_placeholders_file(&proposal_path, diagnostics);
-                }
-
-                let comments_dir =
-                    crate::domain::exchange::innovators::paths::innovator_comments_dir(
-                        inputs.jules_path,
-                        &persona_name,
-                    );
-                if comments_dir.exists() {
-                    for entry in read_yaml_files(&comments_dir, diagnostics) {
-                        validate_innovator_comment(&entry, diagnostics);
-                    }
-                }
+                continue;
             }
+            validate_innovator_perspective(&perspective_path, &role_name, diagnostics);
+        }
+
+        let proposals_dir =
+            crate::domain::exchange::proposals::paths::proposals_dir(inputs.jules_path);
+        for proposal_path in read_yaml_files(&proposals_dir, diagnostics) {
+            validate_innovator_proposal(&proposal_path, diagnostics);
+            check_placeholders_file(&proposal_path, diagnostics);
         }
     }
 }
@@ -538,6 +513,30 @@ fn ensure_date(map: &serde_yaml::Mapping, path: &Path, key: &str, diagnostics: &
     }
 }
 
+fn scheduled_innovator_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<String> {
+    let schedule_path = crate::domain::schedule::paths::schedule(root);
+    let content = match fs::read_to_string(&schedule_path) {
+        Ok(content) => content,
+        Err(err) => {
+            diagnostics.push_error(schedule_path.display().to_string(), err.to_string());
+            return Vec::new();
+        }
+    };
+
+    let schedule = match crate::domain::Schedule::parse_toml(&content) {
+        Ok(schedule) => schedule,
+        Err(err) => {
+            diagnostics.push_error(schedule_path.display().to_string(), err.to_string());
+            return Vec::new();
+        }
+    };
+
+    match schedule.innovators {
+        Some(layer) => layer.roles.into_iter().map(|role| role.name.as_str().to_string()).collect(),
+        None => Vec::new(),
+    }
+}
+
 // --- Innovator validation functions ---
 
 fn validate_innovator_role_file(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
@@ -613,14 +612,6 @@ fn validate_innovator_document_common_fields(
     ensure_non_empty_string(data, path, "problem", diagnostics);
 }
 
-fn validate_innovator_idea(path: &Path, diagnostics: &mut Diagnostics) {
-    if let Some(data) = load_yaml_mapping(path, diagnostics) {
-        validate_innovator_document_common_fields(&data, path, diagnostics);
-        ensure_non_empty_string(&data, path, "introduction", diagnostics);
-        ensure_non_empty_string(&data, path, "expected_value", diagnostics);
-    }
-}
-
 fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
     if let Some(data) = load_yaml_mapping(path, diagnostics) {
         validate_innovator_document_common_fields(&data, path, diagnostics);
@@ -630,61 +621,18 @@ fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
         ensure_non_empty_string(&data, path, "implementation_cost", diagnostics);
         ensure_non_empty_sequence(&data, path, "consistency_risks", diagnostics);
         ensure_non_empty_sequence(&data, path, "verification_signals", diagnostics);
-    }
-}
 
-fn validate_innovator_comment(path: &Path, diagnostics: &mut Diagnostics) {
-    let data = match load_yaml_mapping(path, diagnostics) {
-        Some(data) => data,
-        None => return,
-    };
-
-    ensure_int(&data, path, "schema_version", diagnostics, Some(1));
-    ensure_non_empty_string(&data, path, "author", diagnostics);
-
-    let comment_types = ["risk", "supplement", "alternative"];
-    ensure_enum(&data, path, "type", &comment_types, diagnostics);
-    ensure_non_empty_string(&data, path, "target", diagnostics);
-    ensure_non_empty_string(&data, path, "summary", diagnostics);
-    ensure_non_empty_string(&data, path, "rationale", diagnostics);
-
-    if let Some(evidence) = get_sequence(&data, "evidence") {
-        if evidence.is_empty() {
-            diagnostics.push_error(path.display().to_string(), "evidence must have entries");
-        } else {
-            for (idx, entry) in evidence.iter().enumerate() {
-                if let serde_yaml::Value::Mapping(map) = entry {
-                    if get_string(map, "path").unwrap_or_default().is_empty() {
-                        diagnostics.push_error(
-                            path.display().to_string(),
-                            format!("evidence[{}].path is required", idx),
-                        );
-                    }
-                    if get_sequence(map, "loc").map(|seq| seq.is_empty()).unwrap_or(true) {
-                        diagnostics.push_error(
-                            path.display().to_string(),
-                            format!("evidence[{}].loc is required", idx),
-                        );
-                    }
-                    if get_string(map, "note").unwrap_or_default().is_empty() {
-                        diagnostics.push_error(
-                            path.display().to_string(),
-                            format!("evidence[{}].note is required", idx),
-                        );
-                    }
-                } else {
-                    diagnostics.push_error(
-                        path.display().to_string(),
-                        format!("evidence[{}] must be a map", idx),
-                    );
-                }
-            }
+        let persona = get_string(&data, "persona").unwrap_or_default();
+        if !persona.is_empty()
+            && let Some(stem) = path.file_stem().and_then(|s| s.to_str())
+            && !stem.starts_with(&format!("{}-", persona))
+        {
+            diagnostics.push_error(
+                path.display().to_string(),
+                format!("proposal filename must start with '{}-'", persona),
+            );
         }
-    } else {
-        diagnostics.push_error(path.display().to_string(), "Missing evidence list");
     }
-
-    ensure_non_empty_string(&data, path, "content", diagnostics);
 }
 
 #[cfg(test)]

@@ -16,10 +16,8 @@
         run: |
           set -euo pipefail
           run_narrator=false
-          run_innovators_1=false
+          run_innovators=false
           run_observers=false
-          run_innovators_2=false
-          run_publish_proposals=false
           run_decider=false
           run_planner=false
           run_implementer=false
@@ -27,19 +25,15 @@
           case "${ENTRY_POINT}" in
             narrator)
               run_narrator=true
-              run_innovators_1=true
+              run_innovators=true
               run_observers=true
-              run_innovators_2=true
-              run_publish_proposals=true
               run_decider=true
               run_planner=true
               run_implementer=true
               ;;
             observers)
-              run_innovators_1=true
+              run_innovators=true
               run_observers=true
-              run_innovators_2=true
-              run_publish_proposals=true
               run_decider=true
               run_planner=true
               run_implementer=true
@@ -59,4 +53,4 @@
               ;;
           esac
 
-          echo "json={\"should_run\":true,\"entry_point\":\"${ENTRY_POINT}\",\"run_narrator\":${run_narrator},\"run_innovators_1\":${run_innovators_1},\"run_observers\":${run_observers},\"run_innovators_2\":${run_innovators_2},\"run_publish_proposals\":${run_publish_proposals},\"run_decider\":${run_decider},\"run_planner\":${run_planner},\"run_implementer\":${run_implementer}}" >> "$GITHUB_OUTPUT"
+          echo "json={\"should_run\":true,\"entry_point\":\"${ENTRY_POINT}\",\"run_narrator\":${run_narrator},\"run_innovators\":${run_innovators},\"run_observers\":${run_observers},\"run_decider\":${run_decider},\"run_planner\":${run_planner},\"run_implementer\":${run_implementer}}" >> "$GITHUB_OUTPUT"

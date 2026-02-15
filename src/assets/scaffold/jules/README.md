@@ -72,10 +72,8 @@ Implementer modifies source code and requires human review.
 |   |       +-- *.yml
 |   +-- requirements/   # Actionable requirements (flat)
 |   |   +-- *.yml
-|   +-- innovators/     # Innovator state persistence
-|       +-- <persona>/  # Persona-specific workstation
-|           +-- perspective.yml   # Innovator continuity
-|           +-- proposal.yml      # Current proposal draft
+|   +-- proposals/      # Innovator proposal queue
+|       +-- *.yml
 |
 +-- workstations/       # Observer state persistence
 |   +-- <role>/         # Role-specific workstation
@@ -95,7 +93,7 @@ Implementer modifies source code and requires human review.
     |   +-- contracts.yml    # Shared observer contract
     |   +-- observers_prompt.j2 # Prompt construction rules
     |   +-- tasks/
-    |   |   +-- bridge_comments.yml
+|   |   +-- observe.yml
     |   +-- schemas/
     |   |   +-- event.yml    # Event template
     |
@@ -127,17 +125,14 @@ Implementer modifies source code and requires human review.
     |   +-- tasks/
     |   |   +-- integrate_implementer_branches.yml
     |
-    +-- innovators/     # Multi-role layer (phase-driven)
-        +-- innovators_prompt.j2      # Prompt construction (uses {{phase}})
+    +-- innovators/     # Multi-role layer
+        +-- innovators_prompt.j2      # Prompt construction
         +-- contracts.yml             # Layer contract
         +-- tasks/
-        |   +-- create_idea.yml       # Creation phase task
-        |   +-- refine_idea_and_create_proposal.yml   # Refinement phase task
+        |   +-- create_three_proposals.yml
         +-- schemas/
         |   +-- perspective.yml
-        |   +-- idea.yml
         |   +-- proposal.yml
-        |   +-- comment.yml
         +-- roles/
             +-- <persona>/
                 +-- role.yml
@@ -169,7 +164,7 @@ Implementer modifies source code and requires human review.
 
 **Integrator**: A manual, on-demand layer that merges all remote `jules-implementer-*` branches into a single integration branch. PR discussions are retrieved live via `gh` during execution. Not part of the scheduled orchestration chain.
 
-**Innovators**: Task-driven execution (`--task <task_name>`). Standard scheduled flow uses `tasks/create_idea.yml` then `tasks/refine_idea_and_create_proposal.yml` with observer feedback in between. Direct invocation can use `tasks/create_proposal.yml` to publish without observer pass. Universal constraints are in `contracts.yml`.
+**Innovators**: Task-driven execution (`--task <task_name>`). Current flow uses `tasks/create_three_proposals.yml` to emit three proposals in one run and update workstation memory. Universal constraints are in `contracts.yml`.
 
 ## Exchange
  
