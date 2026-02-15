@@ -1,8 +1,15 @@
+use crate::domain::RoleId;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-use super::error::ScheduleError;
-use crate::domain::RoleId;
+#[derive(Debug, thiserror::Error)]
+pub enum ScheduleError {
+    #[error("Schedule config invalid: {0}")]
+    ConfigInvalid(String),
+
+    #[error("TOML format error: {0}")]
+    Toml(#[from] toml::de::Error),
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]

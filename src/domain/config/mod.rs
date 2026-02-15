@@ -4,6 +4,7 @@ pub mod parse;
 pub mod paths;
 pub mod run;
 pub mod run_options;
+pub mod schedule;
 pub mod workflow_generate;
 pub mod workflow_runner_mode;
 

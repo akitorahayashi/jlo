@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::domain::AppError;
-use crate::domain::schedule::{Schedule, ScheduleLayer};
+use crate::domain::config::schedule::{Schedule, ScheduleLayer};
 
 /// Configuration for agent execution loaded from `.jlo/config.toml`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

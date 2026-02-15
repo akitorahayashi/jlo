@@ -2,7 +2,7 @@
 //!
 //! This port encapsulates domain-facing operations on the `.jlo/` directory.
 //! Path semantics (which files live where) are owned by `domain::roles::paths`,
-//! `domain::config::paths`, and `domain::schedule::paths`;
+//! `domain::config::paths`;
 //! this port owns only the I/O behavior.
 
 use std::path::PathBuf;

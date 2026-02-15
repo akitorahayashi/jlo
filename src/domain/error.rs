@@ -155,7 +155,7 @@ pub enum AppError {
 
     /// Exchange schedule error.
     #[error(transparent)]
-    Schedule(#[from] crate::domain::schedule::ScheduleError),
+    Schedule(#[from] crate::domain::config::schedule::ScheduleError),
 
     /// Requirement file not found at path.
     #[error("Requirement file not found: {0}")]

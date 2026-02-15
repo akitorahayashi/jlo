@@ -5,7 +5,7 @@ use chrono::{NaiveDate, Utc};
 
 use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
 use crate::app::config::load_schedule;
-use crate::domain::schedule::ScheduleLayer;
+use crate::domain::config::schedule::ScheduleLayer;
 use crate::domain::{AppError, Layer};
 use crate::ports::RoleTemplateStore;
 
