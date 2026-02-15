@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::domain::{AppError, Layer};
 
-/// Configuration for mock execution, loaded from workspace files.
+/// Configuration for mock execution, loaded from repository files.
 #[derive(Debug, Clone)]
 pub struct MockConfig {
     /// Mock tag identifier (embedded in branch names and filenames).

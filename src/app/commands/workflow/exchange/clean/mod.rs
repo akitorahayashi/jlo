@@ -8,7 +8,7 @@ pub use requirement::{ExchangeCleanRequirementOptions, ExchangeCleanRequirementO
 
 use crate::domain::AppError;
 use crate::domain::PromptAssetLoader;
-use crate::ports::{GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
+use crate::ports::{Git, JloStore, JulesStore, RepositoryFilesystem};
 
 /// Execute exchange clean requirement command.
 pub fn clean_requirement(
@@ -18,14 +18,14 @@ pub fn clean_requirement(
 }
 
 pub fn clean_requirement_with_adapters<
-    G: GitPort,
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    G: Git,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 >(
     options: ExchangeCleanRequirementOptions,
-    workspace: &W,
+    repository: &W,
     git: &G,
 ) -> Result<ExchangeCleanRequirementOutput, AppError> {
-    requirement::execute_with_adapters(options, workspace, git)
+    requirement::execute_with_adapters(options, repository, git)
 }
 
 /// Execute exchange clean mock command.

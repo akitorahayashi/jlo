@@ -1,14 +1,14 @@
-//! `RepositoryFilesystemPort` implementation for `FilesystemStore`.
+//! `RepositoryFilesystem` implementation for `LocalRepositoryAdapter`.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::domain::AppError;
-use crate::ports::RepositoryFilesystemPort;
+use crate::ports::RepositoryFilesystem;
 
-use super::FilesystemStore;
+use super::LocalRepositoryAdapter;
 
-impl RepositoryFilesystemPort for FilesystemStore {
+impl RepositoryFilesystem for LocalRepositoryAdapter {
     fn read_file(&self, path: &str) -> Result<String, AppError> {
         let full_path = self.resolve_path(path);
         self.validate_path_within_root(&full_path)?;

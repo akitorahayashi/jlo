@@ -2,7 +2,7 @@ use std::path::Path;
 
 use super::diagnostics::Diagnostics;
 use super::yaml::{read_yaml_files, read_yaml_string, read_yaml_strings};
-use crate::domain::workspace::paths::jules;
+use crate::domain::repository::paths::jules;
 
 const MIN_STATEMENT_LEN: usize = 20;
 const MIN_PROBLEM_LEN: usize = 20;

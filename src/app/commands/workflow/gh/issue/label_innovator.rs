@@ -8,7 +8,7 @@
 use serde::Serialize;
 
 use crate::domain::AppError;
-use crate::ports::GitHubPort;
+use crate::ports::GitHub;
 
 /// Options for `workflow gh issue label-innovator`.
 #[derive(Debug, Clone)]
@@ -32,7 +32,7 @@ pub struct LabelInnovatorOutput {
 
 /// Execute `issue label-innovator`.
 pub fn execute(
-    github: &impl GitHubPort,
+    github: &impl GitHub,
     options: LabelInnovatorOptions,
 ) -> Result<LabelInnovatorOutput, AppError> {
     let persona_label = format!("innovator/{}", options.persona);

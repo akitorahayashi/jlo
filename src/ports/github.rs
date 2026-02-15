@@ -49,7 +49,7 @@ pub struct IssueInfo {
     pub url: String,
 }
 
-pub trait GitHubPort {
+pub trait GitHub {
     // === Mock mode operations ===
 
     /// Create a pull request.

@@ -4,13 +4,12 @@ use chrono::DateTime;
 
 use crate::app::configuration::{detect_repository_source, load_mock_config};
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::workspace::paths::jules;
+use crate::domain::repository::paths::jules;
 use crate::domain::{
     AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RunConfig, RunOptions,
 };
 use crate::ports::{
-    AutomationMode, GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort,
-    SessionRequest,
+    AutomationMode, Git, GitHub, JloStore, JulesStore, RepositoryFilesystem, SessionRequest,
 };
 
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -19,9 +18,9 @@ pub struct NarratorLayer;
 
 impl<W> LayerStrategy<W> for NarratorLayer
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -33,13 +32,13 @@ where
         jules_path: &Path,
         options: &RunOptions,
         config: &RunConfig,
-        git: &dyn GitPort,
-        _github: &dyn GitHubPort,
-        workspace: &W,
+        git: &dyn Git,
+        _github: &dyn GitHub,
+        repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
         if options.mock {
-            let mock_config = load_mock_config(jules_path, options, workspace)?;
+            let mock_config = load_mock_config(jules_path, options, repository)?;
             let output = execute_mock(&mock_config)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
@@ -63,7 +62,7 @@ where
             options.branch.as_deref(),
             config,
             git,
-            workspace,
+            repository,
             client_factory,
         )
     }
@@ -76,14 +75,14 @@ fn execute_real<G, W>(
     branch: Option<&str>,
     config: &RunConfig,
     git: &G,
-    workspace: &W,
+    repository: &W,
     client_factory: &dyn JulesClientFactory,
 ) -> Result<RunResult, AppError>
 where
-    G: GitPort + ?Sized,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    G: Git + ?Sized,
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -91,14 +90,14 @@ where
         + 'static,
 {
     let changes_path = exchange_changes_path(jules_path)?;
-    let had_previous_changes = workspace.file_exists(&changes_path);
+    let had_previous_changes = repository.file_exists(&changes_path);
 
     // Determine starting branch (Narrator always uses jules worker branch)
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
 
     // Determine commit range
-    let range = determine_range(&changes_path, git, workspace)?;
+    let range = determine_range(&changes_path, git, repository)?;
 
     // Check if there are any non-excluded changes in the range
     let pathspec = &[".", ":(exclude).jules"];
@@ -114,7 +113,7 @@ where
         });
     }
 
-    let prompt = assemble_narrator_prompt(jules_path, &range, git, workspace)?;
+    let prompt = assemble_narrator_prompt(jules_path, &range, git, repository)?;
 
     if prompt_preview {
         println!("=== Prompt Preview: Narrator ===");
@@ -129,7 +128,7 @@ where
     }
 
     if had_previous_changes {
-        workspace.remove_file(&changes_path)?;
+        repository.remove_file(&changes_path)?;
         println!("Removed previous .jules/exchange/changes.yml after reading created_at cursor.");
     }
 
@@ -177,10 +176,10 @@ fn execute_mock(config: &MockConfig) -> Result<MockOutput, AppError> {
 // --- Prompt Assembly Logic ---
 
 fn assemble_narrator_prompt<
-    G: GitPort + ?Sized,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    G: Git + ?Sized,
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -190,7 +189,7 @@ fn assemble_narrator_prompt<
     jules_path: &Path,
     range: &RangeContext,
     git: &G,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     let run_mode = match range.selection_mode.as_str() {
         "incremental" => "overwrite",
@@ -209,12 +208,12 @@ fn assemble_narrator_prompt<
     };
     prompt_context = prompt_context.with_var("commits_since_cursor", commits_text);
 
-    assemble_prompt(jules_path, Layer::Narrator, &prompt_context, workspace)
+    assemble_prompt(jules_path, Layer::Narrator, &prompt_context, repository)
         .map(|p: AssembledPrompt| p.content)
         .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
-fn fetch_commits_since_cursor<G: GitPort + ?Sized>(
+fn fetch_commits_since_cursor<G: Git + ?Sized>(
     git: &G,
     range: &RangeContext,
 ) -> Result<String, AppError> {
@@ -247,15 +246,15 @@ struct RangeContext {
 fn determine_range<G, W>(
     changes_path: &str,
     git: &G,
-    workspace: &W,
+    repository: &W,
 ) -> Result<RangeContext, AppError>
 where
-    G: GitPort + ?Sized,
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    G: Git + ?Sized,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
     let head_sha = git.get_head_sha()?;
-    let changes_content = if workspace.file_exists(changes_path) {
-        Some(workspace.read_file(changes_path)?)
+    let changes_content = if repository.file_exists(changes_path) {
+        Some(repository.read_file(changes_path)?)
     } else {
         None
     };
@@ -352,7 +351,7 @@ fn extract_created_at(content: &str) -> Result<String, AppError> {
     Ok(created_at.to_string())
 }
 
-fn get_commit_before_timestamp<G: GitPort + ?Sized>(
+fn get_commit_before_timestamp<G: Git + ?Sized>(
     git: &G,
     head_sha: &str,
     timestamp: &str,
@@ -397,8 +396,7 @@ fn exchange_changes_path(jules_path: &Path) -> Result<String, AppError> {
 mod tests {
     use super::*;
     use crate::ports::{
-        DiscoveredRole, JloStorePort, JulesStorePort, PullRequestInfo, RepositoryFilesystemPort,
-        ScaffoldFile,
+        DiscoveredRole, JloStore, JulesStore, PullRequestInfo, RepositoryFilesystem, ScaffoldFile,
     };
     use std::collections::HashMap;
     use std::path::PathBuf;
@@ -498,7 +496,7 @@ created_at: "2026-02-05 00:00:00"
     #[allow(dead_code)]
     struct MustNotTouchGit;
 
-    impl GitPort for MustNotTouchGit {
+    impl Git for MustNotTouchGit {
         fn get_head_sha(&self) -> Result<String, AppError> {
             panic!("mock narrator no-op must not call get_head_sha");
         }
@@ -560,7 +558,7 @@ created_at: "2026-02-05 00:00:00"
     #[allow(dead_code)]
     struct MustNotTouchGitHub;
 
-    impl GitHubPort for MustNotTouchGitHub {
+    impl GitHub for MustNotTouchGitHub {
         fn create_pull_request(
             &self,
             _head: &str,
@@ -648,7 +646,7 @@ created_at: "2026-02-05 00:00:00"
         }
     }
 
-    impl RepositoryFilesystemPort for DummyWorkspace {
+    impl RepositoryFilesystem for DummyWorkspace {
         fn read_file(&self, _path: &str) -> Result<String, AppError> {
             panic!("mock narrator no-op must not call read_file");
         }
@@ -694,7 +692,7 @@ created_at: "2026-02-05 00:00:00"
         }
     }
 
-    impl JloStorePort for DummyWorkspace {
+    impl JloStore for DummyWorkspace {
         fn jlo_exists(&self) -> bool {
             panic!("mock narrator no-op must not call jlo_exists");
         }
@@ -733,7 +731,7 @@ created_at: "2026-02-05 00:00:00"
         }
     }
 
-    impl JulesStorePort for DummyWorkspace {
+    impl JulesStore for DummyWorkspace {
         fn jules_exists(&self) -> bool {
             panic!("mock narrator no-op must not call jules_exists");
         }

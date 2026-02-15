@@ -2,7 +2,7 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 use crate::domain::AppError;
-use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
+use crate::ports::{GitHub, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
 
 #[derive(Debug, Clone, Default)]
 pub struct GitHubCommandAdapter;
@@ -65,7 +65,7 @@ impl GitHubCommandAdapter {
     }
 }
 
-impl GitHubPort for GitHubCommandAdapter {
+impl GitHub for GitHubCommandAdapter {
     fn create_pull_request(
         &self,
         head: &str,

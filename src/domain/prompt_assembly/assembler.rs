@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use minijinja::{Environment, UndefinedBehavior};
 
 use crate::domain::Layer;
-use crate::domain::workspace::paths::jules;
+use crate::domain::repository::paths::jules;
 
 use super::error::PromptAssemblyError;
 use super::loader::PromptAssetLoader;

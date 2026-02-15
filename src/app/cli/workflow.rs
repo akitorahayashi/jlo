@@ -5,9 +5,9 @@ use clap::{Args, Subcommand};
 
 #[derive(Subcommand)]
 pub enum WorkflowCommands {
-    /// Bootstrap the .jules/ runtime workspace on the current branch
+    /// Bootstrap the .jules/ runtime repository on the current branch
     Bootstrap,
-    /// Validation gate for .jules/ workspace
+    /// Validation gate for .jules/ repository
     Doctor,
     /// Run a layer and return wait-gating metadata
     Run {
@@ -262,7 +262,7 @@ fn run_workflow_gh(command: WorkflowGhCommands) -> Result<(), AppError> {
 }
 
 fn run_workflow_gh_process_pr(
-    github: &impl crate::ports::GitHubPort,
+    github: &impl crate::ports::GitHub,
     command: WorkflowProcessPrCommands,
 ) -> Result<(), AppError> {
     use crate::app::commands::workflow;
@@ -290,7 +290,7 @@ fn run_workflow_gh_process_pr(
 }
 
 fn run_workflow_gh_process_issue(
-    github: &impl crate::ports::GitHubPort,
+    github: &impl crate::ports::GitHub,
     command: WorkflowProcessIssueCommands,
 ) -> Result<(), AppError> {
     use crate::app::commands::workflow;

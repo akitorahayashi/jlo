@@ -2,7 +2,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 
 use crate::domain::AppError;
-use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
+use crate::ports::{GitHub, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
 
 pub struct FakeGitHub {
     pub pr_detail: Mutex<PullRequestDetail>,
@@ -107,7 +107,7 @@ impl FakeGitHub {
     }
 }
 
-impl GitHubPort for FakeGitHub {
+impl GitHub for FakeGitHub {
     fn create_pull_request(
         &self,
         head: &str,

@@ -17,7 +17,7 @@ use std::io::ErrorKind;
 #[command(name = "jlo")]
 #[command(version)]
 #[command(
-    about = "Deploy and manage .jules/ workspace scaffolding",
+    about = "Deploy and manage .jules/ repository scaffolding",
     long_about = None
 )]
 struct Cli {
@@ -157,9 +157,9 @@ fn run_update(prompt_preview: bool, cli: bool) -> Result<(), AppError> {
             && !result.workflow_refreshed
             && result.previous_version == env!("CARGO_PKG_VERSION")
         {
-            println!("✅ Workspace already up to date");
+            println!("✅ Repository already up to date");
         } else {
-            println!("✅ Updated workspace to version {}", env!("CARGO_PKG_VERSION"));
+            println!("✅ Updated repository to version {}", env!("CARGO_PKG_VERSION"));
             if !result.created.is_empty() {
                 println!("  Created {} file(s)", result.created.len());
             }

@@ -1,29 +1,29 @@
 use crate::domain::PromptAssetLoader;
-use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort, RoleTemplateStore};
+use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 /// Application context holding dependencies for command execution.
 pub struct AppContext<W, R>
 where
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
     R: RoleTemplateStore,
 {
-    workspace: W,
+    repository: W,
     templates: R,
 }
 
 impl<W, R> AppContext<W, R>
 where
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
     R: RoleTemplateStore,
 {
     /// Create a new application context.
-    pub fn new(workspace: W, templates: R) -> Self {
-        Self { workspace, templates }
+    pub fn new(repository: W, templates: R) -> Self {
+        Self { repository, templates }
     }
 
-    /// Get a reference to the workspace store.
-    pub fn workspace(&self) -> &W {
-        &self.workspace
+    /// Get a reference to the repository adapter.
+    pub fn repository(&self) -> &W {
+        &self.repository
     }
 
     /// Get a reference to the role template store.

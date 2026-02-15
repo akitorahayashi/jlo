@@ -4,8 +4,8 @@ pub mod identifiers;
 pub mod requirement;
 
 pub mod prompt_assembly;
+pub mod repository;
 pub mod setup;
-pub mod workspace;
 
 pub mod builtin_role;
 
@@ -20,6 +20,6 @@ pub use identifiers::RoleId;
 pub use requirement::RequirementHeader;
 
 pub use prompt_assembly::{PromptAssemblyError, PromptAssetLoader};
+pub use repository::{JLO_DIR, JULES_DIR, Layer, ScaffoldManifest, VERSION_FILE};
 #[allow(unused_imports)]
 pub use setup::{DependencyGraph, EnvSpec, SetupComponent, SetupComponentId, SetupEnvArtifacts};
-pub use workspace::{JLO_DIR, JULES_DIR, Layer, ScaffoldManifest, VERSION_FILE};

@@ -1,15 +1,15 @@
-//! `JloStorePort` implementation for `FilesystemStore`.
+//! `JloStore` implementation for `LocalRepositoryAdapter`.
 
 use std::fs;
 use std::path::PathBuf;
 
-use crate::domain::workspace::paths::jlo;
+use crate::domain::repository::paths::jlo;
 use crate::domain::{AppError, JLO_DIR, Layer, RoleId};
-use crate::ports::{DiscoveredRole, JloStorePort, RepositoryFilesystemPort};
+use crate::ports::{DiscoveredRole, JloStore, RepositoryFilesystem};
 
-use super::FilesystemStore;
+use super::LocalRepositoryAdapter;
 
-impl JloStorePort for FilesystemStore {
+impl JloStore for LocalRepositoryAdapter {
     fn jlo_exists(&self) -> bool {
         self.jlo_path().exists()
     }
@@ -108,7 +108,7 @@ impl JloStorePort for FilesystemStore {
 mod tests {
     use super::super::tests::test_store;
     use crate::domain::Layer;
-    use crate::ports::{JloStorePort, RepositoryFilesystemPort};
+    use crate::ports::{JloStore, RepositoryFilesystem};
 
     #[test]
     fn discover_roles_finds_and_sorts() {

@@ -1,6 +1,6 @@
-//! Type-safe path catalog for workspace artifacts.
+//! Type-safe path catalog for repository artifacts.
 //!
-//! All logical workspace paths are defined here. Business logic modules must use
+//! All logical repository paths are defined here. Business logic modules must use
 //! these accessors instead of ad-hoc `.join("...")` chains.
 //!
 //! - [`jules`] — paths rooted under `.jules/` (runtime artifacts)
@@ -9,7 +9,7 @@
 pub mod jlo;
 pub mod jules;
 
-/// The `.jules/` workspace directory name.
+/// The `.jules/` runtime directory name.
 pub const JULES_DIR: &str = ".jules";
 
 /// The `.jlo/` control-plane directory name.

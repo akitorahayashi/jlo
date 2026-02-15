@@ -7,9 +7,7 @@
 use std::path::{Path, PathBuf};
 
 use crate::domain::{AppError, Layer, PromptAssetLoader};
-use crate::ports::{
-    DiscoveredRole, JloStorePort, JulesStorePort, RepositoryFilesystemPort, ScaffoldFile,
-};
+use crate::ports::{DiscoveredRole, JloStore, JulesStore, RepositoryFilesystem, ScaffoldFile};
 
 use super::test_files::TestFiles;
 use super::test_jlo_store::MockJloStore;
@@ -66,9 +64,9 @@ impl Default for TestStore {
     }
 }
 
-// --- Delegate RepositoryFilesystemPort to self.fs ---
+// --- Delegate RepositoryFilesystem to self.fs ---
 
-impl RepositoryFilesystemPort for TestStore {
+impl RepositoryFilesystem for TestStore {
     fn read_file(&self, path: &str) -> Result<String, AppError> {
         self.fs.read_file(path)
     }
@@ -114,9 +112,9 @@ impl RepositoryFilesystemPort for TestStore {
     }
 }
 
-// --- Delegate JloStorePort to self.jlo ---
+// --- Delegate JloStore to self.jlo ---
 
-impl JloStorePort for TestStore {
+impl JloStore for TestStore {
     fn jlo_exists(&self) -> bool {
         self.jlo.jlo_exists()
     }
@@ -150,9 +148,9 @@ impl JloStorePort for TestStore {
     }
 }
 
-// --- Delegate JulesStorePort to self.jules ---
+// --- Delegate JulesStore to self.jules ---
 
-impl JulesStorePort for TestStore {
+impl JulesStore for TestStore {
     fn jules_exists(&self) -> bool {
         self.jules.jules_exists()
     }

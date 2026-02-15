@@ -5,11 +5,10 @@ use serde::Deserialize;
 use crate::app::configuration::detect_repository_source;
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::workspace::paths::jules;
+use crate::domain::repository::paths::jules;
 use crate::domain::{AppError, Layer, PromptAssetLoader, RunConfig, RunOptions};
 use crate::ports::{
-    AutomationMode, GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort,
-    SessionRequest,
+    AutomationMode, Git, GitHub, JloStore, JulesStore, RepositoryFilesystem, SessionRequest,
 };
 
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -23,9 +22,9 @@ pub struct IntegratorLayer;
 
 impl<W> LayerStrategy<W> for IntegratorLayer
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -37,9 +36,9 @@ where
         jules_path: &Path,
         options: &RunOptions,
         config: &RunConfig,
-        git: &dyn GitPort,
-        _github: &dyn GitHubPort,
-        workspace: &W,
+        git: &dyn Git,
+        _github: &dyn GitHub,
+        repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
         if options.mock {
@@ -52,7 +51,7 @@ where
             options.branch.as_deref(),
             config,
             git,
-            workspace,
+            repository,
             client_factory,
         )
     }
@@ -64,14 +63,14 @@ fn execute_real<G, W>(
     branch: Option<&str>,
     config: &RunConfig,
     git: &G,
-    workspace: &W,
+    repository: &W,
     client_factory: &dyn JulesClientFactory,
 ) -> Result<RunResult, AppError>
 where
-    G: GitPort + ?Sized,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    G: Git + ?Sized,
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -93,7 +92,7 @@ where
         branch.map(String::from).unwrap_or_else(|| config.run.jlo_target_branch.clone());
 
     // Resolve implementer branch prefix from its contracts for discovery
-    let implementer_prefix = load_implementer_branch_prefix(jules_path, workspace)?;
+    let implementer_prefix = load_implementer_branch_prefix(jules_path, repository)?;
 
     // Preflight: discover candidate branches before Jules API session creation
     let candidates = discover_candidate_branches(git, &implementer_prefix)?;
@@ -114,7 +113,7 @@ where
             &starting_branch,
             &candidates,
             &source,
-            workspace,
+            repository,
         )?;
         println!("{}", prompt);
 
@@ -129,7 +128,7 @@ where
     let client = client_factory.create()?;
 
     let prompt =
-        assemble_integrator_prompt(jules_path, &starting_branch, &candidates, &source, workspace)?;
+        assemble_integrator_prompt(jules_path, &starting_branch, &candidates, &source, repository)?;
 
     let request = SessionRequest {
         prompt,
@@ -153,15 +152,15 @@ where
 
 /// Read the implementer branch prefix from its contracts.yml to drive discovery.
 fn load_implementer_branch_prefix<
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 >(
     jules_path: &Path,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     let contracts_path = jules::contracts(jules_path, Layer::Implementer);
     let contracts_path_str = contracts_path.to_string_lossy();
 
-    let content = workspace.read_file(&contracts_path_str).map_err(|_| {
+    let content = repository.read_file(&contracts_path_str).map_err(|_| {
         AppError::Validation(format!(
             "Cannot read implementer contracts at {}: required for branch discovery",
             contracts_path.display()
@@ -183,7 +182,7 @@ fn load_implementer_branch_prefix<
 /// Discover remote implementer branches matching the branch prefix policy.
 ///
 /// Fails explicitly if no candidate branches exist.
-fn discover_candidate_branches<G: GitPort + ?Sized>(
+fn discover_candidate_branches<G: Git + ?Sized>(
     git: &G,
     implementer_prefix: &str,
 ) -> Result<Vec<String>, AppError> {
@@ -218,9 +217,9 @@ fn discover_candidate_branches<G: GitPort + ?Sized>(
 }
 
 fn assemble_integrator_prompt<
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -231,7 +230,7 @@ fn assemble_integrator_prompt<
     starting_branch: &str,
     candidates: &[String],
     source: &str,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     let candidate_list =
         candidates.iter().map(|b| format!("- {}", b)).collect::<Vec<_>>().join("\n");
@@ -241,7 +240,7 @@ fn assemble_integrator_prompt<
         .with_var("candidate_branches", candidate_list)
         .with_var("repository", source);
 
-    assemble_prompt(jules_path, Layer::Integrator, &context, workspace)
+    assemble_prompt(jules_path, Layer::Integrator, &context, repository)
         .map(|p: AssembledPrompt| p.content)
         .map_err(|e| AppError::InternalError(e.to_string()))
 }

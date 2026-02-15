@@ -10,26 +10,24 @@ pub mod options;
 use chrono::Utc;
 
 use crate::domain::AppError;
-use crate::ports::{GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
+use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 
 use self::layer::execute_layer;
 pub use self::options::{WorkflowRunOptions, WorkflowRunOutput};
 
 /// Execute workflow run command.
 pub fn execute<G, H>(
-    store: &(
-         impl RepositoryFilesystemPort + JloStorePort + JulesStorePort + Clone + Send + Sync + 'static
-     ),
+    store: &(impl RepositoryFilesystem + JloStore + JulesStore + Clone + Send + Sync + 'static),
     options: WorkflowRunOptions,
     git: &G,
     github: &H,
 ) -> Result<WorkflowRunOutput, AppError>
 where
-    G: GitPort,
-    H: GitHubPort,
+    G: Git,
+    H: GitHub,
 {
     if !store.jules_exists() {
-        return Err(AppError::WorkspaceNotFound);
+        return Err(AppError::JulesNotFound);
     }
 
     let run_started_at = Utc::now().to_rfc3339();

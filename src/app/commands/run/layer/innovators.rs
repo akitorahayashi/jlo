@@ -6,11 +6,11 @@ use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
 use crate::app::configuration::{detect_repository_source, load_mock_config};
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::workspace::paths::jules;
+use crate::domain::repository::paths::jules;
 use crate::domain::{
     AppError, Layer, MockConfig, MockOutput, PromptAssetLoader, RoleId, RunConfig, RunOptions,
 };
-use crate::ports::{GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
+use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 
 use super::super::role_session::{dispatch_session, print_role_preview, validate_role_exists};
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -19,9 +19,9 @@ pub struct InnovatorsLayer;
 
 impl<W> LayerStrategy<W> for InnovatorsLayer
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -33,14 +33,14 @@ where
         jules_path: &Path,
         options: &RunOptions,
         config: &RunConfig,
-        git: &dyn GitPort,
-        github: &dyn GitHubPort,
-        workspace: &W,
+        git: &dyn Git,
+        github: &dyn GitHub,
+        repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
         if options.mock {
-            let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let mock_config = load_mock_config(jules_path, options, repository)?;
+            let output = execute_mock(jules_path, options, &mock_config, git, github, repository)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
@@ -65,7 +65,7 @@ where
             options.task.as_deref(),
             config,
             git,
-            workspace,
+            repository,
             client_factory,
         )
     }
@@ -80,14 +80,14 @@ fn execute_real<G, W>(
     task: Option<&str>,
     config: &RunConfig,
     git: &G,
-    workspace: &W,
+    repository: &W,
     client_factory: &dyn JulesClientFactory,
 ) -> Result<RunResult, AppError>
 where
-    G: GitPort + ?Sized,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    G: Git + ?Sized,
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -98,7 +98,7 @@ where
         .ok_or_else(|| AppError::MissingArgument("Role is required for innovators".to_string()))?;
 
     let role_id = RoleId::new(role)?;
-    validate_role_exists(jules_path, Layer::Innovators, role_id.as_str(), workspace)?;
+    validate_role_exists(jules_path, Layer::Innovators, role_id.as_str(), repository)?;
 
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
@@ -108,16 +108,16 @@ where
             "--task is required for innovators (e.g. create_idea, refine_idea_and_create_proposal, create_proposal)".to_string(),
         )
     })?;
-    let task_content = resolve_innovator_task(jules_path, task, workspace)?;
+    let task_content = resolve_innovator_task(jules_path, task, repository)?;
 
     if prompt_preview {
-        print_role_preview(jules_path, Layer::Innovators, &role_id, &starting_branch, workspace);
+        print_role_preview(jules_path, Layer::Innovators, &role_id, &starting_branch, repository);
         let assembled = assemble_innovator_prompt(
             jules_path,
             role_id.as_str(),
             task,
             &task_content,
-            workspace,
+            repository,
         )?;
         println!("  Assembled prompt: {} chars", assembled.len());
         println!("\nWould execute 1 session");
@@ -131,7 +131,7 @@ where
 
     let source = detect_repository_source(git)?;
     let assembled =
-        assemble_innovator_prompt(jules_path, role_id.as_str(), task, &task_content, workspace)?;
+        assemble_innovator_prompt(jules_path, role_id.as_str(), task, &task_content, repository)?;
     let client = client_factory.create()?;
 
     let session_id = dispatch_session(
@@ -152,9 +152,9 @@ where
 }
 
 fn assemble_innovator_prompt<
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -165,24 +165,22 @@ fn assemble_innovator_prompt<
     role: &str,
     task_name: &str,
     task: &str,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     let context = PromptContext::new()
         .with_var("role", role)
         .with_var("task_name", task_name)
         .with_var("task", task);
 
-    assemble_prompt(jules_path, Layer::Innovators, &context, workspace)
+    assemble_prompt(jules_path, Layer::Innovators, &context, repository)
         .map(|p: AssembledPrompt| p.content)
         .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
-fn resolve_innovator_task<
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
->(
+fn resolve_innovator_task<W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader>(
     jules_path: &Path,
     task: &str,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     let filename = match task {
         "create_idea" => "create_idea.yml",
@@ -193,7 +191,7 @@ fn resolve_innovator_task<
         }
     };
     let task_path = jules::tasks_dir(jules_path, Layer::Innovators).join(filename);
-    workspace.read_file(&task_path.to_string_lossy()).map_err(|_| {
+    repository.read_file(&task_path.to_string_lossy()).map_err(|_| {
         AppError::Validation(format!(
             "No task file for innovators task '{}': expected {}",
             task,
@@ -221,12 +219,12 @@ fn execute_mock<G, H, W>(
     config: &MockConfig,
     git: &G,
     github: &H,
-    workspace: &W,
+    repository: &W,
 ) -> Result<MockOutput, AppError>
 where
-    G: GitPort + ?Sized,
-    H: GitHubPort + ?Sized,
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    G: Git + ?Sized,
+    H: GitHub + ?Sized,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
     let role = options.role.as_deref().ok_or_else(|| {
         AppError::MissingArgument("Role (persona) is required for innovators".to_string())
@@ -271,7 +269,7 @@ where
 
     let room_dir_str =
         room_dir.to_str().ok_or_else(|| AppError::Validation("Invalid room path".to_string()))?;
-    workspace.create_dir_all(room_dir_str)?;
+    repository.create_dir_all(room_dir_str)?;
 
     println!("Mock innovators: task={} for {}", task, role);
 
@@ -294,15 +292,15 @@ where
             .replace(TMPL_DATE, &Utc::now().format("%Y-%m-%d").to_string())
             .replace(TMPL_TAG, &safe_tag);
 
-        workspace.write_file(idea_path_str, &idea_content)?;
+        repository.write_file(idea_path_str, &idea_content)?;
         let files: Vec<&Path> = vec![idea_path.as_path()];
         git.commit_files(
             &format!("[{}] innovator: mock creation (create idea)", config.mock_tag),
             &files,
         )?;
     } else if task == "refine_idea_and_create_proposal" {
-        if workspace.file_exists(idea_path_str) {
-            workspace.remove_file(idea_path_str)?;
+        if repository.file_exists(idea_path_str) {
+            repository.remove_file(idea_path_str)?;
             let files: Vec<&Path> = vec![idea_path.as_path()];
             git.commit_files(
                 &format!("[{}] innovator: mock refinement (remove idea)", config.mock_tag),
@@ -324,7 +322,7 @@ where
             role,
             safe_tag
         );
-        workspace.write_file(proposal_path_str, &proposal_content)?;
+        repository.write_file(proposal_path_str, &proposal_content)?;
         let files: Vec<&Path> = vec![proposal_path.as_path()];
         git.commit_files(
             &format!("[{}] innovator: mock direct proposal", config.mock_tag),
@@ -358,7 +356,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::RepositoryFilesystemPort;
+    use crate::ports::RepositoryFilesystem;
     use crate::testing::{FakeGit, FakeGitHub, TestStore};
     use std::collections::HashMap;
     use std::path::PathBuf;
@@ -378,7 +376,7 @@ mod tests {
     #[test]
     fn mock_innovator_creates_idea_with_create_idea_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = TestStore::new().with_exists(true);
+        let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -393,7 +391,7 @@ mod tests {
             task: Some("create_idea".to_string()),
         };
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
         assert!(result.is_ok());
         let output = result.unwrap();
         assert!(output.mock_branch.starts_with("jules-innovator-"));
@@ -401,20 +399,20 @@ mod tests {
 
         // idea.yml should now exist
         let idea_path = jules_path.join("exchange/innovators/alice/idea.yml");
-        assert!(workspace.file_exists(idea_path.to_str().unwrap()));
+        assert!(repository.file_exists(idea_path.to_str().unwrap()));
     }
 
     #[test]
     fn mock_innovator_removes_idea_with_refine_idea_and_create_proposal_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = TestStore::new().with_exists(true);
+        let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
 
         // Pre-populate idea.yml
         let idea_path = jules_path.join("exchange/innovators/alice/idea.yml");
-        workspace.write_file(idea_path.to_str().unwrap(), "existing idea").unwrap();
+        repository.write_file(idea_path.to_str().unwrap(), "existing idea").unwrap();
 
         let options = RunOptions {
             layer: Layer::Innovators,
@@ -426,17 +424,17 @@ mod tests {
             task: Some("refine_idea_and_create_proposal".to_string()),
         };
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
         assert!(result.is_ok());
 
         // idea.yml should be removed
-        assert!(!workspace.file_exists(idea_path.to_str().unwrap()));
+        assert!(!repository.file_exists(idea_path.to_str().unwrap()));
     }
 
     #[test]
     fn mock_innovator_create_then_refine_is_deterministic() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = TestStore::new().with_exists(true);
+        let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -453,9 +451,9 @@ mod tests {
             mock: true,
             task: Some("create_idea".to_string()),
         };
-        let _ =
-            execute_mock(&jules_path, &create_options, &config, &git, &github, &workspace).unwrap();
-        assert!(workspace.file_exists(idea_path.to_str().unwrap()));
+        let _ = execute_mock(&jules_path, &create_options, &config, &git, &github, &repository)
+            .unwrap();
+        assert!(repository.file_exists(idea_path.to_str().unwrap()));
 
         // refine_proposal task: removes idea.yml
         let refine_options = RunOptions {
@@ -467,15 +465,15 @@ mod tests {
             mock: true,
             task: Some("refine_idea_and_create_proposal".to_string()),
         };
-        let _ =
-            execute_mock(&jules_path, &refine_options, &config, &git, &github, &workspace).unwrap();
-        assert!(!workspace.file_exists(idea_path.to_str().unwrap()));
+        let _ = execute_mock(&jules_path, &refine_options, &config, &git, &github, &repository)
+            .unwrap();
+        assert!(!repository.file_exists(idea_path.to_str().unwrap()));
     }
 
     #[test]
     fn mock_innovator_direct_task_creates_proposal() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = TestStore::new().with_exists(true);
+        let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -490,17 +488,17 @@ mod tests {
             task: Some("create_proposal".to_string()),
         };
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
         assert!(result.is_ok());
 
         let proposal_path = jules_path.join("exchange/innovators/alice/proposal.yml");
-        assert!(workspace.file_exists(proposal_path.to_str().unwrap()));
+        assert!(repository.file_exists(proposal_path.to_str().unwrap()));
     }
 
     #[test]
     fn mock_innovator_rejects_missing_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = TestStore::new().with_exists(true);
+        let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -515,14 +513,14 @@ mod tests {
             task: None,
         };
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
         assert!(result.is_err());
     }
 
     #[test]
     fn mock_innovator_rejects_invalid_task() {
         let jules_path = PathBuf::from(".jules");
-        let workspace = TestStore::new().with_exists(true);
+        let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
@@ -537,7 +535,7 @@ mod tests {
             task: Some("invalid".to_string()),
         };
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &workspace);
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
         assert!(result.is_err());
     }
 }

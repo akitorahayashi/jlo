@@ -1,15 +1,15 @@
-//! Test double for `JloStorePort`.
+//! Test double for `JloStore`.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{DiscoveredRole, JloStorePort};
+use crate::ports::{DiscoveredRole, JloStore};
 
 use super::test_files::TestFiles;
 
-/// In-memory implementation of `JloStorePort` for unit tests.
+/// In-memory implementation of `JloStore` for unit tests.
 ///
 /// Holds `.jlo/`-scoped state (existence, version, roles) independently
 /// from `.jules/`-scoped state in `MockJulesStore`.
@@ -44,7 +44,7 @@ impl MockJloStore {
     }
 }
 
-impl JloStorePort for MockJloStore {
+impl JloStore for MockJloStore {
     fn jlo_exists(&self) -> bool {
         *self.exists.lock().unwrap()
     }

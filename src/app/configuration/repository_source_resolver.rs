@@ -2,10 +2,10 @@
 
 use crate::domain::AppError;
 use crate::domain::configuration::run_config_parser;
-use crate::ports::GitPort;
+use crate::ports::Git;
 
 /// Detect the repository source from git remote or `GITHUB_REPOSITORY` env var.
-pub fn detect_repository_source(git: &(impl GitPort + ?Sized)) -> Result<String, AppError> {
+pub fn detect_repository_source(git: &(impl Git + ?Sized)) -> Result<String, AppError> {
     let output = git.run_command(&["remote", "get-url", "origin"], None);
 
     if let Ok(url) = output
@@ -27,12 +27,12 @@ mod tests {
     use serial_test::serial;
     use std::path::Path;
 
-    struct MockGitPort {
+    struct MockGit {
         remote_url: Option<String>,
         fail: bool,
     }
 
-    impl GitPort for MockGitPort {
+    impl Git for MockGit {
         fn get_head_sha(&self) -> Result<String, AppError> {
             Ok(String::new())
         }
@@ -119,10 +119,8 @@ mod tests {
     #[serial]
     fn detects_github_ssh_url() {
         let _guard = EnvVarGuard::remove("GITHUB_REPOSITORY");
-        let git = MockGitPort {
-            remote_url: Some("git@github.com:owner/repo.git".to_string()),
-            fail: false,
-        };
+        let git =
+            MockGit { remote_url: Some("git@github.com:owner/repo.git".to_string()), fail: false };
         let result = detect_repository_source(&git).expect("should succeed");
         assert_eq!(result, "sources/github/owner/repo");
     }
@@ -131,7 +129,7 @@ mod tests {
     #[serial]
     fn detects_github_https_url() {
         let _guard = EnvVarGuard::remove("GITHUB_REPOSITORY");
-        let git = MockGitPort {
+        let git = MockGit {
             remote_url: Some("https://github.com/owner/repo.git".to_string()),
             fail: false,
         };
@@ -143,7 +141,7 @@ mod tests {
     #[serial]
     fn detects_from_env_var_when_git_fails() {
         let _guard = EnvVarGuard::set("GITHUB_REPOSITORY", "env-owner/env-repo");
-        let git = MockGitPort { remote_url: None, fail: true };
+        let git = MockGit { remote_url: None, fail: true };
         let result = detect_repository_source(&git).expect("should succeed from env");
         assert_eq!(result, "sources/github/env-owner/env-repo");
     }
@@ -152,7 +150,7 @@ mod tests {
     #[serial]
     fn fails_when_both_fail() {
         let _guard = EnvVarGuard::remove("GITHUB_REPOSITORY");
-        let git = MockGitPort { remote_url: None, fail: true };
+        let git = MockGit { remote_url: None, fail: true };
         let result = detect_repository_source(&git);
         assert!(result.is_err());
         assert!(matches!(result, Err(AppError::RepositoryDetectionFailed)));

@@ -31,7 +31,7 @@ Strict dependency rules apply to maintain architectural purity:
 | `identifiers` | Shared strongly-typed IDs (`RoleId`) and validation utilities. |
 | `prompt_assembly` | Logic for assembling prompt contexts for different layers. |
 | `setup` | Setup component model, dependency resolution, and artifact generation. |
-| `workspace` | Logical paths and layer structures. |
+| `repository` | Logical `.jlo/` and `.jules/` paths and layer structures. |
 | `error` | Domain-level error types (`AppError`). |
 | `requirement` | Requirement file parsing and schema validation. |
 | `builtin_role` | Definitions for built-in roles. |

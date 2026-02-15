@@ -5,57 +5,57 @@ use crate::adapters::catalogs::workflow_scaffold::{
 };
 use crate::domain::configuration::WorkflowGenerateConfig;
 use crate::domain::{AppError, WorkflowRunnerMode};
-use crate::ports::RepositoryFilesystemPort;
+use crate::ports::RepositoryFilesystem;
 
 /// Execute the workflow scaffold installation.
 pub fn install_workflow_scaffold(
-    workspace: &impl RepositoryFilesystemPort,
+    repository: &impl RepositoryFilesystem,
     mode: &WorkflowRunnerMode,
     generate_config: &WorkflowGenerateConfig,
 ) -> Result<(), AppError> {
     let scaffold = load_workflow_scaffold(mode, generate_config)?;
-    remove_stale_managed_workflows(workspace, &scaffold)?;
+    remove_stale_managed_workflows(repository, &scaffold)?;
 
     for action_dir in &scaffold.action_dirs {
-        if workspace.is_dir(action_dir) {
-            workspace.remove_dir_all(action_dir)?;
-        } else if workspace.file_exists(action_dir) {
-            workspace.remove_file(action_dir)?;
+        if repository.is_dir(action_dir) {
+            repository.remove_dir_all(action_dir)?;
+        } else if repository.file_exists(action_dir) {
+            repository.remove_file(action_dir)?;
         }
     }
 
     for file in &scaffold.files {
-        workspace.write_file(&file.path, &file.content)?;
+        repository.write_file(&file.path, &file.content)?;
     }
 
     Ok(())
 }
 
 fn remove_stale_managed_workflows(
-    workspace: &impl RepositoryFilesystemPort,
+    repository: &impl RepositoryFilesystem,
     scaffold: &WorkflowScaffoldAssets,
 ) -> Result<(), AppError> {
     let workflows_dir = ".github/workflows";
-    if !workspace.is_dir(workflows_dir) {
+    if !repository.is_dir(workflows_dir) {
         return Ok(());
     }
 
     let rendered_paths: HashSet<_> =
-        scaffold.files.iter().map(|file| workspace.resolve_path(&file.path)).collect();
+        scaffold.files.iter().map(|file| repository.resolve_path(&file.path)).collect();
 
-    let entries = workspace.list_dir(workflows_dir)?;
+    let entries = repository.list_dir(workflows_dir)?;
     for path in entries {
         let file_name = match path.file_name().and_then(|name| name.to_str()) {
             Some(name) => name,
             None => continue,
         };
 
-        // Skip directories via workspace abstraction (not std::path::Path::is_file)
+        // Skip directories via repository abstraction (not std::path::Path::is_file)
         let path_str = match path.to_str() {
             Some(s) => s,
             None => continue,
         };
-        if workspace.is_dir(path_str) {
+        if repository.is_dir(path_str) {
             continue;
         }
 
@@ -74,7 +74,7 @@ fn remove_stale_managed_workflows(
 
         // Use relative path: list_dir returns absolute paths but remove_file expects relative.
         let relative_path = format!("{}/{}", workflows_dir, file_name);
-        workspace.remove_file(&relative_path)?;
+        repository.remove_file(&relative_path)?;
     }
 
     Ok(())

@@ -8,14 +8,12 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::adapters::filesystem::FilesystemStore;
 use crate::adapters::git::GitCommandAdapter;
+use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::domain::AppError;
 use crate::domain::PromptAssetLoader;
-use crate::domain::workspace::paths::jules;
-use crate::ports::{
-    GitHubPort, GitPort, IssueInfo, JloStorePort, JulesStorePort, RepositoryFilesystemPort,
-};
+use crate::domain::repository::paths::jules;
+use crate::ports::{Git, GitHub, IssueInfo, JloStore, JulesStore, RepositoryFilesystem};
 
 #[derive(Debug, Clone)]
 pub struct ExchangePublishProposalsOptions {}
@@ -69,37 +67,37 @@ struct PerspectiveData {
 pub fn execute(
     options: ExchangePublishProposalsOptions,
 ) -> Result<ExchangePublishProposalsOutput, AppError> {
-    let workspace = FilesystemStore::current()?;
-    if !workspace.jules_exists() {
-        return Err(AppError::WorkspaceNotFound);
+    let repository = LocalRepositoryAdapter::current()?;
+    if !repository.jules_exists() {
+        return Err(AppError::JulesNotFound);
     }
 
-    let jules_path = workspace.jules_path();
+    let jules_path = repository.jules_path();
     let root = jules_path.parent().unwrap_or(Path::new(".")).to_path_buf();
     let git = GitCommandAdapter::new(root.canonicalize().map_err(|e| {
-        AppError::InternalError(format!("Failed to resolve workspace root: {}", e))
+        AppError::InternalError(format!("Failed to resolve repository root: {}", e))
     })?);
     let github = crate::adapters::github::GitHubCommandAdapter::new();
 
-    execute_with(&workspace, &options, &git, &github)
+    execute_with(&repository, &options, &git, &github)
 }
 
 /// Core logic, injectable for testing.
 fn execute_with<W, G, H>(
-    workspace: &W,
+    repository: &W,
     _options: &ExchangePublishProposalsOptions,
     git: &G,
     github: &H,
 ) -> Result<ExchangePublishProposalsOutput, AppError>
 where
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
-    G: GitPort,
-    H: GitHubPort,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
+    G: Git,
+    H: GitHub,
 {
-    let jules_path = workspace.jules_path();
+    let jules_path = repository.jules_path();
     let innovators_dir = jules::innovators_dir(&jules_path);
 
-    let proposals = discover_proposals(&innovators_dir, workspace)?;
+    let proposals = discover_proposals(&innovators_dir, repository)?;
 
     if proposals.is_empty() {
         return Ok(ExchangePublishProposalsOutput {
@@ -114,7 +112,7 @@ where
     // This prevents partial failure leaving orphaned issues on GitHub.
     let mut validated: Vec<(String, PathBuf, String, String)> = Vec::new();
     for (persona, proposal_path) in &proposals {
-        let content = workspace.read_file(
+        let content = repository.read_file(
             proposal_path
                 .to_str()
                 .ok_or_else(|| AppError::Validation("Invalid proposal path".to_string()))?,
@@ -161,13 +159,13 @@ where
         let perspective_path_str = perspective_path
             .to_str()
             .ok_or_else(|| AppError::Validation("Invalid perspective path".to_string()))?;
-        if !workspace.file_exists(perspective_path_str) {
+        if !repository.file_exists(perspective_path_str) {
             return Err(AppError::Validation(format!(
                 "perspective.yml missing for persona '{}': refinement must update perspective before publication",
                 persona
             )));
         }
-        let perspective_content = workspace.read_file(perspective_path_str)?;
+        let perspective_content = repository.read_file(perspective_path_str)?;
         let perspective: PerspectiveData =
             serde_yaml::from_str(&perspective_content).map_err(|e| {
                 AppError::Validation(format!(
@@ -229,7 +227,7 @@ where
         });
 
         // Remove proposal artifact
-        workspace.remove_file(
+        repository.remove_file(
             proposal_path
                 .to_str()
                 .ok_or_else(|| AppError::Validation("Invalid proposal path".to_string()))?,
@@ -240,11 +238,11 @@ where
         let comments_dir = proposal_path.parent().unwrap_or(Path::new(".")).join("comments");
         if let Some(comments_dir_str) = comments_dir.to_str()
             && !comments_dir_str.is_empty()
-            && let Ok(entries) = workspace.list_dir(comments_dir_str)
+            && let Ok(entries) = repository.list_dir(comments_dir_str)
         {
             for entry in entries {
                 if let Some(path_str) = entry.to_str() {
-                    workspace.remove_file(path_str)?;
+                    repository.remove_file(path_str)?;
                     deleted_paths.push(entry);
                 }
             }
@@ -269,17 +267,15 @@ where
 }
 
 /// Discover proposal.yml files across all innovator persona rooms.
-fn discover_proposals<
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
->(
+fn discover_proposals<W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader>(
     innovators_dir: &Path,
-    workspace: &W,
+    repository: &W,
 ) -> Result<Vec<(String, PathBuf)>, AppError> {
     let dir_str = innovators_dir
         .to_str()
         .ok_or_else(|| AppError::Validation("Invalid innovators path".to_string()))?;
 
-    let persona_dirs = match workspace.list_dir(dir_str) {
+    let persona_dirs = match repository.list_dir(dir_str) {
         Ok(dirs) => dirs,
         Err(_) => return Ok(Vec::new()), // No innovators directory
     };
@@ -287,7 +283,7 @@ fn discover_proposals<
     let mut proposals = Vec::new();
     for persona_dir in persona_dirs {
         let Some(persona_dir_str) = persona_dir.to_str() else { continue };
-        if !workspace.is_dir(persona_dir_str) {
+        if !repository.is_dir(persona_dir_str) {
             continue;
         }
 
@@ -300,7 +296,7 @@ fn discover_proposals<
 
         let proposal_path = persona_dir.join("proposal.yml");
         let Some(proposal_str) = proposal_path.to_str() else { continue };
-        if workspace.file_exists(proposal_str) {
+        if repository.file_exists(proposal_str) {
             proposals.push((persona_name.to_string(), proposal_path));
         }
     }
@@ -315,7 +311,7 @@ fn render_list(items: &[String]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::RepositoryFilesystemPort;
+    use crate::ports::RepositoryFilesystem;
     use crate::testing::{FakeGit, FakeGitHub, TestStore};
 
     fn proposal_yaml() -> &'static str {
@@ -348,7 +344,7 @@ verification_signals:
         let perspective_path = ".jules/exchange/innovators/alice/perspective.yml";
         let perspective_yaml =
             "persona: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
-        let workspace = TestStore::new()
+        let repository = TestStore::new()
             .with_exists(true)
             .with_file(proposal_path, proposal_yaml())
             .with_file(perspective_path, perspective_yaml);
@@ -358,7 +354,7 @@ verification_signals:
 
         let options = ExchangePublishProposalsOptions {};
 
-        let output = execute_with(&workspace, &options, &git, &github).unwrap();
+        let output = execute_with(&repository, &options, &git, &github).unwrap();
 
         assert_eq!(output.published.len(), 1);
         assert_eq!(output.published[0].persona, "alice");
@@ -367,7 +363,7 @@ verification_signals:
         assert!(output.pushed);
 
         // Proposal file should be removed
-        assert!(!workspace.file_exists(proposal_path));
+        assert!(!repository.file_exists(proposal_path));
 
         // Verify issue was created with correct title
         let issues = github.created_issues.lock().unwrap();
@@ -381,13 +377,13 @@ verification_signals:
 
     #[test]
     fn no_proposals_returns_empty_output() {
-        let workspace = TestStore::new().with_exists(true);
+        let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
 
         let options = ExchangePublishProposalsOptions {};
 
-        let output = execute_with(&workspace, &options, &git, &github).unwrap();
+        let output = execute_with(&repository, &options, &git, &github).unwrap();
 
         assert!(output.published.is_empty());
         assert!(!output.committed);

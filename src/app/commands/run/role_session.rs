@@ -1,15 +1,15 @@
 use std::path::Path;
 
-use crate::domain::workspace::paths::{jlo, jules};
+use crate::domain::repository::paths::{jlo, jules};
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{AutomationMode, JulesClient, RepositoryFilesystemPort, SessionRequest};
+use crate::ports::{AutomationMode, JulesClient, RepositoryFilesystem, SessionRequest};
 
-pub fn print_role_preview<W: RepositoryFilesystemPort + ?Sized>(
+pub fn print_role_preview<W: RepositoryFilesystem + ?Sized>(
     jules_path: &Path,
     layer: Layer,
     role: &RoleId,
     starting_branch: &str,
-    workspace: &W,
+    repository: &W,
 ) {
     println!("=== Prompt Preview: {} ===", layer.display_name());
     println!("Starting branch: {}", starting_branch);
@@ -18,28 +18,28 @@ pub fn print_role_preview<W: RepositoryFilesystemPort + ?Sized>(
     let root = jules_path.parent().unwrap_or(Path::new("."));
     let role_yml_path = jlo::role_yml(root, layer, role.as_str());
 
-    if !workspace.file_exists(&role_yml_path.to_string_lossy()) {
+    if !repository.file_exists(&role_yml_path.to_string_lossy()) {
         println!("  ⚠️  role.yml not found at {}\n", role_yml_path.display());
         return;
     }
 
     let contracts_path = jules::contracts(jules_path, layer);
-    if workspace.file_exists(&contracts_path.to_string_lossy()) {
+    if repository.file_exists(&contracts_path.to_string_lossy()) {
         println!("  Contracts: {}", contracts_path.display());
     }
     println!("  Role config: {}", role_yml_path.display());
 }
 
-pub fn validate_role_exists<W: RepositoryFilesystemPort + ?Sized>(
+pub fn validate_role_exists<W: RepositoryFilesystem + ?Sized>(
     jules_path: &Path,
     layer: Layer,
     role: &str,
-    workspace: &W,
+    repository: &W,
 ) -> Result<(), AppError> {
     let root = jules_path.parent().unwrap_or(Path::new("."));
     let role_yml_path = jlo::role_yml(root, layer, role);
 
-    if !workspace.file_exists(&role_yml_path.to_string_lossy()) {
+    if !repository.file_exists(&role_yml_path.to_string_lossy()) {
         return Err(AppError::RoleNotFound(format!(
             "{}/{} (role.yml not found)",
             layer.dir_name(),

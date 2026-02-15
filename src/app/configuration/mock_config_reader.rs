@@ -10,9 +10,9 @@ use crate::domain::configuration::mock_config_parser::{
     extract_branch_prefix, extract_issue_labels,
 };
 use crate::domain::identifiers::validation::validate_safe_path_component;
-use crate::domain::workspace::paths::jules;
+use crate::domain::repository::paths::jules;
 use crate::domain::{AppError, Layer, MockConfig, RunOptions};
-use crate::ports::RepositoryFilesystemPort;
+use crate::ports::RepositoryFilesystem;
 
 /// Validate prerequisites for mock mode.
 pub fn validate_mock_prerequisites(_options: &RunOptions) -> Result<(), AppError> {
@@ -39,17 +39,17 @@ pub fn validate_mock_prerequisites(_options: &RunOptions) -> Result<(), AppError
     Ok(())
 }
 
-fn load_branch_prefix_for_layer<W: RepositoryFilesystemPort>(
+fn load_branch_prefix_for_layer<W: RepositoryFilesystem>(
     jules_path: &Path,
     layer: Layer,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     let contracts_path = jules::contracts(jules_path, layer);
     let contracts_path_str = contracts_path
         .to_str()
         .ok_or_else(|| AppError::InvalidPath("Invalid contracts path".to_string()))?;
 
-    let content = workspace.read_file(contracts_path_str).map_err(|_| {
+    let content = repository.read_file(contracts_path_str).map_err(|_| {
         AppError::InvalidConfig(format!(
             "Missing contracts file for layer '{}' at {}",
             layer.dir_name(),
@@ -67,17 +67,17 @@ fn load_branch_prefix_for_layer<W: RepositoryFilesystemPort>(
     })
 }
 
-/// Load mock configuration from workspace files.
-pub fn load_mock_config<W: RepositoryFilesystemPort>(
+/// Load mock configuration from repository files.
+pub fn load_mock_config<W: RepositoryFilesystem>(
     jules_path: &Path,
     _options: &RunOptions,
-    workspace: &W,
+    repository: &W,
 ) -> Result<MockConfig, AppError> {
-    let run_config = load_config(jules_path, workspace)?;
+    let run_config = load_config(jules_path, repository)?;
 
     let mut branch_prefixes = HashMap::new();
     for layer in Layer::ALL {
-        let prefix = load_branch_prefix_for_layer(jules_path, layer, workspace)?;
+        let prefix = load_branch_prefix_for_layer(jules_path, layer, repository)?;
         branch_prefixes.insert(layer, prefix);
     }
 
@@ -85,7 +85,7 @@ pub fn load_mock_config<W: RepositoryFilesystemPort>(
     let labels_path_str = labels_path
         .to_str()
         .ok_or_else(|| AppError::InvalidPath("Invalid labels path".to_string()))?;
-    let labels_content = workspace.read_file(labels_path_str).map_err(|_| {
+    let labels_content = repository.read_file(labels_path_str).map_err(|_| {
         AppError::InvalidConfig(format!(
             "Missing github-labels.json for mock mode: {}",
             labels_path.display()
@@ -134,13 +134,13 @@ mod tests {
 
     #[test]
     fn load_branch_prefix_for_innovators_uses_contracts_yml() {
-        let workspace = TestStore::new().with_file(
+        let repository = TestStore::new().with_file(
             ".jules/layers/innovators/contracts.yml",
             "branch_prefix: jules-innovator-\n",
         );
 
         let prefix =
-            load_branch_prefix_for_layer(Path::new(".jules"), Layer::Innovators, &workspace)
+            load_branch_prefix_for_layer(Path::new(".jules"), Layer::Innovators, &repository)
                 .unwrap();
 
         assert_eq!(prefix, "jules-innovator-");

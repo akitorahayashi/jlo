@@ -3,12 +3,10 @@
 use std::path::{Path, PathBuf};
 
 use crate::domain::{AppError, IoErrorKind, Schedule};
-use crate::ports::{JloStorePort, RepositoryFilesystemPort};
+use crate::ports::{JloStore, RepositoryFilesystem};
 
 /// Load the root schedule from `.jlo/scheduled.toml`.
-pub fn load_schedule(
-    store: &(impl RepositoryFilesystemPort + JloStorePort),
-) -> Result<Schedule, AppError> {
+pub fn load_schedule(store: &(impl RepositoryFilesystem + JloStore)) -> Result<Schedule, AppError> {
     let path = store.jlo_path().join("scheduled.toml");
     let path_str = path.to_string_lossy();
 
@@ -22,9 +20,9 @@ pub fn load_schedule(
     Ok(Schedule::parse_toml(&content)?)
 }
 
-/// List subdirectories of a directory via workspace store.
+/// List subdirectories of a directory via repository store.
 pub fn list_subdirectories(
-    store: &impl RepositoryFilesystemPort,
+    store: &impl RepositoryFilesystem,
     dir: &Path,
 ) -> Result<Vec<PathBuf>, AppError> {
     let entries = store.list_dir(&dir.to_string_lossy())?;

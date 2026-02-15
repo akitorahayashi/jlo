@@ -2,8 +2,8 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::domain::workspace::layer::Layer;
-use crate::domain::workspace::manifest::MANIFEST_FILENAME;
+use crate::domain::repository::layer::Layer;
+use crate::domain::repository::manifest::MANIFEST_FILENAME;
 
 // ── Top-level files ────────────────────────────────────────────────────
 

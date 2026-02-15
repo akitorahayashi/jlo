@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use crate::domain::configuration::WorkflowGenerateConfig;
 use crate::domain::{AppError, WorkflowRunnerMode};
-use crate::ports::RepositoryFilesystemPort;
+use crate::ports::RepositoryFilesystem;
 
 #[derive(Deserialize)]
 struct WorkflowGenerateConfigDto {
@@ -29,16 +29,16 @@ struct WorkflowTimingDto {
 }
 
 fn load_workflow_config_dto(
-    workspace: &impl RepositoryFilesystemPort,
+    repository: &impl RepositoryFilesystem,
 ) -> Result<WorkflowGenerateConfigDto, AppError> {
     let config_path = ".jlo/config.toml";
-    if !workspace.file_exists(config_path) {
+    if !repository.file_exists(config_path) {
         return Err(AppError::Validation(
             "Missing .jlo/config.toml. Run 'jlo init' to create the control plane first.".into(),
         ));
     }
 
-    let content = workspace.read_file(config_path)?;
+    let content = repository.read_file(config_path)?;
     let dto: WorkflowGenerateConfigDto = toml::from_str(&content)?;
     Ok(dto)
 }
@@ -47,9 +47,9 @@ fn load_workflow_config_dto(
 ///
 /// Errors on missing or invalid configuration to avoid silent fallbacks.
 pub fn load_workflow_generate_config(
-    workspace: &impl RepositoryFilesystemPort,
+    repository: &impl RepositoryFilesystem,
 ) -> Result<WorkflowGenerateConfig, AppError> {
-    let dto = load_workflow_config_dto(workspace)?;
+    let dto = load_workflow_config_dto(repository)?;
 
     let run = dto
         .run
@@ -103,9 +103,9 @@ pub fn load_workflow_generate_config(
 /// The control-plane configuration is the authoritative source for selecting
 /// remote vs self-hosted workflow scaffolds.
 pub fn load_workflow_runner_mode(
-    workspace: &impl RepositoryFilesystemPort,
+    repository: &impl RepositoryFilesystem,
 ) -> Result<WorkflowRunnerMode, AppError> {
-    let dto = load_workflow_config_dto(workspace)?;
+    let dto = load_workflow_config_dto(repository)?;
     let workflow = dto.workflow.ok_or_else(|| {
         AppError::Validation("Missing [workflow] section in .jlo/config.toml.".into())
     })?;
@@ -120,11 +120,11 @@ fn parse_workflow_runner_mode(raw: Option<&str>) -> Result<WorkflowRunnerMode, A
 }
 
 pub fn persist_workflow_runner_mode(
-    workspace: &impl RepositoryFilesystemPort,
+    repository: &impl RepositoryFilesystem,
     mode: &WorkflowRunnerMode,
 ) -> Result<(), AppError> {
     let config_path = ".jlo/config.toml";
-    let content = workspace.read_file(config_path)?;
+    let content = repository.read_file(config_path)?;
     let mut doc = content
         .parse::<toml_edit::DocumentMut>()
         .map_err(|e| AppError::Validation(format!("Failed to parse .jlo/config.toml: {}", e)))?;
@@ -150,21 +150,21 @@ pub fn persist_workflow_runner_mode(
         *item = toml_edit::value(desired_value);
     }
 
-    workspace.write_file(config_path, &doc.to_string())
+    repository.write_file(config_path, &doc.to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::filesystem::FilesystemStore;
-    use crate::ports::RepositoryFilesystemPort;
+    use crate::adapters::local_repository::LocalRepositoryAdapter;
+    use crate::ports::RepositoryFilesystem;
     use assert_fs::TempDir;
     use std::fs;
 
     #[test]
     fn persist_workflow_runner_mode_updates_only_workflow_value() {
         let temp = TempDir::new().unwrap();
-        let workspace = FilesystemStore::new(temp.path().to_path_buf());
+        let repository = LocalRepositoryAdapter::new(temp.path().to_path_buf());
         let config = r#"# heading
 [run]
 jlo_target_branch = "main"
@@ -175,9 +175,9 @@ runner_mode = "remote" # keep me
 cron = ["0 20 * * *"]
 wait_minutes_default = 30
 "#;
-        workspace.write_file(".jlo/config.toml", config).unwrap();
+        repository.write_file(".jlo/config.toml", config).unwrap();
 
-        persist_workflow_runner_mode(&workspace, &WorkflowRunnerMode::self_hosted()).unwrap();
+        persist_workflow_runner_mode(&repository, &WorkflowRunnerMode::self_hosted()).unwrap();
         let updated = fs::read_to_string(temp.path().join(".jlo/config.toml")).unwrap();
 
         assert!(updated.contains("runner_mode = \"self-hosted\" # keep me"));
@@ -188,8 +188,8 @@ wait_minutes_default = 30
     #[test]
     fn persist_workflow_runner_mode_fails_without_workflow_section() {
         let temp = TempDir::new().unwrap();
-        let workspace = FilesystemStore::new(temp.path().to_path_buf());
-        workspace
+        let repository = LocalRepositoryAdapter::new(temp.path().to_path_buf());
+        repository
             .write_file(
                 ".jlo/config.toml",
                 r#"[run]
@@ -200,7 +200,7 @@ jules_worker_branch = "jules"
             .unwrap();
 
         let err =
-            persist_workflow_runner_mode(&workspace, &WorkflowRunnerMode::remote()).unwrap_err();
+            persist_workflow_runner_mode(&repository, &WorkflowRunnerMode::remote()).unwrap_err();
         assert!(err.to_string().contains("Missing [workflow] section"));
     }
 }

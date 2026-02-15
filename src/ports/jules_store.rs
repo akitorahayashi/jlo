@@ -1,7 +1,7 @@
 //! `.jules/` runtime data-plane store operations.
 //!
 //! This port encapsulates domain-facing operations on the `.jules/` directory.
-//! Path semantics are owned by `domain::workspace::paths::jules`;
+//! Path semantics are owned by `domain::repository::paths::jules`;
 //! this port owns only the I/O behavior.
 
 use std::path::PathBuf;
@@ -12,9 +12,9 @@ use crate::ports::ScaffoldFile;
 /// Port for `.jules/` runtime data-plane store operations.
 ///
 /// Extends `PromptAssetLoader` (defined in domain) so that any
-/// `JulesStorePort` implementation also satisfies prompt assembly.
+/// `JulesStore` implementation also satisfies prompt assembly.
 #[allow(dead_code)]
-pub trait JulesStorePort: PromptAssetLoader {
+pub trait JulesStore: PromptAssetLoader {
     /// Check whether the `.jules/` directory exists.
     fn jules_exists(&self) -> bool;
 

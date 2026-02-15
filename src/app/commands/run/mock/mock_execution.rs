@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use include_dir::{Dir, include_dir};
 
 use crate::domain::{AppError, IoErrorKind, MockConfig, MockOutput};
-use crate::ports::{GitHubPort, GitPort, RepositoryFilesystemPort};
+use crate::ports::{Git, GitHub, RepositoryFilesystem};
 
 /// Mock assets embedded in the binary.
 pub static MOCK_ASSETS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/assets/mock");
@@ -57,8 +57,8 @@ pub fn mock_event_id_from_path(path: &Path, mock_tag: &str) -> Option<String> {
 }
 
 /// List files in directory matching the mock tag pattern.
-pub fn list_mock_tagged_files<W: RepositoryFilesystemPort + ?Sized>(
-    workspace: &W,
+pub fn list_mock_tagged_files<W: RepositoryFilesystem + ?Sized>(
+    repository: &W,
     dir: &Path,
     mock_tag: &str,
 ) -> Result<Vec<PathBuf>, AppError> {
@@ -66,7 +66,7 @@ pub fn list_mock_tagged_files<W: RepositoryFilesystemPort + ?Sized>(
         AppError::InvalidPath(format!("Invalid directory path: {}", dir.display()))
     })?;
 
-    let entries = match workspace.list_dir(dir_str) {
+    let entries = match repository.list_dir(dir_str) {
         Ok(entries) => entries,
         Err(AppError::Io { kind: IoErrorKind::NotFound, .. }) => return Ok(Vec::new()),
         Err(err) => return Err(err),
@@ -74,7 +74,7 @@ pub fn list_mock_tagged_files<W: RepositoryFilesystemPort + ?Sized>(
 
     let mut files: Vec<PathBuf> = entries
         .into_iter()
-        .filter(|path| !workspace.is_dir(&path.to_string_lossy()))
+        .filter(|path| !repository.is_dir(&path.to_string_lossy()))
         .filter(|path| mock_event_id_from_path(path, mock_tag).is_some())
         .collect();
 
@@ -91,23 +91,23 @@ pub struct MockExecutionService<'a, G: ?Sized, H: ?Sized, W: ?Sized> {
     pub git: &'a G,
     pub github: &'a H,
     #[allow(dead_code)]
-    pub workspace: &'a W,
+    pub repository: &'a W,
 }
 
 impl<'a, G, H, W> MockExecutionService<'a, G, H, W>
 where
-    G: GitPort + ?Sized,
-    H: GitHubPort + ?Sized,
-    W: RepositoryFilesystemPort + ?Sized,
+    G: Git + ?Sized,
+    H: GitHub + ?Sized,
+    W: RepositoryFilesystem + ?Sized,
 {
     pub fn new(
         jules_path: &'a Path,
         config: &'a MockConfig,
         git: &'a G,
         github: &'a H,
-        workspace: &'a W,
+        repository: &'a W,
     ) -> Self {
-        Self { jules_path, config, git, github, workspace }
+        Self { jules_path, config, git, github, repository }
     }
 
     /// Fetch origin and checkout a base branch (detached HEAD).
@@ -161,7 +161,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::filesystem::FilesystemStore;
+    use crate::adapters::local_repository::LocalRepositoryAdapter;
     use std::fs;
     use tempfile::tempdir;
 
@@ -194,8 +194,9 @@ mod tests {
         fs::write(decided_dir.join("mock-other-run-cccccc.yml"), "id: cccccc\n").expect("write");
         fs::write(decided_dir.join("notes.txt"), "ignored\n").expect("write");
 
-        let workspace = FilesystemStore::new(dir.path().to_path_buf());
-        let files = list_mock_tagged_files(&workspace, &decided_dir, "mock-run-123").expect("list");
+        let repository = LocalRepositoryAdapter::new(dir.path().to_path_buf());
+        let files =
+            list_mock_tagged_files(&repository, &decided_dir, "mock-run-123").expect("list");
 
         assert_eq!(files.len(), 2);
         assert!(files[0].to_string_lossy().ends_with("mock-run-123-aaaaaa.yml"));

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::domain::AppError;
-use crate::domain::workspace::paths;
+use crate::domain::repository::paths;
 
 const MANIFEST_SCHEMA_VERSION: u32 = 1;
 

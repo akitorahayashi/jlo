@@ -3,14 +3,14 @@
 use std::path::Path;
 
 use crate::domain::configuration::run_config_parser;
-use crate::domain::workspace::paths::jlo;
+use crate::domain::repository::paths::jlo;
 use crate::domain::{AppError, RunConfig};
-use crate::ports::RepositoryFilesystemPort;
+use crate::ports::RepositoryFilesystem;
 
 /// Load and parse the run configuration from `.jlo/config.toml`.
-pub fn load_config<W: RepositoryFilesystemPort>(
+pub fn load_config<W: RepositoryFilesystem>(
     jules_path: &Path,
-    workspace: &W,
+    repository: &W,
 ) -> Result<RunConfig, AppError> {
     let root = jules_path.parent().ok_or_else(|| {
         AppError::InvalidPath(format!(
@@ -26,10 +26,10 @@ pub fn load_config<W: RepositoryFilesystemPort>(
         ))
     })?;
 
-    if !workspace.file_exists(config_path_str) {
+    if !repository.file_exists(config_path_str) {
         return Err(AppError::RunConfigMissing);
     }
 
-    let content = workspace.read_file(config_path_str)?;
+    let content = repository.read_file(config_path_str)?;
     run_config_parser::parse_config_content(&content)
 }

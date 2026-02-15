@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use crate::domain::AppError;
-use crate::ports::GitPort;
+use crate::ports::Git;
 
 pub struct FakeGit {
     pub committed_files: Mutex<Vec<PathBuf>>,
@@ -28,7 +28,7 @@ impl FakeGit {
     }
 }
 
-impl GitPort for FakeGit {
+impl Git for FakeGit {
     fn get_head_sha(&self) -> Result<String, AppError> {
         Ok(self.head_sha.lock().unwrap().clone())
     }

@@ -1,7 +1,7 @@
 use crate::domain::AppError;
 use std::path::Path;
 
-pub trait GitPort {
+pub trait Git {
     /// Get the current HEAD SHA.
     fn get_head_sha(&self) -> Result<String, AppError>;
 

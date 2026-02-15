@@ -3,7 +3,7 @@ use include_dir::{Dir, DirEntry, include_dir};
 use crate::adapters::catalogs::builtin_role_assets::{
     load_builtin_role_catalog, read_builtin_role_file,
 };
-use crate::domain::workspace::paths::jlo;
+use crate::domain::repository::paths::jlo;
 use crate::domain::{AppError, BuiltinRoleEntry, Layer};
 use crate::ports::{RoleTemplateStore, ScaffoldFile};
 

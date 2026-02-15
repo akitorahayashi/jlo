@@ -1,12 +1,12 @@
 //! Workflow doctor command implementation.
 //!
-//! Validates `.jules/` workspace structure for workflow automation.
+//! Validates `.jules/` repository structure for workflow automation.
 
 use serde::Serialize;
 
-use crate::adapters::filesystem::FilesystemStore;
+use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::domain::AppError;
-use crate::ports::JulesStorePort;
+use crate::ports::JulesStore;
 
 /// Options for workflow doctor command.
 #[derive(Debug, Clone, Default)]
@@ -23,12 +23,12 @@ pub struct WorkflowDoctorOutput {
 
 /// Execute workflow doctor validation.
 ///
-/// Returns a machine-readable output indicating workspace health.
+/// Returns a machine-readable output indicating repository health.
 pub fn execute(_options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, AppError> {
-    let workspace = FilesystemStore::current()?;
+    let repository = LocalRepositoryAdapter::current()?;
 
-    if !workspace.jules_exists() {
-        return Err(AppError::WorkspaceNotFound);
+    if !repository.jules_exists() {
+        return Err(AppError::JulesNotFound);
     }
 
     // Delegate to existing doctor logic but translate to workflow output
@@ -36,7 +36,7 @@ pub fn execute(_options: WorkflowDoctorOptions) -> Result<WorkflowDoctorOutput, 
         strict: true, // Workflow mode is strict by default
     };
 
-    let outcome = crate::app::commands::doctor::execute(&workspace.jules_path(), doctor_options)?;
+    let outcome = crate::app::commands::doctor::execute(&repository.jules_path(), doctor_options)?;
 
     Ok(WorkflowDoctorOutput { schema_version: 1, ok: outcome.errors == 0 && outcome.warnings == 0 })
 }

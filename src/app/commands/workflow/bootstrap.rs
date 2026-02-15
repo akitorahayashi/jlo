@@ -1,7 +1,7 @@
 //! Workflow bootstrap: deterministic projection of `.jules/` from `.jlo/` + scaffold.
 //!
 //! Runs as the first step in workflow execution, guaranteeing that the runtime
-//! workspace matches the control-plane intent before any agent job.
+//! repository matches the control-plane intent before any agent job.
 //!
 //! Invariants:
 //! - Missing `.jlo/` is a hard failure.
@@ -14,18 +14,18 @@ use std::path::Path;
 use serde::Serialize;
 
 use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
-use crate::adapters::filesystem::FilesystemStore;
+use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
-use crate::domain::workspace::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};
-use crate::domain::workspace::paths::{JLO_DIR, JULES_DIR, VERSION_FILE};
+use crate::domain::repository::manifest::{MANIFEST_FILENAME, hash_content, is_default_role_file};
+use crate::domain::repository::paths::{JLO_DIR, JULES_DIR, VERSION_FILE};
 use crate::domain::{AppError, ScaffoldManifest};
-use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort, RoleTemplateStore};
+use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 /// Options for the bootstrap command.
 #[derive(Debug)]
 pub struct WorkflowBootstrapOptions {
-    /// Root path of the workspace (on the `jules` branch).
+    /// Root path of the repository (on the `jules` branch).
     pub root: std::path::PathBuf,
 }
 
@@ -47,7 +47,7 @@ pub fn execute(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOut
     let current_version = env!("CARGO_PKG_VERSION");
     let root = &options.root;
 
-    let store = FilesystemStore::new(root.clone());
+    let store = LocalRepositoryAdapter::new(root.clone());
     let templates = EmbeddedRoleTemplateStore::new();
 
     // --- Hard preconditions ---
@@ -61,7 +61,7 @@ pub fn execute(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOut
 
     let jlo_version_path = jlo_path.join(VERSION_FILE);
     if !jlo_version_path.exists() {
-        return Err(AppError::WorkspaceIntegrity(
+        return Err(AppError::RepositoryIntegrity(
             "Missing .jlo/.jlo-version. Control plane is incomplete.".to_string(),
         ));
     }
@@ -83,7 +83,7 @@ fn project_runtime<W, R>(
     version: &str,
 ) -> Result<usize, AppError>
 where
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
     R: RoleTemplateStore,
 {
     // Counts write operations performed.
@@ -91,8 +91,8 @@ where
 
     // 1. Materialize managed framework files from embedded scaffold
     let scaffold_files = ctx.templates().scaffold_files();
-    ctx.workspace().create_structure(&scaffold_files)?;
-    ctx.workspace().jules_write_version(version)?;
+    ctx.repository().create_structure(&scaffold_files)?;
+    ctx.repository().jules_write_version(version)?;
     files_written += scaffold_files.len() + 1; // +1 for version
 
     // 2. Write managed manifest
@@ -105,7 +105,7 @@ where
     let managed_manifest = ScaffoldManifest::from_map(map);
     let manifest_content = managed_manifest.to_yaml()?;
     let manifest_path = format!("{}/{}", JULES_DIR, MANIFEST_FILENAME);
-    ctx.workspace().write_file(&manifest_path, &manifest_content)?;
+    ctx.repository().write_file(&manifest_path, &manifest_content)?;
     files_written += 1;
 
     Ok(files_written)

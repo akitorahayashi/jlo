@@ -1,7 +1,7 @@
 //! Filesystem adapter implementations for store ports.
 //!
-//! Provides concrete adapters for `RepositoryFilesystemPort`, `JloStorePort`,
-//! and `JulesStorePort`. All three are implemented on a single `FilesystemStore`
+//! Provides concrete adapters for `RepositoryFilesystem`, `JloStore`,
+//! and `JulesStore`. All three are implemented on a single `LocalRepositoryAdapter`
 //! struct that owns the repository root path and enforces path-traversal safety.
 
 mod jlo_store;
@@ -14,15 +14,15 @@ use crate::domain::AppError;
 
 /// Filesystem-backed store rooted at a repository directory.
 ///
-/// Implements `RepositoryFilesystemPort`, `JloStorePort`, and `JulesStorePort`
+/// Implements `RepositoryFilesystem`, `JloStore`, and `JulesStore`
 /// on a single struct. Path operations are validated against the root to prevent
 /// directory traversal.
 #[derive(Debug, Clone)]
-pub struct FilesystemStore {
+pub struct LocalRepositoryAdapter {
     root: PathBuf,
 }
 
-impl FilesystemStore {
+impl LocalRepositoryAdapter {
     /// Create a store rooted at the given directory.
     pub fn new(root: PathBuf) -> Self {
         Self { root }
@@ -43,7 +43,7 @@ impl FilesystemStore {
 
 // ── Path safety ────────────────────────────────────────────────────────
 
-impl FilesystemStore {
+impl LocalRepositoryAdapter {
     /// Validates that a path (after logical normalization) is within the root.
     pub(crate) fn validate_path_within_root(&self, path: &Path) -> Result<(), AppError> {
         let full_path = if path.is_absolute() { path.to_path_buf() } else { self.root.join(path) };
@@ -95,9 +95,9 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
 
-    pub fn test_store() -> (TempDir, FilesystemStore) {
+    pub fn test_store() -> (TempDir, LocalRepositoryAdapter) {
         let dir = TempDir::new().expect("failed to create temp dir");
-        let store = FilesystemStore::new(dir.path().to_path_buf());
+        let store = LocalRepositoryAdapter::new(dir.path().to_path_buf());
         (dir, store)
     }
 

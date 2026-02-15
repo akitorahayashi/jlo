@@ -10,7 +10,7 @@
 use serde::Serialize;
 
 use crate::domain::AppError;
-use crate::ports::GitHubPort;
+use crate::ports::GitHub;
 
 /// Allowed branch prefixes derived from the Layer model.
 const ALLOWED_PREFIXES: &[&str] = &[
@@ -43,7 +43,7 @@ pub struct EnableAutomergeOutput {
 
 /// Execute `pr enable-automerge`.
 pub fn execute(
-    github: &impl GitHubPort,
+    github: &impl GitHub,
     options: EnableAutomergeOptions,
 ) -> Result<EnableAutomergeOutput, AppError> {
     let pr = github.get_pr_detail(options.pr_number)?;

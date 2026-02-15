@@ -1,4 +1,4 @@
-//! jlo: Deploy and manage .jules/ workspace scaffolding for organizational memory.
+//! jlo: Deploy and manage .jules/ runtime scaffolding for organizational memory.
 
 pub(crate) mod adapters;
 pub(crate) mod app;

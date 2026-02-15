@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::domain::configuration::run_config_parser::parse_config_content;
-use crate::domain::workspace::paths::{self, jlo, jules};
+use crate::domain::repository::paths::{self, jlo, jules};
 use crate::domain::{AppError, Layer, RunConfig};
 
 use super::diagnostics::Diagnostics;
@@ -160,10 +160,10 @@ fn check_version_file(jules_path: &Path, current_version: &str, diagnostics: &mu
         }
     };
 
-    let workspace_parts = parse_version_parts(&content);
+    let runtime_parts = parse_version_parts(&content);
     let current_parts = parse_version_parts(current_version);
 
-    if workspace_parts.is_none() {
+    if runtime_parts.is_none() {
         diagnostics.push_error(version_path.display().to_string(), "Invalid version format");
         return;
     }
@@ -174,10 +174,10 @@ fn check_version_file(jules_path: &Path, current_version: &str, diagnostics: &mu
         return;
     }
 
-    if compare_versions(&workspace_parts.unwrap(), &current_parts.unwrap()) > 0 {
+    if compare_versions(&runtime_parts.unwrap(), &current_parts.unwrap()) > 0 {
         diagnostics.push_error(
             version_path.display().to_string(),
-            "Workspace version is newer than the binary",
+            "Repository version is newer than the binary",
         );
     }
 }
@@ -298,7 +298,7 @@ mod tests {
     }
 
     #[test]
-    fn test_check_version_file_workspace_older_is_ok() {
+    fn test_check_version_file_repository_older_is_ok() {
         let temp = assert_fs::TempDir::new().unwrap();
         temp.child(".jlo-version").write_str("0.9.0").unwrap();
         let mut diagnostics = Diagnostics::default();
@@ -307,14 +307,14 @@ mod tests {
     }
 
     #[test]
-    fn test_check_version_file_workspace_newer_is_error() {
+    fn test_check_version_file_repository_newer_is_error() {
         let temp = assert_fs::TempDir::new().unwrap();
         temp.child(".jlo-version").write_str("2.0.0").unwrap();
         let mut diagnostics = Diagnostics::default();
         check_version_file(temp.path(), "1.0.0", &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 1);
         assert!(
-            diagnostics.errors()[0].message.contains("Workspace version is newer than the binary")
+            diagnostics.errors()[0].message.contains("Repository version is newer than the binary")
         );
     }
 
@@ -328,7 +328,7 @@ mod tests {
         assert!(diagnostics.errors()[0].message.contains("Invalid version format"));
     }
 
-    fn create_valid_workspace(temp: &assert_fs::TempDir) {
+    fn create_valid_repository(temp: &assert_fs::TempDir) {
         temp.child(".jules/JULES.md").touch().unwrap();
         temp.child(".jules/README.md").touch().unwrap();
         temp.child(".jlo/config.toml").touch().unwrap();
@@ -379,7 +379,7 @@ mod tests {
     #[test]
     fn test_structural_checks_success() {
         let temp = assert_fs::TempDir::new().unwrap();
-        create_valid_workspace(&temp);
+        create_valid_repository(&temp);
 
         let mut diagnostics = Diagnostics::default();
         let event_states = vec!["pending".to_string()];
@@ -402,7 +402,7 @@ mod tests {
     #[test]
     fn test_structural_checks_missing_critical_files() {
         let temp = assert_fs::TempDir::new().unwrap();
-        create_valid_workspace(&temp);
+        create_valid_repository(&temp);
 
         // Remove config.toml
         std::fs::remove_file(temp.path().join(".jlo/config.toml")).unwrap();
@@ -430,7 +430,7 @@ mod tests {
     #[test]
     fn test_structural_checks_missing_layer_files() {
         let temp = assert_fs::TempDir::new().unwrap();
-        create_valid_workspace(&temp);
+        create_valid_repository(&temp);
 
         // Remove implementer contracts
         std::fs::remove_file(temp.path().join(".jules/layers/implementer/contracts.yml")).unwrap();

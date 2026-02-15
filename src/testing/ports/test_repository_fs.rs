@@ -1,14 +1,14 @@
-//! Test double for `RepositoryFilesystemPort`.
+//! Test double for `RepositoryFilesystem`.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use crate::domain::AppError;
-use crate::ports::RepositoryFilesystemPort;
+use crate::ports::RepositoryFilesystem;
 
 use super::test_files::TestFiles;
 
-/// In-memory implementation of `RepositoryFilesystemPort` for unit tests.
+/// In-memory implementation of `RepositoryFilesystem` for unit tests.
 #[derive(Clone, Debug)]
 pub struct MockRepositoryFs {
     files: TestFiles,
@@ -20,7 +20,7 @@ impl MockRepositoryFs {
     }
 }
 
-impl RepositoryFilesystemPort for MockRepositoryFs {
+impl RepositoryFilesystem for MockRepositoryFs {
     fn read_file(&self, path: &str) -> Result<String, AppError> {
         self.files.files.lock().unwrap().get(path).cloned().ok_or_else(|| {
             AppError::from(std::io::Error::new(std::io::ErrorKind::NotFound, "Mock file not found"))

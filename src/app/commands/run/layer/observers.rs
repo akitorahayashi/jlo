@@ -7,11 +7,11 @@ use crate::app::configuration::{detect_repository_source, load_mock_config, load
 use crate::domain::PromptAssetLoader;
 use crate::domain::identifiers::validation::validate_safe_path_component;
 use crate::domain::prompt_assembly::{AssembledPrompt, PromptContext, assemble_prompt};
-use crate::domain::workspace::paths::jules;
+use crate::domain::repository::paths::jules;
 use crate::domain::{
     AppError, IoErrorKind, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions,
 };
-use crate::ports::{GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
+use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 
 use super::super::role_session::{dispatch_session, print_role_preview, validate_role_exists};
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
@@ -20,9 +20,9 @@ pub struct ObserversLayer;
 
 impl<W> LayerStrategy<W> for ObserversLayer
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -34,17 +34,17 @@ where
         jules_path: &Path,
         options: &RunOptions,
         config: &RunConfig,
-        git: &dyn GitPort,
-        github: &dyn GitHubPort,
-        workspace: &W,
+        git: &dyn Git,
+        github: &dyn GitHub,
+        repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
         if options.mock {
             let role = options.role.clone().ok_or_else(|| {
                 AppError::MissingArgument("Role is required for observers in mock mode".to_string())
             })?;
-            let mock_config = load_mock_config(jules_path, options, workspace)?;
-            let output = execute_mock(jules_path, options, &mock_config, git, github, workspace)?;
+            let mock_config = load_mock_config(jules_path, options, repository)?;
+            let output = execute_mock(jules_path, options, &mock_config, git, github, repository)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
@@ -68,7 +68,7 @@ where
             options.role.as_deref(),
             config,
             git,
-            workspace,
+            repository,
             client_factory,
         )
     }
@@ -82,14 +82,14 @@ fn execute_real<G, W>(
     role: Option<&str>,
     config: &RunConfig,
     git: &G,
-    workspace: &W,
+    repository: &W,
     client_factory: &dyn JulesClientFactory,
 ) -> Result<RunResult, AppError>
 where
-    G: GitPort + ?Sized,
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    G: Git + ?Sized,
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -100,17 +100,17 @@ where
         .ok_or_else(|| AppError::MissingArgument("Role is required for observers".to_string()))?;
 
     let role_id = RoleId::new(role)?;
-    validate_role_exists(jules_path, Layer::Observers, role_id.as_str(), workspace)?;
+    validate_role_exists(jules_path, Layer::Observers, role_id.as_str(), repository)?;
 
     let starting_branch =
         branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
 
-    let bridge_task = resolve_observer_bridge_task(jules_path, workspace)?;
+    let bridge_task = resolve_observer_bridge_task(jules_path, repository)?;
 
     if prompt_preview {
-        print_role_preview(jules_path, Layer::Observers, &role_id, &starting_branch, workspace);
+        print_role_preview(jules_path, Layer::Observers, &role_id, &starting_branch, repository);
         let assembled =
-            assemble_observer_prompt(jules_path, role_id.as_str(), &bridge_task, workspace)?;
+            assemble_observer_prompt(jules_path, role_id.as_str(), &bridge_task, repository)?;
         println!("  Assembled prompt: {} chars", assembled.len());
         println!("\nWould execute 1 session");
         return Ok(RunResult {
@@ -123,7 +123,7 @@ where
 
     let source = detect_repository_source(git)?;
     let assembled =
-        assemble_observer_prompt(jules_path, role_id.as_str(), &bridge_task, workspace)?;
+        assemble_observer_prompt(jules_path, role_id.as_str(), &bridge_task, repository)?;
     let client = client_factory.create()?;
 
     let session_id = dispatch_session(
@@ -144,9 +144,9 @@ where
 }
 
 fn assemble_observer_prompt<
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
@@ -156,33 +156,33 @@ fn assemble_observer_prompt<
     jules_path: &Path,
     role: &str,
     bridge_task: &str,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     let context = PromptContext::new().with_var("role", role).with_var("bridge_task", bridge_task);
 
-    assemble_prompt(jules_path, Layer::Observers, &context, workspace)
+    assemble_prompt(jules_path, Layer::Observers, &context, repository)
         .map(|p: AssembledPrompt| p.content)
         .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
 fn resolve_observer_bridge_task<
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 >(
     jules_path: &Path,
-    workspace: &W,
+    repository: &W,
 ) -> Result<String, AppError> {
     let innovators = jules::innovators_dir(jules_path);
     let innovators_str = innovators.to_string_lossy();
 
-    let entries = match workspace.list_dir(&innovators_str) {
+    let entries = match repository.list_dir(&innovators_str) {
         Ok(entries) => entries,
         Err(AppError::Io { kind: IoErrorKind::NotFound, .. }) => return Ok(String::new()),
         Err(err) => return Err(err),
     };
 
     let has_ideas = entries.iter().any(|entry| {
-        workspace.is_dir(&entry.to_string_lossy())
-            && workspace.file_exists(&entry.join("idea.yml").to_string_lossy())
+        repository.is_dir(&entry.to_string_lossy())
+            && repository.file_exists(&entry.join("idea.yml").to_string_lossy())
     });
 
     if !has_ideas {
@@ -190,7 +190,7 @@ fn resolve_observer_bridge_task<
     }
 
     let bridge_path = jules::tasks_dir(jules_path, Layer::Observers).join("bridge_comments.yml");
-    workspace.read_file(&bridge_path.to_string_lossy()).map_err(|_| {
+    repository.read_file(&bridge_path.to_string_lossy()).map_err(|_| {
         AppError::Validation(format!(
             "Innovator ideas exist, but observer bridge task file is missing: expected {}",
             bridge_path.display()
@@ -213,12 +213,12 @@ fn execute_mock<G, H, W>(
     config: &MockConfig,
     git: &G,
     github: &H,
-    workspace: &W,
+    repository: &W,
 ) -> Result<MockOutput, AppError>
 where
-    G: GitPort + ?Sized,
-    H: GitHubPort + ?Sized,
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    G: Git + ?Sized,
+    H: GitHub + ?Sized,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();
     let branch_name = config.branch_name(Layer::Observers, &timestamp)?;
@@ -271,23 +271,23 @@ where
         .replace("workflow validation", "workflow implementation check");
 
     // Ensure directory exists
-    workspace.create_dir_all(
+    repository.create_dir_all(
         events_dir.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
     )?;
 
-    workspace.write_file(
+    repository.write_file(
         event_file_1.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
         &event_content_1,
     )?;
 
-    workspace.write_file(
+    repository.write_file(
         event_file_2.to_str().ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
         &event_content_2,
     )?;
 
     // Bridge: generate comment artifacts for each scheduled innovator persona.
     let mut comment_files: Vec<PathBuf> = Vec::new();
-    let innovator_personas = resolve_innovator_personas(workspace)?;
+    let innovator_personas = resolve_innovator_personas(repository)?;
 
     if !innovator_personas.is_empty() {
         let mock_comment_template = MOCK_ASSETS
@@ -306,7 +306,7 @@ where
             let comments_dir_str = comments_dir
                 .to_str()
                 .ok_or_else(|| AppError::Validation("Invalid comments path".to_string()))?;
-            workspace.create_dir_all(comments_dir_str)?;
+            repository.create_dir_all(comments_dir_str)?;
 
             let comment_file =
                 comments_dir.join(format!("observer-{}-{}.yml", observer_role, config.mock_tag));
@@ -314,7 +314,7 @@ where
                 .replace(COMMENT_TMPL_AUTHOR, observer_role)
                 .replace(COMMENT_TMPL_TAG, &config.mock_tag);
 
-            workspace.write_file(
+            repository.write_file(
                 comment_file
                     .to_str()
                     .ok_or_else(|| AppError::Validation("Invalid path".to_string()))?,
@@ -356,11 +356,11 @@ where
 }
 
 fn resolve_innovator_personas<
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 >(
-    workspace: &W,
+    repository: &W,
 ) -> Result<Vec<String>, AppError> {
-    let schedule = match load_schedule(workspace) {
+    let schedule = match load_schedule(repository) {
         Ok(schedule) => schedule,
         Err(AppError::ScheduleConfigMissing(_)) => return Ok(Vec::new()),
         Err(err) => return Err(err),

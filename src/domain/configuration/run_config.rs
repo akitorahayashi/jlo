@@ -99,7 +99,7 @@ pub struct ExecutionConfig {
     /// Target branch for agent operations (base for PRs).
     #[serde(default = "default_jlo_target_branch")]
     pub jlo_target_branch: String,
-    /// Branch where .jules/ workspace resides (worker).
+    /// Branch where .jules/ runtime repository resides (worker).
     #[serde(default = "default_jules_worker_branch")]
     pub jules_worker_branch: String,
     /// Whether to run agents in parallel.

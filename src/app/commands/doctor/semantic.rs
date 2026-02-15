@@ -5,7 +5,7 @@ use chrono::{NaiveDate, Utc};
 
 use crate::app::configuration::load_schedule;
 use crate::domain::configuration::schedule::ScheduleLayer;
-use crate::domain::workspace::paths::{jlo, jules};
+use crate::domain::repository::paths::{jlo, jules};
 use crate::domain::{AppError, Layer};
 
 use super::diagnostics::Diagnostics;
@@ -183,7 +183,7 @@ pub fn semantic_checks(
     }
 
     let mut scheduled_roles: HashMap<Layer, HashSet<String>> = HashMap::new();
-    let store = crate::adapters::filesystem::FilesystemStore::new(root.to_path_buf());
+    let store = crate::adapters::local_repository::LocalRepositoryAdapter::new(root.to_path_buf());
 
     match load_schedule(&store) {
         Ok(schedule) => {

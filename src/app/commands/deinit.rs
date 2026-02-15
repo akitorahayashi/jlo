@@ -4,9 +4,9 @@ use std::path::Path;
 
 use crate::adapters::catalogs::workflow_scaffold::load_workflow_scaffold;
 use crate::domain::configuration::WorkflowGenerateConfig;
-use crate::domain::workspace::paths::JLO_DIR;
+use crate::domain::repository::paths::JLO_DIR;
 use crate::domain::{AppError, WorkflowRunnerMode};
-use crate::ports::GitPort;
+use crate::ports::Git;
 
 #[derive(Debug, Default)]
 pub struct DeinitOutcome {
@@ -16,7 +16,7 @@ pub struct DeinitOutcome {
     pub deleted_jlo: bool,
 }
 
-pub fn execute(root: &Path, git: &impl GitPort) -> Result<DeinitOutcome, AppError> {
+pub fn execute(root: &Path, git: &impl Git) -> Result<DeinitOutcome, AppError> {
     let current_branch = git.get_current_branch()?;
     if current_branch == "jules" || current_branch.starts_with("jules-test-") {
         return Err(AppError::Validation(format!(

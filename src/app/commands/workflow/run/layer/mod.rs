@@ -1,7 +1,7 @@
 use crate::app::commands::run::{self, RunOptions};
 use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, Layer};
-use crate::ports::{GitHubPort, GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort};
+use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 use std::path::Path;
 
 use super::options::{RunResults, WorkflowRunOptions};
@@ -22,16 +22,16 @@ pub(crate) fn execute_layer<W, G, H>(
     github: &H,
 ) -> Result<RunResults, AppError>
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
         + Sync
         + 'static,
-    G: GitPort,
-    H: GitHubPort,
+    G: Git,
+    H: GitHub,
 {
     let mut run_layer =
         |path: &Path, run_options: RunOptions, git_ref: &G, github_ref: &H, store_ref: &W| {
@@ -49,16 +49,16 @@ fn execute_layer_with_runner<W, G, H, F>(
     run_layer: &mut F,
 ) -> Result<RunResults, AppError>
 where
-    W: RepositoryFilesystemPort
-        + JloStorePort
-        + JulesStorePort
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
         + PromptAssetLoader
         + Clone
         + Send
         + Sync
         + 'static,
-    G: GitPort,
-    H: GitHubPort,
+    G: Git,
+    H: GitHub,
     F: FnMut(&Path, RunOptions, &G, &H, &W) -> Result<(), AppError>,
 {
     let jules_path = store.jules_path();
@@ -83,12 +83,12 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::{GitHubPort, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
+    use crate::ports::{GitHub, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
     use crate::testing::TestStore;
 
     struct NoopGit;
 
-    impl GitPort for NoopGit {
+    impl Git for NoopGit {
         fn get_head_sha(&self) -> Result<String, AppError> {
             Ok("deadbeef".to_string())
         }
@@ -141,7 +141,7 @@ mod tests {
 
     struct NoopGitHub;
 
-    impl GitHubPort for NoopGitHub {
+    impl GitHub for NoopGitHub {
         fn create_pull_request(
             &self,
             head: &str,

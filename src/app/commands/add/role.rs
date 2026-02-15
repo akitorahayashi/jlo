@@ -2,9 +2,9 @@
 
 use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
-use crate::domain::workspace::paths::jlo;
+use crate::domain::repository::paths::jlo;
 use crate::domain::{AppError, Layer, RoleId};
-use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort, RoleTemplateStore};
+use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 use crate::app::commands::role_schedule::ensure_role_scheduled;
 
@@ -16,11 +16,11 @@ pub fn execute<W, R>(
     role: &str,
 ) -> Result<AddOutcome, AppError>
 where
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
     R: RoleTemplateStore,
 {
-    if !ctx.workspace().jlo_exists() {
-        return Err(AppError::WorkspaceNotFound);
+    if !ctx.repository().jlo_exists() {
+        return Err(AppError::JulesNotFound);
     }
 
     let layer_enum = Layer::from_dir_name(layer)
@@ -48,7 +48,7 @@ where
             ))
         })?;
 
-    let role_dir = jlo::role_dir(&ctx.workspace().resolve_path(""), layer_enum, role_id.as_str());
+    let role_dir = jlo::role_dir(&ctx.repository().resolve_path(""), layer_enum, role_id.as_str());
 
     if role_dir.exists() {
         return Err(AppError::RoleExists {
@@ -62,7 +62,7 @@ where
     std::fs::create_dir_all(&role_dir)?;
     std::fs::write(role_dir.join("role.yml"), role_content)?;
 
-    ensure_role_scheduled(ctx.workspace(), layer_enum, &role_id)?;
+    ensure_role_scheduled(ctx.repository(), layer_enum, &role_id)?;
 
     Ok(AddOutcome::Role {
         layer: layer_enum.dir_name().to_string(),

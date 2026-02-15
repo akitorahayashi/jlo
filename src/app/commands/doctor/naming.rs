@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::domain::workspace::paths::jules;
+use crate::domain::repository::paths::jules;
 
 use super::diagnostics::Diagnostics;
 use super::structure::list_subdirs;

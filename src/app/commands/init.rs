@@ -4,18 +4,16 @@ use crate::adapters::control_plane_config;
 use crate::adapters::workflow_installer;
 use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
-use crate::domain::workspace::manifest::{hash_content, is_control_plane_entity_file};
-use crate::domain::workspace::paths::jlo;
-use crate::domain::workspace::{JLO_DIR, VERSION_FILE};
+use crate::domain::repository::manifest::{hash_content, is_control_plane_entity_file};
+use crate::domain::repository::paths::jlo;
+use crate::domain::repository::{JLO_DIR, VERSION_FILE};
 use crate::domain::{AppError, Layer, ScaffoldManifest, Schedule, WorkflowRunnerMode};
 use crate::ports::ScaffoldFile;
-use crate::ports::{
-    GitPort, JloStorePort, JulesStorePort, RepositoryFilesystemPort, RoleTemplateStore,
-};
+use crate::ports::{Git, JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 /// Execute the unified init command.
 ///
-/// Creates the `.jlo/` control plane, the `.jules/` runtime workspace, and
+/// Creates the `.jlo/` control plane, the `.jules/` runtime repository, and
 /// installs the workflow scaffold into `.github/`.
 pub fn execute<W, R, G>(
     ctx: &AppContext<W, R>,
@@ -23,12 +21,12 @@ pub fn execute<W, R, G>(
     mode: &WorkflowRunnerMode,
 ) -> Result<(), AppError>
 where
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
     R: RoleTemplateStore,
-    G: GitPort,
+    G: Git,
 {
-    if ctx.workspace().jlo_exists() {
-        return Err(AppError::WorkspaceExists);
+    if ctx.repository().jlo_exists() {
+        return Err(AppError::JloAlreadyExists);
     }
 
     // Reject execution on 'jules' branch — init creates the control plane which
@@ -43,17 +41,17 @@ where
     // Create .jlo/ control plane (minimal intent overlay)
     let control_plane_files = ctx.templates().control_plane_files();
     for entry in &control_plane_files {
-        ctx.workspace().write_file(&entry.path, &entry.content)?;
+        ctx.repository().write_file(&entry.path, &entry.content)?;
     }
 
     // Delegate config persistence
-    control_plane_config::persist_workflow_runner_mode(ctx.workspace(), mode)?;
+    control_plane_config::persist_workflow_runner_mode(ctx.repository(), mode)?;
 
     let seeded_roles = seed_scheduled_roles(ctx)?;
 
     // Write version pin to .jlo/
     let jlo_version_path = format!("{}/{}", JLO_DIR, VERSION_FILE);
-    ctx.workspace().write_file(&jlo_version_path, &format!("{}\n", env!("CARGO_PKG_VERSION")))?;
+    ctx.repository().write_file(&jlo_version_path, &format!("{}\n", env!("CARGO_PKG_VERSION")))?;
 
     // Create managed manifest for .jlo/ default entity files
     let mut map = BTreeMap::new();
@@ -65,25 +63,25 @@ where
     let managed_manifest = ScaffoldManifest::from_map(map);
     let manifest_content = managed_manifest.to_yaml()?;
     let manifest_path = jlo::manifest_relative();
-    ctx.workspace().write_file(&manifest_path, &manifest_content)?;
+    ctx.repository().write_file(&manifest_path, &manifest_content)?;
 
     // Install workflow scaffold
-    let generate_config = control_plane_config::load_workflow_generate_config(ctx.workspace())?;
-    workflow_installer::install_workflow_scaffold(ctx.workspace(), mode, &generate_config)?;
+    let generate_config = control_plane_config::load_workflow_generate_config(ctx.repository())?;
+    workflow_installer::install_workflow_scaffold(ctx.repository(), mode, &generate_config)?;
 
     // Generate setup artifacts immediately in control plane.
     // Hard-fail init when setup generation fails.
-    crate::app::commands::setup::generate(ctx.workspace())?;
+    crate::app::commands::setup::generate(ctx.repository())?;
 
     Ok(())
 }
 
 fn seed_scheduled_roles<W, R>(ctx: &AppContext<W, R>) -> Result<Vec<ScaffoldFile>, AppError>
 where
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
     R: RoleTemplateStore,
 {
-    let schedule_content = ctx.workspace().read_file(".jlo/scheduled.toml")?;
+    let schedule_content = ctx.repository().read_file(".jlo/scheduled.toml")?;
     let schedule = Schedule::parse_toml(&schedule_content)?;
 
     let catalog = ctx.templates().builtin_role_catalog()?;
@@ -109,7 +107,7 @@ where
                 role.name.as_str()
             ))
         })?;
-        ctx.workspace().write_file(&file.path, &file.content)?;
+        ctx.repository().write_file(&file.path, &file.content)?;
         seeded.push(file.clone());
     }
 
@@ -122,7 +120,7 @@ where
                     role.name.as_str()
                 ))
             })?;
-            ctx.workspace().write_file(&file.path, &file.content)?;
+            ctx.repository().write_file(&file.path, &file.content)?;
             seeded.push(file.clone());
         }
     }

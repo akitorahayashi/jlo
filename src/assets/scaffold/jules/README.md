@@ -1,6 +1,6 @@
 # .jules/
 
-The `.jules/` directory is a structured workspace for scheduled agents and human execution.
+The `.jules/` directory is a structured runtime repository for scheduled agents and human execution.
 It captures **observations as events** and **actionable work as requirements** within the exchange.
 
 This file is human-oriented. Agents must read `.jules/JULES.md` for the formal contract.

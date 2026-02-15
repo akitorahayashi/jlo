@@ -2,11 +2,11 @@ use std::path::{Path, PathBuf};
 
 use serde_yaml::{Mapping, Value};
 
-use crate::adapters::filesystem::FilesystemStore;
+use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::app::configuration::{list_subdirectories, load_schedule};
 use crate::domain::AppError;
-use crate::domain::workspace::paths::jules;
-use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort};
+use crate::domain::repository::paths::jules;
+use crate::ports::{JloStore, JulesStore, RepositoryFilesystem};
 
 use super::model::{
     EventItem, EventStateSummary, EventSummary, ExchangeInspectOutput, RequirementItem,
@@ -17,22 +17,22 @@ use super::model::{
 pub struct ExchangeInspectOptions {}
 
 pub fn execute(_options: ExchangeInspectOptions) -> Result<ExchangeInspectOutput, AppError> {
-    let workspace = FilesystemStore::current()?;
+    let repository = LocalRepositoryAdapter::current()?;
 
-    if !workspace.jules_exists() {
-        return Err(AppError::WorkspaceNotFound);
+    if !repository.jules_exists() {
+        return Err(AppError::JulesNotFound);
     }
 
-    inspect_at(&workspace)
+    inspect_at(&repository)
 }
 
 pub(super) fn inspect_at(
-    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
+    store: &(impl RepositoryFilesystem + JloStore + JulesStore),
 ) -> Result<ExchangeInspectOutput, AppError> {
     let jules_path = store.jules_path();
     let exchange_dir = jules::exchange_dir(&jules_path);
     if !store.file_exists(exchange_dir.to_str().unwrap()) {
-        return Err(AppError::WorkspaceNotFound);
+        return Err(AppError::JulesNotFound);
     }
 
     let schedule = load_schedule(store)?;
@@ -62,7 +62,7 @@ pub(super) fn inspect_at(
 }
 
 fn summarize_events(
-    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
+    store: &(impl RepositoryFilesystem + JloStore + JulesStore),
     root: &Path,
     exchange_dir: &Path,
 ) -> Result<EventSummary, AppError> {
@@ -105,7 +105,7 @@ fn summarize_events(
 }
 
 fn summarize_requirements(
-    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
+    store: &(impl RepositoryFilesystem + JloStore + JulesStore),
     root: &Path,
     exchange_dir: &Path,
 ) -> Result<RequirementSummary, AppError> {
@@ -132,7 +132,7 @@ fn summarize_requirements(
 }
 
 fn list_yml_files(
-    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
+    store: &(impl RepositoryFilesystem + JloStore + JulesStore),
     dir: &Path,
 ) -> Result<Vec<PathBuf>, AppError> {
     let entries = store.list_dir(dir.to_str().unwrap())?;
@@ -149,7 +149,7 @@ fn to_repo_relative(root: &Path, path: &Path) -> String {
 }
 
 fn read_event_item(
-    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
+    store: &(impl RepositoryFilesystem + JloStore + JulesStore),
     root: &Path,
     path: &Path,
     state: &str,
@@ -161,7 +161,7 @@ fn read_event_item(
 }
 
 fn read_requirement_item(
-    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
+    store: &(impl RepositoryFilesystem + JloStore + JulesStore),
     root: &Path,
     path: &Path,
 ) -> Result<RequirementItem, AppError> {
@@ -181,7 +181,7 @@ fn read_requirement_item(
 }
 
 fn read_yaml_mapping(
-    store: &(impl RepositoryFilesystemPort + JloStorePort + JulesStorePort),
+    store: &(impl RepositoryFilesystem + JloStore + JulesStore),
     path: &Path,
 ) -> Result<Mapping, AppError> {
     let content = store.read_file(path.to_str().unwrap())?;
@@ -355,7 +355,7 @@ roles = [
         )
         .unwrap();
 
-        let store = FilesystemStore::new(root.to_path_buf());
+        let store = LocalRepositoryAdapter::new(root.to_path_buf());
         let output = inspect_at(&store).unwrap();
 
         let pending = output.events.states.iter().find(|state| state.name == "pending").unwrap();

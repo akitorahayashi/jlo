@@ -10,7 +10,7 @@ use std::path::Path;
 use serde::Serialize;
 
 use crate::domain::AppError;
-use crate::ports::GitHubPort;
+use crate::ports::GitHub;
 
 /// Options for `workflow gh pr sync-category-label`.
 #[derive(Debug, Clone)]
@@ -40,7 +40,7 @@ struct ParsedBranch {
 
 /// Execute `pr sync-category-label`.
 pub fn execute(
-    github: &impl GitHubPort,
+    github: &impl GitHub,
     options: SyncCategoryLabelOptions,
 ) -> Result<SyncCategoryLabelOutput, AppError> {
     let pr = github.get_pr_detail(options.pr_number)?;

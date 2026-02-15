@@ -1,15 +1,15 @@
-//! `JulesStorePort` and `PromptAssetLoader` implementation for `FilesystemStore`.
+//! `JulesStore` and `PromptAssetLoader` implementation for `LocalRepositoryAdapter`.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::domain::workspace::paths::jules;
+use crate::domain::repository::paths::jules;
 use crate::domain::{AppError, JULES_DIR, Layer, PromptAssetLoader, VERSION_FILE};
-use crate::ports::{JulesStorePort, RepositoryFilesystemPort, ScaffoldFile};
+use crate::ports::{JulesStore, RepositoryFilesystem, ScaffoldFile};
 
-use super::FilesystemStore;
+use super::LocalRepositoryAdapter;
 
-impl PromptAssetLoader for FilesystemStore {
+impl PromptAssetLoader for LocalRepositoryAdapter {
     fn read_asset(&self, path: &Path) -> std::io::Result<String> {
         fs::read_to_string(path)
     }
@@ -27,7 +27,7 @@ impl PromptAssetLoader for FilesystemStore {
     }
 }
 
-impl JulesStorePort for FilesystemStore {
+impl JulesStore for LocalRepositoryAdapter {
     fn jules_exists(&self) -> bool {
         self.jules_path().exists()
     }
@@ -76,7 +76,7 @@ impl JulesStorePort for FilesystemStore {
 mod tests {
     use super::super::tests::test_store;
     use crate::domain::Layer;
-    use crate::ports::{JulesStorePort, ScaffoldFile};
+    use crate::ports::{JulesStore, ScaffoldFile};
 
     #[test]
     fn create_structure_creates_directories() {

@@ -13,11 +13,11 @@
 
 use std::collections::BTreeMap;
 
-use crate::domain::workspace::manifest::{
+use crate::domain::repository::manifest::{
     MANIFEST_FILENAME, ScaffoldManifest, hash_content, is_control_plane_entity_file,
 };
 use crate::domain::{AppError, PromptAssetLoader, WorkflowRunnerMode};
-use crate::ports::{JloStorePort, JulesStorePort, RepositoryFilesystemPort, RoleTemplateStore};
+use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 /// Result of an update operation.
 #[derive(Debug)]
@@ -47,15 +47,15 @@ pub struct UpdateOptions {
 ///
 /// Operates exclusively on `.jlo/` control-plane files.
 pub fn execute<W>(
-    workspace: &W,
+    repository: &W,
     options: UpdateOptions,
     templates: &impl RoleTemplateStore,
 ) -> Result<UpdateResult, AppError>
 where
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
     // Check if control plane exists
-    if !workspace.jlo_exists() {
+    if !repository.jlo_exists() {
         return Err(AppError::Validation(
             "No .jlo/ control plane found. Run 'jlo init' first.".to_string(),
         ));
@@ -65,10 +65,10 @@ where
 
     // Version comparison
     let binary_version = env!("CARGO_PKG_VERSION");
-    let workspace_version = match workspace.read_file(version_path) {
+    let runtime_version = match repository.read_file(version_path) {
         Ok(content) => content.trim().to_string(),
         Err(_) => {
-            return Err(AppError::WorkspaceIntegrity(
+            return Err(AppError::RepositoryIntegrity(
                 "Missing .jlo/.jlo-version file. Cannot update without version marker.".into(),
             ));
         }
@@ -80,13 +80,13 @@ where
     };
 
     let binary_parts = parse_version(binary_version);
-    let workspace_parts = parse_version(&workspace_version);
+    let runtime_parts = parse_version(&runtime_version);
 
-    let version_cmp = compare_versions(&binary_parts, &workspace_parts);
+    let version_cmp = compare_versions(&binary_parts, &runtime_parts);
 
     if version_cmp < 0 {
-        return Err(AppError::WorkspaceVersionMismatch {
-            workspace: workspace_version,
+        return Err(AppError::RepositoryVersionMismatch {
+            repository: runtime_version,
             binary: binary_version.into(),
         });
     }
@@ -102,7 +102,7 @@ where
             continue;
         }
         // Only create missing files; never overwrite user-owned content
-        if !workspace.file_exists(&file.path) {
+        if !repository.file_exists(&file.path) {
             to_create.push((file.path.clone(), file.content.clone()));
         }
     }
@@ -130,8 +130,8 @@ where
 
     let manifest_path = format!(".jlo/{}", MANIFEST_FILENAME);
     let mut warnings = Vec::new();
-    let mut manifest_map: BTreeMap<String, String> = if workspace.file_exists(&manifest_path) {
-        let content = workspace.read_file(&manifest_path)?;
+    let mut manifest_map: BTreeMap<String, String> = if repository.file_exists(&manifest_path) {
+        let content = repository.read_file(&manifest_path)?;
         ScaffoldManifest::from_yaml(&content)?.to_map()
     } else {
         warnings.push(
@@ -145,14 +145,14 @@ where
     let mut manifest_changed = false;
 
     for (path, default_content) in &entity_defaults {
-        if !workspace.file_exists(path) {
+        if !repository.file_exists(path) {
             if manifest_map.remove(path).is_some() {
                 manifest_changed = true;
             }
             continue;
         }
 
-        let current_content = workspace.read_file(path)?;
+        let current_content = repository.read_file(path)?;
         let current_hash = hash_content(&current_content);
         let default_hash = hash_content(default_content);
 
@@ -181,13 +181,13 @@ where
         }
     }
 
-    let workflow_mode = configured_workflow_mode(workspace)?;
+    let workflow_mode = configured_workflow_mode(repository)?;
     let workflow_will_refresh = workflow_mode.is_some();
 
     // Prompt preview
     if options.prompt_preview {
         println!("=== Prompt Preview: Update Plan ===\n");
-        println!("Current version: {}", workspace_version);
+        println!("Current version: {}", runtime_version);
         println!("Target version:  {}\n", binary_version);
 
         if to_create.is_empty() {
@@ -223,28 +223,28 @@ where
             updated: to_update.into_iter().map(|(p, _)| p).collect(),
             workflow_refreshed: workflow_will_refresh,
             prompt_preview: true,
-            previous_version: workspace_version,
+            previous_version: runtime_version,
             warnings,
         });
     }
 
     // Create missing user intent files
     for (rel_path, content) in &to_create {
-        workspace.write_file(rel_path, content)?;
+        repository.write_file(rel_path, content)?;
     }
 
     // Refresh managed defaults
     for (rel_path, content) in &to_update {
-        workspace.write_file(rel_path, content)?;
+        repository.write_file(rel_path, content)?;
     }
 
     // Refresh workflow scaffold
     let mut workflow_refreshed = false;
     if let Some(mode) = workflow_mode {
         let generate_config =
-            crate::adapters::control_plane_config::load_workflow_generate_config(workspace)?;
+            crate::adapters::control_plane_config::load_workflow_generate_config(repository)?;
         crate::adapters::workflow_installer::install_workflow_scaffold(
-            workspace,
+            repository,
             &mode,
             &generate_config,
         )?;
@@ -254,12 +254,12 @@ where
     if manifest_changed {
         let manifest = ScaffoldManifest::from_map(manifest_map);
         let manifest_content = manifest.to_yaml()?;
-        workspace.write_file(&manifest_path, &manifest_content)?;
+        repository.write_file(&manifest_path, &manifest_content)?;
     }
 
     // Advance version pin if needed
     if version_cmp > 0 {
-        workspace.write_file(version_path, &format!("{}\n", binary_version))?;
+        repository.write_file(version_path, &format!("{}\n", binary_version))?;
     }
 
     let created_paths: Vec<String> = to_create.into_iter().map(|(p, _)| p).collect();
@@ -270,14 +270,14 @@ where
         updated: updated_paths,
         workflow_refreshed,
         prompt_preview: false,
-        previous_version: workspace_version,
+        previous_version: runtime_version,
         warnings,
     })
 }
 
-fn configured_workflow_mode<W>(workspace: &W) -> Result<Option<WorkflowRunnerMode>, AppError>
+fn configured_workflow_mode<W>(repository: &W) -> Result<Option<WorkflowRunnerMode>, AppError>
 where
-    W: RepositoryFilesystemPort + JloStorePort + JulesStorePort + PromptAssetLoader,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
     let has_managed_workflow = [
         ".github/workflows/jules-scheduled-workflows.yml",
@@ -288,13 +288,13 @@ where
         ".github/workflows/jules-integrator-pr.yml",
     ]
     .iter()
-    .any(|path| workspace.file_exists(path));
+    .any(|path| repository.file_exists(path));
 
     if !has_managed_workflow {
         return Ok(None);
     }
 
-    Ok(Some(crate::adapters::control_plane_config::load_workflow_runner_mode(workspace)?))
+    Ok(Some(crate::adapters::control_plane_config::load_workflow_runner_mode(repository)?))
 }
 
 /// Compare two version arrays. Returns -1, 0, or 1.
@@ -315,7 +315,7 @@ fn compare_versions(a: &[u32], b: &[u32]) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::filesystem::FilesystemStore;
+    use crate::adapters::local_repository::LocalRepositoryAdapter;
     use std::fs;
 
     #[test]
@@ -403,8 +403,8 @@ wait_minutes_default = 30
         };
 
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemStore::new(temp.path().to_path_buf());
-        let result = execute(&workspace, options, &mock_store).unwrap();
+        let repository = LocalRepositoryAdapter::new(temp.path().to_path_buf());
+        let result = execute(&repository, options, &mock_store).unwrap();
 
         assert!(result.created.contains(&".jlo/config.toml".to_string()));
         assert!(result.created.contains(&".jlo/setup/tools.yml".to_string()));
@@ -440,8 +440,8 @@ wait_minutes_default = 30
         };
 
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemStore::new(temp.path().to_path_buf());
-        let result = execute(&workspace, options, &mock_store).unwrap();
+        let repository = LocalRepositoryAdapter::new(temp.path().to_path_buf());
+        let result = execute(&repository, options, &mock_store).unwrap();
 
         // Should NOT overwrite user-owned file
         assert!(!result.created.contains(&".jlo/config.toml".to_string()));
@@ -480,8 +480,8 @@ wait_minutes_default = 30
 
         let mock_store = MockRoleTemplateStore { control_files: vec![] };
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemStore::new(temp.path().to_path_buf());
-        let err = execute(&workspace, options, &mock_store).unwrap_err();
+        let repository = LocalRepositoryAdapter::new(temp.path().to_path_buf());
+        let err = execute(&repository, options, &mock_store).unwrap_err();
         assert!(err.to_string().contains("workflow.runner_mode"));
     }
 
@@ -496,8 +496,8 @@ wait_minutes_default = 30
         let mock_store = MockRoleTemplateStore { control_files: vec![] };
 
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemStore::new(temp.path().to_path_buf());
-        let result = execute(&workspace, options, &mock_store).unwrap();
+        let repository = LocalRepositoryAdapter::new(temp.path().to_path_buf());
+        let result = execute(&repository, options, &mock_store).unwrap();
 
         assert_eq!(result.previous_version, "0.0.0");
         let version = fs::read_to_string(jlo_path.join(".jlo-version")).unwrap();
@@ -515,8 +515,8 @@ wait_minutes_default = 30
         let mock_store = MockRoleTemplateStore { control_files: vec![] };
 
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemStore::new(temp.path().to_path_buf());
-        let result = execute(&workspace, options, &mock_store).unwrap();
+        let repository = LocalRepositoryAdapter::new(temp.path().to_path_buf());
+        let result = execute(&repository, options, &mock_store).unwrap();
 
         assert!(result.created.is_empty());
         assert_eq!(result.previous_version, env!("CARGO_PKG_VERSION"));
@@ -550,8 +550,8 @@ wait_minutes_default = 30
         };
 
         let options = UpdateOptions { prompt_preview: false };
-        let workspace = FilesystemStore::new(temp.path().to_path_buf());
-        let result = execute(&workspace, options, &mock_store).unwrap();
+        let repository = LocalRepositoryAdapter::new(temp.path().to_path_buf());
+        let result = execute(&repository, options, &mock_store).unwrap();
 
         // Skeleton file (config.toml) should be created
         assert!(result.created.contains(&".jlo/config.toml".to_string()));

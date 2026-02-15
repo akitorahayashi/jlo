@@ -5,7 +5,7 @@ use crate::app::config::SetupConfig;
 use crate::domain::AppError;
 use crate::domain::setup::artifact_generator;
 use crate::domain::setup::dependency_graph::DependencyGraph;
-use crate::ports::RepositoryFilesystemPort;
+use crate::ports::RepositoryFilesystem;
 
 /// Execute the setup gen command.
 ///
@@ -15,7 +15,7 @@ use crate::ports::RepositoryFilesystemPort;
 /// - `.jlo/setup/secrets.toml` - Secret environment variables
 ///
 /// Returns the list of resolved component names in installation order.
-pub fn execute(store: &impl RepositoryFilesystemPort) -> Result<Vec<String>, AppError> {
+pub fn execute(store: &impl RepositoryFilesystem) -> Result<Vec<String>, AppError> {
     let jlo_setup = ".jlo/setup";
     let tools_yml = ".jlo/setup/tools.yml";
 
@@ -71,7 +71,7 @@ pub fn execute(store: &impl RepositoryFilesystemPort) -> Result<Vec<String>, App
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::RepositoryFilesystemPort;
+    use crate::ports::RepositoryFilesystem;
     use crate::testing::TestStore;
 
     #[test]

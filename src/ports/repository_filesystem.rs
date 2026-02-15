@@ -12,7 +12,7 @@ use crate::domain::AppError;
 ///
 /// All `path` arguments are relative to the repository root.
 /// Implementations must reject paths that escape the root boundary.
-pub trait RepositoryFilesystemPort {
+pub trait RepositoryFilesystem {
     /// Read a file as UTF-8 text.
     fn read_file(&self, path: &str) -> Result<String, AppError>;
 

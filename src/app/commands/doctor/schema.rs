@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use chrono::NaiveDate;
 use serde_yaml::Mapping;
 
-use crate::domain::workspace::paths::jules;
+use crate::domain::repository::paths::jules;
 use crate::domain::{AppError, Layer};
 
 use super::diagnostics::Diagnostics;
