@@ -244,16 +244,7 @@ fn materialize_perspective_from_schema(
         ))
     })?;
 
-    let key = match layer {
-        Layer::Innovators => "persona",
-        Layer::Observers => "observer",
-        _ => {
-            return Err(AppError::RepositoryIntegrity(format!(
-                "Unsupported layer for workstation perspective materialization: '{}'",
-                layer.dir_name()
-            )));
-        }
-    };
+    let key = layer.perspective_role_key()?;
     map.insert(
         serde_yaml::Value::String(key.to_string()),
         serde_yaml::Value::String(role.to_string()),

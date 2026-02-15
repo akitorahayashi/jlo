@@ -133,6 +133,18 @@ impl Layer {
     pub fn is_issue_driven(&self) -> bool {
         matches!(self, Layer::Planner | Layer::Implementer)
     }
+
+    /// Returns the YAML key used for the role identifier in a workstation perspective file.
+    pub fn perspective_role_key(&self) -> Result<&'static str, crate::domain::AppError> {
+        match self {
+            Layer::Innovators => Ok("persona"),
+            Layer::Observers => Ok("observer"),
+            _ => Err(crate::domain::AppError::RepositoryIntegrity(format!(
+                "Unsupported layer for workstation perspective materialization: '{}'",
+                self.dir_name()
+            ))),
+        }
+    }
 }
 
 impl fmt::Display for Layer {

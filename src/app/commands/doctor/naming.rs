@@ -63,13 +63,10 @@ fn validate_proposal_filename(path: &Path, diagnostics: &mut Diagnostics) {
         }
     }
 
-    if !stem
-        .chars()
-        .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-' || ch == '_')
-    {
+    if !stem.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-') {
         diagnostics.push_error(
             path.display().to_string(),
-            "proposal filename must use lowercase ASCII, digits, '-', or '_'",
+            "proposal filename must use kebab-case (lowercase ASCII, digits, or '-')",
         );
     }
 }
@@ -191,5 +188,13 @@ mod tests {
         let mut diagnostics = Diagnostics::default();
         validate_proposal_filename(&PathBuf::from("alice-proposal-one.yml"), &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_validate_proposal_filename_rejects_underscores() {
+        let mut diagnostics = Diagnostics::default();
+        validate_proposal_filename(&PathBuf::from("alice-proposal_one.yml"), &mut diagnostics);
+        assert!(diagnostics.error_count() > 0);
+        assert!(diagnostics.errors()[0].message.contains("kebab-case"));
     }
 }
