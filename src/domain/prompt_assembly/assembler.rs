@@ -1,9 +1,3 @@
-//! Domain model for prompt assembly configuration.
-//!
-//! Prompt assembly is asset-driven: each layer has a `<layer>_prompt.j2` template
-//! that renders the final prompt using safe include helpers.
-
-use std::collections::HashMap;
 use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -12,110 +6,9 @@ use minijinja::{Environment, UndefinedBehavior};
 use crate::domain::Layer;
 use crate::domain::workspace::paths::jules;
 
-/// Abstraction for prompt asset loading.
-pub trait PromptAssetLoader {
-    fn read_asset(&self, path: &Path) -> std::io::Result<String>;
-    fn asset_exists(&self, path: &Path) -> bool;
-    fn ensure_asset_dir(&self, path: &Path) -> std::io::Result<()>;
-    fn copy_asset(&self, from: &Path, to: &Path) -> std::io::Result<u64>;
-}
-
-/// Runtime context for prompt assembly.
-///
-/// Contains the variable values to substitute into include paths.
-#[derive(Debug, Clone, Default)]
-pub struct PromptContext {
-    /// Variable name to value mapping.
-    pub variables: HashMap<String, String>,
-}
-
-impl PromptContext {
-    /// Create a new empty context.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Add a variable to the context.
-    pub fn with_var(mut self, name: impl Into<String>, value: impl Into<String>) -> Self {
-        self.variables.insert(name.into(), value.into());
-        self
-    }
-
-    /// Get a variable value.
-    #[allow(dead_code)]
-    pub fn get(&self, name: &str) -> Option<&str> {
-        self.variables.get(name).map(|s| s.as_str())
-    }
-}
-
-/// Result of prompt assembly.
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct AssembledPrompt {
-    /// The fully assembled prompt text.
-    pub content: String,
-
-    /// Files that were included (for diagnostic output).
-    pub included_files: Vec<String>,
-
-    /// Files that were skipped (optional and missing).
-    pub skipped_files: Vec<String>,
-}
-
-/// Error during prompt assembly.
-#[derive(Debug, Clone)]
-pub enum PromptAssemblyError {
-    /// The prompt template file was not found.
-    AssemblyTemplateNotFound(String),
-
-    /// Failed to read the prompt template file.
-    TemplateReadError { path: String, reason: String },
-
-    /// A required include file was not found.
-    RequiredIncludeNotFound { path: String, title: String },
-
-    /// Failed to read an include file.
-    IncludeReadError { path: String, reason: String },
-
-    /// Failed to render a template with the provided context.
-    TemplateRenderError { template: String, reason: String },
-
-    /// Path traversal detected in include path.
-    PathTraversalDetected { path: String },
-
-    /// Failed to seed a missing file from a schema template.
-    SchemaSeedError { path: String, reason: String },
-}
-
-impl std::fmt::Display for PromptAssemblyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::AssemblyTemplateNotFound(path) => {
-                write!(f, "Prompt assembly template not found: {}", path)
-            }
-            Self::TemplateReadError { path, reason } => {
-                write!(f, "Failed to read prompt assembly template {}: {}", path, reason)
-            }
-            Self::RequiredIncludeNotFound { path, title } => {
-                write!(f, "Required include '{}' not found: {}", title, path)
-            }
-            Self::IncludeReadError { path, reason } => {
-                write!(f, "Failed to read include {}: {}", path, reason)
-            }
-            Self::TemplateRenderError { template, reason } => {
-                write!(f, "Failed to render template {}: {}", template, reason)
-            }
-            Self::PathTraversalDetected { path } => {
-                write!(f, "Path traversal detected in include path: {}", path)
-            }
-            Self::SchemaSeedError { path, reason } => {
-                write!(f, "Failed to seed include {}: {}", path, reason)
-            }
-        }
-    }
-}
-
-impl std::error::Error for PromptAssemblyError {}
+use super::error::PromptAssemblyError;
+use super::loader::PromptAssetLoader;
+use super::types::{AssembledPrompt, PromptContext};
 
 /// Assemble a prompt for the given layer using the prompt assembly spec.
 ///
@@ -363,6 +256,7 @@ impl IncludeContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
     use std::sync::{Arc, Mutex};
 
     #[derive(Clone)]
