@@ -1,0 +1,34 @@
+schema_version: 1
+
+# Metadata
+id: "742ce0"
+issue_id: "doccli" # ID of the issue that processed this event (empty if unprocessed)
+created_at: "2026-02-16"
+author_role: "consistency" # e.g. taxonomy
+confidence: "high"
+
+# Content
+title: "Undocumented Integrator layer and aliases in run command"
+statement: |
+  The `jlo run` command implementation includes an `Integrator` layer (alias `g`) and plural aliases (e.g., `deciders`, `planners`) for all layers, which are completely omitted from the `README.md` documentation. The documentation implies only specific layers are supported and lists only single-letter aliases.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/cli/run.rs"
+    loc:
+      - "103"
+    note: "Implementation of Integrator layer with alias 'g' and 'integrators'"
+
+  - path: "src/app/cli/run.rs"
+    loc:
+      - "43"
+      - "53"
+      - "62"
+      - "71"
+    note: "Implementation of plural aliases for other layers (deciders, planners, implementers)"
+
+  - path: "README.md"
+    loc:
+      - "37"
+      - "78"
+    note: "Documentation lists `jlo run <layer>` and aliases but omits Integrator and plural forms"

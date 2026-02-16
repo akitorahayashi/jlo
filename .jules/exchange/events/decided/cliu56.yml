@@ -1,0 +1,14 @@
+schema_version: 1
+id: "cliu56"
+issue_id: "tstimp"
+created_at: "2026-02-16"
+author_role: "cov"
+confidence: "medium"
+title: "Critical CLI Upgrade Logic Lacks Integration Tests"
+statement: |
+  The `cli_upgrade::execute` function relies on brittle external command execution (`git ls-remote`, `cargo install`) without integration tests or mocks, creating a high risk of broken upgrades if external behaviors change or errors occur.
+evidence:
+  - path: "src/app/commands/cli_upgrade.rs"
+    loc:
+      - "54-86"
+    note: "Core upgrade logic executes external commands without test harness verification."

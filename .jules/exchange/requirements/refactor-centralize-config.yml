@@ -1,0 +1,48 @@
+schema_version: 2
+
+# Metadata
+id: "cfgcnt"
+source_events:
+  - "aaaa01"
+  - "bbbb02"
+  - "dupcfg"
+  - "conf01"
+  - "redsch"
+title: "Centralize Configuration Logic"
+label: "refacts"
+priority: "high"
+summary: "Fix duplicate config parsing, domain leakage, and ambiguous sections in `.jlo/config.toml`."
+
+# Content
+goal: |
+  Ensure configuration is parsed in one place (domain layer), and runtime options are separate from domain config.
+
+problem: |
+  Adapters re-parse config. `RunOptions` leaks runtime flags into domain. `RunConfig` duplicates `Schedule`. `[jules]` section is ambiguous.
+
+impact: |
+  Maintenance nightmare. Drift between adapter and domain logic.
+
+desired_outcome: |
+  Adapters use domain config models. `RunOptions` is pure. `RunConfig` reuses `Schedule`. `[jules]` section is renamed or clarified.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/config/"
+  - "src/adapters/control_plane_config.rs"
+
+acceptance_criteria:
+  - "`WorkflowGenerateConfigDto` is removed from adapters."
+  - "`RunConfig` uses `Schedule` struct."
+  - "`RunOptions` does not contain CLI flags."
+
+verification_criteria:
+  - "Grep for duplicate config parsing logic."
+  - "Review `RunConfig` struct definition."
+
+# Analysis Flags
+requires_deep_analysis: true
+deep_analysis_reason: "Refactoring configuration parsing affects the entire application initialization flow."

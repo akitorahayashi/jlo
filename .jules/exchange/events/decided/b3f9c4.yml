@@ -1,0 +1,14 @@
+schema_version: 1
+id: b3f9c4
+confidence: high
+issue_id: "clicns"
+created_at: 2026-02-16
+author_role: cli_sentinel
+title: Inconsistent Mandatory Argument Style (Positional vs Flag) in `jlo run`
+statement: |
+  `jlo run` subcommands inconsistently handle mandatory inputs. `Planner` and `Implementer` accept their mandatory subject (`requirement`) as a positional argument, while `Observers` and `Innovators` require their mandatory subject (`role`) via a flag (`--role`).
+evidence:
+  - path: src/app/cli/run.rs
+    loc:
+      - lines 21-50
+    note: "`Planner` uses `requirement: PathBuf` (positional), `Observers` uses `role: String` (flag)."

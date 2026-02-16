@@ -1,0 +1,13 @@
+schema_version: 1
+id: hrdlyr
+issue_id: "domcln"
+created_at: "2026-02-16"
+author_role: data_arch
+confidence: high
+title: "Hardcoded Multi-Role Layers in Manifest Logic"
+statement: |
+  The `is_default_role_file` function in `src/domain/workstations/manifest.rs` hardcodes the layer names "observers" and "innovators" to identify role files. This creates a hidden coupling that will break if new multi-role layers are added.
+evidence:
+  - path: "src/domain/workstations/manifest.rs"
+    loc: ["67-68"]
+    note: "Explicitly matches 'observers' and 'innovators'."

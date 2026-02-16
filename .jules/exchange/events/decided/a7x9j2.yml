@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "a7x9j2"
+issue_id: "docgov"
+created_at: "2026-02-16"
+author_role: "tactician"
+confidence: "high"
+
+# Content
+title: "Scope Violation in src/testing/AGENTS.md"
+statement: |
+  src/testing/AGENTS.md asserts authority over tests/ structure, violating scope locality principles.
+  It attempts to define where integration tests belong, contradicting tests/AGENTS.md.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/testing/AGENTS.md"
+    loc:
+      - "lines 12-13"
+    note: "Attempts to govern tests/harness/ usage from src/testing/ scope."
+  - path: "tests/AGENTS.md"
+    loc:
+      - "lines 18-20"
+    note: "Defines the actual structure for integration tests."

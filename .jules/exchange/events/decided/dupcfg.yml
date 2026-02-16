@@ -1,0 +1,16 @@
+schema_version: 1
+id: dupcfg
+issue_id: "cfgcnt"
+created_at: "2026-02-16"
+author_role: data_arch
+confidence: high
+title: "Duplicate Workflow Configuration Logic"
+statement: |
+  The `WorkflowGenerateConfig` and related DTOs are defined and parsed in `src/adapters/control_plane_config.rs`, duplicating the domain logic present in `src/domain/config/run.rs` and `src/domain/config/workflow_generate.rs`. This violates the Single Source of Truth principle.
+evidence:
+  - path: "src/adapters/control_plane_config.rs"
+    loc: ["15-30"]
+    note: "Defines WorkflowGenerateConfigDto and parses it separately."
+  - path: "src/domain/config/run.rs"
+    loc: ["170-177"]
+    note: "Defines WorkflowTimingConfig in domain logic."

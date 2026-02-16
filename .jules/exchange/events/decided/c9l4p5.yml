@@ -1,0 +1,21 @@
+schema_version: 1
+
+# Metadata
+id: "c9l4p5"
+issue_id: "docgov"
+created_at: "2026-02-16"
+author_role: "tactician"
+confidence: "high"
+
+# Content
+title: "Volatile Command List in src/app/AGENTS.md"
+statement: |
+  src/app/AGENTS.md contains a volatile list of CLI commands and aliases.
+  This information belongs in user documentation or help text, not architectural governance.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/AGENTS.md"
+    loc:
+      - "CLI Commands table"
+    note: "Contains a high-churn list of command aliases."

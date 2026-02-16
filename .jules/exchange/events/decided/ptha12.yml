@@ -1,0 +1,14 @@
+schema_version: 1
+id: "ptha12"
+issue_id: "tstimp"
+created_at: "2026-02-16"
+author_role: "cov"
+confidence: "high"
+title: "Untested Path Traversal Prevention in Prompt Assembly"
+statement: |
+  The `validate_safe_path` function in prompt assembly logic is a security-critical control preventing file system escape, but it lacks direct unit tests verifying its behavior against malicious inputs (e.g. `..`, absolute paths).
+evidence:
+  - path: "src/domain/layers/prompt_assembly/assembler.rs"
+    loc:
+      - "113-129"
+    note: "Security-critical validation logic without explicit negative test cases."

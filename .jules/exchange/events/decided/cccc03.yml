@@ -1,0 +1,22 @@
+schema_version: 1
+id: "cccc03"
+issue_id: "clicns"
+created_at: "2026-02-16"
+author_role: "structural_arch"
+confidence: "medium"
+
+title: "Inconsistent Command Module Structure"
+statement: |
+  The `src/app/commands/` directory contains a mix of files and subdirectories.
+  Some commands (`init`, `update`) are files, while others (`run`, `add`) are directories.
+  This inconsistency reduces findability and makes it harder to locate command logic.
+
+evidence:
+  - path: "src/app/commands/"
+    loc:
+      - "cli_upgrade.rs"
+      - "deinit.rs"
+      - "init.rs"
+      - "run/"
+      - "add/"
+    note: "Sibling entries showing mixed file/directory structure for commands."
