@@ -27,31 +27,7 @@ src/app/
 
 ## CLI Commands
 
-| Command | Alias | Description |
-|---------|-------|-------------|
-| `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow scaffold |
-| `jlo update [--prompt-preview \| --cli]` | `u` | Advance control-plane version pin or update jlo CLI binary |
-| `jlo create <layer> <name>` | `c` | Create a custom role under `.jlo/` |
-| `jlo add [layer] [roles...]` | `a` | Add a built-in role under `.jlo/` |
-| `jlo run narrator [--prompt-preview] [--branch <branch>] [--mock]` | `r n` | Run narrator (produces changes feed) |
-| `jlo run observers --role <role> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |
-| `jlo run decider [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
-| `jlo run planner <requirement> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (requirement-driven) |
-| `jlo run implementer <requirement> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (requirement-driven) |
-| `jlo run integrator [--prompt-preview] [--branch <branch>]` | `r g` | Run integrator (merges implementer branches) |
-| `jlo run innovators --role <role> --task <task_name> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
-| `jlo doctor [--strict]` | | Validate .jules/ structure and content |
-| `jlo workflow doctor` | `wf` | Validate runtime repository for workflow use |
-| `jlo workflow run <layer> [--mock]` | | Run layer and return wait-gating metadata |
-| `jlo workflow exchange inspect` | | Inspect exchange state |
-| `jlo workflow exchange publish-proposals` | | Publish innovator proposals as GitHub issues |
-| `jlo workflow exchange clean requirement <file>` | | Remove a processed requirement and its source events |
-| `jlo workflow exchange clean mock --mock-tag <tag> [--pr-numbers-json <json>] [--branches-json <json>]` | | Cleanup mock artifacts |
-| `jlo workflow gh process pr <all\|metadata\|automerge> <pr_number> [--retry-attempts <n>] [--retry-delay-seconds <n>] [--fail-on-error]` | | Run PR process pipeline |
-| `jlo workflow gh process issue label-innovator <issue_number> <persona>` | | Apply innovator labels to a proposal issue |
-| `jlo setup gen [path]` | `s g` | Generate `.jlo/setup/install.sh`, `vars.toml`, and `secrets.toml` |
-| `jlo setup list [--detail <component>]` | `s ls` | List available components |
-| `jlo deinit` | | Remove all jlo-managed assets (`.jlo/`, branch, workflows) |
+See `jlo --help` or the project `README.md` for the authoritative command list.
 
 ## Layer Architecture
 
