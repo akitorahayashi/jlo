@@ -53,3 +53,4 @@ See [src/AGENTS.md](src/AGENTS.md) for development verification commands and CLI
 - [Workflow Branch Impact Map](docs/WORKFLOW_BRANCH_IMPACT_MAP.md) — Operational index for branch-contract changes
 - [Workflow Layer Change Map](docs/WORKFLOW_LAYER_CHANGE_MAP.md) — Repository touch points for layer-level changes
 - [Prompt Assembly Policy](docs/PROMPT_ASSEMBLY.md) — Policy for `contracts.yml` + `tasks/*.yml` assembly
+- [Create Skill Guide](docs/operations/create_skill.md) — How to create and register new skills
