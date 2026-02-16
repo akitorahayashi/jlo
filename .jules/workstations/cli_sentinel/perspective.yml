@@ -1,10 +1,11 @@
 schema_version: 2
 observer: cli_sentinel
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-16T00:00:00Z
 goals:
-- <concrete goal>
+- Standardize `RunLayer` variants to singular nouns for consistency.
+- Enforce consistent interactive behavior for mandatory arguments across all `jlo` commands.
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-16T00:00:00Z
+  summary: Emitted 3 events for `jlo run` inconsistencies (pluralization, argument style, interactivity).
