@@ -1,4 +1,4 @@
-  wait-after-initial-requests:
+  wait-after-narrator:
     needs: [check-schedule, run-narrator]
     if: |
       always() &&
@@ -17,6 +17,8 @@
     timeout-minutes: 60
     outputs:
       json: {{ gha_expr("steps.wait.outputs.json") }}
+    env:
+      RUN_NARRATOR: {{ gha_expr("fromJSON(needs.check-schedule.outputs.json).run_narrator") }}
     steps:
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
         id: wait
@@ -25,7 +27,10 @@
           set -euo pipefail
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
 
-          if [ "{{ gha_expr("env.MOCK_MODE") }}" = "true" ]; then
+          if [ "$RUN_NARRATOR" != "true" ]; then
+            TOTAL_SECONDS=0
+            echo "Narrator not requested; skipping wait."
+          elif [ "{{ gha_expr("env.MOCK_MODE") }}" = "true" ]; then
             TOTAL_SECONDS=15
             echo "Mock mode enabled: overriding wait to 15 seconds."
           else

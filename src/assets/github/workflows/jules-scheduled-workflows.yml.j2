@@ -81,20 +81,20 @@ jobs:
   # ============================================================
   # Phase 6: Wait for narrator processing
   # ============================================================
-{% include "workflows/jules-workflows/components/wait-after-initial-requests.yml.j2" %}
+{% include "workflows/jules-workflows/components/wait-after-narrator.yml.j2" %}
   # ============================================================
   # Phase 7: Run observers
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-observers',
-    'wait-after-initial-requests',
+    'wait-after-narrator',
     'json',
     'observers',
     'Run observers',
     {},
-    ['check-schedule', 'wait-after-initial-requests'],
+    ['check-schedule', 'wait-after-narrator'],
     "fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
-      needs.wait-after-initial-requests.result == 'success'"
+      needs.wait-after-narrator.result == 'success'"
 ) }}
   # ============================================================
   # Phase 8: Wait for observer processing
