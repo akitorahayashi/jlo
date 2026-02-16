@@ -36,6 +36,8 @@ jlo init --remote
 | `jlo add [<layer> <role>]` | `a, ad` | Install a built-in role under `.jlo/` (observers, innovators) |
 | `jlo run <layer>` | `r` | Execute agents for specified layer |
 | `jlo doctor [--strict]` | | Validate `.jules/` structure and content |
+| `jlo workflow bootstrap` | | Materialize `.jules/` runtime repository on the current branch |
+| `jlo workflow doctor` | | Validation gate for `.jules/` repository |
 | `jlo workflow run <layer>` | `wf` | Run layer and return orchestration metadata |
 | `jlo workflow exchange inspect` | | Inspect exchange state for automation |
 | `jlo workflow exchange publish-proposals` | | Publish innovator proposals as GitHub issues |
@@ -69,7 +71,7 @@ jlo add innovators recruiter       # Install built-in innovator role
 
 ### Run Command
 
-Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (decider), `p` (planner), `i` (implementer), `x` (innovators).
+Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (decider), `p` (planner), `i` (implementer), `g` (integrator), `x` (innovators). Plural aliases (e.g., `deciders`, `planners`, `implementers`, `integrators`) are also supported.
 
 **Multi-role layers** (Observers, Innovators) require `--role`:
 
@@ -80,11 +82,12 @@ jlo run observers --role <role> --branch custom    # Override starting branch
 jlo run innovators --role <role> --task create_three_proposals  # Run innovator role with a task
 ```
 
-**Single-role layers** (Narrator, Decider, Planner, Implementer):
+**Single-role layers** (Narrator, Decider, Planner, Implementer, Integrator):
 
 ```bash
 jlo run narrator                     # Run narrator (no role flag needed)
 jlo run decider                      # Run decider (single role)
+jlo run integrator                   # Run integrator (merges implementer branches)
 ```
 
 **Requirement-driven layers** (Planner, Implementer) require a requirement file:
@@ -104,6 +107,7 @@ jlo run innovators --role <role> --mock
 ```
 
 Mock mode creates real branches and PRs with synthetic commit content, enabling E2E workflow validation in CI. The mock tag is auto-generated from `JULES_MOCK_TAG` env var or a timestamp.
+Note: Integrator layer does not support mock mode.
 
 **Flags**:
 - `-r, --role <name>`: Run specific role (required for observers/innovators)
@@ -146,6 +150,23 @@ Exit codes:
 `jlo deinit` removes the `.jlo/` control plane, the local `JULES_WORKER_BRANCH`, and workflow scaffold files from `.github/`.
 The command refuses to run while the current branch is `JULES_WORKER_BRANCH` or `jules-test-*`.
 GitHub secrets (such as `JULES_API_KEY` and `JLO_BOT_TOKEN`) remain configured and require manual removal.
+
+### Workflow Command
+
+The `jlo workflow` family of commands handles automation orchestration, typically running inside GitHub Actions.
+
+**Subcommands**:
+
+- `bootstrap`: Materialize the `.jules/` runtime repository on the current branch.
+- `doctor`: Validation gate for the `.jules/` repository (similar to `jlo doctor` but for runtime).
+- `run <layer>`: Run a specific layer and return wait-gating metadata.
+- `generate`: Generate workflow scaffold files to an output directory.
+- `gh`: GitHub entity operations (PR, issue).
+- `exchange`: Exchange area observation and cleanup operations.
+
+**Workflow Run Flags**:
+- `--mock`: Run in mock mode (requires `JULES_MOCK_TAG` environment variable).
+- `--task <name>`: Task selector for innovators (e.g. `create_three_proposals`).
 
 ### Other Examples
 
