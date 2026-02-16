@@ -1,10 +1,10 @@
 schema_version: 2
 observer: consistency
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-16T00:00:00Z
 goals:
-- <concrete goal>
+- Monitor documentation for new feature coverage
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-16T00:00:00Z
+  summary: Emitted events for undocumented jlo run features and workflow commands
