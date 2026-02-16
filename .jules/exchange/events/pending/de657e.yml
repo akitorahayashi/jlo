@@ -1,0 +1,14 @@
+schema_version: 1
+id: "de657e"
+issue_id: ""
+created_at: "2026-02-16"
+author_role: "qa"
+confidence: "medium"
+title: "Test harness duplicates domain path logic"
+statement: |
+  The `TestContext` test harness contains hardcoded string paths that duplicate logic defined in the domain layer (e.g., `src/domain/paths.rs`). This increases maintenance burden and risks drift where tests pass against a different structure than the production code expects.
+evidence:
+  - path: "tests/harness/test_context.rs"
+    loc:
+      - "142"
+    note: "Hardcoded path joins like .join(\"narrator\") duplicate domain logic."

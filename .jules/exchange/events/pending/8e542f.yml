@@ -1,0 +1,14 @@
+schema_version: 1
+id: "8e542f"
+issue_id: ""
+created_at: "2026-02-16"
+author_role: "qa"
+confidence: "high"
+title: "Implicit git init configuration creates environment dependency"
+statement: |
+  The `TestContext` harness initializes git repositories without specifying the initial branch name. This relies on the global or system-level git configuration (`init.defaultBranch`), which can vary between developer machines and CI environments, potentially leading to flaky tests if branch names (e.g., `master` vs `main`) are assumed.
+evidence:
+  - path: "tests/harness/test_context.rs"
+    loc:
+      - "21"
+    note: "git init command is executed without --initial-branch argument."
