@@ -19,26 +19,61 @@ problem: |
 
 impact: |
   Cognitive load for developers. Ambiguous domain model.
+  Changes affect CLI arguments (`label-innovator`), configuration schemas (`perspective.yml`, `proposal.yml`),
+  and require careful handling of backward compatibility for existing user projects.
 
 desired_outcome: |
   "Agent" and "Persona" are replaced by "Role" in domain models, comments, and non-historical docs.
 
-constraints: []
-risks: []
+constraints:
+  - "Must support reading existing `perspective.yml` and `proposal.yml` files using 'persona' key (backward compatibility)."
+
+risks:
+  - "Breaking changes for existing .jules/ configuration files if migration or compatibility layer is missing."
+  - "Breaking changes for scripts using 'label-innovator' CLI command if arguments are renamed without aliases."
 
 # Specifics
 affected_areas:
   - "src/domain/"
   - "docs/"
   - "README.md"
+  - "src/app/commands/workflow/"
+  - "src/assets/scaffold/"
+  - "src/domain/exchange/"
 
 acceptance_criteria:
   - "`perspective_role_key` uses consistent terminology."
   - "Documentation refers to \"Roles\" not \"Agents\" (except in historical context or \"AI Agent\" general sense)."
+  - "CLI command `label-innovator` accepts role identifier."
+  - "Structs in domain model use `role` field instead of `persona`."
+  - "Scaffold templates use `role` key in YAML files."
 
 verification_criteria:
-  - "Grep for 'Agent' and 'Persona' in codebase."
+  - "Grep for 'Agent' and 'Persona' in codebase (excluding backward compatibility aliases)."
+  - "Verify `jlo init` generates files with `role` key."
+  - "Verify `jlo workflow gh process issue label-innovator` works with new arguments."
 
 # Analysis Flags
-requires_deep_analysis: true
-deep_analysis_reason: "Renaming might affect many files and potentially break external contracts if not careful."
+requires_deep_analysis: false
+deep_analysis_reason: |
+  Analysis Findings:
+  1. System Impact:
+     - "Persona" is deeply embedded in Innovator layer structs and YAML schemas (`perspective.yml`, `proposal.yml`).
+     - "Persona" is exposed in CLI command arguments (`jlo workflow gh process issue label-innovator <issue> <persona>`).
+     - "Agent" is primarily a documentation artifact (`AGENTS.md`) and in comments, less in structural code.
+
+  2. Dependency Analysis:
+     - `src/app/commands/workflow/gh/issue/label_innovator.rs` depends on `persona` argument.
+     - `src/app/commands/workflow/exchange/publish_proposals.rs` depends on `persona` field.
+     - `src/domain/exchange/proposals/paths.rs` depends on `persona` path segment.
+     - `src/assets/scaffold/` templates use `persona` key in YAML files.
+
+  3. Risks & Constraints:
+     - Existing user projects have `.jules/` files with `persona: ...`. We must support reading these via Serde aliases (e.g., `#[serde(alias = "persona")]`).
+     - CLI command `label-innovator` is used in workflows. Renaming the argument without backward compatibility might break custom workflows.
+
+  4. Implementation Plan:
+     - Rename struct fields `persona` to `role` (or `role_id`). Use `#[serde(alias = "persona")]` for deserialization.
+     - Update `label-innovator` command to accept `role` argument. Support `persona` as a hidden alias or keep it for now.
+     - Update templates in `src/assets/scaffold/` to use `role` key for new projects.
+     - Update `AGENTS.md` and `README.md` to use "Role" terminology.
