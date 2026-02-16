@@ -9,5 +9,5 @@ statement: |
   The `docs/` directory lacks a `README.md` entry point, relying instead on `AGENTS.md` (root) or `docs/AGENTS.md` for navigation, creating ambiguity and violating the "One canonical path" principle.
 evidence:
   - path: "docs/"
-    loc: "1"
+    loc: ["1"]
     note: "Listing `docs/` confirms the absence of `README.md`."

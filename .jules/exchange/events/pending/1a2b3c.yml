@@ -9,8 +9,8 @@ statement: |
   The `docs/` directory contains a flat mix of architectural definitions and operational guides, violating the memory requirement for subdirectories `docs/architecture/` and `docs/operations/`.
 evidence:
   - path: "docs/ARCHITECTURE_BOUNDARY.md"
-    loc: "1"
+    loc: ["1"]
     note: "Architectural document at the root of `docs/` instead of `docs/architecture/`."
   - path: "docs/REPRODUCTION_GUIDE.md"
-    loc: "1"
+    loc: ["1"]
     note: "Operational guide at the root of `docs/` instead of `docs/operations/`."

@@ -9,8 +9,8 @@ statement: |
   Both `AGENTS.md` (root) and `docs/AGENTS.md` claim indexing authority for `docs/` content, creating conflicting navigation paths.
 evidence:
   - path: "AGENTS.md"
-    loc: "1"
+    loc: ["1"]
     note: "Root index includes links to specialized docs, partially acting as the documentation home."
   - path: "docs/AGENTS.md"
-    loc: "1"
+    loc: ["1"]
     note: "Specialized index also claims 'Core Documentation' indexing, creating redundancy."
