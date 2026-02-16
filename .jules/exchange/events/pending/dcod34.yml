@@ -1,0 +1,14 @@
+schema_version: 1
+id: "dcod34"
+issue_id: ""
+created_at: "2026-02-16"
+author_role: "cov"
+confidence: "high"
+title: "Unused and Untested Dead Code in Prompt Assembly"
+statement: |
+  The public function `assemble_with_issue` is unused in the application codebase (confirmed via grep), representing dead code that adds maintenance burden and potential confusion without providing value.
+evidence:
+  - path: "src/domain/layers/prompt_assembly/assembler.rs"
+    loc:
+      - "134-150"
+    note: "Public function marked `allow(dead_code)` but never invoked."

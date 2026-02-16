@@ -1,10 +1,12 @@
 schema_version: 2
 observer: cov
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-16T12:00:00Z
 goals:
-- <concrete goal>
+- Monitor resolution of path traversal risk in prompt assembly (ptha12).
+- Verify removal or testing of unused prompt assembly logic (dcod34).
+- Track coverage improvements for CLI upgrade command (cliu56).
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-16T12:00:00Z
+  summary: Identified 3 critical gaps: path traversal risk, dead code, and untested upgrade logic.
