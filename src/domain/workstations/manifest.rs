@@ -66,11 +66,10 @@ pub fn is_default_role_file(path: &str) -> bool {
         && parts[0] == workstations::paths::JULES_DIR
         && parts[1] == layers::paths::LAYERS_DIR
     {
-        if let Some(layer) = Layer::from_dir_name(parts[2]) {
-            if !layer.is_single_role() && parts[4] == roles::paths::ROLE_FILENAME {
-                return true;
-            }
-        }
+        let Some(layer) = Layer::from_dir_name(parts[2]) else {
+            return false;
+        };
+        return !layer.is_single_role() && parts[4] == roles::paths::ROLE_FILENAME;
     }
 
     false
