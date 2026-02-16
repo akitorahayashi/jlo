@@ -6,7 +6,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::domain::{AppError, layers, roles, workstations};
+use crate::domain::{AppError, Layer, layers, roles, workstations};
 
 const MANIFEST_SCHEMA_VERSION: u32 = 1;
 
@@ -65,10 +65,12 @@ pub fn is_default_role_file(path: &str) -> bool {
     if parts.len() == 5
         && parts[0] == workstations::paths::JULES_DIR
         && parts[1] == layers::paths::LAYERS_DIR
-        && matches!(parts[2], "observers" | "innovators")
-        && parts[4] == roles::paths::ROLE_FILENAME
     {
-        return true;
+        if let Some(layer) = Layer::from_dir_name(parts[2]) {
+            if !layer.is_single_role() && parts[4] == roles::paths::ROLE_FILENAME {
+                return true;
+            }
+        }
     }
 
     false

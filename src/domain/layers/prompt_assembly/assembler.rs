@@ -14,9 +14,6 @@ use super::types::{AssembledPrompt, PromptContext};
 /// For multi-role layers (observers, innovators), the context must include
 /// the `role` variable. For single-role layers, the context
 /// may be empty.
-///
-/// For issue-driven layers (planner, implementer), use `assemble_with_issue`
-/// to append issue content to the assembled prompt.
 pub fn assemble_prompt<L>(
     jules_path: &Path,
     layer: Layer,
@@ -128,27 +125,6 @@ fn validate_safe_path(path: &str) -> Result<(), PromptAssemblyError> {
         }
     }
     Ok(())
-}
-
-/// Assemble a prompt for an issue-driven layer (planner, implementer).
-///
-/// This appends the issue content to the base assembled prompt.
-#[allow(dead_code)]
-pub fn assemble_with_issue<L>(
-    jules_path: &Path,
-    layer: Layer,
-    issue_content: &str,
-    loader: &L,
-) -> Result<AssembledPrompt, PromptAssemblyError>
-where
-    L: PromptAssetLoader + Clone + Send + Sync + 'static,
-{
-    let mut result = assemble_prompt(jules_path, layer, &PromptContext::new(), loader)?;
-
-    result.content.push_str(&format!("\n---\n# Issue\n{}", issue_content));
-    result.included_files.push("(issue content embedded)".to_string());
-
-    Ok(result)
 }
 
 struct IncludeContext {

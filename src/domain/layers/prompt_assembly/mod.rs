@@ -4,7 +4,7 @@ pub mod loader;
 pub mod types;
 
 #[allow(unused_imports)]
-pub use assembler::{assemble_prompt, assemble_with_issue};
+pub use assembler::assemble_prompt;
 #[allow(unused_imports)]
 pub use error::PromptAssemblyError;
 #[allow(unused_imports)]

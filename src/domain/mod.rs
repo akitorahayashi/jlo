@@ -3,6 +3,7 @@ pub mod error;
 pub mod exchange;
 pub mod layers;
 pub mod roles;
+pub mod version;
 
 pub mod setup;
 pub mod workstations;
@@ -24,4 +25,5 @@ pub use roles::{BuiltinRoleEntry, RoleId};
 
 #[allow(unused_imports)]
 pub use setup::{DependencyGraph, EnvSpec, SetupComponent, SetupComponentId, SetupEnvArtifacts};
+pub use version::Version;
 pub use workstations::{JLO_DIR, JULES_DIR, ScaffoldManifest, VERSION_FILE};
