@@ -1,0 +1,24 @@
+schema_version: 1
+id: "aaaa01"
+issue_id: "cfgcnt"
+created_at: "2026-02-16"
+author_role: "structural_arch"
+confidence: "high"
+
+title: "Domain Leaking Runtime Concerns (RunOptions)"
+statement: |
+  The domain layer defines RunOptions which contains CLI-specific flags (mock, prompt_preview).
+  This violates domain purity and couples core logic to application execution details.
+  Domain configuration should reflect persistent state or business rules, not transient CLI arguments.
+
+evidence:
+  - path: "src/domain/config/run_options.rs"
+    loc:
+      - "pub struct RunOptions"
+      - "pub mock: bool"
+      - "pub prompt_preview: bool"
+    note: "Definition includes CLI flags unrelated to domain logic."
+  - path: "src/app/commands/run/mod.rs"
+    loc:
+      - "pub use crate::domain::RunOptions;"
+    note: "App layer re-exports domain type for CLI use, confirming the dependency direction is inverted (domain defined for app needs)."

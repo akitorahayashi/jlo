@@ -1,0 +1,47 @@
+schema_version: 2
+
+# Metadata
+id: "docarc"
+source_events:
+  - "1a2b3c"
+  - "4d5e6f"
+  - "7g8h9i"
+title: "Restructure Documentation Architecture"
+label: "docs"
+priority: "high"
+summary: "Organize `docs/` into `architecture/` and `operations/`, add `README.md`, fix indexing."
+
+# Content
+goal: |
+  Enforce a clean separation between architectural definitions and operational guides within the `docs/` directory, and provide a clear entry point.
+
+problem: |
+  The `docs/` directory is flat and mixes architectural docs with operational guides. It lacks a README, and indexing responsibility is split between root `AGENTS.md` and `docs/AGENTS.md`.
+
+impact: |
+  New contributors struggle to find relevant documentation. The architecture is harder to govern.
+
+desired_outcome: |
+  `docs/` contains `architecture/` and `operations/` subdirectories. `docs/README.md` exists and serves as the index. `AGENTS.md` indexing is consolidated.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "docs/"
+  - "AGENTS.md"
+
+acceptance_criteria:
+  - "`docs/architecture/` contains architectural docs."
+  - "`docs/operations/` contains operational guides."
+  - "`docs/README.md` links to all sub-areas."
+  - "Root `AGENTS.md` delegates indexing to `docs/README.md` or `docs/AGENTS.md`."
+
+verification_criteria:
+  - "File system check of `docs/` structure."
+  - "Link check in `docs/README.md`."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

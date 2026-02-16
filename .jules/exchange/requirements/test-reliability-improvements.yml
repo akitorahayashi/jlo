@@ -1,0 +1,48 @@
+schema_version: 2
+
+# Metadata
+id: "tstimp"
+source_events:
+  - "8e542f"
+  - "aad05a"
+  - "cliu56"
+  - "de657e"
+  - "ptha12"
+title: "Improve Test Coverage and Reliability"
+label: "tests"
+priority: "high"
+summary: "Fix test harness issues, add contract tests for Git, and verify critical paths."
+
+# Content
+goal: |
+  Ensure the test suite is reliable and covers critical infrastructure.
+
+problem: |
+  Implicit `git init` causes flakes. Missing Git contract tests. Missing upgrade integration tests. Path duplication in harness. Untested security logic.
+
+impact: |
+  Flaky tests. Regression risks.
+
+desired_outcome: |
+  Harness is robust. Git adapter has contract tests. Upgrade logic is tested.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "tests/"
+  - "src/adapters/git/"
+
+acceptance_criteria:
+  - "`TestContext` uses explicit branch names."
+  - "`GitCommandAdapter` has contract tests."
+  - "Path traversal logic is tested."
+
+verification_criteria:
+  - "Run `cargo test`."
+  - "Review new test files."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

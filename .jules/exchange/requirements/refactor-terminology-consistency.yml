@@ -1,0 +1,44 @@
+schema_version: 2
+
+# Metadata
+id: "trmcns"
+source_events:
+  - "agnt01"
+  - "pers01"
+title: "Standardize Agent vs Role Terminology"
+label: "refacts"
+priority: "medium"
+summary: "Unify terminology around \"Role\" and remove \"Agent\"/\"Persona\" synonyms."
+
+# Content
+goal: |
+  Use "Role" as the single authoritative term for the actor concept in code and docs.
+
+problem: |
+  "Agent" and "Persona" are used interchangeably with "Role", creating confusion.
+
+impact: |
+  Cognitive load for developers. Ambiguous domain model.
+
+desired_outcome: |
+  "Agent" and "Persona" are replaced by "Role" in domain models, comments, and non-historical docs.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/"
+  - "docs/"
+  - "README.md"
+
+acceptance_criteria:
+  - "`perspective_role_key` uses consistent terminology."
+  - "Documentation refers to \"Roles\" not \"Agents\" (except in historical context or \"AI Agent\" general sense)."
+
+verification_criteria:
+  - "Grep for 'Agent' and 'Persona' in codebase."
+
+# Analysis Flags
+requires_deep_analysis: true
+deep_analysis_reason: "Renaming might affect many files and potentially break external contracts if not careful."

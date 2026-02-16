@@ -1,0 +1,43 @@
+schema_version: 2
+
+# Metadata
+id: "doccli"
+source_events:
+  - "742ce0"
+  - "8d0c71"
+title: "Complete CLI Documentation"
+label: "docs"
+priority: "high"
+summary: "Document all CLI commands, flags (e.g., `--mock`), and the Integrator layer."
+
+# Content
+goal: |
+  Ensure `README.md` accurately reflects the implemented CLI capabilities.
+
+problem: |
+  Missing docs for `Integrator`, plural aliases, `workflow` commands (`bootstrap`, `doctor`), and `run` flags (`--mock`).
+
+impact: |
+  Users are unaware of powerful features.
+
+desired_outcome: |
+  `README.md` lists all commands and flags.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "README.md"
+
+acceptance_criteria:
+  - "`jlo run integrator` is documented."
+  - "`jlo workflow` subcommands are documented."
+  - "`--mock` flag is documented."
+
+verification_criteria:
+  - "Review `README.md` vs `jlo --help`."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

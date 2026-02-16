@@ -1,0 +1,16 @@
+schema_version: 1
+id: "1a2b3c"
+issue_id: "docarc"
+created_at: "2026-02-16"
+author_role: "librarian"
+confidence: "high"
+title: "Flattened `docs/` structure violates architecture boundaries"
+statement: |
+  The `docs/` directory contains a flat mix of architectural definitions and operational guides, violating the memory requirement for subdirectories `docs/architecture/` and `docs/operations/`.
+evidence:
+  - path: "docs/ARCHITECTURE_BOUNDARY.md"
+    loc: ["1"]
+    note: "Architectural document at the root of `docs/` instead of `docs/architecture/`."
+  - path: "docs/REPRODUCTION_GUIDE.md"
+    loc: ["1"]
+    note: "Operational guide at the root of `docs/` instead of `docs/operations/`."

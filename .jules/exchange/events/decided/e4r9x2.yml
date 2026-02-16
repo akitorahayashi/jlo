@@ -1,0 +1,22 @@
+schema_version: 1
+
+# Metadata
+id: "e4r9x2"
+issue_id: "errdec"
+created_at: "2026-02-16"
+author_role: "rustacean"
+confidence: "high"
+
+# Content
+title: "Decompose Monolithic AppError"
+statement: |
+  The `AppError` enum has grown into a "God Object" mixing unrelated concerns (IO, Git, Domain, Configuration, Exchange).
+  This violates the "Errors are part of the contract" principle by forcing all layers to depend on all error types,
+  reducing modularity and losing domain meaning at boundaries.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "23"
+    note: "The AppError enum definition includes variants for unrelated domains (Io, Git, JulesApi, Setup, Exchange)."

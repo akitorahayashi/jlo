@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "b3k8m1"
+issue_id: "docgov"
+created_at: "2026-02-16"
+author_role: "tactician"
+confidence: "high"
+
+# Content
+title: "Duplicated Branch Strategy in .github/AGENTS.md"
+statement: |
+  .github/AGENTS.md duplicates volatile Branch Strategy information from docs/CONTROL_PLANE_OWNERSHIP.md.
+  This creates a maintenance burden and risk of inconsistency.
+
+# Evidence supporting the observation
+evidence:
+  - path: ".github/AGENTS.md"
+    loc:
+      - "Branch Strategy table"
+    note: "Duplicates content from docs/CONTROL_PLANE_OWNERSHIP.md."
+  - path: "docs/CONTROL_PLANE_OWNERSHIP.md"
+    loc:
+      - "Branch Topology table"
+    note: "The authoritative source for branch topology."

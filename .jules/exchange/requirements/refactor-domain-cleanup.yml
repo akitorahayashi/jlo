@@ -1,0 +1,46 @@
+schema_version: 2
+
+# Metadata
+id: "domcln"
+source_events:
+  - "hrdlyr"
+  - "i8t8z3"
+  - "m7u7k1"
+  - "dcod34"
+title: "Domain Logic Cleanup and Optimization"
+label: "refacts"
+priority: "low"
+summary: "Remove hardcoded layers, refactor version parsing, remove `Arc<Mutex>`, and clean dead code."
+
+# Content
+goal: |
+  Clean up technical debt in the domain layer.
+
+problem: |
+  Hardcoded layer names. Inefficient version parsing. Tactical use of `Arc<Mutex>`. Dead code.
+
+impact: |
+  Reduced maintainability and performance.
+
+desired_outcome: |
+  Code is cleaner, more idiomatic, and robust.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/"
+
+acceptance_criteria:
+  - "`is_default_role_file` is generic."
+  - "`assemble_with_issue` is removed."
+  - "`Arc<Mutex>` is replaced in prompt assembly if possible."
+
+verification_criteria:
+  - "Grep for dead code."
+  - "Review `is_default_role_file` implementation."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""
