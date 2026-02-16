@@ -26,13 +26,19 @@ impact: |
 desired_outcome: |
   Adapters use domain config models. `RunOptions` is pure. `RunConfig` reuses `Schedule`. `[jules]` section is renamed or clarified.
 
-constraints: []
-risks: []
+constraints:
+  - "Backward compatibility for [jules] section (alias)"
+
+risks:
+  - "Breaking change for CLI args if not careful"
+  - "Config schema migration complexity"
 
 # Specifics
 affected_areas:
   - "src/domain/config/"
   - "src/adapters/control_plane_config.rs"
+  - "src/app/commands/"
+  - "src/testing/"
 
 acceptance_criteria:
   - "`WorkflowGenerateConfigDto` is removed from adapters."
@@ -44,5 +50,21 @@ verification_criteria:
   - "Review `RunConfig` struct definition."
 
 # Analysis Flags
-requires_deep_analysis: true
-deep_analysis_reason: "Refactoring configuration parsing affects the entire application initialization flow."
+requires_deep_analysis: false
+deep_analysis_reason: |
+  Refactoring configuration parsing affects the entire application initialization flow.
+
+  DEEP ANALYSIS FINDINGS:
+  1. Duplication in Adapters:
+     The `WorkflowGenerateConfigDto` in `src/adapters/control_plane_config.rs` duplicates the `RunConfig` structure defined in the domain layer. This creates drift where adapter logic (parsing) and domain logic (validation/defaults) are separated. The fix requires removing `WorkflowGenerateConfigDto` and using `RunConfig` directly, or a domain-defined DTO if necessary, ensuring the domain owns the schema.
+
+  2. Structural Duplication in Domain:
+     `RunConfig` (in `src/domain/config/run.rs`) manually re-defines `observers` and `innovators` fields, mirroring `Schedule` (in `src/domain/config/schedule.rs`). `RunConfig` should instead embed `Schedule` as a field (e.g., `pub schedule: Schedule`) to enforce a single source of truth for scheduling logic.
+
+  3. RunOptions Leakage:
+     `RunOptions` currently confounds "Run Target" (Layer, Role, Requirement) with "Execution Context" (Mock mode, Prompt Preview, Branch overrides). This structure is passed deep into domain logic, carrying CLI-specific flags.
+     - Recommendation: Split `RunOptions` into `RunTarget` (domain entity) and `RuntimeContext` (execution parameters).
+     - Mock execution should be handled via dependency injection (Service Strategy) at the composition root, rather than passing a boolean flag down to the domain.
+
+  4. [jules] Section Ambiguity:
+     The `[jules]` TOML section maps specifically to `JulesApiConfig`, which is misleading as it implies general system config. It should be renamed to `[api]` or `[jules_api]`. To maintain backward compatibility, the parser should support both keys (alias) during a transition period.
