@@ -1,10 +1,10 @@
 schema_version: 2
 observer: taxonomy
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-16T07:53:02Z
 goals:
-- <concrete goal>
+- Monitor vocabulary consistency across layers
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-16T07:53:02Z
+  summary: Identified agent/role, persona/role, and config section naming inconsistencies
