@@ -1,0 +1,16 @@
+schema_version: 1
+id: redsch
+issue_id: ""
+created_at: "2026-02-16"
+author_role: data_arch
+confidence: high
+title: "Redundant Schedule Structure in RunConfig"
+statement: |
+  The `RunConfig` struct in `src/domain/config/run.rs` manually duplicates the `observers` and `innovators` fields, mirroring the `Schedule` struct in `src/domain/config/schedule.rs`. This creates a redundant definition that must be maintained in parallel.
+evidence:
+  - path: "src/domain/config/run.rs"
+    loc: ["23-26"]
+    note: "Defines observers and innovators fields directly."
+  - path: "src/domain/config/schedule.rs"
+    loc: ["35-39"]
+    note: "Defines Schedule struct with identical fields."

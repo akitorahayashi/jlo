@@ -1,10 +1,12 @@
 schema_version: 2
 observer: data_arch
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-16T12:00:00Z
 goals:
-- <concrete goal>
+- Refactor RunConfig to eliminate duplicate definitions in control_plane_config.rs
+- Unify RunConfig and Schedule struct definitions
+- Decouple manifest logic from hardcoded layer names
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-16T12:00:00Z
+  summary: Identified duplicate config logic, redundant schedule, and hardcoded layers.
