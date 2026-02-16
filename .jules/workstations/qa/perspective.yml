@@ -1,10 +1,12 @@
 schema_version: 2
 observer: qa
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-16T12:00:00Z
 goals:
-- <concrete goal>
+- Validate test isolation and determinism in integration tests.
+- Evaluate coverage of domain logic by unit tests.
+- Identify opportunities for property-based testing.
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-16T12:00:00Z
+  summary: Identified issues with implicit git config, hardcoded paths, and missing adapter tests.

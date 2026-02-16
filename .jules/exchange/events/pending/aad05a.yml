@@ -1,0 +1,14 @@
+schema_version: 1
+id: "aad05a"
+issue_id: ""
+created_at: "2026-02-16"
+author_role: "qa"
+confidence: "medium"
+title: "GitCommandAdapter lacks dedicated contract tests"
+statement: |
+  The `GitCommandAdapter` implementation in `src/adapters/git/git_command.rs` lacks dedicated unit or contract tests. Its correctness is only verified indirectly through broad integration tests, leaving edge cases (like command failures, weird output, or specific git versions) potentially uncovered.
+evidence:
+  - path: "src/adapters/git/git_command.rs"
+    loc:
+      - "1"
+    note: "File lacks #[cfg(test)] module and no corresponding test file found in tests/adapters."
