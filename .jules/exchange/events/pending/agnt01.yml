@@ -1,0 +1,19 @@
+schema_version: 1
+id: "agnt01"
+issue_id: ""
+created_at: "2026-02-16"
+author_role: "taxonomy"
+confidence: "high"
+title: "Ambiguous 'Agent' vs 'Role' Terminology"
+statement: |
+  The term "Agent" is used inconsistently in documentation and comments, often interchangeably with "Role" or "Role Execution", but is not defined as a distinct concept in the domain model. This creates confusion about whether "Agent" implies a separate entity or just a runtime instance of a Role.
+evidence:
+  - path: "src/app/commands/run/mod.rs"
+    loc: ["1"]
+    note: "Module doc comment refers to 'executing Jules agents'."
+  - path: "src/domain/config/run.rs"
+    loc: ["9"]
+    note: "Struct doc comment refers to 'Configuration for agent execution'."
+  - path: "README.md"
+    loc: ["105"]
+    note: "Usage section refers to 'Execute Jules agents'."

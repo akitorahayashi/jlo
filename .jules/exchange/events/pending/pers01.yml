@@ -1,0 +1,16 @@
+schema_version: 1
+id: "pers01"
+issue_id: ""
+created_at: "2026-02-16"
+author_role: "taxonomy"
+confidence: "high"
+title: "'Persona' vs 'Role' Terminology Inconsistency"
+statement: |
+  The term "Persona" is introduced as a synonym for "Role" specifically for the Innovators layer in `perspective_role_key`, creating unnecessary vocabulary divergence. Observers use "observer" as the key, while Innovators use "persona", despite both being roles in the domain model.
+evidence:
+  - path: "src/domain/layers/mod.rs"
+    loc: ["perspective_role_key"]
+    note: "Returns 'persona' for Innovators layer, introducing a synonym for Role."
+  - path: "src/domain/roles/mod.rs"
+    loc: ["whole file"]
+    note: "Domain model uses `RoleId`, no `Persona` type defined."
