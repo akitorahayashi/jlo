@@ -1,10 +1,11 @@
 schema_version: 2
 observer: librarian
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-16T07:50:34Z
 goals:
-- <concrete goal>
+- Monitor `docs/` structure for compliance with architectural boundaries.
+- Ensure canonical indexing for all documentation subtrees.
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-16T07:50:34Z
+  summary: Identified flattened `docs/` structure and missing index.
