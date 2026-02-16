@@ -27,8 +27,14 @@ fn git_contract_tests() {
     // has_changes compares commits, so we need another commit to compare.
     let sha2 = git.commit_files("commit 2", &[&file_path]).expect("commit 2");
 
-    assert!(git.has_changes(&sha1, &sha2, &["test.txt"]).unwrap(), "Should have changes between sha1 and sha2");
-    assert!(!git.has_changes(&sha1, &sha1, &["test.txt"]).unwrap(), "Should not have changes between sha1 and sha1");
+    assert!(
+        git.has_changes(&sha1, &sha2, &["test.txt"]).unwrap(),
+        "Should have changes between sha1 and sha2"
+    );
+    assert!(
+        !git.has_changes(&sha1, &sha1, &["test.txt"]).unwrap(),
+        "Should not have changes between sha1 and sha1"
+    );
 
     // 4. Ancestry
     let ancestor = git.get_nth_ancestor(&sha2, 1).expect("ancestor");
@@ -45,7 +51,10 @@ fn git_contract_tests() {
     let branches = git.run_command(&["branch"], None).unwrap();
     assert!(!branches.contains("feature"));
 
-    assert!(!git.delete_branch("non-existent", false).unwrap(), "Should return false for non-existent branch");
+    assert!(
+        !git.delete_branch("non-existent", false).unwrap(),
+        "Should return false for non-existent branch"
+    );
 
     // 7. Remote operations (Push/Fetch)
     // Create a bare repo as remote
@@ -58,7 +67,8 @@ fn git_contract_tests() {
         .expect("init remote");
 
     // Add remote
-    git.run_command(&["remote", "add", "origin", remote_dir.to_str().unwrap()], None).expect("add remote");
+    git.run_command(&["remote", "add", "origin", remote_dir.to_str().unwrap()], None)
+        .expect("add remote");
 
     // Push
     git.push_branch("main", false).expect("push main");
