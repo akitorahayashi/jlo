@@ -1,10 +1,12 @@
 schema_version: 2
 observer: rustacean
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-16T07:51:55Z
 goals:
-- <concrete goal>
+- Decompose AppError into domain-specific error types.
+- Eliminate tactical shared mutability in prompt assembly.
+- Refactor doctor command to use idiomatic error handling.
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-16T07:51:55Z
+  summary: Identified monolithic AppError and tactical shared mutability in prompt assembly.
