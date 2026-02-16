@@ -21,10 +21,9 @@ pub enum RunLayer {
         mock: bool,
     },
     /// Run observers layer (requires role)
-    #[clap(visible_alias = "o")]
-    Observers {
+    #[clap(visible_alias = "o", alias = "observers")]
+    Observer {
         /// Role (persona) to run
-        #[arg(short = 'r', long)]
         role: String,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
@@ -80,10 +79,9 @@ pub enum RunLayer {
         mock: bool,
     },
     /// Run innovators layer (requires role)
-    #[clap(visible_alias = "x")]
-    Innovators {
+    #[clap(visible_alias = "x", alias = "innovators")]
+    Innovator {
         /// Role (persona) to run
-        #[arg(short = 'r', long)]
         role: String,
         /// Task selector (expected: create_three_proposals)
         #[arg(long)]
@@ -117,7 +115,7 @@ pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
         RunLayer::Narrator { prompt_preview, branch, mock } => {
             (Layer::Narrator, None, prompt_preview, branch, None, mock, None)
         }
-        RunLayer::Observers { role, prompt_preview, branch, mock } => {
+        RunLayer::Observer { role, prompt_preview, branch, mock } => {
             (Layer::Observers, Some(role), prompt_preview, branch, None, mock, None)
         }
         RunLayer::Decider { prompt_preview, branch, mock } => {
@@ -129,7 +127,7 @@ pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
         RunLayer::Implementer { prompt_preview, branch, requirement, mock } => {
             (Layer::Implementer, None, prompt_preview, branch, Some(requirement), mock, None)
         }
-        RunLayer::Innovators { role, task, prompt_preview, branch, mock } => {
+        RunLayer::Innovator { role, task, prompt_preview, branch, mock } => {
             (Layer::Innovators, Some(role), prompt_preview, branch, None, mock, task)
         }
         RunLayer::Integrator { prompt_preview, branch } => {
