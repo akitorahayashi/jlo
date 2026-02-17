@@ -40,6 +40,7 @@ Workflow orchestration delegates to `jlo workflow` commands:
 - `jlo workflow gh pr sync-category-label <pr_number>`
 - `jlo workflow gh pr automerge <pr_number>`
 - `jlo workflow gh pr process <all|metadata|automerge> <pr_number> [--retry-attempts N] [--retry-delay-seconds N] [--fail-on-error]`
+- `jlo workflow gh push worker-branch --change-token <token> --commit-message <msg> --pr-title <title> --pr-body <body>`
 - `jlo workflow gh issue label-innovator <issue_number> <persona>`
 
 ## Workflow Execution Flow

@@ -5,7 +5,6 @@
 
 use std::path::{Path, PathBuf};
 
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 use crate::adapters::git::GitCommandAdapter;
@@ -87,7 +86,7 @@ pub fn execute(
 fn execute_with<W, G, H>(
     repository: &W,
     _options: &ExchangePublishProposalsOptions,
-    git: &G,
+    _git: &G,
     github: &H,
 ) -> Result<ExchangePublishProposalsOutput, AppError>
 where
@@ -247,33 +246,11 @@ where
         deleted_paths.push(proposal_path.clone());
     }
 
-    // Commit and push the deletions on a publish branch, then open PR to worker branch.
-    let base_branch = git.get_current_branch()?.trim().to_string();
-    if base_branch.is_empty() {
-        return Err(AppError::Validation(
-            "Current git branch is empty; cannot publish proposals".to_string(),
-        ));
-    }
-    let publish_branch = build_publish_branch_name();
-    git.checkout_branch(&publish_branch, true)?;
-
-    let files_refs: Vec<&Path> = deleted_paths.iter().map(|p| p.as_path()).collect();
-    let commit_message = format!("jules: publish {} innovator proposal(s)", published.len());
-    git.commit_files(&commit_message, &files_refs)?;
-    git.push_branch(&publish_branch, false)?;
-
-    let pr_title = format!("chore: publish {} innovator proposal(s)", published.len());
-    let pr_body = format!(
-        "Automated publication for innovator proposals.\n\n- create {} proposal issue(s)\n- remove published proposal artifacts",
-        published.len()
-    );
-    github.create_pull_request(&publish_branch, &base_branch, &pr_title, &pr_body)?;
-
     Ok(ExchangePublishProposalsOutput {
         schema_version: 1,
         published,
-        committed: true,
-        pushed: true,
+        committed: false,
+        pushed: false,
     })
 }
 
@@ -349,11 +326,6 @@ fn validate_proposal_filename_matches_persona(
     Ok(())
 }
 
-fn build_publish_branch_name() -> String {
-    let suffix = Utc::now().format("%Y%m%d%H%M%S");
-    format!("jules-publish-proposals-{}", suffix)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -405,11 +377,10 @@ verification_signals:
         assert_eq!(output.published.len(), 1);
         assert_eq!(output.published[0].persona, "alice");
         assert_eq!(output.published[0].issue_number, 1);
-        assert!(output.committed);
-        assert!(output.pushed);
+        assert!(!output.committed);
+        assert!(!output.pushed);
         let created_branches = git.branches_created.lock().unwrap();
-        assert_eq!(created_branches.len(), 1);
-        assert!(created_branches[0].starts_with("jules-publish-proposals-"));
+        assert_eq!(created_branches.len(), 0);
 
         // Proposal file should be removed
         assert!(!repository.file_exists(proposal_path));

@@ -44,12 +44,12 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "Should not install separate mock cleanup workflow"
     );
     assert!(
-        workflow.contains("Cleanup uses a PR merge path to satisfy branch protection"),
-        "Cleanup flow should explain PR-based branch protection rationale"
+        workflow.contains("jlo workflow doctor"),
+        "Cleanup flow should validate with doctor as an explicit workflow step"
     );
     assert!(
-        workflow.contains("authority is centralized in jules-automerge workflow"),
-        "Cleanup flow should explain centralized auto-merge ownership"
+        workflow.contains("jlo workflow gh push worker-branch"),
+        "Cleanup flow should publish worker updates via workflow gh push worker-branch"
     );
     assert!(workflow.contains("run-innovators:"), "Should have integrated innovators job");
     assert!(

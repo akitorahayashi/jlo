@@ -102,9 +102,17 @@ See [root AGENTS.md](../../AGENTS.md) for critical design principles including P
 
 **Rule**: Jules-internal definitions stay in `.jules/`. User configuration stays in `.jlo/`. Execution/orchestration belongs in `.github/`.
 
-## Prompt Hierarchy
+### Prompt Assembly Strategy
 
-See "Critical Design Principles" above for the contract structure.
+Prompts are constructed dynamically using layer-specific Jinja2 templates (`<layer>_prompt.j2`), which serve as the authoritative definition for the agent's context window.
+
+**Principles:**
+- **Modular Composition**: Content is injected via explicit `include_required` and `include_optional` directives, treating file paths as dynamic resources resolved at runtime.
+- **Context-Aware**: Templates leverage context variables (e.g., `role`) to render specific configurations without hardcoding, enabling a single template to serve multiple actors within a layer.
+- **Single Source of Truth**: Data is never duplicated across prompts. Each layer references the definitive artifacts (contracts, schemas, exchange states) directly, ensuring consistency and reducing maintenance overhead.
+
+**Critical Rule: No Redundant Read Instructions**
+Do not include instructions in contracts or task files that tell the agent to "read file X". If a file is needed, it must be injected directly into the prompt via the `.j2` template. The agent should receive the *content* of the file, not an instruction to go find it.
 
 | File | Scope | Content |
 |------|-------|---------|

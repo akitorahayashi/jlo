@@ -125,53 +125,23 @@ jobs:
       - name: Bootstrap runtime repository
         run: jlo workflow bootstrap
 
-      - name: Commit changes and open bootstrap PR
-        id: bootstrap
+      - name: Validate repository (fail-fast)
+        run: jlo workflow doctor
+
+      - name: Publish bootstrap updates via worker-branch merge path
         run: |
           set -euo pipefail
-          if [ -n "$(git status --porcelain .jules)" ]; then
-            git add .jules/
-            git commit -m "chore: bootstrap .jules/ runtime repository [jlo $(jlo --version | awk '{print $2}')]"
-          fi
-
-          ahead_count="$(git rev-list --count "origin/${JULES_WORKER_BRANCH}..HEAD")"
-          if [ "${ahead_count}" -eq 0 ]; then
-            echo "committed=false" >> "$GITHUB_OUTPUT"
-            echo "pr_created=false" >> "$GITHUB_OUTPUT"
+          if [ -z "$(git status --porcelain .jules)" ]; then
+            echo "No bootstrap changes detected."
             exit 0
           fi
 
-          bootstrap_branch="jules-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          git checkout -B "${bootstrap_branch}"
-          git push origin "${bootstrap_branch}"
-
-          pr_number="$(gh pr list \
-            --state open \
-            --head "${bootstrap_branch}" \
-            --base "${JULES_WORKER_BRANCH}" \
-            --json number \
-            --jq '.[0].number')"
-          if [ -z "${pr_number}" ] || [ "${pr_number}" = "null" ]; then
-            pr_body=$'Automated bootstrap update for the runtime workspace.\n\n- synchronize '"${JLO_TARGET_BRANCH}"' into '"${JULES_WORKER_BRANCH}"$'\n- materialize .jules via jlo workflow bootstrap'
-            gh pr create \
-              --base "${JULES_WORKER_BRANCH}" \
-              --head "${bootstrap_branch}" \
-              --title "chore: bootstrap runtime workspace" \
-              --body "${pr_body}"
-
-            pr_number="$(gh pr list \
-              --state open \
-              --head "${bootstrap_branch}" \
-              --base "${JULES_WORKER_BRANCH}" \
-              --json number \
-              --jq '.[0].number')"
-            echo "pr_created=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "pr_created=false" >> "$GITHUB_OUTPUT"
-          fi
-
-          echo "committed=true" >> "$GITHUB_OUTPUT"
-          echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
+          pr_body=$'Automated bootstrap update for the runtime workspace.\n\n- synchronize '"${JLO_TARGET_BRANCH}"' into '"${JULES_WORKER_BRANCH}"$'\n- materialize .jules via jlo workflow bootstrap'
+          jlo workflow gh push worker-branch \
+            --change-token "bootstrap" \
+            --commit-message "chore: bootstrap .jules/ runtime repository [jlo $(jlo --version | awk '{print $2}')]" \
+            --pr-title "chore: bootstrap runtime workspace" \
+            --pr-body "${pr_body}"
 
 
   # ============================================================
@@ -387,6 +357,22 @@ jobs:
 
       - name: Publish proposals
         run: jlo workflow exchange publish-proposals
+
+      - name: Validate repository (fail-fast)
+        run: jlo workflow doctor
+
+      - name: Merge published proposal cleanup
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain .jules)" ]; then
+            echo "No proposal cleanup changes detected."
+            exit 0
+          fi
+          jlo workflow gh push worker-branch \
+            --change-token "publish-proposals" \
+            --commit-message "jules: publish innovator proposals" \
+            --pr-title "chore: publish innovator proposals" \
+            --pr-body "Automated publication cleanup for innovator proposals."
 
   # ============================================================
   # Phase 6: Wait for narrator processing
@@ -812,6 +798,7 @@ jobs:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
       TARGET_BRANCH: 'main'
+      JLO_DEFER_WORKER_MERGE: 'true'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -919,7 +906,20 @@ jobs:
 
       - name: Cleanup mock artifacts for this run
         run: |
-          # Cleanup uses a PR merge path to satisfy branch protection and preserve auditable history.
-          # Auto-merge is not enabled here; authority is centralized in jules-automerge workflow.
           jlo workflow exchange clean mock --mock-tag "$JULES_MOCK_TAG"
 
+      - name: Validate repository (fail-fast)
+        run: jlo workflow doctor
+
+      - name: Merge mock cleanup changes
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain .jules)" ]; then
+            echo "No mock cleanup changes detected."
+            exit 0
+          fi
+          jlo workflow gh push worker-branch \
+            --change-token "mock-cleanup-${JULES_MOCK_TAG}" \
+            --commit-message "jules: cleanup mock artifacts ${JULES_MOCK_TAG}" \
+            --pr-title "chore: cleanup mock artifacts ${JULES_MOCK_TAG}" \
+            --pr-body "Automated cleanup for mock run ${JULES_MOCK_TAG}."

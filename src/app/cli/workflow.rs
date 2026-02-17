@@ -83,6 +83,30 @@ pub enum WorkflowGhCommands {
         #[command(subcommand)]
         command: WorkflowProcessCommands,
     },
+    /// Push worker-branch maintenance changes through PR merge path
+    Push {
+        #[command(subcommand)]
+        command: WorkflowPushCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum WorkflowPushCommands {
+    /// Commit .jules changes, create PR to worker branch, and merge it
+    WorkerBranch {
+        /// Stable token used in branch naming (e.g. requirement-cleanup)
+        #[arg(long)]
+        change_token: String,
+        /// Commit message
+        #[arg(long)]
+        commit_message: String,
+        /// Pull request title
+        #[arg(long)]
+        pr_title: String,
+        /// Pull request body
+        #[arg(long)]
+        pr_body: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -262,6 +286,24 @@ fn run_workflow_gh(command: WorkflowGhCommands) -> Result<(), AppError> {
                 run_workflow_gh_process_issue(&github, command)
             }
         },
+        WorkflowGhCommands::Push { command } => run_workflow_gh_push(command),
+    }
+}
+
+fn run_workflow_gh_push(command: WorkflowPushCommands) -> Result<(), AppError> {
+    use crate::app::commands::workflow;
+
+    match command {
+        WorkflowPushCommands::WorkerBranch { change_token, commit_message, pr_title, pr_body } => {
+            let output =
+                workflow::gh::push::execute(workflow::gh::push::PushWorkerBranchOptions {
+                    change_token,
+                    commit_message,
+                    pr_title,
+                    pr_body,
+                })?;
+            workflow::write_workflow_output(&output)
+        }
     }
 }
 

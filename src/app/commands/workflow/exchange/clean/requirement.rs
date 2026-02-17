@@ -5,6 +5,9 @@ use serde::Serialize;
 
 use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
+use crate::app::commands::workflow::gh::push::{
+    PushWorkerBranchOptions, execute as push_worker_branch,
+};
 use crate::domain::AppError;
 use crate::domain::PromptAssetLoader;
 use crate::ports::{Git, JloStore, JulesStore, RepositoryFilesystem};
@@ -23,6 +26,15 @@ pub struct ExchangeCleanRequirementOutput {
     pub committed: bool,
     pub commit_sha: String,
     pub pushed: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pr_number: Option<u64>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ExchangeCleanRequirementApplyOutput {
+    pub schema_version: u32,
+    pub deleted_paths: Vec<String>,
+    pub requirement_id: String,
 }
 
 pub fn execute(
@@ -42,6 +54,39 @@ pub fn execute_with_adapters<
     repository: &W,
     git: &G,
 ) -> Result<ExchangeCleanRequirementOutput, AppError> {
+    let applied = apply_with_adapters(options, repository, git)?;
+    let push_output = push_worker_branch(PushWorkerBranchOptions {
+        change_token: format!("requirement-cleanup-{}", applied.requirement_id),
+        commit_message: format!("jules: clean requirement {}", applied.requirement_id),
+        pr_title: format!("chore: clean requirement {}", applied.requirement_id),
+        pr_body: format!(
+            "Automated cleanup for processed requirement `{}`.\n\n- remove requirement artifact\n- remove source event artifacts",
+            applied.requirement_id
+        ),
+    })?;
+
+    let commit_sha = push_output.head_sha.unwrap_or_default();
+    let committed = push_output.applied;
+    let pushed = push_output.applied;
+
+    Ok(ExchangeCleanRequirementOutput {
+        schema_version: 1,
+        deleted_paths: applied.deleted_paths,
+        committed,
+        commit_sha,
+        pushed,
+        pr_number: push_output.pr_number,
+    })
+}
+
+pub fn apply_with_adapters<
+    G: Git,
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
+>(
+    options: ExchangeCleanRequirementOptions,
+    repository: &W,
+    git: &G,
+) -> Result<ExchangeCleanRequirementApplyOutput, AppError> {
     if !repository.jules_exists() {
         return Err(AppError::JulesNotFound);
     }
@@ -114,25 +159,10 @@ pub fn execute_with_adapters<
         git.run_command(&["rm", "--", path], None)?;
     }
 
-    let commit_message = format!("jules: clean requirement {}", requirement_item.id);
-    git.run_command(&["commit", "-m", &commit_message], None)?;
-    let commit_sha = git.get_head_sha()?;
-
-    let branch = git.get_current_branch()?;
-    if branch.trim().is_empty() {
-        return Err(AppError::Validation(
-            "Cannot push cleanup commit: current branch name is empty".to_string(),
-        ));
-    }
-
-    git.push_branch(&branch, false)?;
-
-    Ok(ExchangeCleanRequirementOutput {
+    Ok(ExchangeCleanRequirementApplyOutput {
         schema_version: 1,
         deleted_paths,
-        committed: true,
-        commit_sha,
-        pushed: true,
+        requirement_id: requirement_item.id.clone(),
     })
 }
 
@@ -191,6 +221,8 @@ fn path_to_str<'a>(path: &'a Path, err_prefix: &str) -> Result<&'a str, AppError
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::adapters::git::GitCommandAdapter;
+    use crate::adapters::local_repository::LocalRepositoryAdapter;
     use serial_test::serial;
     use std::fs;
     use std::process::Command;
@@ -198,7 +230,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn clean_requirement_deletes_files_and_pushes() {
+    fn clean_requirement_apply_deletes_files() {
         let dir = tempdir().unwrap();
         let root = dir.path();
         let repo_dir = root.join("repo");
@@ -275,9 +307,15 @@ roles = [
 
         std::env::set_current_dir(&repo_dir).unwrap();
 
-        let output = execute(ExchangeCleanRequirementOptions {
-            requirement_file: ".jules/exchange/requirements/issue.yml".to_string(),
-        })
+        let repository = LocalRepositoryAdapter::new(repo_dir.clone());
+        let git = GitCommandAdapter::new(repo_dir.clone());
+        let output = apply_with_adapters(
+            ExchangeCleanRequirementOptions {
+                requirement_file: ".jules/exchange/requirements/issue.yml".to_string(),
+            },
+            &repository,
+            &git,
+        )
         .unwrap();
 
         assert_eq!(output.schema_version, 1);
@@ -289,21 +327,14 @@ roles = [
         assert!(!repo_dir.join(".jules/exchange/events/pending/event2.yml").exists());
         assert!(!repo_dir.join(".jules/exchange/requirements/issue.yml").exists());
 
-        let head = Command::new("git")
-            .args(["rev-parse", "HEAD"])
+        let status = Command::new("git")
+            .args(["status", "--porcelain", "--", ".jules"])
             .current_dir(&repo_dir)
             .output()
             .unwrap();
-        let head_sha = String::from_utf8_lossy(&head.stdout).trim().to_string();
-
-        let remote_head = Command::new("git")
-            .args(["ls-remote", "origin", "refs/heads/jules"])
-            .current_dir(&repo_dir)
-            .output()
-            .unwrap();
-        let remote_line = String::from_utf8_lossy(&remote_head.stdout);
-        let remote_sha = remote_line.split_whitespace().next().unwrap_or("");
-
-        assert_eq!(head_sha, remote_sha);
+        assert!(
+            !String::from_utf8_lossy(&status.stdout).trim().is_empty(),
+            "cleanup apply should stage/track .jules changes"
+        );
     }
 }

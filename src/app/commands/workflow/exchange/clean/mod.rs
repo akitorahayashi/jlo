@@ -4,7 +4,10 @@ pub mod mock;
 pub mod requirement;
 
 pub use mock::{ExchangeCleanMockOptions, ExchangeCleanMockOutput};
-pub use requirement::{ExchangeCleanRequirementOptions, ExchangeCleanRequirementOutput};
+pub use requirement::{
+    ExchangeCleanRequirementApplyOutput, ExchangeCleanRequirementOptions,
+    ExchangeCleanRequirementOutput,
+};
 
 use crate::domain::AppError;
 use crate::domain::PromptAssetLoader;
@@ -17,15 +20,15 @@ pub fn clean_requirement(
     requirement::execute(options)
 }
 
-pub fn clean_requirement_with_adapters<
+pub fn clean_requirement_apply_with_adapters<
     G: Git,
     W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 >(
     options: ExchangeCleanRequirementOptions,
     repository: &W,
     git: &G,
-) -> Result<ExchangeCleanRequirementOutput, AppError> {
-    requirement::execute_with_adapters(options, repository, git)
+) -> Result<ExchangeCleanRequirementApplyOutput, AppError> {
+    requirement::apply_with_adapters(options, repository, git)
 }
 
 /// Execute exchange clean mock command.

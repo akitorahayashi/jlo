@@ -1,4 +1,7 @@
 use crate::app::commands::run::RunOptions;
+use crate::app::commands::workflow::gh::push::{
+    PushWorkerBranchOptions, execute as push_worker_branch,
+};
 use crate::app::commands::workflow::run::options::{RunResults, WorkflowRunOptions};
 use crate::app::commands::workflow::run::requirements_routing::find_requirements;
 use crate::domain::PromptAssetLoader;
@@ -48,6 +51,28 @@ where
 
         eprintln!("Executing: implementer {}{}", requirement_path.display(), mock_suffix);
         run_layer(jules_path, run_options, git, github, store)?;
+    }
+
+    let defer_worker_merge = std::env::var("JLO_DEFER_WORKER_MERGE")
+        .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+    if defer_worker_merge && !options.mock {
+        let out = push_worker_branch(PushWorkerBranchOptions {
+            change_token: "implementer-cleanup-batch".to_string(),
+            commit_message: "jules: clean implementer requirements".to_string(),
+            pr_title: "chore: clean implementer requirements".to_string(),
+            pr_body: "Automated cleanup for processed implementer requirements and source events."
+                .to_string(),
+        })?;
+
+        if out.applied {
+            eprintln!(
+                "Merged consolidated implementer cleanup PR #{}",
+                out.pr_number.unwrap_or_default()
+            );
+        } else if let Some(reason) = out.skipped_reason {
+            eprintln!("Skipped consolidated implementer cleanup merge: {}", reason);
+        }
     }
 
     Ok(RunResults { mock_pr_numbers: None, mock_branches: None })

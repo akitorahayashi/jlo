@@ -21,3 +21,19 @@
 
       - name: Publish proposals
         run: jlo workflow exchange publish-proposals
+
+      - name: Validate repository (fail-fast)
+        run: jlo workflow doctor
+
+      - name: Merge published proposal cleanup
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain .jules)" ]; then
+            echo "No proposal cleanup changes detected."
+            exit 0
+          fi
+          jlo workflow gh push worker-branch \
+            --change-token "publish-proposals" \
+            --commit-message "jules: publish innovator proposals" \
+            --pr-title "chore: publish innovator proposals" \
+            --pr-body "Automated publication cleanup for innovator proposals."

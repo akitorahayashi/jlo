@@ -35,6 +35,16 @@ Prompts are constructed by layer-specific `<layer>_prompt.j2` templates, which r
 ### 4. Workflow-Driven Execution
 Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules API; workflows control scheduling, branching, and merge policies.
 
+### 5. Worker Branch Merge Policy
+`JULES_WORKER_BRANCH` is assumed to enforce GitHub Branch protection with `Require a pull request before merging`.
+
+Two merge lanes are intentionally distinct:
+- Jules API lane: Jules-created layer PRs use the existing Jules PR processing and auto-merge policy.
+- Programmatic maintenance lane: worker-branch runtime maintenance updates are merged through `jlo workflow gh push worker-branch` (PR create + merge path), not by direct push.
+
+`doctor` remains workflow orchestration responsibility.
+Programmatic commands do not embed a mandatory internal `doctor` execution; workflows run `jlo workflow doctor` as a separate step after command execution.
+
 ## Development Context
 
 See [src/AGENTS.md](src/AGENTS.md) for development verification commands and CLI architecture details.

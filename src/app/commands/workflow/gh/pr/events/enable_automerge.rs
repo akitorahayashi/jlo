@@ -12,30 +12,9 @@ use serde::Serialize;
 use crate::domain::AppError;
 use crate::ports::GitHub;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ScopePolicy {
-    JulesOnly,
-    RepositoryWide,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct BranchPolicy {
-    prefix: &'static str,
-    scope: ScopePolicy,
-}
-
 /// Allowed branch prefixes and their change-scope policy.
-const BRANCH_POLICIES: &[BranchPolicy] = &[
-    BranchPolicy { prefix: "jules-narrator-", scope: ScopePolicy::JulesOnly },
-    BranchPolicy { prefix: "jules-observer-", scope: ScopePolicy::JulesOnly },
-    BranchPolicy { prefix: "jules-decider-", scope: ScopePolicy::JulesOnly },
-    BranchPolicy { prefix: "jules-planner-", scope: ScopePolicy::JulesOnly },
-    BranchPolicy { prefix: "jules-innovator-", scope: ScopePolicy::JulesOnly },
-    BranchPolicy { prefix: "jules-publish-proposals-", scope: ScopePolicy::JulesOnly },
-    BranchPolicy { prefix: "jules-mock-cleanup-", scope: ScopePolicy::JulesOnly },
-    // Bootstrap branches carry target->worker sync changes and runtime materialization updates.
-    BranchPolicy { prefix: "jules-bootstrap-", scope: ScopePolicy::RepositoryWide },
-];
+const BRANCH_PREFIXES: &[&str] =
+    &["jules-narrator-", "jules-observer-", "jules-decider-", "jules-planner-", "jules-innovator-"];
 
 /// Options for `workflow gh pr enable-automerge`.
 #[derive(Debug, Clone)]
@@ -64,16 +43,12 @@ pub fn execute(
     let pr = github.get_pr_detail(options.pr_number)?;
 
     // Gate 1: branch prefix
-    let branch_policy = match branch_policy_for_head(&pr.head) {
-        Some(policy) => policy,
-        None => {
-            return Ok(skip(
-                options.pr_number,
-                format!("head branch '{}' does not match any allowed Jules prefix", pr.head),
-            ));
-        }
-    };
-
+    if branch_policy_for_head(&pr.head).is_none() {
+        return Ok(skip(
+            options.pr_number,
+            format!("head branch '{}' does not match any allowed Jules prefix", pr.head),
+        ));
+    }
     // Gate 2: draft state
     if pr.is_draft {
         return Ok(skip(options.pr_number, "PR is a draft".to_string()));
@@ -92,17 +67,15 @@ pub fn execute(
 
     // Gate 4: scope policy check
     let files = github.list_pr_files(options.pr_number)?;
-    if branch_policy.scope == ScopePolicy::JulesOnly {
-        let non_jules: Vec<&String> = files.iter().filter(|f| !f.starts_with(".jules/")).collect();
-        if !non_jules.is_empty() {
-            return Ok(skip(
-                options.pr_number,
-                format!(
-                    "PR modifies files outside .jules/: {}",
-                    non_jules.iter().take(3).map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
-                ),
-            ));
-        }
+    let non_jules: Vec<&String> = files.iter().filter(|f| !f.starts_with(".jules/")).collect();
+    if !non_jules.is_empty() {
+        return Ok(skip(
+            options.pr_number,
+            format!(
+                "PR modifies files outside .jules/: {}",
+                non_jules.iter().take(3).map(|s| s.as_str()).collect::<Vec<_>>().join(", ")
+            ),
+        ));
     }
 
     // All gates passed — enable auto-merge
@@ -127,8 +100,8 @@ fn skip(pr_number: u64, reason: String) -> EnableAutomergeOutput {
     }
 }
 
-fn branch_policy_for_head(head: &str) -> Option<&'static BranchPolicy> {
-    BRANCH_POLICIES.iter().find(|policy| head.starts_with(policy.prefix))
+fn branch_policy_for_head(head: &str) -> Option<&'static str> {
+    BRANCH_PREFIXES.iter().copied().find(|prefix| head.starts_with(prefix))
 }
 
 #[cfg(test)]
@@ -140,40 +113,6 @@ mod tests {
     #[test]
     fn enables_automerge_on_eligible_pr() {
         let gh = FakeGitHub::jules_runtime_pr();
-        let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
-        assert!(out.applied);
-        assert_eq!(out.automerge_state.as_deref(), Some("enabled"));
-        assert!(gh.automerge_calls.load(Ordering::SeqCst) > 0);
-    }
-
-    #[test]
-    fn enables_automerge_on_mock_cleanup_branch() {
-        let gh = FakeGitHub::jules_runtime_pr();
-        gh.pr_detail.lock().unwrap().head = "jules-mock-cleanup-mock-run-123".to_string();
-        let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
-        assert!(out.applied);
-        assert_eq!(out.automerge_state.as_deref(), Some("enabled"));
-        assert!(gh.automerge_calls.load(Ordering::SeqCst) > 0);
-    }
-
-    #[test]
-    fn enables_automerge_on_publish_proposals_branch() {
-        let gh = FakeGitHub::jules_runtime_pr();
-        gh.pr_detail.lock().unwrap().head = "jules-publish-proposals-20260215120000".to_string();
-        let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
-        assert!(out.applied);
-        assert_eq!(out.automerge_state.as_deref(), Some("enabled"));
-        assert!(gh.automerge_calls.load(Ordering::SeqCst) > 0);
-    }
-
-    #[test]
-    fn enables_automerge_on_bootstrap_branch_with_repository_scope() {
-        let gh = FakeGitHub::jules_runtime_pr().with_files(vec![
-            "src/main.rs".to_string(),
-            ".github/workflows/jules-scheduled-workflows.yml".to_string(),
-            ".jules/README.md".to_string(),
-        ]);
-        gh.pr_detail.lock().unwrap().head = "jules-bootstrap-12345-1".to_string();
         let out = execute(&gh, EnableAutomergeOptions { pr_number: 42 }).unwrap();
         assert!(out.applied);
         assert_eq!(out.automerge_state.as_deref(), Some("enabled"));
