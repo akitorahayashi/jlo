@@ -47,6 +47,7 @@ where
             requirement: None,
             mock: options.mock,
             task: options.task.clone(),
+            no_cleanup: false,
         };
 
         eprintln!("Executing: innovators --role {}{}", role, mock_suffix);

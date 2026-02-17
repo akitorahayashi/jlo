@@ -450,6 +450,7 @@ mod tests {
             requirement: Some(req_path.clone()),
             mock: true,
             task: None,
+            no_cleanup: false,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
@@ -479,6 +480,7 @@ mod tests {
             requirement: Some(req_path),
             mock: true,
             task: None,
+            no_cleanup: false,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);

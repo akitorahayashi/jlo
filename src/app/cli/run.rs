@@ -78,6 +78,9 @@ pub enum RunLayer {
         /// Run in mock mode (no Jules API, real git/GitHub operations)
         #[arg(long, conflicts_with = "prompt_preview")]
         mock: bool,
+        /// Skip post-execution cleanup (requirement deletion and worker-branch push)
+        #[arg(long, short = 'C', visible_alias = "nc")]
+        no_cleanup: bool,
     },
     /// Run innovators layer (requires role)
     #[clap(visible_alias = "x", alias = "innovator")]
@@ -113,32 +116,48 @@ pub enum RunLayer {
 pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
     use crate::domain::Layer;
 
-    let (target_layer, role, prompt_preview, branch, requirement, mock, task) = match layer {
-        RunLayer::Narrator { prompt_preview, branch, mock } => {
-            (Layer::Narrator, None, prompt_preview, branch, None, mock, None)
-        }
-        RunLayer::Observers { role, prompt_preview, branch, mock } => {
-            (Layer::Observers, Some(role), prompt_preview, branch, None, mock, None)
-        }
-        RunLayer::Decider { prompt_preview, branch, mock } => {
-            (Layer::Decider, None, prompt_preview, branch, None, mock, None)
-        }
-        RunLayer::Planner { prompt_preview, branch, requirement, mock } => {
-            (Layer::Planner, None, prompt_preview, branch, Some(requirement), mock, None)
-        }
-        RunLayer::Implementer { prompt_preview, branch, requirement, mock } => {
-            (Layer::Implementer, None, prompt_preview, branch, Some(requirement), mock, None)
-        }
-        RunLayer::Innovators { role, task, prompt_preview, branch, mock } => {
-            (Layer::Innovators, Some(role), prompt_preview, branch, None, mock, task)
-        }
-        RunLayer::Integrator { prompt_preview, branch } => {
-            (Layer::Integrator, None, prompt_preview, branch, None, false, None)
-        }
-    };
+    let (target_layer, role, prompt_preview, branch, requirement, mock, task, no_cleanup) =
+        match layer {
+            RunLayer::Narrator { prompt_preview, branch, mock } => {
+                (Layer::Narrator, None, prompt_preview, branch, None, mock, None, false)
+            }
+            RunLayer::Observers { role, prompt_preview, branch, mock } => {
+                (Layer::Observers, Some(role), prompt_preview, branch, None, mock, None, false)
+            }
+            RunLayer::Decider { prompt_preview, branch, mock } => {
+                (Layer::Decider, None, prompt_preview, branch, None, mock, None, false)
+            }
+            RunLayer::Planner { prompt_preview, branch, requirement, mock } => {
+                (Layer::Planner, None, prompt_preview, branch, Some(requirement), mock, None, false)
+            }
+            RunLayer::Implementer { prompt_preview, branch, requirement, mock, no_cleanup } => (
+                Layer::Implementer,
+                None,
+                prompt_preview,
+                branch,
+                Some(requirement),
+                mock,
+                None,
+                no_cleanup,
+            ),
+            RunLayer::Innovators { role, task, prompt_preview, branch, mock } => {
+                (Layer::Innovators, Some(role), prompt_preview, branch, None, mock, task, false)
+            }
+            RunLayer::Integrator { prompt_preview, branch } => {
+                (Layer::Integrator, None, prompt_preview, branch, None, false, None, false)
+            }
+        };
 
-    let result =
-        crate::app::api::run(target_layer, role, prompt_preview, branch, requirement, mock, task)?;
+    let result = crate::app::api::run(
+        target_layer,
+        role,
+        prompt_preview,
+        branch,
+        requirement,
+        mock,
+        task,
+        no_cleanup,
+    )?;
 
     if !result.prompt_preview && !result.roles.is_empty() && !result.sessions.is_empty() {
         println!("✅ Created {} Jules session(s)", result.sessions.len());

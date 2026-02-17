@@ -13,6 +13,7 @@ pub struct RunOptionsBuilder {
     requirement: Option<PathBuf>,
     mock: bool,
     task: Option<String>,
+    no_cleanup: bool,
 }
 
 #[allow(dead_code)]
@@ -26,6 +27,7 @@ impl RunOptionsBuilder {
             requirement: None,
             mock: false,
             task: None,
+            no_cleanup: false,
         }
     }
 
@@ -59,6 +61,11 @@ impl RunOptionsBuilder {
         self
     }
 
+    pub fn no_cleanup(mut self, enabled: bool) -> Self {
+        self.no_cleanup = enabled;
+        self
+    }
+
     pub fn build(self) -> RunOptions {
         RunOptions {
             layer: self.layer,
@@ -68,6 +75,7 @@ impl RunOptionsBuilder {
             requirement: self.requirement,
             mock: self.mock,
             task: self.task,
+            no_cleanup: self.no_cleanup,
         }
     }
 }

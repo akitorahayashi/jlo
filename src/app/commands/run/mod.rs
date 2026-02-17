@@ -131,7 +131,9 @@ where
     )?;
 
     // Handle post-execution cleanup (e.g. Implementer requirement)
-    if let Some(path) = result.cleanup_requirement.as_ref() {
+    if !options.no_cleanup
+        && let Some(path) = result.cleanup_requirement.as_ref()
+    {
         let path_str = path.to_string_lossy().to_string();
         let cleanup_res = clean_requirement_apply_with_adapters(
             ExchangeCleanRequirementOptions { requirement_file: path_str },
@@ -511,6 +513,7 @@ roles = [
                 requirement: None,
                 mock: true,
                 task: None,
+                no_cleanup: false,
             },
             &decider_git,
             &github,
@@ -606,6 +609,7 @@ roles = [
                 requirement: Some(implementer_requirement.clone()),
                 mock: true,
                 task: None,
+                no_cleanup: false,
             },
             &implementer_git,
             &github,
