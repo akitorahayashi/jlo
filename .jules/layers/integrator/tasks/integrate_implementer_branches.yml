@@ -1,0 +1,58 @@
+task: integrate-implementer-branches
+
+objective: >-
+  Merge all remote implementer branches into one integration branch, resolving
+  conflicts contextually, and open a single pull request against the target branch.
+
+inputs:
+  - "Remote branches matching jules-implementer-* (candidate set provided in prompt context)"
+  - "PR discussion for each candidate branch (retrieved at runtime via gh)"
+  - ".jules/layers/integrator/contracts.yml (integration contracts)"
+
+prerequisite_validation:
+  - "Verify gh CLI is available and authenticated."
+  - "Verify at least one candidate branch exists (provided by jlo preflight)."
+
+steps:
+  # 1. Create integration branch
+  - "Create a new branch from the target branch (provided in prompt context)."
+  - "Use branch naming format: jules-integrator-<timestamp>-<id>."
+
+  # 2. Per-branch integration loop (no pauses between branches)
+  - "For each candidate branch in the provided list:"
+  - "  a. Discover the PR by head branch name:"
+  - "     gh pr list --head <branch_name> --json number,title,body,url --limit 1"
+  - "  b. Fail explicitly if zero or multiple PRs match."
+  - "  c. Load PR discussion context:"
+  - "     - PR body: gh pr view <number> --json body"
+  - "     - Issue comments: gh pr view <number> --comments"
+  - "     - Reviews: gh api repos/{owner}/{repo}/pulls/<number>/reviews"
+  - "     - Review comments: gh api repos/{owner}/{repo}/pulls/<number>/comments"
+  - "  d. Examine the branch diff against the target branch."
+  - "  e. Evaluate code changes alongside PR discussion (summary, review feedback, line comments)."
+  - "  f. Merge the branch into the integration branch."
+  - "  g. If merge conflicts arise, resolve them contextually:"
+  - "     - Prefer architectural consistency with the repository."
+  - "     - Respect review feedback and approved changes."
+  - "     - Maintain code correctness and test integrity."
+  - "     - Never pick sides blindly (no always-ours or always-theirs)."
+  - "  h. Proceed immediately to the next branch."
+
+  # 3. Final verification
+  - "After all branches are merged, verify the integration branch compiles and tests pass."
+  - "If verification fails, diagnose and fix integration issues before proceeding."
+
+  # 4. Create pull request
+  - "Open one pull request from the integration branch to the target branch."
+  - "PR body summarizes all integrated branches, key decisions, and conflict resolutions."
+
+output:
+  - "One integration branch containing all implementer changes."
+  - "One pull request targeting the configured target branch."
+
+constraints:
+  - "Do not stop or pause between branches."
+  - "Do not apply review suggestions blindly without evaluating correctness."
+  - "Do not use blind conflict resolution strategies."
+  - "Do not depend on .mx/branches/*.md or pre-generated local summaries."
+  - "Fail explicitly on missing PR, ambiguous PR mapping, or gh authentication failure."
