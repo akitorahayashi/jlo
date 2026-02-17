@@ -112,9 +112,6 @@ fn validate_branch_name(value: &str, key: &str) -> Result<(), AppError> {
     if value.starts_with('-') {
         return Err(AppError::Validation(format!("{} must not start with '-'", key)));
     }
-    if Path::new(value).components().count() == 0 {
-        return Err(AppError::Validation(format!("{} is invalid", key)));
-    }
     Ok(())
 }
 

@@ -15,7 +15,7 @@ Local composite actions are installed under `.github/actions/`.
 
 ## Development Workflow
 
-**DO NOT EDIT files in `.github/` directly.** They are auto-generated artifacts.
+**NEVER EDIT files in `.github/` directly.** They are auto-generated artifacts.
 
 1. Edit the source templates in `src/assets/github/`.
 2. Regenerate the workflow files:

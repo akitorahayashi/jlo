@@ -51,9 +51,17 @@
             exit 0
           fi
 
-          pr_body=$'Automated bootstrap update for the runtime workspace.\n\n- synchronize '"${JLO_TARGET_BRANCH}"' into '"${JULES_WORKER_BRANCH}"' via `jlo workflow bootstrap worker-branch`\n- bootstrap managed files via `jlo workflow bootstrap managed-files`\n- reconcile workstations via `jlo workflow bootstrap workstations`'
+          pr_body=$(cat <<EOF
+          Automated bootstrap update for the runtime workspace.
+
+          - synchronize ${JLO_TARGET_BRANCH} into ${JULES_WORKER_BRANCH} via \`jlo workflow bootstrap worker-branch\`
+          - bootstrap managed files via \`jlo workflow bootstrap managed-files\`
+          - reconcile workstations via \`jlo workflow bootstrap workstations\`
+          EOF
+          )
+          jlo_version="$(jlo --version | cut -d ' ' -f 2)"
           jlo workflow gh push worker-branch \
             --change-token "bootstrap" \
-            --commit-message "chore: bootstrap .jules/ runtime repository [jlo $(jlo --version | awk '{print $2}')]" \
+            --commit-message "chore: bootstrap .jules/ runtime repository [jlo ${jlo_version}]" \
             --pr-title "chore: bootstrap runtime workspace" \
             --pr-body "${pr_body}"
