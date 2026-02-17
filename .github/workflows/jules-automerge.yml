@@ -90,6 +90,6 @@ jobs:
           set -euo pipefail
           jlo workflow gh process pr \
             automerge ${{ steps.discover.outputs.pr_number }} \
-            --retry-attempts 4 \
+            --retry-attempts 15 \
             --retry-delay-seconds 3 \
             --fail-on-error

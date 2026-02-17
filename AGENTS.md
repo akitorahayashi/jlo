@@ -33,6 +33,10 @@ Programmatic commands do not embed a mandatory internal `doctor` execution; work
 Generated workflow files under `.github/workflows/` are projection artifacts from templates in `src/assets/github/workflows/`.
 Manual edits to generated files are not part of the maintained state; changes are applied in templates and then regenerated through `jlo workflow generate`.
 
+### 5. Branch Context Terminology Is Explicit
+Automation and documentation distinguish only two branch contexts: `target branch` (`JLO_TARGET_BRANCH`) and `worker branch` (`JULES_WORKER_BRANCH`).
+Workflow logic, command surfaces, and design descriptions avoid hardcoded branch-name terms such as `main`, `jules`, or `default branch` as normative identifiers.
+
 ## Development Context
 
 See [src/AGENTS.md](src/AGENTS.md) for development verification commands and CLI architecture details.

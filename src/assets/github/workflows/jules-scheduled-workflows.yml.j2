@@ -253,7 +253,7 @@ fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true &&
     needs.wait-after-decider.result == 'skipped'
   )
 )",
-    checkout_ref=target_branch
+    extra_run_args='--branch "${JLO_TARGET_BRANCH}"'
 ) }}
   # ============================================================
   # Phase 14: Wait for implementer labels
