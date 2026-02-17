@@ -40,7 +40,7 @@
       - name: Reconcile workstation perspectives
         run: jlo workflow bootstrap workstations
 
-      - name: Validate repository (fail-fast)
+      - name: Validate repository
         run: jlo workflow doctor
 
       - name: Publish bootstrap updates via worker-branch merge path

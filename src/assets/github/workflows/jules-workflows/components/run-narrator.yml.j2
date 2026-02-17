@@ -27,5 +27,5 @@
         id: run
         run: jlo workflow run narrator {{ gha_raw("env.JLO_RUN_FLAGS") }}
 
-      - name: Validate repository (fail-fast)
+      - name: Validate repository
         run: jlo doctor

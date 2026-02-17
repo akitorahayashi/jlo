@@ -210,7 +210,7 @@ jobs:
         id: run
         run: jlo workflow run narrator ${{ env.JLO_RUN_FLAGS }}
 
-      - name: Validate repository (fail-fast)
+      - name: Validate repository
         run: jlo doctor
 
   # ============================================================
@@ -330,7 +330,7 @@ jobs:
       - name: Publish proposals
         run: jlo workflow exchange publish-proposals
 
-      - name: Validate repository (fail-fast)
+      - name: Validate repository
         run: jlo workflow doctor
 
       - name: Merge published proposal cleanup
@@ -769,8 +769,8 @@ jobs:
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-      TARGET_BRANCH: 'main'
       JLO_DEFER_WORKER_MERGE: 'true'
+      TARGET_BRANCH: 'main'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -880,7 +880,7 @@ jobs:
         run: |
           jlo workflow exchange clean mock --mock-tag "$JULES_MOCK_TAG"
 
-      - name: Validate repository (fail-fast)
+      - name: Validate repository
         run: jlo workflow doctor
 
       - name: Merge mock cleanup changes
@@ -895,3 +895,4 @@ jobs:
             --commit-message "jules: cleanup mock artifacts ${JULES_MOCK_TAG}" \
             --pr-title "chore: cleanup mock artifacts ${JULES_MOCK_TAG}" \
             --pr-body "Automated cleanup for mock run ${JULES_MOCK_TAG}."
+
