@@ -10,7 +10,7 @@ A layer-level change means one of the following:
 
 ## Authoritative Sources
 - Layer model: `src/domain/layers/mod.rs`
-- Control-plane ownership: `docs/CONTROL_PLANE_OWNERSHIP.md`
+- Control-plane ownership: `docs/architecture/CONTROL_PLANE_OWNERSHIP.md`
 - CLI entry points: `src/app/cli/run.rs`, `src/app/cli/workflow.rs`
 - Runtime dispatch: `src/app/commands/run/mod.rs`, `src/app/commands/workflow/run/layer/mod.rs`
 - Schedule model: `src/domain/schedule/model.rs`
