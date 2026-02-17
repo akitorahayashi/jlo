@@ -1,0 +1,5 @@
+{{ section("Role", include_required(".jlo/roles/observers/" ~ role ~ "/role.yml")) }}
+{{ section("Layer Contracts", include_required(".jules/layers/observers/contracts.yml")) }}
+{{ section("Task: Emit Events", include_required(".jules/layers/observers/tasks/emit_events.yml")) }}
+{{ section("Workstation Perspective", include_required(".jules/workstations/" ~ role ~ "/perspective.yml")) }}
+{{ section("Change Summary", include_optional(".jules/exchange/changes.yml")) }}
