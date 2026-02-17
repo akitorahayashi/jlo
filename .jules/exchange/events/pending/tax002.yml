@@ -1,0 +1,21 @@
+schema_version: 1
+id: "tax002"
+requirement_id: ""
+created_at: "2026-02-17"
+author_role: "taxonomy"
+confidence: "high"
+title: "Ambiguous Configuration Naming"
+statement: |
+  The top-level configuration type is named `RunConfig`, which implies it only covers the `[run]` section.
+  However, it serves as the root object for the entire control plane configuration, including `[workflow]`
+  and `[jules_api]`. This naming hides the scope of the configuration object.
+  A more appropriate name would be `ControlPlaneConfig` or `AppConfig`.
+evidence:
+  - path: "src/domain/config/run.rs"
+    loc:
+      - "11"
+    note: "Definition of `RunConfig` struct containing multiple sections."
+  - path: "src/domain/config/mod.rs"
+    loc:
+      - "12"
+    note: "Export of `RunConfig` as the primary configuration type."

@@ -1,0 +1,21 @@
+schema_version: 1
+id: "tax001"
+requirement_id: ""
+created_at: "2026-02-17"
+author_role: "taxonomy"
+confidence: "high"
+title: "Inconsistent Config Path Resolution"
+statement: |
+  The path to the control plane configuration (`.jlo/config.toml`) is hardcoded in the adapter layer,
+  bypassing the domain-owned path logic defined in `src/domain/config/paths.rs`.
+  This violates the "Single Source of Truth" principle and creates a risk of drift if the path changes.
+evidence:
+  - path: "src/adapters/control_plane_config.rs"
+    loc:
+      - "7"
+      - "83"
+    note: "Hardcoded string \".jlo/config.toml\" used instead of domain path helper."
+  - path: "src/domain/config/paths.rs"
+    loc:
+      - "5-7"
+    note: "Domain function `config(root)` defines the canonical path logic."
