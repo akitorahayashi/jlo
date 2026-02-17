@@ -19,6 +19,9 @@ pub enum WorkflowCommands {
         /// Run in mock mode (requires JULES_MOCK_TAG)
         #[arg(long)]
         mock: bool,
+        /// Override starting branch for Jules API request
+        #[arg(long)]
+        branch: Option<String>,
         /// Task selector for innovators (expected: create_three_proposals)
         #[arg(long)]
         task: Option<String>,
@@ -206,12 +209,12 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             }
             Ok(())
         }
-        WorkflowCommands::Run { layer, mock, task } => {
+        WorkflowCommands::Run { layer, mock, branch, task } => {
             use crate::app::commands::workflow;
             let layer = parse_layer(&layer)?;
             let mock_tag = std::env::var("JULES_MOCK_TAG").ok();
 
-            let options = workflow::WorkflowRunOptions { layer, mock, mock_tag, task };
+            let options = workflow::WorkflowRunOptions { layer, mock, branch, mock_tag, task };
             let output = workflow::run(options)?;
             workflow::write_workflow_output(&output)
         }
