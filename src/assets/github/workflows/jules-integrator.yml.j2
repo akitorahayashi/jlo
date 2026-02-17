@@ -35,7 +35,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: '{{ worker_branch }}'
+          ref: '{{ target_branch }}'
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 

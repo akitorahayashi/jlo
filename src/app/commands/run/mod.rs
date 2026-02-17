@@ -111,6 +111,25 @@ where
     // Load configuration
     let config = load_run_config(jules_path, repository)?;
 
+    // Validate current branch matches the layer's branch contract.
+    // --branch override bypasses this check (explicit operator override).
+    if options.branch.is_none() {
+        let current = git.get_current_branch()?;
+        let expected = if options.layer.uses_worker_branch() {
+            &config.run.jules_worker_branch
+        } else {
+            &config.run.jlo_target_branch
+        };
+        if current != *expected {
+            return Err(AppError::Validation(format!(
+                "Layer '{}' requires branch '{}', but current branch is '{}'",
+                options.layer.dir_name(),
+                expected,
+                current,
+            )));
+        }
+    }
+
     if options.mock {
         validate_mock(&options)?;
     }
@@ -600,7 +619,7 @@ roles = [
         let implementer_sources = implementer_requirement_doc.source_events;
         let planner_sources = planner_requirement_doc.source_events;
 
-        let implementer_git = TestGit::new(root.clone(), "jules");
+        let implementer_git = TestGit::new(root.clone(), "main");
         execute_with_mock_prerequisite_validator(
             &repository.jules_path(),
             RunOptions {
@@ -654,5 +673,117 @@ roles = [
             !pushed.iter().any(|branch| branch == "jules"),
             "mock implementer cleanup should not run worker-branch merge push"
         );
+    }
+
+    #[test]
+    #[serial]
+    fn wrong_branch_fails_fast_for_worker_branch_layer() {
+        let temp = tempdir().expect("tempdir");
+        let root = temp.path().to_path_buf();
+        write_mock_workspace(&root, "test");
+
+        let repository = LocalRepositoryAdapter::new(root.clone());
+        let github = TestGitHub::new();
+        // Decider expects worker branch "jules", but current is "main"
+        let git = TestGit::new(root.clone(), "main");
+
+        let result = execute_with_mock_prerequisite_validator(
+            &repository.jules_path(),
+            RunOptions {
+                layer: crate::domain::Layer::Decider,
+                role: None,
+                prompt_preview: false,
+                branch: None,
+                requirement: None,
+                mock: false,
+                task: None,
+                no_cleanup: false,
+            },
+            &git,
+            &github,
+            &repository,
+            |_options| Ok(()),
+        );
+
+        let err = result.expect_err("should fail on wrong branch");
+        let msg = err.to_string();
+        assert!(msg.contains("decider"), "error should name the layer: {}", msg);
+        assert!(msg.contains("jules"), "error should name expected branch: {}", msg);
+        assert!(msg.contains("main"), "error should name current branch: {}", msg);
+    }
+
+    #[test]
+    #[serial]
+    fn wrong_branch_fails_fast_for_target_branch_layer() {
+        let temp = tempdir().expect("tempdir");
+        let root = temp.path().to_path_buf();
+        write_mock_workspace(&root, "test");
+
+        let repository = LocalRepositoryAdapter::new(root.clone());
+        let github = TestGitHub::new();
+        // Implementer expects target branch "main", but current is "jules"
+        let git = TestGit::new(root.clone(), "jules");
+
+        let result = execute_with_mock_prerequisite_validator(
+            &repository.jules_path(),
+            RunOptions {
+                layer: crate::domain::Layer::Implementer,
+                role: None,
+                prompt_preview: false,
+                branch: None,
+                requirement: Some(root.join(".jules/exchange/requirements/fake.yml")),
+                mock: false,
+                task: None,
+                no_cleanup: false,
+            },
+            &git,
+            &github,
+            &repository,
+            |_options| Ok(()),
+        );
+
+        let err = result.expect_err("should fail on wrong branch");
+        let msg = err.to_string();
+        assert!(msg.contains("implementer"), "error should name the layer: {}", msg);
+        assert!(msg.contains("main"), "error should name expected branch: {}", msg);
+        assert!(msg.contains("jules"), "error should name current branch: {}", msg);
+    }
+
+    #[test]
+    #[serial]
+    fn branch_override_bypasses_validation() {
+        let temp = tempdir().expect("tempdir");
+        let root = temp.path().to_path_buf();
+        write_mock_workspace(&root, "test");
+
+        let repository = LocalRepositoryAdapter::new(root.clone());
+        let github = TestGitHub::new();
+        // Narrator expects worker branch "jules", but current is "feature"
+        // --branch override should bypass the check
+        let git = TestGit::new(root.clone(), "feature");
+
+        let _mock_tag_env = EnvVarGuard::set("JULES_MOCK_TAG", "test");
+
+        let result = execute_with_mock_prerequisite_validator(
+            &repository.jules_path(),
+            RunOptions {
+                layer: crate::domain::Layer::Narrator,
+                role: None,
+                prompt_preview: false,
+                branch: Some("custom-branch".to_string()),
+                requirement: None,
+                mock: true,
+                task: None,
+                no_cleanup: false,
+            },
+            &git,
+            &github,
+            &repository,
+            |_options| Ok(()),
+        );
+
+        // With --branch override, branch validation is skipped.
+        // The mock narrator should proceed past validation.
+        assert!(result.is_ok(), "branch override should bypass validation: {:?}", result.err());
     }
 }

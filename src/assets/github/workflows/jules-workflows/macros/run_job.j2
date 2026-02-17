@@ -1,4 +1,4 @@
-{%- macro run_agent_job(job_name, needs_job, check_output_key, layer, step_label, extra_env_vars={}, needs_list=none, if_condition=none, extra_run_args='') %}
+{%- macro run_agent_job(job_name, needs_job, check_output_key, layer, step_label, extra_env_vars={}, needs_list=none, if_condition=none, extra_run_args='', checkout_ref=none) %}
   {{ job_name }}:
     needs: {{ needs_list if needs_list else "[" ~ needs_job ~ "]" }}
     if: |
@@ -17,7 +17,7 @@
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: '{{ worker_branch }}'
+          ref: '{{ checkout_ref if checkout_ref else worker_branch }}'
           fetch-depth: 0
           token: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
 

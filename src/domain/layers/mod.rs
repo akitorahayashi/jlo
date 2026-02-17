@@ -127,6 +127,22 @@ impl Layer {
         matches!(self, Layer::Innovators)
     }
 
+    /// Whether this layer executes on the worker branch.
+    ///
+    /// Layers that operate on the `.jules/` runtime repository (narrator, observers,
+    /// decider, planner, innovators) use the worker branch. Layers that operate on
+    /// production code (implementer, integrator) use the target branch.
+    pub fn uses_worker_branch(&self) -> bool {
+        match self {
+            Layer::Narrator
+            | Layer::Observers
+            | Layer::Decider
+            | Layer::Planner
+            | Layer::Innovators => true,
+            Layer::Implementer | Layer::Integrator => false,
+        }
+    }
+
     /// Whether this layer is issue-driven.
     ///
     /// Issue-driven layers (Planner, Implementer) require a local issue file path.
@@ -222,5 +238,16 @@ mod tests {
     #[test]
     fn perspective_role_key_for_innovators_is_role() {
         assert_eq!(Layer::Innovators.perspective_role_key().unwrap(), "role");
+    }
+
+    #[test]
+    fn uses_worker_branch_matches_branch_contract() {
+        assert!(Layer::Narrator.uses_worker_branch());
+        assert!(Layer::Observers.uses_worker_branch());
+        assert!(Layer::Decider.uses_worker_branch());
+        assert!(Layer::Planner.uses_worker_branch());
+        assert!(Layer::Innovators.uses_worker_branch());
+        assert!(!Layer::Implementer.uses_worker_branch());
+        assert!(!Layer::Integrator.uses_worker_branch());
     }
 }
