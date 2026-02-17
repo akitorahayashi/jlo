@@ -246,6 +246,7 @@ roles = [
         let options = WorkflowRunOptions {
             layer: Layer::Observers,
             mock: true,
+            branch: None,
             mock_tag: Some("mock-test-001".to_string()),
             task: None,
         };

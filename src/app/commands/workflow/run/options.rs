@@ -8,6 +8,8 @@ pub struct WorkflowRunOptions {
     pub layer: Layer,
     /// Run in mock mode.
     pub mock: bool,
+    /// Optional starting branch override passed to `run`.
+    pub branch: Option<String>,
     /// Mock tag (required if mock is true).
     pub mock_tag: Option<String>,
     /// Task selector for innovators (expected: create_three_proposals).
@@ -77,8 +79,13 @@ mod tests {
 
     #[test]
     fn workflow_run_options() {
-        let options =
-            WorkflowRunOptions { layer: Layer::Observers, mock: false, mock_tag: None, task: None };
+        let options = WorkflowRunOptions {
+            layer: Layer::Observers,
+            mock: false,
+            branch: None,
+            mock_tag: None,
+            task: None,
+        };
         assert_eq!(options.layer, Layer::Observers);
         assert!(!options.mock);
     }

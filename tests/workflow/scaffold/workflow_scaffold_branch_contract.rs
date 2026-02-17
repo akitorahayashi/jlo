@@ -1,6 +1,19 @@
 use crate::harness::TestContext;
 use std::fs;
 
+fn rendered_env_value(workflow: &str, key: &str) -> String {
+    let prefix = format!("{}: '", key);
+    let line = workflow
+        .lines()
+        .find(|line| line.trim_start().starts_with(&prefix))
+        .unwrap_or_else(|| panic!("{} should be rendered in workflow env", key));
+    let after = line
+        .trim_start()
+        .strip_prefix(&prefix)
+        .expect("env value should start with expected prefix");
+    after.strip_suffix('\'').expect("env value should end with quote").to_string()
+}
+
 #[test]
 fn installed_workflow_scaffold_enforces_explicit_branch_contract() {
     let ctx = TestContext::new();
@@ -18,7 +31,9 @@ fn installed_workflow_scaffold_enforces_explicit_branch_contract() {
     assert!(root.join(".github/workflows/jules-implementer-pr.yml").exists());
     assert!(root.join(".github/workflows/jules-automerge.yml").exists());
 
-    // Implementer job should check out target branch, not worker branch
+    let worker_branch = rendered_env_value(&primary, "JULES_WORKER_BRANCH");
+
+    // Implementer job should check out worker branch context, but dispatch API on target branch.
     let implementer_section =
         primary.split("run-implementer:").nth(1).expect("run-implementer job should exist");
     let implementer_checkout = implementer_section
@@ -26,8 +41,12 @@ fn installed_workflow_scaffold_enforces_explicit_branch_contract() {
         .nth(1)
         .expect("implementer should have checkout step");
     assert!(
-        implementer_checkout.contains("ref: 'main'"),
-        "Implementer job should check out target branch, not worker branch"
+        implementer_checkout.contains(&format!("ref: '{}'", worker_branch)),
+        "Implementer job should check out worker branch context"
+    );
+    assert!(
+        implementer_section.contains("--branch \"${JLO_TARGET_BRANCH}\""),
+        "Implementer job should dispatch Jules API on target branch"
     );
 
     // Integrator workflow should check out target branch
@@ -35,8 +54,9 @@ fn installed_workflow_scaffold_enforces_explicit_branch_contract() {
         fs::read_to_string(root.join(".github/workflows/jules-integrator.yml")).unwrap();
     let integrator_checkout =
         integrator.split("actions/checkout@").nth(1).expect("integrator should have checkout step");
+    let integrator_target = rendered_env_value(&integrator, "JLO_TARGET_BRANCH");
     assert!(
-        integrator_checkout.contains("ref: 'main'"),
+        integrator_checkout.contains(&format!("ref: '{}'", integrator_target)),
         "Integrator workflow should check out target branch"
     );
 

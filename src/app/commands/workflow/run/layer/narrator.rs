@@ -35,7 +35,7 @@ where
     };
     let runtime = RunRuntimeOptions {
         prompt_preview: false,
-        branch: None,
+        branch: options.branch.clone(),
         mock: options.mock,
         no_cleanup: false,
     };

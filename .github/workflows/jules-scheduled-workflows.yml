@@ -720,7 +720,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 'main'
+          ref: 'jules'
           fetch-depth: 0
           token: ${{ secrets.JLO_BOT_TOKEN }}
 
@@ -734,7 +734,7 @@ jobs:
         id: run
         run: |
           set -euo pipefail
-          jlo workflow run implementer ${{ env.JLO_RUN_FLAGS }}
+          jlo workflow run implementer ${{ env.JLO_RUN_FLAGS }} --branch "${JLO_TARGET_BRANCH}"
   # ============================================================
   # Phase 14: Wait for implementer labels
   # ============================================================

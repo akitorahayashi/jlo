@@ -626,12 +626,18 @@ fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
         let role = get_string(&data, "role").unwrap_or_default();
         if !role.is_empty()
             && let Some(stem) = path.file_stem().and_then(|s| s.to_str())
-            && !stem.starts_with(&format!("{}-", role))
         {
-            diagnostics.push_error(
-                path.display().to_string(),
-                format!("proposal filename must start with '{}-'", role),
-            );
+            let expected_role_segment =
+                crate::domain::exchange::proposals::paths::proposal_filename_role_segment(&role);
+            if !stem.starts_with(&format!("{}-", expected_role_segment)) {
+                diagnostics.push_error(
+                    path.display().to_string(),
+                    format!(
+                        "proposal filename must start with normalized role '{}-'",
+                        expected_role_segment
+                    ),
+                );
+            }
         }
     }
 }
@@ -639,6 +645,8 @@ fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use tempfile::tempdir;
 
     #[test]
     fn test_validate_event_data_valid() {
@@ -755,5 +763,33 @@ verification_criteria: ["test commands"]
         validate_requirement(&data, &path, &labels, &priorities, &mut diagnostics);
         assert!(diagnostics.error_count() > 0);
         assert!(diagnostics.errors()[0].message.contains("requires_deep_analysis is required"));
+    }
+
+    #[test]
+    fn test_validate_innovator_proposal_accepts_normalized_role_prefix() {
+        let dir = tempdir().expect("tempdir");
+        let proposal_path = dir.path().join("leverage-architect-mock-proposal-1.yml");
+        fs::write(
+            &proposal_path,
+            r#"
+schema_version: 1
+id: "abc123"
+role: "leverage_architect"
+created_at: "2026-02-17"
+title: "Mock proposal"
+problem: "p"
+introduction: "i"
+importance: "m"
+impact_surface: ["a"]
+implementation_cost: "c"
+consistency_risks: ["r"]
+verification_signals: ["v"]
+"#,
+        )
+        .expect("write proposal");
+
+        let mut diagnostics = Diagnostics::default();
+        validate_innovator_proposal(&proposal_path, &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
     }
 }
