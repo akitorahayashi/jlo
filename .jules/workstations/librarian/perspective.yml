@@ -1,10 +1,11 @@
 schema_version: 2
 observer: librarian
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-17T16:00:00Z
 goals:
-- <concrete goal>
+- Monitor AGENTS.md for architectural drift
+- Verify separation of concerns between AGENTS.md and docs/
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-17T16:00:00Z
+  summary: Initialized librarian perspective and emitted 2 findings regarding AGENTS.md structural issues.
