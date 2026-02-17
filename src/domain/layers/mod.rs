@@ -82,11 +82,11 @@ impl Layer {
     pub fn from_dir_name(name: &str) -> Option<Layer> {
         match name.to_lowercase().as_str() {
             "narrator" | "narrators" => Some(Layer::Narrator),
-            "observers" | "observer" => Some(Layer::Observers),
+            "observers" | "observer" | "o" => Some(Layer::Observers),
             "deciders" | "decider" => Some(Layer::Decider),
             "planners" | "planner" => Some(Layer::Planner),
             "implementers" | "implementer" => Some(Layer::Implementer),
-            "innovators" | "innovator" => Some(Layer::Innovators),
+            "innovators" | "innovator" | "i" => Some(Layer::Innovators),
             "integrator" | "integrators" => Some(Layer::Integrator),
             _ => None,
         }

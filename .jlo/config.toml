@@ -13,7 +13,7 @@ wait_minutes_default = 30
 
 [innovators]
 roles = [
-  { name = "recruiter", enabled = true },
+  { name = "recruiter", enabled = false },
   { name = "leverage_architect", enabled = true },
 ]
 
