@@ -105,7 +105,11 @@ mod tests {
             true
         }
 
-        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<Option<String>, AppError> {
+            Ok(Some("deadbeef".to_string()))
+        }
+
+        fn get_first_commit(&self, _commit: &str) -> Result<String, AppError> {
             Ok("deadbeef".to_string())
         }
 

@@ -41,8 +41,12 @@ impl Git for FakeGit {
         true
     }
 
-    fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
-        Ok("parent".into())
+    fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<Option<String>, AppError> {
+        Ok(Some("parent".into()))
+    }
+
+    fn get_first_commit(&self, _commit: &str) -> Result<String, AppError> {
+        Ok("root".into())
     }
 
     fn has_changes(&self, _from: &str, _to: &str, _pathspec: &[&str]) -> Result<bool, AppError> {

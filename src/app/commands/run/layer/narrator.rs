@@ -248,7 +248,10 @@ where
     determine_range_strategy(
         &head_sha,
         changes_content.as_deref(),
-        |sha, n| git.get_nth_ancestor(sha, n),
+        |sha, n| match git.get_nth_ancestor(sha, n)? {
+            Some(commit) => Ok(commit),
+            None => git.get_first_commit(sha),
+        },
         |sha, timestamp| {
             let commit = get_commit_before_timestamp(git, sha, timestamp)?;
             if let Some(ref base) = commit
@@ -495,8 +498,12 @@ created_at: "2026-02-05 00:00:00"
             panic!("mock narrator no-op must not call commit_exists");
         }
 
-        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<Option<String>, AppError> {
             panic!("mock narrator no-op must not call get_nth_ancestor");
+        }
+
+        fn get_first_commit(&self, _commit: &str) -> Result<String, AppError> {
+            panic!("mock narrator no-op must not call get_first_commit");
         }
 
         fn has_changes(

@@ -1,7 +1,7 @@
 use crate::domain::AppError;
 use crate::ports::Git;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Output};
 
 #[derive(Debug, Clone)]
 pub struct GitCommandAdapter {
@@ -13,7 +13,7 @@ impl GitCommandAdapter {
         Self { root }
     }
 
-    fn run(&self, args: &[&str], cwd: Option<&Path>) -> Result<String, AppError> {
+    fn run_output(&self, args: &[&str], cwd: Option<&Path>) -> Result<Output, AppError> {
         let mut command = Command::new("git");
         command.args(args);
         command.current_dir(cwd.unwrap_or(&self.root));
@@ -31,6 +31,11 @@ impl GitCommandAdapter {
             });
         }
 
+        Ok(output)
+    }
+
+    fn run(&self, args: &[&str], cwd: Option<&Path>) -> Result<String, AppError> {
+        let output = self.run_output(args, cwd)?;
         Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
     }
 }
@@ -49,31 +54,41 @@ impl Git for GitCommandAdapter {
     }
 
     fn commit_exists(&self, sha: &str) -> bool {
-        self.run(&["cat-file", "-e", sha], None).is_ok()
+        self.run_output(&["cat-file", "-e", sha], None).is_ok()
     }
 
-    fn get_nth_ancestor(&self, commit: &str, n: usize) -> Result<String, AppError> {
-        match self.run(&["rev-parse", &format!("{}~{}", commit, n)], None) {
-            Ok(sha) => Ok(sha),
-            Err(_) => {
-                // Fallback: first commit in ancestry
-                let first = self.run(&["rev-list", "--max-parents=0", commit], None)?;
-                Ok(first.lines().next().unwrap_or("").to_string())
-            }
+    fn get_nth_ancestor(&self, commit: &str, n: usize) -> Result<Option<String>, AppError> {
+        if !self.commit_exists(commit) {
+            return Err(AppError::GitError {
+                command: format!("git rev-parse {}~{}", commit, n),
+                details: format!("Commit {} does not exist", commit),
+            });
         }
+
+        match self.run_output(&["rev-parse", &format!("{}~{}", commit, n)], None) {
+            Ok(output) => {
+                Ok(Some(String::from_utf8_lossy(&output.stdout).trim().to_string()))
+            }
+            Err(_) => Ok(None),
+        }
+    }
+
+    fn get_first_commit(&self, commit: &str) -> Result<String, AppError> {
+        let output = self.run_output(&["rev-list", "--max-parents=0", commit], None)?;
+        Ok(String::from_utf8_lossy(&output.stdout).lines().next().unwrap_or("").to_string())
     }
 
     fn has_changes(&self, from: &str, to: &str, pathspec: &[&str]) -> Result<bool, AppError> {
         let range = format!("{}..{}", from, to);
         let mut args = vec!["diff", "--name-only", &range, "--"];
         args.extend(pathspec);
-        let output = self.run(&args, None)?;
-        Ok(!output.trim().is_empty())
+        let output = self.run_output(&args, None)?;
+        Ok(!output.stdout.is_empty())
     }
 
     fn checkout_branch(&self, branch: &str, create: bool) -> Result<(), AppError> {
         let args = if create { vec!["checkout", "-b", branch] } else { vec!["checkout", branch] };
-        self.run(&args, None)?;
+        self.run_output(&args, None)?;
         Ok(())
     }
 
@@ -83,7 +98,7 @@ impl Git for GitCommandAdapter {
         } else {
             vec!["push", "-u", "origin", branch]
         };
-        self.run(&args, None)?;
+        self.run_output(&args, None)?;
         Ok(())
     }
 
@@ -93,29 +108,29 @@ impl Git for GitCommandAdapter {
             let path_str = file.to_str().ok_or_else(|| {
                 AppError::Validation("File path contains invalid unicode".to_string())
             })?;
-            self.run(&["add", path_str], None)?;
+            self.run_output(&["add", path_str], None)?;
         }
 
         // Commit
-        self.run(&["commit", "-m", message], None)?;
+        self.run_output(&["commit", "-m", message], None)?;
 
         // Return new HEAD SHA
         self.get_head_sha()
     }
 
     fn fetch(&self, remote: &str) -> Result<(), AppError> {
-        self.run(&["fetch", remote], None)?;
+        self.run_output(&["fetch", remote], None)?;
         Ok(())
     }
 
     fn delete_branch(&self, branch: &str, force: bool) -> Result<bool, AppError> {
-        let output = self.run(&["branch", "--list", branch], None)?;
-        if output.trim().is_empty() {
+        let output = self.run_output(&["branch", "--list", branch], None)?;
+        if output.stdout.is_empty() {
             return Ok(false);
         }
 
         let args = if force { vec!["branch", "-D", branch] } else { vec!["branch", "-d", branch] };
-        self.run(&args, None)?;
+        self.run_output(&args, None)?;
         Ok(true)
     }
 }
