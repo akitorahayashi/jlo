@@ -309,9 +309,12 @@ fn validate_proposal_filename_matches_role(
             proposal_path.display()
         )));
     };
-    if !stem.starts_with(&format!("{}-", role)) {
+    let expected_role_segment =
+        crate::domain::exchange::proposals::paths::proposal_filename_role_segment(role);
+    if !stem.starts_with(&format!("{}-", expected_role_segment)) {
         return Err(AppError::Validation(format!(
-            "Proposal filename must start with '{}-': {}",
+            "Proposal filename must start with normalized role '{}-' (role '{}'): {}",
+            expected_role_segment,
             role,
             proposal_path.display()
         )));
@@ -421,5 +424,27 @@ verification_signals:
         assert!(result.is_err());
         let message = result.unwrap_err().to_string();
         assert!(message.contains("Invalid proposal role"));
+    }
+
+    #[test]
+    fn accepts_proposal_filename_with_normalized_role_segment() {
+        let proposal_path = ".jules/exchange/proposals/alice-team-improve-error-messages.yml";
+        let perspective_path = ".jules/workstations/alice_team/perspective.yml";
+        let proposal_with_underscored_role =
+            proposal_yaml().replace("role: \"alice\"", "role: \"alice_team\"");
+        let perspective_yaml =
+            "role: alice_team\nrecent_proposals:\n  - \"Improve error messages\"\n";
+
+        let repository = TestStore::new()
+            .with_exists(true)
+            .with_file(proposal_path, &proposal_with_underscored_role)
+            .with_file(perspective_path, perspective_yaml);
+        let git = FakeGit::new();
+        let github = FakeGitHub::new();
+        let options = ExchangePublishProposalsOptions {};
+
+        let output = execute_with(&repository, &options, &git, &github).unwrap();
+        assert_eq!(output.published.len(), 1);
+        assert_eq!(output.published[0].role, "alice_team");
     }
 }

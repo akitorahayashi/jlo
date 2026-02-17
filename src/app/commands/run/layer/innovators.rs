@@ -429,4 +429,30 @@ mod tests {
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn mock_innovator_normalizes_underscored_role_in_proposal_filenames() {
+        let jules_path = PathBuf::from(".jules");
+        let repository = TestStore::new().with_exists(true);
+        let git = FakeGit::new();
+        let github = FakeGitHub::new();
+        let config = make_config();
+
+        let options = RunOptions {
+            layer: Layer::Innovators,
+            role: Some("leverage_architect".to_string()),
+            requirement: None,
+            task: Some("create_three_proposals".to_string()),
+        };
+
+        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
+        assert!(result.is_ok());
+
+        let p1 = jules_path.join("exchange/proposals/leverage-architect-mock-proposal-1.yml");
+        let p2 = jules_path.join("exchange/proposals/leverage-architect-mock-proposal-2.yml");
+        let p3 = jules_path.join("exchange/proposals/leverage-architect-mock-proposal-3.yml");
+        assert!(repository.file_exists(p1.to_str().unwrap()));
+        assert!(repository.file_exists(p2.to_str().unwrap()));
+        assert!(repository.file_exists(p3.to_str().unwrap()));
+    }
 }
