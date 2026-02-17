@@ -256,6 +256,12 @@ impl GitHub for GitHubCommandAdapter {
         Ok(())
     }
 
+    fn merge_pull_request(&self, pr_number: u64) -> Result<(), AppError> {
+        let pr_num_str = pr_number.to_string();
+        self.run_gh(&["pr", "merge", &pr_num_str, "--squash", "--delete-branch"])?;
+        Ok(())
+    }
+
     fn list_pr_files(&self, pr_number: u64) -> Result<Vec<String>, AppError> {
         let pr_num_str = pr_number.to_string();
         let output = self.run_gh(&["pr", "diff", &pr_num_str, "--name-only"])?;

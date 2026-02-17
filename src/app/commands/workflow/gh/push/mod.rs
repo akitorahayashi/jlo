@@ -152,7 +152,7 @@ pub(crate) fn execute_with_adapters(
         return Err(with_cleanup_context(err, cleanup_error, Some(pr.number), &push_branch));
     }
 
-    if let Err(err) = gh.run(&["pr", "merge", &pr_number, "--squash", "--delete-branch"]) {
+    if let Err(err) = github.merge_pull_request(pr.number) {
         let cleanup_error = cleanup_pr_and_branch(github, pr.number, &push_branch).err();
         return Err(with_cleanup_context(err, cleanup_error, Some(pr.number), &push_branch));
     }
@@ -387,6 +387,7 @@ mod tests {
         should_fail_create_pr: bool,
         created_head: Arc<Mutex<Option<String>>>,
         closed_prs: Arc<Mutex<Vec<u64>>>,
+        merged_prs: Arc<Mutex<Vec<u64>>>,
         deleted_remote_branches: Arc<Mutex<Vec<String>>>,
     }
 
@@ -396,6 +397,7 @@ mod tests {
                 should_fail_create_pr,
                 created_head: Arc::new(Mutex::new(None)),
                 closed_prs: Arc::new(Mutex::new(Vec::new())),
+                merged_prs: Arc::new(Mutex::new(Vec::new())),
                 deleted_remote_branches: Arc::new(Mutex::new(Vec::new())),
             }
         }
@@ -487,6 +489,11 @@ mod tests {
 
         fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> {
             Ok(Vec::new())
+        }
+
+        fn merge_pull_request(&self, pr_number: u64) -> Result<(), AppError> {
+            self.merged_prs.lock().expect("merged prs lock poisoned").push(pr_number);
+            Ok(())
         }
     }
 
