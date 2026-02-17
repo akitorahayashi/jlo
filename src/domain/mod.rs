@@ -26,4 +26,4 @@ pub use roles::{BuiltinRoleEntry, RoleId};
 #[allow(unused_imports)]
 pub use setup::{DependencyGraph, EnvSpec, SetupComponent, SetupComponentId, SetupEnvArtifacts};
 pub use version::Version;
-pub use workstations::{JLO_DIR, JULES_DIR, ScaffoldManifest, VERSION_FILE};
+pub use workstations::{JLO_DIR, JULES_DIR, VERSION_FILE};

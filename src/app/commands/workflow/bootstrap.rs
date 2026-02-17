@@ -8,7 +8,7 @@
 //! - Missing `.jlo/.jlo-version` is a hard failure.
 //! - Managed framework files are always materialized from the embedded scaffold.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap};
 use std::path::Path;
 
 use serde::Serialize;
@@ -17,10 +17,7 @@ use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
-use crate::domain::workstations::manifest::{
-    MANIFEST_FILENAME, hash_content, is_default_role_file,
-};
-use crate::domain::{AppError, JLO_DIR, JULES_DIR, Layer, ScaffoldManifest, VERSION_FILE};
+use crate::domain::{AppError, JLO_DIR, Layer, VERSION_FILE};
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 /// Options for the bootstrap command.
@@ -98,19 +95,6 @@ where
 
     // 2. Ensure + prune workstation perspectives from schedule intent
     files_written += reconcile_workstations(ctx.repository())?;
-
-    // 3. Write managed manifest
-    let mut map = BTreeMap::new();
-    for file in &scaffold_files {
-        if is_default_role_file(&file.path) {
-            map.insert(file.path.clone(), hash_content(&file.content));
-        }
-    }
-    let managed_manifest = ScaffoldManifest::from_map(map);
-    let manifest_content = managed_manifest.to_yaml()?;
-    let manifest_path = format!("{}/{}", JULES_DIR, MANIFEST_FILENAME);
-    ctx.repository().write_file(&manifest_path, &manifest_content)?;
-    files_written += 1;
 
     Ok(files_written)
 }

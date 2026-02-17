@@ -23,6 +23,10 @@ fn bootstrap_materializes_expected_runtime_workspace() {
     for file in root_files {
         assert!(ctx.jules_path().join(file).exists(), "{} should exist in .jules/ (runtime)", file);
     }
+    assert!(
+        !ctx.jules_path().join(".jlo-managed.yml").exists(),
+        ".jlo-managed manifest should not be materialized"
+    );
 
     assert!(ctx.jlo_path().join("config.toml").exists());
 }
