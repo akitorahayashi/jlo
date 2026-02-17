@@ -115,6 +115,7 @@ Flags:
 - `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)
 - `--branch <name>`: Override the default starting branch
+- `-C, --no-cleanup`: Skip post-execution cleanup (requirement deletion and worker-branch push). Use with implementer layer.
 - `<path>`: Local requirement file (required for planner and implementer)
 
 Configuration: Execution settings are configured in `.jlo/config.toml`:
