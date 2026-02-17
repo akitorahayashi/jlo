@@ -1,4 +1,4 @@
-use crate::app::commands::run::RunOptions;
+use crate::app::commands::run::{RunOptions, RunRuntimeOptions};
 use crate::app::commands::workflow::run::input::load_schedule;
 use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, Layer};
@@ -26,7 +26,7 @@ where
         + 'static,
     G: Git,
     H: GitHub,
-    F: FnMut(&Path, RunOptions, &G, &H, &W) -> Result<(), AppError>,
+    F: FnMut(&Path, RunOptions, RunRuntimeOptions, &G, &H, &W) -> Result<(), AppError>,
 {
     let mock_suffix = if options.mock { " (mock)" } else { "" };
     let schedule = load_schedule(store)?;
@@ -42,16 +42,18 @@ where
         let run_options = RunOptions {
             layer: Layer::Innovators,
             role: Some(role.as_str().to_string()),
+            requirement: None,
+            task: options.task.clone(),
+        };
+        let runtime = RunRuntimeOptions {
             prompt_preview: false,
             branch: None,
-            requirement: None,
             mock: options.mock,
-            task: options.task.clone(),
             no_cleanup: false,
         };
 
         eprintln!("Executing: innovators --role {}{}", role, mock_suffix);
-        run_layer(jules_path, run_options, git, github, store)?;
+        run_layer(jules_path, run_options, runtime, git, github, store)?;
         success_count += 1;
     }
 

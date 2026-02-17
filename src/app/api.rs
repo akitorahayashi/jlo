@@ -20,6 +20,7 @@ pub use crate::app::commands::cli_upgrade::CliUpgradeResult;
 pub use crate::app::commands::create::CreateOutcome;
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
+use crate::app::commands::run::RunRuntimeOptions;
 pub use crate::app::commands::run::{RunOptions, RunResult};
 pub use crate::app::commands::setup::list::{
     EnvVarInfo, SetupComponentDetail, SetupComponentSummary,
@@ -86,7 +87,7 @@ pub fn init_workflows_at(
 // Create Command API
 // =============================================================================
 
-/// Create a new role under `.jlo/roles/<layer>/<name>/`.
+/// Create a new role in the current repository.
 pub fn create_role(layer: &str, name: &str) -> Result<CreateOutcome, AppError> {
     create_role_at(layer, name, std::env::current_dir()?)
 }
@@ -185,9 +186,9 @@ pub fn run_at(
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
 
-    let options =
-        RunOptions { layer, role, prompt_preview, branch, requirement, mock, task, no_cleanup };
-    run::execute(&repository.jules_path(), options, &git, &github, &repository)
+    let target = RunOptions { layer, role, requirement, task };
+    let runtime = RunRuntimeOptions { prompt_preview, branch, mock, no_cleanup };
+    run::execute(&repository.jules_path(), target, runtime, &git, &github, &repository)
 }
 
 // =============================================================================

@@ -1,4 +1,4 @@
-use crate::app::commands::run::RunOptions;
+use crate::app::commands::run::{RunOptions, RunRuntimeOptions};
 use crate::domain::PromptAssetLoader;
 use crate::domain::layers::execute::policy::has_pending_events;
 use crate::domain::{AppError, Layer};
@@ -26,7 +26,7 @@ where
         + 'static,
     G: Git,
     H: GitHub,
-    F: FnMut(&Path, RunOptions, &G, &H, &W) -> Result<(), AppError>,
+    F: FnMut(&Path, RunOptions, RunRuntimeOptions, &G, &H, &W) -> Result<(), AppError>,
 {
     if !options.mock && !has_pending_events(jules_path)? {
         eprintln!("No pending events, skipping decider");
@@ -36,16 +36,18 @@ where
     let run_options = RunOptions {
         layer: Layer::Decider,
         role: None,
+        requirement: None,
+        task: options.task.clone(),
+    };
+    let runtime = RunRuntimeOptions {
         prompt_preview: false,
         branch: None,
-        requirement: None,
         mock: options.mock,
-        task: options.task.clone(),
         no_cleanup: false,
     };
 
     eprintln!("Executing: decider{}", if options.mock { " (mock)" } else { "" });
-    run_layer(jules_path, run_options, git, github, store)?;
+    run_layer(jules_path, run_options, runtime, git, github, store)?;
 
     Ok(RunResults::with_count(1))
 }

@@ -1,36 +1,9 @@
-use serde::Deserialize;
-
 use crate::domain::config::WorkflowGenerateConfig;
-use crate::domain::{AppError, WorkflowRunnerMode};
+use crate::domain::config::parse_config_content;
+use crate::domain::{AppError, RunConfig, WorkflowRunnerMode};
 use crate::ports::RepositoryFilesystem;
 
-#[derive(Deserialize)]
-struct WorkflowGenerateConfigDto {
-    run: Option<WorkflowRunDto>,
-    workflow: Option<WorkflowTimingDto>,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-#[allow(dead_code)]
-struct WorkflowRunDto {
-    jlo_target_branch: Option<String>,
-    jules_worker_branch: Option<String>,
-    parallel: Option<bool>,
-    max_parallel: Option<usize>,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct WorkflowTimingDto {
-    runner_mode: Option<String>,
-    cron: Option<Vec<String>>,
-    wait_minutes_default: Option<u32>,
-}
-
-fn load_workflow_config_dto(
-    repository: &impl RepositoryFilesystem,
-) -> Result<WorkflowGenerateConfigDto, AppError> {
+fn load_run_config(repository: &impl RepositoryFilesystem) -> Result<RunConfig, AppError> {
     let config_path = ".jlo/config.toml";
     if !repository.file_exists(config_path) {
         return Err(AppError::Validation(
@@ -39,8 +12,7 @@ fn load_workflow_config_dto(
     }
 
     let content = repository.read_file(config_path)?;
-    let dto: WorkflowGenerateConfigDto = toml::from_str(&content)?;
-    Ok(dto)
+    parse_config_content(&content)
 }
 
 /// Read workflow generate configuration from `.jlo/config.toml`.
@@ -49,21 +21,8 @@ fn load_workflow_config_dto(
 pub fn load_workflow_generate_config(
     repository: &impl RepositoryFilesystem,
 ) -> Result<WorkflowGenerateConfig, AppError> {
-    let dto = load_workflow_config_dto(repository)?;
-
-    let run = dto
-        .run
-        .ok_or_else(|| AppError::Validation("Missing [run] section in .jlo/config.toml.".into()))?;
-    let workflow = dto.workflow.ok_or_else(|| {
-        AppError::Validation("Missing [workflow] section in .jlo/config.toml.".into())
-    })?;
-
-    let target_branch = run.jlo_target_branch.ok_or_else(|| {
-        AppError::Validation("Missing run.jlo_target_branch in .jlo/config.toml.".into())
-    })?;
-    let worker_branch = run.jules_worker_branch.ok_or_else(|| {
-        AppError::Validation("Missing run.jules_worker_branch in .jlo/config.toml.".into())
-    })?;
+    let config = load_run_config(repository)?;
+    let workflow = config.workflow;
 
     let raw_crons = workflow
         .cron
@@ -91,8 +50,8 @@ pub fn load_workflow_generate_config(
     })?;
 
     Ok(WorkflowGenerateConfig {
-        target_branch,
-        worker_branch,
+        target_branch: config.run.jlo_target_branch,
+        worker_branch: config.run.jules_worker_branch,
         schedule_crons,
         wait_minutes_default,
     })
@@ -105,10 +64,8 @@ pub fn load_workflow_generate_config(
 pub fn load_workflow_runner_mode(
     repository: &impl RepositoryFilesystem,
 ) -> Result<WorkflowRunnerMode, AppError> {
-    let dto = load_workflow_config_dto(repository)?;
-    let workflow = dto.workflow.ok_or_else(|| {
-        AppError::Validation("Missing [workflow] section in .jlo/config.toml.".into())
-    })?;
+    let config = load_run_config(repository)?;
+    let workflow = config.workflow;
     parse_workflow_runner_mode(workflow.runner_mode.as_deref())
 }
 

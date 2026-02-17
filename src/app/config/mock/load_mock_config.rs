@@ -5,7 +5,7 @@ use std::path::Path;
 
 use crate::app::config::load_config;
 use crate::domain::config::mock_parse::{extract_branch_prefix, extract_issue_labels};
-use crate::domain::{AppError, Layer, MockConfig, RunOptions};
+use crate::domain::{AppError, Layer, MockConfig};
 use crate::domain::{layers, workstations};
 use crate::ports::RepositoryFilesystem;
 
@@ -42,7 +42,6 @@ fn load_branch_prefix_for_layer<W: RepositoryFilesystem>(
 /// Load mock configuration from repository files.
 pub fn load_mock_config<W: RepositoryFilesystem>(
     jules_path: &Path,
-    _options: &RunOptions,
     repository: &W,
 ) -> Result<MockConfig, AppError> {
     let run_config = load_config(jules_path, repository)?;

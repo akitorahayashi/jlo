@@ -27,7 +27,7 @@ roles = [
   { name = "cov", enabled = true },
 ]
 
-[jules]
+[jules_api]
 # Jules API endpoint
 api_url = "https://jules.googleapis.com/v1alpha/sessions"
 # Request timeout in seconds

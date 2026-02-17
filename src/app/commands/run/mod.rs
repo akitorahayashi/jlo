@@ -26,6 +26,19 @@ use crate::ports::{Git, GitHub, JloStore, JulesClient, JulesStore, RepositoryFil
 
 pub use strategy::RunResult;
 
+/// Runtime execution context for the run command.
+#[derive(Debug, Clone, Default)]
+pub struct RunRuntimeOptions {
+    /// Show assembled prompts without executing.
+    pub prompt_preview: bool,
+    /// Override the starting branch.
+    pub branch: Option<String>,
+    /// Run in mock mode (no Jules API, real git/GitHub operations).
+    pub mock: bool,
+    /// Skip post-execution cleanup (requirement deletion and worker-branch push).
+    pub no_cleanup: bool,
+}
+
 struct LazyClientFactory {
     config: JulesApiConfig,
 }
@@ -41,7 +54,8 @@ impl JulesClientFactory for LazyClientFactory {
 /// Execute the run command.
 pub fn execute<G, H, W>(
     jules_path: &Path,
-    options: RunOptions,
+    target: RunOptions,
+    runtime: RunRuntimeOptions,
     git: &G,
     github: &H,
     repository: &W,
@@ -60,7 +74,8 @@ where
 {
     execute_with_mock_prerequisite_validator(
         jules_path,
-        options,
+        target,
+        runtime,
         git,
         github,
         repository,
@@ -70,7 +85,8 @@ where
 
 fn execute_with_mock_prerequisite_validator<G, H, W, F>(
     jules_path: &Path,
-    options: RunOptions,
+    target: RunOptions,
+    runtime: RunRuntimeOptions,
     git: &G,
     github: &H,
     repository: &W,
@@ -87,10 +103,10 @@ where
         + Send
         + Sync
         + 'static,
-    F: Fn(&RunOptions) -> Result<(), AppError>,
+    F: Fn(&RunRuntimeOptions) -> Result<(), AppError>,
 {
     // Validate task selector if provided (prevents path traversal)
-    if let Some(ref task) = options.task
+    if let Some(ref task) = target.task
         && !validate_safe_path_component(task)
     {
         return Err(AppError::Validation(format!(
@@ -99,7 +115,7 @@ where
         )));
     }
 
-    if options.task.is_some() && options.layer != crate::domain::Layer::Innovators {
+    if target.task.is_some() && target.layer != crate::domain::Layer::Innovators {
         return Err(AppError::Validation(
             "--task is only supported when layer is innovators".to_string(),
         ));
@@ -110,9 +126,9 @@ where
 
     // Validate current branch matches the layer's branch contract.
     // --branch override bypasses this check (explicit operator override).
-    if options.branch.is_none() {
+    if runtime.branch.is_none() {
         let current = git.get_current_branch()?;
-        let expected = if options.layer.uses_worker_branch() {
+        let expected = if target.layer.uses_worker_branch() {
             &config.run.jules_worker_branch
         } else {
             &config.run.jlo_target_branch
@@ -120,27 +136,28 @@ where
         if current != *expected {
             return Err(AppError::Validation(format!(
                 "Layer '{}' requires branch '{}', but current branch is '{}'",
-                options.layer.dir_name(),
+                target.layer.dir_name(),
                 expected,
                 current,
             )));
         }
     }
 
-    if options.mock {
-        validate_mock(&options)?;
+    if runtime.mock {
+        validate_mock(&runtime)?;
     }
 
     // Create client factory
-    let client_factory = LazyClientFactory { config: config.jules.clone() };
+    let client_factory = LazyClientFactory { config: config.jules_api.clone() };
 
     // Get layer strategy
-    let strategy = get_layer_strategy(options.layer);
+    let strategy = get_layer_strategy(target.layer);
 
     // Execute strategy
     let result = strategy.execute(
         jules_path,
-        &options,
+        &target,
+        &runtime,
         &config,
         git,
         github,
@@ -149,7 +166,7 @@ where
     )?;
 
     // Handle post-execution cleanup (e.g. Implementer requirement)
-    if !options.no_cleanup
+    if !runtime.no_cleanup
         && let Some(path) = result.cleanup_requirement.as_ref()
     {
         let path_str = path.to_string_lossy().to_string();
@@ -163,7 +180,7 @@ where
             cleanup_res.deleted_paths.len()
         );
 
-        if !options.mock {
+        if !runtime.mock {
             push_worker_branch(PushWorkerBranchOptions {
                 change_token: format!("requirement-cleanup-{}", cleanup_res.requirement_id),
                 commit_message: format!("jules: clean requirement {}", cleanup_res.requirement_id),
@@ -521,17 +538,19 @@ roles = [
             RunOptions {
                 layer: crate::domain::Layer::Decider,
                 role: None,
+                requirement: None,
+                task: None,
+            },
+            RunRuntimeOptions {
                 prompt_preview: false,
                 branch: None,
-                requirement: None,
                 mock: true,
-                task: None,
                 no_cleanup: false,
             },
             &decider_git,
             &github,
             &repository,
-            |_options| Ok(()),
+            |_runtime| Ok(()),
         )
         .expect("decider run should succeed");
 
@@ -617,17 +636,19 @@ roles = [
             RunOptions {
                 layer: crate::domain::Layer::Implementer,
                 role: None,
+                requirement: Some(implementer_requirement.clone()),
+                task: None,
+            },
+            RunRuntimeOptions {
                 prompt_preview: false,
                 branch: None,
-                requirement: Some(implementer_requirement.clone()),
                 mock: true,
-                task: None,
                 no_cleanup: false,
             },
             &implementer_git,
             &github,
             &repository,
-            |_options| Ok(()),
+            |_runtime| Ok(()),
         )
         .expect("implementer run should succeed");
 
@@ -684,17 +705,19 @@ roles = [
             RunOptions {
                 layer: crate::domain::Layer::Decider,
                 role: None,
+                requirement: None,
+                task: None,
+            },
+            RunRuntimeOptions {
                 prompt_preview: false,
                 branch: None,
-                requirement: None,
                 mock: false,
-                task: None,
                 no_cleanup: false,
             },
             &git,
             &github,
             &repository,
-            |_options| Ok(()),
+            |_runtime| Ok(()),
         );
 
         let err = result.expect_err("should fail on wrong branch");
@@ -721,17 +744,19 @@ roles = [
             RunOptions {
                 layer: crate::domain::Layer::Implementer,
                 role: None,
+                requirement: Some(root.join(".jules/exchange/requirements/fake.yml")),
+                task: None,
+            },
+            RunRuntimeOptions {
                 prompt_preview: false,
                 branch: None,
-                requirement: Some(root.join(".jules/exchange/requirements/fake.yml")),
                 mock: false,
-                task: None,
                 no_cleanup: false,
             },
             &git,
             &github,
             &repository,
-            |_options| Ok(()),
+            |_runtime| Ok(()),
         );
 
         let err = result.expect_err("should fail on wrong branch");
@@ -761,17 +786,19 @@ roles = [
             RunOptions {
                 layer: crate::domain::Layer::Narrator,
                 role: None,
+                requirement: None,
+                task: None,
+            },
+            RunRuntimeOptions {
                 prompt_preview: false,
                 branch: Some("custom-branch".to_string()),
-                requirement: None,
                 mock: true,
-                task: None,
                 no_cleanup: false,
             },
             &git,
             &github,
             &repository,
-            |_options| Ok(()),
+            |_runtime| Ok(()),
         );
 
         // With --branch override, branch validation is skipped.

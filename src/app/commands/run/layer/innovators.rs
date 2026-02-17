@@ -3,6 +3,7 @@ use std::path::Path;
 use chrono::Utc;
 
 use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
+use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::prompt_assemble::{
@@ -31,16 +32,17 @@ where
     fn execute(
         &self,
         jules_path: &Path,
-        options: &RunOptions,
+        target: &RunOptions,
+        runtime: &RunRuntimeOptions,
         config: &RunConfig,
         git: &dyn Git,
         github: &dyn GitHub,
         repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
-        if options.mock {
-            let mock_config = load_mock_config(jules_path, options, repository)?;
-            let output = execute_mock(jules_path, options, &mock_config, git, github, repository)?;
+        if runtime.mock {
+            let mock_config = load_mock_config(jules_path, repository)?;
+            let output = execute_mock(jules_path, target, &mock_config, git, github, repository)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
@@ -50,7 +52,7 @@ where
                 super::super::mock::mock_execution::print_local(&output);
             }
             return Ok(RunResult {
-                roles: vec![options.role.clone().unwrap_or_else(|| "mock".to_string())],
+                roles: vec![target.role.clone().unwrap_or_else(|| "mock".to_string())],
                 prompt_preview: false,
                 sessions: vec![],
                 cleanup_requirement: None,
@@ -59,10 +61,10 @@ where
 
         execute_real(
             jules_path,
-            options.prompt_preview,
-            options.branch.as_deref(),
-            options.role.as_deref(),
-            options.task.as_deref(),
+            runtime.prompt_preview,
+            runtime.branch.as_deref(),
+            target.role.as_deref(),
+            target.task.as_deref(),
             config,
             git,
             repository,
@@ -369,12 +371,8 @@ mod tests {
         let options = RunOptions {
             layer: Layer::Innovators,
             role: Some("alice".to_string()),
-            prompt_preview: false,
-            branch: None,
             requirement: None,
-            mock: true,
             task: Some("create_three_proposals".to_string()),
-            no_cleanup: false,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
@@ -405,12 +403,8 @@ mod tests {
         let options = RunOptions {
             layer: Layer::Innovators,
             role: Some("alice".to_string()),
-            prompt_preview: false,
-            branch: None,
             requirement: None,
-            mock: true,
             task: None,
-            no_cleanup: false,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
@@ -428,12 +422,8 @@ mod tests {
         let options = RunOptions {
             layer: Layer::Innovators,
             role: Some("alice".to_string()),
-            prompt_preview: false,
-            branch: None,
             requirement: None,
-            mock: true,
             task: Some("invalid".to_string()),
-            no_cleanup: false,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);

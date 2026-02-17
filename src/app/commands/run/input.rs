@@ -6,8 +6,9 @@
 
 use std::path::Path;
 
+use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::config;
-use crate::domain::{AppError, MockConfig, RunConfig, RunOptions};
+use crate::domain::{AppError, MockConfig, RunConfig};
 use crate::ports::{Git, RepositoryFilesystem};
 
 /// Load run configuration from `.jlo/config.toml`.
@@ -19,17 +20,16 @@ pub fn load_run_config<W: RepositoryFilesystem>(
 }
 
 /// Validate runtime prerequisites for mock execution.
-pub fn validate_mock_prerequisites(options: &RunOptions) -> Result<(), AppError> {
-    config::validate_mock_prerequisites(options)
+pub fn validate_mock_prerequisites(runtime: &RunRuntimeOptions) -> Result<(), AppError> {
+    config::validate_mock_prerequisites(runtime)
 }
 
 /// Load mock execution inputs from repository and environment.
 pub fn load_mock_config<W: RepositoryFilesystem>(
     jules_path: &Path,
-    options: &RunOptions,
     repository: &W,
 ) -> Result<MockConfig, AppError> {
-    config::load_mock_config(jules_path, options, repository)
+    config::load_mock_config(jules_path, repository)
 }
 
 /// Detect repository source used by session dispatch.

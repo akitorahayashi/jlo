@@ -1,4 +1,4 @@
-use crate::app::commands::run::RunOptions;
+use crate::app::commands::run::{RunOptions, RunRuntimeOptions};
 use crate::app::commands::workflow::run::options::{RunResults, WorkflowRunOptions};
 use crate::app::commands::workflow::run::requirements_routing::find_requirements;
 use crate::domain::PromptAssetLoader;
@@ -25,7 +25,7 @@ where
         + 'static,
     G: Git,
     H: GitHub,
-    F: FnMut(&Path, RunOptions, &G, &H, &W) -> Result<(), AppError>,
+    F: FnMut(&Path, RunOptions, RunRuntimeOptions, &G, &H, &W) -> Result<(), AppError>,
 {
     let mock_suffix = if options.mock { " (mock)" } else { "" };
     let requirements = find_requirements(store, Layer::Planner)?;
@@ -40,16 +40,18 @@ where
         let run_options = RunOptions {
             layer: Layer::Planner,
             role: None,
+            requirement: Some(requirement_path.clone()),
+            task: options.task.clone(),
+        };
+        let runtime = RunRuntimeOptions {
             prompt_preview: false,
             branch: None,
-            requirement: Some(requirement_path.clone()),
             mock: options.mock,
-            task: options.task.clone(),
             no_cleanup: false,
         };
 
         eprintln!("Executing: planner {}{}", requirement_path.display(), mock_suffix);
-        run_layer(jules_path, run_options, git, github, store)?;
+        run_layer(jules_path, run_options, runtime, git, github, store)?;
         success_count += 1;
     }
 

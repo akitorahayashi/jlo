@@ -59,7 +59,7 @@ jlo_target_branch = "develop"
 parallel = false
 max_parallel = 5
 
-[jules]
+[jules_api]
 api_url = "https://example.com/v1/sessions"
 timeout_secs = 10
 max_retries = 1
@@ -70,7 +70,7 @@ retry_delay_ms = 250
         assert_eq!(config.run.jlo_target_branch, "develop");
         assert!(!config.run.parallel);
         assert_eq!(config.run.max_parallel, 5);
-        assert_eq!(config.jules.api_url.as_str(), "https://example.com/v1/sessions");
+        assert_eq!(config.jules_api.api_url.as_str(), "https://example.com/v1/sessions");
     }
 
     #[test]

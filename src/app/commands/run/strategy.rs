@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use super::RunRuntimeOptions;
 use crate::domain::{AppError, Layer, PromptAssetLoader, RunConfig, RunOptions};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 
@@ -15,7 +16,8 @@ where
     fn execute(
         &self,
         jules_path: &Path,
-        options: &RunOptions,
+        target: &RunOptions,
+        runtime: &RunRuntimeOptions,
         config: &RunConfig,
         git: &dyn Git,
         github: &dyn GitHub,
