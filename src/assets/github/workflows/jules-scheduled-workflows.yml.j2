@@ -58,22 +58,45 @@ jobs:
 {% include "workflows/jules-workflows/components/bootstrap.yml.j2" %}
 
   # ============================================================
-  # Phase 1: Check schedule
+  # Phase 1: Resolve run plan
   # ============================================================
 {% include "workflows/jules-workflows/components/resolve-run-plan.yml.j2" %}
 
   # ============================================================
-  # Phase 2: Run narrator (changes feed generation)
+  # Phase 2: Run narrator
   # ============================================================
-{% include "workflows/jules-workflows/components/run-narrator.yml.j2" %}
+{{ run_macro.run_agent_job(
+    job_name='run-narrator',
+    needs_job='resolve-run-plan',
+    check_output_key='run_narrator',
+    layer='narrator',
+    step_label='Run narrator'
+) }}
   # ============================================================
-  # Phase 3: Run innovators (proposal generation)
+  # Phase 3: Run innovators
   # ============================================================
-{% include "workflows/jules-workflows/components/run-innovators.yml.j2" %}
+{{ run_macro.run_agent_job(
+    job_name='run-innovators',
+    needs_job='bootstrap',
+    check_output_key='ignored',
+    layer='innovators',
+    step_label='Run innovators',
+    needs_list=['bootstrap'],
+    if_condition="needs.bootstrap.result == 'success' &&
+((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule') &&
+(
+  github.event_name == 'schedule' ||
+  (
+    github.event_name == 'workflow_dispatch' &&
+    (github.event.inputs.entry_point || 'narrator') == 'innovators'
+  )
+)",
+    extra_run_args='--task create_three_proposals'
+) }}
   # ============================================================
   # Phase 4: Wait for innovators processing
   # ============================================================
-{% include "workflows/jules-workflows/components/wait-after-run-innovators.yml.j2" %}
+{{ wait_macro.wait_for_processing('wait-after-run-innovators', ['run-innovators'], 'run-innovators', 'innovators') }}
   # ============================================================
   # Phase 5: Publish innovators proposals
   # ============================================================
@@ -81,7 +104,26 @@ jobs:
   # ============================================================
   # Phase 6: Wait for narrator processing
   # ============================================================
-{% include "workflows/jules-workflows/components/wait-after-narrator.yml.j2" %}
+{{ wait_macro.wait_for_processing(
+    job_name='wait-after-narrator',
+    needs=['resolve-run-plan', 'run-narrator'],
+    run_job='run-narrator',
+    process_name='narrator',
+    if_condition="always() &&
+needs.resolve-run-plan.result == 'success' &&
+(
+  (
+    fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == true &&
+    needs.run-narrator.result == 'success'
+  ) ||
+  (
+    fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == false &&
+    needs.run-narrator.result == 'skipped'
+  )
+)",
+    wait_requested_expr='fromJSON(needs.resolve-run-plan.outputs.json).run_narrator',
+    skip_message='Narrator not requested; skipping wait.'
+) }}
   # ============================================================
   # Phase 7: Run observers
   # ============================================================

@@ -53,6 +53,14 @@ fn installed_workflow_scaffold_includes_mock_support() {
     );
     assert!(workflow.contains("run-innovators:"), "Should have integrated innovators job");
     assert!(
+        workflow.contains("run-innovators:\n    needs: [\"bootstrap\"]"),
+        "run-innovators should start after bootstrap only"
+    );
+    assert!(
+        !workflow.contains("run-innovators:\n    needs: [\"resolve-run-plan\"]"),
+        "run-innovators must not wait for resolve-run-plan"
+    );
+    assert!(
         workflow.contains("jlo workflow run innovators"),
         "Scheduled workflow should run innovators directly"
     );
@@ -79,6 +87,10 @@ fn installed_workflow_scaffold_includes_mock_support() {
     assert!(
         workflow.contains("(github.event.inputs.entry_point || 'narrator') == 'innovators'"),
         "Integrated run-innovators job should run only for innovators entry-point in dispatch"
+    );
+    assert!(
+        workflow.contains("github.event_name == 'schedule' ||"),
+        "run-innovators should always run on schedule runs"
     );
     assert!(
         workflow.contains("decider)\n              run_decider=true"),
