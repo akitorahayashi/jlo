@@ -18,6 +18,6 @@ src/testing/
 ## Architectural Principles
 
 -   **Test Support**: Provides reusable test components (mocks, builders) for `src/` unit tests and `tests/` integration tests.
--   **No Integration Testing**: Tests that run `cargo build` or invoke the CLI as a subprocess belong in `tests/harness/`, not here.
+-   **No Integration Testing**: This layer contains only pure code. Integration tests that run `cargo build` or invoke the CLI as a subprocess are external to this layer (see `tests/` and `tests/AGENTS.md`).
 -   **Dependency Direction**: `testing -> domain`, `testing -> ports`.
 -   **Pure Code**: Mocks simulate external behavior without side effects.

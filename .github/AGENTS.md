@@ -1,29 +1,7 @@
 # GitHub Actions Workflow Context
 
 See [root AGENTS.md](../AGENTS.md) for design principles.
-See [CONTROL_PLANE_OWNERSHIP.md](../docs/CONTROL_PLANE_OWNERSHIP.md) for the `.jlo/` vs `.jules/` ownership model and projection rules.
-
-## Branch Topology
-
-| Branch | Contents | Owner |
-|--------|----------|-------|
-| `JLO_TARGET_BRANCH` | `.jlo/` (user intent overlay), `.github/` (workflow kit) | User + `jlo init` |
-| `JULES_WORKER_BRANCH` | `.jules/` (runtime scaffold, materialized by bootstrap) | Workflow automation |
-
-The `JULES_WORKER_BRANCH` branch is never edited directly by users.
-Its `.jules/` directory is assembled by `jlo workflow bootstrap` from embedded scaffold assets for the pinned version.
-
-## Branch Strategy
-
-| Agent Type | Starting Branch | Output Branch | Auto-merge |
-|------------|-----------------|---------------|------------|
-| Narrator | `JULES_WORKER_BRANCH` | `jules-narrator-*` | ✅ (if `.jules/` only) |
-| Observer | `JULES_WORKER_BRANCH` | `jules-observer-*` | ✅ (if `.jules/` only) |
-| Decider | `JULES_WORKER_BRANCH` | `jules-decider-*` | ✅ (if `.jules/` only) |
-| Planner | `JULES_WORKER_BRANCH` | `jules-planner-*` | ✅ (if `.jules/` only) |
-| Implementer | `JLO_TARGET_BRANCH` | `jules-implementer-*` | ❌ (human review) |
-| Integrator | `JLO_TARGET_BRANCH` | `jules-integrator-*` | ❌ (human review) |
-| Innovator | `JULES_WORKER_BRANCH` | `jules-innovator-*` | ✅ (if `.jules/` only) |
+See [CONTROL_PLANE_OWNERSHIP.md](../docs/CONTROL_PLANE_OWNERSHIP.md) for the `.jlo/` vs `.jules/` ownership model, projection rules, and Branch Topology.
 
 ## Workflow Files
 
