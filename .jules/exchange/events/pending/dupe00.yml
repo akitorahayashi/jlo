@@ -1,0 +1,18 @@
+schema_version: 1
+id: "dupe00"
+requirement_id: ""
+created_at: "2026-02-17"
+author_role: "cov"
+confidence: "high"
+title: "Missing Test for Duplicate Roles in Schedule"
+statement: |
+  The function Schedule::validate in src/domain/config/schedule.rs includes logic to detect duplicate roles, but this logic is not covered by unit tests. The existing tests only cover valid schedules and other error conditions.
+evidence:
+  - path: "src/domain/config/schedule.rs"
+    loc:
+      - "58-71"
+    note: "Validation logic for detecting duplicates."
+  - path: "src/domain/config/schedule.rs"
+    loc:
+      - "74-123"
+    note: "Existing tests do not include a duplicate role case."
