@@ -3,7 +3,7 @@
 use chrono::Utc;
 
 use crate::domain::AppError;
-use crate::domain::roles::validation::validate_safe_path_component;
+use crate::domain::identifiers::validate_identifier;
 
 pub fn resolve_mock_tag() -> Result<String, AppError> {
     let mock_tag = std::env::var("JULES_MOCK_TAG").ok().unwrap_or_else(|| {
@@ -18,7 +18,7 @@ pub fn resolve_mock_tag() -> Result<String, AppError> {
             "JULES_MOCK_TAG must include 'mock' to mark mock artifacts.".to_string(),
         ));
     }
-    if !validate_safe_path_component(&mock_tag) {
+    if !validate_identifier(&mock_tag, false) {
         return Err(AppError::InvalidConfig(
             "JULES_MOCK_TAG must be a safe path component (letters, numbers, '-' or '_')."
                 .to_string(),

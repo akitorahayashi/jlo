@@ -18,38 +18,13 @@ pub fn validate_identifier(id: &str, allow_dots: bool) -> bool {
     id.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || (allow_dots && c == '.'))
 }
 
-/// Validates a path component for safe filesystem operations.
-///
-/// This is stricter than validate_identifier - used for user-provided path components
-/// like exchange labels or states to prevent path traversal attacks.
-///
-/// Checks:
-/// - Non-empty
-/// - No path separators (/, \)
-/// - Not "." or ".."
-/// - Does not start with '.' (hidden files)
-/// - No null bytes
-/// - Characters are alphanumeric, '-', or '_' only (no dots)
-pub fn validate_safe_path_component(component: &str) -> bool {
-    if component.is_empty() || component.starts_with('.') {
-        return false;
-    }
-    if component.contains('/') || component.contains('\\') || component.contains('\0') {
-        return false;
-    }
-    if component == "." || component == ".." {
-        return false;
-    }
-    component.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_')
-}
-
 #[macro_export]
 macro_rules! impl_validated_id {
     ($name:ident, $allow_dots:expr, $err_variant:path) => {
         impl $name {
             /// Validate and create a new instance.
             pub fn new(id: &str) -> Result<Self, $crate::domain::AppError> {
-                if $crate::domain::roles::validation::validate_identifier(id, $allow_dots) {
+                if $crate::domain::identifiers::validate_identifier(id, $allow_dots) {
                     Ok(Self(id.to_string()))
                 } else {
                     Err($err_variant(id.to_string()))
@@ -112,22 +87,22 @@ mod tests {
 
     #[test]
     fn safe_path_component_valid() {
-        assert!(validate_safe_path_component("valid-name"));
-        assert!(validate_safe_path_component("valid_name"));
-        assert!(validate_safe_path_component("ValidName123"));
+        assert!(validate_identifier("valid-name", false));
+        assert!(validate_identifier("valid_name", false));
+        assert!(validate_identifier("ValidName123", false));
     }
 
     #[test]
     fn safe_path_component_invalid() {
-        assert!(!validate_safe_path_component(""));
-        assert!(!validate_safe_path_component("../escape"));
-        assert!(!validate_safe_path_component("../../.."));
-        assert!(!validate_safe_path_component(".hidden"));
-        assert!(!validate_safe_path_component("has/slash"));
-        assert!(!validate_safe_path_component("has\\backslash"));
-        assert!(!validate_safe_path_component("."));
-        assert!(!validate_safe_path_component(".."));
-        assert!(!validate_safe_path_component("has.dot"));
-        assert!(!validate_safe_path_component("null\0byte"));
+        assert!(!validate_identifier("", false));
+        assert!(!validate_identifier("../escape", false));
+        assert!(!validate_identifier("../../..", false));
+        assert!(!validate_identifier(".hidden", false));
+        assert!(!validate_identifier("has/slash", false));
+        assert!(!validate_identifier("has\\backslash", false));
+        assert!(!validate_identifier(".", false));
+        assert!(!validate_identifier("..", false));
+        assert!(!validate_identifier("has.dot", false));
+        assert!(!validate_identifier("null\0byte", false));
     }
 }
