@@ -1,6 +1,6 @@
 use crate::app::commands::run::RunOptions;
-use crate::app::commands::run::policy::has_pending_events;
 use crate::domain::PromptAssetLoader;
+use crate::domain::layers::execute::policy::has_pending_events;
 use crate::domain::{AppError, Layer};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 use std::path::Path;

@@ -4,7 +4,8 @@ use chrono::Utc;
 
 use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
-use crate::domain::layers::prompt_assembly::{
+use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
+use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::roles::validation::validate_safe_path_component;
@@ -99,8 +100,7 @@ where
     let role_id = RoleId::new(role)?;
     validate_role_exists(jules_path, Layer::Innovators, role_id.as_str(), repository)?;
 
-    let starting_branch =
-        branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
+    let starting_branch = resolve_starting_branch(Layer::Innovators, config, branch);
 
     let task = task.ok_or_else(|| {
         AppError::MissingArgument(

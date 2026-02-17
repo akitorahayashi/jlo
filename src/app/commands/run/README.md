@@ -15,7 +15,7 @@ Each layer supports real execution and, where applicable, mock execution:
 
 ## Prompt Assembly
 
-Prompt assembly is delegated to `src/domain/prompt_assembly/`. Each layer gathers context, builds a `PromptContext`, and calls `assemble_prompt`.
+Prompt assembly is delegated to `src/domain/layers/prompt_assemble/`. Each layer gathers context, builds a `PromptContext`, and calls `assemble_prompt`.
 
 ## Module Responsibilities
 
@@ -28,5 +28,6 @@ Prompt assembly is delegated to `src/domain/prompt_assembly/`. Each layer gather
 - `layer/integrator.rs`: implementer-branch discovery and integration routing
 - `role_session.rs`: shared role session dispatch helpers
 - `mock/mock_execution.rs`: shared mock execution helpers and assets
-- `requirement_path.rs`: requirement-path validation
+- `src/domain/layers/execute/mod.rs`: shared run execution types and requirement-path validation
+- `src/domain/layers/execute/starting_branch.rs`: centralized starting-branch resolution by layer
 - `strategy.rs`: run-layer strategy contracts and dispatch

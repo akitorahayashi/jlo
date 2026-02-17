@@ -1,5 +1,6 @@
+pub mod execute;
 pub mod paths;
-pub mod prompt_assembly;
+pub mod prompt_assemble;
 
 use serde::Serialize;
 use std::fmt;
