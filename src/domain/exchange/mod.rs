@@ -4,8 +4,10 @@
 //! - `events`: Observation events.
 //! - `requirements`: Actionable requirements.
 //! - `proposals`: Innovator proposals.
+//! - `perspectives`: Innovator perspectives.
 
 pub mod events;
 pub mod paths;
+pub mod perspectives;
 pub mod proposals;
 pub mod requirements;
