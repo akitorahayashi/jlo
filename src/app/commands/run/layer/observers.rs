@@ -3,6 +3,7 @@ use std::path::Path;
 use chrono::Utc;
 
 use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
+use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::prompt_assemble::{
@@ -31,19 +32,20 @@ where
     fn execute(
         &self,
         jules_path: &Path,
-        options: &RunOptions,
+        target: &RunOptions,
+        runtime: &RunRuntimeOptions,
         config: &RunConfig,
         git: &dyn Git,
         github: &dyn GitHub,
         repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
-        if options.mock {
-            let role = options.role.clone().ok_or_else(|| {
+        if runtime.mock {
+            let role = target.role.clone().ok_or_else(|| {
                 AppError::MissingArgument("Role is required for observers in mock mode".to_string())
             })?;
-            let mock_config = load_mock_config(jules_path, options, repository)?;
-            let output = execute_mock(jules_path, options, &mock_config, git, github, repository)?;
+            let mock_config = load_mock_config(jules_path, repository)?;
+            let output = execute_mock(jules_path, &role, &mock_config, git, github, repository)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
@@ -62,9 +64,9 @@ where
 
         execute_real(
             jules_path,
-            options.prompt_preview,
-            options.branch.as_deref(),
-            options.role.as_deref(),
+            runtime.prompt_preview,
+            runtime.branch.as_deref(),
+            target.role.as_deref(),
             config,
             git,
             repository,
@@ -165,7 +167,7 @@ const TMPL_TAG: &str = "test-tag";
 
 fn execute_mock<G, H, W>(
     jules_path: &Path,
-    options: &RunOptions,
+    observer_role: &str,
     config: &MockConfig,
     git: &G,
     github: &H,
@@ -199,9 +201,6 @@ where
             AppError::InternalError("Invalid UTF-8 in observer_event.yml".to_string())
         })?;
 
-    let observer_role = options.role.as_deref().ok_or_else(|| {
-        AppError::MissingArgument("Role is required for observers in mock mode".to_string())
-    })?;
     if !validate_safe_path_component(observer_role) {
         return Err(AppError::Validation(format!(
             "Invalid role name '{}': must be alphanumeric with hyphens or underscores only",

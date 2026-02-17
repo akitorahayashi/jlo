@@ -4,40 +4,38 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::domain::AppError;
-use crate::domain::config::schedule::{Schedule, ScheduleLayer};
+use crate::domain::config::schedule::Schedule;
 
 /// Configuration for agent execution loaded from `.jlo/config.toml`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct RunConfig {
     /// Execution configuration.
     #[serde(default)]
     pub run: ExecutionConfig,
     /// Jules API configuration.
+    ///
+    /// Canonical section is `[jules_api]`.
     #[serde(default)]
-    pub jules: JulesApiConfig,
+    pub jules_api: JulesApiConfig,
     /// Workflow timing configuration.
     #[serde(default)]
     #[allow(dead_code)]
     pub workflow: WorkflowTimingConfig,
-    /// Observer role roster and enablement.
-    #[serde(default)]
-    pub observers: ScheduleLayer,
-    /// Innovator role roster and enablement.
-    #[serde(default)]
-    pub innovators: Option<ScheduleLayer>,
+    /// Schedule configuration flattened at top-level (`[observers]`, `[innovators]`).
+    #[serde(default, flatten)]
+    pub schedule: Schedule,
 }
 
 impl RunConfig {
     pub fn validate(&self) -> Result<(), AppError> {
         self.run.validate()?;
-        self.jules.validate()?;
-        self.schedule().validate()?;
+        self.jules_api.validate()?;
+        self.schedule.validate()?;
         Ok(())
     }
 
-    pub fn schedule(&self) -> Schedule {
-        Schedule { observers: self.observers.clone(), innovators: self.innovators.clone() }
+    pub fn schedule(&self) -> &Schedule {
+        &self.schedule
     }
 }
 
@@ -239,7 +237,7 @@ mod tests {
     #[test]
     fn validate_rejects_zero_timeout() {
         let mut config = RunConfig::default();
-        config.jules.timeout_secs = 0;
+        config.jules_api.timeout_secs = 0;
         let err = config.validate().unwrap_err();
         assert!(matches!(err, AppError::InvalidConfig(msg) if msg.contains("timeout_secs")));
     }

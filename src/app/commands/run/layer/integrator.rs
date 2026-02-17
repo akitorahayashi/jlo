@@ -2,6 +2,7 @@ use std::path::Path;
 
 use serde::Deserialize;
 
+use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::detect_repository_source;
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::prompt_assemble::{
@@ -36,21 +37,22 @@ where
     fn execute(
         &self,
         jules_path: &Path,
-        options: &RunOptions,
+        _target: &RunOptions,
+        runtime: &RunRuntimeOptions,
         config: &RunConfig,
         git: &dyn Git,
         _github: &dyn GitHub,
         repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
-        if options.mock {
+        if runtime.mock {
             return Err(AppError::Validation("Integrator does not support mock mode".to_string()));
         }
 
         execute_real(
             jules_path,
-            options.prompt_preview,
-            options.branch.as_deref(),
+            runtime.prompt_preview,
+            runtime.branch.as_deref(),
             config,
             git,
             repository,

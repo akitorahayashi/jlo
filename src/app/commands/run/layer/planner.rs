@@ -2,6 +2,7 @@ use std::path::Path;
 
 use chrono::Utc;
 
+use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::execute::validate_requirement_path;
@@ -32,16 +33,17 @@ where
     fn execute(
         &self,
         jules_path: &Path,
-        options: &RunOptions,
+        target: &RunOptions,
+        runtime: &RunRuntimeOptions,
         config: &RunConfig,
         git: &dyn Git,
         github: &dyn GitHub,
         repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
-        if options.mock {
-            let mock_config = load_mock_config(jules_path, options, repository)?;
-            let output = execute_mock(jules_path, options, &mock_config, git, github, repository)?;
+        if runtime.mock {
+            let mock_config = load_mock_config(jules_path, repository)?;
+            let output = execute_mock(jules_path, target, &mock_config, git, github, repository)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
@@ -60,9 +62,9 @@ where
 
         execute_real(
             jules_path,
-            options.prompt_preview,
-            options.branch.as_deref(),
-            options.requirement.as_deref(),
+            runtime.prompt_preview,
+            runtime.branch.as_deref(),
+            target.requirement.as_deref(),
             config,
             git,
             repository,
@@ -262,7 +264,8 @@ where
 
     println!("Mock planner: creating branch {}", branch_name);
 
-    // Fetch and checkout from jules branch
+    // Planner mock always operates on the worker branch contract (`jules_worker_branch`).
+    // Runtime branch overrides apply to real-mode dispatch only.
     git.fetch("origin")?;
     git.checkout_branch(&format!("origin/{}", config.jules_worker_branch), false)?;
     git.checkout_branch(&branch_name, true)?;

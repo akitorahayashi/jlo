@@ -2,6 +2,7 @@ use std::path::Path;
 
 use chrono::DateTime;
 
+use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::prompt_assemble::{
@@ -30,15 +31,16 @@ where
     fn execute(
         &self,
         jules_path: &Path,
-        options: &RunOptions,
+        _target: &RunOptions,
+        runtime: &RunRuntimeOptions,
         config: &RunConfig,
         git: &dyn Git,
         _github: &dyn GitHub,
         repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
-        if options.mock {
-            let mock_config = load_mock_config(jules_path, options, repository)?;
+        if runtime.mock {
+            let mock_config = load_mock_config(jules_path, repository)?;
             let output = execute_mock(&mock_config)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
@@ -58,8 +60,8 @@ where
 
         execute_real(
             jules_path,
-            options.prompt_preview,
-            options.branch.as_deref(),
+            runtime.prompt_preview,
+            runtime.branch.as_deref(),
             config,
             git,
             repository,

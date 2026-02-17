@@ -532,7 +532,7 @@ fn scheduled_innovator_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<
         }
     };
 
-    match config.innovators {
+    match config.schedule.innovators {
         Some(layer) => layer.roles.into_iter().map(|role| role.name.as_str().to_string()).collect(),
         None => Vec::new(),
     }

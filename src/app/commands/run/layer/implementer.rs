@@ -4,6 +4,7 @@ use chrono::Utc;
 use serde::Deserialize;
 
 use super::super::mock::mock_execution::MockExecutionService;
+use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::execute::validate_requirement_path;
@@ -34,17 +35,19 @@ where
     fn execute(
         &self,
         jules_path: &Path,
-        options: &RunOptions,
+        target: &RunOptions,
+        runtime: &RunRuntimeOptions,
         config: &RunConfig,
         git: &dyn Git,
         github: &dyn GitHub,
         repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
-        if options.mock {
-            let mock_config = load_mock_config(jules_path, options, repository)?;
-            let _output = execute_mock(jules_path, options, &mock_config, git, github, repository)?;
-            let cleanup_requirement = options.requirement.clone();
+        if runtime.mock {
+            let mock_config = load_mock_config(jules_path, repository)?;
+            let _output =
+                execute_mock(jules_path, target, runtime, &mock_config, git, github, repository)?;
+            let cleanup_requirement = target.requirement.clone();
             // Mock output is written by execute_mock's service.finish()
             return Ok(RunResult {
                 roles: vec!["implementer".to_string()],
@@ -56,9 +59,9 @@ where
 
         execute_real(
             jules_path,
-            options.prompt_preview,
-            options.branch.as_deref(),
-            options.requirement.as_deref(),
+            runtime.prompt_preview,
+            runtime.branch.as_deref(),
+            target.requirement.as_deref(),
             config,
             git,
             repository,
@@ -270,6 +273,7 @@ fn execute_prompt_preview<
 fn execute_mock<G, H, W>(
     jules_path: &Path,
     options: &RunOptions,
+    runtime: &RunRuntimeOptions,
     config: &MockConfig,
     git: &G,
     github: &H,
@@ -310,7 +314,7 @@ where
     println!("Mock implementer: creating branch {}", branch_name);
 
     // Fetch and checkout from default branch (not jules)
-    let base_branch = options.branch.as_deref().unwrap_or(&config.jlo_target_branch);
+    let base_branch = runtime.branch.as_deref().unwrap_or(&config.jlo_target_branch);
     service.fetch_and_checkout_base(base_branch)?;
     service.checkout_new_branch(&branch_name)?;
 
@@ -445,15 +449,18 @@ mod tests {
         let options = RunOptions {
             layer: Layer::Implementer,
             role: None,
+            requirement: Some(req_path.clone()),
+            task: None,
+        };
+        let runtime = crate::app::commands::run::RunRuntimeOptions {
             prompt_preview: false,
             branch: None,
-            requirement: Some(req_path.clone()),
             mock: true,
-            task: None,
             no_cleanup: false,
         };
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
+        let result =
+            execute_mock(&jules_path, &options, &runtime, &config, &git, &github, &repository);
         assert!(result.is_ok());
         let output = result.unwrap();
 
@@ -475,15 +482,18 @@ mod tests {
         let options = RunOptions {
             layer: Layer::Implementer,
             role: None,
+            requirement: Some(req_path),
+            task: None,
+        };
+        let runtime = crate::app::commands::run::RunRuntimeOptions {
             prompt_preview: false,
             branch: None,
-            requirement: Some(req_path),
             mock: true,
-            task: None,
             no_cleanup: false,
         };
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
+        let result =
+            execute_mock(&jules_path, &options, &runtime, &config, &git, &github, &repository);
         assert!(result.is_err());
         assert!(
             matches!(result, Err(AppError::InvalidConfig(msg)) if msg.contains("not defined in github-labels.json"))

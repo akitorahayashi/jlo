@@ -24,5 +24,5 @@ pub fn load_schedule(store: &(impl RepositoryFilesystem + JloStore)) -> Result<S
 
     let content = store.read_file(config_path_str)?;
     let run_config = config::parse::parse_config_content(&content)?;
-    Ok(run_config.schedule())
+    Ok(run_config.schedule().clone())
 }

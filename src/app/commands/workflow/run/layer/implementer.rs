@@ -1,4 +1,4 @@
-use crate::app::commands::run::RunOptions;
+use crate::app::commands::run::{RunOptions, RunRuntimeOptions};
 use crate::app::commands::workflow::exchange::{
     ExchangeCleanRequirementOptions, clean_requirement_apply_with_adapters,
 };
@@ -31,7 +31,7 @@ where
         + 'static,
     G: Git,
     H: GitHub,
-    F: FnMut(&Path, RunOptions, &G, &H, &W) -> Result<(), AppError>,
+    F: FnMut(&Path, RunOptions, RunRuntimeOptions, &G, &H, &W) -> Result<(), AppError>,
 {
     let mock_suffix = if options.mock { " (mock)" } else { "" };
     let requirements = find_requirements(store, Layer::Implementer)?;
@@ -49,16 +49,18 @@ where
         let run_options = RunOptions {
             layer: Layer::Implementer,
             role: None,
+            requirement: Some(requirement_path.clone()),
+            task: options.task.clone(),
+        };
+        let runtime = RunRuntimeOptions {
             prompt_preview: false,
             branch: None,
-            requirement: Some(requirement_path.clone()),
             mock: options.mock,
-            task: options.task.clone(),
             no_cleanup: true,
         };
 
         eprintln!("Executing: implementer {}{}", requirement_path.display(), mock_suffix);
-        match run_layer(jules_path, run_options, git, github, store) {
+        match run_layer(jules_path, run_options, runtime, git, github, store) {
             Ok(()) => {
                 succeeded.push(requirement_path.clone());
             }

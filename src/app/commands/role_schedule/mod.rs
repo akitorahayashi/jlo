@@ -36,7 +36,7 @@ pub fn ensure_role_scheduled<W: RepositoryFilesystem>(
 }
 
 fn normalize_top_level_table_order(doc: &mut DocumentMut) {
-    let preferred = ["run", "workflow", "innovators", "observers", "jules"];
+    let preferred = ["run", "workflow", "innovators", "observers", "jules_api"];
     let root = doc.as_table_mut();
     let mut position: isize = 0;
 
@@ -203,7 +203,7 @@ roles = [
   { name = "consistency", enabled = true },
 ]
 
-[jules]
+[jules_api]
 api_url = "https://example.invalid"
 timeout_secs = 30
 max_retries = 3
@@ -232,10 +232,10 @@ roles = [
         let workflow_pos = actual.find("[workflow]").expect("workflow section");
         let innovators_pos = actual.find("[innovators]").expect("innovators section");
         let observers_pos = actual.find("[observers]").expect("observers section");
-        let jules_pos = actual.find("[jules]").expect("jules section");
+        let jules_api_pos = actual.find("[jules_api]").expect("jules_api section");
 
         assert!(workflow_pos < innovators_pos, "actual config:\n{}", actual);
         assert!(innovators_pos < observers_pos, "actual config:\n{}", actual);
-        assert!(observers_pos < jules_pos, "actual config:\n{}", actual);
+        assert!(observers_pos < jules_api_pos, "actual config:\n{}", actual);
     }
 }

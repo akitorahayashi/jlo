@@ -7,6 +7,7 @@ use super::super::mock::mock_execution::{
     MOCK_ASSETS, MockExecutionService, generate_mock_id, list_mock_tagged_files,
     mock_event_id_from_path,
 };
+use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::prompt_assemble::{
@@ -35,16 +36,17 @@ where
     fn execute(
         &self,
         jules_path: &Path,
-        options: &RunOptions,
+        _target: &RunOptions,
+        runtime: &RunRuntimeOptions,
         config: &RunConfig,
         git: &dyn Git,
         github: &dyn GitHub,
         repository: &W,
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
-        if options.mock {
-            let mock_config = load_mock_config(jules_path, options, repository)?;
-            let _output = execute_mock(jules_path, options, &mock_config, git, github, repository)?;
+        if runtime.mock {
+            let mock_config = load_mock_config(jules_path, repository)?;
+            let _output = execute_mock(jules_path, &mock_config, git, github, repository)?;
             return Ok(RunResult {
                 roles: vec!["decider".to_string()],
                 prompt_preview: false,
@@ -55,8 +57,8 @@ where
 
         execute_real(
             jules_path,
-            options.prompt_preview,
-            options.branch.as_deref(),
+            runtime.prompt_preview,
+            runtime.branch.as_deref(),
             config,
             git,
             repository,
@@ -148,7 +150,6 @@ fn assemble_decider_prompt<
 
 fn execute_mock<G, H, W>(
     jules_path: &Path,
-    _options: &RunOptions,
     config: &MockConfig,
     git: &G,
     github: &H,
@@ -501,18 +502,7 @@ mod tests {
             )
             .unwrap();
 
-        let options = RunOptions {
-            layer: Layer::Decider,
-            role: None,
-            prompt_preview: false,
-            branch: None,
-            requirement: None,
-            mock: true,
-            task: None,
-            no_cleanup: false,
-        };
-
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
+        let result = execute_mock(&jules_path, &config, &git, &github, &repository);
         assert!(result.is_ok());
         let output = result.unwrap();
         assert!(output.mock_branch.starts_with("jules-decider-"));
@@ -551,18 +541,7 @@ mod tests {
             .write_file(".jules/exchange/events/pending/mock-test-decider-event1.yml", "id: event1")
             .unwrap();
 
-        let options = RunOptions {
-            layer: Layer::Decider,
-            role: None,
-            prompt_preview: false,
-            branch: None,
-            requirement: None,
-            mock: true,
-            task: None,
-            no_cleanup: false,
-        };
-
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
+        let result = execute_mock(&jules_path, &config, &git, &github, &repository);
         assert!(result.is_err());
         assert!(
             matches!(result, Err(AppError::InvalidConfig(msg)) if msg.contains("requires at least 2 decided events"))

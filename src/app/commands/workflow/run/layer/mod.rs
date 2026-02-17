@@ -1,4 +1,4 @@
-use crate::app::commands::run::{self, RunOptions};
+use crate::app::commands::run::{self, RunOptions, RunRuntimeOptions};
 use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, Layer};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
@@ -33,10 +33,14 @@ where
     G: Git,
     H: GitHub,
 {
-    let mut run_layer =
-        |path: &Path, run_options: RunOptions, git_ref: &G, github_ref: &H, store_ref: &W| {
-            run::execute(path, run_options, git_ref, github_ref, store_ref).map(|_| ())
-        };
+    let mut run_layer = |path: &Path,
+                         run_options: RunOptions,
+                         runtime: RunRuntimeOptions,
+                         git_ref: &G,
+                         github_ref: &H,
+                         store_ref: &W| {
+        run::execute(path, run_options, runtime, git_ref, github_ref, store_ref).map(|_| ())
+    };
 
     execute_layer_with_runner(store, options, git, github, &mut run_layer)
 }
@@ -59,7 +63,7 @@ where
         + 'static,
     G: Git,
     H: GitHub,
-    F: FnMut(&Path, RunOptions, &G, &H, &W) -> Result<(), AppError>,
+    F: FnMut(&Path, RunOptions, RunRuntimeOptions, &G, &H, &W) -> Result<(), AppError>,
 {
     let jules_path = store.jules_path();
 
@@ -247,6 +251,7 @@ roles = [
         let mut executed_roles: Vec<String> = Vec::new();
         let mut run_layer = |_path: &Path,
                              run_options: RunOptions,
+                             _runtime: RunRuntimeOptions,
                              _git: &NoopGit,
                              _gh: &NoopGitHub,
                              _store: &TestStore| {

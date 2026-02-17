@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use crate::app::commands::run::RunRuntimeOptions;
 use crate::domain::{Layer, RunOptions};
 
 /// Builder for `RunOptions` used by app-layer unit tests.
@@ -8,12 +9,9 @@ use crate::domain::{Layer, RunOptions};
 pub struct RunOptionsBuilder {
     layer: Layer,
     role: Option<String>,
-    prompt_preview: bool,
-    branch: Option<String>,
     requirement: Option<PathBuf>,
-    mock: bool,
     task: Option<String>,
-    no_cleanup: bool,
+    runtime: RunRuntimeOptions,
 }
 
 #[allow(dead_code)]
@@ -22,12 +20,9 @@ impl RunOptionsBuilder {
         Self {
             layer,
             role: None,
-            prompt_preview: false,
-            branch: None,
             requirement: None,
-            mock: false,
             task: None,
-            no_cleanup: false,
+            runtime: RunRuntimeOptions::default(),
         }
     }
 
@@ -37,12 +32,12 @@ impl RunOptionsBuilder {
     }
 
     pub fn prompt_preview(mut self, enabled: bool) -> Self {
-        self.prompt_preview = enabled;
+        self.runtime.prompt_preview = enabled;
         self
     }
 
     pub fn branch(mut self, branch: impl Into<String>) -> Self {
-        self.branch = Some(branch.into());
+        self.runtime.branch = Some(branch.into());
         self
     }
 
@@ -52,7 +47,7 @@ impl RunOptionsBuilder {
     }
 
     pub fn mock(mut self, enabled: bool) -> Self {
-        self.mock = enabled;
+        self.runtime.mock = enabled;
         self
     }
 
@@ -62,7 +57,7 @@ impl RunOptionsBuilder {
     }
 
     pub fn no_cleanup(mut self, enabled: bool) -> Self {
-        self.no_cleanup = enabled;
+        self.runtime.no_cleanup = enabled;
         self
     }
 
@@ -70,12 +65,14 @@ impl RunOptionsBuilder {
         RunOptions {
             layer: self.layer,
             role: self.role,
-            prompt_preview: self.prompt_preview,
-            branch: self.branch,
             requirement: self.requirement,
-            mock: self.mock,
             task: self.task,
-            no_cleanup: self.no_cleanup,
         }
+    }
+
+    pub fn build_with_runtime(self) -> (RunOptions, RunRuntimeOptions) {
+        let runtime = self.runtime.clone();
+        let target = self.build();
+        (target, runtime)
     }
 }
