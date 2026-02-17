@@ -56,9 +56,7 @@ mod tests {
     #[test]
     fn empty_pending_dir_returns_false() {
         let store = TestStore::new();
-        store
-            .create_dir_all(".jules/exchange/events/pending")
-            .unwrap();
+        store.create_dir_all(".jules/exchange/events/pending").unwrap();
         let jules = Path::new(".jules");
         assert!(!has_pending_events(&store, jules).unwrap());
     }
@@ -66,12 +64,8 @@ mod tests {
     #[test]
     fn pending_yml_returns_true() {
         let store = TestStore::new();
-        store
-            .create_dir_all(".jules/exchange/events/pending")
-            .unwrap();
-        store
-            .write_file(".jules/exchange/events/pending/event1.yml", "id: e1")
-            .unwrap();
+        store.create_dir_all(".jules/exchange/events/pending").unwrap();
+        store.write_file(".jules/exchange/events/pending/event1.yml", "id: e1").unwrap();
         let jules = Path::new(".jules");
         assert!(has_pending_events(&store, jules).unwrap());
     }
@@ -79,12 +73,8 @@ mod tests {
     #[test]
     fn pending_non_yml_ignored() {
         let store = TestStore::new();
-        store
-            .create_dir_all(".jules/exchange/events/pending")
-            .unwrap();
-        store
-            .write_file(".jules/exchange/events/pending/README.md", "info")
-            .unwrap();
+        store.create_dir_all(".jules/exchange/events/pending").unwrap();
+        store.write_file(".jules/exchange/events/pending/README.md", "info").unwrap();
         let jules = Path::new(".jules");
         assert!(!has_pending_events(&store, jules).unwrap());
     }
