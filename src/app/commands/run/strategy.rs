@@ -1,25 +1,9 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::domain::{AppError, Layer, PromptAssetLoader, RunConfig, RunOptions};
-use crate::ports::{Git, GitHub, JloStore, JulesClient, JulesStore, RepositoryFilesystem};
+use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 
-/// Result of a run execution.
-#[derive(Debug)]
-pub struct RunResult {
-    /// Role that was processed.
-    pub roles: Vec<String>,
-    /// Whether this was a prompt preview.
-    pub prompt_preview: bool,
-    /// Session IDs from Jules (empty if prompt_preview or mock).
-    pub sessions: Vec<String>,
-    /// Requirement file to clean up (delete) after successful execution.
-    pub cleanup_requirement: Option<PathBuf>,
-}
-
-/// Factory for creating a Jules client on demand.
-pub trait JulesClientFactory {
-    fn create(&self) -> Result<Box<dyn JulesClient>, AppError>;
-}
+pub use crate::domain::{JulesClientFactory, RunResult};
 
 /// A strategy for executing a specific layer.
 pub trait LayerStrategy<W>

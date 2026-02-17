@@ -8,7 +8,8 @@ use super::super::mock::mock_execution::{
     mock_event_id_from_path,
 };
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
-use crate::domain::layers::prompt_assembly::{
+use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
+use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
@@ -84,8 +85,7 @@ where
         + Sync
         + 'static,
 {
-    let starting_branch =
-        branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
+    let starting_branch = resolve_starting_branch(Layer::Decider, config, branch);
 
     if prompt_preview {
         println!("=== Prompt Preview: Decider ===");

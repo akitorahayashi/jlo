@@ -3,7 +3,8 @@ use std::path::Path;
 use chrono::DateTime;
 
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
-use crate::domain::layers::prompt_assembly::{
+use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
+use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
@@ -91,9 +92,7 @@ where
     let changes_path = exchange_changes_path(jules_path)?;
     let had_previous_changes = repository.file_exists(&changes_path);
 
-    // Determine starting branch (Narrator always uses jules worker branch)
-    let starting_branch =
-        branch.map(String::from).unwrap_or_else(|| config.run.jules_worker_branch.clone());
+    let starting_branch = resolve_starting_branch(Layer::Narrator, config, branch);
 
     // Determine commit range
     let range = determine_range(&changes_path, git, repository)?;

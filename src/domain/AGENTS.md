@@ -11,7 +11,7 @@ This layer is pure, with no dependencies on `adapters` or `app`.
 src/domain/
 ├── config/           # Configuration models
 ├── exchange/         # Exchange (events/requirements) models
-├── layers/           # Layer taxonomy & Prompt assembly
+├── layers/           # Layer taxonomy, prompt assembly, and execution semantics
 ├── roles/            # Role taxonomy
 ├── schedule/         # Schedule models
 ├── setup/            # Setup component logic
@@ -27,3 +27,5 @@ src/domain/
 -   Ownership: Sole owner of `.jlo` and `.jules` path logic (parsing, validation).
 -   Dependency Direction: `domain -> ports` (interfaces only), `domain -> std`.
 -   Type Safety: All domain concepts are strongly typed (enums, structs).
+
+`src/domain/layers/execute/` owns shared run execution semantics (`RunResult`, `JulesClientFactory`, requirement-path validation, starting-branch resolution, and shared layer policy predicates).

@@ -20,7 +20,9 @@ pub use error::{AppError, IoErrorKind};
 pub use exchange::requirements::RequirementHeader;
 pub use layers::Layer;
 #[allow(unused_imports)]
-pub use layers::prompt_assembly::{PromptAssemblyError, PromptAssetLoader};
+pub use layers::execute::{JulesClientFactory, RequirementPathInfo, RunResult};
+#[allow(unused_imports)]
+pub use layers::prompt_assemble::{PromptAssemblyError, PromptAssetLoader};
 pub use roles::{BuiltinRoleEntry, RoleId};
 
 #[allow(unused_imports)]

@@ -54,7 +54,8 @@ The following dependencies are prohibited:
 | Capability | Ownership Description |
 |------------|-----------------------|
 | `setup/` | Component models, dependency resolution, artifact generation, and setup config. |
-| `prompt_assembly/` | Prompt contracts, loading semantics, and composition errors. |
+| `prompt_assemble/` | Prompt contracts, loading semantics, and composition errors. |
+| `execute/` | Shared run execution policy and branch/requirement execution semantics. |
 | `roles/` | Role identity, roster semantics, and level invariants. |
 | `events/` | Event schema, state model, parsing, and validation. |
 | `requirements/` | Requirement schema, parse/validation, and requirement-event linkage. |

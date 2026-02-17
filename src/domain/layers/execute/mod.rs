@@ -1,7 +1,28 @@
-use std::path::Path;
+pub mod policy;
+pub mod starting_branch;
+
+use std::path::{Path, PathBuf};
 
 use crate::domain::AppError;
-use crate::ports::{JulesStore, RepositoryFilesystem};
+use crate::ports::{JulesClient, JulesStore, RepositoryFilesystem};
+
+/// Result of a run execution.
+#[derive(Debug)]
+pub struct RunResult {
+    /// Role that was processed.
+    pub roles: Vec<String>,
+    /// Whether this was a prompt preview.
+    pub prompt_preview: bool,
+    /// Session IDs from Jules (empty if prompt_preview or mock).
+    pub sessions: Vec<String>,
+    /// Requirement file to clean up (delete) after successful execution.
+    pub cleanup_requirement: Option<PathBuf>,
+}
+
+/// Factory for creating a Jules client on demand.
+pub trait JulesClientFactory {
+    fn create(&self) -> Result<Box<dyn JulesClient>, AppError>;
+}
 
 pub struct RequirementPathInfo {
     pub requirement_path_str: String,

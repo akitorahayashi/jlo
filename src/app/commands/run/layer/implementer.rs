@@ -5,7 +5,9 @@ use serde::Deserialize;
 
 use super::super::mock::mock_execution::MockExecutionService;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
-use crate::domain::layers::prompt_assembly::{
+use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
+use crate::domain::layers::execute::validate_requirement_path;
+use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RunConfig, RunOptions};
@@ -14,7 +16,6 @@ use crate::ports::{
     SessionRequest,
 };
 
-use super::super::requirement_path::validate_requirement_path;
 use super::super::strategy::{JulesClientFactory, LayerStrategy, RunResult};
 
 pub struct ImplementerLayer;
@@ -95,8 +96,7 @@ where
 
     let requirement_content = repository.read_file(&requirement_info.requirement_path_str)?;
 
-    let starting_branch =
-        branch.map(String::from).unwrap_or_else(|| config.run.jlo_target_branch.clone());
+    let starting_branch = resolve_starting_branch(Layer::Implementer, config, branch);
 
     if prompt_preview {
         execute_prompt_preview(jules_path, &starting_branch, &requirement_content, repository)?;

@@ -3,10 +3,10 @@
 mod input;
 mod layer;
 mod mock;
-mod requirement_path;
 mod role_session;
 mod strategy;
 
+#[allow(unused_imports)]
 pub use layer::policy;
 
 use std::path::Path;
