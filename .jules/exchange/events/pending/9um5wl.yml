@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "9um5wl"
+requirement_id: ""
+created_at: "2026-02-17"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Inconsistent Role Validation and Primitive Obsession"
+statement: |
+  Role identifiers are validated inconsistently across the codebase. While `RoleId` encapsulates the domain rules for role identifiers (alphanumeric, hyphens, underscores), some parts of the application (specifically `execute_mock` in `src/app/commands/run/layer/innovators.rs`) use raw strings and a separate `validate_safe_path_component` function. This violates "Represent Valid States Only" by allowing raw strings to masquerade as valid roles until runtime validation, and "Single Source of Truth" by duplicating validation logic.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/roles/role_id.rs"
+    loc:
+      - "10-20"
+    note: "Defines `RoleId` struct and validation logic."
+  - path: "src/app/commands/run/layer/innovators.rs"
+    loc:
+      - "170-176"
+    note: "Uses `validate_safe_path_component` on a raw string instead of `RoleId`."
+  - path: "src/domain/roles/validation.rs"
+    loc:
+      - "1-20"
+    note: "Contains duplicated/overlapping validation logic."

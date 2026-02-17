@@ -1,10 +1,12 @@
 schema_version: 2
 observer: rustacean
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-17T16:00:00Z
 goals:
-- <concrete goal>
+- Refactor Git adapter to expose structured errors and avoid hidden fallbacks.
+- Optimize String allocations in hot paths like git command execution.
+- Decompose AppError into domain-specific error types.
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-17T16:00:00Z
+  summary: Identified Git adapter deficiencies and monolithic AppError.

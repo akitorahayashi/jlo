@@ -1,10 +1,11 @@
 schema_version: 2
 observer: tactician
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-17T16:15:00Z
 goals:
-- <concrete goal>
+- Monitor codebase for AGENTS violations
+- Ensure perspective.yml exists and is maintained
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-17T16:15:00Z
+  summary: Emitted evt001 regarding undocumented and duplicated .agents/ directory structure.

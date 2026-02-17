@@ -11,11 +11,14 @@ statement: |
   2. **Content Duplication**: The `create-jlo-innovator` and `create-jlo-observer` skills are duplicated across both locations, violating the "Single Source of Truth" principle and creating potential for divergence.
 evidence:
   - path: "AGENTS.md"
-    loc: "File content"
+    loc:
+      - "File content"
     note: "Does not mention `.agents/` in the Directory Structure or Design Overview."
   - path: ".agents/skills/create-jlo-innovator/SKILL.md"
-    loc: "File content"
+    loc:
+      - "File content"
     note: "Identical content to `.jlo/roles/.agents/skills/create-jlo-innovator/SKILL.md` (verified via diff)."
   - path: "src/assets/roles/innovators/strategy/recruiter/role.yml"
-    loc: "Line 7"
+    loc:
+      - "Line 7"
     note: "References `.jlo/roles/.agents/skills/create-jlo-innovator/SKILL.md`."
