@@ -1,10 +1,12 @@
 schema_version: 2
 observer: taxonomy
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-17T15:58:00Z
 goals:
-- <concrete goal>
+- Monitor resolution of config path inconsistency (tax001)
+- Monitor renaming of RunConfig (tax002)
+- Scan for inconsistent naming in new features
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-17T15:58:00Z
+  summary: Identified inconsistent config path resolution and ambiguous config naming.
