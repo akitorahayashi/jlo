@@ -10,6 +10,18 @@
 Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All configuration is performed on `JLO_TARGET_BRANCH` under `.jlo/`.
 `jlo init` installs the control-plane and workflow kit only; `.jules/` is created by workflow bootstrap on `JULES_WORKER_BRANCH`.
 
+### Terminology
+
+Automation and documentation distinguish only two branch contexts: `target branch` (`JLO_TARGET_BRANCH`) and `worker branch` (`JULES_WORKER_BRANCH`).
+Hardcoded branch names (e.g., `main`, `jules`, or `default branch`) are avoided as normative identifiers.
+
+### Merge Policy
+
+Two merge lanes are intentionally distinct for `JULES_WORKER_BRANCH`:
+
+- **Jules API lane**: Layer PRs use `jlo workflow gh pr enable-automerge` (via `--auto`) to delegate merge timing to GitHub asynchronously.
+- **Programmatic maintenance lane**: `jlo workflow gh push worker-branch` waits for status checks in-process and performs an immediate merge without `--auto`.
+
 ## Directory Ownership
 
 ### `.jlo/` — Intent Overlay (control branch)
@@ -43,9 +55,12 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 
 | Path | Owner | Installed by | Description |
 |------|-------|--------------|-------------|
-| `.github/workflows/jules-*.yml` | jlo | `jlo init` | Workflow definitions |
+| `.github/workflows/jules-*.yml` | jlo | `jlo init` | Workflow definitions. Generated artifacts; manual edits are not maintained. |
 | `.github/actions/install-jlo/**` | jlo | `jlo init` | jlo installer action |
 | `.github/actions/configure-git/**` | jlo | `jlo init` | Git configuration action |
+
+Generated workflow files under `.github/workflows/` are projection artifacts from templates in `src/assets/github/workflows/`.
+Manual edits to generated files are not part of the maintained state; changes are applied in templates and then regenerated through `jlo workflow generate`.
 
 ## Classification Rules
 
@@ -55,6 +70,18 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 | **User intent** | Configuration, schedule rosters, role customizations, tool selections. Created once by `init` or `template`; owned by the user thereafter. | `.jlo/` |
 | **Managed framework** | Contracts, schemas, prompts, global documents. Content is determined entirely by the jlo version. | Embedded scaffold → materialized to `.jules/` by bootstrap |
 | **Agent-generated** | Runtime artifacts written by agent execution. Never touched by bootstrap, update, or projection. | `.jules/` exchange paths |
+
+## Asset Architecture
+
+### Static Asset Policy
+
+All scaffold files, workflow kits, configurations, and prompts must exist as real files within `src/assets/`.
+File contents are never embedded as string constants in Rust source code.
+`include_dir!` is used to load `src/assets/scaffold` and `src/assets/github` as authoritative sources.
+
+### Scaffold Mapping
+
+The directory `src/assets/scaffold/jules/layers` in the source code maps directly to `.jules/layers` in the deployed environment.
 
 ## Materialization Boundary
 
