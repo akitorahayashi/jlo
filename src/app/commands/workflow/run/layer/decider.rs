@@ -29,7 +29,7 @@ where
 {
     if !options.mock && !has_pending_events(jules_path)? {
         eprintln!("No pending events, skipping decider");
-        return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
+        return Ok(RunResults::skipped("No pending events"));
     }
 
     let run_options = RunOptions {
@@ -45,7 +45,7 @@ where
     eprintln!("Executing: decider{}", if options.mock { " (mock)" } else { "" });
     run_layer(jules_path, run_options, git, github, store)?;
 
-    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+    Ok(RunResults::with_count(1))
 }
 
 fn has_pending_events(jules_path: &Path) -> Result<bool, AppError> {

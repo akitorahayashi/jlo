@@ -1,6 +1,7 @@
 pub mod paths;
 pub mod prompt_assembly;
 
+use serde::Serialize;
 use std::fmt;
 
 /// The architectural layers for execution roles.
@@ -150,6 +151,12 @@ impl Layer {
 impl fmt::Display for Layer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.display_name())
+    }
+}
+
+impl Serialize for Layer {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.dir_name())
     }
 }
 
