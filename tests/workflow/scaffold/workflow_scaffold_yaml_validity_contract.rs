@@ -128,7 +128,8 @@ fn automerge_workflow_uses_push_scoped_trigger_contract() {
     assert!(branch_values.contains(&"jules-decider-*"));
     assert!(branch_values.contains(&"jules-planner-*"));
     assert!(branch_values.contains(&"jules-innovator-*"));
-    assert!(branch_values.contains(&"jules-publish-proposals-*"));
-    assert!(branch_values.contains(&"jules-mock-cleanup-*"));
+    assert!(!branch_values.contains(&"jules-publish-proposals-*"));
+    assert!(!branch_values.contains(&"jules-mock-cleanup-*"));
+    assert!(!branch_values.contains(&"jules-bootstrap-*"));
     assert!(!branch_values.contains(&"jules-implementer-*"));
 }

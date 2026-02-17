@@ -67,11 +67,11 @@ If automated review tools are enabled, configure them to avoid blocking Jules-ma
 `jules-scheduled-workflows.yml` orchestrates:
 
 - schedule/dispatch/call layer execution
-- bootstrap-time target-to-worker branch sync
+- bootstrap-time target-to-worker sync via bootstrap PR into `JULES_WORKER_BRANCH`
 - implementer PR metadata processing
 - worker PR doctor validation and auto-merge processing
 
-Auto-merge remains limited to policy-qualified `.jules/`-scoped Jules PRs.
+Auto-merge remains policy-qualified: layer/publish/cleanup PRs are `.jules/`-scoped, and bootstrap sync PRs use the dedicated bootstrap branch policy.
 
 ## Self-hosted Runners
 

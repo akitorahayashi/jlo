@@ -6,7 +6,7 @@ purpose:
   then create a pull request with the changes.
 
 constraints:
-  - "Branch format: jules-implementer-<label>-<id>-<short_description>"
+  - "Branch format: jules-implementer-<label>-<short_description>"
   - "<label> must match the requirement label"
   - "When adding new features or refactoring, removing old modules and deprecated features is mandatory. Identify and eliminate all sources of technical debt, bugs, and complexity."
   - "Never define class or file names with ambiguous responsibilities, such as base, core, utils, or helpers."

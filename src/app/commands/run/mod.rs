@@ -14,7 +14,10 @@ use crate::adapters::jules_client::{RetryPolicy, RetryingJulesClient};
 use crate::app::commands::run::input::{load_run_config, validate_mock_prerequisites};
 use crate::app::commands::run::strategy::{JulesClientFactory, get_layer_strategy};
 use crate::app::commands::workflow::exchange::{
-    ExchangeCleanRequirementOptions, clean_requirement_with_adapters,
+    ExchangeCleanRequirementOptions, clean_requirement_apply_with_adapters,
+};
+use crate::app::commands::workflow::gh::push::{
+    PushWorkerBranchOptions, execute as push_worker_branch,
 };
 use crate::domain::PromptAssetLoader;
 pub use crate::domain::RunOptions;
@@ -130,21 +133,31 @@ where
     // Handle post-execution cleanup (e.g. Implementer requirement)
     if let Some(path) = result.cleanup_requirement.as_ref() {
         let path_str = path.to_string_lossy().to_string();
-        match clean_requirement_with_adapters(
+        let cleanup_res = clean_requirement_apply_with_adapters(
             ExchangeCleanRequirementOptions { requirement_file: path_str },
             repository,
             git,
-        ) {
-            Ok(cleanup_res) => {
-                println!(
-                    "✅ Cleaned requirement and source events ({} file(s) removed)",
-                    cleanup_res.deleted_paths.len()
-                );
-            }
-            Err(e) => {
-                // Log warning but don't fail the run result, as the main task succeeded
-                println!("⚠️ Failed to clean up requirement: {}", e);
-            }
+        )?;
+        println!(
+            "✅ Cleaned requirement and source events ({} file(s) removed)",
+            cleanup_res.deleted_paths.len()
+        );
+
+        let defer_worker_merge = std::env::var("JLO_DEFER_WORKER_MERGE")
+            .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
+            .unwrap_or(false);
+
+        // Mock runs and deferred worker merge runs intentionally skip immediate remote merge.
+        if !options.mock && !defer_worker_merge {
+            push_worker_branch(PushWorkerBranchOptions {
+                change_token: format!("requirement-cleanup-{}", cleanup_res.requirement_id),
+                commit_message: format!("jules: clean requirement {}", cleanup_res.requirement_id),
+                pr_title: format!("chore: clean requirement {}", cleanup_res.requirement_id),
+                pr_body: format!(
+                    "Automated cleanup for processed requirement `{}`.\n\n- remove requirement artifact\n- remove source event artifacts",
+                    cleanup_res.requirement_id
+                ),
+            })?;
         }
     }
 
@@ -359,7 +372,7 @@ mod tests {
 
     #[derive(serde::Deserialize)]
     struct EventDoc {
-        issue_id: String,
+        requirement_id: String,
     }
 
     struct EnvVarGuard {
@@ -516,7 +529,7 @@ roles = [
         assert_eq!(requirement_files.len(), 2, "decider should create two requirements");
 
         let mut all_source_events: Vec<String> = Vec::new();
-        let mut source_events_by_issue: HashMap<String, Vec<String>> = HashMap::new();
+        let mut source_events_by_requirement: HashMap<String, Vec<String>> = HashMap::new();
         let mut implementer_requirement: Option<PathBuf> = None;
         let mut planner_requirement: Option<PathBuf> = None;
 
@@ -529,7 +542,7 @@ roles = [
             }
 
             all_source_events.extend(requirement.source_events.clone());
-            source_events_by_issue.insert(requirement.id, requirement.source_events);
+            source_events_by_requirement.insert(requirement.id, requirement.source_events);
         }
 
         let implementer_requirement =
@@ -549,7 +562,7 @@ roles = [
         );
 
         let mut source_sizes: Vec<usize> =
-            source_events_by_issue.values().map(std::vec::Vec::len).collect();
+            source_events_by_requirement.values().map(std::vec::Vec::len).collect();
         source_sizes.sort();
         assert_eq!(
             source_sizes,
@@ -569,8 +582,8 @@ roles = [
 
             let event_doc = read_event_doc(&decided_path);
             assert!(
-                source_events_by_issue
-                    .get(&event_doc.issue_id)
+                source_events_by_requirement
+                    .get(&event_doc.requirement_id)
                     .is_some_and(|sources| sources.contains(&event_id.to_string())),
                 "event {} must belong to exactly one requirement source_events owner",
                 event_id
@@ -631,10 +644,9 @@ roles = [
             pushed.iter().any(|branch| branch.starts_with("jules-implementer-")),
             "implementer mock should push an implementer branch"
         );
-        assert_eq!(
-            pushed.last().map(std::string::String::as_str),
-            Some("jules"),
-            "cleanup push should target restored exchange branch"
+        assert!(
+            !pushed.iter().any(|branch| branch == "jules"),
+            "mock implementer cleanup should not run worker-branch merge push"
         );
     }
 }

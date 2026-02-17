@@ -19,11 +19,11 @@ src/app/
 
 ## Architectural Principles
 
--   **Dependency Direction**: `app -> domain`, `app -> ports`.
--   **Wiring**: Wires concrete `adapters` to `ports` at runtime (Dependency Injection via `AppContext`).
--   **No Domain Logic**: `app` delegates parsing, validation, and business rules to `domain`.
--   **No I/O Implementation**: `app` consumes I/O only through `ports` traits, never directly via `adapters` or `std::fs`/`std::net`.
--   **Command Scope**: Each command implementation (in `commands/`) orchestrates a specific user intent.
+-   Dependency Direction: `app -> domain`, `app -> ports`.
+-   Wiring: Wires concrete `adapters` to `ports` at runtime (Dependency Injection via `AppContext`).
+-   No Domain Logic: `app` delegates parsing, validation, and business rules to `domain`.
+-   No I/O Implementation: `app` consumes I/O only through `ports` traits, never directly via `adapters` or `std::fs`/`std::net`.
+-   Command Scope: Each command implementation (in `commands/`) orchestrates a specific user intent.
 
 ## CLI Commands
 
@@ -41,9 +41,9 @@ See `cargo run -- --help` or the project `README.md` for the authoritative comma
 | Integrator | Single-role | `jlo run integrator` | None (manual, on-demand) |
 | Innovators | Multi-role | `jlo workflow run innovators` | `.jlo/config.toml` (`[innovators].roles`) |
 
-**Single-role layers**: Narrator, Decider, Planner, Implementer have a fixed role with a `<layer>_prompt.j2` template in the layer directory. Template creation not supported.
+Single-role layers: Narrator, Decider, Planner, Implementer have a fixed role with a `<layer>_prompt.j2` template in the layer directory. Template creation not supported.
 
-**Multi-role layers**: Observers and Innovators support multiple configurable roles listed in `.jlo/config.toml` (`[observers].roles`, `[innovators].roles`). Custom roles can have `role.yml` under `.jlo/roles/`; built-ins are resolved from embedded assets when no custom role file exists.
+Multi-role layers: Observers and Innovators support multiple configurable roles listed in `.jlo/config.toml` (`[observers].roles`, `[innovators].roles`). Custom roles can have `role.yml` under `.jlo/roles/`; built-ins are resolved from embedded assets when no custom role file exists.
 
 ## Mock Mode
 
@@ -85,9 +85,9 @@ SECRET_VAR = { description = "Secret used by runtime authentication" }
 
 | Module | Responsibility |
 |--------|----------------|
-| **setup_component_catalog_embedded** | Loads setup components from embedded assets |
-| **DependencyGraph** | Topological sort with cycle detection |
-| **artifact_generator** | Produces install.sh and merges vars.toml + secrets.toml |
+| setup_component_catalog_embedded | Loads setup components from embedded assets |
+| DependencyGraph | Topological sort with cycle detection |
+| artifact_generator | Produces install.sh and merges vars.toml + secrets.toml |
 
 ### Environment Contract
 

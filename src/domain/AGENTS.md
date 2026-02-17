@@ -22,8 +22,8 @@ src/domain/
 
 ## Architectural Principles
 
--   **Purity**: Depends only on `std` and pure utility crates (`serde`).
--   **No I/O**: No file system access, network calls, or tool execution.
--   **Ownership**: Sole owner of `.jlo` and `.jules` path logic (parsing, validation).
--   **Dependency Direction**: `domain -> ports` (interfaces only), `domain -> std`.
--   **Type Safety**: All domain concepts are strongly typed (enums, structs).
+-   Purity: Depends only on `std` and pure utility crates (`serde`).
+-   No I/O: No file system access, network calls, or tool execution.
+-   Ownership: Sole owner of `.jlo` and `.jules` path logic (parsing, validation).
+-   Dependency Direction: `domain -> ports` (interfaces only), `domain -> std`.
+-   Type Safety: All domain concepts are strongly typed (enums, structs).

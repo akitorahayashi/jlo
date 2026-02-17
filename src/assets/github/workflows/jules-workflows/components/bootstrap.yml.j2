@@ -31,14 +31,20 @@
       - name: Ensure worker branch
         run: |
           set -euo pipefail
+          git fetch origin "${JLO_TARGET_BRANCH}"
           if git ls-remote --exit-code --heads origin "${JULES_WORKER_BRANCH}" >/dev/null 2>&1; then
             echo "${JULES_WORKER_BRANCH} branch exists, checking out"
-            git fetch origin "${JULES_WORKER_BRANCH}"
-            git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JULES_WORKER_BRANCH}"
           else
-            echo "Creating ${JULES_WORKER_BRANCH} from ${JLO_TARGET_BRANCH}"
-            git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JLO_TARGET_BRANCH}"
+            echo "Creating ${JULES_WORKER_BRANCH} from ${JLO_TARGET_BRANCH} via GitHub API"
+            target_sha="$(git rev-parse "origin/${JLO_TARGET_BRANCH}")"
+            gh api \
+              --method POST \
+              "/repos/${GITHUB_REPOSITORY}/git/refs" \
+              -f ref="refs/heads/${JULES_WORKER_BRANCH}" \
+              -f sha="${target_sha}" >/dev/null
           fi
+          git fetch origin "${JULES_WORKER_BRANCH}"
+          git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JULES_WORKER_BRANCH}"
 
       - name: Merge target branch into worker
         run: |
@@ -62,15 +68,20 @@
       - name: Bootstrap runtime repository
         run: jlo workflow bootstrap
 
-      - name: Commit and push changes
-        id: bootstrap
+      - name: Validate repository (fail-fast)
+        run: jlo workflow doctor
+
+      - name: Publish bootstrap updates via worker-branch merge path
         run: |
           set -euo pipefail
-          if [ -n "$(git status --porcelain .jules)" ]; then
-            git add .jules/
-            git commit -m "chore: bootstrap .jules/ runtime repository [jlo $(jlo --version | awk '{print $2}')]"
-            git push origin "${JULES_WORKER_BRANCH}"
-            echo "committed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "committed=false" >> "$GITHUB_OUTPUT"
+          if [ -z "$(git status --porcelain .jules)" ]; then
+            echo "No bootstrap changes detected."
+            exit 0
           fi
+
+          pr_body=$'Automated bootstrap update for the runtime workspace.\n\n- synchronize '"${JLO_TARGET_BRANCH}"' into '"${JULES_WORKER_BRANCH}"$'\n- materialize .jules via jlo workflow bootstrap'
+          jlo workflow gh push worker-branch \
+            --change-token "bootstrap" \
+            --commit-message "chore: bootstrap .jules/ runtime repository [jlo $(jlo --version | awk '{print $2}')]" \
+            --pr-title "chore: bootstrap runtime workspace" \
+            --pr-body "${pr_body}"

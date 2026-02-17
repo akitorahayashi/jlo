@@ -237,16 +237,17 @@ where
     let impl_source_event_ids: Vec<String> = source_event_ids[1..].to_vec();
 
     // Requirement 1: requires deep analysis (for planner)
-    let planner_issue_id = generate_mock_id();
-    let planner_issue_file = requirements_dir.join(format!("planner-{}.yml", config.mock_tag));
+    let planner_requirement_id = generate_mock_id();
+    let planner_requirement_file =
+        requirements_dir.join(format!("planner-{}.yml", config.mock_tag));
 
-    let mut planner_issue_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
+    let mut planner_requirement_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
         .map_err(|e| {
             AppError::InternalError(format!("Failed to parse mock issue template: {}", e))
         })?;
 
-    if let Some(mapping) = planner_issue_yaml.as_mapping_mut() {
-        mapping.insert("id".into(), planner_issue_id.clone().into());
+    if let Some(mapping) = planner_requirement_yaml.as_mapping_mut() {
+        mapping.insert("id".into(), planner_requirement_id.clone().into());
         mapping.insert("label".into(), label.clone().into());
         mapping.insert(
             "summary".into(),
@@ -276,13 +277,13 @@ where
     }
 
     repository.write_file(
-        planner_issue_file.to_str().ok_or_else(|| {
+        planner_requirement_file.to_str().ok_or_else(|| {
             AppError::InvalidPath(format!(
                 "Invalid planner requirement path: {}",
-                planner_issue_file.display()
+                planner_requirement_file.display()
             ))
         })?,
-        &serde_yaml::to_string(&planner_issue_yaml).map_err(|err| {
+        &serde_yaml::to_string(&planner_requirement_yaml).map_err(|err| {
             AppError::InternalError(format!(
                 "Failed to serialize planner requirement YAML: {}",
                 err
@@ -291,16 +292,17 @@ where
     )?;
 
     // Requirement 2: ready for implementer
-    let impl_issue_id = generate_mock_id();
-    let impl_issue_file = requirements_dir.join(format!("impl-{}.yml", config.mock_tag));
+    let implementer_requirement_id = generate_mock_id();
+    let implementer_requirement_file =
+        requirements_dir.join(format!("impl-{}.yml", config.mock_tag));
 
-    let mut impl_issue_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
-        .map_err(|e| {
+    let mut implementer_requirement_yaml: serde_yaml::Value =
+        serde_yaml::from_str(mock_issue_template).map_err(|e| {
             AppError::InternalError(format!("Failed to parse mock issue template: {}", e))
         })?;
 
-    if let Some(mapping) = impl_issue_yaml.as_mapping_mut() {
-        mapping.insert("id".into(), impl_issue_id.clone().into());
+    if let Some(mapping) = implementer_requirement_yaml.as_mapping_mut() {
+        mapping.insert("id".into(), implementer_requirement_id.clone().into());
         mapping.insert("label".into(), label.clone().into());
         mapping.insert(
             "summary".into(),
@@ -325,13 +327,13 @@ where
     }
 
     repository.write_file(
-        impl_issue_file.to_str().ok_or_else(|| {
+        implementer_requirement_file.to_str().ok_or_else(|| {
             AppError::InvalidPath(format!(
                 "Invalid implementer requirement path: {}",
-                impl_issue_file.display()
+                implementer_requirement_file.display()
             ))
         })?,
-        &serde_yaml::to_string(&impl_issue_yaml).map_err(|err| {
+        &serde_yaml::to_string(&implementer_requirement_yaml).map_err(|err| {
             AppError::InternalError(format!(
                 "Failed to serialize implementer requirement YAML: {}",
                 err
@@ -339,15 +341,15 @@ where
         })?,
     )?;
 
-    // Ensure all tag-matched decided events have issue_id.
+    // Ensure all tag-matched decided events have requirement_id.
     let planner_event_set: HashSet<&str> =
         planner_source_event_ids.iter().map(|event_id| event_id.as_str()).collect();
     for decided_file in &decided_mock_files {
         if let Some(event_id) = mock_event_id_from_path(decided_file, &config.mock_tag) {
-            let assigned_issue_id = if planner_event_set.contains(event_id.as_str()) {
-                &planner_issue_id
+            let assigned_requirement_id = if planner_event_set.contains(event_id.as_str()) {
+                &planner_requirement_id
             } else {
-                &impl_issue_id
+                &implementer_requirement_id
             };
 
             let decided_file_str = match decided_file.to_str() {
@@ -394,8 +396,8 @@ where
             };
 
             mapping.insert(
-                serde_yaml::Value::String("issue_id".to_string()),
-                serde_yaml::Value::String(assigned_issue_id.to_string()),
+                serde_yaml::Value::String("requirement_id".to_string()),
+                serde_yaml::Value::String(assigned_requirement_id.to_string()),
             );
 
             let updated_content = match serde_yaml::to_string(&yaml_value) {
@@ -421,7 +423,8 @@ where
     }
 
     // Commit and push (include moved/deleted files and decided updates)
-    let mut files: Vec<&Path> = vec![planner_issue_file.as_path(), impl_issue_file.as_path()];
+    let mut files: Vec<&Path> =
+        vec![planner_requirement_file.as_path(), implementer_requirement_file.as_path()];
     for f in &decided_mock_files {
         files.push(f.as_path());
     }
@@ -440,7 +443,7 @@ where
         &config.jules_worker_branch,
         &format!("[{}] Decider triage", config.mock_tag),
         &format!("Mock decider run for workflow validation.\n\nMock tag: `{}`\n\nCreated requirements:\n- `{}` (requires analysis)\n- `{}` (ready for impl)",
-            config.mock_tag, planner_issue_id, impl_issue_id),
+            config.mock_tag, planner_requirement_id, implementer_requirement_id),
     )?;
 
     println!("Mock decider: created PR #{} ({})", pr.number, pr.url);

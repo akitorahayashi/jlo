@@ -97,8 +97,7 @@ pub fn execute(options: ExchangeCleanMockOptions) -> Result<ExchangeCleanMockOut
     let closed_prs_count = close_pull_requests(&github, &pr_numbers)?;
     let closed_issues_count = close_issues(&issue_numbers)?;
     let deleted_branches_count = delete_remote_branches(&github, &branches)?;
-    let deleted_files_count =
-        delete_mock_files(&repository, &git, &github, &options.mock_tag, &worker_branch)?;
+    let deleted_files_count = delete_mock_files(&repository, &git, &options.mock_tag)?;
 
     eprintln!(
         "Cleaned mock artifacts for tag '{}': {} PRs, {} issues, {} branches, {} files",
@@ -169,9 +168,7 @@ fn close_issues(issue_numbers: &[u64]) -> Result<usize, AppError> {
 fn delete_mock_files(
     repository: &LocalRepositoryAdapter,
     git: &GitCommandAdapter,
-    github: &GitHubCommandAdapter,
     mock_tag: &str,
-    worker_branch: &str,
 ) -> Result<usize, AppError> {
     let root = repository_root(repository)?;
     let jules_path = repository.jules_path();
@@ -194,23 +191,6 @@ fn delete_mock_files(
         return Ok(files.len());
     }
 
-    let cleanup_branch = build_cleanup_branch_name(mock_tag);
-    git.run_command(&["checkout", "-b", &cleanup_branch], None)?;
-
-    let message = format!("jules: cleanup mock artifacts {}", mock_tag);
-    git.run_command(&["add", "-u", ".jules"], None)?;
-    git.run_command(&["commit", "-m", &message], None)?;
-    git.push_branch(&cleanup_branch, false)?;
-
-    let pr_title = format!("chore: cleanup mock artifacts {}", mock_tag);
-    let pr_body = format!(
-        "Automated cleanup for mock run `{}`.\n\n- remove mock-tagged runtime artifacts\n- close/delete related mock resources",
-        mock_tag
-    );
-    // Cleanup uses a PR path to satisfy branch protection and preserve auditable merge history.
-    // Auto-merge authority remains centralized in the dedicated `jules-automerge` workflow.
-    github.create_pull_request(&cleanup_branch, worker_branch, &pr_title, &pr_body)?;
-
     Ok(files.len())
 }
 
@@ -231,18 +211,6 @@ fn resolve_worker_branch(configured_worker_branch: Option<String>) -> Result<Str
     }
 
     Ok(worker_branch)
-}
-
-fn build_cleanup_branch_name(mock_tag: &str) -> String {
-    let sanitized: String = mock_tag
-        .chars()
-        .map(
-            |ch| {
-                if ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-' { ch } else { '-' }
-            },
-        )
-        .collect();
-    format!("jules-mock-cleanup-{}", sanitized)
 }
 
 fn collect_mock_files(jules_path: &Path, mock_tag: &str) -> Result<Vec<PathBuf>, AppError> {

@@ -15,9 +15,9 @@ const STALE_DEEP_ANALYSIS_THRESHOLD_DAYS: i64 = 7;
 #[derive(Debug, Default)]
 pub struct SemanticContext {
     decided_events: HashMap<String, PathBuf>,
-    event_issue_map: HashMap<String, String>,
-    issues: HashMap<String, PathBuf>,
-    issue_sources: HashMap<String, Vec<String>>,
+    event_requirement_map: HashMap<String, String>,
+    requirements: HashMap<String, PathBuf>,
+    requirement_sources: HashMap<String, Vec<String>>,
 }
 
 pub fn semantic_context(jules_path: &Path, diagnostics: &mut Diagnostics) -> SemanticContext {
@@ -27,10 +27,10 @@ pub fn semantic_context(jules_path: &Path, diagnostics: &mut Diagnostics) -> Sem
     for entry in read_yaml_files(&decided_dir, diagnostics) {
         if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
             context.decided_events.insert(id.clone(), entry.clone());
-            if let Some(issue_id) = read_yaml_string(&entry, "issue_id", diagnostics)
-                && !issue_id.is_empty()
+            if let Some(requirement_id) = read_yaml_string(&entry, "requirement_id", diagnostics)
+                && !requirement_id.is_empty()
             {
-                context.event_issue_map.insert(id, issue_id);
+                context.event_requirement_map.insert(id, requirement_id);
             }
         }
     }
@@ -39,9 +39,9 @@ pub fn semantic_context(jules_path: &Path, diagnostics: &mut Diagnostics) -> Sem
         crate::domain::exchange::requirements::paths::requirements_dir(jules_path);
     for entry in read_yaml_files(&requirements_dir, diagnostics) {
         if let Some(id) = read_yaml_string(&entry, "id", diagnostics) {
-            context.issues.insert(id.clone(), entry.clone());
+            context.requirements.insert(id.clone(), entry.clone());
             if let Some(source_events) = read_yaml_strings(&entry, "source_events", diagnostics) {
-                context.issue_sources.insert(id, source_events);
+                context.requirement_sources.insert(id, source_events);
             }
         }
     }
@@ -56,21 +56,21 @@ pub fn semantic_checks(
 ) {
     let event_source_index = build_event_source_index(context);
 
-    for (event_id, issue_id) in &context.event_issue_map {
-        if !context.issues.contains_key(issue_id)
+    for (event_id, requirement_id) in &context.event_requirement_map {
+        if !context.requirements.contains_key(requirement_id)
             && let Some(path) = context.decided_events.get(event_id)
         {
             diagnostics.push_error(
                 path.display().to_string(),
-                format!("issue_id '{}' does not exist", issue_id),
+                format!("requirement_id '{}' does not exist", requirement_id),
             );
         }
     }
 
-    for (issue_id, sources) in &context.issue_sources {
+    for (requirement_id, sources) in &context.requirement_sources {
         for source in sources {
             if !context.decided_events.contains_key(source)
-                && let Some(path) = context.issues.get(issue_id)
+                && let Some(path) = context.requirements.get(requirement_id)
             {
                 diagnostics.push_error(
                     path.display().to_string(),
@@ -80,11 +80,11 @@ pub fn semantic_checks(
         }
     }
 
-    for (event_id, issue_ids) in &event_source_index {
-        if issue_ids.len() > 1 {
-            let owners = issue_ids.join(", ");
-            for issue_id in issue_ids {
-                if let Some(path) = context.issues.get(issue_id) {
+    for (event_id, requirement_ids) in &event_source_index {
+        if requirement_ids.len() > 1 {
+            let owners = requirement_ids.join(", ");
+            for requirement_id in requirement_ids {
+                if let Some(path) = context.requirements.get(requirement_id) {
                     diagnostics.push_error(
                         path.display().to_string(),
                         format!(
@@ -97,17 +97,17 @@ pub fn semantic_checks(
         }
     }
 
-    for (event_id, issue_id) in &context.event_issue_map {
+    for (event_id, requirement_id) in &context.event_requirement_map {
         if let Some(owners) = event_source_index.get(event_id) {
-            if !owners.iter().any(|owner| owner == issue_id)
+            if !owners.iter().any(|owner| owner == requirement_id)
                 && let Some(path) = context.decided_events.get(event_id)
             {
                 diagnostics.push_error(
                     path.display().to_string(),
                     format!(
-                        "event '{}' issue_id '{}' does not match requirement source owner(s): {}",
+                        "event '{}' requirement_id '{}' does not match requirement source owner(s): {}",
                         event_id,
-                        issue_id,
+                        requirement_id,
                         owners.join(", ")
                     ),
                 );
@@ -116,24 +116,24 @@ pub fn semantic_checks(
             diagnostics.push_error(
                 path.display().to_string(),
                 format!(
-                    "event '{}' has issue_id '{}' but is not referenced by any requirement source_events",
-                    event_id, issue_id
+                    "event '{}' has requirement_id '{}' but is not referenced by any requirement source_events",
+                    event_id, requirement_id
                 ),
             );
         }
     }
 
-    for (issue_id, sources) in &context.issue_sources {
+    for (requirement_id, sources) in &context.requirement_sources {
         for source in sources {
-            if let Some(event_issue_id) = context.event_issue_map.get(source)
-                && event_issue_id != issue_id
-                && let Some(path) = context.issues.get(issue_id)
+            if let Some(event_requirement_id) = context.event_requirement_map.get(source)
+                && event_requirement_id != requirement_id
+                && let Some(path) = context.requirements.get(requirement_id)
             {
                 diagnostics.push_error(
                     path.display().to_string(),
                     format!(
-                        "source event '{}' belongs to requirement '{}' via event.issue_id, but was found in requirement '{}'",
-                        source, event_issue_id, issue_id
+                        "source event '{}' belongs to requirement '{}' via event.requirement_id, but was found in requirement '{}'",
+                        source, event_requirement_id, requirement_id
                     ),
                 );
             }
@@ -217,7 +217,7 @@ pub fn semantic_checks(
         }
     }
 
-    for path in context.issues.values() {
+    for path in context.requirements.values() {
         if let Some(requires) = read_yaml_bool(path, "requires_deep_analysis", diagnostics)
             && requires
         {
@@ -273,9 +273,9 @@ fn validate_scheduled_layer(
 
 fn build_event_source_index(context: &SemanticContext) -> HashMap<String, Vec<String>> {
     let mut index: HashMap<String, Vec<String>> = HashMap::new();
-    for (issue_id, sources) in &context.issue_sources {
+    for (requirement_id, sources) in &context.requirement_sources {
         for source in sources {
-            index.entry(source.clone()).or_default().push(issue_id.clone());
+            index.entry(source.clone()).or_default().push(requirement_id.clone());
         }
     }
     for owners in index.values_mut() {
@@ -326,7 +326,7 @@ roles = [
 
         fs::write(
             root.join(".jules/exchange/events/decided/event-a.yml"),
-            "id: abc123\nissue_id: req111\n",
+            "id: abc123\nrequirement_id: req111\n",
         )
         .expect("write event");
         fs::write(
@@ -350,19 +350,19 @@ roles = [
     }
 
     #[test]
-    fn semantic_checks_reject_issue_id_source_owner_mismatch() {
+    fn semantic_checks_reject_requirement_id_source_owner_mismatch() {
         let dir = tempdir().expect("tempdir");
         let root = dir.path();
         write_minimal_workspace(root);
 
         fs::write(
             root.join(".jules/exchange/events/decided/event-a.yml"),
-            "id: abc123\nissue_id: req111\n",
+            "id: abc123\nrequirement_id: req111\n",
         )
         .expect("write event a");
         fs::write(
             root.join(".jules/exchange/events/decided/event-b.yml"),
-            "id: def456\nissue_id: req111\n",
+            "id: def456\nrequirement_id: req111\n",
         )
         .expect("write event b");
         fs::write(

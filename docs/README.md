@@ -33,6 +33,6 @@ Specific guides for each architectural role.
 
 ## Keeping Docs Updated
 
-- **Code Changes**: If you modify logic that affects architecture or usage, update the corresponding doc.
-- **New Features**: Add new guides or update existing ones.
-- **Reference**: Link to these docs from code comments or other documentation where relevant.
+- Code Changes: If you modify logic that affects architecture or usage, update the corresponding doc.
+- New Features: Add new guides or update existing ones.
+- Reference: Link to these docs from code comments or other documentation where relevant.

@@ -3,6 +3,8 @@ use std::fs;
 
 fn setup_scaffold(ctx: &TestContext) {
     ctx.init_remote_and_bootstrap();
+    fs::write(ctx.jules_path().join("JULES.md"), "# Jules\n").expect("write JULES.md");
+    fs::write(ctx.jules_path().join("README.md"), "# Workspace\n").expect("write README.md");
 }
 
 #[test]
@@ -43,22 +45,24 @@ fn mock_decider_issue_file_passes_doctor() {
     fs::create_dir_all(&events_dir).expect("Failed to create events directory");
 
     let impl_event_id = "evt001";
-    let impl_issue_id = "iss001";
+    let impl_requirement_id = "iss001";
     fs::write(
         events_dir.join(format!("{}.yml", impl_event_id)),
-        mock_event
-            .replace("mock01", impl_event_id)
-            .replace("issue_id: \"\"", &format!("issue_id: \"{}\"", impl_issue_id)),
+        mock_event.replace("mock01", impl_event_id).replace(
+            "requirement_id: \"\"",
+            &format!("requirement_id: \"{}\"", impl_requirement_id),
+        ),
     )
     .expect("Failed to write event file");
 
     let planner_event_id = "evt002";
-    let planner_issue_id = "pln001";
+    let planner_requirement_id = "pln001";
     fs::write(
         events_dir.join(format!("{}.yml", planner_event_id)),
-        mock_event
-            .replace("mock01", planner_event_id)
-            .replace("issue_id: \"\"", &format!("issue_id: \"{}\"", planner_issue_id)),
+        mock_event.replace("mock01", planner_event_id).replace(
+            "requirement_id: \"\"",
+            &format!("requirement_id: \"{}\"", planner_requirement_id),
+        ),
     )
     .expect("Failed to write planner event file");
 
@@ -68,14 +72,14 @@ fn mock_decider_issue_file_passes_doctor() {
 
     fs::write(
         requirements_dir.join("impl-issue.yml"),
-        mock_requirement.replace("mock01", impl_issue_id).replace("event1", impl_event_id),
+        mock_requirement.replace("mock01", impl_requirement_id).replace("event1", impl_event_id),
     )
     .expect("Failed to write impl requirement file");
 
     fs::write(
         requirements_dir.join("planner-issue.yml"),
         mock_requirement
-            .replace("mock01", planner_issue_id)
+          .replace("mock01", planner_requirement_id)
             .replace("event1", planner_event_id)
             .replace(
                 "requires_deep_analysis: false",

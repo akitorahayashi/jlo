@@ -14,9 +14,9 @@ A layer-level change means one of the following:
 - CLI entry points: `src/app/cli/run.rs`, `src/app/cli/workflow.rs`
 - Runtime dispatch: `src/app/commands/run/mod.rs`, `src/app/commands/workflow/run/layer/mod.rs`
 - Schedule model: `src/domain/schedule/model.rs`
-- Scaffold assets: `src/assets/scaffold/jules/**`
+- Scaffold assets: `src/assets/scaffold/jules/`
 - Workflow templates: `src/assets/github/workflows/*.j2`
-- Mock execution: `src/app/commands/run/mock/**`
+- Mock execution: `src/app/commands/run/mock/`
 - Mock recovery cleanup: `src/app/commands/workflow/exchange/clean/mock.rs`
 
 ## Layer Change Surface
@@ -28,7 +28,7 @@ A layer-level change means one of the following:
 | Workflow command parsing | `workflow run <layer>` relies on `Layer::from_dir_name` | `src/app/cli/workflow.rs` |
 | Runtime execution branch | Main `run` path and workflow layer dispatcher match on layer enum | `src/app/commands/run/mod.rs`, `src/app/commands/workflow/run/layer/mod.rs` |
 | Multi-role scheduling | `.jlo/config.toml` models observer and innovator roles explicitly | `src/domain/schedule/model.rs`, `src/domain/config/run.rs` |
-| Prompt and contracts | Layer assets are file-based and embedded with `include_dir` | `src/assets/scaffold/jules/layers/<layer>/**` |
+| Prompt and contracts | Layer assets are file-based and embedded with `include_dir` | `src/assets/scaffold/jules/layers/<layer>/` |
 | Doctor validation | Structural/schema/semantic checks iterate layers and exchange data contracts | `src/app/commands/doctor/*.rs` |
 | Requirement routing | Exchange inspect provides requirement counts for planner/implementer gating | `src/app/commands/workflow/exchange/inspect.rs`, `src/app/commands/workflow/run/*.rs` |
 | Workflow orchestration | Layer sequence is defined in workflow templates; integrator has a dedicated manual-dispatch workflow | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`, `src/assets/github/workflows/jules-integrator.yml.j2` |
@@ -103,9 +103,9 @@ A layer-level change means one of the following:
 
 ## Workflow Maintenance Invariants
 - Workflow kit source of truth is `src/assets/github/`; generated `.github/` files are installation outputs.
-- Auto-merge policy gates (branch prefix, `.jules/`-only scope, draft, already-enabled) are evaluated in `src/app/commands/workflow/gh/pr/events/enable_automerge.rs`. The workflow template delegates to `jlo workflow gh pr process automerge`.
-- Adding or removing a layer requires updating the `ALLOWED_PREFIXES` constant in `enable_automerge.rs` and regenerating workflows.
-- `.jules/`-only scope remains the automerge safety boundary.
+- Auto-merge policy gates (branch-prefix policy, scope policy, draft, already-enabled) are evaluated in `src/app/commands/workflow/gh/pr/events/enable_automerge.rs`. The workflow template delegates to `jlo workflow gh pr process automerge`.
+- Adding or removing auto-merge branch families requires updating the branch policy table in `enable_automerge.rs` and regenerating workflows.
+- `.jules/`-only scope applies to layer/publish/cleanup PRs; bootstrap sync PRs use repository-wide scope.
 - Control-plane files live under `.jlo/` on the control branch; `.jules/` is materialized by workflow bootstrap.
 - `install-jlo` reads the version pin from `JLO_TARGET_BRANCH` `.jlo/.jlo-version`, not from `origin/JULES_WORKER_BRANCH`.
 - Bootstrap materialization of `.jules/` never overwrites agent-generated exchange artifacts.

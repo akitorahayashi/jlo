@@ -35,6 +35,20 @@
 
       - name: Cleanup mock artifacts for this run
         run: |
-          # Cleanup uses a PR merge path to satisfy branch protection and preserve auditable history.
-          # Auto-merge is not enabled here; authority is centralized in jules-automerge workflow.
           jlo workflow exchange clean mock --mock-tag "$JULES_MOCK_TAG"
+
+      - name: Validate repository (fail-fast)
+        run: jlo workflow doctor
+
+      - name: Merge mock cleanup changes
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain .jules)" ]; then
+            echo "No mock cleanup changes detected."
+            exit 0
+          fi
+          jlo workflow gh push worker-branch \
+            --change-token "mock-cleanup-${JULES_MOCK_TAG}" \
+            --commit-message "jules: cleanup mock artifacts ${JULES_MOCK_TAG}" \
+            --pr-title "chore: cleanup mock artifacts ${JULES_MOCK_TAG}" \
+            --pr-body "Automated cleanup for mock run ${JULES_MOCK_TAG}."

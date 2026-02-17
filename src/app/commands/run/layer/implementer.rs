@@ -294,7 +294,8 @@ where
         .ok_or_else(|| AppError::InvalidPath("Invalid requirement path".to_string()))?;
 
     let requirement_content = repository.read_file(requirement_path_str)?;
-    let (label, issue_id) = parse_requirement_for_branch(&requirement_content, requirement_path)?;
+    let (label, requirement_id) =
+        parse_requirement_for_branch(&requirement_content, requirement_path)?;
     if !config.issue_labels.contains(&label) {
         return Err(AppError::InvalidConfig(format!(
             "Issue label '{}' is not defined in github-labels.json",
@@ -302,10 +303,9 @@ where
         )));
     }
 
-    // Implementer branch format: jules-implementer-<label>-<id>-<short_description>
+    // Implementer branch format: jules-implementer-<label>-<short_description>
     let prefix = config.branch_prefix(Layer::Implementer)?;
-    let issue_id_short = issue_id.chars().take(6).collect::<String>();
-    let branch_name = format!("{}{}-{}-{}", prefix, label, issue_id_short, config.mock_tag);
+    let branch_name = format!("{}{}-{}", prefix, label, config.mock_tag);
 
     println!("Mock implementer: creating branch {}", branch_name);
 
@@ -317,9 +317,9 @@ where
     // Create minimal mock file to have a commit
     let mock_file_path = format!(".{}", config.mock_tag);
     let mock_content = format!(
-        "# Mock implementation marker\n# Mock tag: {}\n# Issue: {}\n# Created: {}\n",
+        "# Mock implementation marker\n# Mock tag: {}\n# Requirement: {}\n# Created: {}\n",
         config.mock_tag,
-        issue_id,
+        requirement_id,
         Utc::now().to_rfc3339()
     );
 
@@ -340,9 +340,9 @@ where
         base_branch,
         &format!("[{}] Implementation: {}", config.mock_tag, label),
         &format!(
-            "Mock implementer run for workflow validation.\n\nMock tag: `{}`\nIssue: `{}`\nLabel: `{}`\n\n⚠️ This PR targets `{}` (not `jules`) - requires human review.",
+            "Mock implementer run for workflow validation.\n\nMock tag: `{}`\nRequirement: `{}`\nLabel: `{}`\n\n⚠️ This PR targets `{}` (not `jules`) - requires human review.",
             config.mock_tag,
-            issue_id,
+            requirement_id,
             label,
             base_branch
         ),
@@ -456,7 +456,7 @@ mod tests {
         assert!(result.is_ok());
         let output = result.unwrap();
 
-        assert!(output.mock_branch.starts_with("jules-implementer-bugs-abc123-"));
+        assert!(output.mock_branch.starts_with("jules-implementer-bugs-"));
         assert_eq!(output.mock_pr_number, 101);
     }
 

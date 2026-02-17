@@ -136,20 +136,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn scaffold_includes_readme() {
-        let store = EmbeddedRoleTemplateStore::new();
-        let files = store.scaffold_files();
-        assert!(files.iter().any(|f| f.path == ".jules/README.md"));
-    }
-
-    #[test]
-    fn scaffold_includes_jules_contract() {
-        let store = EmbeddedRoleTemplateStore::new();
-        let files = store.scaffold_files();
-        assert!(files.iter().any(|f| f.path == ".jules/JULES.md"));
-    }
-
-    #[test]
     fn scaffold_excludes_jlo_files() {
         let store = EmbeddedRoleTemplateStore::new();
         let files = store.scaffold_files();

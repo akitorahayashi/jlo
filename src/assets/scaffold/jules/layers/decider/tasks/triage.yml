@@ -39,12 +39,12 @@ steps:
   - "Place requirement files in .jules/exchange/requirements/<kebab-case-title>.yml."
 
   # 4. Transition event state
-  - Update each processed event's issue_id field.
+  - Update each processed event's requirement_id field.
   - >-
     Move processed events from .jules/exchange/events/pending/ to
     .jules/exchange/events/decided/.
 
 output:
   - ".jules/exchange/requirements/<kebab-case-title>.yml (created or updated)"
-  - ".jules/exchange/events/decided/*.yml (processed events with issue_id set)"
+  - ".jules/exchange/events/decided/*.yml (processed events with requirement_id set)"
   - ".jules/exchange/events/pending/ contains no processed events."

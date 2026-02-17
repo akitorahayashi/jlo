@@ -1,47 +1,17 @@
-# Observer Role Guide
+# Observers
+Agents analyzing repository state and emitting event artifacts.
 
-The **Observers** layer analyzes repository state and emits event artifacts for Decider.
+## Interface
+- Input: repo state, `.jules/exchange/changes.yml`, workstation `.jules/workstations/<role>/perspective.yml`, contract `.jlo/roles/observers/<role>/role.yml`.
+- Output: `.jules/exchange/events/pending/*.yml`, updated `perspective.yml`.
+- Execution: `jlo run observers --role <role_name>`
 
-## Inputs
+## Constraints
+- Scope: Modifies `pending/` events and workstation `perspective.yml`. Reads entire repo.
+- Deduplication: Avoid duplicate findings with open requirements or recent events.
+- Memory: Persistent state strictly resides in `perspective.yml`.
 
-- Repository codebase state
-- Optional narrator change summary: `.jules/exchange/changes.yml`
-- Workstation perspective: `.jules/workstations/<role>/perspective.yml`
-- Role contract: `.jlo/roles/observers/<role>/role.yml`
-
-Observers do not participate in innovator idea/comment bridging.
-
-## Outputs
-
-- Event files in:
-  - `.jules/exchange/events/pending/*.yml`
-- Updated workstation perspective:
-  - `.jules/workstations/<role>/perspective.yml`
-
-## Execution
-
-```bash
-jlo run observers --role <role_name>
-```
-
-Example:
-
-```bash
-jlo run observers --role taxonomy
-```
-
-## Event Schema
-
-Event schema is defined by:
-
-- `.jules/layers/observers/schemas/event.yml`
-
-Typical required fields include:
-
-- `id`
-- `created_at`
-- `author_role`
-- `confidence`
-- `title`
-- `statement`
-- `evidence`
+## Resources
+- Schema: `.jules/layers/observers/schemas/event.yml`
+- Tasks:
+  - emit_events.yml: Logic for repo state analysis and event emission.

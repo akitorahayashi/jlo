@@ -9,8 +9,8 @@ mod model;
 pub mod publish_proposals;
 
 pub use clean::{
-    ExchangeCleanMockOptions, ExchangeCleanMockOutput, ExchangeCleanRequirementOptions,
-    ExchangeCleanRequirementOutput,
+    ExchangeCleanMockOptions, ExchangeCleanMockOutput, ExchangeCleanRequirementApplyOutput,
+    ExchangeCleanRequirementOptions, ExchangeCleanRequirementOutput,
 };
 pub use inspect::ExchangeInspectOptions;
 pub use model::ExchangeInspectOutput;
@@ -40,15 +40,15 @@ pub fn clean_requirement(
 }
 
 /// Execute exchange clean requirement command with injected adapters.
-pub fn clean_requirement_with_adapters<
+pub fn clean_requirement_apply_with_adapters<
     G: Git,
     W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 >(
     options: ExchangeCleanRequirementOptions,
     repository: &W,
     git: &G,
-) -> Result<ExchangeCleanRequirementOutput, AppError> {
-    clean::clean_requirement_with_adapters(options, repository, git)
+) -> Result<ExchangeCleanRequirementApplyOutput, AppError> {
+    clean::clean_requirement_apply_with_adapters(options, repository, git)
 }
 
 /// Execute exchange clean mock command.
