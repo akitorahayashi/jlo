@@ -13,6 +13,9 @@ fn sync_path_serializes_worker_branch_updates_within_primary_workflow() {
 
     assert!(workflow.contains("bootstrap:"));
     assert!(workflow.contains("Merge target branch into worker"));
+    assert!(workflow.contains("gh pr create"));
+    assert!(workflow.contains("jules-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"));
+    assert!(!workflow.contains("git push origin \"${JULES_WORKER_BRANCH}\""));
     assert!(!workflow.contains("sync-worker-branch:"));
 
     assert!(

@@ -88,14 +88,20 @@ jobs:
       - name: Ensure worker branch
         run: |
           set -euo pipefail
+          git fetch origin "${JLO_TARGET_BRANCH}"
           if git ls-remote --exit-code --heads origin "${JULES_WORKER_BRANCH}" >/dev/null 2>&1; then
             echo "${JULES_WORKER_BRANCH} branch exists, checking out"
-            git fetch origin "${JULES_WORKER_BRANCH}"
-            git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JULES_WORKER_BRANCH}"
           else
-            echo "Creating ${JULES_WORKER_BRANCH} from ${JLO_TARGET_BRANCH}"
-            git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JLO_TARGET_BRANCH}"
+            echo "Creating ${JULES_WORKER_BRANCH} from ${JLO_TARGET_BRANCH} via GitHub API"
+            target_sha="$(git rev-parse "origin/${JLO_TARGET_BRANCH}")"
+            gh api \
+              --method POST \
+              "/repos/${GITHUB_REPOSITORY}/git/refs" \
+              -f ref="refs/heads/${JULES_WORKER_BRANCH}" \
+              -f sha="${target_sha}" >/dev/null
           fi
+          git fetch origin "${JULES_WORKER_BRANCH}"
+          git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JULES_WORKER_BRANCH}"
 
       - name: Merge target branch into worker
         run: |
@@ -119,18 +125,53 @@ jobs:
       - name: Bootstrap runtime repository
         run: jlo workflow bootstrap
 
-      - name: Commit and push changes
+      - name: Commit changes and open bootstrap PR
         id: bootstrap
         run: |
           set -euo pipefail
           if [ -n "$(git status --porcelain .jules)" ]; then
             git add .jules/
             git commit -m "chore: bootstrap .jules/ runtime repository [jlo $(jlo --version | awk '{print $2}')]"
-            git push origin "${JULES_WORKER_BRANCH}"
-            echo "committed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "committed=false" >> "$GITHUB_OUTPUT"
           fi
+
+          ahead_count="$(git rev-list --count "origin/${JULES_WORKER_BRANCH}..HEAD")"
+          if [ "${ahead_count}" -eq 0 ]; then
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+            echo "pr_created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          bootstrap_branch="jules-bootstrap-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git checkout -B "${bootstrap_branch}"
+          git push origin "${bootstrap_branch}"
+
+          pr_number="$(gh pr list \
+            --state open \
+            --head "${bootstrap_branch}" \
+            --base "${JULES_WORKER_BRANCH}" \
+            --json number \
+            --jq '.[0].number')"
+          if [ -z "${pr_number}" ] || [ "${pr_number}" = "null" ]; then
+            pr_body=$'Automated bootstrap update for the runtime workspace.\n\n- synchronize '"${JLO_TARGET_BRANCH}"' into '"${JULES_WORKER_BRANCH}"$'\n- materialize .jules via jlo workflow bootstrap'
+            gh pr create \
+              --base "${JULES_WORKER_BRANCH}" \
+              --head "${bootstrap_branch}" \
+              --title "chore: bootstrap runtime workspace" \
+              --body "${pr_body}"
+
+            pr_number="$(gh pr list \
+              --state open \
+              --head "${bootstrap_branch}" \
+              --base "${JULES_WORKER_BRANCH}" \
+              --json number \
+              --jq '.[0].number')"
+            echo "pr_created=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr_created=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+          echo "pr_number=${pr_number}" >> "$GITHUB_OUTPUT"
 
 
   # ============================================================

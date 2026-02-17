@@ -103,9 +103,9 @@ A layer-level change means one of the following:
 
 ## Workflow Maintenance Invariants
 - Workflow kit source of truth is `src/assets/github/`; generated `.github/` files are installation outputs.
-- Auto-merge policy gates (branch prefix, `.jules/`-only scope, draft, already-enabled) are evaluated in `src/app/commands/workflow/gh/pr/events/enable_automerge.rs`. The workflow template delegates to `jlo workflow gh pr process automerge`.
-- Adding or removing a layer requires updating the `ALLOWED_PREFIXES` constant in `enable_automerge.rs` and regenerating workflows.
-- `.jules/`-only scope remains the automerge safety boundary.
+- Auto-merge policy gates (branch-prefix policy, scope policy, draft, already-enabled) are evaluated in `src/app/commands/workflow/gh/pr/events/enable_automerge.rs`. The workflow template delegates to `jlo workflow gh pr process automerge`.
+- Adding or removing auto-merge branch families requires updating the branch policy table in `enable_automerge.rs` and regenerating workflows.
+- `.jules/`-only scope applies to layer/publish/cleanup PRs; bootstrap sync PRs use repository-wide scope.
 - Control-plane files live under `.jlo/` on the control branch; `.jules/` is materialized by workflow bootstrap.
 - `install-jlo` reads the version pin from `JLO_TARGET_BRANCH` `.jlo/.jlo-version`, not from `origin/JULES_WORKER_BRANCH`.
 - Bootstrap materialization of `.jules/` never overwrites agent-generated exchange artifacts.
