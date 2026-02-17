@@ -1,0 +1,33 @@
+schema_version: 1
+
+id: "c5f9g2"
+role: "leverage_architect"
+
+created_at: "2024-05-23"
+
+title: "Unified Configuration Engine"
+problem: |
+  The current configuration loading mechanism in `src/adapters/control_plane_config.rs` relies on Data Transfer Objects (DTOs) that duplicate the structure and validation logic of domain models in `src/domain/config/`. This violation of the Single Source of Truth principle creates a high risk of schema drift, where changes to domain models are not reflected in the configuration loader, leading to silent failures or inconsistent application state. Additionally, `AppError` is polluted with multiple configuration-specific error variants (`InvalidConfig`, `Validation`, `TomlParseError`), coupling the domain error type to implementation details of the configuration adapter.
+introduction: |
+  Introduce a unified configuration engine that serves as the single authority for loading, parsing, and validating application configuration. This mechanism will deserialize configuration sources (e.g., `config.toml`, environment variables) directly into domain-compliant structures using `serde`, or into a strictly mapped intermediate layer that guarantees conversion to valid domain models. Validation logic will be centralized within the domain models themselves or a dedicated validator, ensuring that any instance of a configuration struct in the codebase is guaranteed to be valid by construction.
+importance: |
+  Configuration integrity is foundational to system reliability. By eliminating the duplication between adapter DTOs and domain models, we remove a class of defects caused by structural drift. A unified engine provides a clear contract: if the configuration loads, the system state is valid. This reduces the cognitive load for developers adding new features and ensures that validation rules are consistently applied across all entry points (CLI, file, env).
+
+impact_surface:
+  - "src/adapters/control_plane_config.rs (Refactor/Remove duplicate DTOs)"
+  - "src/domain/config/ (Enhance with Serde and Validation)"
+  - "src/domain/error.rs (Remove specific config parsing variants)"
+  - "src/app/ (Update usage to rely on the new engine)"
+
+implementation_cost: |
+  Medium. The change requires refactoring the existing `control_plane_config.rs` to remove manual parsing logic and adopt a `serde`-driven approach. It also involves auditing and migrating existing validation rules from the adapter to the domain models. The primary cost driver is ensuring backward compatibility with existing configuration files and handling edge cases in TOML parsing.
+
+consistency_risks:
+  - "Temporary breakage of configuration loading during the migration of specific fields."
+  - "Loss of specific error messages if the new validation layer is too generic (mitigated by using a rich error reporting library like `thiserror` or `miette`)."
+
+verification_signals:
+  - "Absence of duplicate configuration DTOs in `src/adapters/`."
+  - "Successful execution of all existing configuration loading tests with the new engine."
+  - "Reduction in `AppError` variants related to configuration parsing."
+  - "Demonstrable ability to add a new configuration field in exactly one place (the domain model) and have it automatically supported by the loader."
