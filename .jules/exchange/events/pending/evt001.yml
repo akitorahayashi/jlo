@@ -1,0 +1,21 @@
+schema_version: 1
+id: "evt001"
+requirement_id: ""
+created_at: "2026-02-17"
+author_role: "tactician"
+confidence: "high"
+title: "Undocumented and Duplicated .agents/ Directory Structure"
+statement: |
+  The `.agents/` directory structure exhibits two critical issues:
+  1. **Undocumented Existence**: The directory exists in both the repository root (`.agents/`) and within the control plane (`.jlo/roles/.agents/`), but neither location is documented in the authoritative `AGENTS.md` (Design Overview) or `src/assets/scaffold/AGENTS.md`. This creates a gap in structural context and potential ambiguity regarding ownership and scope.
+  2. **Content Duplication**: The `create-jlo-innovator` and `create-jlo-observer` skills are duplicated across both locations, violating the "Single Source of Truth" principle and creating potential for divergence.
+evidence:
+  - path: "AGENTS.md"
+    loc: "File content"
+    note: "Does not mention `.agents/` in the Directory Structure or Design Overview."
+  - path: ".agents/skills/create-jlo-innovator/SKILL.md"
+    loc: "File content"
+    note: "Identical content to `.jlo/roles/.agents/skills/create-jlo-innovator/SKILL.md` (verified via diff)."
+  - path: "src/assets/roles/innovators/strategy/recruiter/role.yml"
+    loc: "Line 7"
+    note: "References `.jlo/roles/.agents/skills/create-jlo-innovator/SKILL.md`."
