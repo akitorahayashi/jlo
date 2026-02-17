@@ -27,7 +27,7 @@ src/app/
 
 ## CLI Commands
 
-See `jlo --help` or the project `README.md` for the authoritative command list.
+See `cargo run -- --help` or the project `README.md` for the authoritative command list.
 
 ## Layer Architecture
 

@@ -1,7 +1,7 @@
 # GitHub Actions Workflow Context
 
 See [root AGENTS.md](../AGENTS.md) for design principles.
-See [CONTROL_PLANE_OWNERSHIP.md](../docs/CONTROL_PLANE_OWNERSHIP.md) for the `.jlo/` vs `.jules/` ownership model, Branch Topology, and Branch Strategy.
+See [CONTROL_PLANE_OWNERSHIP.md](../docs/CONTROL_PLANE_OWNERSHIP.md) for the `.jlo/` vs `.jules/` ownership model, projection rules, and Branch Topology.
 
 ## Workflow Files
 
