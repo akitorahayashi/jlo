@@ -264,7 +264,8 @@ where
 
     println!("Mock planner: creating branch {}", branch_name);
 
-    // Fetch and checkout from jules branch
+    // Planner mock always operates on the worker branch contract (`jules_worker_branch`).
+    // Runtime branch overrides apply to real-mode dispatch only.
     git.fetch("origin")?;
     git.checkout_branch(&format!("origin/{}", config.jules_worker_branch), false)?;
     git.checkout_branch(&branch_name, true)?;

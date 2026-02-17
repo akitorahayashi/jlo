@@ -1,10 +1,9 @@
 //! Mock execution prerequisite validation.
 
-use crate::app::commands::run::RunRuntimeOptions;
 use crate::domain::AppError;
 
 /// Validate prerequisites for mock mode.
-pub fn validate_mock_prerequisites(_runtime: &RunRuntimeOptions) -> Result<(), AppError> {
+pub fn validate_mock_prerequisites() -> Result<(), AppError> {
     if std::env::var("GH_TOKEN").is_err() {
         return Err(AppError::MissingArgument(
             "Mock mode requires GH_TOKEN environment variable to be set".to_string(),

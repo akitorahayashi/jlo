@@ -36,7 +36,7 @@ where
     fn execute(
         &self,
         jules_path: &Path,
-        target: &RunOptions,
+        _target: &RunOptions,
         runtime: &RunRuntimeOptions,
         config: &RunConfig,
         git: &dyn Git,
@@ -46,7 +46,7 @@ where
     ) -> Result<RunResult, AppError> {
         if runtime.mock {
             let mock_config = load_mock_config(jules_path, repository)?;
-            let _output = execute_mock(jules_path, target, &mock_config, git, github, repository)?;
+            let _output = execute_mock(jules_path, &mock_config, git, github, repository)?;
             return Ok(RunResult {
                 roles: vec!["decider".to_string()],
                 prompt_preview: false,
@@ -150,7 +150,6 @@ fn assemble_decider_prompt<
 
 fn execute_mock<G, H, W>(
     jules_path: &Path,
-    _options: &RunOptions,
     config: &MockConfig,
     git: &G,
     github: &H,
@@ -503,9 +502,7 @@ mod tests {
             )
             .unwrap();
 
-        let options =
-            RunOptions { layer: Layer::Decider, role: None, requirement: None, task: None };
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
+        let result = execute_mock(&jules_path, &config, &git, &github, &repository);
         assert!(result.is_ok());
         let output = result.unwrap();
         assert!(output.mock_branch.starts_with("jules-decider-"));
@@ -544,9 +541,7 @@ mod tests {
             .write_file(".jules/exchange/events/pending/mock-test-decider-event1.yml", "id: event1")
             .unwrap();
 
-        let options =
-            RunOptions { layer: Layer::Decider, role: None, requirement: None, task: None };
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
+        let result = execute_mock(&jules_path, &config, &git, &github, &repository);
         assert!(result.is_err());
         assert!(
             matches!(result, Err(AppError::InvalidConfig(msg)) if msg.contains("requires at least 2 decided events"))

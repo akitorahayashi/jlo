@@ -8,7 +8,6 @@ use crate::domain::config::schedule::Schedule;
 
 /// Configuration for agent execution loaded from `.jlo/config.toml`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct RunConfig {
     /// Execution configuration.
     #[serde(default)]
@@ -35,8 +34,8 @@ impl RunConfig {
         Ok(())
     }
 
-    pub fn schedule(&self) -> Schedule {
-        self.schedule.clone()
+    pub fn schedule(&self) -> &Schedule {
+        &self.schedule
     }
 }
 

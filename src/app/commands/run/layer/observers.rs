@@ -45,7 +45,7 @@ where
                 AppError::MissingArgument("Role is required for observers in mock mode".to_string())
             })?;
             let mock_config = load_mock_config(jules_path, repository)?;
-            let output = execute_mock(jules_path, target, &mock_config, git, github, repository)?;
+            let output = execute_mock(jules_path, &role, &mock_config, git, github, repository)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
@@ -167,7 +167,7 @@ const TMPL_TAG: &str = "test-tag";
 
 fn execute_mock<G, H, W>(
     jules_path: &Path,
-    options: &RunOptions,
+    observer_role: &str,
     config: &MockConfig,
     git: &G,
     github: &H,
@@ -201,9 +201,6 @@ where
             AppError::InternalError("Invalid UTF-8 in observer_event.yml".to_string())
         })?;
 
-    let observer_role = options.role.as_deref().ok_or_else(|| {
-        AppError::MissingArgument("Role is required for observers in mock mode".to_string())
-    })?;
     if !validate_safe_path_component(observer_role) {
         return Err(AppError::Validation(format!(
             "Invalid role name '{}': must be alphanumeric with hyphens or underscores only",

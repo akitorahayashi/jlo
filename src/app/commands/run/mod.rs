@@ -103,7 +103,7 @@ where
         + Send
         + Sync
         + 'static,
-    F: Fn(&RunRuntimeOptions) -> Result<(), AppError>,
+    F: Fn() -> Result<(), AppError>,
 {
     // Validate task selector if provided (prevents path traversal)
     if let Some(ref task) = target.task
@@ -144,7 +144,7 @@ where
     }
 
     if runtime.mock {
-        validate_mock(&runtime)?;
+        validate_mock()?;
     }
 
     // Create client factory
@@ -550,7 +550,7 @@ roles = [
             &decider_git,
             &github,
             &repository,
-            |_runtime| Ok(()),
+            || Ok(()),
         )
         .expect("decider run should succeed");
 
@@ -648,7 +648,7 @@ roles = [
             &implementer_git,
             &github,
             &repository,
-            |_runtime| Ok(()),
+            || Ok(()),
         )
         .expect("implementer run should succeed");
 
@@ -717,7 +717,7 @@ roles = [
             &git,
             &github,
             &repository,
-            |_runtime| Ok(()),
+            || Ok(()),
         );
 
         let err = result.expect_err("should fail on wrong branch");
@@ -756,7 +756,7 @@ roles = [
             &git,
             &github,
             &repository,
-            |_runtime| Ok(()),
+            || Ok(()),
         );
 
         let err = result.expect_err("should fail on wrong branch");
@@ -798,7 +798,7 @@ roles = [
             &git,
             &github,
             &repository,
-            |_runtime| Ok(()),
+            || Ok(()),
         );
 
         // With --branch override, branch validation is skipped.

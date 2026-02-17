@@ -71,12 +71,8 @@ impl RunOptionsBuilder {
     }
 
     pub fn build_with_runtime(self) -> (RunOptions, RunRuntimeOptions) {
-        let target = RunOptions {
-            layer: self.layer,
-            role: self.role,
-            requirement: self.requirement,
-            task: self.task,
-        };
-        (target, self.runtime)
+        let runtime = self.runtime.clone();
+        let target = self.build();
+        (target, runtime)
     }
 }

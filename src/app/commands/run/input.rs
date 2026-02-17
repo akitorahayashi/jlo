@@ -6,7 +6,6 @@
 
 use std::path::Path;
 
-use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::config;
 use crate::domain::{AppError, MockConfig, RunConfig};
 use crate::ports::{Git, RepositoryFilesystem};
@@ -20,8 +19,8 @@ pub fn load_run_config<W: RepositoryFilesystem>(
 }
 
 /// Validate runtime prerequisites for mock execution.
-pub fn validate_mock_prerequisites(runtime: &RunRuntimeOptions) -> Result<(), AppError> {
-    config::validate_mock_prerequisites(runtime)
+pub fn validate_mock_prerequisites() -> Result<(), AppError> {
+    config::validate_mock_prerequisites()
 }
 
 /// Load mock execution inputs from repository and environment.
