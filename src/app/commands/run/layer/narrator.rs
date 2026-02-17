@@ -605,6 +605,9 @@ created_at: "2026-02-05 00:00:00"
         fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> {
             panic!("mock narrator no-op must not call list_pr_files");
         }
+        fn merge_pull_request(&self, _pr_number: u64) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call merge_pull_request");
+        }
     }
 
     #[allow(dead_code)]
