@@ -125,7 +125,7 @@ jobs:
 
 
   # ============================================================
-  # Phase 1: Check schedule
+  # Phase 1: Resolve run plan
   # ============================================================
   resolve-run-plan:
     needs: [bootstrap]
@@ -187,13 +187,15 @@ jobs:
 
 
   # ============================================================
-  # Phase 2: Run narrator (changes feed generation)
+  # Phase 2: Run narrator
   # ============================================================
+
   run-narrator:
     needs: [resolve-run-plan]
-    if: >-
+    if: |
       needs.resolve-run-plan.result == 'success' &&
-      fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == true
+            fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == true
+
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -216,16 +218,15 @@ jobs:
 
       - name: Run narrator
         id: run
-        run: jlo workflow run narrator ${{ env.JLO_RUN_FLAGS }}
-
-      - name: Validate repository
-        run: jlo workflow doctor
-
+        run: |
+          set -euo pipefail
+          jlo workflow run narrator ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
-  # Phase 3: Run innovators (proposal generation)
+  # Phase 3: Run innovators
   # ============================================================
+
   run-innovators:
-    needs: [bootstrap]
+    needs: ["bootstrap"]
     if: |
       needs.bootstrap.result == 'success' &&
       ((vars.JLO_PAUSED || 'false') != 'true' || github.event_name != 'schedule') &&
@@ -236,6 +237,7 @@ jobs:
           (github.event.inputs.entry_point || 'narrator') == 'innovators'
         )
       )
+
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -261,14 +263,16 @@ jobs:
         run: |
           set -euo pipefail
           jlo workflow run innovators ${{ env.JLO_RUN_FLAGS }} --task create_three_proposals
-
   # ============================================================
   # Phase 4: Wait for innovators processing
   # ============================================================
+
   wait-after-run-innovators:
-    needs: [run-innovators]
+    needs: ["run-innovators"]
     if: |
-      needs.run-innovators.result == 'success'
+      always() &&
+      needs.run-innovators.result == 'success' &&
+      fromJSON(needs.run-innovators.outputs.json).number_of_api_requests_succeeded > 0
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -280,7 +284,6 @@ jobs:
         run: |
           set -euo pipefail
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
-
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
             TOTAL_SECONDS=15
             echo "Mock mode enabled: overriding wait to 15 seconds."
@@ -293,8 +296,7 @@ jobs:
             echo "json={}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
-          echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process innovators..."
+            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process innovators..."
           ELAPSED=0
           INTERVAL=5
           while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
@@ -310,7 +312,6 @@ jobs:
           done
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
-
   # ============================================================
   # Phase 5: Publish innovators proposals
   # ============================================================
@@ -357,8 +358,9 @@ jobs:
   # ============================================================
   # Phase 6: Wait for narrator processing
   # ============================================================
+
   wait-after-narrator:
-    needs: [resolve-run-plan, run-narrator]
+    needs: ["resolve-run-plan", "run-narrator"]
     if: |
       always() &&
       needs.resolve-run-plan.result == 'success' &&
@@ -377,7 +379,7 @@ jobs:
     outputs:
       json: ${{ steps.wait.outputs.json }}
     env:
-      RUN_NARRATOR: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_narrator }}
+      WAIT_REQUESTED: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_narrator }}
     steps:
       - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
         id: wait
@@ -385,8 +387,7 @@ jobs:
         run: |
           set -euo pipefail
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
-
-          if [ "$RUN_NARRATOR" != "true" ]; then
+          if [ "$WAIT_REQUESTED" != "true" ]; then
             TOTAL_SECONDS=0
             echo "Narrator not requested; skipping wait."
           elif [ "${{ env.MOCK_MODE }}" = "true" ]; then
@@ -401,8 +402,7 @@ jobs:
             echo "json={}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
-          echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process narrator..."
+            echo "Waiting ${TOTAL_SECONDS} seconds for Jules to process narrator..."
           ELAPSED=0
           INTERVAL=5
           while [ $ELAPSED -lt $TOTAL_SECONDS ]; do
@@ -418,7 +418,6 @@ jobs:
           done
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
-
   # ============================================================
   # Phase 7: Run observers
   # ============================================================
@@ -459,9 +458,11 @@ jobs:
   # ============================================================
 
   wait-after-observers:
-    needs: run-observers
+    needs: ["run-observers"]
     if: |
-      needs.run-observers.result == 'success'
+      always() &&
+      needs.run-observers.result == 'success' &&
+      fromJSON(needs.run-observers.outputs.json).number_of_api_requests_succeeded > 0
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -473,7 +474,6 @@ jobs:
         run: |
           set -euo pipefail
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
-
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
             TOTAL_SECONDS=15
             echo "Mock mode enabled: overriding wait to 15 seconds."
@@ -503,12 +503,12 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 9: Check for pending events (decider gate)
+  # Phase 9: Run decider
   # ============================================================
-  generate-decider-matrix:
-    needs: [resolve-run-plan, wait-after-observers]
+
+  run-decider:
+    needs: ["resolve-run-plan", "wait-after-observers"]
     if: |
-      always() &&
       needs.resolve-run-plan.result == 'success' &&
       fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
       (
@@ -521,42 +521,6 @@ jobs:
           needs.wait-after-observers.result == 'skipped'
         )
       )
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    outputs:
-      json: ${{ steps.matrix.outputs.json }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: 'jules'
-          fetch-depth: 0
-
-      - name: Install jlo
-        uses: ./.github/actions/install-jlo
-
-      - name: Check for pending events
-        id: matrix
-        env:
-          REQUEST_DECIDER: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_decider }}
-        run: |
-          set -euo pipefail
-          HAS_PENDING=$(jlo workflow exchange inspect | jq '(.events.pending_files | length) > 0')
-          RUN_DECIDER=false
-          if [ "$REQUEST_DECIDER" = "true" ] && [ "$HAS_PENDING" = "true" ]; then
-            RUN_DECIDER=true
-          fi
-          echo "json={\"has_pending\":$HAS_PENDING,\"run_decider\":$RUN_DECIDER}" >> "$GITHUB_OUTPUT"
-
-
-  # ============================================================
-  # Phase 10: Run decider
-  # ============================================================
-
-  run-decider:
-    needs: [generate-decider-matrix]
-    if: |
-      needs.generate-decider-matrix.result == 'success' &&
-            fromJSON(needs.generate-decider-matrix.outputs.json).run_decider == true
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -584,13 +548,15 @@ jobs:
           set -euo pipefail
           jlo workflow run decider ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
-  # Phase 11: Wait for decider processing
+  # Phase 10: Wait for decider processing
   # ============================================================
 
   wait-after-decider:
-    needs: run-decider
+    needs: ["run-decider"]
     if: |
-      needs.run-decider.result == 'success'
+      always() &&
+      needs.run-decider.result == 'success' &&
+      fromJSON(needs.run-decider.outputs.json).number_of_api_requests_succeeded > 0
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -602,7 +568,6 @@ jobs:
         run: |
           set -euo pipefail
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
-
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
             TOTAL_SECONDS=15
             echo "Mock mode enabled: overriding wait to 15 seconds."
@@ -632,60 +597,24 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 12: Resolve planner/implementer run requests
-  # ============================================================
-  generate-routing-matrix:
-    needs: [resolve-run-plan, generate-decider-matrix, run-decider, wait-after-decider]
-    if: |
-      always() &&
-      needs.resolve-run-plan.result == 'success' &&
-      (fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true || fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true) &&
-      (
-        (
-          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == false &&
-          needs.generate-decider-matrix.result == 'skipped' &&
-          needs.run-decider.result == 'skipped' &&
-          needs.wait-after-decider.result == 'skipped'
-        ) ||
-        (
-          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
-          needs.generate-decider-matrix.result == 'success' &&
-          (
-            (
-              needs.run-decider.result == 'success' &&
-              needs.wait-after-decider.result == 'success'
-            ) ||
-            (
-              needs.run-decider.result == 'skipped' &&
-              needs.wait-after-decider.result == 'skipped'
-            )
-          )
-        )
-      )
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    outputs:
-      json: ${{ steps.matrix.outputs.json }}
-    steps:
-      - name: Resolve planner/implementer run requests
-        id: matrix
-        env:
-          REQUEST_PLANNER: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_planner }}
-          REQUEST_IMPLEMENTER: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_implementer }}
-        run: |
-          set -euo pipefail
-          echo "json={\"run_planner\":$REQUEST_PLANNER,\"run_implementer\":$REQUEST_IMPLEMENTER}" >> "$GITHUB_OUTPUT"
-
-
-  # ============================================================
-  # Phase 13: Run planner
+  # Phase 11: Run planner
   # ============================================================
 
   run-planner:
-    needs: [generate-routing-matrix]
+    needs: ["resolve-run-plan", "wait-after-decider"]
     if: |
-      needs.generate-routing-matrix.result == 'success' &&
-            fromJSON(needs.generate-routing-matrix.outputs.json).run_planner == true
+      needs.resolve-run-plan.result == 'success' &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true &&
+      (
+        (
+          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
+          needs.wait-after-decider.result == 'success'
+        ) ||
+        (
+          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == false &&
+          needs.wait-after-decider.result == 'skipped'
+        )
+      )
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -713,13 +642,15 @@ jobs:
           set -euo pipefail
           jlo workflow run planner ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
-  # Phase 14: Wait for planner PRs
+  # Phase 12: Wait for planner PRs
   # ============================================================
 
   wait-after-planner:
-    needs: run-planner
+    needs: ["run-planner"]
     if: |
-      needs.run-planner.result == 'success'
+      always() &&
+      needs.run-planner.result == 'success' &&
+      fromJSON(needs.run-planner.outputs.json).number_of_api_requests_succeeded > 0
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -731,7 +662,6 @@ jobs:
         run: |
           set -euo pipefail
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
-
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
             TOTAL_SECONDS=15
             echo "Mock mode enabled: overriding wait to 15 seconds."
@@ -761,14 +691,24 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 15: Run implementer
+  # Phase 13: Run implementer
   # ============================================================
 
   run-implementer:
-    needs: [generate-routing-matrix]
+    needs: ["resolve-run-plan", "wait-after-decider"]
     if: |
-      needs.generate-routing-matrix.result == 'success' &&
-            fromJSON(needs.generate-routing-matrix.outputs.json).run_implementer == true
+      needs.resolve-run-plan.result == 'success' &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true &&
+      (
+        (
+          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
+          needs.wait-after-decider.result == 'success'
+        ) ||
+        (
+          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == false &&
+          needs.wait-after-decider.result == 'skipped'
+        )
+      )
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -777,11 +717,10 @@ jobs:
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-      JLO_DEFER_WORKER_MERGE: 'true'
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 'jules'
+          ref: 'main'
           fetch-depth: 0
           token: ${{ secrets.JLO_BOT_TOKEN }}
 
@@ -797,13 +736,15 @@ jobs:
           set -euo pipefail
           jlo workflow run implementer ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
-  # Phase 16: Wait for implementer labels
+  # Phase 14: Wait for implementer labels
   # ============================================================
 
   wait-after-implementer:
-    needs: run-implementer
+    needs: ["run-implementer"]
     if: |
-      needs.run-implementer.result == 'success'
+      always() &&
+      needs.run-implementer.result == 'success' &&
+      fromJSON(needs.run-implementer.outputs.json).number_of_api_requests_succeeded > 0
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -815,7 +756,6 @@ jobs:
         run: |
           set -euo pipefail
           trap 'echo "Cancellation detected. Exiting wait early."; exit 130' INT TERM
-
           if [ "${{ env.MOCK_MODE }}" = "true" ]; then
             TOTAL_SECONDS=15
             echo "Mock mode enabled: overriding wait to 15 seconds."
@@ -846,7 +786,7 @@ jobs:
           echo "json={}" >> "$GITHUB_OUTPUT"
 
   # ============================================================
-  # Phase 17: Cleanup mock artifacts
+  # Phase 15: Cleanup mock artifacts
   # ============================================================
   cleanup-mock-artifacts:
     needs: [publish-proposals, wait-after-planner, wait-after-implementer]

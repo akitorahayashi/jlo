@@ -32,9 +32,10 @@ where
 
     if requirements.is_empty() {
         eprintln!("No requirements found for planner");
-        return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
+        return Ok(RunResults::skipped("No requirements found for planner"));
     }
 
+    let mut success_count: u32 = 0;
     for requirement_path in requirements {
         let run_options = RunOptions {
             layer: Layer::Planner,
@@ -44,11 +45,13 @@ where
             requirement: Some(requirement_path.clone()),
             mock: options.mock,
             task: options.task.clone(),
+            no_cleanup: false,
         };
 
         eprintln!("Executing: planner {}{}", requirement_path.display(), mock_suffix);
         run_layer(jules_path, run_options, git, github, store)?;
+        success_count += 1;
     }
 
-    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+    Ok(RunResults::with_count(success_count))
 }

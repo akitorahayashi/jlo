@@ -258,6 +258,8 @@ roles = [
             execute_layer_with_runner(&store, &options, &git, &github, &mut run_layer).unwrap();
         assert!(out.mock_pr_numbers.is_none());
         assert!(out.mock_branches.is_none());
+        assert_eq!(out.number_of_api_requests_succeeded, 3);
+        assert!(out.skip_reason.is_none());
         assert_eq!(
             executed_roles,
             vec!["taxonomy".to_string(), "consistency".to_string(), "cov".to_string()]

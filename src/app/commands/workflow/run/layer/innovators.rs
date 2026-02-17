@@ -34,9 +34,10 @@ where
     let roles = schedule.innovators.as_ref().map(|l| l.enabled_roles()).unwrap_or_default();
     if roles.is_empty() {
         eprintln!("No enabled innovators roles");
-        return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
+        return Ok(RunResults::skipped("No enabled innovators roles"));
     }
 
+    let mut success_count: u32 = 0;
     for role in roles {
         let run_options = RunOptions {
             layer: Layer::Innovators,
@@ -46,11 +47,13 @@ where
             requirement: None,
             mock: options.mock,
             task: options.task.clone(),
+            no_cleanup: false,
         };
 
         eprintln!("Executing: innovators --role {}{}", role, mock_suffix);
         run_layer(jules_path, run_options, git, github, store)?;
+        success_count += 1;
     }
 
-    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+    Ok(RunResults::with_count(success_count))
 }

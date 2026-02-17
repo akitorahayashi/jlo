@@ -34,9 +34,10 @@ where
     let roles = schedule.observers.enabled_roles();
     if roles.is_empty() {
         eprintln!("No enabled observers roles");
-        return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
+        return Ok(RunResults::skipped("No enabled observers roles"));
     }
 
+    let mut success_count: u32 = 0;
     for role in roles {
         let run_options = RunOptions {
             layer: Layer::Observers,
@@ -46,11 +47,13 @@ where
             requirement: None,
             mock: options.mock,
             task: options.task.clone(),
+            no_cleanup: false,
         };
 
         eprintln!("Executing: observers --role {}{}", role, mock_suffix);
         run_layer(jules_path, run_options, git, github, store)?;
+        success_count += 1;
     }
 
-    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+    Ok(RunResults::with_count(success_count))
 }

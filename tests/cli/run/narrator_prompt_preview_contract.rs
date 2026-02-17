@@ -19,6 +19,9 @@ fn run_narrator_prompt_preview_shows_target_range() {
         .expect("write updated readme");
     git_repository::commit_all(ctx.work_dir(), "update readme");
 
+    // Narrator runs on worker branch per branch contract.
+    ctx.git_checkout_branch("jules", true);
+
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
         .args(["run", "narrator", "--prompt-preview"])

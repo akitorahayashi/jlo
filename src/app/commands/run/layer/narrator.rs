@@ -98,20 +98,6 @@ where
     // Determine commit range
     let range = determine_range(&changes_path, git, repository)?;
 
-    // Check if there are any non-excluded changes in the range
-    let pathspec = &[".", ":(exclude).jules"];
-    let has_changes = git.has_changes(&range.from_commit, &range.to_commit, pathspec)?;
-
-    if !has_changes {
-        println!("No codebase changes detected (excluding .jules/). Skipping Narrator.");
-        return Ok(RunResult {
-            roles: vec!["narrator".to_string()],
-            prompt_preview,
-            sessions: vec![],
-            cleanup_requirement: None,
-        });
-    }
-
     let prompt = assemble_narrator_prompt(jules_path, &range, git, repository)?;
 
     if prompt_preview {

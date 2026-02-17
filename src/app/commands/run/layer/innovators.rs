@@ -374,6 +374,7 @@ mod tests {
             requirement: None,
             mock: true,
             task: Some("create_three_proposals".to_string()),
+            no_cleanup: false,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
@@ -409,6 +410,7 @@ mod tests {
             requirement: None,
             mock: true,
             task: None,
+            no_cleanup: false,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
@@ -431,6 +433,7 @@ mod tests {
             requirement: None,
             mock: true,
             task: Some("invalid".to_string()),
+            no_cleanup: false,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);

@@ -1,4 +1,7 @@
 use crate::app::commands::run::RunOptions;
+use crate::app::commands::workflow::exchange::{
+    ExchangeCleanRequirementOptions, clean_requirement_apply_with_adapters,
+};
 use crate::app::commands::workflow::gh::push::{
     PushWorkerBranchOptions, execute as push_worker_branch,
 };
@@ -7,7 +10,7 @@ use crate::app::commands::workflow::run::requirements_routing::find_requirements
 use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, Layer};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub(super) fn execute<W, G, H, F>(
     store: &W,
@@ -35,10 +38,14 @@ where
 
     if requirements.is_empty() {
         eprintln!("No requirements found for implementer");
-        return Ok(RunResults { mock_pr_numbers: None, mock_branches: None });
+        return Ok(RunResults::skipped("No requirements found for implementer"));
     }
 
-    for requirement_path in requirements {
+    // Execute each requirement with no_cleanup=true, track successes
+    let mut succeeded: Vec<PathBuf> = Vec::new();
+    let mut first_error: Option<AppError> = None;
+
+    for requirement_path in &requirements {
         let run_options = RunOptions {
             layer: Layer::Implementer,
             role: None,
@@ -47,16 +54,48 @@ where
             requirement: Some(requirement_path.clone()),
             mock: options.mock,
             task: options.task.clone(),
+            no_cleanup: true,
         };
 
         eprintln!("Executing: implementer {}{}", requirement_path.display(), mock_suffix);
-        run_layer(jules_path, run_options, git, github, store)?;
+        match run_layer(jules_path, run_options, git, github, store) {
+            Ok(()) => {
+                succeeded.push(requirement_path.clone());
+            }
+            Err(e) => {
+                eprintln!("Failed: implementer {} — {}", requirement_path.display(), e);
+                if first_error.is_none() {
+                    first_error = Some(e);
+                }
+            }
+        }
     }
 
-    let defer_worker_merge = std::env::var("JLO_DEFER_WORKER_MERGE")
-        .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
-        .unwrap_or(false);
-    if defer_worker_merge && !options.mock {
+    let success_count = succeeded.len() as u32;
+
+    // Cleanup only successful requirements
+    if !succeeded.is_empty() && !options.mock {
+        for req_path in &succeeded {
+            let path_str = req_path.to_string_lossy().to_string();
+            match clean_requirement_apply_with_adapters(
+                ExchangeCleanRequirementOptions { requirement_file: path_str },
+                store,
+                git,
+            ) {
+                Ok(cleanup_res) => {
+                    eprintln!(
+                        "Cleaned requirement {} ({} file(s) removed)",
+                        cleanup_res.requirement_id,
+                        cleanup_res.deleted_paths.len()
+                    );
+                }
+                Err(e) => {
+                    eprintln!("Failed to clean requirement {}: {}", req_path.display(), e);
+                }
+            }
+        }
+
+        // Single worker-branch publish after all cleanups
         let out = push_worker_branch(PushWorkerBranchOptions {
             change_token: "implementer-cleanup-batch".to_string(),
             commit_message: "jules: clean implementer requirements".to_string(),
@@ -77,5 +116,12 @@ where
         }
     }
 
-    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+    // If all requirements failed, propagate the first error
+    if success_count == 0
+        && let Some(err) = first_error
+    {
+        return Err(err);
+    }
+
+    Ok(RunResults::with_count(success_count))
 }

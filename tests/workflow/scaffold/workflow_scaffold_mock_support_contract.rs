@@ -53,6 +53,14 @@ fn installed_workflow_scaffold_includes_mock_support() {
     );
     assert!(workflow.contains("run-innovators:"), "Should have integrated innovators job");
     assert!(
+        workflow.contains("run-innovators:\n    needs: [\"bootstrap\"]"),
+        "run-innovators should start after bootstrap only"
+    );
+    assert!(
+        !workflow.contains("run-innovators:\n    needs: [\"resolve-run-plan\"]"),
+        "run-innovators must not wait for resolve-run-plan"
+    );
+    assert!(
         workflow.contains("jlo workflow run innovators"),
         "Scheduled workflow should run innovators directly"
     );
@@ -81,6 +89,10 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "Integrated run-innovators job should run only for innovators entry-point in dispatch"
     );
     assert!(
+        workflow.contains("github.event_name == 'schedule' ||"),
+        "run-innovators should always run on schedule runs"
+    );
+    assert!(
         workflow.contains("decider)\n              run_decider=true"),
         "Decider entry-point should start at decider"
     );
@@ -104,10 +116,21 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "run-observers should depend on narrator wait only when narrator path is used"
     );
     assert!(
-        workflow.contains(
-            "fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&\n            needs.wait-after-narrator.result == 'success'"
+        workflow.contains("fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&\n            needs.wait-after-narrator.result == 'success'"
         ),
         "run-observers should stay simple and require narrator-wait gate success"
+    );
+    assert!(
+        workflow.contains("number_of_api_requests_succeeded > 0"),
+        "Wait jobs should gate on output-driven number_of_api_requests_succeeded"
+    );
+    assert!(
+        !workflow.contains("generate-decider-matrix"),
+        "Removed generate-decider-matrix job should not exist"
+    );
+    assert!(
+        !workflow.contains("generate-routing-matrix"),
+        "Removed generate-routing-matrix job should not exist"
     );
     assert!(
         workflow.contains("Narrator not requested; skipping wait."),

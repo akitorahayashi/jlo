@@ -19,4 +19,6 @@ pub struct RunOptions {
     pub mock: bool,
     /// Task file selector for innovators (expected: create_three_proposals).
     pub task: Option<String>,
+    /// Skip post-execution cleanup (requirement deletion and worker-branch push).
+    pub no_cleanup: bool,
 }

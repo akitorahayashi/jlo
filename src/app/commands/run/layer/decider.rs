@@ -509,6 +509,7 @@ mod tests {
             requirement: None,
             mock: true,
             task: None,
+            no_cleanup: false,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
@@ -558,6 +559,7 @@ mod tests {
             requirement: None,
             mock: true,
             task: None,
+            no_cleanup: false,
         };
 
         let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);

@@ -34,10 +34,11 @@ where
         requirement: None,
         mock: options.mock,
         task: options.task.clone(),
+        no_cleanup: false,
     };
 
     eprintln!("Executing: integrator");
     run_layer(jules_path, run_options, git, github, store)?;
 
-    Ok(RunResults { mock_pr_numbers: None, mock_branches: None })
+    Ok(RunResults::with_count(1))
 }

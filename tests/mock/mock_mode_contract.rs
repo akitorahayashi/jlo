@@ -4,6 +4,8 @@ use predicates::prelude::*;
 
 fn setup_scaffold(ctx: &TestContext) {
     ctx.init_remote_and_bootstrap();
+    // Narrator runs on worker branch per branch contract.
+    ctx.git_checkout_branch("jules", true);
 }
 
 #[test]

@@ -53,7 +53,10 @@ where
 
     Ok(WorkflowRunOutput {
         schema_version: 1,
+        layer: options.layer,
         run_started_at,
+        number_of_api_requests_succeeded: run_results.number_of_api_requests_succeeded,
+        skip_reason: run_results.skip_reason,
         mock_tag,
         mock_pr_numbers: run_results.mock_pr_numbers,
         mock_branches: run_results.mock_branches,
