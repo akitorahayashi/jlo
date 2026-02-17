@@ -10,7 +10,9 @@ use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::roles::validation::validate_safe_path_component;
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, ControlPlaneConfig, RunOptions};
+use crate::domain::{
+    AppError, ControlPlaneConfig, Layer, MockConfig, MockOutput, RoleId, RunOptions,
+};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 
 use super::super::role_session::{dispatch_session, print_role_preview, validate_role_exists};

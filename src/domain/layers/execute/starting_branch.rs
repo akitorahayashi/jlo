@@ -1,4 +1,4 @@
-use crate::domain::{Layer, ControlPlaneConfig};
+use crate::domain::{ControlPlaneConfig, Layer};
 
 pub fn resolve_starting_branch(
     layer: Layer,
@@ -17,7 +17,7 @@ pub fn resolve_starting_branch(
 #[cfg(test)]
 mod tests {
     use super::resolve_starting_branch;
-    use crate::domain::{Layer, ControlPlaneConfig};
+    use crate::domain::{ControlPlaneConfig, Layer};
 
     fn test_config() -> ControlPlaneConfig {
         let mut config = ControlPlaneConfig::default();

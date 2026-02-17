@@ -9,7 +9,7 @@ use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::roles::validation::validate_safe_path_component;
-use crate::domain::{AppError, Layer, ControlPlaneConfig, RunOptions};
+use crate::domain::{AppError, ControlPlaneConfig, Layer, RunOptions};
 use crate::ports::{
     AutomationMode, Git, GitHub, JloStore, JulesStore, RepositoryFilesystem, SessionRequest,
 };

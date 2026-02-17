@@ -2,11 +2,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::domain::config::parse::parse_config_content;
-use crate::domain::{AppError, Layer, ControlPlaneConfig, Version};
+use crate::domain::{AppError, ControlPlaneConfig, Layer, Version};
 
 use super::diagnostics::Diagnostics;
 
-pub fn read_run_config(root: &Path, diagnostics: &mut Diagnostics) -> Result<ControlPlaneConfig, AppError> {
+pub fn read_run_config(
+    root: &Path,
+    diagnostics: &mut Diagnostics,
+) -> Result<ControlPlaneConfig, AppError> {
     let config_path = crate::domain::config::paths::config(root);
     if !config_path.exists() {
         diagnostics.push_error(config_path.display().to_string(), "Missing .jlo/config.toml");

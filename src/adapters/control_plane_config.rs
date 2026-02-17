@@ -30,11 +30,9 @@ pub fn load_workflow_generate_config(
     let config = load_control_plane_config(repository)?;
     let workflow = config.workflow;
 
-    let raw_crons = workflow
-        .cron
-        .ok_or_else(|| {
-            AppError::Validation("Missing workflow.cron in control plane config.".into())
-        })?;
+    let raw_crons = workflow.cron.ok_or_else(|| {
+        AppError::Validation("Missing workflow.cron in control plane config.".into())
+    })?;
     if raw_crons.is_empty() {
         return Err(AppError::Validation(
             "workflow.cron must contain at least one cron entry.".into(),

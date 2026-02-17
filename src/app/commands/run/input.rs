@@ -7,7 +7,7 @@
 use std::path::Path;
 
 use crate::app::config;
-use crate::domain::{AppError, MockConfig, ControlPlaneConfig};
+use crate::domain::{AppError, ControlPlaneConfig, MockConfig};
 use crate::ports::{Git, RepositoryFilesystem};
 
 /// Load run configuration from `.jlo/config.toml`.

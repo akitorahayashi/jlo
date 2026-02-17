@@ -11,11 +11,11 @@ pub mod workstations;
 #[allow(unused_imports)]
 pub use config::WorkflowGenerateConfig;
 pub use config::schedule::Schedule;
+pub use config::{
+    ControlPlaneConfig, JulesApiConfig, MockConfig, MockOutput, RunOptions, WorkflowRunnerMode,
+};
 #[allow(unused_imports)]
 pub use config::{ExecutionConfig, WorkflowTimingConfig};
-pub use config::{
-    JulesApiConfig, MockConfig, MockOutput, ControlPlaneConfig, RunOptions, WorkflowRunnerMode,
-};
 pub use error::{AppError, IoErrorKind};
 pub use exchange::requirements::RequirementHeader;
 pub use layers::Layer;
