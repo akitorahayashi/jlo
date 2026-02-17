@@ -8,14 +8,14 @@ See [root AGENTS.md](../../AGENTS.md) for critical design principles including P
 
 ### Layers vs Roles
 
-*   **Layer**: A distinct stage in the agent pipeline with a specific responsibility (e.g., Observers, Decider). Layers are the top-level organizational units.
-*   **Role**: A specific agent persona within a layer.
+*   Layer: A distinct stage in the agent pipeline with a specific responsibility (e.g., Observers, Decider). Layers are the top-level organizational units.
+*   Role: A specific agent persona within a layer.
 
 ### Layer Types
 
-*   **Single-Role Layers**: The layer itself acts as the sole agent.
+*   Single-Role Layers: The layer itself acts as the sole agent.
     *   *Narrator, Decider, Planner, Implementer*
-*   **Multi-Role Layers**: The layer contains multiple distinct roles (personas) that can be run independently.
+*   Multi-Role Layers: The layer contains multiple distinct roles (personas) that can be run independently.
     *   *Observers*: e.g., `taxonomy`, `security`
     *   *Innovators*: e.g., `researcher`, `architect`
 
@@ -100,18 +100,18 @@ See [root AGENTS.md](../../AGENTS.md) for critical design principles including P
 | `JULES.md` | Jules agents | Formal contracts and schemas |
 | `README.md` | Humans | Informal guide |
 
-**Rule**: Jules-internal definitions stay in `.jules/`. User configuration stays in `.jlo/`. Execution/orchestration belongs in `.github/`.
+Rule: Jules-internal definitions stay in `.jules/`. User configuration stays in `.jlo/`. Execution/orchestration belongs in `.github/`.
 
 ### Prompt Assembly Strategy
 
 Prompts are constructed dynamically using layer-specific Jinja2 templates (`<layer>_prompt.j2`), which serve as the authoritative definition for the agent's context window.
 
-**Principles:**
-- **Modular Composition**: Content is injected via explicit `include_required` and `include_optional` directives, treating file paths as dynamic resources resolved at runtime.
-- **Context-Aware**: Templates leverage context variables (e.g., `role`) to render specific configurations without hardcoding, enabling a single template to serve multiple actors within a layer.
-- **Single Source of Truth**: Data is never duplicated across prompts. Each layer references the definitive artifacts (contracts, schemas, exchange states) directly, ensuring consistency and reducing maintenance overhead.
+Principles:
+- Modular Composition: Content is injected via explicit `include_required` and `include_optional` directives, treating file paths as dynamic resources resolved at runtime.
+- Context-Aware: Templates leverage context variables (e.g., `role`) to render specific configurations without hardcoding, enabling a single template to serve multiple actors within a layer.
+- Single Source of Truth: Data is never duplicated across prompts. Each layer references the definitive artifacts (contracts, schemas, exchange states) directly, ensuring consistency and reducing maintenance overhead.
 
-**Critical Rule: No Redundant Read Instructions**
+Critical Rule: No Redundant Read Instructions
 Do not include instructions in contracts or task files that tell the agent to "read file X". If a file is needed, it must be injected directly into the prompt via the `.j2` template. The agent should receive the *content* of the file, not an instruction to go find it.
 
 | File | Scope | Content |
@@ -120,7 +120,6 @@ Do not include instructions in contracts or task files that tell the agent to "r
 | `role.yml` | Role | Specialized focus (observers/innovators). |
 | `contracts.yml` | Layer | Universal constraints shared within layer. |
 | `tasks/<task-id>.yml` | Layer | Independent action units with local limits and output expectations. |
-| `JULES.md` | Global | Rules applying to ALL layers (branch naming, system boundaries). |
 
 ## Schema Files
 
@@ -135,7 +134,7 @@ Schemas define the structure for artifacts produced by agents.
 | `perspective.yml` | `.jules/layers/innovators/schemas/` | Innovator persona memory |
 | `proposal.yml` | `.jules/layers/innovators/schemas/` | Finalized proposal structure |
 
-**Rule**: Agents copy the schema and fill its fields. Never invent structure.
+Rule: Agents copy the schema and fill its fields. Never invent structure.
 
 ## Exchange Model
 
@@ -163,9 +162,9 @@ innovators (independent cycle)
 workstation perspective -> three proposals
 ```
 
-1. **Narrator** runs first, producing `.jules/exchange/changes.yml` as a secondary hint for observer triage.
-2. **Observers** emit events to exchange event directories.
-3. **Decider** reads events, emits requirements, and links related events via `source_events`.
-4. **Planner** expands requirements with `requires_deep_analysis: true`.
-5. **Implementer** executes approved tasks and creates PRs with code changes.
-6. **Innovators** run independently: each persona updates `workstations/<persona>/perspective.yml` and emits three proposals into `exchange/proposals/`.
+1. Narrator runs first, producing `.jules/exchange/changes.yml` as a secondary hint for observer triage.
+2. Observers emit events to exchange event directories.
+3. Decider reads events, emits requirements, and links related events via `source_events`.
+4. Planner expands requirements with `requires_deep_analysis: true`.
+5. Implementer executes approved tasks and creates PRs with code changes.
+6. Innovators run independently: each persona updates `workstations/<persona>/perspective.yml` and emits three proposals into `exchange/proposals/`.

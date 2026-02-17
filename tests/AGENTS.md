@@ -4,13 +4,13 @@ This directory contains integration and end-to-end tests for the `jlo` CLI and i
 
 ## Purpose
 
-- **Behavior verification**: validate CLI behavior and exit codes from a user perspective.
-- **Scaffold contracts**: validate generated `.jules/` runtime scaffolding and installed `.github/` workflow kit.
-- **Schema safety**: validate that doctor catches contract violations and that shipped mock fixtures remain valid.
+- Behavior verification: validate CLI behavior and exit codes from a user perspective.
+- Scaffold contracts: validate generated `.jules/` runtime scaffolding and installed `.github/` workflow kit.
+- Schema safety: validate that doctor catches contract violations and that shipped mock fixtures remain valid.
 
 ## Structure
 
-Integration tests are organized as **small, stable targets** (top-level `tests/*.rs`), with detailed contract modules under `tests/<target>/`.
+Integration tests are organized as small, stable targets (top-level `tests/*.rs`), with detailed contract modules under `tests/<target>/`.
 
 ```text
 tests/
@@ -38,8 +38,8 @@ tests/
 
 ## Contract Granularity
 
-- Default rule: **one behavior contract per file**.
-- Multiple `#[test]` functions in one file are allowed only when they validate the **same contract** (typical target: 1–3 tests, ~250 LOC max).
+- Default rule: one behavior contract per file.
+- Multiple `#[test]` functions in one file are allowed only when they validate the same contract (typical target: 1–3 tests, ~250 LOC max).
 - Avoid catch-all buckets and unrelated assertions in the same file.
 
 ## Shared Harness

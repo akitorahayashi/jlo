@@ -6,9 +6,9 @@ CLI tool for managing `.jlo/` control-plane scaffolding and orchestrating schedu
 
 | Component | Responsibility |
 |-----------|----------------|
-| **jlo** | `.jlo/` control-plane management, `.jules/` scaffold installation, prompt assembly |
-| **GitHub Actions** | Workflow triggers: cron schedules, bootstrap, merge control |
-| **Jules API** | Execution: code analysis, artifact generation, branch/PR creation |
+| jlo | `.jlo/` control-plane management, `.jules/` scaffold installation, prompt assembly |
+| GitHub Actions | Workflow triggers: cron schedules, bootstrap, merge control |
+| Jules API | Execution: code analysis, artifact generation, branch/PR creation |
 
 ### Branch Topology
 
@@ -73,7 +73,7 @@ jlo add innovators recruiter       # Install built-in innovator role
 
 Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (decider), `p` (planner), `i` (implementer), `g` (integrator), `x` (innovators). Plural aliases (e.g., `deciders`, `planners`, `implementers`, `integrators`) are also supported.
 
-**Multi-role layers** (Observers, Innovators) require `--role`:
+Multi-role layers (Observers, Innovators) require `--role`:
 
 ```bash
 jlo run observers --role <role>                    # Run specific observer role
@@ -82,7 +82,7 @@ jlo run observers --role <role> --branch custom    # Override starting branch
 jlo run innovators --role <role> --task create_three_proposals  # Run innovator role with a task
 ```
 
-**Single-role layers** (Narrator, Decider, Planner, Implementer, Integrator):
+Single-role layers (Narrator, Decider, Planner, Implementer, Integrator):
 
 ```bash
 jlo run narrator                     # Run narrator (no role flag needed)
@@ -90,14 +90,14 @@ jlo run decider                      # Run decider (single role)
 jlo run integrator                   # Run integrator (merges implementer branches)
 ```
 
-**Requirement-driven layers** (Planner, Implementer) require a requirement file:
+Requirement-driven layers (Planner, Implementer) require a requirement file:
 
 ```bash
 jlo run planner .jules/exchange/requirements/auth-inconsistency.yml
 jlo run implementer .jules/exchange/requirements/auth-inconsistency.yml
 ```
 
-**Mock Mode**: Validate workflow orchestration without calling Jules API:
+Mock Mode: Validate workflow orchestration without calling Jules API:
 
 ```bash
 jlo run narrator --mock
@@ -109,7 +109,7 @@ jlo run innovators --role <role> --mock
 Mock mode creates real branches and PRs with synthetic commit content, enabling E2E workflow validation in CI. The mock tag is auto-generated from `JULES_MOCK_TAG` env var or a timestamp.
 Note: Integrator layer does not support mock mode.
 
-**Flags**:
+Flags:
 - `-r, --role <name>`: Run specific role (required for observers/innovators)
 - `--task <name>`: Innovator task selector (`create_three_proposals`)
 - `--prompt-preview`: Show assembled prompts without API calls
@@ -117,7 +117,7 @@ Note: Integrator layer does not support mock mode.
 - `--branch <name>`: Override the default starting branch
 - `<path>`: Local requirement file (required for planner and implementer)
 
-**Configuration**: Execution settings are configured in `.jlo/config.toml`:
+Configuration: Execution settings are configured in `.jlo/config.toml`:
 
 ```toml
 [run]
@@ -129,7 +129,7 @@ jlo_target_branch = "main"
 # max_retries = 3
 ```
 
-**Environment**: Set the API key environment variable referenced by the workflows for authentication.
+Environment: Set the API key environment variable referenced by the workflows for authentication.
 
 ### Doctor Command
 
@@ -155,7 +155,7 @@ GitHub secrets (such as `JULES_API_KEY` and `JLO_BOT_TOKEN`) remain configured a
 
 The `jlo workflow` family of commands handles automation orchestration, typically running inside GitHub Actions.
 
-**Subcommands**:
+Subcommands:
 
 - `bootstrap`: Materialize the `.jules/` runtime repository on the current branch.
 - `doctor`: Validation gate for the `.jules/` repository (similar to `jlo doctor` but for runtime).
@@ -164,7 +164,7 @@ The `jlo workflow` family of commands handles automation orchestration, typicall
 - `gh`: GitHub entity operations (PR, issue).
 - `exchange`: Exchange area observation and cleanup operations.
 
-**Workflow Run Flags**:
+Workflow Run Flags:
 - `--mock`: Run in mock mode (requires `JULES_MOCK_TAG` environment variable).
 - `--task <name>`: Task selector for innovators (e.g. `create_three_proposals`).
 
@@ -194,7 +194,7 @@ Workflow scaffold layout:
 - `.github/workflows/jules-*.yml`
 - `.github/actions/` (Jules composite actions)
 
-**Configuration Variables**:
+Configuration Variables:
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
@@ -204,9 +204,9 @@ Workflow scaffold layout:
 
 Workflow expressions read these values from GitHub Actions variables (`vars.*`), so define them as repository variables (for example, `vars.JLO_PAUSED`).
 
-**Workflow Timing**: Schedule cron entries and the default wait minutes are rendered from `.jlo/config.toml` (`[workflow]`) at install time. Reinstalling the kit overwrites existing schedule and wait defaults with the config values.
+Workflow Timing: Schedule cron entries and the default wait minutes are rendered from `.jlo/config.toml` (`[workflow]`) at install time. Reinstalling the kit overwrites existing schedule and wait defaults with the config values.
 
-**Branch Strategy**:
+Branch Strategy:
 
 | Branch Pattern | Agent Type | Base Branch | Merge Strategy |
 |----------------|------------|-------------|----------------|
@@ -221,22 +221,22 @@ Workflow expressions read these values from GitHub Actions variables (`vars.*`),
 Auto-merge authority is centralized in `.github/workflows/jules-automerge.yml`, triggered by push on the Jules auto-merge branch families.
 Cleanup keeps a PR-based merge path for branch-protection compatibility and auditable history.
 
-**Flow**:
-1. **Sync**: `JULES_WORKER_BRANCH` syncs from `JLO_TARGET_BRANCH` periodically
-2. **Analysis**: Observers create event files under `.jules/exchange/events/`
-3. **Triage**: Decider links and consolidates events into requirements
-4. **Expansion**: Planner expands requirements that require deep analysis
-5. **Implementation**: Implementer implements solutions for requirements, either automatically via workflow or manually with a specified requirement file
-6. **Innovation**: Innovators generate ideas and proposals, published as GitHub issues
+Flow:
+1. Sync: `JULES_WORKER_BRANCH` syncs from `JLO_TARGET_BRANCH` periodically
+2. Analysis: Observers create event files under `.jules/exchange/events/`
+3. Triage: Decider links and consolidates events into requirements
+4. Expansion: Planner expands requirements that require deep analysis
+5. Implementation: Implementer implements solutions for requirements, either automatically via workflow or manually with a specified requirement file
+6. Innovation: Innovators generate ideas and proposals, published as GitHub issues
 
-**Pause/Resume**: Set the repository pause variable referenced by the workflows to skip scheduled runs.
+Pause/Resume: Set the repository pause variable referenced by the workflows to skip scheduled runs.
 
 ## Documentation
 
-- **Control plane ownership**: `docs/architecture/CONTROL_PLANE_OWNERSHIP.md`
-- **Workflow details**: `.jules/README.md` (materialized by bootstrap)
-- **Agent contracts**: `.jules/JULES.md` (materialized by bootstrap)
-- **Development guide**: `AGENTS.md`
+- Control plane ownership: `docs/architecture/CONTROL_PLANE_OWNERSHIP.md`
+- Workflow details: `.jules/README.md` (materialized by bootstrap)
+- Agent contracts: `.jules/JULES.md` (materialized by bootstrap)
+- Development guide: `AGENTS.md`
 
 ## Development
 

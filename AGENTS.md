@@ -6,36 +6,22 @@
 
 | Component | Responsibility |
 |-----------|----------------|
-| **jlo** | Scaffold installation, versioning, prompt asset management |
-| **GitHub Actions** | Orchestration: cron triggers, matrix execution, auto-merge control |
-| **Jules API** | Execution: code analysis, artifact generation, branch/PR creation |
+| jlo | Scaffold installation, versioning, prompt asset management |
+| GitHub Actions | Orchestration: cron triggers, matrix execution, auto-merge control |
+| Jules API | Execution: code analysis, artifact generation, branch/PR creation |
 
 ## Critical Design Principles
 
 ### 1. Assets are Static Files, Never Hardcoded in Rust
 All scaffold files, workflow kits, configurations, and prompts must exist as real files within `src/assets/`.
-**Never** embed file contents (like `DEFAULT_CONFIG_TOML`, `tools.yml`, or default `.gitignore`) as string constants in Rust source code.
-- **Why**: Keeps the scaffold structure visible and maintainable without digging into implementation details.
-- **How**: Use `include_dir!` to load `src/assets/scaffold` and `src/assets/github` as authoritative sources of truth.
+Never embed file contents (like `DEFAULT_CONFIG_TOML`, `tools.yml`, or default `.gitignore`) as string constants in Rust source code.
+- Why: Keeps the scaffold structure visible and maintainable without digging into implementation details.
+- How: Use `include_dir!` to load `src/assets/scaffold` and `src/assets/github` as authoritative sources of truth.
 
 ### 2. Scaffold Mapping
 The directory `src/assets/scaffold/jules/layers` in the source code maps directly to `.jules/layers` in the deployed environment. This structure aligns the internal source organization with the deployed "layered" pipeline concept.
 
-### 3. Prompt Hierarchy (No Duplication)
-Prompts are constructed by layer-specific `<layer>_prompt.j2` templates, which render prompt sections via explicit include helpers. Each layer has a single prompt template that references contracts, role definitions, and exchange data.
-
-```jinja
-{{ section("Layer Contracts", include_required(".jules/layers/<layer>/contracts.yml")) }}
-{{ section("Role", include_required(".jlo/roles/<layer>/" ~ role ~ "/role.yml")) }}
-{{ section("Change Summary", include_optional(".jules/exchange/changes.yml")) }}
-```
-
-**Rule**: Never duplicate content across levels. Each level refines the constraints of the previous one.
-
-### 4. Workflow-Driven Execution
-Agent execution is orchestrated by GitHub Actions using `jlo run`. The CLI delegates to Jules API; workflows control scheduling, branching, and merge policies.
-
-### 5. Worker Branch Merge Policy
+### 3. Worker Branch Merge Policy
 `JULES_WORKER_BRANCH` is assumed to enforce GitHub Branch protection with `Require a pull request before merging`.
 
 Two merge lanes are intentionally distinct:
