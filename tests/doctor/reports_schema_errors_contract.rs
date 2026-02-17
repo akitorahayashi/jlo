@@ -12,7 +12,7 @@ fn doctor_reports_schema_errors_with_nonzero_exit_code() {
     let event_path = event_dir.join("bad-event.yml");
     std::fs::write(
         &event_path,
-        "schema_version: 1\nid: abc123\nissue_id: \"\"\ncreated_at: 2026-01-01\nauthor_role: tester\nconfidence: low\ntitle: Bad event\nstatement: too short\nevidence: []\n",
+        "schema_version: 1\nid: abc123\nrequirement_id: \"\"\ncreated_at: 2026-01-01\nauthor_role: tester\nconfidence: low\ntitle: Bad event\nstatement: too short\nevidence: []\n",
     )
     .unwrap();
 

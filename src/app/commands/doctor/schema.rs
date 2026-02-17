@@ -191,18 +191,19 @@ pub fn validate_event(
     ensure_int(data, path, "schema_version", diagnostics, Some(1));
     ensure_id(data, path, "id", diagnostics);
 
-    let issue_id = match get_string(data, "issue_id") {
+    let requirement_id = match get_string(data, "requirement_id") {
         Some(value) => value,
         None => {
-            diagnostics.push_error(path.display().to_string(), "issue_id is required");
+            diagnostics.push_error(path.display().to_string(), "requirement_id is required");
             String::new()
         }
     };
-    if state == "pending" && !issue_id.is_empty() {
-        diagnostics.push_error(path.display().to_string(), "issue_id must be empty in pending");
+    if state == "pending" && !requirement_id.is_empty() {
+        diagnostics
+            .push_error(path.display().to_string(), "requirement_id must be empty in pending");
     }
-    if state == "decided" && issue_id.is_empty() {
-        diagnostics.push_error(path.display().to_string(), "issue_id must be set in decided");
+    if state == "decided" && requirement_id.is_empty() {
+        diagnostics.push_error(path.display().to_string(), "requirement_id must be set in decided");
     }
 
     ensure_date(data, path, "created_at", diagnostics);
@@ -644,7 +645,7 @@ mod tests {
         let yaml = r#"
 schema_version: 1
 id: "abc123"
-issue_id: ""
+requirement_id: ""
 created_at: "2023-10-27"
 author_role: "observer"
 confidence: "high"
@@ -669,7 +670,7 @@ evidence:
         let yaml = r#"
 schema_version: 1
 id: "abc123"
-issue_id: "xyz789"  # Should be empty for pending
+requirement_id: "xyz789"  # Should be empty for pending
 created_at: "2023-10-27"
 author_role: "observer"
 confidence: "high"
@@ -684,7 +685,7 @@ evidence: []
 
         validate_event(&data, &path, "pending", &confidence, &mut diagnostics);
         assert!(diagnostics.error_count() > 0);
-        // Should have errors: issue_id must be empty in pending, evidence must have entries
+        // Should have errors: requirement_id must be empty in pending, evidence must have entries
     }
 
     #[test]

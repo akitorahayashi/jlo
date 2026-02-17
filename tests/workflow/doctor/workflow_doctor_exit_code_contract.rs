@@ -25,7 +25,7 @@ fn workflow_doctor_fails_when_checks_fail() {
         decided_dir.join("bad.yml"),
         r#"schema_version: 1
 id: abc123
-issue_id: req001
+requirement_id: req001
 created_at: "2026-02-01"
 author_role: taxonomy
 confidence: low

@@ -34,8 +34,6 @@ pub struct SyncCategoryLabelOutput {
 /// Parsed implementer branch info.
 struct ParsedBranch {
     label: String,
-    #[allow(dead_code)]
-    issue_id: String,
 }
 
 /// Execute `pr sync-category-label`.
@@ -86,10 +84,9 @@ pub fn execute(
 }
 
 /// Parse implementer branch name.
-/// Expected format: `jules-implementer-<label>-<issue_id>-<short_description>`
+/// Expected format: `jules-implementer-<label>-<short_description>`
 /// where:
 /// - `<label>` must exist in github-labels.json issue_labels keys
-/// - `<issue_id>` is 6 lowercase alphanumeric chars
 /// - `<short_description>` is non-empty and may contain hyphens.
 fn parse_implementer_branch(
     branch: &str,
@@ -109,24 +106,17 @@ fn parse_implementer_branch(
 
     for label in labels {
         let label_prefix = format!("{}-", label);
-        let Some(rest) = suffix.strip_prefix(&label_prefix) else {
+        let Some(short_description) = suffix.strip_prefix(&label_prefix) else {
             continue;
         };
-        let mut parts = rest.splitn(2, '-');
-        let issue_id = parts.next().unwrap_or("");
-        let short_description = parts.next().unwrap_or("");
         if short_description.is_empty() {
             continue;
         }
-        if issue_id.len() == 6
-            && issue_id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-        {
-            return Ok(ParsedBranch { label: label.to_string(), issue_id: issue_id.to_string() });
-        }
+        return Ok(ParsedBranch { label: label.to_string() });
     }
 
     Err(AppError::Validation(format!(
-        "Branch '{}' does not match implementer pattern '<label>-<id>-<short_description>'",
+        "Branch '{}' does not match implementer pattern '<label>-<short_description>'",
         branch
     )))
 }
@@ -180,10 +170,8 @@ mod tests {
             "bugs".to_string(),
             LabelInfo { name: "bugs".to_string(), color: "d73a4a".to_string() },
         );
-        let parsed =
-            parse_implementer_branch("jules-implementer-bugs-abc123-fix-crash", &labels).unwrap();
+        let parsed = parse_implementer_branch("jules-implementer-bugs-fix-crash", &labels).unwrap();
         assert_eq!(parsed.label, "bugs");
-        assert_eq!(parsed.issue_id, "abc123");
     }
 
     #[test]
@@ -194,10 +182,9 @@ mod tests {
             LabelInfo { name: "tech-debt".to_string(), color: "0055aa".to_string() },
         );
         let parsed =
-            parse_implementer_branch("jules-implementer-tech-debt-def456-refactor-parser", &labels)
+            parse_implementer_branch("jules-implementer-tech-debt-refactor-parser", &labels)
                 .unwrap();
         assert_eq!(parsed.label, "tech-debt");
-        assert_eq!(parsed.issue_id, "def456");
     }
 
     #[test]
@@ -208,15 +195,14 @@ mod tests {
     }
 
     #[test]
-    fn reject_invalid_issue_id() {
+    fn reject_missing_short_description() {
         let mut labels = HashMap::new();
         labels.insert(
             "bugs".to_string(),
             LabelInfo { name: "bugs".to_string(), color: "d73a4a".to_string() },
         );
-        assert!(parse_implementer_branch("jules-implementer-bugs-abc-fix", &labels).is_err());
-        assert!(parse_implementer_branch("jules-implementer-bugs-abc1234-fix", &labels).is_err());
-        assert!(parse_implementer_branch("jules-implementer-bugs-ABC123-fix", &labels).is_err());
+        assert!(parse_implementer_branch("jules-implementer-bugs", &labels).is_err());
+        assert!(parse_implementer_branch("jules-implementer-bugs-", &labels).is_err());
     }
 
     #[test]
@@ -227,8 +213,7 @@ mod tests {
             LabelInfo { name: "bugs".to_string(), color: "d73a4a".to_string() },
         );
         assert!(
-            parse_implementer_branch("jules-implementer-tech-debt-abc123-fix-parser", &labels)
-                .is_err()
+            parse_implementer_branch("jules-implementer-tech-debt-fix-parser", &labels).is_err()
         );
     }
 }

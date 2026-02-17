@@ -372,7 +372,7 @@ mod tests {
 
     #[derive(serde::Deserialize)]
     struct EventDoc {
-        issue_id: String,
+        requirement_id: String,
     }
 
     struct EnvVarGuard {
@@ -529,7 +529,7 @@ roles = [
         assert_eq!(requirement_files.len(), 2, "decider should create two requirements");
 
         let mut all_source_events: Vec<String> = Vec::new();
-        let mut source_events_by_issue: HashMap<String, Vec<String>> = HashMap::new();
+        let mut source_events_by_requirement: HashMap<String, Vec<String>> = HashMap::new();
         let mut implementer_requirement: Option<PathBuf> = None;
         let mut planner_requirement: Option<PathBuf> = None;
 
@@ -542,7 +542,7 @@ roles = [
             }
 
             all_source_events.extend(requirement.source_events.clone());
-            source_events_by_issue.insert(requirement.id, requirement.source_events);
+            source_events_by_requirement.insert(requirement.id, requirement.source_events);
         }
 
         let implementer_requirement =
@@ -562,7 +562,7 @@ roles = [
         );
 
         let mut source_sizes: Vec<usize> =
-            source_events_by_issue.values().map(std::vec::Vec::len).collect();
+            source_events_by_requirement.values().map(std::vec::Vec::len).collect();
         source_sizes.sort();
         assert_eq!(
             source_sizes,
@@ -582,8 +582,8 @@ roles = [
 
             let event_doc = read_event_doc(&decided_path);
             assert!(
-                source_events_by_issue
-                    .get(&event_doc.issue_id)
+                source_events_by_requirement
+                    .get(&event_doc.requirement_id)
                     .is_some_and(|sources| sources.contains(&event_id.to_string())),
                 "event {} must belong to exactly one requirement source_events owner",
                 event_id

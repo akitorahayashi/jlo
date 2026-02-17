@@ -15,7 +15,7 @@ Triage center converting Observer events into requirements.
 ## Logic
 1. Discovery: Scan `pending/` events.
 2. Triage: Group similar events, filter noise, assign priority (`low|medium|high`) and label.
-3. Generation: Create requirement with `issue_id` mapping to source events.
+3. Generation: Create requirement with `requirement_id` mapping to source events.
 4. Cleanup: Archive source events to `decided/`.
 
 ## Resources

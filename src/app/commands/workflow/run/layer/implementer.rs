@@ -66,10 +66,12 @@ where
         })?;
 
         if out.applied {
-            eprintln!(
-                "Merged consolidated implementer cleanup PR #{}",
-                out.pr_number.unwrap_or_default()
-            );
+            let pr_number = out.pr_number.ok_or_else(|| {
+                AppError::InternalError(
+                    "worker cleanup push reported applied=true without pr_number".to_string(),
+                )
+            })?;
+            eprintln!("Merged consolidated implementer cleanup PR #{}", pr_number);
         } else if let Some(reason) = out.skipped_reason {
             eprintln!("Skipped consolidated implementer cleanup merge: {}", reason);
         }
