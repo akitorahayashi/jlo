@@ -1,0 +1,16 @@
+schema_version: 1
+id: "gitfbk"
+requirement_id: ""
+created_at: "2026-02-17"
+author_role: "rustacean"
+confidence: "high"
+title: "Hidden Fallback in Git Ancestry Logic"
+statement: |
+  The `Git::get_nth_ancestor` method contract implies a precise lookup, but the implementation in `GitCommandAdapter` silently falls back to the root commit when the requested ancestor does not exist. This masks potential errors and creates unpredictable behavior for callers relying on accurate history traversal.
+evidence:
+  - path: "src/adapters/git/git_command.rs"
+    loc: "55-63"
+    note: "Method `get_nth_ancestor` catches `rev-parse` errors and defaults to `rev-list --max-parents=0`, returning the root commit instead of propagating the error."
+  - path: "src/ports/git.rs"
+    loc: "14"
+    note: "Trait definition returns `Result<String, AppError>`, suggesting failure is an option, but the implementation suppresses it."
