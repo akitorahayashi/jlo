@@ -166,12 +166,7 @@ where
             cleanup_res.deleted_paths.len()
         );
 
-        let defer_worker_merge = std::env::var("JLO_DEFER_WORKER_MERGE")
-            .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
-            .unwrap_or(false);
-
-        // Mock runs and deferred worker merge runs intentionally skip immediate remote merge.
-        if !options.mock && !defer_worker_merge {
+        if !options.mock {
             push_worker_branch(PushWorkerBranchOptions {
                 change_token: format!("requirement-cleanup-{}", cleanup_res.requirement_id),
                 commit_message: format!("jules: clean requirement {}", cleanup_res.requirement_id),

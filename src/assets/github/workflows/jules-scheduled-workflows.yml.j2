@@ -239,7 +239,7 @@ fromJSON(needs.run-planner.outputs.json).number_of_api_requests_succeeded > 0"
     'run_implementer',
     'implementer',
     'Run implementer',
-    {'JLO_DEFER_WORKER_MERGE': "'true'"},
+    {},
     ['resolve-run-plan', 'wait-after-decider'],
     "needs.resolve-run-plan.result == 'success' &&
 fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true &&

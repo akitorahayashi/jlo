@@ -717,7 +717,6 @@ jobs:
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-      JLO_DEFER_WORKER_MERGE: 'true'
     steps:
       - uses: actions/checkout@v4
         with:
