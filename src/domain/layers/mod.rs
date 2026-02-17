@@ -85,8 +85,8 @@ impl Layer {
             "observers" | "observer" | "o" => Some(Layer::Observers),
             "deciders" | "decider" => Some(Layer::Decider),
             "planners" | "planner" => Some(Layer::Planner),
-            "implementers" | "implementer" => Some(Layer::Implementer),
-            "innovators" | "innovator" | "i" => Some(Layer::Innovators),
+            "implementers" | "implementer" | "i" => Some(Layer::Implementer),
+            "innovators" | "innovator" | "x" => Some(Layer::Innovators),
             "integrator" | "integrators" => Some(Layer::Integrator),
             _ => None,
         }
@@ -250,5 +250,12 @@ mod tests {
         assert!(Layer::Innovators.uses_worker_branch());
         assert!(!Layer::Implementer.uses_worker_branch());
         assert!(!Layer::Integrator.uses_worker_branch());
+    }
+
+    #[test]
+    fn layer_aliases_match_cli() {
+        // "i" should map to Implementer, "x" should map to Innovators
+        assert_eq!(Layer::from_dir_name("i"), Some(Layer::Implementer));
+        assert_eq!(Layer::from_dir_name("x"), Some(Layer::Innovators));
     }
 }
