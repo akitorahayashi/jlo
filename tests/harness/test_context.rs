@@ -20,8 +20,9 @@ impl TestContext {
         fs::create_dir_all(&work_dir).expect("Failed to create test work directory");
 
         // Initialize git repo on a control branch (not 'jules').
+        // Explicitly set initial branch to 'main' to avoid default configuration dependency.
         let output = std::process::Command::new("git")
-            .arg("init")
+            .args(["init", "--initial-branch=main"])
             .current_dir(&work_dir)
             .output()
             .expect("Failed to git init");
@@ -30,6 +31,21 @@ impl TestContext {
             "git init failed: {}",
             String::from_utf8_lossy(&output.stderr)
         );
+
+        // Configure git user/email for commits
+        let output = std::process::Command::new("git")
+            .args(["config", "user.name", "Test User"])
+            .current_dir(&work_dir)
+            .output()
+            .expect("Failed to configure git user.name");
+        assert!(output.status.success());
+
+        let output = std::process::Command::new("git")
+            .args(["config", "user.email", "test@example.com"])
+            .current_dir(&work_dir)
+            .output()
+            .expect("Failed to configure git user.email");
+        assert!(output.status.success());
 
         Self { root, work_dir }
     }
@@ -127,9 +143,29 @@ impl TestContext {
         assert!(!self.jules_path().exists(), ".jules directory should not exist");
     }
 
+    /// Path to the `.jules/layers` directory.
+    pub(crate) fn layers_path(&self) -> PathBuf {
+        self.jules_path().join("layers")
+    }
+
+    /// Path to the `.jules/exchange` directory.
+    pub(crate) fn exchange_path(&self) -> PathBuf {
+        self.jules_path().join("exchange")
+    }
+
+    /// Path to the `.jules/exchange/events` directory.
+    pub(crate) fn events_path(&self) -> PathBuf {
+        self.exchange_path().join("events")
+    }
+
+    /// Path to the `.jules/exchange/requirements` directory.
+    pub(crate) fn requirements_path(&self) -> PathBuf {
+        self.exchange_path().join("requirements")
+    }
+
     /// Assert that layer directories exist.
     pub(crate) fn assert_layer_structure_exists(&self) {
-        let roles_path = self.jules_path().join("layers");
+        let roles_path = self.layers_path();
         assert!(roles_path.join("narrator").exists(), "narrator layer should exist");
         assert!(roles_path.join("observers").exists(), "observers layer should exist");
         assert!(roles_path.join("decider").exists(), "decider layer should exist");
@@ -141,7 +177,7 @@ impl TestContext {
     /// Assert that the narrator layer exists with correct structure.
     pub(crate) fn assert_narrator_exists(&self) {
         self.assert_single_role_layer_exists("narrator");
-        let narrator_path = self.jules_path().join("layers").join("narrator");
+        let narrator_path = self.layers_path().join("narrator");
         assert!(
             narrator_path.join("schemas").join("changes.yml").exists(),
             "narrator schemas/changes.yml should exist"
@@ -166,7 +202,7 @@ impl TestContext {
 
     /// Assert that the events directory structure exists (flat exchange).
     pub(crate) fn assert_events_structure_exists(&self) {
-        let events_path = self.jules_path().join("exchange/events");
+        let events_path = self.events_path();
         assert!(events_path.exists(), "exchange/events should exist");
         assert!(events_path.join("pending").exists(), "exchange/events/pending should exist");
         assert!(events_path.join("decided").exists(), "exchange/events/decided should exist");
@@ -174,13 +210,12 @@ impl TestContext {
 
     /// Assert that the requirements directory exists (flat exchange).
     pub(crate) fn assert_requirements_directory_exists(&self) {
-        let requirements_path = self.jules_path().join("exchange/requirements");
-        assert!(requirements_path.exists(), "exchange/requirements directory should exist");
+        assert!(self.requirements_path().exists(), "exchange/requirements directory should exist");
     }
 
     /// Assert that flat exchange directory structure exists.
     pub(crate) fn assert_exchange_structure_exists(&self) {
-        let exchange = self.jules_path().join("exchange");
+        let exchange = self.exchange_path();
         assert!(exchange.exists(), "exchange directory should exist");
         assert!(exchange.join("events").exists(), "exchange/events should exist");
         assert!(exchange.join("events/pending").exists(), "exchange/events/pending should exist");
@@ -191,7 +226,7 @@ impl TestContext {
 
     /// Assert that `contracts.yml` exists in each layer directory.
     pub(crate) fn assert_contracts_exist(&self) {
-        let roles_path = self.jules_path().join("layers");
+        let roles_path = self.layers_path();
         assert!(
             roles_path.join("narrator/contracts.yml").exists(),
             "narrator/contracts.yml should exist"
@@ -273,7 +308,7 @@ impl TestContext {
 
     /// Assert that a single-role layer exists with the correct structure.
     pub(crate) fn assert_single_role_layer_exists(&self, layer: &str) {
-        let layer_path = self.jules_path().join("layers").join(layer);
+        let layer_path = self.layers_path().join(layer);
         assert!(layer_path.exists(), "Layer directory should exist at {}", layer_path.display());
 
         assert!(

@@ -1,9 +1,9 @@
 //! jlo: Deploy and manage .jules/ runtime scaffolding for organizational memory.
 
-pub(crate) mod adapters;
+pub mod adapters;
 pub(crate) mod app;
-pub(crate) mod domain;
-pub(crate) mod ports;
+pub mod domain;
+pub mod ports;
 
 #[cfg(test)]
 pub(crate) mod testing;
