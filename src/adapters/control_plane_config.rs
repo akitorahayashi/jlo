@@ -1,14 +1,20 @@
 use crate::domain::config::WorkflowGenerateConfig;
 use crate::domain::config::parse_config_content;
-use crate::domain::{AppError, RunConfig, WorkflowRunnerMode};
+use crate::domain::config::paths;
+use crate::domain::{AppError, ControlPlaneConfig, WorkflowRunnerMode};
 use crate::ports::RepositoryFilesystem;
+use std::path::Path;
 
-fn load_run_config(repository: &impl RepositoryFilesystem) -> Result<RunConfig, AppError> {
-    let config_path = ".jlo/config.toml";
+fn load_control_plane_config(
+    repository: &impl RepositoryFilesystem,
+) -> Result<ControlPlaneConfig, AppError> {
+    let config_path_buf = paths::config(Path::new(""));
+    let config_path = config_path_buf
+        .to_str()
+        .ok_or_else(|| AppError::InternalError("Config path not UTF-8".into()))?;
+
     if !repository.file_exists(config_path) {
-        return Err(AppError::Validation(
-            "Missing .jlo/config.toml. Run 'jlo init' to create the control plane first.".into(),
-        ));
+        return Err(AppError::ControlPlaneConfigMissing);
     }
 
     let content = repository.read_file(config_path)?;
@@ -21,12 +27,14 @@ fn load_run_config(repository: &impl RepositoryFilesystem) -> Result<RunConfig, 
 pub fn load_workflow_generate_config(
     repository: &impl RepositoryFilesystem,
 ) -> Result<WorkflowGenerateConfig, AppError> {
-    let config = load_run_config(repository)?;
+    let config = load_control_plane_config(repository)?;
     let workflow = config.workflow;
 
     let raw_crons = workflow
         .cron
-        .ok_or_else(|| AppError::Validation("Missing workflow.cron in .jlo/config.toml.".into()))?;
+        .ok_or_else(|| {
+            AppError::Validation("Missing workflow.cron in control plane config.".into())
+        })?;
     if raw_crons.is_empty() {
         return Err(AppError::Validation(
             "workflow.cron must contain at least one cron entry.".into(),
@@ -46,7 +54,9 @@ pub fn load_workflow_generate_config(
         .collect::<Result<Vec<String>, _>>()?;
 
     let wait_minutes_default = workflow.wait_minutes_default.ok_or_else(|| {
-        AppError::Validation("Missing workflow.wait_minutes_default in .jlo/config.toml.".into())
+        AppError::Validation(
+            "Missing workflow.wait_minutes_default in control plane config.".into(),
+        )
     })?;
 
     Ok(WorkflowGenerateConfig {
@@ -64,14 +74,14 @@ pub fn load_workflow_generate_config(
 pub fn load_workflow_runner_mode(
     repository: &impl RepositoryFilesystem,
 ) -> Result<WorkflowRunnerMode, AppError> {
-    let config = load_run_config(repository)?;
+    let config = load_control_plane_config(repository)?;
     let workflow = config.workflow;
     parse_workflow_runner_mode(workflow.runner_mode.as_deref())
 }
 
 fn parse_workflow_runner_mode(raw: Option<&str>) -> Result<WorkflowRunnerMode, AppError> {
     let value = raw.ok_or_else(|| {
-        AppError::Validation("Missing workflow.runner_mode in .jlo/config.toml.".into())
+        AppError::Validation("Missing workflow.runner_mode in control plane config.".into())
     })?;
     value.parse::<WorkflowRunnerMode>()
 }
@@ -80,22 +90,27 @@ pub fn persist_workflow_runner_mode(
     repository: &impl RepositoryFilesystem,
     mode: &WorkflowRunnerMode,
 ) -> Result<(), AppError> {
-    let config_path = ".jlo/config.toml";
+    let config_path_buf = paths::config(Path::new(""));
+    let config_path = config_path_buf
+        .to_str()
+        .ok_or_else(|| AppError::InternalError("Config path not UTF-8".into()))?;
+
     let content = repository.read_file(config_path)?;
     let mut doc = content
         .parse::<toml_edit::DocumentMut>()
-        .map_err(|e| AppError::Validation(format!("Failed to parse .jlo/config.toml: {}", e)))?;
+        .map_err(|e| AppError::Validation(format!("Failed to parse {}: {}", config_path, e)))?;
 
     let desired_value = mode.label();
 
     let workflow_table = doc["workflow"].as_table_mut().ok_or_else(|| {
-        AppError::Validation("Missing [workflow] section in .jlo/config.toml.".into())
+        AppError::Validation(format!("Missing [workflow] section in {}.", config_path))
     })?;
 
     if !workflow_table.contains_key("runner_mode") {
-        return Err(AppError::Validation(
-            "Missing workflow.runner_mode in .jlo/config.toml.".into(),
-        ));
+        return Err(AppError::Validation(format!(
+            "Missing workflow.runner_mode in {}.",
+            config_path
+        )));
     }
 
     let item = &mut workflow_table["runner_mode"];

@@ -203,7 +203,7 @@ pub fn semantic_checks(
                 );
             }
         }
-        Err(AppError::RunConfigMissing) => {
+        Err(AppError::ControlPlaneConfigMissing) => {
             // structural checks handle missing config.toml
         }
         Err(AppError::Schedule(err)) => {

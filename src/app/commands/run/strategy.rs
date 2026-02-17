@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use super::RunRuntimeOptions;
-use crate::domain::{AppError, Layer, PromptAssetLoader, RunConfig, RunOptions};
+use crate::domain::{AppError, Layer, PromptAssetLoader, ControlPlaneConfig, RunOptions};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 
 pub use crate::domain::{JulesClientFactory, RunResult};
@@ -18,7 +18,7 @@ where
         jules_path: &Path,
         target: &RunOptions,
         runtime: &RunRuntimeOptions,
-        config: &RunConfig,
+        config: &ControlPlaneConfig,
         git: &dyn Git,
         github: &dyn GitHub,
         repository: &W,

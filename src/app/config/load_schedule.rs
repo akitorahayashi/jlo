@@ -19,7 +19,7 @@ pub fn load_schedule(store: &(impl RepositoryFilesystem + JloStore)) -> Result<S
     })?;
 
     if !store.file_exists(config_path_str) {
-        return Err(AppError::RunConfigMissing);
+        return Err(AppError::ControlPlaneConfigMissing);
     }
 
     let content = store.read_file(config_path_str)?;

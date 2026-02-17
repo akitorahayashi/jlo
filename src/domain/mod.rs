@@ -14,7 +14,7 @@ pub use config::schedule::Schedule;
 #[allow(unused_imports)]
 pub use config::{ExecutionConfig, WorkflowTimingConfig};
 pub use config::{
-    JulesApiConfig, MockConfig, MockOutput, RunConfig, RunOptions, WorkflowRunnerMode,
+    JulesApiConfig, MockConfig, MockOutput, ControlPlaneConfig, RunOptions, WorkflowRunnerMode,
 };
 pub use error::{AppError, IoErrorKind};
 pub use exchange::requirements::RequirementHeader;

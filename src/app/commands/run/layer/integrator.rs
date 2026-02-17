@@ -9,7 +9,7 @@ use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::roles::validation::validate_safe_path_component;
-use crate::domain::{AppError, Layer, RunConfig, RunOptions};
+use crate::domain::{AppError, Layer, ControlPlaneConfig, RunOptions};
 use crate::ports::{
     AutomationMode, Git, GitHub, JloStore, JulesStore, RepositoryFilesystem, SessionRequest,
 };
@@ -39,7 +39,7 @@ where
         jules_path: &Path,
         _target: &RunOptions,
         runtime: &RunRuntimeOptions,
-        config: &RunConfig,
+        config: &ControlPlaneConfig,
         git: &dyn Git,
         _github: &dyn GitHub,
         repository: &W,
@@ -65,7 +65,7 @@ fn execute_real<G, W>(
     jules_path: &Path,
     prompt_preview: bool,
     branch: Option<&str>,
-    config: &RunConfig,
+    config: &ControlPlaneConfig,
     git: &G,
     repository: &W,
     client_factory: &dyn JulesClientFactory,

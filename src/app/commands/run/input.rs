@@ -7,14 +7,14 @@
 use std::path::Path;
 
 use crate::app::config;
-use crate::domain::{AppError, MockConfig, RunConfig};
+use crate::domain::{AppError, MockConfig, ControlPlaneConfig};
 use crate::ports::{Git, RepositoryFilesystem};
 
 /// Load run configuration from `.jlo/config.toml`.
-pub fn load_run_config<W: RepositoryFilesystem>(
+pub fn load_control_plane_config<W: RepositoryFilesystem>(
     jules_path: &Path,
     repository: &W,
-) -> Result<RunConfig, AppError> {
+) -> Result<ControlPlaneConfig, AppError> {
     config::load_config(jules_path, repository)
 }
 

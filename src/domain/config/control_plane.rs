@@ -8,7 +8,7 @@ use crate::domain::config::schedule::Schedule;
 
 /// Configuration for agent execution loaded from `.jlo/config.toml`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct RunConfig {
+pub struct ControlPlaneConfig {
     /// Execution configuration.
     #[serde(default)]
     pub run: ExecutionConfig,
@@ -26,7 +26,7 @@ pub struct RunConfig {
     pub schedule: Schedule,
 }
 
-impl RunConfig {
+impl ControlPlaneConfig {
     pub fn validate(&self) -> Result<(), AppError> {
         self.run.validate()?;
         self.jules_api.validate()?;
@@ -178,8 +178,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn run_config_defaults() {
-        let config = RunConfig::default();
+    fn control_plane_config_defaults() {
+        let config = ControlPlaneConfig::default();
         assert_eq!(config.run.jlo_target_branch, "main");
         assert_eq!(config.run.jules_worker_branch, "jules");
         assert!(config.run.parallel);
@@ -222,13 +222,13 @@ mod tests {
 
     #[test]
     fn validate_accepts_valid_config() {
-        let config = RunConfig::default();
+        let config = ControlPlaneConfig::default();
         assert!(config.validate().is_ok());
     }
 
     #[test]
     fn validate_rejects_zero_max_parallel() {
-        let mut config = RunConfig::default();
+        let mut config = ControlPlaneConfig::default();
         config.run.max_parallel = 0;
         let err = config.validate().unwrap_err();
         assert!(matches!(err, AppError::InvalidConfig(msg) if msg.contains("max_parallel")));
@@ -236,7 +236,7 @@ mod tests {
 
     #[test]
     fn validate_rejects_zero_timeout() {
-        let mut config = RunConfig::default();
+        let mut config = ControlPlaneConfig::default();
         config.jules_api.timeout_secs = 0;
         let err = config.validate().unwrap_err();
         assert!(matches!(err, AppError::InvalidConfig(msg) if msg.contains("timeout_secs")));

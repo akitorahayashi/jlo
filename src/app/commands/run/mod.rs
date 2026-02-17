@@ -10,7 +10,7 @@ use std::path::Path;
 
 use crate::adapters::jules_client::HttpJulesClient;
 use crate::adapters::jules_client::{RetryPolicy, RetryingJulesClient};
-use crate::app::commands::run::input::{load_run_config, validate_mock_prerequisites};
+use crate::app::commands::run::input::{load_control_plane_config, validate_mock_prerequisites};
 use crate::app::commands::run::strategy::{JulesClientFactory, get_layer_strategy};
 use crate::app::commands::workflow::exchange::{
     ExchangeCleanRequirementOptions, clean_requirement_apply_with_adapters,
@@ -122,7 +122,7 @@ where
     }
 
     // Load configuration
-    let config = load_run_config(jules_path, repository)?;
+    let config = load_control_plane_config(jules_path, repository)?;
 
     let expected_branch = if target.layer.uses_worker_branch() {
         config.run.jules_worker_branch.as_str()
