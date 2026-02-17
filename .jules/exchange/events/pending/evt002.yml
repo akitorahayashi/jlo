@@ -1,0 +1,13 @@
+schema_version: 1
+id: evt002
+requirement_id: ""
+created_at: "2026-02-17"
+author_role: qa
+confidence: high
+title: "Slow Feedback Loop due to Compilation Time"
+statement: |
+  The compilation time for the project is significantly high (> 1 minute), which hinders the "fast inner loop" principle of test-driven development.
+evidence:
+  - path: "Cargo.toml"
+    loc: ["1"]
+    note: "Project dependencies or structure lead to slow compilation (1m 12s observed)."
