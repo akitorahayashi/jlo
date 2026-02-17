@@ -1,0 +1,50 @@
+task: triage
+
+objective: >-
+  Process all pending observer events through a sequential pipeline —
+  verify currency, resolve conflicts, create or update requirements, and
+  transition event state.
+
+inputs:
+  - ".jules/exchange/events/pending/*.yml (observer events)"
+  - ".jules/exchange/requirements/*.yml (existing requirements)"
+  - ".jules/layers/decider/schemas/requirements.yml (requirement schema)"
+  - ".jules/github-labels.json (available requirement labels)"
+
+steps:
+  # 1. Verify events
+  - Read all event files from .jules/exchange/events/pending/.
+  - >-
+    Verify each event against the current codebase — delete stale events
+    whose observations are no longer valid.
+
+  # 2. Rationalize conflicts
+  - Group remaining events by affected area or subject.
+  - >-
+    Resolve conflicts — when multiple events contradict each other, keep
+    the event with the strongest evidence (e.g. deletion overrides
+    renaming, newer observation overrides older).
+
+  # 3. Create or update requirements
+  - >-
+    For events related to an existing requirement, merge the event into that
+    requirement and add the event ID to source_events.
+  - >-
+    Keep source ownership exclusive: each event ID appears in source_events of
+    only one requirement at any time.
+  - >-
+    For genuinely new problems, copy schema with
+    cp .jules/layers/decider/schemas/requirements.yml .jules/exchange/requirements/<kebab-case-title>.yml,
+    then fill all fields using a label from .jules/github-labels.json.
+  - "Place requirement files in .jules/exchange/requirements/<kebab-case-title>.yml."
+
+  # 4. Transition event state
+  - Update each processed event's requirement_id field.
+  - >-
+    Move processed events from .jules/exchange/events/pending/ to
+    .jules/exchange/events/decided/.
+
+output:
+  - ".jules/exchange/requirements/<kebab-case-title>.yml (created or updated)"
+  - ".jules/exchange/events/decided/*.yml (processed events with requirement_id set)"
+  - ".jules/exchange/events/pending/ contains no processed events."

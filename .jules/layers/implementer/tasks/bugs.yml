@@ -1,0 +1,17 @@
+task: implement-bug
+
+objective:
+  Fix the reported bug with minimal, targeted changes. Ensure the fix addresses
+  the root cause rather than masking the symptom.
+
+steps:
+  - Reproduce the described behaviour to confirm the bug.
+  - Identify the root cause through code and test analysis.
+  - Implement the fix with minimal scope — avoid unrelated changes.
+  - Add or update tests that cover the fixed behaviour.
+  - Run the project's verification suite (tests, linting, type checks).
+  - Create a pull request referencing the requirement.
+
+constraints:
+  - Regression tests are mandatory — the fix must prove the bug is resolved.
+  - Do not refactor surrounding code unless it is part of the root cause.
