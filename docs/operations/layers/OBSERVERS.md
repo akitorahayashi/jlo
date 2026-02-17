@@ -14,4 +14,4 @@ Agents analyzing repository state and emitting event artifacts.
 ## Resources
 - Schema: `.jules/layers/observers/schemas/event.yml`
 - Tasks:
-  - observe.yml: Rules for repo state analysis and event emission.
+  - emit_events.yml: Logic for repo state analysis and event emission.
