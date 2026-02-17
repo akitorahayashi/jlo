@@ -3,7 +3,7 @@
 //! Evaluates auto-merge policy gates and enables auto-merge on eligible PRs.
 //! Policy gates (all must pass):
 //! - Head branch starts with a known Jules layer prefix
-//! - Changed-file scope matches the branch policy
+//! - All changed files are within .jules/
 //! - PR is not a draft
 //! - Auto-merge is not already enabled
 

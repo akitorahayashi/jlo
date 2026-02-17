@@ -20,7 +20,7 @@ src/adapters/
 
 ## Architectural Principles
 
--   **Dependency Direction**: `adapters -> ports`. Adapters implement traits defined in `ports`.
--   **No Business Logic**: Adapters must **not** contain domain logic (parsing, validation, path semantics). They only execute I/O and map errors.
--   **No Cross-Adapter Dependencies**: Adapters should not depend on other adapters directly. Wiring happens in `app`.
--   **Ownership**: Adapters do **not** own `.jlo` or `.jules` layout semantics. They use paths provided by `domain` or `app`.
+-   Dependency Direction: `adapters -> ports`. Adapters implement traits defined in `ports`.
+-   No Business Logic: Adapters must not contain domain logic (parsing, validation, path semantics). They only execute I/O and map errors.
+-   No Cross-Adapter Dependencies: Adapters should not depend on other adapters directly. Wiring happens in `app`.
+-   Ownership: Adapters do not own `.jlo` or `.jules` layout semantics. They use paths provided by `domain` or `app`.

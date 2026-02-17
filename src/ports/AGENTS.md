@@ -21,7 +21,7 @@ src/ports/
 
 ## Architectural Principles
 
--   **Interface Only**: Contains traits (`trait JloStore`, `trait Git`) and their request/response types.
--   **Abstraction**: Decouples `app` (what) from `adapters` (how).
--   **Testing Support**: Provides mockable boundaries (`MockJloStore` in `src/testing/ports`).
--   **No Implementation**: Implementations reside in `src/adapters/`.
+-   Interface Only: Contains traits (`trait JloStore`, `trait Git`) and their request/response types.
+-   Abstraction: Decouples `app` (what) from `adapters` (how).
+-   Testing Support: Provides mockable boundaries (`MockJloStore` in `src/testing/ports`).
+-   No Implementation: Implementations reside in `src/adapters/`.

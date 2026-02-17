@@ -20,9 +20,9 @@ src/assets/
 
 ## Architectural Principles
 
--   **Static Resources**: Everything here is embedded into the binary.
--   **Usage**: Access is mediated by `adapters/catalogs` (e.g., `scaffold_assets.rs`).
--   **Content Ownership**:
+-   Static Resources: Everything here is embedded into the binary.
+-   Usage: Access is mediated by `adapters/catalogs` (e.g., `scaffold_assets.rs`).
+-   Content Ownership:
     -   `scaffold`: Defines the exact structure of the `.jules/` directory.
     -   `github`: Workflow templates (source of truth for `.github/` artifacts).
     -   `setup`: Component definitions for `jlo setup`.
