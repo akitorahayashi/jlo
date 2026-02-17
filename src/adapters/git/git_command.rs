@@ -66,9 +66,7 @@ impl Git for GitCommandAdapter {
         }
 
         match self.run_output(&["rev-parse", &format!("{}~{}", commit, n)], None) {
-            Ok(output) => {
-                Ok(Some(String::from_utf8_lossy(&output.stdout).trim().to_string()))
-            }
+            Ok(output) => Ok(Some(String::from_utf8_lossy(&output.stdout).trim().to_string())),
             Err(_) => Ok(None),
         }
     }
