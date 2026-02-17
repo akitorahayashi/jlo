@@ -116,10 +116,21 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "run-observers should depend on narrator wait only when narrator path is used"
     );
     assert!(
-        workflow.contains(
-            "fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&\n            needs.wait-after-narrator.result == 'success'"
+        workflow.contains("fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&\n            needs.wait-after-narrator.result == 'success'"
         ),
         "run-observers should stay simple and require narrator-wait gate success"
+    );
+    assert!(
+        workflow.contains("number_of_api_requests_succeeded > 0"),
+        "Wait jobs should gate on output-driven number_of_api_requests_succeeded"
+    );
+    assert!(
+        !workflow.contains("generate-decider-matrix"),
+        "Removed generate-decider-matrix job should not exist"
+    );
+    assert!(
+        !workflow.contains("generate-routing-matrix"),
+        "Removed generate-routing-matrix job should not exist"
     );
     assert!(
         workflow.contains("Narrator not requested; skipping wait."),

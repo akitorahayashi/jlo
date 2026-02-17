@@ -85,6 +85,13 @@ fn workflow_templates_validate_structure() {
     ] {
         assert!(jobs.contains_key(serde_yaml::Value::from(job)), "Missing job '{}'", job);
     }
+    for removed_job in ["generate-decider-matrix", "generate-routing-matrix"] {
+        assert!(
+            !jobs.contains_key(serde_yaml::Value::from(removed_job)),
+            "Removed job '{}' should not exist",
+            removed_job,
+        );
+    }
 }
 
 #[test]

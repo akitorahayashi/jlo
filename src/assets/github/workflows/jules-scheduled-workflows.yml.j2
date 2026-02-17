@@ -96,7 +96,15 @@ jobs:
   # ============================================================
   # Phase 4: Wait for innovators processing
   # ============================================================
-{{ wait_macro.wait_for_processing('wait-after-run-innovators', ['run-innovators'], 'run-innovators', 'innovators') }}
+{{ wait_macro.wait_for_processing(
+    job_name='wait-after-run-innovators',
+    needs=['run-innovators'],
+    run_job='run-innovators',
+    process_name='innovators',
+    if_condition="always() &&
+needs.run-innovators.result == 'success' &&
+fromJSON(needs.run-innovators.outputs.json).number_of_api_requests_succeeded > 0"
+) }}
   # ============================================================
   # Phase 5: Publish innovators proposals
   # ============================================================
@@ -141,62 +149,125 @@ needs.resolve-run-plan.result == 'success' &&
   # ============================================================
   # Phase 8: Wait for observer processing
   # ============================================================
-{{ wait_macro.wait_for_processing('wait-after-observers', 'run-observers', 'run-observers', 'observers') }}
+{{ wait_macro.wait_for_processing(
+    job_name='wait-after-observers',
+    needs=['run-observers'],
+    run_job='run-observers',
+    process_name='observers',
+    if_condition="always() &&
+needs.run-observers.result == 'success' &&
+fromJSON(needs.run-observers.outputs.json).number_of_api_requests_succeeded > 0"
+) }}
   # ============================================================
-  # Phase 9: Check for pending events (decider gate)
-  # ============================================================
-{% include "workflows/jules-workflows/components/generate-decider-matrix.yml.j2" %}
-
-  # ============================================================
-  # Phase 10: Run decider
+  # Phase 9: Run decider
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-decider',
-    'generate-decider-matrix',
+    'resolve-run-plan',
     'run_decider',
     'decider',
-    'Run decider'
+    'Run decider',
+    {},
+    ['resolve-run-plan', 'wait-after-observers'],
+    "needs.resolve-run-plan.result == 'success' &&
+fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
+(
+  (
+    fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&
+    needs.wait-after-observers.result == 'success'
+  ) ||
+  (
+    fromJSON(needs.resolve-run-plan.outputs.json).run_observers == false &&
+    needs.wait-after-observers.result == 'skipped'
+  )
+)"
 ) }}
   # ============================================================
-  # Phase 11: Wait for decider processing
+  # Phase 10: Wait for decider processing
   # ============================================================
-{{ wait_macro.wait_for_processing('wait-after-decider', 'run-decider', 'run-decider', 'decider') }}
+{{ wait_macro.wait_for_processing(
+    job_name='wait-after-decider',
+    needs=['run-decider'],
+    run_job='run-decider',
+    process_name='decider',
+    if_condition="always() &&
+needs.run-decider.result == 'success' &&
+fromJSON(needs.run-decider.outputs.json).number_of_api_requests_succeeded > 0"
+) }}
   # ============================================================
-  # Phase 12: Resolve planner/implementer run requests
-  # ============================================================
-{% include "workflows/jules-workflows/components/generate-routing-matrix.yml.j2" %}
-
-  # ============================================================
-  # Phase 13: Run planner
+  # Phase 11: Run planner
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-planner',
-    'generate-routing-matrix',
+    'resolve-run-plan',
     'run_planner',
     'planner',
-    'Run planner'
+    'Run planner',
+    {},
+    ['resolve-run-plan', 'wait-after-decider'],
+    "needs.resolve-run-plan.result == 'success' &&
+fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true &&
+(
+  (
+    fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
+    needs.wait-after-decider.result == 'success'
+  ) ||
+  (
+    fromJSON(needs.resolve-run-plan.outputs.json).run_decider == false &&
+    needs.wait-after-decider.result == 'skipped'
+  )
+)"
 ) }}
   # ============================================================
-  # Phase 14: Wait for planner PRs
+  # Phase 12: Wait for planner PRs
   # ============================================================
-{{ wait_macro.wait_for_processing('wait-after-planner', 'run-planner', 'run-planner', 'planner') }}
+{{ wait_macro.wait_for_processing(
+    job_name='wait-after-planner',
+    needs=['run-planner'],
+    run_job='run-planner',
+    process_name='planner',
+    if_condition="always() &&
+needs.run-planner.result == 'success' &&
+fromJSON(needs.run-planner.outputs.json).number_of_api_requests_succeeded > 0"
+) }}
   # ============================================================
-  # Phase 15: Run implementer
+  # Phase 13: Run implementer
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-implementer',
-    'generate-routing-matrix',
+    'resolve-run-plan',
     'run_implementer',
     'implementer',
     'Run implementer',
-  {'JLO_DEFER_WORKER_MERGE': "'true'"}
+    {'JLO_DEFER_WORKER_MERGE': "'true'"},
+    ['resolve-run-plan', 'wait-after-decider'],
+    "needs.resolve-run-plan.result == 'success' &&
+fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true &&
+(
+  (
+    fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
+    needs.wait-after-decider.result == 'success'
+  ) ||
+  (
+    fromJSON(needs.resolve-run-plan.outputs.json).run_decider == false &&
+    needs.wait-after-decider.result == 'skipped'
+  )
+)"
 ) }}
   # ============================================================
-  # Phase 16: Wait for implementer labels
+  # Phase 14: Wait for implementer labels
   # ============================================================
-{{ wait_macro.wait_for_processing('wait-after-implementer', 'run-implementer', 'run-implementer', 'implementer') }}
+{{ wait_macro.wait_for_processing(
+    job_name='wait-after-implementer',
+    needs=['run-implementer'],
+    run_job='run-implementer',
+    process_name='implementer',
+    if_condition="always() &&
+needs.run-implementer.result == 'success' &&
+fromJSON(needs.run-implementer.outputs.json).number_of_api_requests_succeeded > 0"
+) }}
 
   # ============================================================
-  # Phase 17: Cleanup mock artifacts
+  # Phase 15: Cleanup mock artifacts
   # ============================================================
 {% include "workflows/jules-workflows/components/cleanup-mock-artifacts.yml.j2" %}
