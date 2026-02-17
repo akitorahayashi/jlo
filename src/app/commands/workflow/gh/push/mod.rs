@@ -121,9 +121,7 @@ pub(crate) fn execute_with_adapters(
         return Err(with_cleanup_context(err, cleanup_error, Some(pr.number), &push_branch));
     }
 
-    git.fetch("origin")?;
-    git.checkout_branch(&worker_branch, false)?;
-    git.run_command(&["pull", "--ff-only", "origin", &worker_branch], None)?;
+    sync_worker_branch_to_origin(git, &worker_branch)?;
 
     Ok(PushWorkerBranchOutput {
         schema_version: 1,
@@ -161,6 +159,15 @@ fn with_cleanup_context(
     } else {
         cause
     }
+}
+
+fn sync_worker_branch_to_origin(git: &impl Git, worker_branch: &str) -> Result<(), AppError> {
+    // Worker-branch PRs are squash-merged, so local history can legitimately diverge.
+    // Re-anchor the local worker branch to origin/<worker> explicitly.
+    let remote_ref = format!("origin/{}", worker_branch);
+    git.fetch("origin")?;
+    git.run_command(&["checkout", "-B", worker_branch, remote_ref.as_str()], None)?;
+    Ok(())
 }
 
 fn validate_options(options: &PushWorkerBranchOptions) -> Result<(), AppError> {
@@ -492,7 +499,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn execute_with_adapters_succeeds_and_fast_forwards_worker_branch() {
+    fn execute_with_adapters_succeeds_and_resyncs_worker_branch_to_origin() {
         let _worker_branch = EnvVarGuard::set("JULES_WORKER_BRANCH", "jules");
         let git = TestGit::new(
             "jules",
@@ -509,8 +516,8 @@ mod tests {
 
         let commands = git.commands.lock().expect("commands lock poisoned");
         assert!(
-            commands.iter().any(|cmd| cmd == &vec!["pull", "--ff-only", "origin", "jules"]),
-            "worker branch should be fast-forwarded after merge"
+            commands.iter().any(|cmd| cmd == &vec!["checkout", "-B", "jules", "origin/jules"]),
+            "worker branch should be reset to origin after merge"
         );
     }
 
