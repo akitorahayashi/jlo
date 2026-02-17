@@ -1,0 +1,18 @@
+schema_version: 1
+id: ev002
+kind: finding
+layer: observers
+role: structural_arch
+created_at: "2026-02-17"
+author_role: structural_arch
+confidence: high
+title: "Inconsistent Port Definition Strategy"
+statement: |
+  Some ports are defined within the domain layer (e.g., PromptAssetLoader), while others are defined in the ports module (e.g., SetupComponentCatalog). This inconsistency makes the architectural model ambiguous and harder to navigate.
+evidence:
+  - path: "src/domain/layers/prompt_assemble/loader.rs"
+    loc: "pub trait PromptAssetLoader"
+    note: "Port defined in the domain layer."
+  - path: "src/ports/setup_component_catalog.rs"
+    loc: "pub trait SetupComponentCatalog"
+    note: "Port defined in the ports module."
