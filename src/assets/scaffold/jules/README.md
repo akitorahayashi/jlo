@@ -80,7 +80,7 @@ Implementer modifies source code and requires human review.
 | Layer | Type | Invocation |
 |-------|------|------------|
 | Narrator | Single-role | `jlo run narrator` |
-| Observers | Multi-role | `jlo run observers --role <role>` |
+| Observers | Multi-role | `jlo run observer <role>` |
 | Decider | Single-role | `jlo run decider` |
 | Planner | Single-role | `jlo run planner <path>` |
 | Implementer | Single-role | `jlo run implementer <path>` |

@@ -48,7 +48,7 @@ where
             task: options.task.clone(),
         };
 
-        eprintln!("Executing: innovators --role {}{}", role, mock_suffix);
+        eprintln!("Executing: innovator {}{}", role, mock_suffix);
         run_layer(jules_path, run_options, git, github, store)?;
     }
 

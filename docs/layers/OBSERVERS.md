@@ -21,13 +21,13 @@ Observers do not participate in innovator idea/comment bridging.
 ## Execution
 
 ```bash
-jlo run observers --role <role_name>
+jlo run observer <role_name>
 ```
 
 Example:
 
 ```bash
-jlo run observers --role taxonomy
+jlo run observer taxonomy
 ```
 
 ## Event Schema

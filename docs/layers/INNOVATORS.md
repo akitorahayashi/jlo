@@ -40,7 +40,7 @@ Innovators run independently from the main decision flow (Narrator -> Observers 
 ### Task Contract
 
 ```bash
-jlo run innovators --role <persona> --task create_three_proposals
+jlo run innovator <persona> --task create_three_proposals
 ```
 
 - **Task file**: `.jules/layers/innovators/tasks/create_three_proposals.yml`

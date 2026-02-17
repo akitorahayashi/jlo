@@ -34,7 +34,7 @@ jlo init --remote
 | `jlo deinit` | | Remove `.jlo/`, workflow scaffold, and local `jules` branch |
 | `jlo create [<layer> <name>]` | `cr` | Create a custom role under `.jlo/` (observers, innovators) |
 | `jlo add [<layer> <role>]` | `a, ad` | Install a built-in role under `.jlo/` (observers, innovators) |
-| `jlo run <layer>` | `r` | Execute agents for specified layer |
+| `jlo run <layer> [role]` | `r` | Execute agents for specified layer |
 | `jlo doctor [--strict]` | | Validate `.jules/` structure and content |
 | `jlo workflow run <layer>` | `wf` | Run layer and return orchestration metadata |
 | `jlo workflow exchange inspect` | | Inspect exchange state for automation |
@@ -69,15 +69,15 @@ jlo add innovators recruiter       # Install built-in innovator role
 
 ### Run Command
 
-Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (decider), `p` (planner), `i` (implementer), `x` (innovators).
+Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observer), `d` (decider), `p` (planner), `i` (implementer), `x` (innovator).
 
-**Multi-role layers** (Observers, Innovators) require `--role`:
+**Multi-role layers** (Observer, Innovator) require a role argument:
 
 ```bash
-jlo run observers --role <role>                    # Run specific observer role
-jlo run observers --role <role> --prompt-preview   # Show prompts without executing
-jlo run observers --role <role> --branch custom    # Override starting branch
-jlo run innovators --role <role> --task create_three_proposals  # Run innovator role with a task
+jlo run observer <role>                    # Run specific observer role
+jlo run observer <role> --prompt-preview   # Show prompts without executing
+jlo run observer <role> --branch custom    # Override starting branch
+jlo run innovator <role> --task create_three_proposals  # Run innovator role with a task
 ```
 
 **Single-role layers** (Narrator, Decider, Planner, Implementer):
@@ -98,15 +98,14 @@ jlo run implementer .jules/exchange/requirements/auth-inconsistency.yml
 
 ```bash
 jlo run narrator --mock
-jlo run observers --role <role> --mock
+jlo run observer <role> --mock
 jlo run decider --mock
-jlo run innovators --role <role> --mock
+jlo run innovator <role> --mock
 ```
 
 Mock mode creates real branches and PRs with synthetic commit content, enabling E2E workflow validation in CI. The mock tag is auto-generated from `JULES_MOCK_TAG` env var or a timestamp.
 
 **Flags**:
-- `-r, --role <name>`: Run specific role (required for observers/innovators)
 - `--task <name>`: Innovator task selector (`create_three_proposals`)
 - `--prompt-preview`: Show assembled prompts without API calls
 - `--mock`: Use mock execution (creates branches/PRs without Jules API)

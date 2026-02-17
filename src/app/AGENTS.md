@@ -34,12 +34,12 @@ src/app/
 | `jlo create <layer> <name>` | `c` | Create a custom role under `.jlo/` |
 | `jlo add [layer] [roles...]` | `a` | Add a built-in role under `.jlo/` |
 | `jlo run narrator [--prompt-preview] [--branch <branch>] [--mock]` | `r n` | Run narrator (produces changes feed) |
-| `jlo run observers --role <role> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |
+| `jlo run observer <role> [--prompt-preview] [--branch <branch>] [--mock]` | `r o` | Run observer agents |
 | `jlo run decider [--prompt-preview] [--branch <branch>] [--mock]` | `r d` | Run decider agents |
 | `jlo run planner <requirement> [--prompt-preview] [--branch <branch>] [--mock]` | `r p` | Run planner (requirement-driven) |
 | `jlo run implementer <requirement> [--prompt-preview] [--branch <branch>] [--mock]` | `r i` | Run implementer (requirement-driven) |
 | `jlo run integrator [--prompt-preview] [--branch <branch>]` | `r g` | Run integrator (merges implementer branches) |
-| `jlo run innovators --role <role> --task <task_name> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
+| `jlo run innovator <role> --task <task_name> [--prompt-preview] [--branch <branch>] [--mock]` | `r x` | Run innovator agents |
 | `jlo doctor [--strict]` | | Validate .jules/ structure and content |
 | `jlo workflow doctor` | `wf` | Validate runtime repository for workflow use |
 | `jlo workflow run <layer> [--mock]` | | Run layer and return wait-gating metadata |

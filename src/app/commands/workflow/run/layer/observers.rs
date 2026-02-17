@@ -48,7 +48,7 @@ where
             task: options.task.clone(),
         };
 
-        eprintln!("Executing: observers --role {}{}", role, mock_suffix);
+        eprintln!("Executing: observer {}{}", role, mock_suffix);
         run_layer(jules_path, run_options, git, github, store)?;
     }
 
