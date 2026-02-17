@@ -9,9 +9,9 @@ use serde::Serialize;
 
 use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
+use crate::domain::PromptAssetLoader;
 use crate::domain::exchange::perspectives::Perspective;
 use crate::domain::exchange::proposals::Proposal;
-use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, RoleId};
 use crate::ports::{Git, GitHub, IssueInfo, JloStore, JulesStore, RepositoryFilesystem};
 
