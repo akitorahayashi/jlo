@@ -581,21 +581,21 @@ fn validate_innovator_role_file(path: &Path, role_dir: &Path, diagnostics: &mut 
     }
 }
 
-fn validate_innovator_perspective(path: &Path, persona_name: &str, diagnostics: &mut Diagnostics) {
+fn validate_innovator_perspective(path: &Path, role_name: &str, diagnostics: &mut Diagnostics) {
     let data = match load_yaml_mapping(path, diagnostics) {
         Some(data) => data,
         None => return,
     };
 
     ensure_int(&data, path, "schema_version", diagnostics, Some(1));
-    ensure_non_empty_string(&data, path, "persona", diagnostics);
+    ensure_non_empty_string(&data, path, "role", diagnostics);
     ensure_non_empty_string(&data, path, "focus", diagnostics);
 
-    let persona_value = get_string(&data, "persona").unwrap_or_default();
-    if !persona_value.is_empty() && persona_value != persona_name {
+    let role_value = get_string(&data, "role").unwrap_or_default();
+    if !role_value.is_empty() && role_value != role_name {
         diagnostics.push_error(
             path.display().to_string(),
-            format!("persona '{}' does not match directory '{}'", persona_value, persona_name),
+            format!("role '{}' does not match directory '{}'", role_value, role_name),
         );
     }
 }
@@ -607,7 +607,7 @@ fn validate_innovator_document_common_fields(
 ) {
     ensure_int(data, path, "schema_version", diagnostics, Some(1));
     ensure_id(data, path, "id", diagnostics);
-    ensure_non_empty_string(data, path, "persona", diagnostics);
+    ensure_non_empty_string(data, path, "role", diagnostics);
     ensure_date(data, path, "created_at", diagnostics);
     ensure_non_empty_string(data, path, "title", diagnostics);
     ensure_non_empty_string(data, path, "problem", diagnostics);
@@ -623,14 +623,14 @@ fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
         ensure_non_empty_sequence(&data, path, "consistency_risks", diagnostics);
         ensure_non_empty_sequence(&data, path, "verification_signals", diagnostics);
 
-        let persona = get_string(&data, "persona").unwrap_or_default();
-        if !persona.is_empty()
+        let role = get_string(&data, "role").unwrap_or_default();
+        if !role.is_empty()
             && let Some(stem) = path.file_stem().and_then(|s| s.to_str())
-            && !stem.starts_with(&format!("{}-", persona))
+            && !stem.starts_with(&format!("{}-", role))
         {
             diagnostics.push_error(
                 path.display().to_string(),
-                format!("proposal filename must start with '{}-'", persona),
+                format!("proposal filename must start with '{}-'", role),
             );
         }
     }

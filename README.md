@@ -1,6 +1,6 @@
 # jlo
 
-CLI tool for managing `.jlo/` control-plane scaffolding and orchestrating scheduled LLM agent execution via GitHub Actions.
+CLI tool for managing `.jlo/` control-plane scaffolding and orchestrating scheduled LLM role execution via GitHub Actions.
 
 ## Architecture
 
@@ -34,7 +34,7 @@ jlo init --remote
 | `jlo deinit` | | Remove `.jlo/`, workflow scaffold, and local `jules` branch |
 | `jlo create [<layer> <name>]` | `cr` | Create a custom role under `.jlo/` (observers, innovators) |
 | `jlo add [<layer> <role>]` | `a, ad` | Install a built-in role under `.jlo/` (observers, innovators) |
-| `jlo run <layer>` | `r` | Execute agents for specified layer |
+| `jlo run <layer>` | `r` | Execute roles for specified layer |
 | `jlo doctor [--strict]` | | Validate `.jules/` structure and content |
 | `jlo workflow bootstrap` | | Materialize `.jules/` runtime repository on the current branch |
 | `jlo workflow doctor` | | Validation gate for `.jules/` repository |
@@ -44,7 +44,7 @@ jlo init --remote
 | `jlo workflow exchange clean requirement <file>` | | Remove a processed requirement and its source events |
 | `jlo workflow exchange clean mock --mock-tag <tag>` | | Clean up mock artifacts |
 | `jlo workflow gh process pr <all\|metadata\|automerge> <pr_number>` | | Run PR process pipeline (add `--fail-on-error` to fail on step errors) |
-| `jlo workflow gh process issue label-innovator <issue> <persona>` | | Apply innovator labels to a proposal issue |
+| `jlo workflow gh process issue label-innovator <issue> <role>` | | Apply innovator labels to a proposal issue |
 | `jlo workflow generate <mode> [--output-dir <dir>]` | `g [-o]` | Generate workflow scaffold files to an output directory |
 | `jlo setup gen [path]` | `s g` | Generate `.jlo/setup/install.sh`, `.jlo/setup/vars.toml`, and `.jlo/setup/secrets.toml` |
 | `jlo setup list` | `s ls` | List available components |
@@ -71,7 +71,7 @@ jlo add innovators recruiter       # Install built-in innovator role
 
 ### Run Command
 
-Execute Jules agents for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (decider), `p` (planner), `i` (implementer), `g` (integrator), `x` (innovators). Plural aliases (e.g., `deciders`, `planners`, `implementers`, `integrators`) are also supported.
+Execute Jules roles for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (decider), `p` (planner), `i` (implementer), `g` (integrator), `x` (innovators). Plural aliases (e.g., `deciders`, `planners`, `implementers`, `integrators`) are also supported.
 
 Multi-role layers (Observers, Innovators) require `--role`:
 
@@ -133,7 +133,7 @@ Environment: Set the API key environment variable referenced by the workflows fo
 
 ### Doctor Command
 
-Validate the `.jules/` workspace after agent execution:
+Validate the `.jules/` workspace after role execution:
 
 ```bash
 jlo doctor

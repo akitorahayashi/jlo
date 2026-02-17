@@ -226,9 +226,10 @@ where
     H: GitHub + ?Sized,
     W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
-    let role = options.role.as_deref().ok_or_else(|| {
-        AppError::MissingArgument("Role (persona) is required for innovators".to_string())
-    })?;
+    let role = options
+        .role
+        .as_deref()
+        .ok_or_else(|| AppError::MissingArgument("Role is required for innovators".to_string()))?;
 
     let task = options.task.as_deref().ok_or_else(|| {
         AppError::MissingArgument(
@@ -281,7 +282,7 @@ where
         let proposal_title = format!("Mock proposal {} for {}", index, role);
         let proposal_content = proposal_template
             .replace("__ID__", &generate_mock_id())
-            .replace("__PERSONA__", role)
+            .replace("__ROLE__", role)
             .replace("__DATE__", &today)
             .replace("__TITLE__", &proposal_title)
             .replace("__INDEX__", &index.to_string())
@@ -304,7 +305,7 @@ where
 
     let perspective_template = load_mock_asset_text("innovator_perspective.yml")?;
     let perspective_content = perspective_template
-        .replace("__PERSONA__", role)
+        .replace("__ROLE__", role)
         .replace("__TITLE_1__", &proposal_titles[2])
         .replace("__TITLE_2__", &proposal_titles[1])
         .replace("__TITLE_3__", &proposal_titles[0]);
@@ -322,7 +323,7 @@ where
         &format!("[{}] Innovator {} {}", config.mock_tag, role, task),
         &format!(
             "Mock innovator run for workflow validation.\n\n\
-             Mock tag: `{}`\nPersona: `{}`\nTask: {}",
+             Mock tag: `{}`\nRole: `{}`\nTask: {}",
             config.mock_tag, role, task
         ),
     )?;

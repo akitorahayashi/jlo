@@ -1,5 +1,5 @@
 schema_version: 1
-persona: "__PERSONA__"
+role: "__ROLE__"
 focus: "Mock innovators perspective"
 repository_observations:
   codebase_state:

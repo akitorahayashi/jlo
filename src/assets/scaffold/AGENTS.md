@@ -5,9 +5,9 @@ Ref: [root AGENTS.md](../../AGENTS.md).
 
 ## Concepts
 - Layer: Pipeline stage (e.g., Decider).
-- Role: Agent persona.
-  - Single-Role: Layer = Agent (Narrator, Decider, Planner, Implementer).
-  - Multi-Role: Multiple personas (Observers, Innovators).
+- Role: Agent execution identity.
+  - Single-Role: Layer = one execution role (Narrator, Decider, Planner, Implementer).
+  - Multi-Role: Multiple roles (Observers, Innovators).
 
 ## Directory Structure
 ```

@@ -100,7 +100,7 @@ fn mock_innovator_proposal_file_passes_doctor() {
     fs::create_dir_all(&workstation_dir).expect("Failed to create workstation directory");
 
     let perspective = r#"schema_version: 1
-persona: "alice"
+role: "alice"
 focus: "High-leverage improvements"
 repository_observations:
   codebase_state:
@@ -132,7 +132,7 @@ recent_proposals:
     fs::create_dir_all(&proposals_dir).expect("Failed to create proposals directory");
     let proposal = r#"schema_version: 1
 id: "abc123"
-persona: "alice"
+role: "alice"
 created_at: "2026-02-05"
 title: "Improve workflow error messages"
 problem: |

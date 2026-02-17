@@ -26,7 +26,7 @@ pub struct ExchangePublishProposalsOutput {
 
 #[derive(Debug, Serialize)]
 pub struct PublishedProposal {
-    pub persona: String,
+    pub role: String,
     pub proposal_path: String,
     pub issue_number: u64,
     pub issue_url: String,
@@ -38,7 +38,7 @@ struct ProposalData {
     #[serde(default)]
     id: String,
     #[serde(default)]
-    persona: String,
+    role: String,
     #[serde(default)]
     title: String,
     #[serde(default)]
@@ -126,8 +126,8 @@ where
             ))
         })?;
 
-        let persona = validate_persona(&data, proposal_path)?;
-        validate_proposal_filename_matches_persona(proposal_path, persona.as_str())?;
+        let role = validate_role(&data, proposal_path)?;
+        validate_proposal_filename_matches_role(proposal_path, role.as_str())?;
 
         if data.title.trim().is_empty() {
             return Err(AppError::Validation(format!(
@@ -157,17 +157,15 @@ where
         }
 
         // Verify perspective.yml exists and records this proposal
-        let perspective_path = crate::domain::workstations::paths::workstation_perspective(
-            &jules_path,
-            persona.as_str(),
-        );
+        let perspective_path =
+            crate::domain::workstations::paths::workstation_perspective(&jules_path, role.as_str());
         let perspective_path_str = perspective_path
             .to_str()
             .ok_or_else(|| AppError::Validation("Invalid perspective path".to_string()))?;
         if !repository.file_exists(perspective_path_str) {
             return Err(AppError::Validation(format!(
-                "perspective.yml missing for persona '{}': innovator run must update workstation perspective before publication",
-                persona.as_str()
+                "perspective.yml missing for role '{}': innovator run must update workstation perspective before publication",
+                role.as_str()
             )));
         }
         let perspective_content = repository.read_file(perspective_path_str)?;
@@ -183,18 +181,18 @@ where
         if !perspective.recent_proposals.iter().any(|p| p.trim() == title_trimmed) {
             return Err(AppError::Validation(format!(
                 "perspective.yml for '{}' does not list proposal '{}' in recent_proposals: refinement contract violated",
-                persona.as_str(),
+                role.as_str(),
                 title_trimmed
             )));
         }
 
-        let issue_title = format!("[innovator/{}] {}", persona.as_str(), data.title.trim());
+        let issue_title = format!("[innovator/{}] {}", role.as_str(), data.title.trim());
         let impact_surface = render_list(&data.impact_surface);
         let consistency_risks = render_list(&data.consistency_risks);
         let verification_signals = render_list(&data.verification_signals);
 
         let issue_body = format!(
-            "## Problem\n\n{}\n\n## Introduction\n\n{}\n\n## Why It Matters\n\n{}\n\n## Impact Surface\n\n{}\n\n## Implementation Cost\n\n{}\n\n## Consistency Risks\n\n{}\n\n## Verification Signals\n\n{}\n\n---\n\n_Published from proposal `{}` by innovator persona `{}`._",
+            "## Problem\n\n{}\n\n## Introduction\n\n{}\n\n## Why It Matters\n\n{}\n\n## Impact Surface\n\n{}\n\n## Implementation Cost\n\n{}\n\n## Consistency Risks\n\n{}\n\n## Verification Signals\n\n{}\n\n---\n\n_Published from proposal `{}` by innovator role `{}`._",
             data.problem.trim(),
             data.introduction.trim(),
             data.importance.trim(),
@@ -203,22 +201,17 @@ where
             consistency_risks,
             verification_signals,
             data.id,
-            persona.as_str(),
+            role.as_str(),
         );
 
-        validated.push((
-            persona.as_str().to_string(),
-            proposal_path.clone(),
-            issue_title,
-            issue_body,
-        ));
+        validated.push((role.as_str().to_string(), proposal_path.clone(), issue_title, issue_body));
     }
 
     // Pass 2: Create issues and clean up artifacts (all proposals validated).
     let mut published = Vec::new();
     let mut deleted_paths: Vec<PathBuf> = Vec::new();
 
-    for (persona, proposal_path, issue_title, issue_body) in &validated {
+    for (role, proposal_path, issue_title, issue_body) in &validated {
         let issue: IssueInfo = github.create_issue(issue_title, issue_body, &[])?;
 
         // Apply innovator labels to the newly created issue
@@ -226,12 +219,12 @@ where
             github,
             crate::app::commands::workflow::gh::issue::LabelInnovatorOptions {
                 issue_number: issue.number,
-                persona: persona.clone(),
+                role: role.clone(),
             },
         )?;
 
         published.push(PublishedProposal {
-            persona: persona.clone(),
+            role: role.clone(),
             proposal_path: proposal_path.display().to_string(),
             issue_number: issue.number,
             issue_url: issue.url.clone(),
@@ -288,27 +281,27 @@ fn render_list(items: &[String]) -> String {
     items.iter().map(|line| format!("- {}", line.trim())).collect::<Vec<_>>().join("\n")
 }
 
-fn validate_persona(data: &ProposalData, proposal_path: &Path) -> Result<RoleId, AppError> {
-    let persona = data.persona.trim();
-    if persona.is_empty() {
+fn validate_role(data: &ProposalData, proposal_path: &Path) -> Result<RoleId, AppError> {
+    let role = data.role.trim();
+    if role.is_empty() {
         return Err(AppError::Validation(format!(
-            "Proposal missing 'persona': {}",
+            "Proposal missing 'role': {}",
             proposal_path.display()
         )));
     }
 
-    RoleId::new(persona).map_err(|_| {
+    RoleId::new(role).map_err(|_| {
         AppError::Validation(format!(
-            "Invalid proposal persona '{}': expected safe role identifier in {}",
-            persona,
+            "Invalid proposal role '{}': expected safe role identifier in {}",
+            role,
             proposal_path.display()
         ))
     })
 }
 
-fn validate_proposal_filename_matches_persona(
+fn validate_proposal_filename_matches_role(
     proposal_path: &Path,
-    persona: &str,
+    role: &str,
 ) -> Result<(), AppError> {
     let Some(stem) = proposal_path.file_stem().and_then(|s| s.to_str()) else {
         return Err(AppError::Validation(format!(
@@ -316,10 +309,10 @@ fn validate_proposal_filename_matches_persona(
             proposal_path.display()
         )));
     };
-    if !stem.starts_with(&format!("{}-", persona)) {
+    if !stem.starts_with(&format!("{}-", role)) {
         return Err(AppError::Validation(format!(
             "Proposal filename must start with '{}-': {}",
-            persona,
+            role,
             proposal_path.display()
         )));
     }
@@ -335,7 +328,7 @@ mod tests {
     fn proposal_yaml() -> &'static str {
         r#"schema_version: 1
 id: "abc123"
-persona: "alice"
+role: "alice"
 created_at: "2026-02-05"
 title: "Improve error messages"
 problem: |
@@ -360,8 +353,7 @@ verification_signals:
     fn publishes_proposal_and_removes_artifact() {
         let proposal_path = ".jules/exchange/proposals/alice-improve-error-messages.yml";
         let perspective_path = ".jules/workstations/alice/perspective.yml";
-        let perspective_yaml =
-            "persona: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let perspective_yaml = "role: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
         let repository = TestStore::new()
             .with_exists(true)
             .with_file(proposal_path, proposal_yaml())
@@ -375,7 +367,7 @@ verification_signals:
         let output = execute_with(&repository, &options, &git, &github).unwrap();
 
         assert_eq!(output.published.len(), 1);
-        assert_eq!(output.published[0].persona, "alice");
+        assert_eq!(output.published[0].role, "alice");
         assert_eq!(output.published[0].issue_number, 1);
         assert!(!output.committed);
         assert!(!output.pushed);
@@ -411,16 +403,14 @@ verification_signals:
     }
 
     #[test]
-    fn rejects_invalid_persona_identifier() {
+    fn rejects_invalid_role_identifier() {
         let proposal_path = ".jules/exchange/proposals/alice-improve-error-messages.yml";
         let perspective_path = ".jules/workstations/alice/perspective.yml";
-        let invalid_persona_yaml =
-            proposal_yaml().replace("persona: \"alice\"", "persona: \"../../etc\"");
-        let perspective_yaml =
-            "persona: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let invalid_role_yaml = proposal_yaml().replace("role: \"alice\"", "role: \"../../etc\"");
+        let perspective_yaml = "role: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
         let repository = TestStore::new()
             .with_exists(true)
-            .with_file(proposal_path, &invalid_persona_yaml)
+            .with_file(proposal_path, &invalid_role_yaml)
             .with_file(perspective_path, perspective_yaml);
 
         let git = FakeGit::new();
@@ -430,6 +420,6 @@ verification_signals:
         let result = execute_with(&repository, &options, &git, &github);
         assert!(result.is_err());
         let message = result.unwrap_err().to_string();
-        assert!(message.contains("Invalid proposal persona"));
+        assert!(message.contains("Invalid proposal role"));
     }
 }

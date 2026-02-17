@@ -1,8 +1,8 @@
 schema_version: 1
 
-persona: "<persona_id>"
+role: "<role_id>"
 
-focus: "<primary analytical lens for this persona>"
+focus: "<primary analytical lens for this role>"
 
 # Structured repository understanding updated every cycle.
 repository_observations:
