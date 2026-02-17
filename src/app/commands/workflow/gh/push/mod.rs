@@ -1,5 +1,3 @@
-use std::process::Command;
-
 use chrono::Utc;
 use serde::Serialize;
 
@@ -34,34 +32,6 @@ pub struct PushWorkerBranchOutput {
     pub merged: bool,
 }
 
-pub(crate) trait GhCliRunner {
-    fn run(&self, args: &[&str]) -> Result<String, AppError>;
-}
-
-struct ShellGhCliRunner;
-
-impl GhCliRunner for ShellGhCliRunner {
-    fn run(&self, args: &[&str]) -> Result<String, AppError> {
-        let output =
-            Command::new("gh").args(args).output().map_err(|e| AppError::ExternalToolError {
-                tool: "gh".to_string(),
-                error: format!("Failed to execute gh CLI: {}", e),
-            })?;
-
-        if !output.status.success() {
-            return Err(AppError::ExternalToolError {
-                tool: "gh".to_string(),
-                error: format!(
-                    "gh command failed: {}",
-                    String::from_utf8_lossy(&output.stderr).trim()
-                ),
-            });
-        }
-
-        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
-    }
-}
-
 pub fn execute(options: PushWorkerBranchOptions) -> Result<PushWorkerBranchOutput, AppError> {
     let repository = LocalRepositoryAdapter::current()?;
     if !repository.jules_exists() {
@@ -75,15 +45,13 @@ pub fn execute(options: PushWorkerBranchOptions) -> Result<PushWorkerBranchOutpu
         .to_path_buf();
     let git = GitCommandAdapter::new(root);
     let github = GitHubCommandAdapter::new();
-    let gh = ShellGhCliRunner;
 
-    execute_with_adapters(&git, &github, &gh, options)
+    execute_with_adapters(&git, &github, options)
 }
 
 pub(crate) fn execute_with_adapters(
     git: &impl Git,
     github: &impl GitHub,
-    gh: &impl GhCliRunner,
     options: PushWorkerBranchOptions,
 ) -> Result<PushWorkerBranchOutput, AppError> {
     validate_options(&options)?;
@@ -146,13 +114,9 @@ pub(crate) fn execute_with_adapters(
         }
     };
 
-    let pr_number = pr.number.to_string();
-    if let Err(err) = gh.run(&["pr", "checks", &pr_number, "--watch"]) {
-        let cleanup_error = cleanup_pr_and_branch(github, pr.number, &push_branch).err();
-        return Err(with_cleanup_context(err, cleanup_error, Some(pr.number), &push_branch));
-    }
+    // checks wait logic removed as requested checks
 
-    if let Err(err) = gh.run(&["pr", "merge", &pr_number, "--squash", "--delete-branch"]) {
+    if let Err(err) = github.merge_pull_request(pr.number) {
         let cleanup_error = cleanup_pr_and_branch(github, pr.number, &push_branch).err();
         return Err(with_cleanup_context(err, cleanup_error, Some(pr.number), &push_branch));
     }
@@ -385,17 +349,21 @@ mod tests {
     #[derive(Clone)]
     struct TestGitHub {
         should_fail_create_pr: bool,
+        should_fail_merge: bool,
         created_head: Arc<Mutex<Option<String>>>,
         closed_prs: Arc<Mutex<Vec<u64>>>,
+        merged_prs: Arc<Mutex<Vec<u64>>>,
         deleted_remote_branches: Arc<Mutex<Vec<String>>>,
     }
 
     impl TestGitHub {
-        fn new(should_fail_create_pr: bool) -> Self {
+        fn new(should_fail_create_pr: bool, should_fail_merge: bool) -> Self {
             Self {
                 should_fail_create_pr,
+                should_fail_merge,
                 created_head: Arc::new(Mutex::new(None)),
                 closed_prs: Arc::new(Mutex::new(Vec::new())),
+                merged_prs: Arc::new(Mutex::new(Vec::new())),
                 deleted_remote_branches: Arc::new(Mutex::new(Vec::new())),
             }
         }
@@ -488,42 +456,16 @@ mod tests {
         fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> {
             Ok(Vec::new())
         }
-    }
 
-    struct TestGhCliRunner {
-        fail_checks: bool,
-        fail_merge: bool,
-        calls: Arc<Mutex<Vec<Vec<String>>>>,
-    }
-
-    impl TestGhCliRunner {
-        fn new(fail_checks: bool, fail_merge: bool) -> Self {
-            Self { fail_checks, fail_merge, calls: Arc::new(Mutex::new(Vec::new())) }
-        }
-    }
-
-    impl GhCliRunner for TestGhCliRunner {
-        fn run(&self, args: &[&str]) -> Result<String, AppError> {
-            self.calls
-                .lock()
-                .expect("gh calls lock poisoned")
-                .push(args.iter().map(|arg| arg.to_string()).collect());
-
-            if self.fail_checks && args.starts_with(&["pr", "checks"]) {
+        fn merge_pull_request(&self, pr_number: u64) -> Result<(), AppError> {
+            if self.should_fail_merge {
                 return Err(AppError::ExternalToolError {
-                    tool: "gh".to_string(),
-                    error: "checks failed".to_string(),
-                });
-            }
-
-            if self.fail_merge && args.starts_with(&["pr", "merge"]) {
-                return Err(AppError::ExternalToolError {
-                    tool: "gh".to_string(),
+                    tool: "github".to_string(),
                     error: "merge failed".to_string(),
                 });
             }
-
-            Ok(String::new())
+            self.merged_prs.lock().expect("merged prs lock poisoned").push(pr_number);
+            Ok(())
         }
     }
 
@@ -557,11 +499,9 @@ mod tests {
             " M .jules/layers/implementer/prompt.md",
             ".jules/layers/implementer/prompt.md\n",
         );
-        let github = TestGitHub::new(false);
-        let gh = TestGhCliRunner::new(false, false);
+        let github = TestGitHub::new(false, false);
 
-        let out =
-            execute_with_adapters(&git, &github, &gh, options()).expect("push should succeed");
+        let out = execute_with_adapters(&git, &github, options()).expect("push should succeed");
 
         assert!(out.applied);
         assert!(out.merged);
@@ -579,11 +519,9 @@ mod tests {
     fn execute_with_adapters_deletes_local_push_branch_when_nothing_staged() {
         let _worker_branch = EnvVarGuard::set("JULES_WORKER_BRANCH", "jules");
         let git = TestGit::new("jules", " M .jules/layers/implementer/prompt.md", "");
-        let github = TestGitHub::new(false);
-        let gh = TestGhCliRunner::new(false, false);
+        let github = TestGitHub::new(false, false);
 
-        let out =
-            execute_with_adapters(&git, &github, &gh, options()).expect("should skip cleanly");
+        let out = execute_with_adapters(&git, &github, options()).expect("should skip cleanly");
 
         assert!(!out.applied);
         assert_eq!(out.skipped_reason.as_deref(), Some("No staged .jules changes to commit"));
@@ -595,18 +533,17 @@ mod tests {
 
     #[test]
     #[serial]
-    fn execute_with_adapters_attempts_cleanup_when_checks_fail() {
+    fn execute_with_adapters_attempts_cleanup_when_merge_fails() {
         let _worker_branch = EnvVarGuard::set("JULES_WORKER_BRANCH", "jules");
         let git = TestGit::new(
             "jules",
             " M .jules/layers/implementer/prompt.md",
             ".jules/layers/implementer/prompt.md\n",
         );
-        let github = TestGitHub::new(false);
-        let gh = TestGhCliRunner::new(true, false);
+        let github = TestGitHub::new(false, true); // fail merge
 
-        let err = execute_with_adapters(&git, &github, &gh, options())
-            .expect_err("checks failure should return error");
+        let err = execute_with_adapters(&git, &github, options())
+            .expect_err("merge failure should return error");
 
         assert!(matches!(err, AppError::ExternalToolError { .. }));
 

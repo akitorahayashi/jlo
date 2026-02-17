@@ -110,6 +110,10 @@ pub trait GitHub {
     #[allow(dead_code)]
     fn enable_automerge(&self, pr_number: u64) -> Result<(), AppError>;
 
+    /// Merge a pull request immediately (squash).
+    /// Does NOT use auto-merge side-effects.
+    fn merge_pull_request(&self, pr_number: u64) -> Result<(), AppError>;
+
     /// List files changed by a pull request (relative paths).
     #[allow(dead_code)]
     fn list_pr_files(&self, pr_number: u64) -> Result<Vec<String>, AppError>;

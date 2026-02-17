@@ -393,6 +393,10 @@ mod tests {
         fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> {
             Ok(Vec::new())
         }
+
+        fn merge_pull_request(&self, _pr_number: u64) -> Result<(), AppError> {
+            Ok(())
+        }
     }
 
     #[derive(serde::Deserialize)]

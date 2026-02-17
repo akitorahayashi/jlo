@@ -219,6 +219,10 @@ mod tests {
         fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> {
             Ok(vec![])
         }
+
+        fn merge_pull_request(&self, _pr_number: u64) -> Result<(), AppError> {
+            Ok(())
+        }
     }
 
     #[test]
