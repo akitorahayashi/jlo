@@ -1,0 +1,24 @@
+task: create_three_proposals
+mode: direct
+
+objective:
+  Create three independent, high-leverage intervention proposals aligned with role focus.
+
+steps:
+  - Inspect repository behavior, boundaries, and runtime assumptions before drafting conclusions.
+  - Reject directions equivalent to recent_proposals and avoid incremental restatements.
+  - Generate exactly three proposals with clearly different directions.
+  - For each proposal, copy schema with cp .jules/layers/innovators/schemas/proposal.yml .jules/exchange/proposals/<role>-<kebab-case-slug>.yml, then fill all fields.
+  - Each proposal must include importance, impact_surface, implementation_cost, consistency_risks, and verification_signals.
+  - Update .jules/workstations/<role>/perspective.yml with intervention hypotheses, tradeoff decisions, and the three new proposal titles in recent_proposals.
+
+output:
+  - .jules/exchange/proposals/<role>-<kebab-case-slug>.yml (3 files)
+  - .jules/workstations/<role>/perspective.yml (updated)
+
+constraints:
+  - "All proposals must satisfy role.yml proposal_quality_bar and remain within role focus boundary"
+  - "The three proposals must have non-overlapping core direction"
+  - "Filenames must include role prefix and kebab-case slug to avoid collisions"
+  - "recent_proposals must include all three proposal titles and keep FIFO max 15"
+  - "If any proposal direction is equivalent to recent_proposals, fail explicitly instead of emitting files"

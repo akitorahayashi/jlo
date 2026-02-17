@@ -215,6 +215,11 @@ impl GitHub for FakeGitHub {
         Ok(())
     }
 
+    fn merge_pull_request(&self, pr_number: u64) -> Result<(), AppError> {
+        let _ = pr_number;
+        Ok(())
+    }
+
     fn list_pr_files(&self, _pr_number: u64) -> Result<Vec<String>, AppError> {
         Ok(self.files.lock().unwrap().clone())
     }
