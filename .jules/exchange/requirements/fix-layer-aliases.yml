@@ -1,0 +1,42 @@
+schema_version: 2
+
+# Metadata
+id: "layali"
+source_events:
+  - "evt1a2"
+title: "Fix Inconsistent Layer Aliases"
+label: "bugs"
+priority: "medium"
+summary: "Align CLI aliases and internal domain mapping for layers 'i' and 'x'."
+
+# Content
+goal: |
+  Ensure consistent interpretation of layer aliases 'i' (Implementer) and 'x' (Innovators) across CLI and domain logic.
+
+problem: |
+  The CLI defines 'i' as Implementer and 'x' as Innovators. However, `Layer::from_dir_name` maps 'i' to Innovators and does not recognize 'x'. This causes inconsistency when domain logic parses layer names.
+
+impact: |
+  Commands relying on `Layer::from_dir_name` may misinterpret 'i' or fail on 'x', leading to unexpected behavior or errors.
+
+desired_outcome: |
+  `Layer::from_dir_name` is updated to map 'i' to Implementer (or remove 'i' if ambiguous and not strictly needed there) and 'x' to Innovators, matching the CLI.
+
+constraints: []
+risks:
+  - "Changing 'i' mapping might break existing scripts if they rely on 'i' -> Innovators in `Layer::from_dir_name` context."
+
+# Specifics
+affected_areas:
+  - "src/domain/layers/mod.rs"
+
+acceptance_criteria:
+  - "`Layer::from_dir_name(\"i\")` returns `Some(Layer::Implementer)` (or `None` if we want to force full names internally)."
+  - "`Layer::from_dir_name(\"x\")` returns `Some(Layer::Innovators)`."
+
+verification_criteria:
+  - "Unit tests for `Layer::from_dir_name`."
+
+# Analysis Flags
+requires_deep_analysis: false
+deep_analysis_reason: ""

@@ -1,0 +1,41 @@
+schema_version: 2
+
+# Metadata
+id: "optcmp"
+source_events:
+  - "evt002"
+title: "Optimize Compilation Time"
+label: "refacts"
+priority: "medium"
+summary: "Investigate and reduce compilation time to improve feedback loop."
+
+# Content
+goal: |
+  Reduce the project compilation time to enable a faster inner development loop.
+
+problem: |
+  Compilation time is significantly high (> 1 minute), hindering TDD and rapid iteration.
+
+impact: |
+  Developer productivity is reduced due to long wait times.
+
+desired_outcome: |
+  Compilation time is noticeably reduced. Unused dependencies are removed. Heavy dependencies are optimized or replaced if possible.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "Cargo.toml"
+
+acceptance_criteria:
+  - "Dependency tree analyzed."
+  - "Unused dependencies removed."
+
+verification_criteria:
+  - "Measure `cargo build` time before and after changes."
+
+# Analysis Flags
+requires_deep_analysis: true
+deep_analysis_reason: "Need to profile build times and dependency graph to identify bottlenecks."
