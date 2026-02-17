@@ -5,5 +5,3 @@ pub mod integrator;
 pub mod narrator;
 pub mod observers;
 pub mod planner;
-
-pub use crate::domain::layers::execute::policy;
