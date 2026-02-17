@@ -6,7 +6,10 @@ use clap::{Args, Subcommand};
 #[derive(Subcommand)]
 pub enum WorkflowCommands {
     /// Bootstrap the .jules/ runtime repository on the current branch
-    Bootstrap,
+    Bootstrap {
+        #[command(subcommand)]
+        command: WorkflowBootstrapCommands,
+    },
     /// Validation gate for .jules/ repository
     Doctor,
     /// Run a layer and return wait-gating metadata
@@ -40,6 +43,16 @@ pub enum WorkflowCommands {
         #[command(subcommand)]
         command: WorkflowExchangeCommands,
     },
+}
+
+#[derive(Subcommand)]
+pub enum WorkflowBootstrapCommands {
+    /// Ensure/sync worker branch from target branch
+    WorkerBranch,
+    /// Materialize managed files from embedded scaffold
+    ManagedFiles,
+    /// Reconcile workstation perspectives from schedule intent
+    Workstations,
 }
 
 #[derive(Subcommand)]
@@ -181,18 +194,10 @@ pub fn parse_layer(value: &str) -> Result<crate::domain::Layer, AppError> {
 }
 
 pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
     match command {
-        WorkflowCommands::Bootstrap => {
-            let root = std::env::current_dir().map_err(|e| {
-                AppError::InternalError(format!("Failed to get current directory: {}", e))
-            })?;
-            let options = workflow::WorkflowBootstrapOptions { root };
-            let output = workflow::bootstrap(options)?;
-            workflow::write_workflow_output(&output)
-        }
+        WorkflowCommands::Bootstrap { command } => run_workflow_bootstrap(command),
         WorkflowCommands::Doctor => {
+            use crate::app::commands::workflow;
             let options = workflow::WorkflowDoctorOptions {};
             let output = workflow::doctor(options)?;
             workflow::write_workflow_output(&output)?;
@@ -202,6 +207,7 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             Ok(())
         }
         WorkflowCommands::Run { layer, mock, task } => {
+            use crate::app::commands::workflow;
             let layer = parse_layer(&layer)?;
             let mock_tag = std::env::var("JULES_MOCK_TAG").ok();
 
@@ -210,6 +216,7 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             workflow::write_workflow_output(&output)
         }
         WorkflowCommands::Generate { mode, output_dir } => {
+            use crate::app::commands::workflow;
             let output_dir = output_dir.map(std::path::PathBuf::from);
             let options = workflow::WorkflowGenerateOptions { mode, output_dir };
             let output = workflow::generate(options)?;
@@ -217,6 +224,31 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
         }
         WorkflowCommands::Gh { command } => run_workflow_gh(command),
         WorkflowCommands::Exchange { command } => run_workflow_exchange(command),
+    }
+}
+
+fn run_workflow_bootstrap(command: WorkflowBootstrapCommands) -> Result<(), AppError> {
+    use crate::app::commands::workflow;
+
+    let root = std::env::current_dir()
+        .map_err(|e| AppError::InternalError(format!("Failed to get current directory: {}", e)))?;
+
+    match command {
+        WorkflowBootstrapCommands::WorkerBranch => {
+            let options = workflow::WorkflowBootstrapWorkerBranchOptions { root };
+            let output = workflow::bootstrap_worker_branch(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowBootstrapCommands::ManagedFiles => {
+            let options = workflow::WorkflowBootstrapManagedFilesOptions { root };
+            let output = workflow::bootstrap_managed_files(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowBootstrapCommands::Workstations => {
+            let options = workflow::WorkflowBootstrapWorkstationsOptions { root };
+            let output = workflow::bootstrap_workstations(options)?;
+            workflow::write_workflow_output(&output)
+        }
     }
 }
 
@@ -315,23 +347,23 @@ fn run_workflow_gh_process_pr(
 
     let (pr_number, mode, args) = match command {
         WorkflowProcessPrCommands::All { pr_number, args } => {
-            (pr_number, workflow::gh::pr::ProcessMode::All, args)
+            (pr_number, workflow::gh::process::pr::ProcessMode::All, args)
         }
         WorkflowProcessPrCommands::Metadata { pr_number, args } => {
-            (pr_number, workflow::gh::pr::ProcessMode::Metadata, args)
+            (pr_number, workflow::gh::process::pr::ProcessMode::Metadata, args)
         }
         WorkflowProcessPrCommands::Automerge { pr_number, args } => {
-            (pr_number, workflow::gh::pr::ProcessMode::Automerge, args)
+            (pr_number, workflow::gh::process::pr::ProcessMode::Automerge, args)
         }
     };
-    let options = workflow::gh::pr::ProcessOptions {
+    let options = workflow::gh::process::pr::ProcessOptions {
         pr_number,
         mode,
         fail_on_error: args.fail_on_error,
         retry_attempts: args.retry_attempts,
         retry_delay_seconds: args.retry_delay_seconds,
     };
-    let output = workflow::gh::pr::process::execute(github, options)?;
+    let output = workflow::gh::process::pr::process::execute(github, options)?;
     workflow::write_workflow_output(&output)
 }
 
@@ -343,8 +375,9 @@ fn run_workflow_gh_process_issue(
 
     match command {
         WorkflowProcessIssueCommands::LabelInnovator { issue_number, role } => {
-            let options = workflow::gh::issue::LabelInnovatorOptions { issue_number, role };
-            let output = workflow::gh::issue::label_innovator::execute(github, options)?;
+            let options =
+                workflow::gh::process::issue::LabelInnovatorOptions { issue_number, role };
+            let output = workflow::gh::process::issue::label_innovator::execute(github, options)?;
             workflow::write_workflow_output(&output)
         }
     }

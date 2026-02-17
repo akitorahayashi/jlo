@@ -3,3 +3,4 @@ mod bootstrap_fails_without_control_plane_contract;
 mod bootstrap_fails_without_version_pin_contract;
 mod bootstrap_materializes_expected_workspace_contract;
 mod bootstrap_no_projection_contract;
+mod bootstrap_subcommands_contract;

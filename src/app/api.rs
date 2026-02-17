@@ -25,7 +25,9 @@ pub use crate::app::commands::setup::list::{
     EnvVarInfo, SetupComponentDetail, SetupComponentSummary,
 };
 pub use crate::app::commands::update::{UpdateOptions, UpdateResult};
-pub use crate::app::commands::workflow::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
+pub use crate::app::commands::workflow::{
+    WorkflowBootstrapManagedFilesOutput, WorkflowBootstrapWorkstationsOutput,
+};
 pub use crate::domain::AppError;
 pub use crate::domain::WorkflowRunnerMode;
 pub use crate::domain::{BuiltinRoleEntry, Layer};
@@ -256,10 +258,20 @@ pub fn doctor_at(
 // Workflow Command API
 // =============================================================================
 
-/// Materialize `.jules/` from `.jlo/` using the workflow bootstrap process.
-pub fn workflow_bootstrap_at(
+/// Materialize managed runtime files under `.jules/` from embedded scaffold assets.
+pub fn workflow_bootstrap_managed_files_at(
     path: impl Into<PathBuf>,
-) -> Result<WorkflowBootstrapOutput, AppError> {
-    let options = WorkflowBootstrapOptions { root: path.into() };
-    crate::app::commands::workflow::bootstrap(options)
+) -> Result<WorkflowBootstrapManagedFilesOutput, AppError> {
+    let options =
+        crate::app::commands::workflow::WorkflowBootstrapManagedFilesOptions { root: path.into() };
+    crate::app::commands::workflow::bootstrap_managed_files(options)
+}
+
+/// Reconcile workstation perspectives under `.jules/workstations/`.
+pub fn workflow_bootstrap_workstations_at(
+    path: impl Into<PathBuf>,
+) -> Result<WorkflowBootstrapWorkstationsOutput, AppError> {
+    let options =
+        crate::app::commands::workflow::WorkflowBootstrapWorkstationsOptions { root: path.into() };
+    crate::app::commands::workflow::bootstrap_workstations(options)
 }

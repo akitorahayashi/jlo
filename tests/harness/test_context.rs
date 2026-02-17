@@ -102,12 +102,13 @@ impl TestContext {
         self.cli().args(["init", "--self-hosted"]).assert().success();
     }
 
-    /// Run `jlo workflow bootstrap` and assert success.
+    /// Run bootstrap subcommands and assert success.
     pub(crate) fn workflow_bootstrap(&self) {
-        self.cli().args(["workflow", "bootstrap"]).assert().success();
+        self.cli().args(["workflow", "bootstrap", "managed-files"]).assert().success();
+        self.cli().args(["workflow", "bootstrap", "workstations"]).assert().success();
     }
 
-    /// Initialize the workspace and materialize `.jules/` via bootstrap.
+    /// Initialize the workspace and run bootstrap subcommands for `.jules/`.
     pub(crate) fn init_remote_and_bootstrap(&self) {
         self.init_remote();
         self.workflow_bootstrap();

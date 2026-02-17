@@ -10,7 +10,8 @@ fn bootstrap_does_not_delete_unmanaged_files_in_runtime_plane() {
     let random_file = ctx.jules_path().join("random.txt");
     fs::write(&random_file, "I survive").expect("write random file");
 
-    ctx.cli().args(["workflow", "bootstrap"]).assert().success();
+    ctx.cli().args(["workflow", "bootstrap", "managed-files"]).assert().success();
+    ctx.cli().args(["workflow", "bootstrap", "workstations"]).assert().success();
 
     assert!(random_file.exists(), "Unmanaged file in .jules/ should survive bootstrap");
 }
