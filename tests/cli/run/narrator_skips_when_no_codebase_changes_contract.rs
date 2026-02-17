@@ -3,7 +3,7 @@ use crate::harness::git_repository;
 use predicates::prelude::*;
 
 #[test]
-fn run_narrator_skips_when_no_codebase_changes_detected() {
+fn run_narrator_dispatches_even_without_codebase_changes() {
     let ctx = TestContext::new();
 
     ctx.init_remote_and_bootstrap();
@@ -16,5 +16,5 @@ fn run_narrator_skips_when_no_codebase_changes_detected() {
         .args(["run", "narrator", "--prompt-preview"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("No codebase changes detected"));
+        .stdout(predicate::str::contains("Prompt Preview: Narrator"));
 }

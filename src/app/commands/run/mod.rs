@@ -7,6 +7,8 @@ mod requirement_path;
 mod role_session;
 mod strategy;
 
+pub use layer::policy;
+
 use std::path::Path;
 
 use crate::adapters::jules_client::HttpJulesClient;
