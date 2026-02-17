@@ -88,5 +88,5 @@ Reinstalling the workflow kit overwrites rendered schedule/wait values with `.jl
 
 ## Relationship to REPRODUCTION_GUIDE.md
 
-[REPRODUCTION_GUIDE.md](../docs/REPRODUCTION_GUIDE.md) provides reproduction setup guidance.
+[REPRODUCTION_GUIDE.md](../docs/operations/REPRODUCTION_GUIDE.md) provides reproduction setup guidance.
 This file focuses on workflow development context.

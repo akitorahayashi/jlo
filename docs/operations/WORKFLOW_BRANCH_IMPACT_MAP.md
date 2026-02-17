@@ -29,7 +29,7 @@ Branch contract covered by this map:
 
 | Change type | Workflow templates impacted | Composite actions impacted | Tests/doc impacted |
 |---|---|---|---|
-| Rename/add/remove branch variables | `jules-scheduled-workflows.yml.j2`, `jules-workflows/components/*.yml.j2`, `jules-workflows/macros/*.j2` | `install-jlo/action.yml` | `tests/workflow.rs`, `.github/AGENTS.md`, `docs/CONTROL_PLANE_OWNERSHIP.md`, this file |
+| Rename/add/remove branch variables | `jules-scheduled-workflows.yml.j2`, `jules-workflows/components/*.yml.j2`, `jules-workflows/macros/*.j2` | `install-jlo/action.yml` | `tests/workflow.rs`, `.github/AGENTS.md`, `docs/architecture/CONTROL_PLANE_OWNERSHIP.md`, this file |
 | Change source of `.jlo/.jlo-version` | `jules-scheduled-workflows.yml.j2` | `install-jlo/action.yml` | `tests/workflow.rs`, branch-contract docs |
 | Change worker bootstrap/sync strategy | `jules-scheduled-workflows.yml.j2`, `jules-workflows/components/bootstrap.yml.j2` | none | `tests/workflow.rs`, ownership docs |
 | Change implementer target routing | `jules-scheduled-workflows.yml.j2` | `install-jlo/action.yml` | `tests/workflow.rs`, `.github/AGENTS.md` |
