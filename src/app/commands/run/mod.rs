@@ -762,7 +762,7 @@ roles = [
         // --branch override should bypass the check
         let git = TestGit::new(root.clone(), "feature");
 
-        let _mock_tag_env = EnvVarGuard::set("JULES_MOCK_TAG", "test");
+        let _mock_tag_env = EnvVarGuard::set("JULES_MOCK_TAG", "mock-test");
 
         let result = execute_with_mock_prerequisite_validator(
             &repository.jules_path(),

@@ -11,6 +11,9 @@ fn run_narrator_dispatches_even_without_codebase_changes() {
     git_repository::configure_user(ctx.work_dir());
     git_repository::commit_all(ctx.work_dir(), "initial");
 
+    // Narrator runs on worker branch per branch contract.
+    ctx.git_checkout_branch("jules", true);
+
     ctx.cli()
         .env_remove("GITHUB_ACTIONS")
         .args(["run", "narrator", "--prompt-preview"])
