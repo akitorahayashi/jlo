@@ -1,6 +1,6 @@
 schema_version: 1
 id: "__ID__"
-persona: "__PERSONA__"
+role: "__ROLE__"
 created_at: "__DATE__"
 title: "__TITLE__"
 problem: |

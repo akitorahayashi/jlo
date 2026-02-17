@@ -24,7 +24,7 @@ Prompt assembly is delegated to `src/domain/prompt_assembly/`. Each layer gather
 - `layer/decider.rs`: requirement triage and decider workflow routing
 - `layer/planner.rs`: requirement expansion flow
 - `layer/implementer.rs`: implementation routing and post-run cleanup metadata
-- `layer/innovators.rs`: persona/task-driven ideation and proposal flow
+- `layer/innovators.rs`: role/task-driven ideation and proposal flow
 - `layer/integrator.rs`: implementer-branch discovery and integration routing
 - `role_session.rs`: shared role session dispatch helpers
 - `mock/mock_execution.rs`: shared mock execution helpers and assets

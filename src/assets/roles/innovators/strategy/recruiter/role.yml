@@ -3,7 +3,7 @@ description: Identify missing roles and contract boundaries.
 layer: innovators
 
 profile:
-  focus: "Increase proposal quality by identifying missing observer/innovator personas and contract boundaries."
+  focus: "Increase proposal quality by identifying missing observer/innovator roles and contract boundaries."
   analysis_points:
     - "Review and follow .jlo/roles/.agents/skills/create-jlo-observer/SKILL.md, .jlo/roles/.agents/skills/create-jlo-innovator/SKILL.md."
     - "Role-definition coverage and boundary quality in .jlo/roles/observers/*/role.yml"
@@ -24,7 +24,7 @@ profile:
     - "What concrete repository evidence proves this role gap is real?"
     - "What role boundary prevents overlap with current observers and innovators?"
   anti_patterns:
-    - "Proposing personas with no repository-specific need."
+    - "Proposing roles with no repository-specific need."
     - "Duplicating existing roles with new names."
     - "Expanding team size without improving decision quality."
     - "Local cleanup proposals that do not introduce a new team capability."

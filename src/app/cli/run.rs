@@ -23,7 +23,7 @@ pub enum RunLayer {
     /// Run observers layer (requires role)
     #[clap(visible_alias = "o", alias = "observer")]
     Observers {
-        /// Role (persona) to run
+        /// Role to run
         #[arg(short = 'r', long)]
         role: String,
         /// Show assembled prompts without executing
@@ -82,7 +82,7 @@ pub enum RunLayer {
     /// Run innovators layer (requires role)
     #[clap(visible_alias = "x", alias = "innovator")]
     Innovators {
-        /// Role (persona) to run
+        /// Role to run
         #[arg(short = 'r', long)]
         role: String,
         /// Task selector (expected: create_three_proposals)

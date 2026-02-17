@@ -170,8 +170,8 @@ pub enum WorkflowProcessIssueCommands {
     LabelInnovator {
         /// Issue number
         issue_number: u64,
-        /// Persona name (e.g., scout, architect)
-        persona: String,
+        /// Role name (e.g., scout, architect)
+        role: String,
     },
 }
 
@@ -342,8 +342,8 @@ fn run_workflow_gh_process_issue(
     use crate::app::commands::workflow;
 
     match command {
-        WorkflowProcessIssueCommands::LabelInnovator { issue_number, persona } => {
-            let options = workflow::gh::issue::LabelInnovatorOptions { issue_number, persona };
+        WorkflowProcessIssueCommands::LabelInnovator { issue_number, role } => {
+            let options = workflow::gh::issue::LabelInnovatorOptions { issue_number, role };
             let output = workflow::gh::issue::label_innovator::execute(github, options)?;
             workflow::write_workflow_output(&output)
         }

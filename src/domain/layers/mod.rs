@@ -3,7 +3,7 @@ pub mod prompt_assembly;
 
 use std::fmt;
 
-/// The architectural layers for agent roles.
+/// The architectural layers for execution roles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Layer {
     /// Narrator: Summarize codebase changes, produce changes feed
@@ -16,7 +16,7 @@ pub enum Layer {
     Planner,
     /// Implementer: Execute approved tasks, create PRs with code changes (executor_global)
     Implementer,
-    /// Innovators: Generate improvement proposals from persona workstations
+    /// Innovators: Generate improvement proposals from role workstations
     Innovators,
     /// Integrator: Merge all implementer branches into one integration branch
     Integrator,
@@ -99,7 +99,7 @@ impl Layer {
             Layer::Planner => "Read issues requiring deep analysis, expand them in-place.",
             Layer::Implementer => "Execute approved tasks, create PRs with code changes.",
             Layer::Innovators => {
-                "Generate improvement proposals from repository context and persona workstations."
+                "Generate improvement proposals from repository context and role workstations."
             }
             Layer::Integrator => "Merge all implementer branches into one integration branch.",
         }
@@ -137,7 +137,7 @@ impl Layer {
     /// Returns the YAML key used for the role identifier in a workstation perspective file.
     pub fn perspective_role_key(&self) -> Result<&'static str, crate::domain::AppError> {
         match self {
-            Layer::Innovators => Ok("persona"),
+            Layer::Innovators => Ok("role"),
             Layer::Observers => Ok("observer"),
             _ => Err(crate::domain::AppError::RepositoryIntegrity(format!(
                 "Unsupported layer for workstation perspective materialization: '{}'",
@@ -210,5 +210,10 @@ mod tests {
         assert!(!Layer::Implementer.is_innovator());
         assert!(Layer::Innovators.is_innovator());
         assert!(!Layer::Integrator.is_innovator());
+    }
+
+    #[test]
+    fn perspective_role_key_for_innovators_is_role() {
+        assert_eq!(Layer::Innovators.perspective_role_key().unwrap(), "role");
     }
 }

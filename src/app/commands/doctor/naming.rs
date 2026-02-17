@@ -50,7 +50,7 @@ fn validate_proposal_filename(path: &Path, diagnostics: &mut Diagnostics) {
     if !stem.contains('-') {
         diagnostics.push_error(
             path.display().to_string(),
-            "proposal filename must include '<persona>-<slug>'",
+            "proposal filename must include '<role>-<slug>'",
         );
         return;
     } else {
@@ -58,7 +58,7 @@ fn validate_proposal_filename(path: &Path, diagnostics: &mut Diagnostics) {
         if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
             diagnostics.push_error(
                 path.display().to_string(),
-                "proposal filename must be in the format '<persona>-<slug>'",
+                "proposal filename must be in the format '<role>-<slug>'",
             );
         }
     }
@@ -176,11 +176,11 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_proposal_filename_requires_persona_and_slug() {
+    fn test_validate_proposal_filename_requires_role_and_slug() {
         let mut diagnostics = Diagnostics::default();
         validate_proposal_filename(&PathBuf::from("invalid-.yml"), &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 1);
-        assert!(diagnostics.errors()[0].message.contains("<persona>-<slug>"));
+        assert!(diagnostics.errors()[0].message.contains("<role>-<slug>"));
     }
 
     #[test]
