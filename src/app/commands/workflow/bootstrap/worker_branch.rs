@@ -2,8 +2,6 @@
 //!
 //! Ensures the worker branch exists and synchronizes target branch changes into it.
 
-use std::path::Path;
-
 use serde::Serialize;
 
 use crate::adapters::git::GitCommandAdapter;
