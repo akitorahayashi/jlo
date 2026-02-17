@@ -1,8 +1,8 @@
   run-narrator:
-    needs: [check-schedule]
+    needs: [resolve-run-plan]
     if: >-
-      needs.check-schedule.result == 'success' &&
-      fromJSON(needs.check-schedule.outputs.json).run_narrator == true
+      needs.resolve-run-plan.result == 'success' &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == true
     runs-on: {{ runner }}
     timeout-minutes: 30
     outputs:

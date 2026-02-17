@@ -119,7 +119,7 @@ jobs:
   # ============================================================
   # Phase 1: Check schedule
   # ============================================================
-  check-schedule:
+  resolve-run-plan:
     needs: [bootstrap]
     if: |
       needs.bootstrap.result == 'success' &&
@@ -182,10 +182,10 @@ jobs:
   # Phase 2: Run narrator (changes feed generation)
   # ============================================================
   run-narrator:
-    needs: [check-schedule]
+    needs: [resolve-run-plan]
     if: >-
-      needs.check-schedule.result == 'success' &&
-      fromJSON(needs.check-schedule.outputs.json).run_narrator == true
+      needs.resolve-run-plan.result == 'success' &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -350,17 +350,17 @@ jobs:
   # Phase 6: Wait for narrator processing
   # ============================================================
   wait-after-narrator:
-    needs: [check-schedule, run-narrator]
+    needs: [resolve-run-plan, run-narrator]
     if: |
       always() &&
-      needs.check-schedule.result == 'success' &&
+      needs.resolve-run-plan.result == 'success' &&
       (
         (
-          fromJSON(needs.check-schedule.outputs.json).run_narrator == true &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == true &&
           needs.run-narrator.result == 'success'
         ) ||
         (
-          fromJSON(needs.check-schedule.outputs.json).run_narrator == false &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == false &&
           needs.run-narrator.result == 'skipped'
         )
       )
@@ -369,7 +369,7 @@ jobs:
     outputs:
       json: ${{ steps.wait.outputs.json }}
     env:
-      RUN_NARRATOR: ${{ fromJSON(needs.check-schedule.outputs.json).run_narrator }}
+      RUN_NARRATOR: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_narrator }}
     steps:
       - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
         id: wait
@@ -416,9 +416,9 @@ jobs:
   # ============================================================
 
   run-observers:
-    needs: ["check-schedule", "wait-after-narrator"]
+    needs: ["resolve-run-plan", "wait-after-narrator"]
     if: |
-      fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&
             needs.wait-after-narrator.result == 'success'
 
     runs-on: ubuntu-latest
@@ -498,18 +498,18 @@ jobs:
   # Phase 9: Check for pending events (decider gate)
   # ============================================================
   generate-decider-matrix:
-    needs: [check-schedule, wait-after-observers]
+    needs: [resolve-run-plan, wait-after-observers]
     if: |
       always() &&
-      needs.check-schedule.result == 'success' &&
-      fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
+      needs.resolve-run-plan.result == 'success' &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
       (
         (
-          fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&
           needs.wait-after-observers.result == 'success'
         ) ||
         (
-          fromJSON(needs.check-schedule.outputs.json).run_observers == false &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_observers == false &&
           needs.wait-after-observers.result == 'skipped'
         )
       )
@@ -529,7 +529,7 @@ jobs:
       - name: Check for pending events
         id: matrix
         env:
-          REQUEST_DECIDER: ${{ fromJSON(needs.check-schedule.outputs.json).run_decider }}
+          REQUEST_DECIDER: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_decider }}
         run: |
           set -euo pipefail
           HAS_PENDING=$(jlo workflow exchange inspect | jq '(.events.pending_files | length) > 0')
@@ -627,20 +627,20 @@ jobs:
   # Phase 12: Resolve planner/implementer run requests
   # ============================================================
   generate-routing-matrix:
-    needs: [check-schedule, generate-decider-matrix, run-decider, wait-after-decider]
+    needs: [resolve-run-plan, generate-decider-matrix, run-decider, wait-after-decider]
     if: |
       always() &&
-      needs.check-schedule.result == 'success' &&
-      (fromJSON(needs.check-schedule.outputs.json).run_planner == true || fromJSON(needs.check-schedule.outputs.json).run_implementer == true) &&
+      needs.resolve-run-plan.result == 'success' &&
+      (fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true || fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true) &&
       (
         (
-          fromJSON(needs.check-schedule.outputs.json).run_decider == false &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == false &&
           needs.generate-decider-matrix.result == 'skipped' &&
           needs.run-decider.result == 'skipped' &&
           needs.wait-after-decider.result == 'skipped'
         ) ||
         (
-          fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
           needs.generate-decider-matrix.result == 'success' &&
           (
             (
@@ -662,8 +662,8 @@ jobs:
       - name: Resolve planner/implementer run requests
         id: matrix
         env:
-          REQUEST_PLANNER: ${{ fromJSON(needs.check-schedule.outputs.json).run_planner }}
-          REQUEST_IMPLEMENTER: ${{ fromJSON(needs.check-schedule.outputs.json).run_implementer }}
+          REQUEST_PLANNER: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_planner }}
+          REQUEST_IMPLEMENTER: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_implementer }}
         run: |
           set -euo pipefail
           echo "json={\"run_planner\":$REQUEST_PLANNER,\"run_implementer\":$REQUEST_IMPLEMENTER}" >> "$GITHUB_OUTPUT"

@@ -1,15 +1,15 @@
   wait-after-narrator:
-    needs: [check-schedule, run-narrator]
+    needs: [resolve-run-plan, run-narrator]
     if: |
       always() &&
-      needs.check-schedule.result == 'success' &&
+      needs.resolve-run-plan.result == 'success' &&
       (
         (
-          fromJSON(needs.check-schedule.outputs.json).run_narrator == true &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == true &&
           needs.run-narrator.result == 'success'
         ) ||
         (
-          fromJSON(needs.check-schedule.outputs.json).run_narrator == false &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == false &&
           needs.run-narrator.result == 'skipped'
         )
       )
@@ -18,7 +18,7 @@
     outputs:
       json: {{ gha_expr("steps.wait.outputs.json") }}
     env:
-      RUN_NARRATOR: {{ gha_expr("fromJSON(needs.check-schedule.outputs.json).run_narrator") }}
+      RUN_NARRATOR: {{ gha_expr("fromJSON(needs.resolve-run-plan.outputs.json).run_narrator") }}
     steps:
       - name: Wait {{ gha_raw("env.WAIT_MINUTES") }} minutes for Jules async processing
         id: wait

@@ -100,12 +100,12 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "Legacy wait-after-initial-requests job should not exist"
     );
     assert!(
-        workflow.contains("needs: [\"check-schedule\", \"wait-after-narrator\"]"),
+        workflow.contains("needs: [\"resolve-run-plan\", \"wait-after-narrator\"]"),
         "run-observers should depend on narrator wait only when narrator path is used"
     );
     assert!(
         workflow.contains(
-            "fromJSON(needs.check-schedule.outputs.json).run_observers == true &&\n            needs.wait-after-narrator.result == 'success'"
+            "fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&\n            needs.wait-after-narrator.result == 'success'"
         ),
         "run-observers should stay simple and require narrator-wait gate success"
     );
@@ -114,7 +114,7 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "wait-after-narrator should explicitly skip waiting when narrator is not requested"
     );
     assert!(
-        workflow.contains("fromJSON(needs.check-schedule.outputs.json).run_narrator == false &&"),
+        workflow.contains("fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == false &&"),
         "wait-after-narrator should branch for non-narrator entry points"
     );
 }

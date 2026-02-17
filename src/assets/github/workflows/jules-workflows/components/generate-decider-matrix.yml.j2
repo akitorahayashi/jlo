@@ -1,16 +1,16 @@
   generate-decider-matrix:
-    needs: [check-schedule, wait-after-observers]
+    needs: [resolve-run-plan, wait-after-observers]
     if: |
       always() &&
-      needs.check-schedule.result == 'success' &&
-      fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
+      needs.resolve-run-plan.result == 'success' &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
       (
         (
-          fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&
           needs.wait-after-observers.result == 'success'
         ) ||
         (
-          fromJSON(needs.check-schedule.outputs.json).run_observers == false &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_observers == false &&
           needs.wait-after-observers.result == 'skipped'
         )
       )
@@ -30,7 +30,7 @@
       - name: Check for pending events
         id: matrix
         env:
-          REQUEST_DECIDER: {{ gha_expr("fromJSON(needs.check-schedule.outputs.json).run_decider") }}
+          REQUEST_DECIDER: {{ gha_expr("fromJSON(needs.resolve-run-plan.outputs.json).run_decider") }}
         run: |
           set -euo pipefail
           HAS_PENDING=$(jlo workflow exchange inspect | jq '(.events.pending_files | length) > 0')
