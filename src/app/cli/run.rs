@@ -21,8 +21,8 @@ pub enum RunLayer {
         mock: bool,
     },
     /// Run observers layer (requires role)
-    #[clap(visible_alias = "o", alias = "observers")]
-    Observer {
+    #[clap(visible_alias = "o", alias = "observer")]
+    Observers {
         /// Role (persona) to run
         #[arg(short = 'r', long)]
         role: String,
@@ -80,8 +80,8 @@ pub enum RunLayer {
         mock: bool,
     },
     /// Run innovators layer (requires role)
-    #[clap(visible_alias = "x", alias = "innovators")]
-    Innovator {
+    #[clap(visible_alias = "x", alias = "innovator")]
+    Innovators {
         /// Role (persona) to run
         #[arg(short = 'r', long)]
         role: String,
@@ -99,7 +99,7 @@ pub enum RunLayer {
         mock: bool,
     },
     /// Run integrator layer (merges implementer branches into one integration PR)
-    #[clap(visible_alias = "g", alias = "integrators")]
+    #[clap(visible_alias = "g")]
     Integrator {
         /// Show assembled prompts without executing
         #[arg(long)]
@@ -117,7 +117,7 @@ pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
         RunLayer::Narrator { prompt_preview, branch, mock } => {
             (Layer::Narrator, None, prompt_preview, branch, None, mock, None)
         }
-        RunLayer::Observer { role, prompt_preview, branch, mock } => {
+        RunLayer::Observers { role, prompt_preview, branch, mock } => {
             (Layer::Observers, Some(role), prompt_preview, branch, None, mock, None)
         }
         RunLayer::Decider { prompt_preview, branch, mock } => {
@@ -129,7 +129,7 @@ pub fn run_agents(layer: RunLayer) -> Result<(), AppError> {
         RunLayer::Implementer { prompt_preview, branch, requirement, mock } => {
             (Layer::Implementer, None, prompt_preview, branch, Some(requirement), mock, None)
         }
-        RunLayer::Innovator { role, task, prompt_preview, branch, mock } => {
+        RunLayer::Innovators { role, task, prompt_preview, branch, mock } => {
             (Layer::Innovators, Some(role), prompt_preview, branch, None, mock, task)
         }
         RunLayer::Integrator { prompt_preview, branch } => {
