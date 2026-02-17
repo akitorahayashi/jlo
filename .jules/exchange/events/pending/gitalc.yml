@@ -9,8 +9,10 @@ statement: |
   `GitCommandAdapter` suffers from two issues: it eagerly allocates `String`s for command output (even when unused) and converts structured `std::process::Output` errors into unstructured `String` messages. This reduces performance and hinders precise error handling.
 evidence:
   - path: "src/adapters/git/git_command.rs"
-    loc: "33"
+    loc:
+      - "33"
     note: "Eager `to_string()` allocation on `stdout` regardless of caller need."
   - path: "src/adapters/git/git_command.rs"
-    loc: "20-31"
+    loc:
+      - "20-31"
     note: "Lossy conversion of stderr and exit codes into a generic `AppError::GitError` string."

@@ -9,5 +9,6 @@ statement: |
   The `AppError` enum is a monolithic error type that mixes I/O, configuration, domain logic, and external tool errors. This makes it difficult to handle specific error cases gracefully and increases the coupling between unrelated modules.
 evidence:
   - path: "src/domain/error.rs"
-    loc: "14-167"
+    loc:
+      - "14-167"
     note: "Single `AppError` enum contains over 30 variants spanning all domain concerns."
