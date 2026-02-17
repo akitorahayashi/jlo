@@ -21,7 +21,7 @@ pub enum RunLayer {
         mock: bool,
     },
     /// Run observers layer (requires role)
-    #[clap(visible_alias = "o")]
+    #[clap(visible_alias = "o", alias = "observer")]
     Observers {
         /// Role (persona) to run
         #[arg(short = 'r', long)]
@@ -80,7 +80,7 @@ pub enum RunLayer {
         mock: bool,
     },
     /// Run innovators layer (requires role)
-    #[clap(visible_alias = "x")]
+    #[clap(visible_alias = "x", alias = "innovator")]
     Innovators {
         /// Role (persona) to run
         #[arg(short = 'r', long)]
@@ -99,7 +99,7 @@ pub enum RunLayer {
         mock: bool,
     },
     /// Run integrator layer (merges implementer branches into one integration PR)
-    #[clap(visible_alias = "g", alias = "integrators")]
+    #[clap(visible_alias = "g")]
     Integrator {
         /// Show assembled prompts without executing
         #[arg(long)]

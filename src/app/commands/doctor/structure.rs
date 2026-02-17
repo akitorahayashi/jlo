@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::domain::config::parse::parse_config_content;
-use crate::domain::{AppError, Layer, RunConfig};
+use crate::domain::{AppError, Layer, RunConfig, Version};
 
 use super::diagnostics::Diagnostics;
 
@@ -164,48 +164,23 @@ fn check_version_file(jules_path: &Path, current_version: &str, diagnostics: &mu
         }
     };
 
-    let runtime_parts = parse_version_parts(&content);
-    let current_parts = parse_version_parts(current_version);
-
-    if runtime_parts.is_none() {
+    let Some(runtime_version) = Version::parse(&content) else {
         diagnostics.push_error(version_path.display().to_string(), "Invalid version format");
         return;
-    }
+    };
 
-    if current_parts.is_none() {
+    let Some(current_version_obj) = Version::parse(current_version) else {
         diagnostics
             .push_error(version_path.display().to_string(), "Current binary version is invalid");
         return;
-    }
+    };
 
-    if compare_versions(&runtime_parts.unwrap(), &current_parts.unwrap()) > 0 {
+    if runtime_version > current_version_obj {
         diagnostics.push_error(
             version_path.display().to_string(),
             "Repository version is newer than the binary",
         );
     }
-}
-
-fn parse_version_parts(version: &str) -> Option<Vec<u32>> {
-    let parts: Vec<_> = version.split('.').map(|segment| segment.parse::<u32>()).collect();
-    if parts.iter().any(|part| part.is_err()) {
-        return None;
-    }
-    Some(parts.into_iter().map(|part| part.unwrap()).collect())
-}
-
-fn compare_versions(left: &[u32], right: &[u32]) -> i32 {
-    let max_len = left.len().max(right.len());
-    for idx in 0..max_len {
-        let left_value = *left.get(idx).unwrap_or(&0);
-        let right_value = *right.get(idx).unwrap_or(&0);
-        match left_value.cmp(&right_value) {
-            std::cmp::Ordering::Less => return -1,
-            std::cmp::Ordering::Greater => return 1,
-            std::cmp::Ordering::Equal => {}
-        }
-    }
-    0
 }
 
 fn ensure_directory_exists(path: PathBuf, diagnostics: &mut Diagnostics) {
@@ -258,31 +233,6 @@ mod tests {
     use crate::app::commands::doctor::diagnostics::Diagnostics;
 
     use super::*;
-
-    #[test]
-    fn test_parse_version_parts() {
-        assert_eq!(parse_version_parts("1.2.3"), Some(vec![1, 2, 3]));
-        assert_eq!(parse_version_parts("1.0"), Some(vec![1, 0]));
-        assert_eq!(parse_version_parts("10.20.30"), Some(vec![10, 20, 30]));
-        assert_eq!(parse_version_parts("invalid"), None);
-        assert_eq!(parse_version_parts("1.a.2"), None);
-    }
-
-    #[test]
-    fn test_compare_versions() {
-        // Equal
-        assert_eq!(compare_versions(&[1, 2, 3], &[1, 2, 3]), 0);
-        // Left greater
-        assert_eq!(compare_versions(&[1, 2, 4], &[1, 2, 3]), 1);
-        assert_eq!(compare_versions(&[1, 3, 0], &[1, 2, 3]), 1);
-        assert_eq!(compare_versions(&[2, 0, 0], &[1, 2, 3]), 1);
-        assert_eq!(compare_versions(&[1, 2, 3, 1], &[1, 2, 3]), 1);
-        // Left smaller
-        assert_eq!(compare_versions(&[1, 2, 2], &[1, 2, 3]), -1);
-        assert_eq!(compare_versions(&[1, 1, 9], &[1, 2, 3]), -1);
-        assert_eq!(compare_versions(&[0, 9, 9], &[1, 2, 3]), -1);
-        assert_eq!(compare_versions(&[1, 2], &[1, 2, 3]), -1);
-    }
 
     #[test]
     fn test_check_version_file_missing_is_ok() {
