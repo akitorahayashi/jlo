@@ -23,11 +23,14 @@ desired_outcome: |
   Compilation time is noticeably reduced. Unused dependencies are removed. Heavy dependencies are optimized or replaced if possible.
 
 constraints: []
-risks: []
+risks:
+  - "Replacing `reqwest` with `ureq` or `minreq` might introduce subtle behavior differences (e.g. timeout handling, redirect policy, proxy support)."
+  - "Code changes required in `src/adapters/jules_client/http.rs`."
 
 # Specifics
 affected_areas:
   - "Cargo.toml"
+  - "src/adapters/jules_client/http.rs"
 
 acceptance_criteria:
   - "Dependency tree analyzed."
@@ -37,5 +40,18 @@ verification_criteria:
   - "Measure `cargo build` time before and after changes."
 
 # Analysis Flags
-requires_deep_analysis: true
-deep_analysis_reason: "Need to profile build times and dependency graph to identify bottlenecks."
+requires_deep_analysis: false
+deep_analysis_reason: |
+  Need to profile build times and dependency graph to identify bottlenecks.
+
+  **Analysis Findings:**
+  - **Build Time:** Measured ~1m 25s for clean build.
+  - **Dependency Analysis:**
+      - `reqwest` (blocking) pulls heavy async runtime `tokio`, `hyper`, `rustls`. This is the single largest contributor to compile time.
+      - `toml` and `toml_edit` are both present. `toml` is used for simple parsing/serialization, while `toml_edit` is used for modifying files while preserving comments. Deduplication is possible but `toml_edit` API is more verbose.
+      - `minijinja` is lightweight and necessary.
+      - `include_dir` is necessary for asset embedding.
+
+  **Optimization Strategy:**
+  - **Primary:** Replace `reqwest` with a synchronous HTTP client like `ureq` (v3). This eliminates `tokio`, `hyper`, and `rustls` dependencies, potentially cutting build time significantly.
+  - **Secondary:** Investigate consolidating `toml` and `toml_edit` usage to just `toml_edit` to reduce dependency count.
