@@ -51,15 +51,8 @@ where
             })?;
 
             let mock_config = load_mock_config(jules_path, repository)?;
-            let output = execute_mock(
-                jules_path,
-                &role,
-                task,
-                &mock_config,
-                git,
-                github,
-                repository,
-            )?;
+            let output =
+                execute_mock(jules_path, &role, task, &mock_config, git, github, repository)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
@@ -375,8 +368,7 @@ mod tests {
         let role_id = RoleId::new("alice").unwrap();
         let task = "create_three_proposals";
 
-        let result =
-            execute_mock(&jules_path, &role_id, task, &config, &git, &github, &repository);
+        let result = execute_mock(&jules_path, &role_id, task, &config, &git, &github, &repository);
         assert!(result.is_ok());
         let output = result.unwrap();
         assert!(output.mock_branch.starts_with("jules-innovator-"));
@@ -409,8 +401,7 @@ mod tests {
         let role_id = RoleId::new("alice").unwrap();
         let task = "invalid_task";
 
-        let result =
-            execute_mock(&jules_path, &role_id, task, &config, &git, &github, &repository);
+        let result = execute_mock(&jules_path, &role_id, task, &config, &git, &github, &repository);
         assert!(result.is_err());
     }
 
@@ -425,8 +416,7 @@ mod tests {
         let role_id = RoleId::new("leverage_architect").unwrap();
         let task = "create_three_proposals";
 
-        let result =
-            execute_mock(&jules_path, &role_id, task, &config, &git, &github, &repository);
+        let result = execute_mock(&jules_path, &role_id, task, &config, &git, &github, &repository);
         assert!(result.is_ok());
 
         let p1 = jules_path.join("exchange/proposals/leverage-architect-mock-proposal-1.yml");

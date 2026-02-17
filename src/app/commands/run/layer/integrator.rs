@@ -4,11 +4,11 @@ use serde::Deserialize;
 
 use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::detect_repository_source;
+use crate::domain::identifiers::validate_identifier;
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
-use crate::domain::identifiers::validate_identifier;
 use crate::domain::{AppError, Layer, RunConfig, RunOptions};
 use crate::ports::{
     AutomationMode, Git, GitHub, JloStore, JulesStore, RepositoryFilesystem, SessionRequest,
