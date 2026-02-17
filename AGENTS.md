@@ -2,8 +2,6 @@
 
 `jlo` manages the `.jules/` scaffolding for agent configuration and assets, and orchestrates the complete autonomous lifecycle via GitHub Actions.
 
-## Architecture
-
 | Component | Responsibility |
 |-----------|----------------|
 | jlo | Scaffold installation, versioning, prompt asset management |
@@ -31,6 +29,10 @@ Two merge lanes are intentionally distinct:
 `doctor` remains workflow orchestration responsibility.
 Programmatic commands do not embed a mandatory internal `doctor` execution; workflows run `jlo workflow doctor` as a separate step after command execution.
 
+### 4. Generated Workflow Files Are Not Manually Edited
+Generated workflow files under `.github/workflows/` are projection artifacts from templates in `src/assets/github/workflows/`.
+Manual edits to generated files are not part of the maintained state; changes are applied in templates and then regenerated through `jlo workflow generate`.
+
 ## Development Context
 
 See [src/AGENTS.md](src/AGENTS.md) for development verification commands and CLI architecture details.
@@ -42,9 +44,6 @@ See [src/AGENTS.md](src/AGENTS.md) for development verification commands and CLI
 - [.github/AGENTS.md](.github/AGENTS.md) — GitHub Actions workflows design
 - [src/assets/scaffold/AGENTS.md](src/assets/scaffold/AGENTS.md) — `.jules/` scaffold design
 - [src/assets/templates/AGENTS.md](src/assets/templates/AGENTS.md) — Template system
-
-### Documentation Index
-- [Documentation Index](docs/README.md) — Central index for all documentation.
 
 ### Architectural Guides
 - [Control Plane Ownership](docs/architecture/CONTROL_PLANE_OWNERSHIP.md) — `.jlo/` vs `.jules/` ownership model and projection rules

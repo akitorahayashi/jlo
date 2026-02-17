@@ -85,47 +85,19 @@ jobs:
       - name: Configure Git
         uses: ./.github/actions/configure-git
 
-      - name: Ensure worker branch
-        run: |
-          set -euo pipefail
-          git fetch origin "${JLO_TARGET_BRANCH}"
-          if git ls-remote --exit-code --heads origin "${JULES_WORKER_BRANCH}" >/dev/null 2>&1; then
-            echo "${JULES_WORKER_BRANCH} branch exists, checking out"
-          else
-            echo "Creating ${JULES_WORKER_BRANCH} from ${JLO_TARGET_BRANCH} via GitHub API"
-            target_sha="$(git rev-parse "origin/${JLO_TARGET_BRANCH}")"
-            gh api \
-              --method POST \
-              "/repos/${GITHUB_REPOSITORY}/git/refs" \
-              -f ref="refs/heads/${JULES_WORKER_BRANCH}" \
-              -f sha="${target_sha}" >/dev/null
-          fi
-          git fetch origin "${JULES_WORKER_BRANCH}"
-          git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JULES_WORKER_BRANCH}"
-
-      - name: Merge target branch into worker
-        run: |
-          set -euo pipefail
-          git fetch origin "$JLO_TARGET_BRANCH"
-          # Merge control branch, preferring control-plane code changes.
-          git merge "origin/$JLO_TARGET_BRANCH" --no-edit -X theirs --allow-unrelated-histories || {
-            # On conflict, preserve runtime plane from the worker branch.
-            git checkout --ours .jules/
-            git add .jules/
-            if git diff --cached --quiet; then
-              echo "::error::Merge failed and no conflict resolution changes were staged."
-              exit 1
-            fi
-            git commit --no-edit
-          }
-
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Bootstrap runtime repository
-        run: jlo workflow bootstrap
+      - name: Sync worker branch
+        run: jlo workflow bootstrap worker-branch
 
-      - name: Validate repository (fail-fast)
+      - name: Bootstrap managed files
+        run: jlo workflow bootstrap managed-files
+
+      - name: Reconcile workstation perspectives
+        run: jlo workflow bootstrap workstations
+
+      - name: Validate repository
         run: jlo workflow doctor
 
       - name: Publish bootstrap updates via worker-branch merge path
@@ -136,10 +108,18 @@ jobs:
             exit 0
           fi
 
-          pr_body=$'Automated bootstrap update for the runtime workspace.\n\n- synchronize '"${JLO_TARGET_BRANCH}"' into '"${JULES_WORKER_BRANCH}"$'\n- materialize .jules via jlo workflow bootstrap'
+          pr_body=$(cat <<EOF
+          Automated bootstrap update for the runtime workspace.
+
+          - synchronize ${JLO_TARGET_BRANCH} into ${JULES_WORKER_BRANCH} via \`jlo workflow bootstrap worker-branch\`
+          - bootstrap managed files via \`jlo workflow bootstrap managed-files\`
+          - reconcile workstations via \`jlo workflow bootstrap workstations\`
+          EOF
+          )
+          jlo_version="$(jlo --version | cut -d ' ' -f 2)"
           jlo workflow gh push worker-branch \
             --change-token "bootstrap" \
-            --commit-message "chore: bootstrap .jules/ runtime repository [jlo $(jlo --version | awk '{print $2}')]" \
+            --commit-message "chore: bootstrap .jules/ runtime repository [jlo ${jlo_version}]" \
             --pr-title "chore: bootstrap runtime workspace" \
             --pr-body "${pr_body}"
 
@@ -147,7 +127,7 @@ jobs:
   # ============================================================
   # Phase 1: Check schedule
   # ============================================================
-  check-schedule:
+  resolve-run-plan:
     needs: [bootstrap]
     if: |
       needs.bootstrap.result == 'success' &&
@@ -210,10 +190,10 @@ jobs:
   # Phase 2: Run narrator (changes feed generation)
   # ============================================================
   run-narrator:
-    needs: [check-schedule]
+    needs: [resolve-run-plan]
     if: >-
-      needs.check-schedule.result == 'success' &&
-      fromJSON(needs.check-schedule.outputs.json).run_narrator == true
+      needs.resolve-run-plan.result == 'success' &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -238,8 +218,8 @@ jobs:
         id: run
         run: jlo workflow run narrator ${{ env.JLO_RUN_FLAGS }}
 
-      - name: Validate repository (fail-fast)
-        run: jlo doctor
+      - name: Validate repository
+        run: jlo workflow doctor
 
   # ============================================================
   # Phase 3: Run innovators (proposal generation)
@@ -358,7 +338,7 @@ jobs:
       - name: Publish proposals
         run: jlo workflow exchange publish-proposals
 
-      - name: Validate repository (fail-fast)
+      - name: Validate repository
         run: jlo workflow doctor
 
       - name: Merge published proposal cleanup
@@ -378,17 +358,17 @@ jobs:
   # Phase 6: Wait for narrator processing
   # ============================================================
   wait-after-narrator:
-    needs: [check-schedule, run-narrator]
+    needs: [resolve-run-plan, run-narrator]
     if: |
       always() &&
-      needs.check-schedule.result == 'success' &&
+      needs.resolve-run-plan.result == 'success' &&
       (
         (
-          fromJSON(needs.check-schedule.outputs.json).run_narrator == true &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == true &&
           needs.run-narrator.result == 'success'
         ) ||
         (
-          fromJSON(needs.check-schedule.outputs.json).run_narrator == false &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == false &&
           needs.run-narrator.result == 'skipped'
         )
       )
@@ -397,7 +377,7 @@ jobs:
     outputs:
       json: ${{ steps.wait.outputs.json }}
     env:
-      RUN_NARRATOR: ${{ fromJSON(needs.check-schedule.outputs.json).run_narrator }}
+      RUN_NARRATOR: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_narrator }}
     steps:
       - name: Wait ${{ env.WAIT_MINUTES }} minutes for Jules async processing
         id: wait
@@ -444,9 +424,9 @@ jobs:
   # ============================================================
 
   run-observers:
-    needs: ["check-schedule", "wait-after-narrator"]
+    needs: ["resolve-run-plan", "wait-after-narrator"]
     if: |
-      fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&
             needs.wait-after-narrator.result == 'success'
 
     runs-on: ubuntu-latest
@@ -526,18 +506,18 @@ jobs:
   # Phase 9: Check for pending events (decider gate)
   # ============================================================
   generate-decider-matrix:
-    needs: [check-schedule, wait-after-observers]
+    needs: [resolve-run-plan, wait-after-observers]
     if: |
       always() &&
-      needs.check-schedule.result == 'success' &&
-      fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
+      needs.resolve-run-plan.result == 'success' &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
       (
         (
-          fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&
           needs.wait-after-observers.result == 'success'
         ) ||
         (
-          fromJSON(needs.check-schedule.outputs.json).run_observers == false &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_observers == false &&
           needs.wait-after-observers.result == 'skipped'
         )
       )
@@ -557,7 +537,7 @@ jobs:
       - name: Check for pending events
         id: matrix
         env:
-          REQUEST_DECIDER: ${{ fromJSON(needs.check-schedule.outputs.json).run_decider }}
+          REQUEST_DECIDER: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_decider }}
         run: |
           set -euo pipefail
           HAS_PENDING=$(jlo workflow exchange inspect | jq '(.events.pending_files | length) > 0')
@@ -655,20 +635,20 @@ jobs:
   # Phase 12: Resolve planner/implementer run requests
   # ============================================================
   generate-routing-matrix:
-    needs: [check-schedule, generate-decider-matrix, run-decider, wait-after-decider]
+    needs: [resolve-run-plan, generate-decider-matrix, run-decider, wait-after-decider]
     if: |
       always() &&
-      needs.check-schedule.result == 'success' &&
-      (fromJSON(needs.check-schedule.outputs.json).run_planner == true || fromJSON(needs.check-schedule.outputs.json).run_implementer == true) &&
+      needs.resolve-run-plan.result == 'success' &&
+      (fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true || fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true) &&
       (
         (
-          fromJSON(needs.check-schedule.outputs.json).run_decider == false &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == false &&
           needs.generate-decider-matrix.result == 'skipped' &&
           needs.run-decider.result == 'skipped' &&
           needs.wait-after-decider.result == 'skipped'
         ) ||
         (
-          fromJSON(needs.check-schedule.outputs.json).run_decider == true &&
+          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
           needs.generate-decider-matrix.result == 'success' &&
           (
             (
@@ -690,8 +670,8 @@ jobs:
       - name: Resolve planner/implementer run requests
         id: matrix
         env:
-          REQUEST_PLANNER: ${{ fromJSON(needs.check-schedule.outputs.json).run_planner }}
-          REQUEST_IMPLEMENTER: ${{ fromJSON(needs.check-schedule.outputs.json).run_implementer }}
+          REQUEST_PLANNER: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_planner }}
+          REQUEST_IMPLEMENTER: ${{ fromJSON(needs.resolve-run-plan.outputs.json).run_implementer }}
         run: |
           set -euo pipefail
           echo "json={\"run_planner\":$REQUEST_PLANNER,\"run_implementer\":$REQUEST_IMPLEMENTER}" >> "$GITHUB_OUTPUT"
@@ -797,7 +777,6 @@ jobs:
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GH_TOKEN: ${{ secrets.JLO_BOT_TOKEN }}
-      TARGET_BRANCH: 'main'
       JLO_DEFER_WORKER_MERGE: 'true'
     steps:
       - uses: actions/checkout@v4
@@ -908,7 +887,7 @@ jobs:
         run: |
           jlo workflow exchange clean mock --mock-tag "$JULES_MOCK_TAG"
 
-      - name: Validate repository (fail-fast)
+      - name: Validate repository
         run: jlo workflow doctor
 
       - name: Merge mock cleanup changes
@@ -923,3 +902,4 @@ jobs:
             --commit-message "jules: cleanup mock artifacts ${JULES_MOCK_TAG}" \
             --pr-title "chore: cleanup mock artifacts ${JULES_MOCK_TAG}" \
             --pr-body "Automated cleanup for mock run ${JULES_MOCK_TAG}."
+

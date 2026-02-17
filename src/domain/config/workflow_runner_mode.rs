@@ -15,8 +15,12 @@ pub struct WorkflowRunnerMode(String);
 impl WorkflowRunnerMode {
     /// Well-known shortcut for GitHub-hosted runners.
     pub const REMOTE: &str = "remote";
+    /// Alias for REMOTE.
+    pub const REMOTE_ALIAS: &str = "r";
     /// Well-known shortcut for the generic self-hosted label.
     pub const SELF_HOSTED: &str = "self-hosted";
+    /// Alias for SELF_HOSTED.
+    pub const SELF_HOSTED_ALIAS: &str = "s";
 
     /// The config value as written in `.jlo/config.toml`.
     pub fn label(&self) -> &str {
@@ -49,7 +53,8 @@ impl FromStr for WorkflowRunnerMode {
         }
         // Normalize well-known aliases to lowercase; pass everything else through verbatim.
         let normalized = match trimmed.to_lowercase().as_str() {
-            v @ (Self::REMOTE | Self::SELF_HOSTED) => v.to_string(),
+            Self::REMOTE | Self::REMOTE_ALIAS => Self::REMOTE.to_string(),
+            Self::SELF_HOSTED | Self::SELF_HOSTED_ALIAS => Self::SELF_HOSTED.to_string(),
             _ => trimmed.to_string(),
         };
         Ok(Self(normalized))

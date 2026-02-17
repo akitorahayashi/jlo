@@ -60,7 +60,7 @@ jobs:
   # ============================================================
   # Phase 1: Check schedule
   # ============================================================
-{% include "workflows/jules-workflows/components/check-schedule.yml.j2" %}
+{% include "workflows/jules-workflows/components/resolve-run-plan.yml.j2" %}
 
   # ============================================================
   # Phase 2: Run narrator (changes feed generation)
@@ -92,8 +92,8 @@ jobs:
     'observers',
     'Run observers',
     {},
-    ['check-schedule', 'wait-after-narrator'],
-    "fromJSON(needs.check-schedule.outputs.json).run_observers == true &&
+    ['resolve-run-plan', 'wait-after-narrator'],
+    "fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&
       needs.wait-after-narrator.result == 'success'"
 ) }}
   # ============================================================
@@ -147,7 +147,7 @@ jobs:
     'run_implementer',
     'implementer',
     'Run implementer',
-  {'TARGET_BRANCH': "'" ~ target_branch ~ "'", 'JLO_DEFER_WORKER_MERGE': "'true'"}
+  {'JLO_DEFER_WORKER_MERGE': "'true'"}
 ) }}
   # ============================================================
   # Phase 16: Wait for implementer labels

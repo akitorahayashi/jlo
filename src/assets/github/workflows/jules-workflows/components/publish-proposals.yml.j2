@@ -22,7 +22,7 @@
       - name: Publish proposals
         run: jlo workflow exchange publish-proposals
 
-      - name: Validate repository (fail-fast)
+      - name: Validate repository
         run: jlo workflow doctor
 
       - name: Merge published proposal cleanup

@@ -11,7 +11,11 @@ pub mod gh;
 mod output;
 mod run;
 
-pub use bootstrap::{WorkflowBootstrapOptions, WorkflowBootstrapOutput};
+pub use bootstrap::{
+    WorkflowBootstrapManagedFilesOptions, WorkflowBootstrapManagedFilesOutput,
+    WorkflowBootstrapWorkerBranchOptions, WorkflowBootstrapWorkerBranchOutput,
+    WorkflowBootstrapWorkstationsOptions, WorkflowBootstrapWorkstationsOutput,
+};
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
 pub use generate::{WorkflowGenerateOptions, WorkflowGenerateOutput};
 pub use output::write_workflow_output;
@@ -20,9 +24,25 @@ pub use run::{WorkflowRunOptions, WorkflowRunOutput};
 use crate::domain::AppError;
 use crate::ports::JulesStore;
 
-/// Execute workflow bootstrap.
-pub fn bootstrap(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOutput, AppError> {
-    bootstrap::execute(options)
+/// Execute workflow bootstrap managed files projection.
+pub fn bootstrap_managed_files(
+    options: WorkflowBootstrapManagedFilesOptions,
+) -> Result<WorkflowBootstrapManagedFilesOutput, AppError> {
+    bootstrap::managed_files::execute(options)
+}
+
+/// Execute workflow bootstrap workstation reconciliation.
+pub fn bootstrap_workstations(
+    options: WorkflowBootstrapWorkstationsOptions,
+) -> Result<WorkflowBootstrapWorkstationsOutput, AppError> {
+    bootstrap::workstations::execute(options)
+}
+
+/// Execute workflow bootstrap worker-branch synchronization.
+pub fn bootstrap_worker_branch(
+    options: WorkflowBootstrapWorkerBranchOptions,
+) -> Result<WorkflowBootstrapWorkerBranchOutput, AppError> {
+    bootstrap::worker_branch::execute(options)
 }
 
 /// Execute workflow doctor validation.

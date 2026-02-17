@@ -28,47 +28,19 @@
       - name: Configure Git
         uses: ./.github/actions/configure-git
 
-      - name: Ensure worker branch
-        run: |
-          set -euo pipefail
-          git fetch origin "${JLO_TARGET_BRANCH}"
-          if git ls-remote --exit-code --heads origin "${JULES_WORKER_BRANCH}" >/dev/null 2>&1; then
-            echo "${JULES_WORKER_BRANCH} branch exists, checking out"
-          else
-            echo "Creating ${JULES_WORKER_BRANCH} from ${JLO_TARGET_BRANCH} via GitHub API"
-            target_sha="$(git rev-parse "origin/${JLO_TARGET_BRANCH}")"
-            gh api \
-              --method POST \
-              "/repos/${GITHUB_REPOSITORY}/git/refs" \
-              -f ref="refs/heads/${JULES_WORKER_BRANCH}" \
-              -f sha="${target_sha}" >/dev/null
-          fi
-          git fetch origin "${JULES_WORKER_BRANCH}"
-          git checkout -B "${JULES_WORKER_BRANCH}" "origin/${JULES_WORKER_BRANCH}"
-
-      - name: Merge target branch into worker
-        run: |
-          set -euo pipefail
-          git fetch origin "$JLO_TARGET_BRANCH"
-          # Merge control branch, preferring control-plane code changes.
-          git merge "origin/$JLO_TARGET_BRANCH" --no-edit -X theirs --allow-unrelated-histories || {
-            # On conflict, preserve runtime plane from the worker branch.
-            git checkout --ours .jules/
-            git add .jules/
-            if git diff --cached --quiet; then
-              echo "::error::Merge failed and no conflict resolution changes were staged."
-              exit 1
-            fi
-            git commit --no-edit
-          }
-
       - name: Install jlo
         uses: ./.github/actions/install-jlo
 
-      - name: Bootstrap runtime repository
-        run: jlo workflow bootstrap
+      - name: Sync worker branch
+        run: jlo workflow bootstrap worker-branch
 
-      - name: Validate repository (fail-fast)
+      - name: Bootstrap managed files
+        run: jlo workflow bootstrap managed-files
+
+      - name: Reconcile workstation perspectives
+        run: jlo workflow bootstrap workstations
+
+      - name: Validate repository
         run: jlo workflow doctor
 
       - name: Publish bootstrap updates via worker-branch merge path
@@ -79,9 +51,17 @@
             exit 0
           fi
 
-          pr_body=$'Automated bootstrap update for the runtime workspace.\n\n- synchronize '"${JLO_TARGET_BRANCH}"' into '"${JULES_WORKER_BRANCH}"$'\n- materialize .jules via jlo workflow bootstrap'
+          pr_body=$(cat <<EOF
+          Automated bootstrap update for the runtime workspace.
+
+          - synchronize ${JLO_TARGET_BRANCH} into ${JULES_WORKER_BRANCH} via \`jlo workflow bootstrap worker-branch\`
+          - bootstrap managed files via \`jlo workflow bootstrap managed-files\`
+          - reconcile workstations via \`jlo workflow bootstrap workstations\`
+          EOF
+          )
+          jlo_version="$(jlo --version | cut -d ' ' -f 2)"
           jlo workflow gh push worker-branch \
             --change-token "bootstrap" \
-            --commit-message "chore: bootstrap .jules/ runtime repository [jlo $(jlo --version | awk '{print $2}')]" \
+            --commit-message "chore: bootstrap .jules/ runtime repository [jlo ${jlo_version}]" \
             --pr-title "chore: bootstrap runtime workspace" \
             --pr-body "${pr_body}"

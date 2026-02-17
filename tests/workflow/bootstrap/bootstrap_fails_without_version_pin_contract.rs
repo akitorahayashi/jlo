@@ -13,7 +13,7 @@ fn bootstrap_fails_without_control_plane_version_pin() {
     fs::remove_file(&version_file).expect("remove .jlo-version");
 
     ctx.cli()
-        .args(["workflow", "bootstrap"])
+        .args(["workflow", "bootstrap", "managed-files"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("jlo-version"));

@@ -7,7 +7,7 @@ fn bootstrap_fails_without_control_plane() {
 
     // No init — `.jlo/` does not exist.
     ctx.cli()
-        .args(["workflow", "bootstrap"])
+        .args(["workflow", "bootstrap", "managed-files"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("control plane"));

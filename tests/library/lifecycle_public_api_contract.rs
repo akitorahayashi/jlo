@@ -1,7 +1,7 @@
 use crate::harness::git_repository;
 use jlo::{
     DoctorOptions, WorkflowRunnerMode, create_role_at, doctor_at, init_at, update_at,
-    workflow_bootstrap_at,
+    workflow_bootstrap_managed_files_at, workflow_bootstrap_workstations_at,
 };
 use tempfile::TempDir;
 
@@ -23,7 +23,8 @@ fn public_api_lifecycle_happy_path_contract() {
     init_at(root.clone(), &WorkflowRunnerMode::remote()).expect("init failed");
     assert!(root.join(".jlo").exists());
 
-    workflow_bootstrap_at(root.clone()).expect("bootstrap failed");
+    workflow_bootstrap_managed_files_at(root.clone()).expect("managed-files bootstrap failed");
+    workflow_bootstrap_workstations_at(root.clone()).expect("workstations bootstrap failed");
     assert!(root.join(".jules").exists());
 
     let doctor_outcome =

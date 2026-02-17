@@ -37,7 +37,7 @@
         run: |
           jlo workflow exchange clean mock --mock-tag "$JULES_MOCK_TAG"
 
-      - name: Validate repository (fail-fast)
+      - name: Validate repository
         run: jlo workflow doctor
 
       - name: Merge mock cleanup changes

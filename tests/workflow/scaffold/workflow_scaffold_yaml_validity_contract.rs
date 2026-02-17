@@ -76,7 +76,7 @@ fn workflow_templates_validate_structure() {
     for job in [
         "bootstrap",
         "run-narrator",
-        "check-schedule",
+        "resolve-run-plan",
         "run-innovators",
         "run-observers",
         "run-decider",

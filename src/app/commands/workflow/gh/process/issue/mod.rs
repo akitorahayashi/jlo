@@ -1,4 +1,4 @@
-//! Workflow gh issue commands.
+//! Workflow gh process issue commands.
 //!
 //! Each subcommand is a first-class operation on a GitHub issue.
 

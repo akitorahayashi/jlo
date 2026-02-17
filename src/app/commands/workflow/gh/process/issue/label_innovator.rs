@@ -35,7 +35,8 @@ pub fn execute(
     github: &impl GitHub,
     options: LabelInnovatorOptions,
 ) -> Result<LabelInnovatorOutput, AppError> {
-    let role_label = format!("innovator/{}", options.role);
+    let role_id = crate::domain::RoleId::new(&options.role)?;
+    let role_label = format!("innovator/{}", role_id.as_str());
 
     // Ensure role label exists (no color specified → GitHub assigns random on first creation)
     github.ensure_label(&role_label, None)?;

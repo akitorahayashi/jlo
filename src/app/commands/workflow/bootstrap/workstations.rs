@@ -1,105 +1,58 @@
-//! Workflow bootstrap: deterministic projection of `.jules/` from `.jlo/` + scaffold.
+//! Workflow bootstrap workstations subcommand.
 //!
-//! Runs as the first step in workflow execution, guaranteeing that the runtime
-//! repository matches the control-plane intent before any agent job.
-//!
-//! Invariants:
-//! - Missing `.jlo/` is a hard failure.
-//! - Missing `.jlo/.jlo-version` is a hard failure.
-//! - Managed framework files are always materialized from the embedded scaffold.
+//! Reconciles workstation perspectives from schedule intent.
 
 use std::collections::{BTreeSet, HashMap};
 use std::path::Path;
 
 use serde::Serialize;
 
-use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
-use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
-use crate::domain::{AppError, JLO_DIR, Layer, VERSION_FILE};
-use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
+use crate::domain::{AppError, Layer};
+use crate::ports::{JloStore, JulesStore, RepositoryFilesystem};
 
-/// Options for the bootstrap command.
+/// Options for `workflow bootstrap workstations`.
 #[derive(Debug)]
-pub struct WorkflowBootstrapOptions {
-    /// Root path of the repository (on the `jules` branch).
+pub struct WorkflowBootstrapWorkstationsOptions {
+    /// Root path of the repository.
     pub root: std::path::PathBuf,
 }
 
-/// Output of the bootstrap command.
+/// Output of `workflow bootstrap workstations`.
 #[derive(Debug, Serialize)]
-pub struct WorkflowBootstrapOutput {
-    /// Whether materialization was performed.
-    pub materialized: bool,
-    /// The jlo version used for materialization.
-    pub version: String,
-    /// Number of files written during materialization.
-    pub files_written: usize,
+pub struct WorkflowBootstrapWorkstationsOutput {
+    /// Whether reconciliation was performed.
+    pub reconciled: bool,
+    /// Number of newly created perspective files.
+    pub perspectives_created: usize,
+    /// Number of removed stale workstation directories.
+    pub workstations_pruned: usize,
 }
 
-/// Execute the workflow bootstrap.
-///
-/// Deterministically projects `.jules/` from `.jlo/` control inputs and embedded scaffold.
-pub fn execute(options: WorkflowBootstrapOptions) -> Result<WorkflowBootstrapOutput, AppError> {
-    let current_version = env!("CARGO_PKG_VERSION");
-    let root = &options.root;
+#[derive(Debug)]
+struct WorkstationReconcileStats {
+    perspectives_created: usize,
+    workstations_pruned: usize,
+}
 
-    let store = LocalRepositoryAdapter::new(root.clone());
-    let templates = EmbeddedRoleTemplateStore::new();
+/// Execute `workflow bootstrap workstations`.
+pub fn execute(
+    options: WorkflowBootstrapWorkstationsOptions,
+) -> Result<WorkflowBootstrapWorkstationsOutput, AppError> {
+    super::validate_control_plane_preconditions(options.root.as_path())?;
 
-    // --- Hard preconditions ---
-    let jlo_path = root.join(JLO_DIR);
-    if !jlo_path.exists() {
-        return Err(AppError::Validation(
-            "Bootstrap requires .jlo/ control plane. Run 'jlo init' on your control branch first."
-                .to_string(),
-        ));
-    }
+    let repository = LocalRepositoryAdapter::new(options.root);
+    let stats = reconcile_workstations(&repository)?;
 
-    let jlo_version_path = jlo_path.join(VERSION_FILE);
-    if !jlo_version_path.exists() {
-        return Err(AppError::RepositoryIntegrity(
-            "Missing .jlo/.jlo-version. Control plane is incomplete.".to_string(),
-        ));
-    }
-
-    let ctx = AppContext::new(store, templates);
-    let files_written = project_runtime(&ctx, root, current_version)?;
-
-    Ok(WorkflowBootstrapOutput {
-        materialized: true,
-        version: current_version.to_string(),
-        files_written,
+    Ok(WorkflowBootstrapWorkstationsOutput {
+        reconciled: true,
+        perspectives_created: stats.perspectives_created,
+        workstations_pruned: stats.workstations_pruned,
     })
 }
 
-/// Full deterministic projection of `.jules/` from embedded scaffold.
-fn project_runtime<W, R>(
-    ctx: &AppContext<W, R>,
-    _root: &Path,
-    version: &str,
-) -> Result<usize, AppError>
-where
-    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
-    R: RoleTemplateStore,
-{
-    // Counts write operations performed.
-    let mut files_written: usize = 0;
-
-    // 1. Materialize managed framework files from embedded scaffold
-    let scaffold_files = ctx.templates().scaffold_files();
-    ctx.repository().create_structure(&scaffold_files)?;
-    ctx.repository().jules_write_version(version)?;
-    files_written += scaffold_files.len() + 1; // +1 for version
-
-    // 2. Ensure + prune workstation perspectives from schedule intent
-    files_written += reconcile_workstations(ctx.repository())?;
-
-    Ok(files_written)
-}
-
-fn reconcile_workstations<W>(repository: &W) -> Result<usize, AppError>
+fn reconcile_workstations<W>(repository: &W) -> Result<WorkstationReconcileStats, AppError>
 where
     W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
@@ -110,7 +63,8 @@ where
 
     let role_layers = collect_scheduled_role_layers(&schedule)?;
     let mut expected_roles: BTreeSet<String> = BTreeSet::new();
-    let mut files_written = 0usize;
+    let mut perspectives_created = 0usize;
+    let mut workstations_pruned = 0usize;
 
     for (role, layer) in &role_layers {
         expected_roles.insert(role.clone());
@@ -141,13 +95,13 @@ where
         let workstation_dir_str = path_to_str(&workstation_dir, "workstation directory path")?;
         repository.create_dir_all(workstation_dir_str)?;
         repository.write_file(perspective_path_str, &rendered_perspective)?;
-        files_written += 1;
+        perspectives_created += 1;
     }
 
     let entries = match repository.list_dir(workstations_dir_str) {
         Ok(entries) => entries,
         Err(AppError::Io { kind: crate::domain::IoErrorKind::NotFound, .. }) => {
-            return Ok(files_written);
+            return Ok(WorkstationReconcileStats { perspectives_created, workstations_pruned });
         }
         Err(err) => return Err(err),
     };
@@ -164,9 +118,10 @@ where
             continue;
         }
         repository.remove_dir_all(entry_str)?;
+        workstations_pruned += 1;
     }
 
-    Ok(files_written)
+    Ok(WorkstationReconcileStats { perspectives_created, workstations_pruned })
 }
 
 fn collect_scheduled_role_layers(
