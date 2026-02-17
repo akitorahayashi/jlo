@@ -124,20 +124,21 @@ where
     // Load configuration
     let config = load_run_config(jules_path, repository)?;
 
+    let expected_branch = if target.layer.uses_worker_branch() {
+        config.run.jules_worker_branch.as_str()
+    } else {
+        config.run.jlo_target_branch.as_str()
+    };
+
     // Validate current branch matches the layer's branch contract.
     // --branch override bypasses this check (explicit operator override).
     if runtime.branch.is_none() {
         let current = git.get_current_branch()?;
-        let expected = if target.layer.uses_worker_branch() {
-            &config.run.jules_worker_branch
-        } else {
-            &config.run.jlo_target_branch
-        };
-        if current != *expected {
+        if current != expected_branch {
             return Err(AppError::Validation(format!(
                 "Layer '{}' requires branch '{}', but current branch is '{}'",
                 target.layer.dir_name(),
-                expected,
+                expected_branch,
                 current,
             )));
         }
@@ -164,6 +165,12 @@ where
         repository,
         &client_factory,
     )?;
+
+    // Mock executions can checkout ephemeral branches during simulation.
+    // Restore the expected layer branch so subsequent runs keep branch context.
+    if runtime.mock && runtime.branch.is_none() {
+        git.checkout_branch(expected_branch, false)?;
+    }
 
     // Handle post-execution cleanup (e.g. Implementer requirement)
     if !runtime.no_cleanup
@@ -808,5 +815,46 @@ roles = [
         // With --branch override, branch validation is skipped.
         // The mock narrator should proceed past validation.
         assert!(result.is_ok(), "branch override should bypass validation: {:?}", result.err());
+    }
+
+    #[test]
+    #[serial]
+    fn mock_observer_restores_worker_branch_after_success() {
+        let temp = tempdir().expect("tempdir");
+        let root = temp.path().to_path_buf();
+        write_mock_workspace(&root, "mock-test");
+
+        let repository = LocalRepositoryAdapter::new(root.clone());
+        let github = TestGitHub::new();
+        let git = TestGit::new(root.clone(), "jules");
+
+        let _mock_tag_env = EnvVarGuard::set("JULES_MOCK_TAG", "mock-test");
+
+        let result = execute_with_mock_prerequisite_validator(
+            &repository.jules_path(),
+            RunOptions {
+                layer: crate::domain::Layer::Observers,
+                role: Some("taxonomy".to_string()),
+                requirement: None,
+                task: None,
+            },
+            RunRuntimeOptions {
+                prompt_preview: false,
+                branch: None,
+                mock: true,
+                no_cleanup: false,
+            },
+            &git,
+            &github,
+            &repository,
+            || Ok(()),
+        );
+
+        assert!(result.is_ok(), "mock observer run should succeed: {:?}", result.err());
+        assert_eq!(
+            git.get_current_branch().expect("branch should be readable"),
+            "jules",
+            "mock observer run should restore worker branch context"
+        );
     }
 }
