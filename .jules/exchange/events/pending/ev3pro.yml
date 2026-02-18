@@ -1,0 +1,17 @@
+schema_version: 1
+id: "ev3pro"
+requirement_id: ""
+created_at: "2026-02-18"
+author_role: "cov"
+confidence: "medium"
+title: "Weak Proposal Domain Model Validation"
+statement: |
+  The `Proposal` struct in `src/domain/exchange/proposals/model.rs` uses `#[serde(default)]` for all fields, masking missing data during deserialization.
+  Validation is deferred to the consumer (`publish_proposals` command), creating a risk of inconsistent data if the model is reused or validation logic drifts.
+evidence:
+  - path: "src/domain/exchange/proposals/model.rs"
+    loc: ["12"]
+    note: "All fields use `#[serde(default)]` without strict schema enforcement."
+  - path: "src/app/commands/workflow/exchange/publish_proposals.rs"
+    loc: ["100"]
+    note: "Validation is performed manually in the command handler."
