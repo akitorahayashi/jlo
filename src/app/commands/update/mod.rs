@@ -19,7 +19,7 @@ pub struct UpdateResult {
     /// Latest semver tag found upstream (e.g. `v9.4.1`).
     pub latest_tag: String,
     /// Whether an update was applied.
-    pub upgraded: bool,
+    pub updated: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -75,7 +75,7 @@ pub fn execute() -> Result<UpdateResult, AppError> {
     })?;
 
     if latest.cmp(current) != Ordering::Greater {
-        return Ok(UpdateResult { current_version, latest_tag, upgraded: false });
+        return Ok(UpdateResult { current_version, latest_tag, updated: false });
     }
 
     run_command_status(
@@ -84,7 +84,7 @@ pub fn execute() -> Result<UpdateResult, AppError> {
         "cargo install",
     )?;
 
-    Ok(UpdateResult { current_version, latest_tag, upgraded: true })
+    Ok(UpdateResult { current_version, latest_tag, updated: true })
 }
 
 fn latest_release_tag(ls_remote_output: &str) -> Option<String> {
@@ -119,8 +119,12 @@ fn run_command(program: &str, args: &[&str], tool_name: &str) -> Result<Output, 
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(AppError::ExternalToolError {
             tool: tool_name.to_string(),
-            error: format!("command failed: {} {}", program, args.join(" ")).to_string()
-                + &format!("\nstderr:\n{}", stderr.trim()),
+            error: format!(
+                "command failed: {} {}\nstderr:\n{}",
+                program,
+                args.join(" "),
+                stderr.trim()
+            ),
         });
     }
 

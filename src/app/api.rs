@@ -270,10 +270,10 @@ pub fn upgrade(prompt_preview: bool) -> Result<UpgradeResult, AppError> {
 
 /// Upgrade repository at the specified path.
 pub fn upgrade_at(
-    path: std::path::PathBuf,
+    path: impl Into<PathBuf>,
     prompt_preview: bool,
 ) -> Result<UpgradeResult, AppError> {
-    let repository = LocalRepositoryAdapter::new(path);
+    let repository = LocalRepositoryAdapter::new(path.into());
     let templates = EmbeddedRoleTemplateStore::new();
     let options = UpgradeOptions { prompt_preview };
     upgrade::execute(&repository, options, &templates)

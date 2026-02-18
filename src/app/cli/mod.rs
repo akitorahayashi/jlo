@@ -44,7 +44,7 @@ enum Commands {
     #[clap(visible_alias = "u")]
     Update,
     /// Advance .jlo/ control-plane version pin and reconcile workflow scaffold
-    #[clap(visible_alias = "up")]
+    #[clap(visible_alias = "ug")]
     Upgrade {
         /// Show planned changes without applying
         #[arg(long)]
@@ -117,7 +117,7 @@ pub fn run() {
 
 fn run_update() -> Result<(), AppError> {
     let result = crate::app::api::update()?;
-    if result.upgraded {
+    if result.updated {
         println!("✅ Updated jlo CLI from {} to {}", result.current_version, result.latest_tag);
     } else {
         println!(

@@ -36,6 +36,6 @@ fn public_api_lifecycle_happy_path_contract() {
     assert_eq!(outcome.entity_type(), "role");
     assert!(root.join(".jlo/roles/observers/lib-observer/role.yml").exists());
 
-    let update_result = upgrade_at(root.clone(), true).expect("upgrade failed");
-    assert!(update_result.prompt_preview);
+    let upgrade_result = upgrade_at(root.clone(), true).expect("upgrade failed");
+    assert!(upgrade_result.prompt_preview);
 }
