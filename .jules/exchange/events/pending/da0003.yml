@@ -1,0 +1,13 @@
+schema_version: 1
+id: da0003
+requirement_id: ""
+created_at: "2026-02-18"
+author_role: data_arch
+confidence: medium
+title: "Transport Protocol Leakage in Domain Error Types"
+statement: |
+  The `ScheduleError` domain type exposes `toml::de::Error` directly, coupling the core domain logic to the specific serialization format (TOML). This violates Boundary Sovereignty as changes to the transport layer (e.g., switching to YAML) would require changes to the domain error types.
+evidence:
+  - path: "src/domain/config/schedule.rs"
+    loc: ["10"]
+    note: "ScheduleError enum exposes toml::de::Error"
