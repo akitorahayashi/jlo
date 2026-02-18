@@ -28,7 +28,7 @@ where
     H: GitHub,
     F: FnMut(&Path, RunOptions, RunRuntimeOptions, &G, &H, &W) -> Result<(), AppError>,
 {
-    if !options.mock && !has_pending_events(jules_path)? {
+    if !options.mock && !has_pending_events(store, jules_path)? {
         eprintln!("No pending events, skipping decider");
         return Ok(RunResults::skipped("No pending events"));
     }
