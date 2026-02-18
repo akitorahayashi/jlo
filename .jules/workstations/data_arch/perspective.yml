@@ -1,10 +1,12 @@
 schema_version: 2
 observer: data_arch
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-18T12:00:00Z
 goals:
-- <concrete goal>
+- Monitor resolution of prompt assembly side-effects (da0001)
+- Track implementation of Observer Perspective model and validation (da0002)
+- Advise on decoupling domain errors from transport formats (da0003)
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-18T12:00:00Z
+  summary: Identified 3 architectural issues: side-effects in assembly, missing observer model, and transport leakage.

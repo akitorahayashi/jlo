@@ -1,0 +1,13 @@
+schema_version: 1
+id: da0001
+requirement_id: ""
+created_at: "2026-02-18"
+author_role: data_arch
+confidence: high
+title: "Prompt Assembly Violates Boundary Sovereignty via Filesystem Writes"
+statement: |
+  The prompt assembly domain logic, specifically `IncludeContext::seed_from_schema` in `src/domain/prompt_assemble/assembler.rs`, performs side-effects (writing files to disk) during what should be a pure read-only template rendering process. This violates the principle of Boundary Sovereignty and mixes domain logic with operational concerns (seeding files).
+evidence:
+  - path: "src/domain/prompt_assemble/assembler.rs"
+    loc: ["228"]
+    note: "seed_from_schema method performs filesystem writes"
