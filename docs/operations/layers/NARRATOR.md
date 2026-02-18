@@ -16,7 +16,7 @@ Entry agent summarizing recent git changes for downstream context.
 3. Persistence: Write new summary and update the cursor for the next run.
 
 ## Resources
-- Schema: `.jules/layers/narrator/schemas/changes.yml`
+- Schema: `.jules/schemas/narrator/changes.yml`
 - Tasks:
   - bootstrap_summary.yml: Initial summary when no history exists.
   - overwrite_summary.yml: Incremental updates to existing narrative.

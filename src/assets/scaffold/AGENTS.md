@@ -17,12 +17,11 @@ Ref: [root AGENTS.md](../../AGENTS.md).
 └── setup/ (tools.yml, vars.toml, secrets.toml, install.sh)
 
 .jules/ (System Definition)
-├── roles/
-│   ├── <layer>/
-│   │   ├── <layer>_prompt.j2
-│   │   ├── contracts.yml
-│   │   ├── tasks/*.yml
-│   │   └── schemas/*.yml
+├── schemas/
+│   ├── narrator/changes.yml
+│   ├── observers/event.yml
+│   ├── decider/issue.yml
+│   └── innovators/proposal.yml
 ├── exchange/
 │   ├── changes.yml
 │   ├── events/{pending,decided}/
@@ -33,14 +32,16 @@ Ref: [root AGENTS.md](../../AGENTS.md).
 
 ## Prompt Assembly
 Jinja2 templates (`<layer>_prompt.j2`) define the context window.
-- Modular: Inject content via `include_*`.
+Prompt assets (contracts, tasks, templates) are embedded in the binary from `src/assets/prompt-assemble/`.
+References use the `prompt-assemble://` scheme to load from the embedded catalog.
+- Modular: Inject content via `include_*` functions.
 - Context-Aware: Use variables (e.g., `role`) for dynamic configuration.
 - DRY: Reference definitive artifacts directly.
 - Direct Injection: Inject file content directly; do not instruct agents to "read file X".
 
 ## Artifacts
 
-### Schemas (`.jules/layers/<layer>/schemas/`)
+### Schemas (`.jules/schemas/<layer>/`)
 | Schema | Layer | Purpose |
 |--------|-------|---------|
 | `changes.yml` | Narrator | Diff summary |

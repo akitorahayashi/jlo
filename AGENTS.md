@@ -17,7 +17,8 @@ Never embed file contents (like `DEFAULT_CONFIG_TOML`, `tools.yml`, or default `
 - How: Use `include_dir!` to load `src/assets/scaffold` and `src/assets/github` as authoritative sources of truth.
 
 ### 2. Scaffold Mapping
-The directory `src/assets/scaffold/jules/layers` in the source code maps directly to `.jules/layers` in the deployed environment. This structure aligns the internal source organization with the deployed "layered" pipeline concept.
+The directory `src/assets/scaffold/jules/schemas` in the source code maps directly to `.jules/schemas` in the deployed environment.
+Prompt-assembly assets (contracts, tasks, templates) live in `src/assets/prompt-assemble/` and are embedded into the binary via `include_dir!`; they are never deployed to `.jules/`.
 
 ### 3. Worker Branch Merge Policy
 `JULES_WORKER_BRANCH` is assumed to enforce GitHub Branch protection with `Require a pull request before merging`.
