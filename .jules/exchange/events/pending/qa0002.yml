@@ -1,0 +1,13 @@
+schema_version: 1
+id: qa0002
+requirement_id: ""
+created_at: "2026-02-18"
+author_role: qa
+confidence: high
+title: Missing Unit Tests for Path Logic in Exchange Events
+statement: |
+  The `src/domain/exchange/events/paths.rs` module contains path manipulation logic (`events_dir`, `events_state_dir`, etc.) but lacks unit tests. This increases the risk of subtle bugs in path handling and regressions during future changes.
+evidence:
+  - path: src/domain/exchange/events/paths.rs
+    loc: ["1-23"]
+    note: entire file lacks unit tests
