@@ -40,15 +40,15 @@ enum Commands {
         #[arg(short = 's', long, conflicts_with = "remote", required_unless_present = "remote")]
         self_hosted: bool,
     },
-    /// Advance .jlo/ control-plane version pin
+    /// Update the jlo CLI binary from upstream releases
     #[clap(visible_alias = "u")]
-    Update {
+    Update,
+    /// Advance .jlo/ control-plane version pin and reconcile workflow scaffold
+    #[clap(visible_alias = "ug")]
+    Upgrade {
         /// Show planned changes without applying
-        #[arg(long, conflicts_with = "cli")]
+        #[arg(long)]
         prompt_preview: bool,
-        /// Update the jlo CLI binary from upstream releases
-        #[arg(short = 'c', long, conflicts_with = "prompt_preview")]
-        cli: bool,
     },
     /// Manage role lifecycle in .jlo/
     #[clap(visible_alias = "r")]
@@ -89,7 +89,8 @@ pub fn run() {
 
     let result: Result<i32, AppError> = match cli.command {
         Commands::Init { remote, self_hosted } => init::run_init(remote, self_hosted).map(|_| 0),
-        Commands::Update { prompt_preview, cli } => run_update(prompt_preview, cli).map(|_| 0),
+        Commands::Update => run_update().map(|_| 0),
+        Commands::Upgrade { prompt_preview } => run_upgrade(prompt_preview).map(|_| 0),
         Commands::Role { command } => role::run_role(command).map(|_| 0),
         Commands::Setup { command } => match command {
             setup::SetupCommands::Gen { path } => setup::run_setup_gen(path).map(|_| 0),
@@ -114,25 +115,25 @@ pub fn run() {
     }
 }
 
-fn run_update(prompt_preview: bool, cli: bool) -> Result<(), AppError> {
-    if cli {
-        let result = crate::app::api::update_cli()?;
-        if result.upgraded {
-            println!("✅ Updated jlo CLI from {} to {}", result.current_version, result.latest_tag);
-        } else {
-            println!(
-                "✅ jlo CLI is already up to date (current: {}, latest: {})",
-                result.current_version, result.latest_tag
-            );
-        }
-        return Ok(());
+fn run_update() -> Result<(), AppError> {
+    let result = crate::app::api::update()?;
+    if result.updated {
+        println!("✅ Updated jlo CLI from {} to {}", result.current_version, result.latest_tag);
+    } else {
+        println!(
+            "✅ jlo CLI is already up to date (current: {}, latest: {})",
+            result.current_version, result.latest_tag
+        );
     }
+    Ok(())
+}
 
-    let result = crate::app::api::update(prompt_preview)?;
+fn run_upgrade(prompt_preview: bool) -> Result<(), AppError> {
+    let result = crate::app::api::upgrade(prompt_preview)?;
 
     if !result.prompt_preview {
         if !result.warnings.is_empty() {
-            println!("⚠️  Update warnings:");
+            println!("⚠️  Upgrade warnings:");
             for warning in &result.warnings {
                 println!("  • {}", warning);
             }
@@ -145,7 +146,7 @@ fn run_update(prompt_preview: bool, cli: bool) -> Result<(), AppError> {
         {
             println!("✅ Repository already up to date");
         } else {
-            println!("✅ Updated repository to version {}", env!("CARGO_PKG_VERSION"));
+            println!("✅ Upgraded repository to version {}", env!("CARGO_PKG_VERSION"));
             if !result.created.is_empty() {
                 println!("  Created {} file(s)", result.created.len());
             }

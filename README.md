@@ -30,7 +30,8 @@ jlo init --remote
 | Command | Alias | Description |
 |---------|-------|-------------|
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow scaffold |
-| `jlo update [--prompt-preview] [--cli]` | `u` | Advance version pin, refresh workflow scaffold, and refresh unchanged defaults. Use `--cli` to update the binary itself. |
+| `jlo update` | `u` | Update the jlo CLI binary from upstream releases |
+| `jlo upgrade [--prompt-preview]` | `up` | Advance version pin, refresh workflow scaffold, and reconcile control-plane skeleton |
 | `jlo deinit` | | Remove `.jlo/`, workflow scaffold, and local `jules` branch |
 | `jlo role <add\|create\|delete> ...` | `r` | Manage role lifecycle under `.jlo/` (`add`: `a, ad`; `create`: `c, cr`; `delete`: `d, dl`) |
 | `jlo run <layer>` | | Execute roles for specified layer |

@@ -2,7 +2,7 @@ use crate::harness::TestContext;
 use std::fs;
 
 #[test]
-fn update_advances_version_and_preserves_config() {
+fn upgrade_advances_version_and_preserves_config() {
     let ctx = TestContext::new();
 
     // 1. Initialize remote (fresh)
@@ -12,8 +12,8 @@ fn update_advances_version_and_preserves_config() {
     let jlo_version_path = ctx.jlo_path().join(".jlo-version");
     fs::write(&jlo_version_path, "0.0.0").expect("Failed to downgrade version");
 
-    // 3. Run update (advances version)
-    ctx.cli().args(["update"]).assert().success();
+    // 3. Run upgrade (advances version)
+    ctx.cli().args(["upgrade"]).assert().success();
 
     // 4. Verify version updated
     let version = fs::read_to_string(&jlo_version_path).expect("Failed to read version file");
