@@ -43,7 +43,7 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
 
     let mut diagnostics = Diagnostics::default();
 
-    let _run_config = structure::read_run_config(&root, &mut diagnostics)?;
+    let _run_config = structure::read_control_plane_config(&root, &mut diagnostics)?;
 
     structure::structural_checks(
         structure::StructuralInputs { jules_path, root: &root, event_states: &event_states },

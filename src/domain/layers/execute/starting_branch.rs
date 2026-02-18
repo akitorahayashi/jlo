@@ -1,8 +1,8 @@
-use crate::domain::{Layer, RunConfig};
+use crate::domain::{ControlPlaneConfig, Layer};
 
 pub fn resolve_starting_branch(
     layer: Layer,
-    config: &RunConfig,
+    config: &ControlPlaneConfig,
     branch_override: Option<&str>,
 ) -> String {
     branch_override.map(String::from).unwrap_or_else(|| {
@@ -17,10 +17,10 @@ pub fn resolve_starting_branch(
 #[cfg(test)]
 mod tests {
     use super::resolve_starting_branch;
-    use crate::domain::{Layer, RunConfig};
+    use crate::domain::{ControlPlaneConfig, Layer};
 
-    fn test_config() -> RunConfig {
-        let mut config = RunConfig::default();
+    fn test_config() -> ControlPlaneConfig {
+        let mut config = ControlPlaneConfig::default();
         config.run.jules_worker_branch = "worker-branch".to_string();
         config.run.jlo_target_branch = "main".to_string();
         config

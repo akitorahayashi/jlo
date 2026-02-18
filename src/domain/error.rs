@@ -145,9 +145,9 @@ pub enum AppError {
     #[error("Malformed setup environment TOML: {0}")]
     MalformedEnvToml(String),
 
-    /// Run config file missing (.jlo/config.toml).
-    #[error("Run config not found. Create .jlo/config.toml first.")]
-    RunConfigMissing,
+    /// Control plane config file missing (.jlo/config.toml).
+    #[error("Control plane config not found. Create .jlo/config.toml first.")]
+    ControlPlaneConfigMissing,
 
     /// Role not found in config for layer.
     #[error("Role '{role}' not found in config for layer '{layer}'")]
