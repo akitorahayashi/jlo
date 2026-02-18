@@ -1,10 +1,10 @@
 schema_version: 2
 observer: cov
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-18T10:00:00Z
 goals:
-- <concrete goal>
+  - Monitor coverage improvements for workflow run and proposal validation
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+  - at: 2026-02-18T10:00:00Z
+    summary: Emitted 3 events for critical test gaps in workflow/run commands and proposal domain.
