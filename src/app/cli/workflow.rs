@@ -183,7 +183,8 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
         WorkflowCommands::LabelInnovator { issue_number, role } => {
             let github = crate::adapters::github::GitHubCommandAdapter::new();
             use crate::app::commands::workflow;
-            let options = workflow::gh::process::issue::LabelInnovatorOptions { issue_number, role };
+            let options =
+                workflow::gh::process::issue::LabelInnovatorOptions { issue_number, role };
             let output = workflow::gh::process::issue::label_innovator::execute(&github, options)?;
             workflow::write_workflow_output(&output)
         }
