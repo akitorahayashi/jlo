@@ -11,7 +11,7 @@ use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::domain::PromptAssetLoader;
 use crate::domain::exchange::proposals::Proposal;
-use crate::domain::workstations::perspectives::Perspective;
+use crate::domain::workstations::perspectives::InnovatorPerspective;
 use crate::domain::{AppError, RoleId};
 use crate::ports::{Git, GitHub, IssueInfo, JloStore, JulesStore, RepositoryFilesystem};
 
@@ -139,13 +139,14 @@ where
             )));
         }
         let perspective_content = repository.read_file(perspective_path_str)?;
-        let perspective: Perspective = serde_yaml::from_str(&perspective_content).map_err(|e| {
-            AppError::Validation(format!(
-                "Invalid YAML in perspective {}: {}",
-                perspective_path.display(),
-                e
-            ))
-        })?;
+        let perspective: InnovatorPerspective =
+            serde_yaml::from_str(&perspective_content).map_err(|e| {
+                AppError::Validation(format!(
+                    "Invalid YAML in perspective {}: {}",
+                    perspective_path.display(),
+                    e
+                ))
+            })?;
         let title_trimmed = data.title.trim();
         if !perspective.recent_proposals.iter().any(|p| p.trim() == title_trimmed) {
             return Err(AppError::Validation(format!(

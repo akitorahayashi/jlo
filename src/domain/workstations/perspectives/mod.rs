@@ -1,3 +1,3 @@
-pub mod model;
+mod model;
 
-pub use model::Perspective;
+pub use model::{InnovatorPerspective, LogEntry, ObserverPerspective};
