@@ -81,13 +81,13 @@ impl Layer {
     /// Parse a layer from its directory name.
     pub fn from_dir_name(name: &str) -> Option<Layer> {
         match name.to_lowercase().as_str() {
-            "narrator" | "narrators" => Some(Layer::Narrator),
+            "narrator" | "narrators" | "n" => Some(Layer::Narrator),
             "observers" | "observer" | "o" => Some(Layer::Observers),
-            "deciders" | "decider" => Some(Layer::Decider),
-            "planners" | "planner" => Some(Layer::Planner),
-            "implementers" | "implementer" => Some(Layer::Implementer),
-            "innovators" | "innovator" | "i" => Some(Layer::Innovators),
-            "integrator" | "integrators" => Some(Layer::Integrator),
+            "deciders" | "decider" | "d" => Some(Layer::Decider),
+            "planners" | "planner" | "p" => Some(Layer::Planner),
+            "implementers" | "implementer" | "i" => Some(Layer::Implementer),
+            "innovators" | "innovator" | "x" => Some(Layer::Innovators),
+            "integrator" | "integrators" | "g" => Some(Layer::Integrator),
             _ => None,
         }
     }
@@ -250,5 +250,16 @@ mod tests {
         assert!(Layer::Innovators.uses_worker_branch());
         assert!(!Layer::Implementer.uses_worker_branch());
         assert!(!Layer::Integrator.uses_worker_branch());
+    }
+
+    #[test]
+    fn layer_aliases_match_cli() {
+        assert_eq!(Layer::from_dir_name("n"), Some(Layer::Narrator));
+        assert_eq!(Layer::from_dir_name("o"), Some(Layer::Observers));
+        assert_eq!(Layer::from_dir_name("d"), Some(Layer::Decider));
+        assert_eq!(Layer::from_dir_name("p"), Some(Layer::Planner));
+        assert_eq!(Layer::from_dir_name("i"), Some(Layer::Implementer));
+        assert_eq!(Layer::from_dir_name("x"), Some(Layer::Innovators));
+        assert_eq!(Layer::from_dir_name("g"), Some(Layer::Integrator));
     }
 }

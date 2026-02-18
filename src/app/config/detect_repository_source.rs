@@ -42,7 +42,10 @@ mod tests {
         fn commit_exists(&self, _sha: &str) -> bool {
             true
         }
-        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<Option<String>, AppError> {
+            Ok(Some(String::new()))
+        }
+        fn get_first_commit(&self, _commit: &str) -> Result<String, AppError> {
             Ok(String::new())
         }
         fn has_changes(

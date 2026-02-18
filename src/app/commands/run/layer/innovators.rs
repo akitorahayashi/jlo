@@ -9,7 +9,9 @@ use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
-use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions};
+use crate::domain::{
+    AppError, ControlPlaneConfig, Layer, MockConfig, MockOutput, RoleId, RunOptions,
+};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 
 use super::super::role_session::{dispatch_session, print_role_preview, validate_role_exists};
@@ -33,7 +35,7 @@ where
         jules_path: &Path,
         target: &RunOptions,
         runtime: &RunRuntimeOptions,
-        config: &RunConfig,
+        config: &ControlPlaneConfig,
         git: &dyn Git,
         github: &dyn GitHub,
         repository: &W,
@@ -90,7 +92,7 @@ fn execute_real<G, W>(
     branch: Option<&str>,
     role: Option<&str>,
     task: Option<&str>,
-    config: &RunConfig,
+    config: &ControlPlaneConfig,
     git: &G,
     repository: &W,
     client_factory: &dyn JulesClientFactory,

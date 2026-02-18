@@ -299,8 +299,12 @@ mod tests {
             true
         }
 
-        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<String, AppError> {
-            Ok("ancestor".to_string())
+        fn get_nth_ancestor(&self, _commit: &str, _n: usize) -> Result<Option<String>, AppError> {
+            Ok(Some("ancestor".to_string()))
+        }
+
+        fn get_first_commit(&self, _commit: &str) -> Result<String, AppError> {
+            Ok("root".to_string())
         }
 
         fn has_changes(

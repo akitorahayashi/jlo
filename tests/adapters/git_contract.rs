@@ -38,7 +38,11 @@ fn git_contract_tests() {
 
     // 4. Ancestry
     let ancestor = git.get_nth_ancestor(&sha2, 1).expect("ancestor");
-    assert_eq!(ancestor, sha1, "Ancestor of sha2 should be sha1");
+    assert_eq!(ancestor, Some(sha1.clone()), "Ancestor of sha2 should be sha1");
+
+    // Ancestry overflow (should be None)
+    let overflow = git.get_nth_ancestor(&sha2, 100).expect("ancestor overflow");
+    assert_eq!(overflow, None, "Ancestor overflow should be None");
 
     // 5. Checkout
     git.checkout_branch("feature", true).expect("checkout new branch");

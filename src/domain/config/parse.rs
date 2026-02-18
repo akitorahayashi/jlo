@@ -1,10 +1,10 @@
 //! Pure parse/validate for run configuration (`config.toml`).
 
-use crate::domain::{AppError, RunConfig};
+use crate::domain::{AppError, ControlPlaneConfig};
 
 /// Parse and validate run configuration from TOML content.
-pub fn parse_config_content(content: &str) -> Result<RunConfig, AppError> {
-    let config: RunConfig = toml::from_str(content)?;
+pub fn parse_config_content(content: &str) -> Result<ControlPlaneConfig, AppError> {
+    let config: ControlPlaneConfig = toml::from_str(content)?;
     config.validate()?;
     Ok(config)
 }

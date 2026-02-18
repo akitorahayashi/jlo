@@ -12,7 +12,10 @@ pub trait Git {
     fn commit_exists(&self, sha: &str) -> bool;
 
     /// Get the Nth ancestor of a commit.
-    fn get_nth_ancestor(&self, commit: &str, n: usize) -> Result<String, AppError>;
+    fn get_nth_ancestor(&self, commit: &str, n: usize) -> Result<Option<String>, AppError>;
+
+    /// Get the first commit (root) in the ancestry of the given commit.
+    fn get_first_commit(&self, commit: &str) -> Result<String, AppError>;
 
     /// Check if there are changes in the range matching the pathspec.
     fn has_changes(&self, from: &str, to: &str, pathspec: &[&str]) -> Result<bool, AppError>;
