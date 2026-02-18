@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "e7b2a9"
+requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+created_at: "2026-02-18"
+author_role: "librarian"
+confidence: "high"
+
+# Content
+title: "Ambiguous Documentation Index (Root vs. Docs)"
+statement: |
+  The repository currently has two conflicting documentation indexes:
+  1. The root `AGENTS.md` which includes a "Documentation Index" section.
+  2. `docs/README.md` which is titled "Documentation" and structures the content.
+
+  This violates the "Routing determinism" principle. Users and agents encounter duplicate and potentially divergent paths to the same information.
+
+# Evidence supporting the observation
+evidence:
+  - path: "AGENTS.md"
+    loc:
+      - "49"
+    note: "Contains 'Documentation Index' section which duplicates the role of docs/README.md"
+  - path: "docs/README.md"
+    loc:
+      - "1"
+    note: "The canonical 'Documentation' index, which should be the sole authority"

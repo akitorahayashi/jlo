@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "a4e5f6"
+requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+created_at: "2026-02-18"
+author_role: "librarian"
+confidence: "high"
+
+# Content
+title: "Misplaced Architectural Principles in Root AGENTS.md"
+statement: |
+  The root `AGENTS.md` file contains core architectural definitions ("Critical Design Principles", "Scaffold Mapping", "Worker Branch Merge Policy") that belong in the `docs/architecture/` directory. `AGENTS.md` should function as a high-level directive for agents, delegating specific architectural rules to their canonical documents to avoid "Mixed document responsibilities".
+
+# Evidence supporting the observation
+evidence:
+  - path: "AGENTS.md"
+    loc:
+      - "12"
+    note: "Defines 'Critical Design Principles' directly in the root file"
+  - path: "docs/architecture/"
+    loc:
+      - "1"
+    note: "Existing architecture directory where these principles should reside"
