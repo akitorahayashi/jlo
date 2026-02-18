@@ -24,7 +24,7 @@ macro_rules! impl_validated_id {
         impl $name {
             /// Validate and create a new instance.
             pub fn new(id: &str) -> Result<Self, $crate::domain::AppError> {
-                if $crate::domain::identifiers::validate_identifier(id, $allow_dots) {
+                if $crate::domain::validation::validate_identifier(id, $allow_dots) {
                     Ok(Self(id.to_string()))
                 } else {
                     Err($err_variant(id.to_string()))
@@ -83,26 +83,10 @@ mod tests {
         assert!(!validate_identifier(".", false));
         assert!(!validate_identifier("..", false));
         assert!(!validate_identifier("has space", false));
-    }
-
-    #[test]
-    fn safe_path_component_valid() {
-        assert!(validate_identifier("valid-name", false));
-        assert!(validate_identifier("valid_name", false));
-        assert!(validate_identifier("ValidName123", false));
-    }
-
-    #[test]
-    fn safe_path_component_invalid() {
-        assert!(!validate_identifier("", false));
+        // Additional cases from removed tests
         assert!(!validate_identifier("../escape", false));
         assert!(!validate_identifier("../../..", false));
         assert!(!validate_identifier(".hidden", false));
-        assert!(!validate_identifier("has/slash", false));
-        assert!(!validate_identifier("has\\backslash", false));
-        assert!(!validate_identifier(".", false));
-        assert!(!validate_identifier("..", false));
-        assert!(!validate_identifier("has.dot", false));
         assert!(!validate_identifier("null\0byte", false));
     }
 }

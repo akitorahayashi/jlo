@@ -3,7 +3,7 @@
 use chrono::Utc;
 
 use crate::domain::AppError;
-use crate::domain::identifiers::validate_identifier;
+use crate::domain::validation::validate_identifier;
 
 pub fn resolve_mock_tag() -> Result<String, AppError> {
     let mock_tag = std::env::var("JULES_MOCK_TAG").ok().unwrap_or_else(|| {

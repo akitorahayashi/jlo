@@ -20,7 +20,7 @@ use crate::app::commands::workflow::gh::push::{
 };
 use crate::domain::PromptAssetLoader;
 pub use crate::domain::RunOptions;
-use crate::domain::identifiers::validate_identifier;
+use crate::domain::validation::validate_identifier;
 use crate::domain::{AppError, JulesApiConfig};
 use crate::ports::{Git, GitHub, JloStore, JulesClient, JulesStore, RepositoryFilesystem};
 

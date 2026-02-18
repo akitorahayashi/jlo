@@ -386,7 +386,7 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_rejects_missing_task() {
+    fn mock_innovator_rejects_invalid_task() {
         // This test was checking missing task in options, but execute_mock now assumes task is present (passed as arg).
         // The check moved to execute(). We can test that RoleId validation happens.
         // But since we pass RoleId, it is already valid.
