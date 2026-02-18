@@ -5,9 +5,9 @@ Prompt composition is declarative and deterministic.
 Layer-level rules are separated from task-level instructions.
 
 ## File Model
-- `.jules/layers/<layer>/contracts.yml`
-- `.jules/layers/<layer>/tasks/<task-id>.yml`
-- `.jules/layers/<layer>/<layer>_prompt.j2`
+- `src/assets/prompt-assemble/<layer>/contracts.yml` (embedded)
+- `src/assets/prompt-assemble/<layer>/tasks/<task-id>.yml` (embedded)
+- `src/assets/prompt-assemble/<layer>/<layer>_prompt.j2` (embedded)
 
 ## Responsibility Split
 - `contracts.yml` describes layer scope and non-negotiable rules shared across all tasks.
@@ -37,6 +37,6 @@ Layer-level rules are separated from task-level instructions.
 - Legacy: `.jules/changes/latest.yml` — will be migrated to the target path in Phase 2.
 
 ## Scaffold Source Conventions
-- Source paths in `src/assets/scaffold/` use plain directory names (`jlo/`, `jules/`, `jules/layers/`).
-- Deployment paths use dot-prefixed names (`.jlo/`, `.jules/`) while preserving `layers/`.
+- Prompt-assembly assets live in `src/assets/prompt-assemble/` and are embedded via `include_dir!`.
+- Schemas are deployed to `.jules/schemas/<layer>/` from `src/assets/scaffold/jules/schemas/`.
 - Path mapping is performed by the `map_scaffold_path` / `unmap_scaffold_path` functions in the adapter layer.

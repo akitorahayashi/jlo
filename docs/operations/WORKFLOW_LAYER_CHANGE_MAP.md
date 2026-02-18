@@ -28,7 +28,7 @@ A layer-level change means one of the following:
 | Workflow command parsing | `workflow run <layer>` relies on `Layer::from_dir_name` | `src/app/cli/workflow.rs` |
 | Runtime execution branch | Main `run` path and workflow layer dispatcher match on layer enum | `src/app/commands/run/mod.rs`, `src/app/commands/workflow/run/layer/mod.rs` |
 | Multi-role scheduling | `.jlo/config.toml` models observer and innovator roles explicitly | `src/domain/schedule/model.rs`, `src/domain/config/run.rs` |
-| Prompt and contracts | Layer assets are file-based and embedded with `include_dir` | `src/assets/scaffold/jules/layers/<layer>/` |
+| Prompt and contracts | Layer assets are embedded with `include_dir` from `src/assets/prompt-assemble/` | `src/assets/prompt-assemble/<layer>/` |
 | Doctor validation | Structural/schema/semantic checks iterate layers and exchange data contracts | `src/app/commands/doctor/*.rs` |
 | Requirement routing | Exchange inspect provides requirement counts for planner/implementer gating | `src/app/commands/workflow/exchange/inspect.rs`, `src/app/commands/workflow/run/*.rs` |
 | Workflow orchestration | Layer sequence is defined in workflow templates; integrator has a dedicated manual-dispatch workflow | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`, `src/assets/github/workflows/jules-integrator.yml.j2` |
@@ -54,7 +54,8 @@ A layer-level change means one of the following:
 - Keep classification (`is_single_role`, `is_issue_driven`) coherent.
 
 2. Scaffold and contracts
-- Add `.jules/layers/<layer>/contracts.yml`, `<layer>_prompt.j2`, and schemas under `src/assets/scaffold/jules/layers/<layer>/`.
+- Add `contracts.yml`, `<layer>_prompt.j2`, and `tasks/*.yml` under `src/assets/prompt-assemble/<layer>/`.
+- Add schemas under `src/assets/scaffold/jules/schemas/<layer>/` (if applicable).
 - Keep assets file-based; do not move schema content into Rust string constants.
 
 3. CLI and runtime dispatch
@@ -88,7 +89,7 @@ A layer-level change means one of the following:
 - Remove CLI exposure and `match` branches in run/workflow commands.
 
 2. Remove scaffold and template assets
-- Remove obsolete role directory under `src/assets/scaffold/jules/layers/`.
+- Remove obsolete assets under `src/assets/prompt-assemble/` and `src/assets/scaffold/jules/schemas/`.
 - Remove related exchange artifacts only when no other layer consumes them.
 
 3. Remove workflow phases

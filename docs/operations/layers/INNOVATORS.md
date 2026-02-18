@@ -17,6 +17,6 @@ Layer generating improvement proposals based on workstation perspectives.
 - Memory: Metadata for emitted proposals must be stored in the role's `perspective.yml`.
 
 ## Resources
-- Schema: `.jules/layers/innovators/schemas/proposal.yml`
+- Schema: `.jules/schemas/innovators/proposal.yml`
 - Tasks:
   - create_three_proposals.yml: Generates directionally distinct proposals.

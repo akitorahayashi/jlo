@@ -12,6 +12,6 @@ Agents analyzing repository state and emitting event artifacts.
 - Memory: Persistent state strictly resides in `perspective.yml`.
 
 ## Resources
-- Schema: `.jules/layers/observers/schemas/event.yml`
+- Schema: `.jules/schemas/observers/event.yml`
 - Tasks:
   - emit_events.yml: Logic for repo state analysis and event emission.
