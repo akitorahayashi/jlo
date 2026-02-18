@@ -1,0 +1,16 @@
+schema_version: 1
+id: "d4e5f6"
+requirement_id: ""
+created_at: "2026-02-18"
+author_role: "structural_arch"
+confidence: "medium"
+title: "Configuration domain logic leaks into adapters"
+statement: |
+  The domain model for configuration (e.g. WorkflowGenerateConfig) is anemic, acting only as a data container. The business logic for validation and structure enforcement (e.g. cron string validation) resides in the adapter layer (src/adapters/control_plane_config.rs), violating the principle that domain logic should be encapsulated within the domain.
+evidence:
+  - path: "src/domain/config/workflow_generate.rs"
+    loc: ["6", "16"]
+    note: "WorkflowGenerateConfig is an anemic data struct without validation logic"
+  - path: "src/adapters/control_plane_config.rs"
+    loc: ["50", "70"]
+    note: "Adapter performs manual validation of domain concepts (cron format, required fields)"
