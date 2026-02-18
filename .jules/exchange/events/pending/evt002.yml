@@ -1,0 +1,13 @@
+schema_version: 1
+id: evt002
+confidence: high
+requirement_id: ""
+created_at: "2024-05-22"
+author_role: cli_sentinel
+title: Excessive Nesting in `jlo workflow` Commands
+statement: |
+  The `jlo workflow` command structure has proliferated into deeply nested subcommands, reaching 5 levels of depth (e.g., `jlo workflow gh process issue label-innovator`). This complexity degrades discoverability and usability, forcing users to navigate a deep hierarchy for routine operations. The command structure should be flattened or reorganized to improve accessibility.
+evidence:
+  - path: src/app/cli/workflow.rs
+    loc: ["186"]
+    note: "Deeply nested LabelInnovator command structure."
