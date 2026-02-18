@@ -73,7 +73,15 @@ impl Git for GitCommandAdapter {
 
     fn get_first_commit(&self, commit: &str) -> Result<String, AppError> {
         let output = self.run_output(&["rev-list", "--max-parents=0", commit], None)?;
-        Ok(String::from_utf8_lossy(&output.stdout).lines().next().unwrap_or("").to_string())
+        String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .next()
+            .map(str::to_string)
+            .filter(|s| !s.is_empty())
+            .ok_or_else(|| AppError::GitError {
+                command: format!("git rev-list --max-parents=0 {}", commit),
+                details: "Could not find first commit in ancestry.".to_string(),
+            })
     }
 
     fn has_changes(&self, from: &str, to: &str, pathspec: &[&str]) -> Result<bool, AppError> {
