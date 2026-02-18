@@ -5,11 +5,13 @@
 
 use std::path::{Path, PathBuf};
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::domain::PromptAssetLoader;
+use crate::domain::exchange::proposals::Proposal;
+use crate::domain::workstations::perspectives::Perspective;
 use crate::domain::{AppError, RoleId};
 use crate::ports::{Git, GitHub, IssueInfo, JloStore, JulesStore, RepositoryFilesystem};
 
@@ -30,38 +32,6 @@ pub struct PublishedProposal {
     pub proposal_path: String,
     pub issue_number: u64,
     pub issue_url: String,
-}
-
-/// Minimal deserialization of proposal.yml for issue creation.
-#[derive(Debug, Deserialize)]
-struct ProposalData {
-    #[serde(default)]
-    id: String,
-    #[serde(default)]
-    role: String,
-    #[serde(default)]
-    title: String,
-    #[serde(default)]
-    problem: String,
-    #[serde(default)]
-    introduction: String,
-    #[serde(default)]
-    importance: String,
-    #[serde(default)]
-    impact_surface: Vec<String>,
-    #[serde(default)]
-    implementation_cost: String,
-    #[serde(default)]
-    consistency_risks: Vec<String>,
-    #[serde(default)]
-    verification_signals: Vec<String>,
-}
-
-/// Minimal deserialization of perspective.yml for validation.
-#[derive(Debug, Deserialize)]
-struct PerspectiveData {
-    #[serde(default)]
-    recent_proposals: Vec<String>,
 }
 
 pub fn execute(
@@ -118,7 +88,7 @@ where
                 .ok_or_else(|| AppError::Validation("Invalid proposal path".to_string()))?,
         )?;
 
-        let data: ProposalData = serde_yaml::from_str(&content).map_err(|e| {
+        let data: Proposal = serde_yaml::from_str(&content).map_err(|e| {
             AppError::Validation(format!(
                 "Invalid YAML in proposal {}: {}",
                 proposal_path.display(),
@@ -169,14 +139,13 @@ where
             )));
         }
         let perspective_content = repository.read_file(perspective_path_str)?;
-        let perspective: PerspectiveData =
-            serde_yaml::from_str(&perspective_content).map_err(|e| {
-                AppError::Validation(format!(
-                    "Invalid YAML in perspective {}: {}",
-                    perspective_path.display(),
-                    e
-                ))
-            })?;
+        let perspective: Perspective = serde_yaml::from_str(&perspective_content).map_err(|e| {
+            AppError::Validation(format!(
+                "Invalid YAML in perspective {}: {}",
+                perspective_path.display(),
+                e
+            ))
+        })?;
         let title_trimmed = data.title.trim();
         if !perspective.recent_proposals.iter().any(|p| p.trim() == title_trimmed) {
             return Err(AppError::Validation(format!(
@@ -281,7 +250,7 @@ fn render_list(items: &[String]) -> String {
     items.iter().map(|line| format!("- {}", line.trim())).collect::<Vec<_>>().join("\n")
 }
 
-fn validate_role(data: &ProposalData, proposal_path: &Path) -> Result<RoleId, AppError> {
+fn validate_role(data: &Proposal, proposal_path: &Path) -> Result<RoleId, AppError> {
     let role = data.role.trim();
     if role.is_empty() {
         return Err(AppError::Validation(format!(
