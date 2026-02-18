@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "ev002b"
+requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+created_at: "2026-02-18"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Inconsistent Terminology: 'Issue' vs 'Requirement'"
+statement: |
+  The codebase uses "Issue" in Layer descriptions and method names (`emit issues`, `is_issue_driven`), while domain entities and file paths use "Requirement".
+  The domain term appears to be "Requirement" (stored in `.jules/exchange/requirements/`), so "Issue" is likely a legacy term or refers to GitHub Issues specifically, causing confusion about internal representation.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/layers/mod.rs"
+    loc:
+      - "98"
+    note: "Layer::Decider description uses 'emit issues'."
+  - path: "src/domain/layers/mod.rs"
+    loc:
+      - "156"
+    note: "Layer::is_issue_driven method name uses 'issue'."
+  - path: "src/domain/exchange/requirements/header.rs"
+    loc:
+      - "10"
+    note: "Domain entity is named RequirementHeader."
