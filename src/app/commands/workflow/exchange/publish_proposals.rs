@@ -139,8 +139,8 @@ where
             )));
         }
         let perspective_content = repository.read_file(perspective_path_str)?;
-        let perspective: InnovatorPerspective =
-            serde_yaml::from_str(&perspective_content).map_err(|e| {
+        let perspective: InnovatorPerspective = serde_yaml::from_str(&perspective_content)
+            .map_err(|e| {
                 AppError::Validation(format!(
                     "Invalid YAML in perspective {}: {}",
                     perspective_path.display(),
