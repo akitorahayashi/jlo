@@ -32,9 +32,8 @@ jlo init --remote
 | `jlo init (--remote \| --self-hosted)` | `i` | Create `.jlo/` control plane and install workflow scaffold |
 | `jlo update [--prompt-preview] [--cli]` | `u` | Advance version pin, refresh workflow scaffold, and refresh unchanged defaults. Use `--cli` to update the binary itself. |
 | `jlo deinit` | | Remove `.jlo/`, workflow scaffold, and local `jules` branch |
-| `jlo create [<layer> <name>]` | `cr` | Create a custom role under `.jlo/` (observers, innovators) |
-| `jlo add [<layer> <role>]` | `a, ad` | Install a built-in role under `.jlo/` (observers, innovators) |
-| `jlo run <layer>` | `r` | Execute roles for specified layer |
+| `jlo role <add\|create\|delete> ...` | `r` | Manage role lifecycle under `.jlo/` (`add`: `a, ad`; `create`: `c, cr`; `delete`: `d, dl`) |
+| `jlo run <layer>` | | Execute roles for specified layer |
 | `jlo doctor [--strict]` | | Validate `.jules/` structure and content |
 | `jlo workflow bootstrap` | | Materialize `.jules/` runtime repository on the current branch |
 | `jlo workflow doctor` | | Validation gate for `.jules/` repository |
@@ -49,29 +48,24 @@ jlo init --remote
 | `jlo setup gen [path]` | `s g` | Generate `.jlo/setup/install.sh`, `.jlo/setup/vars.toml`, and `.jlo/setup/secrets.toml` |
 | `jlo setup list` | `s ls` | List available components |
 
-### Create Command
+### Role Command
 
-`jlo create` authors new custom roles for multi-role layers. When no arguments are provided, it
-prompts for the layer and role name.
-
-```bash
-jlo create observers taxonomy     # Create observer role
-jlo create innovators researcher  # Create innovator role
-```
-
-### Add Command
-
-`jlo add` installs built-in roles from the embedded catalog. When no arguments are provided, it
-guides you through layer, category, and role selection.
+`jlo role` manages role lifecycle in the control plane. You can use `r` as an alias:
 
 ```bash
-jlo add observers pythonista       # Install built-in observer role
-jlo add innovators recruiter       # Install built-in innovator role
+jlo role add observers pythonista        # Install built-in observer role
+jlo role create innovators researcher    # Create custom innovator role
+jlo role delete observers taxonomy       # Delete custom role and unschedule it
+
+# Short aliases
+jlo r a observers pythonista
+jlo r c observers custom-observer
+jlo r d observers custom-observer
 ```
 
 ### Run Command
 
-Execute Jules roles for a specific layer. You can use `r` as an alias for `run`, and short aliases for layers: `n` (narrator), `o` (observers), `d` (decider), `p` (planner), `i` (implementer), `g` (integrator), `x` (innovators). Plural aliases (e.g., `deciders`, `planners`, `implementers`, `integrators`) are also supported.
+Execute Jules roles for a specific layer. Short aliases for layers are available: `n` (narrator), `o` (observers), `d` (decider), `p` (planner), `i` (implementer), `g` (integrator), `x` (innovators). Plural aliases (e.g., `deciders`, `planners`, `implementers`, `integrators`) are also supported.
 
 Multi-role layers (Observers, Innovators) require `--role`:
 
@@ -174,9 +168,9 @@ Workflow Run Flags:
 ```bash
 jlo init --remote                           # Initialize control plane + workflow scaffold (GitHub-hosted)
 jlo init --self-hosted                      # Initialize control plane + workflow scaffold (self-hosted)
-jlo create observers security               # Create observer role
-jlo create innovators researcher            # Create innovator role
-jlo add observers pythonista                # Install built-in observer role
+jlo role create observers security          # Create observer role
+jlo role create innovators researcher       # Create innovator role
+jlo role add observers pythonista           # Install built-in observer role
 
 # Setup compiler
 jlo setup list                              # List available components

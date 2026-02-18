@@ -7,13 +7,13 @@ use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore
 
 use crate::app::commands::role_schedule::ensure_role_scheduled;
 
-use super::AddOutcome;
+use super::RoleAddOutcome;
 
 pub fn execute<W, R>(
     ctx: &AppContext<W, R>,
     layer: &str,
     role: &str,
-) -> Result<AddOutcome, AppError>
+) -> Result<RoleAddOutcome, AppError>
 where
     W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
     R: RoleTemplateStore,
@@ -72,7 +72,7 @@ where
         ctx.repository().write_role(layer_enum, role_id.as_str(), &content)?;
     }
 
-    Ok(AddOutcome::Role {
+    Ok(RoleAddOutcome::Role {
         layer: layer_enum.dir_name().to_string(),
         role: role_id.as_str().to_string(),
     })

@@ -3,13 +3,13 @@ use crate::harness::scheduled_roles::read_scheduled_role_names;
 use predicates::prelude::*;
 
 #[test]
-fn add_registers_role_and_updates_schedule() {
+fn role_add_registers_role_and_updates_schedule() {
     let ctx = TestContext::new();
 
     ctx.init_remote();
 
     ctx.cli()
-        .args(["add", "observers", "pythonista"])
+        .args(["role", "add", "observers", "pythonista"])
         .assert()
         .success()
         .stdout(predicate::str::contains(".jlo/config.toml"));

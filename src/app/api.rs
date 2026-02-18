@@ -11,15 +11,14 @@ use crate::adapters::github::GitHubCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::app::{
     AppContext,
-    commands::{add, cli_upgrade, create, deinit, doctor, init, run, setup, update},
+    commands::{cli_upgrade, deinit, doctor, init, role, run, setup, update},
 };
-use crate::ports::{JulesStore, RoleTemplateStore};
+use crate::ports::{JloStore, JulesStore, RoleTemplateStore};
 
-pub use crate::app::commands::add::AddOutcome;
 pub use crate::app::commands::cli_upgrade::CliUpgradeResult;
-pub use crate::app::commands::create::CreateOutcome;
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
+pub use crate::app::commands::role::{RoleAddOutcome, RoleCreateOutcome, RoleDeleteOutcome};
 use crate::app::commands::run::RunRuntimeOptions;
 pub use crate::app::commands::run::{RunOptions, RunResult};
 pub use crate::app::commands::setup::list::{
@@ -32,6 +31,12 @@ pub use crate::app::commands::workflow::{
 pub use crate::domain::AppError;
 pub use crate::domain::WorkflowRunnerMode;
 pub use crate::domain::{BuiltinRoleEntry, Layer};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExistingRoleEntry {
+    pub layer: Layer,
+    pub role: String,
+}
 
 /// Create an `AppContext` for a given path.
 fn create_context(
@@ -84,47 +89,73 @@ pub fn init_workflows_at(
 }
 
 // =============================================================================
-// Create Command API
+// Role Command API
 // =============================================================================
 
 /// Create a new role in the current repository.
-pub fn create_role(layer: &str, name: &str) -> Result<CreateOutcome, AppError> {
-    create_role_at(layer, name, std::env::current_dir()?)
+pub fn role_create(layer: &str, name: &str) -> Result<RoleCreateOutcome, AppError> {
+    role_create_at(layer, name, std::env::current_dir()?)
 }
 
 /// Create a new role at the specified path.
-pub fn create_role_at(
+pub fn role_create_at(
     layer: &str,
     name: &str,
     root: std::path::PathBuf,
-) -> Result<CreateOutcome, AppError> {
+) -> Result<RoleCreateOutcome, AppError> {
     let ctx = create_context(root);
-    create::create_role(&ctx, layer, name)
+    role::create_role(&ctx, layer, name)
 }
 
-// =============================================================================
-// Add Command API
-// =============================================================================
-
 /// Register a built-in role in `.jlo/config.toml`.
-pub fn add_role(layer: &str, name: &str) -> Result<AddOutcome, AppError> {
-    add_role_at(layer, name, std::env::current_dir()?)
+pub fn role_add(layer: &str, name: &str) -> Result<RoleAddOutcome, AppError> {
+    role_add_at(layer, name, std::env::current_dir()?)
 }
 
 /// Install a built-in role at the specified path.
-pub fn add_role_at(
+pub fn role_add_at(
     layer: &str,
     name: &str,
     root: std::path::PathBuf,
-) -> Result<AddOutcome, AppError> {
+) -> Result<RoleAddOutcome, AppError> {
     let ctx = create_context(root);
-    add::add_role(&ctx, layer, name)
+    role::add_role(&ctx, layer, name)
+}
+
+/// Delete a role directory and schedule entry in `.jlo/config.toml`.
+pub fn role_delete(layer: &str, name: &str) -> Result<RoleDeleteOutcome, AppError> {
+    role_delete_at(layer, name, std::env::current_dir()?)
+}
+
+/// Delete a role at the specified path.
+pub fn role_delete_at(
+    layer: &str,
+    name: &str,
+    root: std::path::PathBuf,
+) -> Result<RoleDeleteOutcome, AppError> {
+    let ctx = create_context(root);
+    role::delete_role(&ctx, layer, name)
 }
 
 /// List the built-in role catalog.
 pub fn builtin_role_catalog() -> Result<Vec<BuiltinRoleEntry>, AppError> {
     let store = EmbeddedRoleTemplateStore::new();
     store.builtin_role_catalog()
+}
+
+/// Discover custom roles currently present in `.jlo/roles`.
+pub fn discover_roles() -> Result<Vec<ExistingRoleEntry>, AppError> {
+    discover_roles_at(std::env::current_dir()?)
+}
+
+/// Discover custom roles at the specified path.
+pub fn discover_roles_at(root: std::path::PathBuf) -> Result<Vec<ExistingRoleEntry>, AppError> {
+    let repository = LocalRepositoryAdapter::new(root);
+    let discovered = repository.discover_roles()?;
+    Ok(discovered
+        .into_iter()
+        .map(|entry| ExistingRoleEntry { layer: entry.layer, role: entry.id.to_string() })
+        .collect())
 }
 
 // =============================================================================
