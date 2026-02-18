@@ -1,10 +1,12 @@
 schema_version: 2
 observer: structural_arch
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: "2026-02-18T10:00:00Z"
 goals:
-- <concrete goal>
+  - "Decouple AppError by splitting it into domain-specific error types (e.g. DomainError, AdapterError)."
+  - "Move configuration validation logic from adapters into domain models (e.g. via TryFrom or Constructor)."
+  - "Resolve cyclic dependency between domain and ports by moving ports into domain or extracting error types."
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+  - at: "2026-02-18T10:00:00Z"
+    summary: "Identified 3 structural coupling issues: Monolithic Error, Anemic Domain, Domain-Ports Cycle."

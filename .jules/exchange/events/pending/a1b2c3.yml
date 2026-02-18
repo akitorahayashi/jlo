@@ -1,0 +1,13 @@
+schema_version: 1
+id: "a1b2c3"
+requirement_id: ""
+created_at: "2026-02-18"
+author_role: "structural_arch"
+confidence: "high"
+title: "Monolithic AppError creates global coupling"
+statement: |
+  The central AppError enum couples all application layers (domain, adapters, ports, app) by aggregating every possible error type (Io, Git, JulesApi, Setup, Exchange). This violates the Single Responsibility Principle and forces recompilation of the entire application when any module's error definition changes.
+evidence:
+  - path: "src/domain/error.rs"
+    loc: ["1", "177"]
+    note: "Defines AppError with variants for every subsystem (Io, Git, JulesApi, etc.)"

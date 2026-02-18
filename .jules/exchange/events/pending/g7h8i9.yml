@@ -1,0 +1,16 @@
+schema_version: 1
+id: "g7h8i9"
+requirement_id: ""
+created_at: "2026-02-18"
+author_role: "structural_arch"
+confidence: "medium"
+title: "Cyclic dependency between domain and ports modules"
+statement: |
+  The ports module (src/ports) depends on the domain module (src/domain) for the AppError type, while the domain module depends on the ports module for traits (e.g. JulesClient). This creates a cycle that prevents these layers from being cleanly separated or extracted.
+evidence:
+  - path: "src/ports/jules_client.rs"
+    loc: ["3", "54"]
+    note: "Imports and uses domain::AppError"
+  - path: "src/domain/layers/execute/mod.rs"
+    loc: ["6"]
+    note: "Imports and uses ports::JulesClient"
