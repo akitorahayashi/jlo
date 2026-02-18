@@ -60,29 +60,20 @@ mod tests {
 
     #[test]
     fn each_layer_has_contracts_and_template() {
-        let layers = [
-            "decider",
-            "implementer",
-            "innovators",
-            "integrator",
-            "narrator",
-            "observers",
-            "planner",
-        ];
-        for layer in layers {
+        for layer in crate::domain::Layer::ALL {
+            let name = layer.dir_name();
             assert!(
-                read_prompt_assemble_asset(&format!("{}/contracts.yml", layer)).is_some(),
+                read_prompt_assemble_asset(&format!("{}/contracts.yml", name)).is_some(),
                 "Missing contracts.yml for {}",
-                layer
+                name
             );
-            // Template files use the layer name (possibly plural)
             let has_template = PROMPT_ASSEMBLE_DIR
-                .get_dir(layer)
+                .get_dir(name)
                 .map(|dir| dir.entries().iter().any(|e| {
                     matches!(e, DirEntry::File(f) if f.path().to_string_lossy().ends_with("_prompt.j2"))
                 }))
                 .unwrap_or(false);
-            assert!(has_template, "Missing prompt template for {}", layer);
+            assert!(has_template, "Missing prompt template for {}", name);
         }
     }
 }

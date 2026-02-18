@@ -177,10 +177,7 @@ impl TestContext {
     pub(crate) fn assert_narrator_exists(&self) {
         let narrator_path = self.schemas_path().join("narrator");
         assert!(narrator_path.exists(), "narrator schema directory should exist");
-        assert!(
-            narrator_path.join("changes.yml").exists(),
-            "narrator changes.yml should exist"
-        );
+        assert!(narrator_path.join("changes.yml").exists(), "narrator changes.yml should exist");
     }
 
     /// Assert that a role exists within a specific layer in `.jlo/` (control plane).
@@ -227,7 +224,15 @@ impl TestContext {
     /// This is a compile-time guarantee via `include_dir!`; runtime check uses the adapter.
     pub(crate) fn assert_contracts_available(&self) {
         use jlo::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset;
-        for layer in ["narrator", "observers", "decider", "planner", "implementer", "integrator"] {
+        for layer in [
+            "narrator",
+            "observers",
+            "decider",
+            "planner",
+            "implementer",
+            "innovators",
+            "integrator",
+        ] {
             assert!(
                 read_prompt_assemble_asset(&format!("{}/contracts.yml", layer)).is_some(),
                 "{}/contracts.yml should be available from embedded catalog",
@@ -281,7 +286,6 @@ impl TestContext {
                 expected
             );
         }
-
     }
 
     /// Read the `.jlo-version` file from the `.jlo/` control plane.
