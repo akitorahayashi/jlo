@@ -136,4 +136,21 @@ roles = [
             "Schedule config invalid: Duplicate role id 'taxonomy' in observers schedule"
         );
     }
+
+    #[test]
+    fn duplicate_role_ids_in_innovators_fail() {
+        let content = r#"
+[innovators]
+roles = [
+  { name = "taxonomy", enabled = true },
+  { name = "taxonomy", enabled = false },
+]
+"#;
+        let err = Schedule::parse_toml(content).unwrap_err();
+        assert!(matches!(err, ScheduleError::ConfigInvalid(_)));
+        assert_eq!(
+            err.to_string(),
+            "Schedule config invalid: Duplicate role id 'taxonomy' in innovators schedule"
+        );
+    }
 }
