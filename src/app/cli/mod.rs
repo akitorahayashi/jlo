@@ -23,22 +23,19 @@ struct Cli {
     command: Commands,
 }
 
+#[derive(clap::ValueEnum, Clone, Debug)]
+pub enum InitMode {
+    Remote,
+    SelfHosted,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     /// Initialize .jlo/ control plane and install workflow scaffold
     #[clap(visible_alias = "i")]
     Init {
-        /// Install the GitHub-hosted runner workflow scaffold
-        #[arg(
-            short = 'r',
-            long,
-            conflicts_with = "self_hosted",
-            required_unless_present = "self_hosted"
-        )]
-        remote: bool,
-        /// Install the self-hosted runner workflow scaffold
-        #[arg(short = 's', long, conflicts_with = "remote", required_unless_present = "remote")]
-        self_hosted: bool,
+        /// Runner mode: remote (GitHub-hosted) or self-hosted
+        mode: InitMode,
     },
     /// Update the jlo CLI binary from upstream releases
     #[clap(visible_alias = "u")]
@@ -88,7 +85,7 @@ pub fn run() {
     let cli = Cli::parse();
 
     let result: Result<i32, AppError> = match cli.command {
-        Commands::Init { remote, self_hosted } => init::run_init(remote, self_hosted).map(|_| 0),
+        Commands::Init { mode } => init::run_init(mode).map(|_| 0),
         Commands::Update => run_update().map(|_| 0),
         Commands::Upgrade { prompt_preview } => run_upgrade(prompt_preview).map(|_| 0),
         Commands::Role { command } => role::run_role(command).map(|_| 0),

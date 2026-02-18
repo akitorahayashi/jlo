@@ -53,6 +53,7 @@ pub enum RunLayer {
     #[clap(visible_alias = "p", alias = "planners")]
     Planner {
         /// Local requirement file path (required)
+        #[arg(long, short = 'r')]
         requirement: PathBuf,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]
@@ -68,6 +69,7 @@ pub enum RunLayer {
     #[clap(visible_alias = "i", alias = "implementers")]
     Implementer {
         /// Local requirement file path (required)
+        #[arg(long, short = 'r')]
         requirement: PathBuf,
         /// Show assembled prompts without executing
         #[arg(long, conflicts_with = "mock")]

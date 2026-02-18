@@ -8,7 +8,7 @@ fn init_rejects_when_already_initialized() {
     ctx.init_remote();
 
     ctx.cli()
-        .args(["init", "--remote"])
+        .args(["init", "remote"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("already exists"));

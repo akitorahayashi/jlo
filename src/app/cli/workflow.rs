@@ -36,80 +36,22 @@ pub enum WorkflowCommands {
         output_dir: Option<String>,
     },
 
-    /// GitHub entity operations (pr, issue)
-    Gh {
+    /// Process a Pull Request
+    ProcessPr {
         #[command(subcommand)]
-        command: WorkflowGhCommands,
+        command: WorkflowProcessPrCommands,
     },
-    /// Exchange area observation and cleanup operations
-    Exchange {
-        #[command(subcommand)]
-        command: WorkflowExchangeCommands,
-    },
-}
 
-#[derive(Subcommand)]
-pub enum WorkflowBootstrapCommands {
-    /// Ensure/sync worker branch from target branch
-    WorkerBranch,
-    /// Materialize managed files from embedded scaffold
-    ManagedFiles,
-    /// Reconcile workstation perspectives from schedule intent
-    Workstations,
-}
+    /// Apply innovator labels to a proposal issue
+    LabelInnovator {
+        /// Issue number
+        issue_number: u64,
+        /// Role name (e.g., scout, architect)
+        role: String,
+    },
 
-#[derive(Subcommand)]
-pub enum WorkflowExchangeCommands {
-    /// Inspect exchange and output JSON
-    Inspect,
-    /// Publish merged proposals as GitHub issues
-    PublishProposals,
-    /// Clean exchange artifacts
-    Clean {
-        #[command(subcommand)]
-        command: WorkflowExchangeCleanCommands,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum WorkflowExchangeCleanCommands {
-    /// Remove a processed requirement and its source events
-    Requirement {
-        /// Path to the requirement file
-        requirement_file: String,
-    },
-    /// Clean up mock artifacts
-    Mock {
-        /// Mock tag to identify artifacts
-        #[arg(long)]
-        mock_tag: String,
-        /// PR numbers JSON array to close
-        #[arg(long)]
-        pr_numbers_json: Option<String>,
-        /// Branches JSON array to delete
-        #[arg(long)]
-        branches_json: Option<String>,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum WorkflowGhCommands {
-    /// Process GitHub entities (pr, issue)
-    Process {
-        #[command(subcommand)]
-        command: WorkflowProcessCommands,
-    },
-    /// Push worker-branch maintenance changes through PR merge path
-    Push {
-        #[command(subcommand)]
-        command: WorkflowPushCommands,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum WorkflowPushCommands {
     /// Commit .jules changes, create PR to worker branch, and merge it
-    WorkerBranch {
+    PushWorker {
         /// Stable token used in branch naming (e.g. requirement-cleanup)
         #[arg(long)]
         change_token: String,
@@ -123,20 +65,41 @@ pub enum WorkflowPushCommands {
         #[arg(long)]
         pr_body: String,
     },
+
+    /// Remove a processed requirement and its source events
+    CleanRequirement {
+        /// Path to the requirement file
+        requirement_file: String,
+    },
+
+    /// Clean up mock artifacts
+    CleanMock {
+        /// Mock tag to identify artifacts
+        #[arg(long)]
+        mock_tag: String,
+        /// PR numbers JSON array to close
+        #[arg(long)]
+        pr_numbers_json: Option<String>,
+        /// Branches JSON array to delete
+        #[arg(long)]
+        branches_json: Option<String>,
+    },
+
+    /// Inspect exchange and output JSON
+    InspectExchange,
+
+    /// Publish merged proposals as GitHub issues
+    PublishProposals,
 }
 
 #[derive(Subcommand)]
-pub enum WorkflowProcessCommands {
-    /// Process a Pull Request
-    Pr {
-        #[command(subcommand)]
-        command: WorkflowProcessPrCommands,
-    },
-    /// Process an Issue
-    Issue {
-        #[command(subcommand)]
-        command: WorkflowProcessIssueCommands,
-    },
+pub enum WorkflowBootstrapCommands {
+    /// Ensure/sync worker branch from target branch
+    WorkerBranch,
+    /// Materialize managed files from embedded scaffold
+    ManagedFiles,
+    /// Reconcile workstation perspectives from schedule intent
+    Workstations,
 }
 
 /// Shared flags for PR processing commands.
@@ -179,18 +142,6 @@ pub enum WorkflowProcessPrCommands {
     },
 }
 
-#[derive(Subcommand)]
-pub enum WorkflowProcessIssueCommands {
-    /// Apply innovator labels to a proposal issue
-    #[command(alias = "label-innovator")]
-    LabelInnovator {
-        /// Issue number
-        issue_number: u64,
-        /// Role name (e.g., scout, architect)
-        role: String,
-    },
-}
-
 pub fn parse_layer(value: &str) -> Result<crate::domain::Layer, AppError> {
     crate::domain::Layer::from_dir_name(value)
         .ok_or_else(|| AppError::InvalidLayer { name: value.to_string() })
@@ -225,64 +176,36 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let output = workflow::generate(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowCommands::Gh { command } => run_workflow_gh(command),
-        WorkflowCommands::Exchange { command } => run_workflow_exchange(command),
-    }
-}
-
-fn run_workflow_bootstrap(command: WorkflowBootstrapCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    let root = std::env::current_dir()
-        .map_err(|e| AppError::InternalError(format!("Failed to get current directory: {}", e)))?;
-
-    match command {
-        WorkflowBootstrapCommands::WorkerBranch => {
-            let options = workflow::WorkflowBootstrapWorkerBranchOptions { root };
-            let output = workflow::bootstrap_worker_branch(options)?;
+        WorkflowCommands::ProcessPr { command } => {
+            let github = crate::adapters::github::GitHubCommandAdapter::new();
+            run_workflow_gh_process_pr(&github, command)
+        }
+        WorkflowCommands::LabelInnovator { issue_number, role } => {
+            let github = crate::adapters::github::GitHubCommandAdapter::new();
+            use crate::app::commands::workflow;
+            let options = workflow::gh::process::issue::LabelInnovatorOptions { issue_number, role };
+            let output = workflow::gh::process::issue::label_innovator::execute(&github, options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowBootstrapCommands::ManagedFiles => {
-            let options = workflow::WorkflowBootstrapManagedFilesOptions { root };
-            let output = workflow::bootstrap_managed_files(options)?;
+        WorkflowCommands::PushWorker { change_token, commit_message, pr_title, pr_body } => {
+            use crate::app::commands::workflow;
+            let output =
+                workflow::gh::push::execute(workflow::gh::push::PushWorkerBranchOptions {
+                    change_token,
+                    commit_message,
+                    pr_title,
+                    pr_body,
+                })?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowBootstrapCommands::Workstations => {
-            let options = workflow::WorkflowBootstrapWorkstationsOptions { root };
-            let output = workflow::bootstrap_workstations(options)?;
-            workflow::write_workflow_output(&output)
-        }
-    }
-}
-
-fn run_workflow_exchange(command: WorkflowExchangeCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    match command {
-        WorkflowExchangeCommands::Inspect => {
-            let options = workflow::exchange::ExchangeInspectOptions {};
-            let output = workflow::exchange::inspect(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowExchangeCommands::PublishProposals => {
-            let options = workflow::exchange::ExchangePublishProposalsOptions {};
-            let output = workflow::exchange::publish_proposals(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowExchangeCommands::Clean { command } => run_workflow_exchange_clean(command),
-    }
-}
-
-fn run_workflow_exchange_clean(command: WorkflowExchangeCleanCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    match command {
-        WorkflowExchangeCleanCommands::Requirement { requirement_file } => {
+        WorkflowCommands::CleanRequirement { requirement_file } => {
+            use crate::app::commands::workflow;
             let options = workflow::exchange::ExchangeCleanRequirementOptions { requirement_file };
             let output = workflow::exchange::clean_requirement(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowExchangeCleanCommands::Mock { mock_tag, pr_numbers_json, branches_json } => {
+        WorkflowCommands::CleanMock { mock_tag, pr_numbers_json, branches_json } => {
+            use crate::app::commands::workflow;
             let pr_numbers_json = match pr_numbers_json {
                 Some(json_str) => {
                     let parsed: Vec<u64> = serde_json::from_str(&json_str).map_err(|e| {
@@ -309,34 +232,41 @@ fn run_workflow_exchange_clean(command: WorkflowExchangeCleanCommands) -> Result
             let output = workflow::exchange::clean_mock(options)?;
             workflow::write_workflow_output(&output)
         }
+        WorkflowCommands::InspectExchange => {
+            use crate::app::commands::workflow;
+            let options = workflow::exchange::ExchangeInspectOptions {};
+            let output = workflow::exchange::inspect(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowCommands::PublishProposals => {
+            use crate::app::commands::workflow;
+            let options = workflow::exchange::ExchangePublishProposalsOptions {};
+            let output = workflow::exchange::publish_proposals(options)?;
+            workflow::write_workflow_output(&output)
+        }
     }
 }
 
-fn run_workflow_gh(command: WorkflowGhCommands) -> Result<(), AppError> {
-    let github = crate::adapters::github::GitHubCommandAdapter::new();
-    match command {
-        WorkflowGhCommands::Process { command } => match command {
-            WorkflowProcessCommands::Pr { command } => run_workflow_gh_process_pr(&github, command),
-            WorkflowProcessCommands::Issue { command } => {
-                run_workflow_gh_process_issue(&github, command)
-            }
-        },
-        WorkflowGhCommands::Push { command } => run_workflow_gh_push(command),
-    }
-}
-
-fn run_workflow_gh_push(command: WorkflowPushCommands) -> Result<(), AppError> {
+fn run_workflow_bootstrap(command: WorkflowBootstrapCommands) -> Result<(), AppError> {
     use crate::app::commands::workflow;
 
+    let root = std::env::current_dir()
+        .map_err(|e| AppError::InternalError(format!("Failed to get current directory: {}", e)))?;
+
     match command {
-        WorkflowPushCommands::WorkerBranch { change_token, commit_message, pr_title, pr_body } => {
-            let output =
-                workflow::gh::push::execute(workflow::gh::push::PushWorkerBranchOptions {
-                    change_token,
-                    commit_message,
-                    pr_title,
-                    pr_body,
-                })?;
+        WorkflowBootstrapCommands::WorkerBranch => {
+            let options = workflow::WorkflowBootstrapWorkerBranchOptions { root };
+            let output = workflow::bootstrap_worker_branch(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowBootstrapCommands::ManagedFiles => {
+            let options = workflow::WorkflowBootstrapManagedFilesOptions { root };
+            let output = workflow::bootstrap_managed_files(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowBootstrapCommands::Workstations => {
+            let options = workflow::WorkflowBootstrapWorkstationsOptions { root };
+            let output = workflow::bootstrap_workstations(options)?;
             workflow::write_workflow_output(&output)
         }
     }
@@ -368,20 +298,4 @@ fn run_workflow_gh_process_pr(
     };
     let output = workflow::gh::process::pr::process::execute(github, options)?;
     workflow::write_workflow_output(&output)
-}
-
-fn run_workflow_gh_process_issue(
-    github: &impl crate::ports::GitHub,
-    command: WorkflowProcessIssueCommands,
-) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    match command {
-        WorkflowProcessIssueCommands::LabelInnovator { issue_number, role } => {
-            let options =
-                workflow::gh::process::issue::LabelInnovatorOptions { issue_number, role };
-            let output = workflow::gh::process::issue::label_innovator::execute(github, options)?;
-            workflow::write_workflow_output(&output)
-        }
-    }
 }

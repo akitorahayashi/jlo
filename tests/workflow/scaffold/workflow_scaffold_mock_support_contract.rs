@@ -48,8 +48,8 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "Cleanup flow should validate with doctor as an explicit workflow step"
     );
     assert!(
-        workflow.contains("jlo workflow gh push worker-branch"),
-        "Cleanup flow should publish worker updates via workflow gh push worker-branch"
+        workflow.contains("jlo workflow push-worker"),
+        "Cleanup flow should publish worker updates via workflow push-worker"
     );
     assert!(workflow.contains("run-innovators:"), "Should have integrated innovators job");
     assert!(
