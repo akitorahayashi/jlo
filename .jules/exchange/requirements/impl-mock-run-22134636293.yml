@@ -1,0 +1,29 @@
+schema_version: 2
+id: a2b2f8
+source_events:
+- 23cdc8
+- 2a718e
+- 2a944e
+- 39162a
+- '393977'
+- 48aca7
+- 48ce8b
+- '563552'
+- '565754'
+- d5ca79
+- d5eba9
+title: Mock requirement ready for implementation
+label: bugs
+priority: medium
+summary: 'This is a mock requirement created by jlo --mock for workflow-scaffold validation. Mock tag: mock-run-22134636293'
+goal: Mock goal description for validation
+problem: Mock problem description for validation
+impact: Mock impact description for validation
+desired_outcome: Mock desired outcome for validation
+affected_areas:
+- workflow
+acceptance_criteria:
+- Mock acceptance criterion
+verification_criteria:
+- mock verification check
+requires_deep_analysis: false
