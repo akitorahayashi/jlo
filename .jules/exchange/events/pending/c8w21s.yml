@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "c8w21s"
+requirement_id: ""
+created_at: "2026-02-18"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "Incorrect Bootstrap Command Reference in Innovators Doc"
+statement: |
+  `docs/operations/layers/INNOVATORS.md` references `jlo bootstrap` as a command, but `jlo bootstrap` is not a valid top-level command. The correct command is likely `jlo workflow bootstrap workstations` (or similar).
+
+# Evidence supporting the observation
+evidence:
+  - path: "docs/operations/layers/INNOVATORS.md"
+    loc:
+      - "Bootstrap: `jlo bootstrap`"
+    note: "Incorrect command reference."
+
+  - path: "src/app/cli/mod.rs"
+    loc:
+      - "enum Commands"
+    note: "Bootstrap command is not defined as a top-level command."

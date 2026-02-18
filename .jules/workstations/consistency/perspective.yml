@@ -1,10 +1,14 @@
 schema_version: 2
 observer: consistency
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-18T10:00:00Z
 goals:
-- <concrete goal>
+- Monitor for CLI command changes and ensure `docs/operations/layers/` reflects them.
+- Verify new domain models (e.g. `Proposals`) are correctly referenced in documentation.
+- Check for missing documentation for new layers (e.g. Integrator).
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-18T10:00:00Z
+  summary: Detected missing documentation for Integrator layer.
+- at: 2026-02-18T10:00:00Z
+  summary: Detected incorrect `jlo bootstrap` command reference in Innovators doc.
