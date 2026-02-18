@@ -13,7 +13,7 @@ Layer generating improvement proposals based on workstation perspectives.
 - Parallelism: Runs independently of the Narrator -> Observer -> Decider flow.
 
 ## Management
-- Bootstrap: `jlo bootstrap` initializes and prunes `perspective.yml` based on `.jlo/config.toml`. Agents never self-initialize.
+- Bootstrap: `jlo workflow bootstrap` initializes and prunes `perspective.yml` based on `.jlo/config.toml`. Agents never self-initialize.
 - Memory: Metadata for emitted proposals must be stored in the role's `perspective.yml`.
 
 ## Resources
