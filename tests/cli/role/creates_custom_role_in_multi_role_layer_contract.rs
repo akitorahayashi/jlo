@@ -2,13 +2,13 @@ use crate::harness::TestContext;
 use predicates::prelude::*;
 
 #[test]
-fn create_writes_role_to_control_plane() {
+fn role_create_writes_role_to_control_plane() {
     let ctx = TestContext::new();
 
     ctx.init_remote();
 
     ctx.cli()
-        .args(["create", "observers", "security"])
+        .args(["role", "create", "observers", "security"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Created new"));

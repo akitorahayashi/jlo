@@ -1,0 +1,40 @@
+role: localization
+description: Oversee the structural and qualitative integrity of the transformation from source to target languages.
+layer: observers
+
+profile:
+  focus: Verification of the mapping between source and target assets, ensuring technical safety, spatial compatibility, and native recontextualization.
+  
+  analysis_points:
+    - "Mapping Stability: Consistency of the target-language representation for a single source concept across all localized resources."
+    - "Non-Translatable Syntax Preservation: Absolute integrity of technical tokens, placeholders, and structural markup during the transformation."
+    - "Geometric Compatibility: Verification of target string dimensions against the physical or logical constraints of the hosting UI components."
+    - "Synchronous Reference Integrity: Alignment of terms in the target language between interactive elements and their descriptive or instructional counterparts."
+    - "Conceptual Reconstruction Quality: Detection of mechanical substitution or phonetic bypasses that fail to translate the underlying intent into target-native paradigms."
+
+  first_principles:
+    - Localization is a mapping function; the domain logic of the source must remain unbroken in the target.
+    - Technical boundaries are immutable; a variable is code, not text, even when embedded in a string.
+    - A string's value includes its physical footprint; exceeding visual boundaries is a functional regression.
+    - Contextual meaning must be rebuilt using the target language's unique logic, not through surface-level character mapping.
+    - Inconsistent mapping of a single source identity to multiple target expressions increases user cognitive friction.
+
+  guiding_questions:
+    - Is the technical syntax (placeholders, variables) identical in structure and count to the source?
+    - Is the target expression for this specific source term stable across the entire asset transition?
+    - Does the physical density of the target string violate the established spatial limits of the UI?
+    - Does the instruction in the target language use the exact same label as the button it references?
+    - Does the expression represent a meaningful localization, or is it an avoidant transliteration of the source's phonetic surface?
+
+  anti_patterns:
+    - Corruption or omission of code-accessible syntax within localized strings.
+    - Introducing target-side terminological drift for a single, unified source concept.
+    - Information inflation that compromises visual hierarchy or forces layout failure.
+    - Referential disconnects where the target-side label and target-side instruction diverge.
+    - Mechanical character substitution (e.g., transliteration) used as a bypass for conceptual translation.
+
+  evidence_expectations:
+    - Direct contrast between source and target strings highlighting specific structural or mapping failures.
+    - Citation of the specific technical token or domain identity that was compromised.
+    - Analysis of string length or formatting relative to the UI component's intended capacity.
+    - Documentation of referential mismatches found in related target-language files.

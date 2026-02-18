@@ -20,7 +20,7 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 |------|-------|-------------|
 | `.jlo/.jlo-version` | jlo | Pinned jlo binary version. Written by `init`, advanced by `update`. |
 | `.jlo/config.toml` | User | Workspace configuration and schedule roster (`[observers].roles`, `[innovators].roles`). Created by `init`; never overwritten. |
-| `.jlo/roles/<layer>/<role>/role.yml` | User | Role-specific customizations. Created by `create`; custom roles override built-ins at runtime. |
+| `.jlo/roles/<layer>/<role>/role.yml` | User | Role-specific customizations. Created by `role create`; custom roles override built-ins at runtime. |
 | `.jlo/setup/tools.yml` | User | Tool selection. Created by `init`; never overwritten. |
 
 ### `.jules/` — Runtime Data Plane (worker branch)

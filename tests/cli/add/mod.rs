@@ -1,2 +1,0 @@
-mod adds_role_and_updates_schedule_contract;
-mod adds_roles_and_updates_schedule_contract;

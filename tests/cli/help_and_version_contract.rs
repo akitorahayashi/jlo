@@ -17,6 +17,6 @@ fn help_lists_visible_aliases() {
     let ctx = TestContext::new();
 
     ctx.cli().arg("--help").assert().success().stdout(
-        predicate::str::contains("[aliases: i]").and(predicate::str::contains("[aliases: cr]")),
+        predicate::str::contains("[aliases: i]").and(predicate::str::contains("[aliases: r]")),
     );
 }

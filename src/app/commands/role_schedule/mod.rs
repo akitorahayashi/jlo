@@ -35,6 +35,45 @@ pub fn ensure_role_scheduled<W: RepositoryFilesystem>(
     Ok(true)
 }
 
+pub fn remove_role_scheduled<W: RepositoryFilesystem>(
+    repository: &W,
+    layer: Layer,
+    role: &RoleId,
+) -> Result<bool, AppError> {
+    if layer.is_single_role() {
+        return Err(AppError::Validation(format!(
+            "Layer '{}' does not support scheduling",
+            layer.dir_name()
+        )));
+    }
+
+    let config_path = ".jlo/config.toml";
+    let content = repository.read_file(config_path)?;
+    let mut doc = content.parse::<DocumentMut>().map_err(|err| {
+        AppError::Validation(format!("Failed to parse .jlo/config.toml: {}", err))
+    })?;
+
+    let roles = layer_roles_mut(&mut doc, layer.dir_name())?;
+    let mut remove_indices = Vec::new();
+    for (index, entry) in roles.iter().enumerate() {
+        if role_entry_name(entry)? == role.as_str() {
+            remove_indices.push(index);
+        }
+    }
+
+    if remove_indices.is_empty() {
+        return Ok(false);
+    }
+
+    for index in remove_indices.into_iter().rev() {
+        roles.remove(index);
+    }
+    format_roles_array(roles);
+    normalize_top_level_table_order(&mut doc);
+    repository.write_file(config_path, &doc.to_string())?;
+    Ok(true)
+}
+
 fn normalize_top_level_table_order(doc: &mut DocumentMut) {
     let preferred = ["run", "workflow", "innovators", "observers", "jules_api"];
     let root = doc.as_table_mut();
@@ -60,6 +99,12 @@ fn normalize_top_level_table_order(doc: &mut DocumentMut) {
 }
 
 fn format_roles_array(roles: &mut Array) {
+    if roles.is_empty() {
+        roles.set_trailing("");
+        roles.set_trailing_comma(false);
+        return;
+    }
+
     for item in roles.iter_mut() {
         item.decor_mut().set_prefix("\n  ");
         item.decor_mut().set_suffix("");
@@ -92,23 +137,24 @@ fn layer_roles_mut<'a>(
 
 fn contains_role(roles: &Array, role: &RoleId) -> Result<bool, AppError> {
     for entry in roles.iter() {
-        let table = entry.as_inline_table().ok_or_else(|| {
-            AppError::Validation(
-                "Schedule role entry must be an inline table: { name = \"...\", enabled = ... }"
-                    .to_string(),
-            )
-        })?;
-        let Some(name) = table.get("name").and_then(|v| v.as_str()) else {
-            return Err(AppError::Validation(
-                "Schedule role entry is missing string field 'name'".to_string(),
-            ));
-        };
-        if name == role.as_str() {
+        if role_entry_name(entry)? == role.as_str() {
             return Ok(true);
         }
     }
 
     Ok(false)
+}
+
+fn role_entry_name(entry: &Value) -> Result<&str, AppError> {
+    let table = entry.as_inline_table().ok_or_else(|| {
+        AppError::Validation(
+            "Schedule role entry must be an inline table: { name = \"...\", enabled = ... }"
+                .to_string(),
+        )
+    })?;
+    table.get("name").and_then(|v| v.as_str()).ok_or_else(|| {
+        AppError::Validation("Schedule role entry is missing string field 'name'".to_string())
+    })
 }
 
 fn scheduled_role_entry(role: &RoleId) -> InlineTable {
@@ -237,5 +283,86 @@ roles = [
         assert!(workflow_pos < innovators_pos, "actual config:\n{}", actual);
         assert!(innovators_pos < observers_pos, "actual config:\n{}", actual);
         assert!(observers_pos < jules_api_pos, "actual config:\n{}", actual);
+    }
+
+    #[test]
+    fn remove_role_scheduled_removes_existing_role() {
+        let repository = TestStore::new().with_file(
+            ".jlo/config.toml",
+            r#"[run]
+jlo_target_branch = "target_branch"
+jules_worker_branch = "worker_branch"
+
+[observers]
+roles = [
+  { name = "consistency", enabled = true },
+  { name = "taxonomy", enabled = true },
+]
+"#,
+        );
+
+        let removed = remove_role_scheduled(
+            &repository,
+            Layer::Observers,
+            &RoleId::new("taxonomy").expect("valid role id"),
+        )
+        .expect("schedule removal should succeed");
+        assert!(removed);
+
+        let actual = repository.read_file(".jlo/config.toml").expect("written config should exist");
+        let roles = role_names(&actual, "observers");
+        assert_eq!(roles, vec!["consistency".to_string()]);
+    }
+
+    #[test]
+    fn remove_role_scheduled_returns_false_when_role_missing() {
+        let repository = TestStore::new().with_file(
+            ".jlo/config.toml",
+            r#"[run]
+jlo_target_branch = "target_branch"
+jules_worker_branch = "worker_branch"
+
+[innovators]
+roles = [
+  { name = "recruiter", enabled = true },
+]
+"#,
+        );
+
+        let removed = remove_role_scheduled(
+            &repository,
+            Layer::Innovators,
+            &RoleId::new("leverage_architect").expect("valid role id"),
+        )
+        .expect("schedule removal should return false");
+        assert!(!removed);
+    }
+
+    #[test]
+    fn remove_role_scheduled_last_role_keeps_empty_roles_array() {
+        let repository = TestStore::new().with_file(
+            ".jlo/config.toml",
+            r#"[run]
+jlo_target_branch = "target_branch"
+jules_worker_branch = "worker_branch"
+
+[observers]
+roles = [
+  { name = "taxonomy", enabled = true },
+]
+"#,
+        );
+
+        let removed = remove_role_scheduled(
+            &repository,
+            Layer::Observers,
+            &RoleId::new("taxonomy").expect("valid role id"),
+        )
+        .expect("schedule removal should succeed");
+        assert!(removed);
+
+        let actual = repository.read_file(".jlo/config.toml").expect("written config should exist");
+        let roles = role_names(&actual, "observers");
+        assert!(roles.is_empty(), "roles should be empty after removing the last entry");
     }
 }
