@@ -49,5 +49,42 @@ acceptance_criteria:
 verification_criteria:
   - "Run `cargo check` and ensure no circular dependencies."
   - "Run `cargo test`."
-requires_deep_analysis: true
-deep_analysis_reason: "Resolving cyclic dependencies and refactoring core error types may have widespread impact on the codebase."
+requires_deep_analysis: false
+deep_analysis_reason: |
+  Resolving cyclic dependencies and refactoring core error types may have widespread impact on the codebase.
+
+  ### System Impact Analysis
+  - **Cyclic Dependency Resolution**: Moving `src/ports` to `src/domain/ports` is a structural refactor affecting imports in `src/adapters`, `src/app`, and `src/domain`. This eliminates the `domain <-> ports` cycle but requires touching ~20-30 files.
+  - **API Decoupling**: Refactoring `src/app/api.rs` to use dependency injection (e.g., passing `impl RepositoryFilesystem` instead of `PathBuf`) breaks the public API signature of the library crate. Consumers (CLI, integration tests) must be updated to instantiate adapters before calling API functions.
+  - **Prompt Assembly**: Changing `IncludeContext::seed_from_schema` to return operations instead of executing side effects changes the contract of `assemble_prompt`. The caller (`run` command) must now handle these operations. This decouples IO from the domain logic.
+
+  ### Dependency Analysis
+  - **Current**: `src/domain` -> `src/ports` -> `src/domain` (via `AppError`).
+  - **Target**: `src/adapters` -> `src/domain/ports`; `src/app` -> `src/domain/ports`; `src/domain` (self-contained).
+  - **External**: `ScheduleError` exposes `toml::de::Error`. This must be wrapped or mapped to `AppError::InvalidConfig` to remove the `toml` dependency from the domain public interface.
+
+  ### Risks
+  - **Merge Conflicts**: High risk due to the number of files affected by import changes.
+  - **Regression**: The prompt assembly refactor changes how files are created. If the operation list is not correctly executed by the runner, schemas will not be seeded, potentially confusing users.
+  - **Validation Gaps**: Moving validation from adapters to domain must ensure that *all* checks (e.g., "cron not empty") are preserved.
+
+  ### Implementation Specifics
+  1.  **Domain/Ports Refactor**:
+      - Create `src/domain/ports/` and move `src/ports/*.rs` there.
+      - Update `src/lib.rs` (or `main.rs`) to export `domain::ports`.
+      - Bulk update imports from `crate::ports` to `crate::domain::ports`.
+      - Delete `src/ports/`.
+  2.  **Config Validation**:
+      - Implement `validate()` for `WorkflowTimingConfig` in `src/domain/config/control_plane.rs`.
+      - Invoke `self.workflow.validate()` in `ControlPlaneConfig::validate()`.
+      - Remove manual validation from `src/adapters/control_plane_config.rs`.
+  3.  **Error Decoupling**:
+      - In `src/domain/config/schedule.rs`, remove `#[from] toml::de::Error`.
+      - In `Schedule::parse_toml`, map the error: `toml::from_str(content).map_err(|e| ScheduleError::Toml(e.to_string()))?`.
+  4.  **Prompt Assembly**:
+      - Modify `IncludeContext` to store `Vec<SeedOp>` (enum with `Copy { from, to }`).
+      - Return `(AssembledPrompt, Vec<SeedOp>)` from `assemble_prompt`.
+      - Update `src/app/commands/run/layer.rs` to iterate and execute seed ops using the repository adapter.
+  5.  **API Injection**:
+      - Update `src/app/api.rs`: `pub fn run_at(..., repo: &impl RepositoryFilesystem, ...)`.
+      - Update `src/app/cli/run.rs`: Instantiate `LocalRepositoryAdapter`, `GitCommandAdapter`, etc., and pass them to `run_at`.
