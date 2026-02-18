@@ -17,6 +17,8 @@ impact: |
   Slow compilation times.
   Fragile error handling logic.
   Codebase is harder to maintain and extend.
+  High risk of regression due to widespread usage (~1173 instances).
+  Cyclic dependency between `src/domain` and `src/ports` complicates architecture.
 desired_outcome: |
   `AppError` is removed or reduced to a top-level application error wrapper.
   Domain-specific errors are used within their respective modules.
@@ -25,6 +27,9 @@ affected_areas:
   - "src/domain/config/"
   - "src/ports/"
   - "src/adapters/"
+  - "src/app/"
+  - "src/domain/roles/"
+  - "src/domain/setup/"
 acceptance_criteria:
   - "`AppError` no longer contains variants for specific low-level errors (e.g., Git, IO) unless wrapped."
   - "Modules use their own error types (e.g., `ConfigError`)."
@@ -32,5 +37,40 @@ acceptance_criteria:
 verification_criteria:
   - "Run `cargo check`."
   - "Run `cargo test`."
-requires_deep_analysis: true
-deep_analysis_reason: "Touching the central error type will require changes across the entire codebase."
+requires_deep_analysis: false
+deep_analysis_reason: |
+  Touching the central error type will require changes across the entire codebase.
+
+  ### Deep Analysis Findings
+
+  #### 1. System Impact
+  The `AppError` enum is central to the application, with over 1100 usages. It is the primary error type returned by `src/ports` (traits), `src/adapters` (implementations), and handled in `src/app` (CLI/API commands). Refactoring it impacts:
+  - **Core Logic**: Almost every `Result<T, AppError>` signature needs updating.
+  - **Dependency Graph**: Currently, `src/ports` depends on `domain::AppError`, while `domain` depends on `ports` traits, creating a cycle.
+  - **Error Handling**: Existing `match` blocks on `AppError` variants will break.
+
+  #### 2. Dependency Analysis
+  `AppError` currently couples:
+  - **Infrastructure**: `std::io`, `toml`, `thiserror`.
+  - **Domain Concepts**: `Role`, `Layer`, `SetupComponent`, `Schedule`, `PromptAssembly`.
+  - **External Tools**: `Git`, `JulesApi`.
+
+  This monolithic structure forces recompilation of the entire app when *any* error variant changes.
+
+  #### 3. Risks
+  - **High Regression Risk**: Logic depending on specific error variants (e.g., retry logic for Git errors) must be carefully migrated.
+  - **Merge Conflicts**: Due to the widespread usage, this refactor will conflict with almost any other concurrent PR.
+  - **Complexity**: Introducing many small error types requires boilerplate (conversions) unless managed with `thiserror` and `anyhow`.
+
+  #### 4. Implementation Specifics (Recommended)
+  - **Phase 1: Categorization**: Group existing `AppError` variants into domains (e.g., `Config`, `Git`, `Role`, `Setup`).
+  - **Phase 2: Definition**: Create domain-specific error enums in their respective modules (e.g., `src/domain/config/error.rs`).
+  - **Phase 3: Migration (Strangler Fig)**:
+      - Implement `From<NewError> for AppError`.
+      - Update one module at a time to return `NewError`.
+      - Update `AppError` to wrap the new error type.
+  - **Phase 4: Cleanup**: Once all variants are migrated, `AppError` becomes a top-level wrapper or is replaced by `anyhow::Result` in the CLI layer (though a structured `AppError` is preferred for library usage).
+
+  #### 5. Verification Strategy
+  - **Compiler**: The Rust compiler will catch most type mismatches.
+  - **Tests**: Existing unit and integration tests must pass. New tests should be added for the specific error types to ensure they serialize/display correctly.
