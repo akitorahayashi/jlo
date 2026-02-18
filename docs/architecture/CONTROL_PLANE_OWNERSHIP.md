@@ -4,7 +4,7 @@
 
 | Branch | Purpose | Editable by |
 |--------|---------|-------------|
-| `JLO_TARGET_BRANCH` | Hosts `.jlo/` intent overlay and `.github/` workflow kit | User (via `jlo init`, `jlo update`, manual edits) |
+| `JLO_TARGET_BRANCH` | Hosts `.jlo/` intent overlay and `.github/` workflow kit | User (via `jlo init`, `jlo upgrade`, manual edits) |
 | `JULES_WORKER_BRANCH` | Hosts materialized `.jules/` runtime state and agent exchange artifacts | Workflow bootstrap only (never user-edited directly) |
 
 Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All configuration is performed on `JLO_TARGET_BRANCH` under `.jlo/`.
@@ -18,7 +18,7 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 
 | Path | Owner | Description |
 |------|-------|-------------|
-| `.jlo/.jlo-version` | jlo | Pinned jlo binary version. Written by `init`, advanced by `update`. |
+| `.jlo/.jlo-version` | jlo | Pinned jlo binary version. Written by `init`, advanced by `upgrade`. |
 | `.jlo/config.toml` | User | Workspace configuration and schedule roster (`[observers].roles`, `[innovators].roles`). Created by `init`; never overwritten. |
 | `.jlo/roles/<layer>/<role>/role.yml` | User | Role-specific customizations. Created by `role create`; custom roles override built-ins at runtime. |
 | `.jlo/setup/tools.yml` | User | Tool selection. Created by `init`; never overwritten. |
@@ -51,7 +51,7 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 
 | Classification | Definition | Lives in |
 |----------------|------------|----------|
-| **Version pin** | The `.jlo-version` file that locks the jlo binary version. Advanced by `jlo update`. | `.jlo/` |
+| **Version pin** | The `.jlo-version` file that locks the jlo binary version. Advanced by `jlo upgrade`. | `.jlo/` |
 | **User intent** | Configuration, schedule rosters, role customizations, tool selections. Created once by `init` or `template`; owned by the user thereafter. | `.jlo/` |
 | **Managed framework** | Contracts, schemas, prompts, global documents. Content is determined entirely by the jlo version. | Embedded scaffold → materialized to `.jules/` by bootstrap |
 | **Agent-generated** | Runtime artifacts written by agent execution. Never touched by bootstrap, update, or projection. | `.jules/` exchange paths |
@@ -77,9 +77,9 @@ Workflow bootstrap is the sole authority for producing `.jules/` on `JULES_WORKE
 
 Running bootstrap twice with the same `.jlo/` inputs and jlo version produces no new commits on `JULES_WORKER_BRANCH`. The algorithm is compare-then-write: files are only written when content differs.
 
-## Update Semantics
+## Upgrade Semantics
 
-`jlo update` is a control-plane maintenance operation that advances the version pin and refreshes the workflow kit.
+`jlo upgrade` is a control-plane maintenance operation that advances the version pin and refreshes the workflow kit.
 
 | Action | Description |
 |--------|-------------|
@@ -95,7 +95,7 @@ Runtime managed assets are expanded from the scaffold for the pinned version dur
 ## Version Pin Flow
 
 1. `jlo init` writes current binary version to `.jlo/.jlo-version` on the control branch.
-2. `jlo update` advances `.jlo/.jlo-version` on the control branch.
+2. `jlo upgrade` advances `.jlo/.jlo-version` on the control branch.
 3. Workflow `install-jlo` action reads `.jlo/.jlo-version` from `JLO_TARGET_BRANCH`.
 4. Workflow bootstrap reads `.jlo/.jlo-version`, loads corresponding scaffold, and materializes `.jules/` on `JULES_WORKER_BRANCH`.
 
