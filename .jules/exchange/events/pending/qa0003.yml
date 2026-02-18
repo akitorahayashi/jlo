@@ -1,0 +1,15 @@
+schema_version: 1
+id: qa0003
+requirement_id: ""
+created_at: "2026-02-18"
+author_role: qa
+confidence: medium
+title: High Coupling in Command Handlers
+statement: |
+  Public API entry points (e.g., `run_at`, `init_at`) in `src/app/api.rs` instantiate concrete adapters (`LocalRepositoryAdapter`, `GitCommandAdapter`) internally. This coupling prevents unit testing of the API layer with mocks and forces reliance on slower integration tests.
+evidence:
+  - path: src/app/api.rs
+    loc:
+      - "fn run_at"
+      - "fn init_at"
+    note: hardcoded adapter instantiation

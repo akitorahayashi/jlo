@@ -1,10 +1,12 @@
 schema_version: 2
 observer: qa
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: "2026-02-18T10:29:36Z"
 goals:
-- <concrete goal>
+  - Monitor test double consolidation (Git/GitHub mocks)
+  - Track unit test coverage for domain logic (e.g., paths, config)
+  - Evaluate opportunities for dependency injection in command handlers
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+  - at: "2026-02-18T10:29:36Z"
+    summary: Identified duplicate test doubles, missing unit tests in paths.rs, and API coupling.
