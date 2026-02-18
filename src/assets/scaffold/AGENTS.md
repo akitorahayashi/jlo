@@ -34,6 +34,10 @@ Ref: [root AGENTS.md](../../AGENTS.md).
 Jinja2 templates (`<layer>_prompt.j2`) define the context window.
 Prompt assets (contracts, tasks, templates) are embedded in the binary from `src/assets/prompt-assemble/`.
 References use the `prompt-assemble://` scheme to load from the embedded catalog.
+- Modular: Inject content via `include_*` functions.
+- Context-Aware: Use variables (e.g., `role`) for dynamic configuration.
+- DRY: Reference definitive artifacts directly.
+- Direct Injection: Inject file content directly; do not instruct agents to "read file X".
 
 ## Artifacts
 
