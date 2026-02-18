@@ -8,6 +8,5 @@
 
 pub mod events;
 pub mod paths;
-pub mod perspectives;
 pub mod proposals;
 pub mod requirements;
