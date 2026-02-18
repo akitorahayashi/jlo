@@ -1,0 +1,47 @@
+schema_version: 2
+id: "r1t3s4"
+source_events:
+  - "ev1wkf"
+  - "ev2run"
+  - "qa0001"
+  - "qa0002"
+  - "ij5kl6"
+title: "Fill Testing Gaps"
+label: "tests"
+priority: "high"
+summary: "Address missing integration and unit tests, deduplicate test infrastructure, and improve testability."
+goal: |
+  Ensure the core execution paths of `jlo run` and `jlo workflow run` are covered by integration tests to prevent regressions.
+  Improve unit test coverage for domain logic and reduce maintenance burden by deduplicating test doubles.
+problem: |
+  The current test suite leaves critical paths (workflow execution, event path logic) untested.
+  Test infrastructure is fragmented with duplicate mocks.
+  Stringly-typed validation errors make writing robust tests difficult.
+impact: |
+  High risk of regression in core functionality.
+  Increased maintenance cost due to duplicate mocks.
+  Fragile tests due to string matching on errors.
+desired_outcome: |
+  Comprehensive integration tests for `jlo run` and `jlo workflow run`.
+  Unit tests for `src/domain/exchange/events/paths.rs`.
+  Shared test doubles for Git/GitHub used across the codebase.
+  Typed configuration errors for better test assertions.
+affected_areas:
+  - "tests/workflow/"
+  - "tests/cli/run/"
+  - "src/app/commands/run/mod.rs"
+  - "src/testing/ports/"
+  - "src/domain/exchange/events/paths.rs"
+  - "src/domain/config/"
+acceptance_criteria:
+  - "Integration tests covering `jlo workflow run` exist and pass."
+  - "Integration tests covering `jlo run` execution (beyond preview) exist and pass."
+  - "TestGit and TestGitHub in `src/app/commands/run/mod.rs` are replaced by shared doubles."
+  - "Unit tests for `src/domain/exchange/events/paths.rs` exist and pass."
+  - "Configuration validation returns typed errors."
+verification_criteria:
+  - "Run `cargo test --test workflow`"
+  - "Run `cargo test --test cli`"
+  - "Run `cargo test`"
+requires_deep_analysis: false
+deep_analysis_reason: ""

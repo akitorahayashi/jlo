@@ -1,0 +1,46 @@
+schema_version: 2
+id: "d6c2m4"
+source_events:
+  - "f3c1d8"
+  - "e7b2a9"
+  - "c8w21s"
+  - "e1m92d"
+  - "a4e5f6"
+title: "Unify Documentation"
+label: "docs"
+priority: "low"
+summary: "Consolidate documentation indexes, fix incorrect references, and fill missing guides."
+goal: |
+  Establish a single source of truth for documentation indexing (`docs/README.md`).
+  Ensure all layers (including Integrator) are documented.
+  Correct inaccurate command references.
+problem: |
+  Two documentation indexes exist (Root AGENTS.md vs docs/README.md).
+  Dev docs in `src/` are unindexed.
+  Architectural principles are misplaced in Root AGENTS.md.
+  Innovator guide references a non-existent `jlo bootstrap` command.
+  Integrator layer lacks an operational guide.
+impact: |
+  Discovery issues for developers and agents.
+  Confusion due to incorrect commands.
+  Incomplete understanding of the system (Integrator).
+desired_outcome: |
+  `docs/README.md` is the sole index, referencing `src/AGENTS.md` and others.
+  Root `AGENTS.md` focuses on high-level agent instructions, not general docs indexing.
+  Architectural principles moved to `docs/architecture/`.
+  `docs/operations/layers/INTEGRATOR.md` exists.
+  Innovator guide references `jlo workflow bootstrap`.
+affected_areas:
+  - "docs/README.md"
+  - "AGENTS.md"
+  - "src/AGENTS.md"
+  - "docs/operations/layers/"
+acceptance_criteria:
+  - "Root AGENTS.md does not duplicate the doc index."
+  - "All `AGENTS.md` files are reachable from `docs/README.md`."
+  - "Integrator layer documentation exists."
+  - "Innovator guide has correct commands."
+verification_criteria:
+  - "Manual inspection of `docs/README.md` and `AGENTS.md`."
+requires_deep_analysis: false
+deep_analysis_reason: ""

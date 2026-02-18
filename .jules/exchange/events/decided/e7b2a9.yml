@@ -2,7 +2,7 @@ schema_version: 1
 
 # Metadata
 id: "e7b2a9"
-requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+requirement_id: "d6c2m4" # ID of the requirement that processed this event (empty if unprocessed)
 created_at: "2026-02-18"
 author_role: "librarian"
 confidence: "high"

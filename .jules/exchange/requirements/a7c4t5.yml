@@ -1,0 +1,53 @@
+schema_version: 2
+id: "a7c4t5"
+source_events:
+  - "d4e5f6"
+  - "da0001"
+  - "da0003"
+  - "g7h8i9"
+  - "ab1cd2"
+  - "qa0003"
+  - "ev3pro"
+title: "Enforce Domain Sovereignty"
+label: "refacts"
+priority: "high"
+summary: "Clean up the domain layer to enforce separation of concerns, remove adapter leakage, and resolve cyclic dependencies."
+goal: |
+  Restore the purity of the domain layer by moving transport concerns, side effects, and concrete adapter instantiations to the outer layers.
+  Ensure domain models enforce their own invariants rather than relying on external validation.
+problem: |
+  Domain logic is leaking into adapters (config validation).
+  Transport protocols (TOML) are leaking into domain errors.
+  Side effects (file writes) are present in domain logic (prompt assembly).
+  Cyclic dependencies exist between domain and ports.
+  Domain models are anemic or loosely typed (`Box<dyn ...>` usage).
+  API layer is coupled to concrete adapters.
+impact: |
+  Architecture is brittle and hard to refactor.
+  Testing is difficult due to coupling and side effects.
+  Validation logic is scattered and potentially inconsistent.
+desired_outcome: |
+  Domain models validate themselves.
+  Domain errors are transport-agnostic.
+  Prompt assembly is side-effect free (returns data, doesn't write).
+  Cyclic dependencies are broken (likely by moving AppError or extracting shared types).
+  API layer uses dependency injection or factories.
+affected_areas:
+  - "src/domain/config/"
+  - "src/adapters/"
+  - "src/domain/prompt_assemble/"
+  - "src/domain/error.rs"
+  - "src/ports/"
+  - "src/app/api.rs"
+acceptance_criteria:
+  - "Configuration validation logic resides in `src/domain/config/`."
+  - "`ScheduleError` does not expose `toml::de::Error`."
+  - "`IncludeContext::seed_from_schema` returns operations instead of performing IO."
+  - "Cyclic dependency between `src/domain` and `src/ports` is resolved."
+  - "`AppError` is decoupled from concrete transport errors where possible."
+  - "`api.rs` does not instantiate concrete adapters."
+verification_criteria:
+  - "Run `cargo check` and ensure no circular dependencies."
+  - "Run `cargo test`."
+requires_deep_analysis: true
+deep_analysis_reason: "Resolving cyclic dependencies and refactoring core error types may have widespread impact on the codebase."
