@@ -1,0 +1,22 @@
+schema_version: 1
+
+# Metadata
+id: "ab1cd2"
+requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+created_at: "2026-02-18"
+author_role: "rustacean"
+confidence: "high"
+
+# Content
+title: "Inconsistent Abstraction Strategy in Prompt Assembly"
+statement: |
+  The `assemble_prompt` function defines a generic parameter `L: PromptAssetLoader`, but immediately wraps it in `Box<dyn PromptAssetLoader>` within `IncludeContext`. This incurs the compilation cost of generics (monomorphization) without the runtime benefit (inlining), while also paying the runtime cost of dynamic dispatch. Additionally, the use of `Arc<Mutex<...>>` for collecting side effects (included files, errors) adds unnecessary synchronization overhead in what appears to be a sequential rendering process.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/prompt_assemble/assembler.rs"
+    loc:
+      - "26" # Generic definition: `fn assemble_prompt<L, R>`
+      - "43" # Boxing: `loader: Box::new(loader.clone())`
+      - "111" # Struct field: `loader: Box<dyn PromptAssetLoader + Send + Sync>`
+    note: "Generic type parameter L is immediately boxed into a trait object, negating the benefit of generics."
