@@ -1,10 +1,12 @@
 schema_version: 2
 observer: librarian
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-18T12:00:00Z
 goals:
-- <concrete goal>
+  - Consolidate documentation index into docs/README.md
+  - Migrate architectural principles from root AGENTS.md to docs/architecture/
+  - Index developer context files in docs/README.md
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+  - at: 2026-02-18T12:00:00Z
+    summary: Inspected documentation architecture; emitted 3 events regarding ambiguous indexing, unindexed dev context, and misplaced principles.
