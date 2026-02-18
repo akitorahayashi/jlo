@@ -1,0 +1,5 @@
+{{ section("Layer Contracts", include_required("prompt-assemble://narrator/contracts.yml")) }}
+{{ section("Task", include_required("prompt-assemble://narrator/tasks/" ~ run_mode ~ "_summary.yml")) }}
+{{ section("Target Range", range_description) }}
+{{ section("Commits Since Cursor", commits_since_cursor) }}
+{{ section("Principles", include_required("prompt-assemble://principle.yml")) }}

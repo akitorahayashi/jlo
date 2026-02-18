@@ -10,12 +10,12 @@ fn bootstrap_materializes_expected_runtime_workspace() {
     ctx.assert_jules_exists();
     assert!(ctx.read_version().is_some());
 
-    ctx.assert_layer_structure_exists();
+    ctx.assert_schema_structure_exists();
     ctx.assert_default_scheduled_roles_exist();
     ctx.assert_exchange_structure_exists();
     ctx.assert_events_structure_exists();
     ctx.assert_requirements_directory_exists();
-    ctx.assert_contracts_exist();
+    ctx.assert_contracts_available();
     ctx.assert_narrator_exists();
 
     // Verify specific files.

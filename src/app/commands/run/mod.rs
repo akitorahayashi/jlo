@@ -461,17 +461,13 @@ mod tests {
             .expect("create pending dir");
         fs::create_dir_all(root.join(".jules/exchange/requirements"))
             .expect("create requirements dir");
-        fs::create_dir_all(root.join(".jules/layers/narrator")).expect("create narrator role dir");
-        fs::create_dir_all(root.join(".jules/layers/observers"))
-            .expect("create observers role dir");
-        fs::create_dir_all(root.join(".jules/layers/decider")).expect("create decider role dir");
-        fs::create_dir_all(root.join(".jules/layers/planner")).expect("create planner role dir");
-        fs::create_dir_all(root.join(".jules/layers/implementer"))
-            .expect("create implementer role dir");
-        fs::create_dir_all(root.join(".jules/layers/innovators"))
-            .expect("create innovators role dir");
-        fs::create_dir_all(root.join(".jules/layers/integrator"))
-            .expect("create integrator role dir");
+        // Create schemas directories for layers that have schemas
+        for layer in crate::domain::Layer::ALL {
+            if layer.has_schemas() {
+                fs::create_dir_all(root.join(format!(".jules/schemas/{}", layer.dir_name())))
+                    .expect("create schemas dir");
+            }
+        }
         fs::create_dir_all(root.join(".jlo/roles/observers/taxonomy"))
             .expect("create observer role dir");
 
@@ -496,23 +492,6 @@ roles = [
             r#"{"issue_labels":{"bugs":{"color":"d73a4a"}}}"#,
         )
         .expect("write labels");
-
-        let contracts = [
-            ("narrator", "jules-narrator-"),
-            ("observers", "jules-observer-"),
-            ("decider", "jules-decider-"),
-            ("planner", "jules-planner-"),
-            ("implementer", "jules-implementer-"),
-            ("innovators", "jules-innovator-"),
-            ("integrator", "jules-integrator-"),
-        ];
-        for (layer, prefix) in contracts {
-            fs::write(
-                root.join(format!(".jules/layers/{}/contracts.yml", layer)),
-                format!("branch_prefix: {}\n", prefix),
-            )
-            .expect("write contracts");
-        }
 
         let event_ids = ["aa1111", "bb2222", "cc3333", "dd4444"];
         for event_id in event_ids {

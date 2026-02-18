@@ -6,7 +6,7 @@ use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
 use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
-use crate::domain::layers::prompt_assemble::{
+use crate::domain::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::{
@@ -121,7 +121,7 @@ where
             "--task is required for innovators (expected: create_three_proposals)".to_string(),
         )
     })?;
-    let task_content = resolve_innovator_task(jules_path, task, repository)?;
+    let task_content = resolve_innovator_task(task)?;
 
     if prompt_preview {
         print_role_preview(jules_path, Layer::Innovators, &role_id, &starting_branch, repository);
@@ -185,31 +185,32 @@ fn assemble_innovator_prompt<
         .with_var("task_name", task_name)
         .with_var("task", task);
 
-    assemble_prompt(jules_path, Layer::Innovators, &context, repository)
-        .map(|p: AssembledPrompt| p.content)
-        .map_err(|e| AppError::InternalError(e.to_string()))
+    assemble_prompt(
+        jules_path,
+        Layer::Innovators,
+        &context,
+        repository,
+        crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset,
+    )
+    .map(|p: AssembledPrompt| p.content)
+    .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
-fn resolve_innovator_task<W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader>(
-    jules_path: &Path,
-    task: &str,
-    repository: &W,
-) -> Result<String, AppError> {
+fn resolve_innovator_task(task: &str) -> Result<String, AppError> {
     let filename = match task {
         "create_three_proposals" => "create_three_proposals.yml",
         _ => {
             return Err(AppError::Validation(format!("Invalid innovator task '{}'", task)));
         }
     };
-    let task_path =
-        crate::domain::layers::paths::tasks_dir(jules_path, Layer::Innovators).join(filename);
-    repository.read_file(&task_path.to_string_lossy()).map_err(|_| {
-        AppError::Validation(format!(
-            "No task file for innovators task '{}': expected {}",
-            task,
-            task_path.display()
-        ))
-    })
+    let catalog_path = format!("innovators/tasks/{}", filename);
+    crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset(&catalog_path)
+        .ok_or_else(|| {
+            AppError::Validation(format!(
+                "No task file for innovators task '{}': expected prompt-assemble://{}",
+                task, catalog_path
+            ))
+        })
 }
 
 fn sanitize_yaml_value(value: &str) -> String {

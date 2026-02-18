@@ -5,7 +5,7 @@ use chrono::DateTime;
 use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
-use crate::domain::layers::prompt_assemble::{
+use crate::domain::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::{AppError, ControlPlaneConfig, Layer, MockConfig, MockOutput, RunOptions};
@@ -194,9 +194,15 @@ fn assemble_narrator_prompt<
     };
     prompt_context = prompt_context.with_var("commits_since_cursor", commits_text);
 
-    assemble_prompt(jules_path, Layer::Narrator, &prompt_context, repository)
-        .map(|p: AssembledPrompt| p.content)
-        .map_err(|e| AppError::InternalError(e.to_string()))
+    assemble_prompt(
+        jules_path,
+        Layer::Narrator,
+        &prompt_context,
+        repository,
+        crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset,
+    )
+    .map(|p: AssembledPrompt| p.content)
+    .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
 fn fetch_commits_since_cursor<G: Git + ?Sized>(

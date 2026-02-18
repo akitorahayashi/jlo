@@ -22,9 +22,14 @@ pub fn print_role_preview<W: RepositoryFilesystem + PromptAssetLoader + ?Sized>(
         return;
     }
 
-    let contracts_path = crate::domain::layers::paths::contracts(jules_path, layer);
-    if repository.file_exists(&contracts_path.to_string_lossy()) {
-        println!("  Contracts: {}", contracts_path.display());
+    let contracts_path = format!("{}/contracts.yml", layer.dir_name());
+    let contracts_exists =
+        crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset(
+            &contracts_path,
+        )
+        .is_some();
+    if contracts_exists {
+        println!("  Contracts: prompt-assemble://{}", contracts_path);
     }
 
     println!("  Role config: {}", role_yml_path.display());

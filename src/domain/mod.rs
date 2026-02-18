@@ -2,6 +2,7 @@ pub mod config;
 pub mod error;
 pub mod exchange;
 pub mod layers;
+pub mod prompt_assemble;
 pub mod roles;
 pub mod validation;
 pub mod version;
@@ -23,7 +24,7 @@ pub use layers::Layer;
 #[allow(unused_imports)]
 pub use layers::execute::{JulesClientFactory, RequirementPathInfo, RunResult};
 #[allow(unused_imports)]
-pub use layers::prompt_assemble::{PromptAssemblyError, PromptAssetLoader};
+pub use prompt_assemble::{PromptAssemblyError, PromptAssetLoader};
 pub use roles::{BuiltinRoleEntry, RoleId};
 
 #[allow(unused_imports)]

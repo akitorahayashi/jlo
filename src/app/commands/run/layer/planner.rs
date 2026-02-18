@@ -6,7 +6,7 @@ use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::execute::validate_requirement_path;
-use crate::domain::layers::prompt_assemble::{
+use crate::domain::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::{AppError, ControlPlaneConfig, Layer, MockConfig, MockOutput, RunOptions};
@@ -194,9 +194,15 @@ fn assemble_planner_prompt<
     jules_path: &Path,
     repository: &W,
 ) -> Result<String, AppError> {
-    assemble_prompt(jules_path, Layer::Planner, &PromptContext::new(), repository)
-        .map(|p: AssembledPrompt| p.content)
-        .map_err(|e| AppError::InternalError(e.to_string()))
+    assemble_prompt(
+        jules_path,
+        Layer::Planner,
+        &PromptContext::new(),
+        repository,
+        crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset,
+    )
+    .map(|p: AssembledPrompt| p.content)
+    .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
 fn execute_prompt_preview<
@@ -219,13 +225,8 @@ fn execute_prompt_preview<
     println!("Starting branch: {}\n", starting_branch);
     println!("Requirement content: {} chars\n", requirement_content.len());
 
-    let prompt_path = crate::domain::layers::paths::prompt_template(jules_path, Layer::Planner);
-    let contracts_path = crate::domain::layers::paths::contracts(jules_path, Layer::Planner);
-
-    println!("Prompt: {}", prompt_path.display());
-    if contracts_path.exists() {
-        println!("Contracts: {}", contracts_path.display());
-    }
+    println!("Prompt template: planner/planner_prompt.j2 (embedded)");
+    println!("Contracts: planner/contracts.yml (embedded)");
 
     if let Ok(mut prompt) = assemble_planner_prompt(jules_path, repository) {
         prompt.push_str("\n---\n# Requirement Content\n");

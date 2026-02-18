@@ -9,7 +9,7 @@ fn harness_paths_are_contained() {
 
     assert!(ctx.jlo_path().starts_with(root), "jlo_path should be inside work_dir");
     assert!(ctx.jules_path().starts_with(root), "jules_path should be inside work_dir");
-    assert!(ctx.layers_path().starts_with(root), "layers_path should be inside work_dir");
+    assert!(ctx.schemas_path().starts_with(root), "schemas_path should be inside work_dir");
     assert!(ctx.exchange_path().starts_with(root), "exchange_path should be inside work_dir");
 }
 

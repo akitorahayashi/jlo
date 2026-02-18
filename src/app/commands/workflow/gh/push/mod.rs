@@ -507,8 +507,8 @@ mod tests {
         let _worker_branch = EnvVarGuard::set("JULES_WORKER_BRANCH", "jules");
         let git = TestGit::new(
             "jules",
-            " M .jules/layers/implementer/prompt.md",
-            ".jules/layers/implementer/prompt.md\n",
+            " M .jules/schemas/observers/event.yml",
+            ".jules/schemas/observers/event.yml\n",
         );
         let github = TestGitHub::new(false, false);
 
@@ -529,7 +529,7 @@ mod tests {
     #[serial]
     fn execute_with_adapters_deletes_local_push_branch_when_nothing_staged() {
         let _worker_branch = EnvVarGuard::set("JULES_WORKER_BRANCH", "jules");
-        let git = TestGit::new("jules", " M .jules/layers/implementer/prompt.md", "");
+        let git = TestGit::new("jules", " M .jules/schemas/observers/event.yml", "");
         let github = TestGitHub::new(false, false);
 
         let out = execute_with_adapters(&git, &github, options()).expect("should skip cleanly");
@@ -548,8 +548,8 @@ mod tests {
         let _worker_branch = EnvVarGuard::set("JULES_WORKER_BRANCH", "jules");
         let git = TestGit::new(
             "jules",
-            " M .jules/layers/implementer/prompt.md",
-            ".jules/layers/implementer/prompt.md\n",
+            " M .jules/schemas/observers/event.yml",
+            ".jules/schemas/observers/event.yml\n",
         );
         let github = TestGitHub::new(false, true); // fail merge
 
