@@ -290,8 +290,8 @@ roles = [
         let repository = TestStore::new().with_file(
             ".jlo/config.toml",
             r#"[run]
-jlo_target_branch = "main"
-jules_worker_branch = "jules"
+jlo_target_branch = "target_branch"
+jules_worker_branch = "worker_branch"
 
 [observers]
 roles = [
@@ -319,8 +319,8 @@ roles = [
         let repository = TestStore::new().with_file(
             ".jlo/config.toml",
             r#"[run]
-jlo_target_branch = "main"
-jules_worker_branch = "jules"
+jlo_target_branch = "target_branch"
+jules_worker_branch = "worker_branch"
 
 [innovators]
 roles = [
@@ -336,5 +336,33 @@ roles = [
         )
         .expect("schedule removal should return false");
         assert!(!removed);
+    }
+
+    #[test]
+    fn remove_role_scheduled_last_role_keeps_empty_roles_array() {
+        let repository = TestStore::new().with_file(
+            ".jlo/config.toml",
+            r#"[run]
+jlo_target_branch = "target_branch"
+jules_worker_branch = "worker_branch"
+
+[observers]
+roles = [
+  { name = "taxonomy", enabled = true },
+]
+"#,
+        );
+
+        let removed = remove_role_scheduled(
+            &repository,
+            Layer::Observers,
+            &RoleId::new("taxonomy").expect("valid role id"),
+        )
+        .expect("schedule removal should succeed");
+        assert!(removed);
+
+        let actual = repository.read_file(".jlo/config.toml").expect("written config should exist");
+        let roles = role_names(&actual, "observers");
+        assert!(roles.is_empty(), "roles should be empty after removing the last entry");
     }
 }

@@ -169,13 +169,10 @@ fn resolve_delete_inputs(
 
     if let Some(layer_value) = layer {
         let layer_enum = parse_multi_role_layer(&layer_value)?;
-        let role_value = match role {
-            Some(value) => value,
-            None => match prompt_deletable_role(&discovered, layer_enum, false)? {
-                DeleteRoleSelection::Selected(value) => value,
-                DeleteRoleSelection::Cancel => return Ok(None),
-                DeleteRoleSelection::BackToLayer => unreachable!("layer is fixed"),
-            },
+        let role_value = match prompt_deletable_role(&discovered, layer_enum, false)? {
+            DeleteRoleSelection::Selected(value) => value,
+            DeleteRoleSelection::Cancel => return Ok(None),
+            DeleteRoleSelection::BackToLayer => unreachable!("layer is fixed"),
         };
         return Ok(Some((layer_enum.dir_name().to_string(), role_value)));
     }

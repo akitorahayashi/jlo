@@ -32,20 +32,40 @@ where
     }
 
     let role_id = RoleId::new(name)?;
-    let role_dir = format!(".jlo/roles/{}/{}", layer_enum.dir_name(), role_id.as_str());
-    if ctx.repository().file_exists(&role_dir) {
+    let jlo_path = ctx.repository().jlo_path();
+    let root = jlo_path.parent().ok_or_else(|| {
+        AppError::InvalidPath(format!("Invalid .jlo path (missing parent): {}", jlo_path.display()))
+    })?;
+    let role_dir = crate::domain::roles::paths::role_dir(root, layer_enum, role_id.as_str());
+    let role_dir_relative = role_dir.strip_prefix(root).unwrap_or(&role_dir);
+    let role_dir_str = role_dir_relative.to_str().ok_or_else(|| {
+        AppError::InvalidPath(format!(
+            "Role directory path contains invalid unicode: {}",
+            role_dir_relative.display()
+        ))
+    })?;
+
+    if ctx.repository().file_exists(role_dir_str) {
         return Err(AppError::Validation(format!(
             "Role '{}' already exists in layer '{}' at {}",
             role_id.as_str(),
             layer_enum.dir_name(),
-            role_dir
+            role_dir_str
         )));
     }
 
     // Seed with default role.yml from role templates
     let role_content = ctx.templates().generate_role_yaml(role_id.as_str(), layer_enum);
-    ctx.repository().create_dir_all(&role_dir)?;
-    ctx.repository().write_file(&format!("{}/role.yml", role_dir), &role_content)?;
+    let role_yml = crate::domain::roles::paths::role_yml(root, layer_enum, role_id.as_str());
+    let role_yml_relative = role_yml.strip_prefix(root).unwrap_or(&role_yml);
+    let role_yml_str = role_yml_relative.to_str().ok_or_else(|| {
+        AppError::InvalidPath(format!(
+            "Role file path contains invalid unicode: {}",
+            role_yml_relative.display()
+        ))
+    })?;
+    ctx.repository().create_dir_all(role_dir_str)?;
+    ctx.repository().write_file(role_yml_str, &role_content)?;
 
     ensure_role_scheduled(ctx.repository(), layer_enum, &role_id)?;
 

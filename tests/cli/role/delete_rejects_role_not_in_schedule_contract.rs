@@ -8,7 +8,7 @@ fn role_delete_rejects_role_missing_from_schedule() {
 
     ctx.init_remote();
 
-    let role_dir = ctx.jlo_path().join("roles/observers/orphan");
+    let role_dir = ctx.jlo_path().join("roles").join("observers").join("orphan");
     fs::create_dir_all(&role_dir).expect("create orphan role dir");
     fs::write(role_dir.join("role.yml"), "role: orphan\nlayer: observers\n")
         .expect("write orphan role.yml");

@@ -5,7 +5,7 @@ use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, Layer, RoleId};
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
-use crate::app::commands::role_schedule::remove_role_scheduled;
+use crate::app::commands::role_schedule::{ensure_role_scheduled, remove_role_scheduled};
 
 use super::RoleDeleteOutcome;
 
@@ -31,14 +31,33 @@ where
     }
 
     let role_id = RoleId::new(role)?;
-    let role_dir = format!(".jlo/roles/{}/{}", layer_enum.dir_name(), role_id.as_str());
-    let role_yml = format!("{}/role.yml", role_dir);
+    let jlo_path = ctx.repository().jlo_path();
+    let root = jlo_path.parent().ok_or_else(|| {
+        AppError::InvalidPath(format!("Invalid .jlo path (missing parent): {}", jlo_path.display()))
+    })?;
+    let role_dir = crate::domain::roles::paths::role_dir(root, layer_enum, role_id.as_str());
+    let role_dir_relative = role_dir.strip_prefix(root).unwrap_or(&role_dir);
+    let role_dir_str = role_dir_relative.to_str().ok_or_else(|| {
+        AppError::InvalidPath(format!(
+            "Role directory path contains invalid unicode: {}",
+            role_dir_relative.display()
+        ))
+    })?;
+    let role_yml = crate::domain::roles::paths::role_yml(root, layer_enum, role_id.as_str());
+    let role_yml_relative = role_yml.strip_prefix(root).unwrap_or(&role_yml);
+    let role_yml_str = role_yml_relative.to_str().ok_or_else(|| {
+        AppError::InvalidPath(format!(
+            "Role file path contains invalid unicode: {}",
+            role_yml_relative.display()
+        ))
+    })?;
 
-    if !ctx.repository().file_exists(&role_yml) {
+    if !ctx.repository().file_exists(role_yml_str) {
         return Err(AppError::RoleNotFound(format!(
-            "{}/{}",
+            "{}/{} (missing {})",
             layer_enum.dir_name(),
-            role_id.as_str()
+            role_id.as_str(),
+            role_yml_str
         )));
     }
 
@@ -50,7 +69,20 @@ where
         });
     }
 
-    ctx.repository().remove_dir_all(&role_dir)?;
+    if let Err(remove_err) = ctx.repository().remove_dir_all(role_dir_str) {
+        match ensure_role_scheduled(ctx.repository(), layer_enum, &role_id) {
+            Ok(_) => return Err(remove_err),
+            Err(rollback_err) => {
+                return Err(AppError::Validation(format!(
+                    "Failed to delete role directory '{}': {}. Failed to restore schedule entry for '{}': {}",
+                    role_dir_str,
+                    remove_err,
+                    role_id.as_str(),
+                    rollback_err
+                )));
+            }
+        }
+    }
 
     Ok(RoleDeleteOutcome::Role {
         layer: layer_enum.dir_name().to_string(),
@@ -76,8 +108,8 @@ mod tests {
             .with_file(
                 ".jlo/config.toml",
                 r#"[run]
-jlo_target_branch = "main"
-jules_worker_branch = "jules"
+jlo_target_branch = "target_branch"
+jules_worker_branch = "worker_branch"
 
 [observers]
 roles = [
@@ -107,8 +139,8 @@ roles = [
             .with_file(
                 ".jlo/config.toml",
                 r#"[run]
-jlo_target_branch = "main"
-jules_worker_branch = "jules"
+jlo_target_branch = "target_branch"
+jules_worker_branch = "worker_branch"
 
 [observers]
 roles = [
