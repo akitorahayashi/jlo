@@ -1,10 +1,12 @@
 schema_version: 2
 observer: taxonomy
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-18T10:30:00Z
 goals:
-- <concrete goal>
+- "Standardize role identification in perspective files to 'role'."
+- "Enforce 'Requirement' terminology over 'Issue' in domain and docs."
+- "Ensure Observer perspective model is defined in domain."
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-18T10:30:00Z
+  summary: "Identified 3 inconsistencies: Role identifier, Issue/Requirement terminology, and missing Perspective model."

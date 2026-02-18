@@ -1,0 +1,21 @@
+schema_version: 1
+
+# Metadata
+id: "ev003c"
+requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+created_at: "2026-02-18"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Observer Perspective Model Missing/Incomplete"
+statement: |
+  The domain model `Perspective` in `src/domain/workstations/perspectives/model.rs` only defines fields for Innovators (`recent_proposals`).
+  Observers use perspective files with fields like `goals`, `log`, etc., which are not modeled in the domain, creating a gap between implementation and model.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/workstations/perspectives/model.rs"
+    loc:
+      - "8"
+    note: "Perspective struct only contains `recent_proposals` field."
