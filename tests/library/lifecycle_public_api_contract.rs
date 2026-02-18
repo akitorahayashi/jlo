@@ -1,6 +1,6 @@
 use crate::harness::git_repository;
 use jlo::{
-    DoctorOptions, WorkflowRunnerMode, doctor_at, init_at, role_create_at, update_at,
+    DoctorOptions, WorkflowRunnerMode, doctor_at, init_at, role_create_at, upgrade_at,
     workflow_bootstrap_managed_files_at, workflow_bootstrap_workstations_at,
 };
 use tempfile::TempDir;
@@ -36,6 +36,6 @@ fn public_api_lifecycle_happy_path_contract() {
     assert_eq!(outcome.entity_type(), "role");
     assert!(root.join(".jlo/roles/observers/lib-observer/role.yml").exists());
 
-    let update_result = update_at(root.clone(), true).expect("update failed");
+    let update_result = upgrade_at(root.clone(), true).expect("upgrade failed");
     assert!(update_result.prompt_preview);
 }

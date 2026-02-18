@@ -11,11 +11,10 @@ use crate::adapters::github::GitHubCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::app::{
     AppContext,
-    commands::{cli_upgrade, deinit, doctor, init, role, run, setup, update},
+    commands::{deinit, doctor, init, role, run, setup, update, upgrade},
 };
 use crate::ports::{JloStore, JulesStore, RoleTemplateStore};
 
-pub use crate::app::commands::cli_upgrade::CliUpgradeResult;
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
 pub use crate::app::commands::role::{RoleAddOutcome, RoleCreateOutcome, RoleDeleteOutcome};
@@ -24,7 +23,8 @@ pub use crate::app::commands::run::{RunOptions, RunResult};
 pub use crate::app::commands::setup::list::{
     EnvVarInfo, SetupComponentDetail, SetupComponentSummary,
 };
-pub use crate::app::commands::update::{UpdateOptions, UpdateResult};
+pub use crate::app::commands::update::UpdateResult;
+pub use crate::app::commands::upgrade::{UpgradeOptions, UpgradeResult};
 pub use crate::app::commands::workflow::{
     WorkflowBootstrapManagedFilesOutput, WorkflowBootstrapWorkstationsOutput,
 };
@@ -254,31 +254,38 @@ pub fn setup_detail(component: &str) -> Result<SetupComponentDetail, AppError> {
 }
 
 // =============================================================================
-// Update Command API
+// Upgrade Command API
 // =============================================================================
 
-/// Update repository to current jlo version.
+/// Upgrade repository control-plane to current jlo version.
 ///
 /// Reconciles the existing repository with the scaffold embedded in the jlo binary.
 /// Only jlo-managed files are overwritten; repository-owned files are preserved.
 ///
 /// # Arguments
 /// * `prompt_preview` - Show planned changes without applying
-pub fn update(prompt_preview: bool) -> Result<UpdateResult, AppError> {
-    update_at(std::env::current_dir()?, prompt_preview)
+pub fn upgrade(prompt_preview: bool) -> Result<UpgradeResult, AppError> {
+    upgrade_at(std::env::current_dir()?, prompt_preview)
 }
 
-/// Update repository at the specified path.
-pub fn update_at(path: std::path::PathBuf, prompt_preview: bool) -> Result<UpdateResult, AppError> {
+/// Upgrade repository at the specified path.
+pub fn upgrade_at(
+    path: std::path::PathBuf,
+    prompt_preview: bool,
+) -> Result<UpgradeResult, AppError> {
     let repository = LocalRepositoryAdapter::new(path);
     let templates = EmbeddedRoleTemplateStore::new();
-    let options = UpdateOptions { prompt_preview };
-    update::execute(&repository, options, &templates)
+    let options = UpgradeOptions { prompt_preview };
+    upgrade::execute(&repository, options, &templates)
 }
 
+// =============================================================================
+// Update Command API
+// =============================================================================
+
 /// Update the installed jlo CLI binary from the upstream repository.
-pub fn update_cli() -> Result<CliUpgradeResult, AppError> {
-    cli_upgrade::execute()
+pub fn update() -> Result<UpdateResult, AppError> {
+    update::execute()
 }
 
 // =============================================================================
