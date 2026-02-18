@@ -9,7 +9,6 @@ use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
-use crate::domain::roles::validation::validate_safe_path_component;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 
@@ -41,9 +40,10 @@ where
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
         if runtime.mock {
-            let role = target.role.clone().ok_or_else(|| {
+            let role_str = target.role.clone().ok_or_else(|| {
                 AppError::MissingArgument("Role is required for observers in mock mode".to_string())
             })?;
+            let role = RoleId::new(&role_str)?;
             let mock_config = load_mock_config(jules_path, repository)?;
             let output = execute_mock(jules_path, &role, &mock_config, git, github, repository)?;
             // Write mock output
@@ -55,7 +55,7 @@ where
                 super::super::mock::mock_execution::print_local(&output);
             }
             return Ok(RunResult {
-                roles: vec![role],
+                roles: vec![role.to_string()],
                 prompt_preview: false,
                 sessions: vec![],
                 cleanup_requirement: None,
@@ -167,7 +167,7 @@ const TMPL_TAG: &str = "test-tag";
 
 fn execute_mock<G, H, W>(
     jules_path: &Path,
-    observer_role: &str,
+    _observer_role: &RoleId,
     config: &MockConfig,
     git: &G,
     github: &H,
@@ -200,13 +200,6 @@ where
         .ok_or_else(|| {
             AppError::InternalError("Invalid UTF-8 in observer_event.yml".to_string())
         })?;
-
-    if !validate_safe_path_component(observer_role) {
-        return Err(AppError::Validation(format!(
-            "Invalid role name '{}': must be alphanumeric with hyphens or underscores only",
-            observer_role
-        )));
-    }
 
     // Create mock event 1 (for planner routing)
     let event_id_1 = generate_mock_id();

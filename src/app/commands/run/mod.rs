@@ -20,7 +20,7 @@ use crate::app::commands::workflow::gh::push::{
 };
 use crate::domain::PromptAssetLoader;
 pub use crate::domain::RunOptions;
-use crate::domain::roles::validation::validate_safe_path_component;
+use crate::domain::validation::validate_identifier;
 use crate::domain::{AppError, JulesApiConfig};
 use crate::ports::{Git, GitHub, JloStore, JulesClient, JulesStore, RepositoryFilesystem};
 
@@ -107,7 +107,7 @@ where
 {
     // Validate task selector if provided (prevents path traversal)
     if let Some(ref task) = target.task
-        && !validate_safe_path_component(task)
+        && !validate_identifier(task, false)
     {
         return Err(AppError::Validation(format!(
             "Invalid task '{}': must be a safe path component (e.g. 'create_three_proposals')",

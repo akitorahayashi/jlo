@@ -3,6 +3,7 @@ pub mod error;
 pub mod exchange;
 pub mod layers;
 pub mod roles;
+pub mod validation;
 pub mod version;
 
 pub mod setup;

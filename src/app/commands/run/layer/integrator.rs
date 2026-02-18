@@ -8,7 +8,7 @@ use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
-use crate::domain::roles::validation::validate_safe_path_component;
+use crate::domain::validation::validate_identifier;
 use crate::domain::{AppError, Layer, RunConfig, RunOptions};
 use crate::ports::{
     AutomationMode, Git, GitHub, JloStore, JulesStore, RepositoryFilesystem, SessionRequest,
@@ -83,7 +83,7 @@ where
 {
     // Validate branch override if provided
     if let Some(b) = branch
-        && !validate_safe_path_component(b)
+        && !validate_identifier(b, false)
     {
         return Err(AppError::Validation(format!(
             "Invalid branch '{}': must be a safe path component",
@@ -199,7 +199,7 @@ fn discover_candidate_branches<G: Git + ?Sized>(
         .map(|line| line.trim())
         .filter(|line| !line.is_empty())
         .map(|line| line.strip_prefix("origin/").unwrap_or(line).to_string())
-        .filter(|name| validate_safe_path_component(name))
+        .filter(|name| validate_identifier(name, false))
         .collect();
 
     if candidates.is_empty() {

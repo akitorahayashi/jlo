@@ -9,7 +9,6 @@ use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
-use crate::domain::roles::validation::validate_safe_path_component;
 use crate::domain::{AppError, Layer, MockConfig, MockOutput, RoleId, RunConfig, RunOptions};
 use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem};
 
@@ -41,8 +40,19 @@ where
         client_factory: &dyn JulesClientFactory,
     ) -> Result<RunResult, AppError> {
         if runtime.mock {
+            let role_str = target.role.as_deref().ok_or_else(|| {
+                AppError::MissingArgument("Role is required for innovators".to_string())
+            })?;
+            let role = RoleId::new(role_str)?;
+            let task = target.task.as_deref().ok_or_else(|| {
+                AppError::MissingArgument(
+                    "--task is required for innovators (create_three_proposals)".to_string(),
+                )
+            })?;
+
             let mock_config = load_mock_config(jules_path, repository)?;
-            let output = execute_mock(jules_path, target, &mock_config, git, github, repository)?;
+            let output =
+                execute_mock(jules_path, &role, task, &mock_config, git, github, repository)?;
             // Write mock output
             if std::env::var("GITHUB_OUTPUT").is_ok() {
                 super::super::mock::mock_execution::write_github_output(&output).map_err(|e| {
@@ -217,7 +227,8 @@ fn load_mock_asset_text(asset_name: &str) -> Result<&'static str, AppError> {
 
 fn execute_mock<G, H, W>(
     jules_path: &Path,
-    options: &RunOptions,
+    role: &RoleId,
+    task: &str,
     config: &MockConfig,
     git: &G,
     github: &H,
@@ -228,28 +239,10 @@ where
     H: GitHub + ?Sized,
     W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
-    let role = options
-        .role
-        .as_deref()
-        .ok_or_else(|| AppError::MissingArgument("Role is required for innovators".to_string()))?;
-
-    let task = options.task.as_deref().ok_or_else(|| {
-        AppError::MissingArgument(
-            "--task is required for innovators (create_three_proposals)".to_string(),
-        )
-    })?;
-
     if task != "create_three_proposals" {
         return Err(AppError::Validation(format!(
             "Invalid innovator task '{}': expected create_three_proposals",
             task
-        )));
-    }
-
-    if !validate_safe_path_component(role) {
-        return Err(AppError::Validation(format!(
-            "Invalid role name '{}': must be alphanumeric with hyphens or underscores only",
-            role
         )));
     }
 
@@ -276,15 +269,18 @@ where
 
     for index in 1..=3 {
         let slug = format!("mock-proposal-{}", index);
-        let proposal_path =
-            crate::domain::exchange::proposals::paths::proposal_file(jules_path, role, &slug);
+        let proposal_path = crate::domain::exchange::proposals::paths::proposal_file(
+            jules_path,
+            role.as_str(),
+            &slug,
+        );
         let proposal_path_str = proposal_path
             .to_str()
             .ok_or_else(|| AppError::Validation("Invalid proposal path".to_string()))?;
         let proposal_title = format!("Mock proposal {} for {}", index, role);
         let proposal_content = proposal_template
             .replace("__ID__", &generate_mock_id())
-            .replace("__ROLE__", role)
+            .replace("__ROLE__", role.as_str())
             .replace("__DATE__", &today)
             .replace("__TITLE__", &proposal_title)
             .replace("__INDEX__", &index.to_string())
@@ -295,11 +291,12 @@ where
     }
 
     let perspective_path =
-        crate::domain::workstations::paths::workstation_perspective(jules_path, role);
+        crate::domain::workstations::paths::workstation_perspective(jules_path, role.as_str());
     let perspective_path_str = perspective_path
         .to_str()
         .ok_or_else(|| AppError::Validation("Invalid perspective path".to_string()))?;
-    let workstation_dir = crate::domain::workstations::paths::workstation_dir(jules_path, role);
+    let workstation_dir =
+        crate::domain::workstations::paths::workstation_dir(jules_path, role.as_str());
     let workstation_dir_str = workstation_dir
         .to_str()
         .ok_or_else(|| AppError::Validation("Invalid workstation path".to_string()))?;
@@ -307,7 +304,7 @@ where
 
     let perspective_template = load_mock_asset_text("innovator_perspective.yml")?;
     let perspective_content = perspective_template
-        .replace("__ROLE__", role)
+        .replace("__ROLE__", role.as_str())
         .replace("__TITLE_1__", &proposal_titles[2])
         .replace("__TITLE_2__", &proposal_titles[1])
         .replace("__TITLE_3__", &proposal_titles[0]);
@@ -368,14 +365,10 @@ mod tests {
         let github = FakeGitHub::new();
         let config = make_config();
 
-        let options = RunOptions {
-            layer: Layer::Innovators,
-            role: Some("alice".to_string()),
-            requirement: None,
-            task: Some("create_three_proposals".to_string()),
-        };
+        let role_id = RoleId::new("alice").unwrap();
+        let task = "create_three_proposals";
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
+        let result = execute_mock(&jules_path, &role_id, task, &config, &git, &github, &repository);
         assert!(result.is_ok());
         let output = result.unwrap();
         assert!(output.mock_branch.starts_with("jules-innovator-"));
@@ -393,40 +386,22 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_rejects_missing_task() {
-        let jules_path = PathBuf::from(".jules");
-        let repository = TestStore::new().with_exists(true);
-        let git = FakeGit::new();
-        let github = FakeGitHub::new();
-        let config = make_config();
-
-        let options = RunOptions {
-            layer: Layer::Innovators,
-            role: Some("alice".to_string()),
-            requirement: None,
-            task: None,
-        };
-
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
-        assert!(result.is_err());
-    }
-
-    #[test]
     fn mock_innovator_rejects_invalid_task() {
+        // This test was checking missing task in options, but execute_mock now assumes task is present (passed as arg).
+        // The check moved to execute(). We can test that RoleId validation happens.
+        // But since we pass RoleId, it is already valid.
+        // So we can check if task is invalid.
+
         let jules_path = PathBuf::from(".jules");
         let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
         let github = FakeGitHub::new();
         let config = make_config();
 
-        let options = RunOptions {
-            layer: Layer::Innovators,
-            role: Some("alice".to_string()),
-            requirement: None,
-            task: Some("invalid".to_string()),
-        };
+        let role_id = RoleId::new("alice").unwrap();
+        let task = "invalid_task";
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
+        let result = execute_mock(&jules_path, &role_id, task, &config, &git, &github, &repository);
         assert!(result.is_err());
     }
 
@@ -438,14 +413,10 @@ mod tests {
         let github = FakeGitHub::new();
         let config = make_config();
 
-        let options = RunOptions {
-            layer: Layer::Innovators,
-            role: Some("leverage_architect".to_string()),
-            requirement: None,
-            task: Some("create_three_proposals".to_string()),
-        };
+        let role_id = RoleId::new("leverage_architect").unwrap();
+        let task = "create_three_proposals";
 
-        let result = execute_mock(&jules_path, &options, &config, &git, &github, &repository);
+        let result = execute_mock(&jules_path, &role_id, task, &config, &git, &github, &repository);
         assert!(result.is_ok());
 
         let p1 = jules_path.join("exchange/proposals/leverage-architect-mock-proposal-1.yml");

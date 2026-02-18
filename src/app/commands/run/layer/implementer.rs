@@ -206,7 +206,7 @@ fn extract_requirement_label(requirement_content: &str) -> Result<String, AppErr
             )
         })?;
 
-    if !crate::domain::roles::validation::validate_safe_path_component(label) {
+    if !crate::domain::validation::validate_identifier(label, false) {
         return Err(AppError::Validation(format!(
             "Invalid label '{}': must be a safe path component",
             label
@@ -394,7 +394,7 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
     let label = parsed.label.filter(|value| !value.trim().is_empty()).ok_or_else(|| {
         AppError::InvalidConfig(format!("Requirement file missing label field: {}", path.display()))
     })?;
-    if !crate::domain::roles::validation::validate_safe_path_component(&label) {
+    if !crate::domain::validation::validate_identifier(&label, false) {
         return Err(AppError::InvalidConfig(format!(
             "Requirement label '{}' is not a safe path component: {}",
             label,
