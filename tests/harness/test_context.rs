@@ -144,9 +144,9 @@ impl TestContext {
         assert!(!self.jules_path().exists(), ".jules directory should not exist");
     }
 
-    /// Path to the `.jules/layers` directory.
-    pub(crate) fn layers_path(&self) -> PathBuf {
-        self.jules_path().join("layers")
+    /// Path to the `.jules/schemas` directory.
+    pub(crate) fn schemas_path(&self) -> PathBuf {
+        self.jules_path().join("schemas")
     }
 
     /// Path to the `.jules/exchange` directory.
@@ -164,24 +164,22 @@ impl TestContext {
         self.exchange_path().join("requirements")
     }
 
-    /// Assert that layer directories exist.
-    pub(crate) fn assert_layer_structure_exists(&self) {
-        let roles_path = self.layers_path();
-        assert!(roles_path.join("narrator").exists(), "narrator layer should exist");
-        assert!(roles_path.join("observers").exists(), "observers layer should exist");
-        assert!(roles_path.join("decider").exists(), "decider layer should exist");
-        assert!(roles_path.join("planner").exists(), "planner layer should exist");
-        assert!(roles_path.join("implementer").exists(), "implementer layer should exist");
-        assert!(roles_path.join("integrator").exists(), "integrator layer should exist");
+    /// Assert that schema directories exist for layers that have schemas.
+    pub(crate) fn assert_schema_structure_exists(&self) {
+        let schemas = self.schemas_path();
+        assert!(schemas.join("narrator").exists(), "narrator schemas should exist");
+        assert!(schemas.join("observers").exists(), "observers schemas should exist");
+        assert!(schemas.join("decider").exists(), "decider schemas should exist");
+        assert!(schemas.join("innovators").exists(), "innovators schemas should exist");
     }
 
-    /// Assert that the narrator layer exists with correct structure.
+    /// Assert that the narrator schema exists.
     pub(crate) fn assert_narrator_exists(&self) {
-        self.assert_single_role_layer_exists("narrator");
-        let narrator_path = self.layers_path().join("narrator");
+        let narrator_path = self.schemas_path().join("narrator");
+        assert!(narrator_path.exists(), "narrator schema directory should exist");
         assert!(
-            narrator_path.join("schemas").join("changes.yml").exists(),
-            "narrator schemas/changes.yml should exist"
+            narrator_path.join("changes.yml").exists(),
+            "narrator changes.yml should exist"
         );
     }
 
@@ -225,33 +223,17 @@ impl TestContext {
         assert!(exchange.join("proposals").exists(), "exchange/proposals should exist");
     }
 
-    /// Assert that `contracts.yml` exists in each layer directory.
-    pub(crate) fn assert_contracts_exist(&self) {
-        let roles_path = self.layers_path();
-        assert!(
-            roles_path.join("narrator/contracts.yml").exists(),
-            "narrator/contracts.yml should exist"
-        );
-        assert!(
-            roles_path.join("observers/contracts.yml").exists(),
-            "observers/contracts.yml should exist"
-        );
-        assert!(
-            roles_path.join("decider/contracts.yml").exists(),
-            "decider/contracts.yml should exist"
-        );
-        assert!(
-            roles_path.join("planner/contracts.yml").exists(),
-            "planner/contracts.yml should exist"
-        );
-        assert!(
-            roles_path.join("implementer/contracts.yml").exists(),
-            "implementer/contracts.yml should exist"
-        );
-        assert!(
-            roles_path.join("integrator/contracts.yml").exists(),
-            "integrator/contracts.yml should exist"
-        );
+    /// Assert that contracts are available from the embedded catalog (not filesystem).
+    /// This is a compile-time guarantee via `include_dir!`; runtime check uses the adapter.
+    pub(crate) fn assert_contracts_available(&self) {
+        use jlo::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset;
+        for layer in ["narrator", "observers", "decider", "planner", "implementer", "integrator"] {
+            assert!(
+                read_prompt_assemble_asset(&format!("{}/contracts.yml", layer)).is_some(),
+                "{}/contracts.yml should be available from embedded catalog",
+                layer
+            );
+        }
     }
 
     /// Assert that default scheduled roles exist in `.jlo/config.toml`.
@@ -300,29 +282,6 @@ impl TestContext {
             );
         }
 
-        // Single-role layers have contracts.yml directly in layer directory.
-        self.assert_single_role_layer_exists("narrator");
-        self.assert_single_role_layer_exists("decider");
-        self.assert_single_role_layer_exists("planner");
-        self.assert_single_role_layer_exists("implementer");
-    }
-
-    /// Assert that a single-role layer exists with the correct structure.
-    pub(crate) fn assert_single_role_layer_exists(&self, layer: &str) {
-        let layer_path = self.layers_path().join(layer);
-        assert!(layer_path.exists(), "Layer directory should exist at {}", layer_path.display());
-
-        assert!(
-            layer_path.join("contracts.yml").exists(),
-            "Layer contracts.yml should exist at {}",
-            layer_path.join("contracts.yml").display()
-        );
-
-        assert!(
-            layer_path.join("tasks").exists(),
-            "tasks/ directory should exist in layer {}",
-            layer
-        );
     }
 
     /// Read the `.jlo-version` file from the `.jlo/` control plane.

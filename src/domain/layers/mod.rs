@@ -1,6 +1,5 @@
 pub mod execute;
 pub mod paths;
-pub mod prompt_assemble;
 
 use serde::Serialize;
 use std::fmt;
@@ -126,6 +125,14 @@ impl Layer {
     /// Whether this layer emits proposal artifacts.
     pub fn is_innovator(&self) -> bool {
         matches!(self, Layer::Innovators)
+    }
+
+    /// Whether this layer deploys schema files to `.jules/schemas/<layer>/`.
+    ///
+    /// Layers with schemas: Narrator, Observers, Decider, Innovators.
+    /// Layers without schemas: Implementer, Planner, Integrator.
+    pub fn has_schemas(&self) -> bool {
+        !matches!(self, Layer::Implementer | Layer::Planner | Layer::Integrator)
     }
 
     /// Whether this layer executes on the worker branch.

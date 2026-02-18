@@ -8,7 +8,7 @@ use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::execute::validate_requirement_path;
-use crate::domain::layers::prompt_assemble::{
+use crate::domain::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::{AppError, ControlPlaneConfig, Layer, MockConfig, MockOutput, RunOptions};
@@ -186,13 +186,19 @@ fn assemble_implementer_prompt<
     repository: &W,
 ) -> Result<String, AppError> {
     let label = extract_requirement_label(requirement_content)?;
-    let task_content = resolve_implementer_task(jules_path, &label, repository)?;
+    let task_content = resolve_implementer_task(&label)?;
 
     let context = PromptContext::new().with_var("task", task_content);
 
-    assemble_prompt(jules_path, Layer::Implementer, &context, repository)
-        .map(|p: AssembledPrompt| p.content)
-        .map_err(|e| AppError::InternalError(e.to_string()))
+    assemble_prompt(
+        jules_path,
+        Layer::Implementer,
+        &context,
+        repository,
+        crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset,
+    )
+    .map(|p: AssembledPrompt| p.content)
+    .map_err(|e| AppError::InternalError(e.to_string()))
 }
 
 fn extract_requirement_label(requirement_content: &str) -> Result<String, AppError> {
@@ -216,21 +222,16 @@ fn extract_requirement_label(requirement_content: &str) -> Result<String, AppErr
     Ok(label.to_string())
 }
 
-fn resolve_implementer_task<W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader>(
-    jules_path: &Path,
-    label: &str,
-    repository: &W,
-) -> Result<String, AppError> {
-    let task_path = crate::domain::layers::paths::tasks_dir(jules_path, Layer::Implementer)
-        .join(format!("{}.yml", label));
+fn resolve_implementer_task(label: &str) -> Result<String, AppError> {
+    let catalog_path = format!("implementer/tasks/{}.yml", label);
 
-    repository.read_file(&task_path.to_string_lossy()).map_err(|_| {
-        AppError::Validation(format!(
-            "No task file for label '{}': expected {}",
-            label,
-            task_path.display()
-        ))
-    })
+    crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset(&catalog_path)
+        .ok_or_else(|| {
+            AppError::Validation(format!(
+                "No task file for label '{}': expected prompt-assemble://{}",
+                label, catalog_path
+            ))
+        })
 }
 
 fn execute_prompt_preview<
@@ -252,13 +253,8 @@ fn execute_prompt_preview<
     println!("Starting branch: {}\n", starting_branch);
     println!("Requirement content: {} chars\n", requirement_content.len());
 
-    let prompt_path = crate::domain::layers::paths::prompt_template(jules_path, Layer::Implementer);
-    let contracts_path = crate::domain::layers::paths::contracts(jules_path, Layer::Implementer);
-
-    println!("Prompt: {}", prompt_path.display());
-    if contracts_path.exists() {
-        println!("Contracts: {}", contracts_path.display());
-    }
+    println!("Prompt template: implementer/implementer_prompt.j2 (embedded)");
+    println!("Contracts: implementer/contracts.yml (embedded)");
 
     let mut prompt = assemble_implementer_prompt(jules_path, requirement_content, repository)?;
     prompt.push_str("\n---\n# Requirement Content\n");

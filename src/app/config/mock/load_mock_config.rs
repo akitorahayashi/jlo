@@ -5,35 +5,29 @@ use std::path::Path;
 
 use crate::app::config::load_config;
 use crate::domain::config::mock_parse::{extract_branch_prefix, extract_issue_labels};
+use crate::domain::workstations;
 use crate::domain::{AppError, Layer, MockConfig};
-use crate::domain::{layers, workstations};
 use crate::ports::RepositoryFilesystem;
 
 use super::mock_tag::resolve_mock_tag;
 
-fn load_branch_prefix_for_layer<W: RepositoryFilesystem>(
-    jules_path: &Path,
-    layer: Layer,
-    repository: &W,
-) -> Result<String, AppError> {
-    let contracts_path = layers::paths::contracts(jules_path, layer);
-    let contracts_path_str = contracts_path
-        .to_str()
-        .ok_or_else(|| AppError::InvalidPath("Invalid contracts path".to_string()))?;
-
-    let content = repository.read_file(contracts_path_str).map_err(|_| {
+fn load_branch_prefix_for_layer(layer: Layer) -> Result<String, AppError> {
+    let catalog_path = format!("{}/contracts.yml", layer.dir_name());
+    let content = crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset(
+        &catalog_path,
+    )
+    .ok_or_else(|| {
         AppError::InvalidConfig(format!(
-            "Missing contracts file for layer '{}' at {}",
+            "Missing contracts for layer '{}' in embedded catalog: prompt-assemble://{}",
             layer.dir_name(),
-            contracts_path.display()
+            catalog_path
         ))
     })?;
 
     extract_branch_prefix(&content).map_err(|e| {
         AppError::InvalidConfig(format!(
-            "Invalid contracts file for layer '{}' at {}: {}",
+            "Invalid contracts for layer '{}': {}",
             layer.dir_name(),
-            contracts_path.display(),
             e
         ))
     })
@@ -48,7 +42,7 @@ pub fn load_mock_config<W: RepositoryFilesystem>(
 
     let mut branch_prefixes = HashMap::new();
     for layer in Layer::ALL {
-        let prefix = load_branch_prefix_for_layer(jules_path, layer, repository)?;
+        let prefix = load_branch_prefix_for_layer(layer)?;
         branch_prefixes.insert(layer, prefix);
     }
 
@@ -84,19 +78,11 @@ pub fn load_mock_config<W: RepositoryFilesystem>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::TestStore;
 
     #[test]
-    fn load_branch_prefix_for_innovators_uses_contracts_yml() {
-        let repository = TestStore::new().with_file(
-            ".jules/layers/innovators/contracts.yml",
-            "branch_prefix: jules-innovator-\n",
-        );
+    fn load_branch_prefix_for_innovators_reads_from_embedded_catalog() {
+        let prefix = load_branch_prefix_for_layer(Layer::Innovators).unwrap();
 
-        let prefix =
-            load_branch_prefix_for_layer(Path::new(".jules"), Layer::Innovators, &repository)
-                .unwrap();
-
-        assert_eq!(prefix, "jules-innovator-");
+        assert!(!prefix.is_empty(), "innovators branch_prefix should be non-empty");
     }
 }

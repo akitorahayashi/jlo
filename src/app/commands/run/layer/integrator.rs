@@ -5,7 +5,7 @@ use serde::Deserialize;
 use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::detect_repository_source;
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
-use crate::domain::layers::prompt_assemble::{
+use crate::domain::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
 use crate::domain::validation::validate_identifier;
@@ -94,7 +94,7 @@ where
     let starting_branch = resolve_starting_branch(Layer::Integrator, config, branch);
 
     // Resolve implementer branch prefix from its contracts for discovery
-    let implementer_prefix = load_implementer_branch_prefix(jules_path, repository)?;
+    let implementer_prefix = load_implementer_branch_prefix()?;
 
     // Preflight: discover candidate branches before Jules API session creation
     let candidates = discover_candidate_branches(git, &implementer_prefix)?;
@@ -153,20 +153,15 @@ where
 }
 
 /// Read the implementer branch prefix from its contracts.yml to drive discovery.
-fn load_implementer_branch_prefix<
-    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
->(
-    jules_path: &Path,
-    repository: &W,
-) -> Result<String, AppError> {
-    let contracts_path = crate::domain::layers::paths::contracts(jules_path, Layer::Implementer);
-    let contracts_path_str = contracts_path.to_string_lossy();
-
-    let content = repository.read_file(&contracts_path_str).map_err(|_| {
-        AppError::Validation(format!(
-            "Cannot read implementer contracts at {}: required for branch discovery",
-            contracts_path.display()
-        ))
+fn load_implementer_branch_prefix() -> Result<String, AppError> {
+    let content = crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset(
+        "implementer/contracts.yml",
+    )
+    .ok_or_else(|| {
+        AppError::Validation(
+            "Cannot read implementer contracts from embedded catalog: required for branch discovery"
+                .to_string(),
+        )
     })?;
 
     let contract: ContractFile = serde_yaml::from_str(&content)
@@ -242,7 +237,13 @@ fn assemble_integrator_prompt<
         .with_var("candidate_branches", candidate_list)
         .with_var("repository", source);
 
-    assemble_prompt(jules_path, Layer::Integrator, &context, repository)
-        .map(|p: AssembledPrompt| p.content)
-        .map_err(|e| AppError::InternalError(e.to_string()))
+    assemble_prompt(
+        jules_path,
+        Layer::Integrator,
+        &context,
+        repository,
+        crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset,
+    )
+    .map(|p: AssembledPrompt| p.content)
+    .map_err(|e| AppError::InternalError(e.to_string()))
 }

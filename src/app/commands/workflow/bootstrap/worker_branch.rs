@@ -235,7 +235,7 @@ mod tests {
     #[test]
     fn resolves_merge_conflict_with_jules_policy() {
         let git =
-            TestGit::new("sha\trefs/heads/jules", true, ".jules/layers/narrator/contracts.yml");
+            TestGit::new("sha\trefs/heads/jules", true, ".jules/schemas/narrator/changes.yml");
         let out = execute_with_adapter(&git, "main", "jules").expect("worker branch sync failed");
         assert!(out.conflict_resolved);
 

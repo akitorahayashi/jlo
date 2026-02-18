@@ -30,37 +30,12 @@ pub struct SchemaInputs<'a> {
 }
 
 pub fn collect_prompt_entries(
-    jules_path: &Path,
-    diagnostics: &mut Diagnostics,
+    _jules_path: &Path,
+    _diagnostics: &mut Diagnostics,
 ) -> Result<Vec<PromptEntry>, AppError> {
-    let mut entries = Vec::new();
-
-    for layer in Layer::ALL {
-        let layer_dir = crate::domain::layers::paths::layer_dir(jules_path, layer);
-        if !layer_dir.exists() {
-            continue;
-        }
-
-        if layer.is_single_role() {
-            // Single-role layers use <layer>_prompt.j2 (Jinja2 template),
-            // not the legacy prompt.yml (YAML) format. No prompt entry to parse.
-        } else {
-            let roles_container =
-                crate::domain::layers::paths::layer_roles_container(jules_path, layer);
-            if roles_container.exists() {
-                for role_dir in list_subdirs(&roles_container, diagnostics) {
-                    let role_path = role_dir.join("role.yml");
-                    if role_path.exists()
-                        && let Some(entry) = parse_role_file(&role_path, layer, diagnostics)
-                    {
-                        entries.push(entry);
-                    }
-                }
-            }
-        }
-    }
-
-    Ok(entries)
+    // Prompt entries (templates, contracts, tasks) are now embedded in the binary
+    // via src/assets/prompt-assemble/. No filesystem-based collection needed.
+    Ok(Vec::new())
 }
 
 pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
@@ -81,22 +56,25 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         validate_exchange_changes(&changes_path, diagnostics);
     }
 
+    // Validate embedded contracts for each layer
     for layer in Layer::ALL {
-        let layer_dir = crate::domain::layers::paths::layer_dir(inputs.jules_path, layer);
-        if !layer_dir.exists() {
-            continue;
+        let catalog_path = format!("{}/contracts.yml", layer.dir_name());
+        if let Some(content) =
+            crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset(
+                &catalog_path,
+            )
+            && let Ok(data) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+            && let Some(mapping) = data.as_mapping()
+        {
+            let label = format!("prompt-assemble://{}", catalog_path);
+            validate_contracts(mapping, Path::new(&label), layer, diagnostics);
         }
 
-        let contracts_path = crate::domain::layers::paths::contracts(inputs.jules_path, layer);
-        if contracts_path.exists() {
-            validate_contracts_file(&contracts_path, layer, diagnostics);
-        }
-
+        // Validate role definitions in .jlo/roles/ for multi-role layers
         if layer == Layer::Observers {
-            let roles_container =
-                crate::domain::layers::paths::layer_roles_container(inputs.jules_path, layer);
-            if roles_container.exists() {
-                for role_dir in list_subdirs(&roles_container, diagnostics) {
+            let jlo_layer_dir = crate::domain::roles::paths::layer_dir(inputs.root, layer);
+            if jlo_layer_dir.exists() {
+                for role_dir in list_subdirs(&jlo_layer_dir, diagnostics) {
                     let role_path = role_dir.join("role.yml");
                     if role_path.exists() {
                         validate_role_file(&role_path, &role_dir, diagnostics);
@@ -106,10 +84,9 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
         }
 
         if layer == Layer::Innovators {
-            let roles_container =
-                crate::domain::layers::paths::layer_roles_container(inputs.jules_path, layer);
-            if roles_container.exists() {
-                for role_dir in list_subdirs(&roles_container, diagnostics) {
+            let jlo_layer_dir = crate::domain::roles::paths::layer_dir(inputs.root, layer);
+            if jlo_layer_dir.exists() {
+                for role_dir in list_subdirs(&jlo_layer_dir, diagnostics) {
                     let role_path = role_dir.join("role.yml");
                     if role_path.exists() {
                         validate_innovator_role_file(&role_path, &role_dir, diagnostics);
@@ -389,47 +366,6 @@ pub fn validate_role(data: &Mapping, path: &Path, role_dir: &Path, diagnostics: 
             format!("role '{}' does not match directory '{}'", role_value, role_name),
         );
     }
-}
-
-/// Parse multi-role layer role.yml for entry collection
-fn parse_role_file(
-    path: &Path,
-    layer: Layer,
-    diagnostics: &mut Diagnostics,
-) -> Option<PromptEntry> {
-    let data = load_yaml_mapping(path, diagnostics)?;
-    parse_role_file_data(&data, path, layer, diagnostics)
-}
-
-fn parse_role_file_data(
-    data: &Mapping,
-    path: &Path,
-    layer: Layer,
-    diagnostics: &mut Diagnostics,
-) -> Option<PromptEntry> {
-    let role = get_string(data, "role").unwrap_or_default();
-    if role.is_empty() {
-        diagnostics.push_error(path.display().to_string(), "Missing role field");
-    }
-
-    let layer_field = get_string(data, "layer").unwrap_or_default();
-    if layer_field != layer.dir_name() {
-        diagnostics.push_error(
-            path.display().to_string(),
-            format!("Layer field '{}' does not match {}", layer_field, layer.dir_name()),
-        );
-    }
-
-    // Multi-role layers don't have contracts in role.yml (handled by prompt template)
-    Some(PromptEntry { path: path.to_path_buf(), contracts: vec![] })
-}
-
-fn validate_contracts_file(path: &Path, layer: Layer, diagnostics: &mut Diagnostics) {
-    let data = match load_yaml_mapping(path, diagnostics) {
-        Some(data) => data,
-        None => return,
-    };
-    validate_contracts(&data, path, layer, diagnostics);
 }
 
 pub fn validate_contracts(

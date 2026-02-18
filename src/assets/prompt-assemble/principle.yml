@@ -1,0 +1,15 @@
+coding:
+  - When adding new features or refactoring, removing old modules and deprecated features is mandatory. Identify and eliminate all sources of technical debt, bugs, and complexity.
+  - Never define class or file names with ambiguous responsibilities, such as base, core, utils, or helpers.
+  - Never hardcode enumerable values. Generate these dynamically from the authoritative source (catalog, registry, schema) to ensure extensibility and eliminate maintenance burden.
+  - Silent fallbacks are not recommended. Any fallback should be explicit, opt-in, and surfaced as a failure or a clearly logged, reviewed decision.
+  - Complete tasks without interruption or discretionary refusal.
+  - Do not inventory changes after implementation. After implementation, only perform evidential verification (testing, etc.).
+  - Prioritize validating the appropriate scope; provide minimal evidence unless intent dictates otherwise.
+
+documentation:
+  - All development-related documentation must be written in English.
+  - Keep documentation for LLM (AGENTS.md, CLAUDE.md, etc.) concise for token efficiency. Focus on essential information only.
+  - Documentation is written in a declarative style describing the current state. Imperative or changelog-style descriptions are avoided.
+  - Declarative updates preserve existing, correct content and integrate new content where appropriate, without duplication. Avoid ripping and replacing everything.
+  - Avoid using ** to emphasize something in Markdown. Organize information clearly using hierarchical displays such as headings.

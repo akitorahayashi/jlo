@@ -47,47 +47,17 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
     );
     ensure_file_exists(&crate::domain::config::paths::config(inputs.root), diagnostics);
     ensure_file_exists(&crate::domain::workstations::paths::version_file(inputs.root), diagnostics);
-    ensure_directory_exists(
-        crate::domain::layers::paths::layers_dir(inputs.jules_path),
-        diagnostics,
-    );
 
     check_version_file(inputs.jules_path, env!("CARGO_PKG_VERSION"), diagnostics);
 
     for layer in Layer::ALL {
-        let layer_dir = crate::domain::layers::paths::layer_dir(inputs.jules_path, layer);
-        if !layer_dir.exists() {
-            diagnostics.push_error(layer_dir.display().to_string(), "Missing layer directory");
-            continue;
-        }
-
-        // Phase-specific contracts for layers that use them; single contracts.yml for others
-        let contracts = crate::domain::layers::paths::contracts(inputs.jules_path, layer);
-        if !contracts.exists() {
-            diagnostics.push_error(contracts.display().to_string(), "Missing contracts.yml");
-        }
-
-        // Check schemas/ directory (layers with output schemas)
-        let schemas_dir = crate::domain::layers::paths::schemas_dir(inputs.jules_path, layer);
-        let has_schemas = !matches!(layer, Layer::Implementer | Layer::Planner | Layer::Integrator);
-        if has_schemas && !schemas_dir.exists() {
-            diagnostics.push_error(schemas_dir.display().to_string(), "Missing schemas/");
-        }
-
-        // Check tasks/ directory (all layers have this)
-        let tasks_dir = crate::domain::layers::paths::tasks_dir(inputs.jules_path, layer);
-        if !tasks_dir.exists() {
-            diagnostics.push_error(tasks_dir.display().to_string(), "Missing tasks/");
-        }
-
-        // Check prompt template (all layers have one)
-        let prompt_template =
-            crate::domain::layers::paths::prompt_template(inputs.jules_path, layer);
-        if !prompt_template.exists() {
-            diagnostics.push_error(
-                prompt_template.display().to_string(),
-                format!("Missing {}", layer.prompt_template_name()),
-            );
+        // Check schemas/ directory (layers with output schemas: .jules/schemas/<layer>/)
+        if layer.has_schemas() {
+            let schemas_dir = crate::domain::layers::paths::schemas_dir(inputs.jules_path, layer);
+            if !schemas_dir.exists() {
+                diagnostics
+                    .push_error(schemas_dir.display().to_string(), "Missing schemas directory");
+            }
         }
 
         if layer.is_single_role() {
@@ -102,9 +72,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             }
         } else {
             // Check roles/ container directory for multi-role layers in .jlo/
-            // The .jules/ structure for multi-role layers (roles/ container) might technically exist from scaffold
-            // but the actual role definitions are in .jlo/.
-            // structure_checks needs to verify that for every role in .jlo/, it exists.
             let jlo_layer_dir = crate::domain::roles::paths::layer_dir(inputs.root, layer);
 
             if jlo_layer_dir.exists() {
@@ -291,24 +258,18 @@ mod tests {
         temp.child(".jlo/config.toml").touch().unwrap();
         temp.child(".jules/.jlo-version").write_str(env!("CARGO_PKG_VERSION")).unwrap();
 
-        // Layers
+        // Schemas for layers that have them (.jules/schemas/<layer>/)
         for layer in Layer::ALL {
-            // Runtime artifacts (contracts, schemas, prompts) in .jules/layers
-            let jules_layer_dir = temp.child(format!(".jules/layers/{}", layer.dir_name()));
-            jules_layer_dir.create_dir_all().unwrap();
-            if !matches!(layer, Layer::Implementer | Layer::Planner | Layer::Integrator) {
-                jules_layer_dir.child("schemas").create_dir_all().unwrap();
+            if layer.has_schemas() {
+                let schemas_dir = temp.child(format!(".jules/schemas/{}", layer.dir_name()));
+                schemas_dir.create_dir_all().unwrap();
             }
-            jules_layer_dir.child("tasks").create_dir_all().unwrap();
-            jules_layer_dir.child(layer.prompt_template_name()).touch().unwrap();
 
-            jules_layer_dir.child("contracts.yml").touch().unwrap();
+            if layer == Layer::Narrator {
+                temp.child(".jules/schemas/narrator/changes.yml").touch().unwrap();
+            }
 
-            if layer.is_single_role() {
-                if layer == Layer::Narrator {
-                    jules_layer_dir.child("schemas/changes.yml").touch().unwrap();
-                }
-            } else {
+            if !layer.is_single_role() {
                 // Multi-role layers have role definitions in .jlo/roles
                 let jlo_role_dir = temp.child(format!(".jlo/roles/{}/my-role", layer.dir_name()));
                 jlo_role_dir.create_dir_all().unwrap();
@@ -377,17 +338,16 @@ mod tests {
         // Expect at least 2 errors
         assert!(diagnostics.error_count() >= 2);
         let errors: Vec<String> = diagnostics.errors().iter().map(|e| e.message.clone()).collect();
-        // The error message is "Missing required file" based on ensure_path_exists
         assert!(errors.contains(&"Missing required file".to_string()));
     }
 
     #[test]
-    fn test_structural_checks_missing_layer_files() {
+    fn test_structural_checks_missing_schemas_dir() {
         let temp = assert_fs::TempDir::new().unwrap();
         create_valid_repository(&temp);
 
-        // Remove implementer contracts
-        std::fs::remove_file(temp.path().join(".jules/layers/implementer/contracts.yml")).unwrap();
+        // Remove narrator schemas directory
+        std::fs::remove_dir_all(temp.path().join(".jules/schemas/narrator")).unwrap();
 
         let mut diagnostics = Diagnostics::default();
         let event_states = vec!["pending".to_string()];
@@ -402,6 +362,6 @@ mod tests {
 
         assert!(diagnostics.error_count() >= 1);
         let errors: Vec<String> = diagnostics.errors().iter().map(|e| e.message.clone()).collect();
-        assert!(errors.contains(&"Missing contracts.yml".to_string()));
+        assert!(errors.iter().any(|msg| msg.contains("Missing")));
     }
 }

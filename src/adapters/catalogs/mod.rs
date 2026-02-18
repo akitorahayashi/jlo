@@ -1,4 +1,5 @@
 pub mod builtin_role_assets;
+pub mod prompt_assemble_assets;
 pub mod role_template_embedded;
 pub mod scaffold_assets;
 pub mod setup_component_embedded;

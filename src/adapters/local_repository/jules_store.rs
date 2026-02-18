@@ -47,10 +47,12 @@ impl JulesStore for LocalRepositoryAdapter {
             fs::write(&path, &entry.content)?;
         }
 
-        // Create layer directories
+        // Create schemas directories for layers that have schemas
         for layer in Layer::ALL {
-            let layer_dir = crate::domain::layers::paths::layer_dir(&jules_path, layer);
-            fs::create_dir_all(&layer_dir)?;
+            if layer.has_schemas() {
+                let schemas_dir = crate::domain::layers::paths::schemas_dir(&jules_path, layer);
+                fs::create_dir_all(&schemas_dir)?;
+            }
         }
 
         Ok(())
@@ -87,22 +89,29 @@ mod tests {
         store.create_structure(&files).unwrap();
 
         assert!(store.jules_path().exists());
-        assert!(store.jules_path().join("layers").exists());
+        assert!(store.jules_path().join("schemas").exists());
         assert!(store.jules_path().join("README.md").exists());
     }
 
     #[test]
-    fn create_structure_creates_layer_directories() {
+    fn create_structure_creates_schema_directories() {
         let (_dir, store) = test_store();
         store.create_structure(&[]).unwrap();
 
         for layer in Layer::ALL {
-            assert!(
-                store.jules_path().join("layers").join(layer.dir_name()).exists(),
-                "Layer directory {:?} should exist",
-                layer
-            );
+            if layer.has_schemas() {
+                assert!(
+                    store.jules_path().join("schemas").join(layer.dir_name()).exists(),
+                    "Schemas directory for {:?} should exist",
+                    layer
+                );
+            }
         }
+
+        // Layers without schemas should not have directories
+        assert!(!store.jules_path().join("schemas/implementer").exists());
+        assert!(!store.jules_path().join("schemas/planner").exists());
+        assert!(!store.jules_path().join("schemas/integrator").exists());
     }
 
     #[test]

@@ -36,10 +36,8 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
     let root = jules_path.parent().unwrap_or(Path::new(".")).to_path_buf();
     let issue_labels = list_issue_labels()?;
     let event_states = list_event_states()?;
-    let event_confidence =
-        read_enum_values(".jules/layers/observers/schemas/event.yml", "confidence")?;
-    let issue_priorities =
-        read_enum_values(".jules/layers/decider/schemas/requirements.yml", "priority")?;
+    let event_confidence = read_enum_values(".jules/schemas/observers/event.yml", "confidence")?;
+    let issue_priorities = read_enum_values(".jules/schemas/decider/requirements.yml", "priority")?;
 
     let mut diagnostics = Diagnostics::default();
 
