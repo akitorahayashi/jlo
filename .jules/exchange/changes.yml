@@ -1,0 +1,19 @@
+schema_version: 1
+created_at: "2026-02-18T09:56:22Z"
+
+summaries:
+  - title: "Innovator Proposals Domain"
+    scope: "src/domain/exchange/proposals"
+    impact: "Enables publishing and management of innovator proposals, supporting the core exchange mechanism."
+  - title: "Configuration System Overhaul"
+    scope: "src/domain/config"
+    impact: "Standardizes configuration parsing and workflow runner modes, improving reliability and type safety."
+  - title: "Prompt Assembly Engine"
+    scope: "src/domain/prompt_assemble"
+    impact: "Introduces Jinja2-based prompt assembly with schema seeding, allowing dynamic and modular prompt construction."
+  - title: "Layer Execution Policy"
+    scope: "src/domain/layers/execute"
+    impact: "Defines execution policies and starting branch logic, clarifying how layers interact and execute tasks."
+  - title: "Testing Harness Expansion"
+    scope: "tests/"
+    impact: "Expands contract tests and test harness for CLI and workflows, ensuring robust verification of system behavior."
