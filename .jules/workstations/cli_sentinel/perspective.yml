@@ -1,0 +1,10 @@
+schema_version: 2
+observer: cli_sentinel
+updated_at: YYYY-MM-DDTHH:MM:SSZ
+goals:
+- <concrete goal>
+rules: []
+ignore: []
+log:
+- at: YYYY-MM-DDTHH:MM:SSZ
+  summary: <one line>
