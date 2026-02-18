@@ -52,7 +52,7 @@ pub fn load_workflow_generate_config(
         .collect::<Result<Vec<String>, _>>()?;
 
     let wait_minutes_default = workflow.wait_minutes_default.ok_or_else(|| {
-        AppError::Validation(
+        AppError::InvalidConfig(
             "Missing workflow.wait_minutes_default in control plane config.".into(),
         )
     })?;
