@@ -1,0 +1,23 @@
+schema_version: 1
+
+# Metadata
+id: "ef3gh4"
+requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+created_at: "2026-02-18"
+author_role: "rustacean"
+confidence: "high"
+
+# Content
+title: "Monolithic AppError Enum Violates Separation of Concerns"
+statement: |
+  The `AppError` enum is a monolithic container for unrelated error domains (IO, Git, Jules API, Configuration, Validation, Setup). This design increases compilation scope (any change to `AppError` rebuilds dependents), makes error handling coarse (handling `GitError` requires importing `JulesApiError`), and leads to broad matching arms. It fails to preserve domain meaning as errors propagate, often converting them to generic strings or overly broad categories.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "26" # Io
+      - "187" # GitError
+      - "34" # JulesApiError
+      - "175" # RequirementFileNotFound
+    note: "AppError mixes low-level infrastructure errors (Git, IO) with high-level domain errors (Requirement, Setup)."

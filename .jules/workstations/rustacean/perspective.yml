@@ -1,10 +1,12 @@
 schema_version: 2
 observer: rustacean
-updated_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: 2026-02-18T10:00:00Z
 goals:
-- <concrete goal>
+- "Advocate for separation of concerns in error handling (decompose AppError)"
+- "Identify and document further instances of stringly-typed errors"
+- "Monitor abstraction costs in core domains (e.g. PromptAssembly)"
 rules: []
 ignore: []
 log:
-- at: YYYY-MM-DDTHH:MM:SSZ
-  summary: <one line>
+- at: 2026-02-18T10:00:00Z
+  summary: "Emitted 3 events (ab1cd2, ef3gh4, ij5kl6) covering abstraction, error handling, and validation."
