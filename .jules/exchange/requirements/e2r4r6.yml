@@ -1,0 +1,36 @@
+schema_version: 2
+id: "e2r4r6"
+source_events:
+  - "ef3gh4"
+  - "a1b2c3"
+title: "Refactor AppError"
+label: "refacts"
+priority: "medium"
+summary: "Refactor the monolithic AppError enum into smaller, domain-specific error types."
+goal: |
+  Decompose `AppError` into specialized error types (e.g., `ConfigError`, `GitError`, `ApiError`) to reduce coupling and improve error handling granularity.
+problem: |
+  `AppError` is a large enum that couples unrelated domains (IO, Git, API, Config).
+  Changes to `AppError` trigger wide rebuilds.
+  Error handling is coarse, often relying on string matching or broad catch-alls.
+impact: |
+  Slow compilation times.
+  Fragile error handling logic.
+  Codebase is harder to maintain and extend.
+desired_outcome: |
+  `AppError` is removed or reduced to a top-level application error wrapper.
+  Domain-specific errors are used within their respective modules.
+affected_areas:
+  - "src/domain/error.rs"
+  - "src/domain/config/"
+  - "src/ports/"
+  - "src/adapters/"
+acceptance_criteria:
+  - "`AppError` no longer contains variants for specific low-level errors (e.g., Git, IO) unless wrapped."
+  - "Modules use their own error types (e.g., `ConfigError`)."
+  - "Error handling logic matches on specific types rather than strings."
+verification_criteria:
+  - "Run `cargo check`."
+  - "Run `cargo test`."
+requires_deep_analysis: true
+deep_analysis_reason: "Touching the central error type will require changes across the entire codebase."

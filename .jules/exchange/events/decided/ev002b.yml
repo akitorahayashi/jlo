@@ -2,7 +2,7 @@ schema_version: 1
 
 # Metadata
 id: "ev002b"
-requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+requirement_id: "u9x1v2" # ID of the requirement that processed this event (empty if unprocessed)
 created_at: "2026-02-18"
 author_role: "taxonomy"
 confidence: "high"

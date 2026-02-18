@@ -1,0 +1,33 @@
+schema_version: 2
+id: "m8d3l2"
+source_events:
+  - "ev003c"
+  - "da0002"
+title: "Model Observer Perspectives"
+label: "refacts"
+priority: "medium"
+summary: "Implement a domain model for Observer perspectives and add validation logic."
+goal: |
+  Formalize the Observer perspective data structure in the domain model.
+  Ensure Observer perspectives are validated during `jlo doctor`.
+problem: |
+  Observer perspectives are currently untyped and unvalidated, leading to potential configuration errors.
+  There is a discrepancy between Innovator (modeled) and Observer (unmodeled) handling.
+impact: |
+  Inconsistent behavior and potential runtime errors due to invalid observer configuration.
+  Developer confusion due to lack of a defined schema.
+desired_outcome: |
+  A `Perspective` struct in `src/domain/workstations/perspectives/model.rs` that covers Observer needs (or a separate `ObserverPerspective` struct).
+  Validation logic in `jlo doctor` that checks observer perspective files against the model.
+affected_areas:
+  - "src/domain/workstations/perspectives/model.rs"
+  - "src/app/commands/doctor/"
+acceptance_criteria:
+  - "Observer perspective fields (goals, log, rules) are defined in the domain model."
+  - "`jlo doctor` successfully validates a correct observer perspective."
+  - "`jlo doctor` fails on an invalid observer perspective."
+verification_criteria:
+  - "Run `cargo test`"
+  - "Run `jlo doctor` and verify output."
+requires_deep_analysis: false
+deep_analysis_reason: ""
