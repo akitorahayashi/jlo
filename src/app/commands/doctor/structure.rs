@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::domain::config::parse::parse_config_content;
+use crate::domain::jlo_paths;
 use crate::domain::{AppError, ControlPlaneConfig, Layer, Version};
 
 use super::diagnostics::Diagnostics;
@@ -160,20 +161,30 @@ fn ensure_file_exists(path: &Path, diagnostics: &mut Diagnostics) {
 }
 
 fn check_workspaces(root: &Path, diagnostics: &mut Diagnostics) {
-    let workspaces_dir = root.join(".jlo").join("workspaces");
+    let workspaces_dir = jlo_paths::workspaces_dir(root);
     if !workspaces_dir.exists() {
         return;
     }
 
     match fs::read_dir(&workspaces_dir) {
         Ok(entries) => {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    diagnostics.push_warning(
-                        path.display().to_string(),
-                        "Temporary workspace found. These are normally cleaned up automatically but may remain after a crash.",
-                    );
+            for entry_result in entries {
+                match entry_result {
+                    Ok(entry) => {
+                        let path = entry.path();
+                        if path.is_dir() {
+                            diagnostics.push_warning(
+                                path.display().to_string(),
+                                "Temporary workspace found. These are normally cleaned up automatically but may remain after a crash.",
+                            );
+                        }
+                    }
+                    Err(err) => {
+                        diagnostics.push_error(
+                            workspaces_dir.display().to_string(),
+                            format!("Failed to read workspace entry: {}", err),
+                        );
+                    }
                 }
             }
         }

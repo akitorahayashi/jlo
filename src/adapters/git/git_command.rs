@@ -1,4 +1,5 @@
-use crate::domain::AppError;
+use crate::domain::jlo_paths;
+use crate::domain::{AppError, IoErrorKind};
 use crate::ports::{Git, GitWorkspace};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -153,22 +154,24 @@ impl Git for GitCommandAdapter {
     }
 
     fn create_workspace(&self, branch: &str) -> Result<Box<dyn GitWorkspace>, AppError> {
-        let workspaces_dir = self.root.join(".jlo").join("workspaces");
+        let workspaces_dir = jlo_paths::workspaces_dir(&self.root);
         std::fs::create_dir_all(&workspaces_dir).map_err(|e| AppError::Io {
             message: format!("Failed to create workspaces directory: {}", e),
             kind: e.kind().into(),
         })?;
 
         let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
-        let id = format!("ws-{}", now);
+        let id = format!("ws-{}-{}", std::process::id(), now);
         let temp_dir = workspaces_dir.join(&id);
+
+        let temp_dir_str = temp_dir.to_str().ok_or_else(|| AppError::Io {
+            message: "Temporary workspace path is not valid UTF-8".to_string(),
+            kind: IoErrorKind::Other,
+        })?;
 
         // git worktree add --detach <path> <branch>
         // We use --detach to allow creating a workspace even if the branch is already checked out elsewhere.
-        self.run_output(
-            &["worktree", "add", "--detach", temp_dir.to_str().unwrap(), branch],
-            None,
-        )?;
+        self.run_output(&["worktree", "add", "--detach", temp_dir_str, branch], None)?;
 
         Ok(Box::new(GitWorktreeWorkspace {
             adapter: GitCommandAdapter::new(temp_dir.clone()),
@@ -250,9 +253,12 @@ impl GitWorkspace for GitWorktreeWorkspace {
 
 impl Drop for GitWorktreeWorkspace {
     fn drop(&mut self) {
-        // try to remove worktree
+        // try to remove worktree; pass the path directly to avoid a panic on non-UTF-8 paths
         let _ = Command::new("git")
-            .args(["worktree", "remove", "-f", self.temp_dir.to_str().unwrap()])
+            .arg("worktree")
+            .arg("remove")
+            .arg("-f")
+            .arg(&self.temp_dir)
             .current_dir(&self.main_root)
             .output();
     }
