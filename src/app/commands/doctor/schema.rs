@@ -12,6 +12,7 @@ use super::yaml::{
     ensure_enum, ensure_id, ensure_int, ensure_non_empty_sequence, ensure_non_empty_string,
     get_bool, get_sequence, get_string, load_yaml_mapping, read_yaml_files,
 };
+use crate::domain::workstations::perspectives::DATETIME_PLACEHOLDER;
 
 #[derive(Debug, Clone)]
 pub(crate) struct PromptEntry {
@@ -134,6 +135,21 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
                 continue;
             }
             validate_innovator_perspective(&perspective_path, &role_name, diagnostics);
+        }
+
+        for role_name in scheduled_observer_roles(inputs.root, diagnostics) {
+            let perspective_path = crate::domain::workstations::paths::workstation_perspective(
+                inputs.jules_path,
+                &role_name,
+            );
+            if !perspective_path.exists() {
+                diagnostics.push_error(
+                    perspective_path.display().to_string(),
+                    "Missing observer workstation perspective.yml",
+                );
+                continue;
+            }
+            validate_observer_perspective(&perspective_path, &role_name, diagnostics);
         }
 
         let proposals_dir =
@@ -427,7 +443,7 @@ pub fn check_placeholders(content: &str, path: &Path, diagnostics: &mut Diagnost
         "<6_random_lowercase_alphanumeric_chars>",
         "<role>",
         "<Descriptive Title>",
-        "YYYY-MM-DD",
+        DATETIME_PLACEHOLDER,
         "<path>",
         "<condition 1>",
         "<condition 2>",
@@ -450,7 +466,14 @@ fn ensure_date(map: &serde_yaml::Mapping, path: &Path, key: &str, diagnostics: &
     }
 }
 
-fn scheduled_innovator_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<String> {
+fn get_scheduled_roles<F>(
+    root: &Path,
+    diagnostics: &mut Diagnostics,
+    role_extractor: F,
+) -> Vec<String>
+where
+    F: FnOnce(crate::domain::ControlPlaneConfig) -> Vec<String>,
+{
     let config_path = crate::domain::config::paths::config(root);
     let content = match fs::read_to_string(&config_path) {
         Ok(content) => content,
@@ -468,10 +491,26 @@ fn scheduled_innovator_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<
         }
     };
 
-    match config.schedule.innovators {
+    role_extractor(config)
+}
+
+fn scheduled_innovator_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<String> {
+    get_scheduled_roles(root, diagnostics, |config| match config.schedule.innovators {
         Some(layer) => layer.roles.into_iter().map(|role| role.name.as_str().to_string()).collect(),
         None => Vec::new(),
-    }
+    })
+}
+
+fn scheduled_observer_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<String> {
+    get_scheduled_roles(root, diagnostics, |config| {
+        config
+            .schedule
+            .observers
+            .roles
+            .into_iter()
+            .map(|role| role.name.as_str().to_string())
+            .collect()
+    })
 }
 
 // --- Innovator validation functions ---
@@ -532,6 +571,79 @@ fn validate_innovator_perspective(path: &Path, role_name: &str, diagnostics: &mu
         diagnostics.push_error(
             path.display().to_string(),
             format!("role '{}' does not match directory '{}'", role_value, role_name),
+        );
+    }
+}
+
+fn validate_observer_perspective(path: &Path, role_name: &str, diagnostics: &mut Diagnostics) {
+    let data = match load_yaml_mapping(path, diagnostics) {
+        Some(data) => data,
+        None => return,
+    };
+    validate_observer_perspective_data(&data, path, role_name, diagnostics);
+}
+
+fn validate_observer_perspective_data(
+    data: &Mapping,
+    path: &Path,
+    role_name: &str,
+    diagnostics: &mut Diagnostics,
+) {
+    ensure_int(data, path, "schema_version", diagnostics, Some(2));
+    ensure_non_empty_string(data, path, "observer", diagnostics);
+    ensure_date(data, path, "updated_at", diagnostics);
+    ensure_non_empty_sequence(data, path, "goals", diagnostics);
+
+    // rules can be empty initially
+    if let Some(rules) = get_sequence(data, "rules") {
+        for (idx, item) in rules.iter().enumerate() {
+            if !item.is_string() {
+                diagnostics.push_error(
+                    path.display().to_string(),
+                    format!("rules[{}] must be a string", idx),
+                );
+            }
+        }
+    } else if data.get("rules").is_some() {
+        diagnostics.push_error(path.display().to_string(), "rules must be a sequence");
+    }
+
+    if let Some(ignore) = get_sequence(data, "ignore") {
+        for (idx, item) in ignore.iter().enumerate() {
+            if !item.is_string() {
+                diagnostics.push_error(
+                    path.display().to_string(),
+                    format!("ignore[{}] must be a string", idx),
+                );
+            }
+        }
+    } else if data.get("ignore").is_some() {
+        diagnostics.push_error(path.display().to_string(), "ignore must be a sequence");
+    }
+
+    if let Some(log) = get_sequence(data, "log") {
+        for (idx, entry) in log.iter().enumerate() {
+            if let serde_yaml::Value::Mapping(map) = entry {
+                ensure_date(map, path, "at", diagnostics);
+                ensure_non_empty_string(map, path, "summary", diagnostics);
+            } else {
+                diagnostics.push_error(
+                    path.display().to_string(),
+                    format!("log[{}] must be a mapping", idx),
+                );
+            }
+        }
+    } else if data.get("log").is_none() {
+        diagnostics.push_error(path.display().to_string(), "Missing log section");
+    } else {
+        diagnostics.push_error(path.display().to_string(), "The 'log' field must be a sequence");
+    }
+
+    let observer_value = get_string(data, "observer").unwrap_or_default();
+    if !observer_value.is_empty() && observer_value != role_name {
+        diagnostics.push_error(
+            path.display().to_string(),
+            format!("observer '{}' does not match directory '{}'", observer_value, role_name),
         );
     }
 }
@@ -727,5 +839,114 @@ verification_signals: ["v"]
         let mut diagnostics = Diagnostics::default();
         validate_innovator_proposal(&proposal_path, &mut diagnostics);
         assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_validate_observer_perspective_valid() {
+        let yaml = r#"
+schema_version: 2
+observer: "cli_sentinel"
+updated_at: "2023-10-27"
+goals: ["Monitor CLI"]
+rules: ["Be nice"]
+ignore: ["ignore_me"]
+log:
+  - at: "2023-10-27"
+    summary: "Started"
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("perspective.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_validate_observer_perspective_invalid_dates() {
+        let yaml = r#"
+schema_version: 2
+observer: "cli_sentinel"
+updated_at: "2023-10-27"
+goals: ["Monitor CLI"]
+rules: []
+log:
+  - at: "invalid-date"
+    summary: "Started"
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("perspective.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
+        assert!(diagnostics.error_count() >= 1);
+        let messages: Vec<_> = diagnostics.errors().iter().map(|e| &e.message).collect();
+        assert!(messages.iter().any(|m| m.contains("at must be YYYY-MM-DD")));
+    }
+
+    #[test]
+    fn test_validate_observer_perspective_missing_fields() {
+        let yaml = r#"
+schema_version: 2
+observer: "cli_sentinel"
+updated_at: "2023-10-27"
+# Missing goals, rules
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("perspective.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
+        assert!(diagnostics.error_count() > 0);
+    }
+    #[test]
+    fn test_validate_observer_perspective_log_not_sequence() {
+        let yaml = r#"
+schema_version: 2
+observer: "cli_sentinel"
+updated_at: "2023-10-27"
+goals: ["Monitor CLI"]
+rules: ["Be nice"]
+log: "this should be a sequence"
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("perspective.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
+        assert!(diagnostics.error_count() > 0);
+        let messages: Vec<_> = diagnostics.errors().iter().map(|e| &e.message).collect();
+        assert!(messages.iter().any(|m| m.contains("The 'log' field must be a sequence")));
+    }
+
+    #[test]
+    fn test_validate_observer_perspective_placeholder_date() {
+        let yaml = r#"
+schema_version: 2
+observer: "cli_sentinel"
+updated_at: "YYYY-MM-DD"
+goals: ["Monitor CLI"]
+rules: ["Be nice"]
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("perspective.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
+        assert!(diagnostics.error_count() > 0);
+        let messages: Vec<_> = diagnostics.errors().iter().map(|e| &e.message).collect();
+        assert!(messages.iter().any(|m| m.contains("updated_at must be YYYY-MM-DD")));
+    }
+
+    #[test]
+    fn test_check_placeholders_datetime() {
+        let content = "updated_at: YYYY-MM-DD";
+        let path = PathBuf::from("test.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        check_placeholders(content, &path, &mut diagnostics);
+        assert!(diagnostics.error_count() > 0);
+        let messages: Vec<_> = diagnostics.errors().iter().map(|e| &e.message).collect();
+        assert!(messages.iter().any(|m| m.contains("placeholder 'YYYY-MM-DD' must be replaced")));
     }
 }
