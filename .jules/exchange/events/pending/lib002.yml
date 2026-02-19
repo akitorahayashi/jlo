@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "lib002"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "librarian"
+confidence: "high"
+
+# Content
+title: "Relocate Template System Documentation"
+statement: |
+  Documentation for the template system is located in `src/assets/templates/AGENTS.md`, treating a core operational capability as implementation detail. This violates the principle of separating specialized content into explicit subtrees, as template usage guides are buried in the source tree rather than `docs/operations/`.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/assets/templates/AGENTS.md"
+    loc:
+      - "line 1-35"
+    note: "Contains Directory Structure, Template Types, and usage instructions which belong in `docs/operations/`."
+  - path: "docs/README.md"
+    loc:
+      - "line 27"
+    note: "Explicitly links 'Template System' to the source tree location."

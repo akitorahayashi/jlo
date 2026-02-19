@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "lib003"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "librarian"
+confidence: "high"
+
+# Content
+title: "Rename Reproduction Guide to Setup Guide"
+statement: |
+  The document `docs/operations/REPRODUCTION_GUIDE.md` describes the initial setup and deployment of the Jules system, but is named 'Reproduction Guide', implying bug reproduction instructions. This ambiguity violates the principle of routing determinism from task intent to one canonical document path, as users intending to deploy the system may overlook this guide due to ambiguous naming.
+
+# Evidence supporting the observation
+evidence:
+  - path: "docs/operations/REPRODUCTION_GUIDE.md"
+    loc:
+      - "line 1-3"
+    note: "Title and description focus on 'repository state required to reproduce Jules workflow behavior', effectively describing system setup."
+  - path: "docs/operations/REPRODUCTION_GUIDE.md"
+    loc:
+      - "line 10"
+    note: "Section 'Jules GUI Initial Setup' describes deployment steps, not reproduction of issues."
