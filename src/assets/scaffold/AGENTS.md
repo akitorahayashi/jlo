@@ -20,7 +20,7 @@ Ref: [root AGENTS.md](../../AGENTS.md).
 ├── schemas/
 │   ├── narrator/changes.yml
 │   ├── observers/event.yml
-│   ├── decider/issue.yml
+│   ├── decider/requirements.yml
 │   └── innovators/proposal.yml
 ├── exchange/
 │   ├── changes.yml
@@ -46,7 +46,7 @@ References use the `prompt-assemble://` scheme to load from the embedded catalog
 |--------|-------|---------|
 | `changes.yml` | Narrator | Diff summary |
 | `event.yml` | Observers | Issue findings |
-| `issue.yml` | Decider | Requirements |
+| `requirements.yml` | Decider | Requirements |
 | `proposal.yml` | Innovators | Improvement proposals |
 | `perspective.yml` | Obs/Inn | Memory state |
 

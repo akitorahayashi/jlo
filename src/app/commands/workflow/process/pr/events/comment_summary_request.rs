@@ -14,20 +14,20 @@ const MANAGED_COMMENT_MARKER: &str = "<!-- jlo:summary-request -->";
 
 /// Summary request body for implementer PRs.
 const IMPLEMENTER_SUMMARY_REQUEST_BODY: &str =
-    include_str!("../../../../../../../assets/summary-requests/implementer.md");
+    include_str!("../../../../../../assets/summary-requests/implementer.md");
 
 /// Summary request body for integrator PRs.
 const INTEGRATOR_SUMMARY_REQUEST_BODY: &str =
-    include_str!("../../../../../../../assets/summary-requests/integrator.md");
+    include_str!("../../../../../../assets/summary-requests/integrator.md");
 
-/// Options for `workflow gh pr comment-summary-request`.
+/// Options for `workflow process pr comment-summary-request`.
 #[derive(Debug, Clone)]
 pub struct CommentSummaryRequestOptions {
     /// PR number to comment on.
     pub pr_number: u64,
 }
 
-/// Output of `workflow gh pr comment-summary-request`.
+/// Output of `workflow process pr comment-summary-request`.
 #[derive(Debug, Clone, Serialize)]
 pub struct CommentSummaryRequestOutput {
     pub schema_version: u32,

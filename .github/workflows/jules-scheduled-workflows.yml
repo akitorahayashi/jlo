@@ -117,7 +117,7 @@ jobs:
           EOF
           )
           jlo_version="$(jlo --version | cut -d ' ' -f 2)"
-          jlo workflow gh push worker-branch \
+          jlo workflow push worker-branch \
             --change-token "bootstrap" \
             --commit-message "chore: bootstrap .jules/ runtime repository [jlo ${jlo_version}]" \
             --pr-title "chore: bootstrap runtime workspace" \
@@ -337,7 +337,7 @@ jobs:
         uses: ./.github/actions/install-jlo
 
       - name: Publish proposals
-        run: jlo workflow exchange publish-proposals
+        run: jlo workflow publish-proposals
 
       - name: Validate repository
         run: jlo workflow doctor
@@ -349,7 +349,7 @@ jobs:
             echo "No proposal cleanup changes detected."
             exit 0
           fi
-          jlo workflow gh push worker-branch \
+          jlo workflow push worker-branch \
             --change-token "publish-proposals" \
             --commit-message "jules: publish innovator proposals" \
             --pr-title "chore: publish innovator proposals" \
@@ -825,7 +825,7 @@ jobs:
 
       - name: Cleanup mock artifacts for this run
         run: |
-          jlo workflow exchange clean mock --mock-tag "$JULES_MOCK_TAG"
+          jlo workflow clean-mock --mock-tag "$JULES_MOCK_TAG"
 
       - name: Validate repository
         run: jlo workflow doctor
@@ -837,7 +837,7 @@ jobs:
             echo "No mock cleanup changes detected."
             exit 0
           fi
-          jlo workflow gh push worker-branch \
+          jlo workflow push worker-branch \
             --change-token "mock-cleanup-${JULES_MOCK_TAG}" \
             --commit-message "jules: cleanup mock artifacts ${JULES_MOCK_TAG}" \
             --pr-title "chore: cleanup mock artifacts ${JULES_MOCK_TAG}" \

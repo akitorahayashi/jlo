@@ -23,7 +23,7 @@ pub struct InnovatorPerspective {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ObserverPerspective {
     pub schema_version: u32,
-    pub observer: String,
+    pub role: String,
     pub updated_at: String,
     #[serde(default)]
     pub goals: Vec<String>,

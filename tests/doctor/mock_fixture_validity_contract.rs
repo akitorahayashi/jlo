@@ -36,7 +36,7 @@ fn mock_observer_event_file_passes_doctor() {
 }
 
 #[test]
-fn mock_decider_issue_file_passes_doctor() {
+fn mock_decider_requirement_file_passes_doctor() {
     let ctx = TestContext::new();
     setup_scaffold(&ctx);
 
@@ -45,7 +45,7 @@ fn mock_decider_issue_file_passes_doctor() {
     fs::create_dir_all(&events_dir).expect("Failed to create events directory");
 
     let impl_event_id = "evt001";
-    let impl_requirement_id = "iss001";
+    let impl_requirement_id = "req001";
     fs::write(
         events_dir.join(format!("{}.yml", impl_event_id)),
         mock_event.replace("mock01", impl_event_id).replace(
@@ -71,22 +71,22 @@ fn mock_decider_issue_file_passes_doctor() {
     fs::create_dir_all(&requirements_dir).expect("Failed to create requirements directory");
 
     fs::write(
-        requirements_dir.join("impl-issue.yml"),
+        requirements_dir.join("impl-requirement.yml"),
         mock_requirement.replace("mock01", impl_requirement_id).replace("event1", impl_event_id),
     )
     .expect("Failed to write impl requirement file");
 
     fs::write(
-        requirements_dir.join("planner-issue.yml"),
+        requirements_dir.join("planner-requirement.yml"),
         mock_requirement
           .replace("mock01", planner_requirement_id)
             .replace("event1", planner_event_id)
             .replace(
                 "requires_deep_analysis: false",
-                "requires_deep_analysis: true\ndeep_analysis_reason: \"Mock issue requires architectural analysis\"",
+                "requires_deep_analysis: true\ndeep_analysis_reason: \"Mock requirement requires architectural analysis\"",
             ),
     )
-    .expect("Failed to write planner issue file");
+    .expect("Failed to write planner requirement file");
 
     ctx.cli().args(["doctor"]).assert().success();
 }

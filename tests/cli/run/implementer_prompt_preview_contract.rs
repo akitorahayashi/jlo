@@ -20,6 +20,7 @@ fn run_implementer_prompt_preview_renders_session_plan() {
         .args([
             "run",
             "implementer",
+            "--requirement",
             ".jules/exchange/requirements/test_requirement.yml",
             "--prompt-preview",
         ])

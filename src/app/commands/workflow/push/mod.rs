@@ -60,7 +60,7 @@ pub(crate) fn execute_with_adapters(
     let current_branch = git.get_current_branch()?;
     if current_branch.trim() != worker_branch {
         return Err(AppError::Validation(format!(
-            "workflow gh push worker-branch must run on '{}', current branch is '{}'",
+            "workflow push worker-branch must run on '{}', current branch is '{}'",
             worker_branch, current_branch
         )));
     }

@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
-use crate::app::commands::workflow::gh::push::{
+use crate::app::commands::workflow::push::{
     PushWorkerBranchOptions, execute as push_worker_branch,
 };
 use crate::domain::AppError;

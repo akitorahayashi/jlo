@@ -20,7 +20,7 @@
         uses: ./.github/actions/install-jlo
 
       - name: Publish proposals
-        run: jlo workflow exchange publish-proposals
+        run: jlo workflow publish-proposals
 
       - name: Validate repository
         run: jlo workflow doctor
@@ -32,7 +32,7 @@
             echo "No proposal cleanup changes detected."
             exit 0
           fi
-          jlo workflow gh push worker-branch \
+          jlo workflow push worker-branch \
             --change-token "publish-proposals" \
             --commit-message "jules: publish innovator proposals" \
             --pr-title "chore: publish innovator proposals" \

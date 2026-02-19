@@ -1,6 +1,6 @@
 schema_version: 2
 
-observer: "<observer-id>"
+role: "<role_id>"
 
 updated_at: "YYYY-MM-DD"
 

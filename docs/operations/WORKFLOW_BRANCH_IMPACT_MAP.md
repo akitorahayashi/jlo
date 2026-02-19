@@ -22,8 +22,8 @@ Branch contract covered by this map:
 | `Can't find 'action.yml' ... .github/actions/install-jlo` | Action resolution path missing in checkout | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`, `src/assets/github/actions/install-jlo/action.yml` |
 | `.jlo/.jlo-version is missing or empty` | Wrong source branch for version pin lookup | `src/assets/github/actions/install-jlo/action.yml` |
 | Worker branch sync does not converge | Bootstrap sync path mis-specified | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`, `src/assets/github/workflows/jules-workflows/components/bootstrap.yml.j2` |
-| Implementer metadata not applied | Implementer trigger/matching drifted | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`, `src/app/commands/workflow/gh/pr/process.rs` |
-| Auto-merge process fails unexpectedly | PR processing mode/retry/policy drifted | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`, `src/app/commands/workflow/gh/pr/process.rs`, `src/app/commands/workflow/gh/pr/events/enable_automerge.rs` |
+| Implementer metadata not applied | Implementer trigger/matching drifted | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`, `src/app/commands/workflow/process/pr/process.rs` |
+| Auto-merge process fails unexpectedly | PR processing mode/retry/policy drifted | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`, `src/app/commands/workflow/process/pr/process.rs`, `src/app/commands/workflow/process/pr/events/enable_automerge.rs` |
 
 ## Change-to-Impact Matrix
 

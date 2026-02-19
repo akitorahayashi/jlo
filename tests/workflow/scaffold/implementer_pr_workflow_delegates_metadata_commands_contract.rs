@@ -13,7 +13,7 @@ fn implementer_metadata_path_delegates_to_unified_process_command() {
 
     assert!(workflow.contains("process-implementer-pr-metadata:"));
     assert!(workflow.contains("'jules-implementer-*'"));
-    assert!(workflow.contains("jlo workflow gh process pr metadata"));
+    assert!(workflow.contains("jlo workflow process pr metadata"));
     assert!(workflow.contains("--fail-on-error"));
     assert!(workflow.contains("secrets.JULES_LINKED_GH_PAT"));
     assert!(workflow.contains("secrets.JLO_BOT_TOKEN"));

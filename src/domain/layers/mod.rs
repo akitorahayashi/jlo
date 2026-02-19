@@ -11,9 +11,9 @@ pub enum Layer {
     Narrator,
     /// Observers: Read source and changes, emit events (taxonomy, data_arch, consistency, qa)
     Observers,
-    /// Decider: Read events, emit issues, delete events
+    /// Decider: Read events, emit requirements, delete events
     Decider,
-    /// Planner: Read issues requiring deep analysis, expand them in-place (specifier_global)
+    /// Planner: Read requirements requiring deep analysis, expand them in-place (specifier_global)
     Planner,
     /// Implementer: Execute approved tasks, create PRs with code changes (executor_global)
     Implementer,
@@ -95,9 +95,9 @@ impl Layer {
     pub fn description(&self) -> &'static str {
         match self {
             Layer::Narrator => "Summarize codebase changes, produce changes feed for observers.",
-            Layer::Observers => "Read source and changes, emit events. Never write issues.",
-            Layer::Decider => "Read events, emit issues. Delete processed events.",
-            Layer::Planner => "Read issues requiring deep analysis, expand them in-place.",
+            Layer::Observers => "Read source and changes, emit events. Never write requirements.",
+            Layer::Decider => "Read events, emit requirements. Delete processed events.",
+            Layer::Planner => "Read requirements requiring deep analysis, expand them in-place.",
             Layer::Implementer => "Execute approved tasks, create PRs with code changes.",
             Layer::Innovators => {
                 "Generate improvement proposals from repository context and role workstations."
@@ -151,11 +151,11 @@ impl Layer {
         }
     }
 
-    /// Whether this layer is issue-driven.
+    /// Whether this layer is requirement-driven.
     ///
-    /// Issue-driven layers (Planner, Implementer) require a local issue file path.
-    /// Narrator is single-role but not issue-driven.
-    pub fn is_issue_driven(&self) -> bool {
+    /// Requirement-driven layers (Planner, Implementer) require a local requirement file path.
+    /// Narrator is single-role but not requirement-driven.
+    pub fn is_requirement_driven(&self) -> bool {
         matches!(self, Layer::Planner | Layer::Implementer)
     }
 
@@ -163,7 +163,7 @@ impl Layer {
     pub fn perspective_role_key(&self) -> Result<&'static str, crate::domain::AppError> {
         match self {
             Layer::Innovators => Ok("role"),
-            Layer::Observers => Ok("observer"),
+            Layer::Observers => Ok("role"),
             _ => Err(crate::domain::AppError::RepositoryIntegrity(format!(
                 "Unsupported layer for workstation perspective materialization: '{}'",
                 self.dir_name()
@@ -222,14 +222,14 @@ mod tests {
     }
 
     #[test]
-    fn issue_driven_layers_are_planner_and_implementer() {
-        assert!(!Layer::Narrator.is_issue_driven());
-        assert!(!Layer::Observers.is_issue_driven());
-        assert!(!Layer::Decider.is_issue_driven());
-        assert!(Layer::Planner.is_issue_driven());
-        assert!(Layer::Implementer.is_issue_driven());
-        assert!(!Layer::Innovators.is_issue_driven());
-        assert!(!Layer::Integrator.is_issue_driven());
+    fn requirement_driven_layers_are_planner_and_implementer() {
+        assert!(!Layer::Narrator.is_requirement_driven());
+        assert!(!Layer::Observers.is_requirement_driven());
+        assert!(!Layer::Decider.is_requirement_driven());
+        assert!(Layer::Planner.is_requirement_driven());
+        assert!(Layer::Implementer.is_requirement_driven());
+        assert!(!Layer::Innovators.is_requirement_driven());
+        assert!(!Layer::Integrator.is_requirement_driven());
     }
 
     #[test]
@@ -246,6 +246,11 @@ mod tests {
     #[test]
     fn perspective_role_key_for_innovators_is_role() {
         assert_eq!(Layer::Innovators.perspective_role_key().unwrap(), "role");
+    }
+
+    #[test]
+    fn perspective_role_key_for_observers_is_role() {
+        assert_eq!(Layer::Observers.perspective_role_key().unwrap(), "role");
     }
 
     #[test]

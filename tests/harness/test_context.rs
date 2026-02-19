@@ -92,14 +92,14 @@ impl TestContext {
         cmd
     }
 
-    /// Run `jlo init --remote` and assert success.
+    /// Run `jlo init remote` and assert success.
     pub(crate) fn init_remote(&self) {
-        self.cli().args(["init", "--remote"]).assert().success();
+        self.cli().args(["init", "remote"]).assert().success();
     }
 
-    /// Run `jlo init --self-hosted` and assert success.
+    /// Run `jlo init self-hosted` and assert success.
     pub(crate) fn init_self_hosted(&self) {
-        self.cli().args(["init", "--self-hosted"]).assert().success();
+        self.cli().args(["init", "self-hosted"]).assert().success();
     }
 
     /// Run bootstrap subcommands and assert success.

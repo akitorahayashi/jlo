@@ -32,7 +32,7 @@ A layer-level change means one of the following:
 | Doctor validation | Structural/schema/semantic checks iterate layers and exchange data contracts | `src/app/commands/doctor/*.rs` |
 | Requirement routing | Exchange inspect provides requirement counts for planner/implementer gating | `src/app/commands/workflow/exchange/inspect.rs`, `src/app/commands/workflow/run/*.rs` |
 | Workflow orchestration | Layer sequence is defined in workflow templates; integrator has a dedicated manual-dispatch workflow | `src/assets/github/workflows/jules-scheduled-workflows.yml.j2`, `src/assets/github/workflows/jules-integrator.yml.j2` |
-| Auto-merge qualification | Branch prefix and scope policy gates are evaluated in `jlo workflow gh process pr automerge` | `src/app/commands/workflow/gh/pr/events/enable_automerge.rs` |
+| Auto-merge qualification | Branch prefix and scope policy gates are evaluated in `jlo workflow process pr automerge` | `src/app/commands/workflow/process/pr/events/enable_automerge.rs` |
 | Mock behavior | Per-layer mock behavior is implemented in dedicated modules | `src/app/commands/run/mock/*.rs` |
 | Failure recovery | Mock residue cleanup scope is explicit and code-defined | `src/app/commands/workflow/exchange/clean/mock.rs` |
 | Tests | Integration tests assert layer structure, workflow text, and mock behavior | `tests/workflow.rs`, `tests/cli.rs`, `tests/mock.rs`, `tests/doctor.rs` |
@@ -104,7 +104,7 @@ A layer-level change means one of the following:
 
 ## Workflow Maintenance Invariants
 - Workflow kit source of truth is `src/assets/github/`; generated `.github/` files are installation outputs.
-- Auto-merge policy gates (branch-prefix policy, scope policy, draft, already-enabled) are evaluated in `src/app/commands/workflow/gh/pr/events/enable_automerge.rs`. The workflow template delegates to `jlo workflow gh pr process automerge`.
+- Auto-merge policy gates (branch-prefix policy, scope policy, draft, already-enabled) are evaluated in `src/app/commands/workflow/process/pr/events/enable_automerge.rs`. The workflow template delegates to `jlo workflow process pr automerge`.
 - Adding or removing auto-merge branch families requires updating the branch policy table in `enable_automerge.rs` and regenerating workflows.
 - `.jules/`-only scope applies to layer/publish/cleanup PRs; bootstrap sync PRs use repository-wide scope.
 - Control-plane files live under `.jlo/` on the control branch; `.jules/` is materialized by workflow bootstrap.
