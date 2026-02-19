@@ -267,7 +267,6 @@ where
     let safe_tag = sanitize_yaml_value(&config.mock_tag);
     let today = Utc::now().format("%Y-%m-%d").to_string();
     let mut created_paths = Vec::new();
-    let mut proposal_titles = Vec::new();
     let proposal_template = load_mock_asset_text("innovator_proposal.yml")?;
 
     for index in 1..=3 {
@@ -290,7 +289,6 @@ where
             .replace("__TAG__", &safe_tag);
         repository.write_file(proposal_path_str, &proposal_content)?;
         created_paths.push(proposal_path);
-        proposal_titles.push(proposal_title);
     }
 
     let perspective_path =
@@ -306,11 +304,7 @@ where
     repository.create_dir_all(workstation_dir_str)?;
 
     let perspective_template = load_mock_asset_text("innovator_perspective.yml")?;
-    let perspective_content = perspective_template
-        .replace("__ROLE__", role.as_str())
-        .replace("__TITLE_1__", &proposal_titles[2])
-        .replace("__TITLE_2__", &proposal_titles[1])
-        .replace("__TITLE_3__", &proposal_titles[0]);
+    let perspective_content = perspective_template.replace("__ROLE__", role.as_str());
     repository.write_file(perspective_path_str, &perspective_content)?;
     created_paths.push(perspective_path);
 

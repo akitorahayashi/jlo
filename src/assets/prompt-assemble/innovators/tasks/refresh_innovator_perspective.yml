@@ -1,0 +1,12 @@
+id: refresh_innovator_perspective
+title: Refresh Innovator Perspective
+
+description:
+  Update perspective.yml as durable decision memory for the next innovator run.
+
+steps:
+  - "Run this task on every innovator execution."
+  - "Rewrite repository_observations as current-state analytical memory for the next cycle."
+  - "Rewrite thinking_notes to preserve active hypotheses, tradeoffs, and rejected paths."
+  - "Keep perspective memory declarative and role-owned; do not store per-run chronology, event IDs, or ticket IDs."
+  - "Do not modify proposal artifacts in this task."

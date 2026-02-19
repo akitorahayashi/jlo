@@ -126,7 +126,7 @@ where
             }
         }
 
-        // Verify perspective.yml exists and records this proposal
+        // Verify perspective.yml exists and is valid innovator memory
         let perspective_path =
             crate::domain::workstations::paths::workstation_perspective(&jules_path, role.as_str());
         let perspective_path_str = perspective_path
@@ -139,22 +139,13 @@ where
             )));
         }
         let perspective_content = repository.read_file(perspective_path_str)?;
-        let perspective: InnovatorPerspective = serde_yaml::from_str(&perspective_content)
-            .map_err(|e| {
-                AppError::Validation(format!(
-                    "Invalid YAML in perspective {}: {}",
-                    perspective_path.display(),
-                    e
-                ))
-            })?;
-        let title_trimmed = data.title.trim();
-        if !perspective.recent_proposals.iter().any(|p| p.trim() == title_trimmed) {
-            return Err(AppError::Validation(format!(
-                "perspective.yml for '{}' does not list proposal '{}' in recent_proposals: refinement contract violated",
-                role.as_str(),
-                title_trimmed
-            )));
-        }
+        let _: InnovatorPerspective = serde_yaml::from_str(&perspective_content).map_err(|e| {
+            AppError::Validation(format!(
+                "Invalid YAML in perspective {}: {}",
+                perspective_path.display(),
+                e
+            ))
+        })?;
 
         let issue_title = format!("[innovator/{}] {}", role.as_str(), data.title.trim());
         let impact_surface = render_list(&data.impact_surface);
@@ -326,7 +317,7 @@ verification_signals:
     fn publishes_proposal_and_removes_artifact() {
         let proposal_path = ".jules/exchange/proposals/alice-improve-error-messages.yml";
         let perspective_path = ".jules/workstations/alice/perspective.yml";
-        let perspective_yaml = "schema_version: 1\nrole: alice\nfocus: \"Tests\"\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let perspective_yaml = "schema_version: 1\nrole: alice\nfocus: \"Tests\"\n";
         let repository = TestStore::new()
             .with_exists(true)
             .with_file(proposal_path, proposal_yaml())
@@ -380,7 +371,7 @@ verification_signals:
         let proposal_path = ".jules/exchange/proposals/alice-improve-error-messages.yml";
         let perspective_path = ".jules/workstations/alice/perspective.yml";
         let invalid_role_yaml = proposal_yaml().replace("role: \"alice\"", "role: \"../../etc\"");
-        let perspective_yaml = "schema_version: 1\nrole: alice\nfocus: \"Tests\"\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let perspective_yaml = "schema_version: 1\nrole: alice\nfocus: \"Tests\"\n";
         let repository = TestStore::new()
             .with_exists(true)
             .with_file(proposal_path, &invalid_role_yaml)
@@ -402,7 +393,7 @@ verification_signals:
         let perspective_path = ".jules/workstations/alice_team/perspective.yml";
         let proposal_with_underscored_role =
             proposal_yaml().replace("role: \"alice\"", "role: \"alice_team\"");
-        let perspective_yaml = "schema_version: 1\nrole: alice_team\nfocus: \"Tests\"\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let perspective_yaml = "schema_version: 1\nrole: alice_team\nfocus: \"Tests\"\n";
 
         let repository = TestStore::new()
             .with_exists(true)

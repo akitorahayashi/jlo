@@ -11,6 +11,7 @@ Layer generating improvement proposals based on workstation perspectives.
 - Quantity: Exactly 3 proposals must be emitted.
 - Naming: `<role>-<kebab-case-slug>.yml`.
 - Parallelism: Runs independently of the Narrator -> Observer -> Decider flow.
+- Memory quality: `perspective.yml` remains durable analytical memory; avoid per-run chronology and ID-based tracking text.
 
 ## Management
 - Bootstrap: `jlo workflow bootstrap` initializes and prunes `perspective.yml` based on `.jlo/config.toml`. Agents never self-initialize.
@@ -19,4 +20,6 @@ Layer generating improvement proposals based on workstation perspectives.
 ## Resources
 - Schema: `.jules/schemas/innovators/proposal.yml`
 - Tasks:
+  - prepare_ideation_scope.yml: Reads role memory and defines ideation scope.
   - create_three_proposals.yml: Generates directionally distinct proposals.
+  - refresh_innovator_perspective.yml: Updates durable innovator memory for the next run.

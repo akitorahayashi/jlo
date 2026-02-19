@@ -17,11 +17,3 @@ thinking_notes:
     - "Higher breadth can raise review overhead"
   rejected_paths:
     - "Idea/comment intermediate loop for this mock scenario"
-feedback_assimilation:
-  observer_inputs: []
-  next_focus:
-    - "Validate proposal publication and cleanup behavior"
-recent_proposals:
-  - "__TITLE_1__"
-  - "__TITLE_2__"
-  - "__TITLE_3__"

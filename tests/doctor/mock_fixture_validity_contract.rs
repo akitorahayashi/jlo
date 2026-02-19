@@ -118,12 +118,6 @@ thinking_notes:
     - "Broader option sets increase evaluation load."
   rejected_paths:
     - "Single-proposal-only execution."
-feedback_assimilation:
-  observer_inputs: []
-  next_focus:
-    - "Track proposal quality through issue outcomes."
-recent_proposals:
-  - "Improve workflow error messages"
 "#;
     fs::write(workstation_dir.join("perspective.yml"), perspective)
         .expect("Failed to write perspective");

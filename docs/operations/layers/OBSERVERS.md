@@ -10,8 +10,12 @@ Agents analyzing repository state and emitting event artifacts.
 - Scope: Modifies `pending/` events and workstation `perspective.yml`. Reads entire repo.
 - Deduplication: Avoid duplicate findings with open requirements or recent events.
 - Memory: Persistent state strictly resides in `perspective.yml`.
+- Prioritization memory: `focus_paths` in `perspective.yml` stores repository-relative areas to inspect first on subsequent runs.
+- Memory quality: goals remain durable role-owned analytical objectives and do not store run history, event IDs, or ticket IDs.
 
 ## Resources
 - Schema: `.jules/schemas/observers/event.yml`
 - Tasks:
-  - emit_events.yml: Logic for repo state analysis and event emission.
+  - prepare_scope.yml: Reads role memory and defines scope/signal filter.
+  - emit_events.yml: Emits 0-3 evidence-backed event files from scoped inspection.
+  - refresh_perspective.yml: Updates durable role memory for the next run.

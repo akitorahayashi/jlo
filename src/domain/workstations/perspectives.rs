@@ -11,8 +11,6 @@ pub struct InnovatorPerspective {
     pub schema_version: u32,
     pub role: String,
     pub focus: String,
-    #[serde(default)]
-    pub recent_proposals: Vec<String>,
 }
 
 /// Observer perspective definition.
@@ -26,17 +24,11 @@ pub struct ObserverPerspective {
     pub role: String,
     pub updated_at: String,
     #[serde(default)]
+    pub focus_paths: Vec<String>,
+    #[serde(default)]
     pub goals: Vec<String>,
     #[serde(default)]
     pub rules: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ignore: Option<Vec<String>>,
-    #[serde(default)]
-    pub log: Vec<LogEntry>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LogEntry {
-    pub at: String,
-    pub summary: String,
 }
