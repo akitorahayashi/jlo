@@ -7,6 +7,8 @@ pub enum WorkflowBootstrapCommands {
     WorkerBranch,
     /// Materialize managed files from embedded scaffold
     ManagedFiles,
+    /// Remove `.jules/exchange/changes.yml` for fresh narrator summary
+    ExchangeChanges,
 }
 
 pub fn run_workflow_bootstrap(command: WorkflowBootstrapCommands) -> Result<(), AppError> {
@@ -24,6 +26,11 @@ pub fn run_workflow_bootstrap(command: WorkflowBootstrapCommands) -> Result<(), 
         WorkflowBootstrapCommands::ManagedFiles => {
             let options = workflow::WorkflowBootstrapManagedFilesOptions { root };
             let output = workflow::bootstrap_managed_files(options)?;
+            workflow::write_workflow_output(&output)
+        }
+        WorkflowBootstrapCommands::ExchangeChanges => {
+            let options = workflow::WorkflowBootstrapExchangeChangesOptions { root };
+            let output = workflow::bootstrap_exchange_changes(options)?;
             workflow::write_workflow_output(&output)
         }
     }

@@ -2,7 +2,7 @@
 Entry agent summarizing recent git changes for downstream context.
 
 ## Interface
-- Input: Git history since previous run, `.jules/exchange/changes.yml` (if existing).
+- Input: Recent git history window from current `HEAD`.
 - Output: Updated summary at `.jules/exchange/changes.yml`.
 - Execution: `jlo run narrator`
 
@@ -11,12 +11,11 @@ Entry agent summarizing recent git changes for downstream context.
 - Exclusion: Always skip `.jules/` and `.jlo/` from diffs and summaries.
 
 ## Logic
-1. Discovery: Determine git range from `created_at` in existing `changes.yml` to `HEAD`.
+1. Discovery: Determine recent commit window ending at `HEAD`.
 2. Analysis: Analyze commits and diff stats via `narrator_prompt.j2`.
-3. Persistence: Write new summary and update the cursor for the next run.
+3. Persistence: Overwrite `.jules/exchange/changes.yml` with exactly 5 major themes.
 
 ## Resources
 - Schema: `.jules/schemas/narrator/changes.yml`
 - Tasks:
-  - bootstrap_summary.yml: Initial summary when no history exists.
-  - overwrite_summary.yml: Incremental updates to existing narrative.
+  - recent_summary.yml: Summarize the current recent history window.

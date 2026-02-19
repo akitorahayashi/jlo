@@ -10,7 +10,7 @@
 # group minor changes under a broader theme to fill all slots.
 
 schema_version: 1
-created_at: "YYYY-MM-DDTHH:MM:SSZ"  # When this file was produced (cursor for next run)
+created_at: "YYYY-MM-DD"  # UTC date when this file was produced
 
 summaries:
   - title: "<concise change theme>"

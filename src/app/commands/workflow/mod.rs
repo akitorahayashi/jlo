@@ -13,6 +13,7 @@ pub mod push;
 mod run;
 
 pub use bootstrap::{
+    WorkflowBootstrapExchangeChangesOptions, WorkflowBootstrapExchangeChangesOutput,
     WorkflowBootstrapManagedFilesOptions, WorkflowBootstrapManagedFilesOutput,
     WorkflowBootstrapWorkerBranchOptions, WorkflowBootstrapWorkerBranchOutput,
 };
@@ -29,6 +30,13 @@ pub fn bootstrap_managed_files(
     options: WorkflowBootstrapManagedFilesOptions,
 ) -> Result<WorkflowBootstrapManagedFilesOutput, AppError> {
     bootstrap::managed_files::execute(options)
+}
+
+/// Execute workflow bootstrap exchange changes cleanup.
+pub fn bootstrap_exchange_changes(
+    options: WorkflowBootstrapExchangeChangesOptions,
+) -> Result<WorkflowBootstrapExchangeChangesOutput, AppError> {
+    bootstrap::exchange_changes::execute(options)
 }
 
 /// Execute workflow bootstrap worker-branch synchronization.

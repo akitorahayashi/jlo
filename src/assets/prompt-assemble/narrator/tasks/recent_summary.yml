@@ -1,0 +1,13 @@
+id: recent_summary
+title: Summarize Recent Major Changes
+
+description:
+  Produce a fresh narrator summary from the recent commit window provided in
+  Run Context.
+
+steps:
+  - "Read .jules/schemas/narrator/changes.yml for the output structure."
+  - "Use git to inspect the provided commit window and diff stats with `.jules/` and `.jlo/` excluded."
+  - "Identify exactly 5 major change themes from the recent history."
+  - "For each theme: title (concise label), scope (affected paths/subsystem), impact (what changed and downstream effect)."
+  - "Write .jules/exchange/changes.yml with created_at set to the current UTC date (YYYY-MM-DD)."

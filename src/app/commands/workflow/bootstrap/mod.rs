@@ -7,9 +7,13 @@ use std::path::Path;
 
 use crate::domain::{AppError, JLO_DIR, VERSION_FILE};
 
+pub mod exchange_changes;
 pub mod managed_files;
 pub mod worker_branch;
 
+pub use exchange_changes::{
+    WorkflowBootstrapExchangeChangesOptions, WorkflowBootstrapExchangeChangesOutput,
+};
 pub use managed_files::{
     WorkflowBootstrapManagedFilesOptions, WorkflowBootstrapManagedFilesOutput,
 };
