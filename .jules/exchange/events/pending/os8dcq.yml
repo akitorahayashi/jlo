@@ -1,0 +1,19 @@
+schema_version: 1
+id: "os8dcq"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "consistency"
+confidence: "high"
+title: "Incorrect `jlo run` Argument Documentation"
+statement: |
+  The `README.md` documents `jlo run planner` and `jlo run implementer` with a positional path argument, but the implementation requires a named flag (`--requirement` or `-r`).
+evidence:
+  - path: "README.md"
+    loc:
+      - "jlo run planner .jules/exchange/requirements/auth-inconsistency.yml"
+    note: "Documents usage with a positional path argument."
+  - path: "src/app/cli/run.rs"
+    loc:
+      - "struct Planner"
+      - "#[arg(long, short = 'r')] requirement: PathBuf"
+    note: "Defines `requirement` as a named argument (`--requirement` or `-r`)."

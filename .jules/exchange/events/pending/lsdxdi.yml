@@ -1,0 +1,21 @@
+schema_version: 1
+id: "lsdxdi"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "consistency"
+confidence: "high"
+title: "Inaccurate `jlo workflow exchange` Command Structure"
+statement: |
+  The `README.md` documents `jlo workflow exchange` commands as subcommands (e.g., `inspect`, `publish-proposals`), but the implementation flattens them into `workflow` subcommands (e.g., `inspect-exchange`, `publish-proposals`, `clean-requirement`, `clean-mock`).
+evidence:
+  - path: "README.md"
+    loc:
+      - "jlo workflow exchange inspect"
+      - "jlo workflow exchange publish-proposals"
+    note: "Documents `exchange` as a distinct subcommand group."
+  - path: "src/app/cli/workflow/mod.rs"
+    loc:
+      - "enum WorkflowCommands"
+      - "InspectExchange"
+      - "PublishProposals"
+    note: "Defines flattened commands like `InspectExchange` directly under `WorkflowCommands`."

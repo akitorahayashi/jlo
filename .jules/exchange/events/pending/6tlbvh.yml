@@ -1,0 +1,19 @@
+schema_version: 1
+id: "6tlbvh"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "consistency"
+confidence: "high"
+title: "Incorrect `jlo init` Argument Documentation"
+statement: |
+  The `README.md` documents `jlo init` usage with flags (`--remote`, `--self-hosted`), but the implementation uses positional arguments (`remote`, `self-hosted`).
+evidence:
+  - path: "README.md"
+    loc:
+      - "jlo init (--remote | --self-hosted)"
+    note: "Documents `init` mode as flags."
+  - path: "src/app/cli/mod.rs"
+    loc:
+      - "struct Init"
+      - "mode: InitMode"
+    note: "Defines `mode` as a positional enum argument (default behavior for clap)."
