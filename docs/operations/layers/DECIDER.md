@@ -9,7 +9,7 @@ Triage center converting Observer events into requirements.
 ## Constraints
 - Scope: Reads repo; modifies `.jules/exchange/requirements/` and `events/`.
 - Identity: Stable kebab-case filenames.
-- Deep Analysis: If `requires_deep_analysis` is true, `deep_analysis_reason` must be provided.
+- Planning Gate: If `implementation_ready` is false, `planner_request_reason` must be provided.
 - Verification: `verification_criteria` must be actionable text.
 
 ## Logic

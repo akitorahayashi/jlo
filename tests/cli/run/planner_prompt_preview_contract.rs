@@ -14,7 +14,7 @@ fn run_planner_prompt_preview_renders_session_plan() {
     std::fs::create_dir_all(&requirement_dir).expect("create requirements dir");
     std::fs::write(
         requirement_dir.join("test_requirement.yml"),
-        "fingerprint: test_requirement\nid: test_requirement\ntitle: Test Requirement\nstatus: open\nrequires_deep_analysis: true\n",
+        "fingerprint: test_requirement\nid: test_requirement\ntitle: Test Requirement\nstatus: open\nimplementation_ready: false\nplanner_request_reason: \"Needs planner detailization\"\n",
     )
     .expect("write requirement");
 

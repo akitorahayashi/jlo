@@ -176,13 +176,13 @@ fn read_requirement_item(
     let map = read_yaml_mapping(store, path)?;
     let id = read_required_id(&map, path, "id")?;
     let label = read_required_string(&map, path, "label")?;
-    let requires_deep_analysis = read_required_bool(&map, path, "requires_deep_analysis")?;
+    let implementation_ready = read_required_bool(&map, path, "implementation_ready")?;
     let source_events = read_required_string_list(&map, path, "source_events")?;
 
     Ok(RequirementItem {
         path: to_repo_relative(root, path),
         label,
-        requires_deep_analysis,
+        implementation_ready,
         id,
         source_events,
     })
@@ -344,7 +344,8 @@ id: abc123
 label: bugs
 source_events:
   - abc123
-requires_deep_analysis: false
+implementation_ready: true
+planner_request_reason: ""
 "#,
         )
         .unwrap();
@@ -382,7 +383,7 @@ roles = [
         let req = &output.requirements.items[0];
         assert_eq!(req.id, "abc123");
         assert_eq!(req.label, "bugs");
-        assert!(!req.requires_deep_analysis);
+        assert!(req.implementation_ready);
         assert_eq!(req.source_events, vec!["abc123".to_string()]);
     }
 }

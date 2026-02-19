@@ -250,7 +250,7 @@ where
     let planner_source_event_ids = vec![source_event_ids[0].clone()];
     let impl_source_event_ids: Vec<String> = source_event_ids[1..].to_vec();
 
-    // Requirement 1: requires deep analysis (for planner)
+    // Requirement 1: not implementation-ready (routes to planner)
     let planner_requirement_id = generate_mock_id();
     let planner_requirement_file =
         requirements_dir.join(format!("planner-{}.yml", config.mock_tag));
@@ -281,12 +281,12 @@ where
             }
         }
 
-        mapping.insert("title".into(), "Mock requirement requiring deep analysis".into());
+        mapping.insert("title".into(), "Mock requirement requiring planner detailization".into());
         mapping.insert("priority".into(), "high".into());
-        mapping.insert("requires_deep_analysis".into(), true.into());
+        mapping.insert("implementation_ready".into(), false.into());
         mapping.insert(
-            "deep_analysis_reason".into(),
-            "Mock requirement requires architectural analysis-for-workflow-validation".into(),
+            "planner_request_reason".into(),
+            "Mock requirement needs planner detailization for workflow validation".into(),
         );
     }
 
@@ -337,7 +337,8 @@ where
         }
 
         mapping.insert("title".into(), "Mock requirement ready for implementation".into());
-        mapping.insert("requires_deep_analysis".into(), false.into());
+        mapping.insert("implementation_ready".into(), true.into());
+        mapping.insert("planner_request_reason".into(), "".into());
     }
 
     repository.write_file(

@@ -218,15 +218,16 @@ pub fn semantic_checks(
     }
 
     for path in context.requirements.values() {
-        if let Some(requires) = read_yaml_bool(path, "requires_deep_analysis", diagnostics)
-            && requires
+        if let Some(implementation_ready) =
+            read_yaml_bool(path, "implementation_ready", diagnostics)
+            && !implementation_ready
         {
-            match read_yaml_string(path, "deep_analysis_reason", diagnostics) {
+            match read_yaml_string(path, "planner_request_reason", diagnostics) {
                 Some(reason) if !reason.trim().is_empty() => {}
                 _ => {
                     diagnostics.push_error(
                         path.display().to_string(),
-                        "requires_deep_analysis true without deep_analysis_reason",
+                        "implementation_ready false without planner_request_reason",
                     );
                 }
             }
@@ -238,7 +239,7 @@ pub fn semantic_checks(
                 if days > STALE_DEEP_ANALYSIS_THRESHOLD_DAYS {
                     diagnostics.push_warning(
                         path.display().to_string(),
-                        format!("requires_deep_analysis true for {} days", days),
+                        format!("implementation_ready false for {} days", days),
                     );
                 }
             }
