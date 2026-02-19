@@ -163,7 +163,7 @@ impl Layer {
     pub fn perspective_role_key(&self) -> Result<&'static str, crate::domain::AppError> {
         match self {
             Layer::Innovators => Ok("role"),
-            Layer::Observers => Ok("observer"),
+            Layer::Observers => Ok("role"),
             _ => Err(crate::domain::AppError::RepositoryIntegrity(format!(
                 "Unsupported layer for workstation perspective materialization: '{}'",
                 self.dir_name()
@@ -249,8 +249,8 @@ mod tests {
     }
 
     #[test]
-    fn perspective_role_key_for_observers_is_observer() {
-        assert_eq!(Layer::Observers.perspective_role_key().unwrap(), "observer");
+    fn perspective_role_key_for_observers_is_role() {
+        assert_eq!(Layer::Observers.perspective_role_key().unwrap(), "role");
     }
 
     #[test]

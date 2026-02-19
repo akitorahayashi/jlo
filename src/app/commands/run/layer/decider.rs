@@ -166,6 +166,13 @@ where
     H: GitHub + ?Sized,
     W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
+    if !crate::domain::validation::validate_identifier(&config.mock_tag, false) {
+        return Err(AppError::InvalidConfig(format!(
+            "mock_tag '{}' must be a safe path component (letters, numbers, '-' or '_')",
+            config.mock_tag
+        )));
+    }
+
     let service = MockExecutionService::new(jules_path, config, git, github, repository);
 
     let timestamp = Utc::now().format("%Y%m%d%H%M%S").to_string();

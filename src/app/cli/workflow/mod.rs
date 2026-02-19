@@ -6,6 +6,7 @@ mod push;
 
 use crate::domain::AppError;
 use clap::Subcommand;
+use std::path::PathBuf;
 
 pub use bootstrap::WorkflowBootstrapCommands;
 pub use process::WorkflowProcessCommands;
@@ -59,7 +60,7 @@ pub enum WorkflowCommands {
     /// Remove a processed requirement and its source events
     CleanRequirement {
         /// Path to the requirement file
-        requirement_file: String,
+        requirement_file: PathBuf,
     },
 
     /// Clean up mock artifacts
@@ -123,6 +124,7 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
         WorkflowCommands::Push { command } => push::run_workflow_push(command),
         WorkflowCommands::CleanRequirement { requirement_file } => {
             use crate::app::commands::workflow;
+            let requirement_file = requirement_file.to_string_lossy().to_string();
             let options = workflow::exchange::ExchangeCleanRequirementOptions { requirement_file };
             let output = workflow::exchange::clean_requirement(options)?;
             workflow::write_workflow_output(&output)

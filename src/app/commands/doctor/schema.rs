@@ -590,7 +590,7 @@ fn validate_observer_perspective_data(
     diagnostics: &mut Diagnostics,
 ) {
     ensure_int(data, path, "schema_version", diagnostics, Some(2));
-    ensure_non_empty_string(data, path, "observer", diagnostics);
+    ensure_non_empty_string(data, path, "role", diagnostics);
     ensure_date(data, path, "updated_at", diagnostics);
     ensure_non_empty_sequence(data, path, "goals", diagnostics);
 
@@ -639,11 +639,11 @@ fn validate_observer_perspective_data(
         diagnostics.push_error(path.display().to_string(), "The 'log' field must be a sequence");
     }
 
-    let observer_value = get_string(data, "observer").unwrap_or_default();
-    if !observer_value.is_empty() && observer_value != role_name {
+    let role_value = get_string(data, "role").unwrap_or_default();
+    if !role_value.is_empty() && role_value != role_name {
         diagnostics.push_error(
             path.display().to_string(),
-            format!("observer '{}' does not match directory '{}'", observer_value, role_name),
+            format!("role '{}' does not match directory '{}'", role_value, role_name),
         );
     }
 }
@@ -845,7 +845,7 @@ verification_signals: ["v"]
     fn test_validate_observer_perspective_valid() {
         let yaml = r#"
 schema_version: 2
-observer: "cli_sentinel"
+role: "cli_sentinel"
 updated_at: "2023-10-27"
 goals: ["Monitor CLI"]
 rules: ["Be nice"]
@@ -866,7 +866,7 @@ log:
     fn test_validate_observer_perspective_invalid_dates() {
         let yaml = r#"
 schema_version: 2
-observer: "cli_sentinel"
+role: "cli_sentinel"
 updated_at: "2023-10-27"
 goals: ["Monitor CLI"]
 rules: []
@@ -888,7 +888,7 @@ log:
     fn test_validate_observer_perspective_missing_fields() {
         let yaml = r#"
 schema_version: 2
-observer: "cli_sentinel"
+role: "cli_sentinel"
 updated_at: "2023-10-27"
 # Missing goals, rules
 "#;
@@ -903,7 +903,7 @@ updated_at: "2023-10-27"
     fn test_validate_observer_perspective_log_not_sequence() {
         let yaml = r#"
 schema_version: 2
-observer: "cli_sentinel"
+role: "cli_sentinel"
 updated_at: "2023-10-27"
 goals: ["Monitor CLI"]
 rules: ["Be nice"]
@@ -923,7 +923,7 @@ log: "this should be a sequence"
     fn test_validate_observer_perspective_placeholder_date() {
         let yaml = r#"
 schema_version: 2
-observer: "cli_sentinel"
+role: "cli_sentinel"
 updated_at: "YYYY-MM-DD"
 goals: ["Monitor CLI"]
 rules: ["Be nice"]
