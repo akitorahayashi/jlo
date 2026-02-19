@@ -40,13 +40,10 @@ pub struct StructuralInputs<'a> {
 }
 
 pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnostics) {
-    ensure_file_exists(&crate::domain::workstations::paths::jules_readme(inputs.root), diagnostics);
-    ensure_file_exists(
-        &crate::domain::workstations::paths::project_readme(inputs.root),
-        diagnostics,
-    );
+    ensure_file_exists(&crate::domain::jules_paths::jules_readme(inputs.root), diagnostics);
+    ensure_file_exists(&crate::domain::jules_paths::project_readme(inputs.root), diagnostics);
     ensure_file_exists(&crate::domain::config::paths::config(inputs.root), diagnostics);
-    ensure_file_exists(&crate::domain::workstations::paths::version_file(inputs.root), diagnostics);
+    ensure_file_exists(&crate::domain::jules_paths::version_file(inputs.root), diagnostics);
 
     check_version_file(inputs.jules_path, env!("CARGO_PKG_VERSION"), diagnostics);
 

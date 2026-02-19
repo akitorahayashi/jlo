@@ -5,7 +5,7 @@ use std::path::Path;
 
 use crate::app::config::load_config;
 use crate::domain::config::mock_parse::{extract_branch_prefix, extract_issue_labels};
-use crate::domain::workstations;
+use crate::domain::jules_paths;
 use crate::domain::{AppError, Layer, MockConfig};
 use crate::ports::RepositoryFilesystem;
 
@@ -46,7 +46,7 @@ pub fn load_mock_config<W: RepositoryFilesystem>(
         branch_prefixes.insert(layer, prefix);
     }
 
-    let labels_path = workstations::paths::github_labels(jules_path);
+    let labels_path = jules_paths::github_labels(jules_path);
     let labels_path_str = labels_path
         .to_str()
         .ok_or_else(|| AppError::InvalidPath("Invalid labels path".to_string()))?;
