@@ -22,19 +22,26 @@ impact: |
 desired_outcome: |
   assemble_prompt uses the generic type directly.
 
-constraints: [] # list of constraints/assumptions (optional)
-risks: [] # list of known risks or regressions (optional)
+constraints:
+  - "Ensure IncludeContext struct becomes generic over L and R."
+  - "Maintain Send + Sync + 'static bounds to satisfy minijinja requirements."
+
+risks:
+  - "Potential increase in binary size due to monomorphization."
 
 # Specifics
 affected_areas:
   - "src/domain/prompt_assemble/assembler.rs"
 
 acceptance_criteria:
-  - "Box::new removed."
+  - "IncludeContext struct definition uses generics <L, R> instead of Box<dyn ...>."
+  - "assemble_prompt function no longer boxes loader or prompt_assemble_reader."
+  - "Existing tests in src/domain/prompt_assemble/assembler.rs pass without modification."
 
 verification_criteria:
-  - "cargo check passes."
+  - "Run cargo test --lib domain::prompt_assemble::assembler to verify functionality."
+  - "Inspect src/domain/prompt_assemble/assembler.rs to confirm absence of Box::new for loader/reader."
 
 # Planning Flags
-implementation_ready: false # false routes to planner; true routes to implementer
+implementation_ready: true # false routes to planner; true routes to implementer
 planner_request_reason: "Verify if boxing was needed for some specific reason." # required when implementation_ready is false
