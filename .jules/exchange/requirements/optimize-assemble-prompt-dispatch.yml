@@ -1,0 +1,40 @@
+schema_version: 2
+
+# Metadata
+id: "bnwe9a" # stable identity
+source_events:
+  - "rust01"
+title: "Optimize Assemble Prompt Dispatch"
+label: "refacts" # Must match a key in .jules/github-labels.json
+priority: "medium"
+summary: "Remove unnecessary dynamic dispatch (boxing) in assemble_prompt."
+
+# Content
+goal: |
+  Use static dispatch for PromptAssetLoader.
+
+problem: |
+  Generic function boxes the argument, defeating the purpose of generics.
+
+impact: |
+  Unnecessary allocation and vtable lookup.
+
+desired_outcome: |
+  assemble_prompt uses the generic type directly.
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "src/domain/prompt_assemble/assembler.rs"
+
+acceptance_criteria:
+  - "Box::new removed."
+
+verification_criteria:
+  - "cargo check passes."
+
+# Planning Flags
+implementation_ready: false # false routes to planner; true routes to implementer
+planner_request_reason: "Verify if boxing was needed for some specific reason." # required when implementation_ready is false

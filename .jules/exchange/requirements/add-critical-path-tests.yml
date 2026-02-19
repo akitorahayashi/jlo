@@ -1,0 +1,44 @@
+schema_version: 2
+
+# Metadata
+id: "zvq91y" # stable identity
+source_events:
+  - "cov001"
+  - "cov002"
+  - "cov003"
+title: "Add Critical Path Tests"
+label: "tests" # Must match a key in .jules/github-labels.json
+priority: "high"
+summary: "Add unit tests for critical paths: proposal validation, exchange paths, and requirement path validation."
+
+# Content
+goal: |
+  Ensure critical infrastructure is tested to prevent regressions.
+
+problem: |
+  Zero coverage on exchange paths and security-critical path validation. Missing negative tests for proposal validation.
+
+impact: |
+  Silent failures, security vulnerabilities, or regression risks.
+
+desired_outcome: |
+  High coverage on paths.rs modules and validate_requirement_path. Negative tests for publish_proposals.
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "src/domain/exchange/"
+  - "src/domain/layers/execute/"
+  - "src/app/commands/workflow/exchange/"
+
+acceptance_criteria:
+  - "Tests added for identified files."
+
+verification_criteria:
+  - "cargo test passes."
+
+# Planning Flags
+implementation_ready: false # false routes to planner; true routes to implementer
+planner_request_reason: "Plan the test cases." # required when implementation_ready is false

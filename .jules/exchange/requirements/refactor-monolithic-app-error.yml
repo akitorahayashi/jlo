@@ -1,0 +1,47 @@
+schema_version: 2
+
+# Metadata
+id: "86gl27" # stable identity
+source_events:
+  - "da0001"
+  - "rust02"
+  - "3zcrid"
+  - "on4mlo"
+title: "Refactor Monolithic App Error"
+label: "refacts" # Must match a key in .jules/github-labels.json
+priority: "high"
+summary: "Break down AppError into domain-specific error types to reduce coupling."
+
+# Content
+goal: |
+  Reduce coupling between domains by removing the central AppError enum.
+
+problem: |
+  AppError couples unrelated domains (IO, Git, Config) and forces recompilation on any change. Stringly-typed variants reduce type safety.
+
+impact: |
+  High coupling, fragile error handling, difficult to test and maintain.
+
+desired_outcome: |
+  Specific error types for each domain (e.g., GitError, ConfigError). AppError removed or reduced to a top-level wrapper only.
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "src/domain/error.rs"
+  - "src/ports/"
+  - "src/adapters/"
+
+acceptance_criteria:
+  - "AppError no longer contains domain-specific variants."
+  - "Domains define their own error types."
+
+verification_criteria:
+  - "cargo check passes."
+  - "Check src/domain/error.rs for removal of variants."
+
+# Planning Flags
+implementation_ready: false # false routes to planner; true routes to implementer
+planner_request_reason: "Please design the error hierarchy and migration strategy." # required when implementation_ready is false

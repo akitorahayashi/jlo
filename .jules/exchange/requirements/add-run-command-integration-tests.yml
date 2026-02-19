@@ -1,0 +1,40 @@
+schema_version: 2
+
+# Metadata
+id: "i406f9" # stable identity
+source_events:
+  - "mis456"
+title: "Add Run Command Integration Tests"
+label: "tests" # Must match a key in .jules/github-labels.json
+priority: "medium"
+summary: "Add integration tests for the jlo run execution loop."
+
+# Content
+goal: |
+  Verify the end-to-end behavior of jlo run.
+
+problem: |
+  Existing tests only check previews/contracts, not the actual execution loop.
+
+impact: |
+  Regressions in the main loop (LLM interaction, git ops) may go unnoticed.
+
+desired_outcome: |
+  Integration tests that simulate a full run.
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "tests/cli/run/"
+
+acceptance_criteria:
+  - "Tests added that execute the run loop."
+
+verification_criteria:
+  - "cargo test passes."
+
+# Planning Flags
+implementation_ready: false # false routes to planner; true routes to implementer
+planner_request_reason: "Design the integration test scenario." # required when implementation_ready is false

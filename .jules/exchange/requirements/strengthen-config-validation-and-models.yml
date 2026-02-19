@@ -1,0 +1,47 @@
+schema_version: 2
+
+# Metadata
+id: "c6et07" # stable identity
+source_events:
+  - "da0002"
+  - "4s99pv"
+  - "da0003"
+  - "cou789"
+title: "Strengthen Config Validation And Models"
+label: "refacts" # Must match a key in .jules/github-labels.json
+priority: "medium"
+summary: "Move validation logic from adapters to domain models and replace stringly-typed errors."
+
+# Content
+goal: |
+  Enforce valid state in domain models and improve validation robustness.
+
+problem: |
+  Validation lives in adapters (control_plane_config.rs). Models (Proposal, WorkflowGenerateConfig) are anemic. Errors are stringly-typed.
+
+impact: |
+  Invalid configurations can be created. Domain logic is scattered.
+
+desired_outcome: |
+  Domain models enforce invariants. Validation logic is inside domain structs. Typed errors for configuration issues.
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "src/domain/config/"
+  - "src/adapters/control_plane_config.rs"
+  - "src/domain/exchange/proposals/"
+
+acceptance_criteria:
+  - "WorkflowGenerateConfig validates itself."
+  - "Proposal validates itself."
+  - "Stringly-typed config errors replaced."
+
+verification_criteria:
+  - "Unit tests for domain models verify validation logic."
+
+# Planning Flags
+implementation_ready: false # false routes to planner; true routes to implementer
+planner_request_reason: "Define the validation strategy and error types." # required when implementation_ready is false

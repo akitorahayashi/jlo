@@ -1,0 +1,42 @@
+schema_version: 2
+
+# Metadata
+id: "ttxq9h" # stable identity
+source_events:
+  - "dup123"
+  - "rust03"
+title: "Deduplicate Test Doubles"
+label: "refacts" # Must match a key in .jules/github-labels.json
+priority: "medium"
+summary: "Remove duplicate TestGit and TestGitHub structs in run command."
+
+# Content
+goal: |
+  Use shared test doubles from src/testing/.
+
+problem: |
+  run command re-implements test doubles, violating DRY.
+
+impact: |
+  Maintenance burden, inconsistent test behavior.
+
+desired_outcome: |
+  run command tests use shared GitStub and GitHubStub.
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "src/app/commands/run/mod.rs"
+
+acceptance_criteria:
+  - "Local TestGit/TestGitHub removed."
+  - "Tests use src/testing/ doubles."
+
+verification_criteria:
+  - "cargo test passes."
+
+# Planning Flags
+implementation_ready: false # false routes to planner; true routes to implementer
+planner_request_reason: "Verify shared doubles cover all needs of run command." # required when implementation_ready is false
