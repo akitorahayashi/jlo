@@ -25,23 +25,41 @@ impact: |
 desired_outcome: |
   Specific error types for each domain (e.g., GitError, ConfigError). AppError removed or reduced to a top-level wrapper only.
 
-constraints: [] # list of constraints/assumptions (optional)
-risks: [] # list of known risks or regressions (optional)
+constraints:
+  - "Use `thiserror` for all domain-specific error types."
+  - "The top-level `AppError` must implement `From<DomainError>` for all new domain errors."
+  - "New error types should not be stringly-typed; use specific enum variants."
+  - "Do not modify `src/domain/roles/error.rs` or `src/domain/config/error.rs` unless necessary for the refactor."
+
+risks:
+  - "High merge conflict potential due to widespread changes in function signatures across the codebase."
+  - "Breaking changes in error handling logic if tests rely on specific `AppError` variant matching."
+  - "Regressions in error reporting format if `Display` implementations change significantly."
 
 # Specifics
 affected_areas:
   - "src/domain/error.rs"
-  - "src/ports/"
-  - "src/adapters/"
+  - "src/domain/git/error.rs"
+  - "src/domain/repository/error.rs"
+  - "src/domain/api/error.rs"
+  - "src/ports/git.rs"
+  - "src/ports/jules_client.rs"
+  - "src/adapters/local_repository/repository_filesystem.rs"
+  - "src/adapters/jules_client/jules_client.rs"
+  - "src/adapters/control_plane_config.rs"
 
 acceptance_criteria:
-  - "AppError no longer contains domain-specific variants."
-  - "Domains define their own error types."
+  - "`AppError` is reduced to a high-level wrapper containing only variants for domain errors (Git, Api, Config, Role, Setup, etc.) and generic system errors."
+  - "The `Git` trait in `src/ports/git.rs` returns `Result<T, GitError>`."
+  - "The `JulesClient` trait in `src/ports/jules_client.rs` returns `Result<T, ApiError>`."
+  - "`src/domain/error.rs` no longer contains variants like `GitError`, `JulesApiError`, or specific IO variants that belong to `RepositoryError`."
 
 verification_criteria:
-  - "cargo check passes."
-  - "Check src/domain/error.rs for removal of variants."
+  - "Run `cargo check` to ensure no compilation errors."
+  - "Run `cargo test` to verify existing tests pass with the new error types."
+  - "Verify `src/domain/git/error.rs` and `src/domain/api/error.rs` exist."
+  - "Grep for `AppError` in `src/domain/` to ensure it's not used as a return type in domain logic functions."
 
 # Planning Flags
-implementation_ready: false # false routes to planner; true routes to implementer
+implementation_ready: true # false routes to planner; true routes to implementer
 planner_request_reason: "Please design the error hierarchy and migration strategy." # required when implementation_ready is false
