@@ -326,7 +326,7 @@ verification_signals:
     fn publishes_proposal_and_removes_artifact() {
         let proposal_path = ".jules/exchange/proposals/alice-improve-error-messages.yml";
         let perspective_path = ".jules/workstations/alice/perspective.yml";
-        let perspective_yaml = "role: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let perspective_yaml = "schema_version: 1\nrole: alice\nfocus: \"Tests\"\nrecent_proposals:\n  - \"Improve error messages\"\n";
         let repository = TestStore::new()
             .with_exists(true)
             .with_file(proposal_path, proposal_yaml())
@@ -380,7 +380,7 @@ verification_signals:
         let proposal_path = ".jules/exchange/proposals/alice-improve-error-messages.yml";
         let perspective_path = ".jules/workstations/alice/perspective.yml";
         let invalid_role_yaml = proposal_yaml().replace("role: \"alice\"", "role: \"../../etc\"");
-        let perspective_yaml = "role: alice\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let perspective_yaml = "schema_version: 1\nrole: alice\nfocus: \"Tests\"\nrecent_proposals:\n  - \"Improve error messages\"\n";
         let repository = TestStore::new()
             .with_exists(true)
             .with_file(proposal_path, &invalid_role_yaml)
@@ -402,8 +402,7 @@ verification_signals:
         let perspective_path = ".jules/workstations/alice_team/perspective.yml";
         let proposal_with_underscored_role =
             proposal_yaml().replace("role: \"alice\"", "role: \"alice_team\"");
-        let perspective_yaml =
-            "role: alice_team\nrecent_proposals:\n  - \"Improve error messages\"\n";
+        let perspective_yaml = "schema_version: 1\nrole: alice_team\nfocus: \"Tests\"\nrecent_proposals:\n  - \"Improve error messages\"\n";
 
         let repository = TestStore::new()
             .with_exists(true)

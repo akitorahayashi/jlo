@@ -5,6 +5,9 @@ use serde::{Deserialize, Serialize};
 /// Originally defined as `PerspectiveData` in `publish_proposals.rs`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InnovatorPerspective {
+    pub schema_version: u32,
+    pub role: String,
+    pub focus: String,
     #[serde(default)]
     pub recent_proposals: Vec<String>,
 }

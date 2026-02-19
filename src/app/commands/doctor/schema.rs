@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use chrono::{DateTime, NaiveDate};
+use chrono::NaiveDate;
 use serde_yaml::Mapping;
 
 use crate::domain::{AppError, Layer};
@@ -12,6 +12,8 @@ use super::yaml::{
     ensure_enum, ensure_id, ensure_int, ensure_non_empty_sequence, ensure_non_empty_string,
     get_bool, get_sequence, get_string, load_yaml_mapping, read_yaml_files,
 };
+
+const DATETIME_PLACEHOLDER: &str = "YYYY-MM-DD";
 
 #[derive(Debug, Clone)]
 pub(crate) struct PromptEntry {
@@ -442,7 +444,7 @@ pub fn check_placeholders(content: &str, path: &Path, diagnostics: &mut Diagnost
         "<6_random_lowercase_alphanumeric_chars>",
         "<role>",
         "<Descriptive Title>",
-        "YYYY-MM-DD",
+        DATETIME_PLACEHOLDER,
         "<path>",
         "<condition 1>",
         "<condition 2>",
@@ -472,18 +474,22 @@ fn ensure_datetime(
     diagnostics: &mut Diagnostics,
 ) {
     let value = get_string(map, key).unwrap_or_default();
-    if value == "YYYY-MM-DDTHH:MM:SSZ" {
-        return;
-    }
-    if DateTime::parse_from_rfc3339(&value).is_err() {
+    if NaiveDate::parse_from_str(&value, "%Y-%m-%d").is_err() {
         diagnostics.push_error(
             path.display().to_string(),
-            format!("{} must be ISO 8601 datetime (YYYY-MM-DDTHH:MM:SSZ)", key),
+            format!("{} must be YYYY-MM-DD ({})", key, DATETIME_PLACEHOLDER),
         );
     }
 }
 
-fn scheduled_innovator_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<String> {
+fn get_scheduled_roles<F>(
+    root: &Path,
+    diagnostics: &mut Diagnostics,
+    role_extractor: F,
+) -> Vec<String>
+where
+    F: FnOnce(crate::domain::ControlPlaneConfig) -> Vec<String>,
+{
     let config_path = crate::domain::config::paths::config(root);
     let content = match fs::read_to_string(&config_path) {
         Ok(content) => content,
@@ -501,31 +507,26 @@ fn scheduled_innovator_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<
         }
     };
 
-    match config.schedule.innovators {
+    role_extractor(config)
+}
+
+fn scheduled_innovator_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<String> {
+    get_scheduled_roles(root, diagnostics, |config| match config.schedule.innovators {
         Some(layer) => layer.roles.into_iter().map(|role| role.name.as_str().to_string()).collect(),
         None => Vec::new(),
-    }
+    })
 }
 
 fn scheduled_observer_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<String> {
-    let config_path = crate::domain::config::paths::config(root);
-    let content = match fs::read_to_string(&config_path) {
-        Ok(content) => content,
-        Err(err) => {
-            diagnostics.push_error(config_path.display().to_string(), err.to_string());
-            return Vec::new();
-        }
-    };
-
-    let config = match crate::domain::config::parse::parse_config_content(&content) {
-        Ok(config) => config,
-        Err(err) => {
-            diagnostics.push_error(config_path.display().to_string(), err.to_string());
-            return Vec::new();
-        }
-    };
-
-    config.schedule.observers.roles.into_iter().map(|role| role.name.as_str().to_string()).collect()
+    get_scheduled_roles(root, diagnostics, |config| {
+        config
+            .schedule
+            .observers
+            .roles
+            .into_iter()
+            .map(|role| role.name.as_str().to_string())
+            .collect()
+    })
 }
 
 // --- Innovator validation functions ---
@@ -648,6 +649,8 @@ fn validate_observer_perspective_data(
         }
     } else if data.get("log").is_none() {
         diagnostics.push_error(path.display().to_string(), "Missing log section");
+    } else {
+        diagnostics.push_error(path.display().to_string(), "The 'log' field must be a sequence");
     }
 
     let observer_value = get_string(data, "observer").unwrap_or_default();
@@ -857,12 +860,12 @@ verification_signals: ["v"]
         let yaml = r#"
 schema_version: 2
 observer: "cli_sentinel"
-updated_at: "2023-10-27T10:00:00Z"
+updated_at: "2023-10-27"
 goals: ["Monitor CLI"]
 rules: ["Be nice"]
 ignore: ["ignore_me"]
 log:
-  - at: "2023-10-27T10:00:00Z"
+  - at: "2023-10-27"
     summary: "Started"
 "#;
         let data: Mapping = serde_yaml::from_str(yaml).unwrap();
@@ -890,10 +893,9 @@ log:
         let mut diagnostics = Diagnostics::default();
 
         validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
-        assert!(diagnostics.error_count() >= 2);
+        assert!(diagnostics.error_count() >= 1);
         let messages: Vec<_> = diagnostics.errors().iter().map(|e| &e.message).collect();
-        assert!(messages.iter().any(|m| m.contains("updated_at must be ISO 8601")));
-        assert!(messages.iter().any(|m| m.contains("at must be ISO 8601")));
+        assert!(messages.iter().any(|m| m.contains("at must be YYYY-MM-DD")));
     }
 
     #[test]
@@ -901,7 +903,7 @@ log:
         let yaml = r#"
 schema_version: 2
 observer: "cli_sentinel"
-updated_at: "2023-10-27T10:00:00Z"
+updated_at: "2023-10-27"
 # Missing goals, rules
 "#;
         let data: Mapping = serde_yaml::from_str(yaml).unwrap();
@@ -910,5 +912,55 @@ updated_at: "2023-10-27T10:00:00Z"
 
         validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
         assert!(diagnostics.error_count() > 0);
+    }
+    #[test]
+    fn test_validate_observer_perspective_log_not_sequence() {
+        let yaml = r#"
+schema_version: 2
+observer: "cli_sentinel"
+updated_at: "2023-10-27"
+goals: ["Monitor CLI"]
+rules: ["Be nice"]
+log: "this should be a sequence"
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("perspective.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
+        assert!(diagnostics.error_count() > 0);
+        let messages: Vec<_> = diagnostics.errors().iter().map(|e| &e.message).collect();
+        assert!(messages.iter().any(|m| m.contains("The 'log' field must be a sequence")));
+    }
+
+    #[test]
+    fn test_validate_observer_perspective_placeholder_date() {
+        let yaml = r#"
+schema_version: 2
+observer: "cli_sentinel"
+updated_at: "YYYY-MM-DD"
+goals: ["Monitor CLI"]
+rules: ["Be nice"]
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("perspective.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
+        assert!(diagnostics.error_count() > 0);
+        let messages: Vec<_> = diagnostics.errors().iter().map(|e| &e.message).collect();
+        assert!(messages.iter().any(|m| m.contains("updated_at must be YYYY-MM-DD")));
+    }
+
+    #[test]
+    fn test_check_placeholders_datetime() {
+        let content = "updated_at: YYYY-MM-DD";
+        let path = PathBuf::from("test.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        check_placeholders(content, &path, &mut diagnostics);
+        assert!(diagnostics.error_count() > 0);
+        let messages: Vec<_> = diagnostics.errors().iter().map(|e| &e.message).collect();
+        assert!(messages.iter().any(|m| m.contains("placeholder 'YYYY-MM-DD' must be replaced")));
     }
 }

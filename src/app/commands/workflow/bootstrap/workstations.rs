@@ -5,7 +5,9 @@
 use std::collections::{BTreeSet, HashMap};
 use std::path::Path;
 
+use chrono::Utc;
 use serde::Serialize;
+use serde_yaml::Value;
 
 use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::domain::PromptAssetLoader;
@@ -189,6 +191,8 @@ fn materialize_perspective_from_schema(
         serde_yaml::Value::String(role.to_string()),
     );
 
+    replace_placeholders(&mut root);
+
     serde_yaml::to_string(&root).map_err(|err| {
         AppError::RepositoryIntegrity(format!(
             "Failed to render perspective for layer '{}': {}",
@@ -196,4 +200,23 @@ fn materialize_perspective_from_schema(
             err
         ))
     })
+}
+
+fn replace_placeholders(value: &mut Value) {
+    match value {
+        Value::String(s) if s == "YYYY-MM-DD" => {
+            *s = Utc::now().date_naive().to_string();
+        }
+        Value::Mapping(map) => {
+            for (_, v) in map.iter_mut() {
+                replace_placeholders(v);
+            }
+        }
+        Value::Sequence(seq) => {
+            for v in seq.iter_mut() {
+                replace_placeholders(v);
+            }
+        }
+        _ => {}
+    }
 }
