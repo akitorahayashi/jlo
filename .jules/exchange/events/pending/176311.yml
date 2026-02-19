@@ -1,0 +1,30 @@
+schema_version: 1
+
+# Metadata
+id: "176311"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Ambiguous Terminology: Issue vs Requirement"
+statement: |
+  The domain concept 'Requirement' is frequently referred to as 'Issue' in code variables and functions, creating ambiguity with GitHub Issues. This violates the "One Concept, One Preferred Term" principle and confuses the domain model with the transport mechanism.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/workflow/run/requirements_routing.rs"
+    loc:
+      - "31"
+      - "57"
+      - "59"
+      - "93"
+      - "107"
+    note: "Variable `issues` is used to store `Requirement` file paths returned by `find_requirements`."
+
+  - path: "src/app/commands/doctor/mod.rs"
+    loc:
+      - "35"
+      - "38"
+    note: "Variables `issue_labels` and `issue_priorities` refer to Requirement metadata, not GitHub Issue metadata."

@@ -1,0 +1,20 @@
+schema_version: 1
+
+# Metadata
+id: "ce411e"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "taxonomy"
+confidence: "medium"
+
+# Content
+title: "Generic Naming: Service Suffix"
+statement: |
+  The 'Service' suffix is used in `MockExecutionService`, which is a generic term that hides the specific responsibility of the type. This is an anti-pattern as per `role.yml` ("Vague names that hide responsibility").
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/run/mock/mock_execution.rs"
+    loc:
+      - "86"
+    note: "`MockExecutionService` struct definition uses the generic 'Service' suffix."

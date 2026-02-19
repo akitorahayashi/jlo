@@ -1,0 +1,20 @@
+schema_version: 1
+
+# Metadata
+id: "c15cc4"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "taxonomy"
+confidence: "medium"
+
+# Content
+title: "Domain Coupling: ScheduleError::Toml"
+statement: |
+  The domain error type `ScheduleError` explicitly exposes the `Toml` format variant. This couples the domain model to a specific transport/serialization format, violating the "Domain vs Transport" boundary.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/config/schedule.rs"
+    loc:
+      - "9-10"
+    note: "`ScheduleError::Toml(String)` variant explicitly binds domain error to TOML format."
