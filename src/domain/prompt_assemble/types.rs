@@ -1,4 +1,20 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
+
+/// A deferred file-seeding intent produced by prompt assembly.
+///
+/// The domain computes which files need to be seeded from schema; the
+/// application layer executes the actual I/O.
+#[derive(Debug, Clone)]
+pub struct SeedOp {
+    /// Source path (schema file to copy from).
+    pub from: PathBuf,
+    /// Destination path (target file to seed into).
+    pub to: PathBuf,
+    /// Whether this seed is required. If `true`, failure to execute must be
+    /// propagated as an error.
+    pub required: bool,
+}
 
 /// Runtime context for prompt assembly.
 ///

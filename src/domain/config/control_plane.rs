@@ -31,6 +31,7 @@ impl ControlPlaneConfig {
     pub fn validate(&self) -> Result<(), AppError> {
         self.run.validate()?;
         self.jules_api.validate()?;
+        self.workflow.validate()?;
         self.schedule.validate()?;
         Ok(())
     }
@@ -168,6 +169,33 @@ pub struct WorkflowTimingConfig {
     pub runner_mode: Option<String>,
     pub cron: Option<Vec<String>>,
     pub wait_minutes_default: Option<u32>,
+}
+
+impl WorkflowTimingConfig {
+    pub fn validate(&self) -> Result<(), ConfigError> {
+        if let Some(ref crons) = self.cron {
+            if crons.is_empty() {
+                return Err(ConfigError::Invalid(
+                    "workflow.cron must contain at least one entry.".to_string(),
+                ));
+            }
+            for cron in crons {
+                if cron.trim().is_empty() {
+                    return Err(ConfigError::Invalid(
+                        "workflow.cron entries must be non-empty strings.".to_string(),
+                    ));
+                }
+            }
+        }
+        if let Some(wait) = self.wait_minutes_default
+            && wait == 0
+        {
+            return Err(ConfigError::Invalid(
+                "workflow.wait_minutes_default must be greater than 0.".to_string(),
+            ));
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

@@ -10,4 +10,4 @@ pub use error::PromptAssemblyError;
 #[allow(unused_imports)]
 pub use loader::PromptAssetLoader;
 #[allow(unused_imports)]
-pub use types::{AssembledPrompt, PromptContext};
+pub use types::{AssembledPrompt, PromptContext, SeedOp};

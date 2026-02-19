@@ -5,9 +5,7 @@ use serde::Deserialize;
 use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::detect_repository_source;
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
-use crate::domain::prompt_assemble::{
-    AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
-};
+use crate::domain::prompt_assemble::{PromptAssetLoader, PromptContext, assemble_prompt};
 use crate::domain::validation::validate_identifier;
 use crate::domain::{AppError, ControlPlaneConfig, Layer, RunOptions};
 use crate::ports::{
@@ -237,13 +235,14 @@ fn assemble_integrator_prompt<
         .with_var("candidate_branches", candidate_list)
         .with_var("repository", source);
 
-    assemble_prompt(
+    let (prompt, seed_ops) = assemble_prompt(
         jules_path,
         Layer::Integrator,
         &context,
         repository,
         crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset,
     )
-    .map(|p: AssembledPrompt| p.content)
-    .map_err(|e| AppError::InternalError(e.to_string()))
+    .map_err(|e| AppError::InternalError(e.to_string()))?;
+    super::execute_seed_ops(seed_ops, repository)?;
+    Ok(prompt.content)
 }

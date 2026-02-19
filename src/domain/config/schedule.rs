@@ -8,7 +8,7 @@ pub enum ScheduleError {
     ConfigInvalid(String),
 
     #[error("TOML format error: {0}")]
-    Toml(#[from] toml::de::Error),
+    Toml(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -43,7 +43,8 @@ pub struct Schedule {
 impl Schedule {
     #[allow(dead_code)]
     pub fn parse_toml(content: &str) -> Result<Self, ScheduleError> {
-        let schedule: Schedule = toml::from_str(content)?;
+        let schedule: Schedule =
+            toml::from_str(content).map_err(|e| ScheduleError::Toml(e.to_string()))?;
         schedule.validate()?;
         Ok(schedule)
     }
