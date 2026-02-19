@@ -24,21 +24,31 @@ impact: |
 desired_outcome: |
   High coverage on paths.rs modules and validate_requirement_path. Negative tests for publish_proposals.
 
-constraints: [] # list of constraints/assumptions (optional)
-risks: [] # list of known risks or regressions (optional)
+constraints:
+  - "Use `crate::testing::TestStore` for filesystem mocking."
+  - "Use `crate::testing::FakeGitHub` for GitHub interaction mocking."
+  - "Ensure tests handle path separators correctly (use `PathBuf` and `.join()`)."
+
+risks:
+  - "Potential test pollution if temporary files are not cleaned up (mitigated by `TestStore`)."
+  - "Path validation logic might behave differently on Windows if not tested with `std::path` abstractions."
 
 # Specifics
 affected_areas:
-  - "src/domain/exchange/"
-  - "src/domain/layers/execute/"
-  - "src/app/commands/workflow/exchange/"
+  - "src/domain/exchange/events/paths.rs"
+  - "src/domain/layers/execute/mod.rs"
+  - "src/app/commands/workflow/exchange/publish_proposals.rs"
 
 acceptance_criteria:
-  - "Tests added for identified files."
+  - "100% function coverage for `src/domain/exchange/events/paths.rs` (events_dir, events_state_dir, events_pending_dir, events_decided_dir)."
+  - "`validate_requirement_path` covers: valid path, non-existent file, path traversal attempt, path outside `.jules/exchange/requirements/`."
+  - "`publish_proposals` negative tests cover: missing title, missing problem, invalid YAML, filename mismatching role, invalid role format."
 
 verification_criteria:
-  - "cargo test passes."
+  - "Run `cargo test src/domain/exchange/events/paths.rs` and verify pass."
+  - "Run `cargo test src/domain/layers/execute/mod.rs` and verify pass."
+  - "Run `cargo test src/app/commands/workflow/exchange/publish_proposals.rs` and verify pass."
 
 # Planning Flags
-implementation_ready: false # false routes to planner; true routes to implementer
+implementation_ready: true # false routes to planner; true routes to implementer
 planner_request_reason: "Plan the test cases." # required when implementation_ready is false
