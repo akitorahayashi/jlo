@@ -90,6 +90,6 @@ max_parallel = 0
 "#;
         let result = parse_config_content(toml);
         assert!(result.is_err());
-        assert!(matches!(result, Err(AppError::InvalidConfig(_))));
+        assert!(matches!(result, Err(AppError::Config(_))));
     }
 }

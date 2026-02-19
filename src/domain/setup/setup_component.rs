@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-use crate::domain::AppError;
+use crate::domain::setup::error::SetupError;
 use crate::impl_validated_id;
 
 /// A validated setup component identifier.
@@ -14,7 +14,7 @@ use crate::impl_validated_id;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SetupComponentId(String);
 
-impl_validated_id!(SetupComponentId, true, AppError::InvalidSetupComponentId);
+impl_validated_id!(SetupComponentId, true, SetupError, SetupError::InvalidComponentId);
 
 /// Environment variable specification for a setup component.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]

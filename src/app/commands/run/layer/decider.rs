@@ -13,7 +13,9 @@ use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
-use crate::domain::{AppError, ControlPlaneConfig, Layer, MockConfig, MockOutput, RunOptions};
+use crate::domain::{
+    AppError, ConfigError, ControlPlaneConfig, Layer, MockConfig, MockOutput, RunOptions,
+};
 use crate::ports::{
     AutomationMode, Git, GitHub, JloStore, JulesStore, RepositoryFilesystem, SessionRequest,
 };
@@ -167,10 +169,11 @@ where
     W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
 {
     if !crate::domain::validation::validate_identifier(&config.mock_tag, false) {
-        return Err(AppError::InvalidConfig(format!(
+        return Err(ConfigError::Invalid(format!(
             "mock_tag '{}' must be a safe path component (letters, numbers, '-' or '_')",
             config.mock_tag
-        )));
+        ))
+        .into());
     }
 
     let service = MockExecutionService::new(jules_path, config, git, github, repository);
@@ -202,7 +205,7 @@ where
 
     // Create two mock requirements: one for planner, one for implementer
     let label = config.issue_labels.first().cloned().ok_or_else(|| {
-        AppError::InvalidConfig("No requirement labels available for mock decider".to_string())
+        ConfigError::Invalid("No requirement labels available for mock decider".to_string())
     })?;
     let mock_requirement_template = MOCK_ASSETS
         .get_file("decider_requirement.yml")
@@ -240,11 +243,12 @@ where
         .collect();
 
     if source_event_ids.len() < 2 {
-        return Err(AppError::InvalidConfig(format!(
+        return Err(ConfigError::Invalid(format!(
             "Mock decider requires at least 2 decided events for tag '{}', found {}",
             config.mock_tag,
             source_event_ids.len()
-        )));
+        ))
+        .into());
     }
 
     let planner_source_event_ids = vec![source_event_ids[0].clone()];
@@ -569,7 +573,7 @@ mod tests {
         let result = execute_mock(&jules_path, &config, &git, &github, &repository);
         assert!(result.is_err());
         assert!(
-            matches!(result, Err(AppError::InvalidConfig(msg)) if msg.contains("requires at least 2 decided events"))
+            matches!(result, Err(AppError::Config(ConfigError::Invalid(ref msg))) if msg.contains("requires at least 2 decided events"))
         );
     }
 }

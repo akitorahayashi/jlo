@@ -1,11 +1,11 @@
-use crate::domain::{AppError, Layer};
+use crate::domain::{AppError, Layer, RoleError};
 use dialoguer::Select;
 
 pub(super) fn parse_multi_role_layer(value: &str) -> Result<Layer, AppError> {
     let layer =
-        Layer::from_dir_name(value).ok_or(AppError::InvalidLayer { name: value.to_string() })?;
+        Layer::from_dir_name(value).ok_or(RoleError::InvalidLayer { name: value.to_string() })?;
     if layer.is_single_role() {
-        return Err(AppError::SingleRoleLayerTemplate(layer.dir_name().to_string()));
+        return Err(RoleError::SingleRoleLayerTemplate(layer.dir_name().to_string()).into());
     }
     Ok(layer)
 }

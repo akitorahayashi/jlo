@@ -1,7 +1,7 @@
 use crate::domain::config::WorkflowGenerateConfig;
 use crate::domain::config::parse_config_content;
 use crate::domain::config::paths;
-use crate::domain::{AppError, ControlPlaneConfig, WorkflowRunnerMode};
+use crate::domain::{AppError, ConfigError, ControlPlaneConfig, WorkflowRunnerMode};
 use crate::ports::RepositoryFilesystem;
 use std::path::Path;
 
@@ -31,12 +31,13 @@ pub fn load_workflow_generate_config(
     let workflow = config.workflow;
 
     let raw_crons = workflow.cron.ok_or_else(|| {
-        AppError::InvalidConfig("Missing workflow.cron in control plane config.".into())
+        ConfigError::Invalid("Missing workflow.cron in control plane config.".into())
     })?;
     if raw_crons.is_empty() {
-        return Err(AppError::InvalidConfig(
+        return Err(ConfigError::Invalid(
             "workflow.cron must contain at least one cron entry.".into(),
-        ));
+        )
+        .into());
     }
 
     let schedule_crons = raw_crons
@@ -52,7 +53,7 @@ pub fn load_workflow_generate_config(
         .collect::<Result<Vec<String>, _>>()?;
 
     let wait_minutes_default = workflow.wait_minutes_default.ok_or_else(|| {
-        AppError::InvalidConfig(
+        ConfigError::Invalid(
             "Missing workflow.wait_minutes_default in control plane config.".into(),
         )
     })?;
@@ -79,7 +80,7 @@ pub fn load_workflow_runner_mode(
 
 fn parse_workflow_runner_mode(raw: Option<&str>) -> Result<WorkflowRunnerMode, AppError> {
     let value = raw.ok_or_else(|| {
-        AppError::InvalidConfig("Missing workflow.runner_mode in control plane config.".into())
+        ConfigError::Invalid("Missing workflow.runner_mode in control plane config.".into())
     })?;
     value.parse::<WorkflowRunnerMode>()
 }
@@ -96,19 +97,20 @@ pub fn persist_workflow_runner_mode(
     let content = repository.read_file(config_path)?;
     let mut doc = content
         .parse::<toml_edit::DocumentMut>()
-        .map_err(|e| AppError::InvalidConfig(format!("Failed to parse {}: {}", config_path, e)))?;
+        .map_err(|e| ConfigError::Invalid(format!("Failed to parse {}: {}", config_path, e)))?;
 
     let desired_value = mode.label();
 
     let workflow_table = doc["workflow"].as_table_mut().ok_or_else(|| {
-        AppError::InvalidConfig(format!("Missing [workflow] section in {}.", config_path))
+        ConfigError::Invalid(format!("Missing [workflow] section in {}.", config_path))
     })?;
 
     if !workflow_table.contains_key("runner_mode") {
-        return Err(AppError::InvalidConfig(format!(
+        return Err(ConfigError::Invalid(format!(
             "Missing workflow.runner_mode in {}.",
             config_path
-        )));
+        ))
+        .into());
     }
 
     let item = &mut workflow_table["runner_mode"];

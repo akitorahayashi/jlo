@@ -6,7 +6,7 @@ use std::path::Path;
 use crate::app::config::load_config;
 use crate::domain::config::mock_parse::{extract_branch_prefix, extract_issue_labels};
 use crate::domain::jules_paths;
-use crate::domain::{AppError, Layer, MockConfig};
+use crate::domain::{AppError, ConfigError, Layer, MockConfig};
 use crate::ports::RepositoryFilesystem;
 
 use super::mock_tag::resolve_mock_tag;
@@ -16,20 +16,21 @@ fn load_branch_prefix_for_layer(layer: Layer) -> Result<String, AppError> {
     let content = crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset(
         &catalog_path,
     )
-    .ok_or_else(|| {
-        AppError::InvalidConfig(format!(
+    .ok_or_else(|| -> AppError {
+        ConfigError::Invalid(format!(
             "Missing contracts for layer '{}' in embedded catalog: prompt-assemble://{}",
             layer.dir_name(),
             catalog_path
         ))
+        .into()
     })?;
 
     extract_branch_prefix(&content).map_err(|e| {
-        AppError::InvalidConfig(format!(
+        AppError::from(ConfigError::Invalid(format!(
             "Invalid contracts for layer '{}': {}",
             layer.dir_name(),
             e
-        ))
+        )))
     })
 }
 
@@ -51,17 +52,18 @@ pub fn load_mock_config<W: RepositoryFilesystem>(
         .to_str()
         .ok_or_else(|| AppError::InvalidPath("Invalid labels path".to_string()))?;
     let labels_content = repository.read_file(labels_path_str).map_err(|_| {
-        AppError::InvalidConfig(format!(
+        ConfigError::Invalid(format!(
             "Missing github-labels.json for mock mode: {}",
             labels_path.display()
         ))
     })?;
     let issue_labels = extract_issue_labels(&labels_content)?;
     if issue_labels.is_empty() {
-        return Err(AppError::InvalidConfig(format!(
+        return Err(ConfigError::Invalid(format!(
             "No issue labels defined in github-labels.json: {}",
             labels_path.display()
-        )));
+        ))
+        .into());
     }
 
     let mock_tag = resolve_mock_tag()?;

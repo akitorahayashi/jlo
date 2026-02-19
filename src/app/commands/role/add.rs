@@ -2,7 +2,7 @@
 
 use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
-use crate::domain::{AppError, Layer, RoleId};
+use crate::domain::{AppError, Layer, RoleError, RoleId};
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 use super::schedule::ensure_role_scheduled;
@@ -25,10 +25,10 @@ where
     }
 
     let layer_enum = Layer::from_dir_name(layer)
-        .ok_or_else(|| AppError::InvalidLayer { name: layer.to_string() })?;
+        .ok_or_else(|| RoleError::InvalidLayer { name: layer.to_string() })?;
 
     if layer_enum.is_single_role() {
-        return Err(AppError::SingleRoleLayerTemplate(layer.to_string()));
+        return Err(RoleError::SingleRoleLayerTemplate(layer.to_string()).into());
     }
 
     let role_id = RoleId::new(role)?;
@@ -50,10 +50,11 @@ where
 
     let inserted = ensure_role_scheduled(ctx.repository(), layer_enum, &role_id)?;
     if !inserted {
-        return Err(AppError::RoleExists {
+        return Err(RoleError::AlreadyExists {
             role: role_id.as_str().to_string(),
             layer: layer_enum.dir_name().to_string(),
-        });
+        }
+        .into());
     }
 
     let jlo_path = ctx.repository().jlo_path();

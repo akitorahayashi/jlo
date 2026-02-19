@@ -2,6 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
+use crate::domain::setup::error::SetupError;
 use crate::domain::{AppError, SetupComponent, SetupComponentId};
 use crate::ports::SetupComponentCatalog;
 
@@ -84,7 +85,7 @@ impl DependencyGraph {
         if result.len() != in_degree.len() {
             let remaining: Vec<_> =
                 in_degree.iter().filter(|&(_, deg)| *deg > 0).map(|(k, _)| k.to_string()).collect();
-            return Err(AppError::CircularDependency(remaining.join(", ")));
+            return Err(SetupError::CircularDependency(remaining.join(", ")).into());
         }
 
         Ok(result)
@@ -100,9 +101,17 @@ impl DependencyGraph {
         let name_str = id.as_str();
 
         // Resolve from catalog first to get canonical identity.
-        let component = catalog.get(name_str).ok_or_else(|| AppError::SetupComponentNotFound {
-            name: name_str.to_string(),
-            available: catalog.names().iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", "),
+        let component = catalog.get(name_str).ok_or_else(|| -> AppError {
+            SetupError::ComponentNotFound {
+                name: name_str.to_string(),
+                available: catalog
+                    .names()
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            }
+            .into()
         })?;
 
         let canonical_id = &component.name;
@@ -113,7 +122,7 @@ impl DependencyGraph {
 
         if visiting.contains(canonical_id) {
             path.push(canonical_id.as_str().to_string());
-            return Err(AppError::CircularDependency(path.join(" -> ")));
+            return Err(SetupError::CircularDependency(path.join(" -> ")).into());
         }
 
         visiting.insert(canonical_id);
@@ -227,14 +236,14 @@ mod tests {
 
         let result = DependencyGraph::resolve(&["x".to_string()], &catalog);
 
-        assert!(matches!(result, Err(AppError::CircularDependency(_))));
+        assert!(matches!(result, Err(AppError::Setup(SetupError::CircularDependency(_)))));
     }
 
     #[test]
     fn invalid_component_id() {
         let catalog = TestCatalog::new(vec![]);
         let result = DependencyGraph::resolve(&["invalid/id".to_string()], &catalog);
-        assert!(matches!(result, Err(AppError::InvalidSetupComponentId(_))));
+        assert!(matches!(result, Err(AppError::Setup(SetupError::InvalidComponentId(_)))));
     }
 
     #[test]
@@ -325,7 +334,7 @@ mod tests {
                     // Property 2: Topological order must be respected.
                     prop_assert!(verify_topological_order(&sorted));
                 }
-                Err(AppError::CircularDependency(path)) => {
+                Err(AppError::Setup(SetupError::CircularDependency(path))) => {
                     // Property 3: If cycle detected, it must be a real cycle.
                     prop_assert!(!path.is_empty());
                 }

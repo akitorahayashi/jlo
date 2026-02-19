@@ -5,6 +5,7 @@ use crate::app::config::load_setup_config;
 use crate::domain::AppError;
 use crate::domain::setup::artifact_generator;
 use crate::domain::setup::dependency_graph::DependencyGraph;
+use crate::domain::setup::error::SetupError;
 use crate::ports::RepositoryFilesystem;
 
 /// Execute the setup gen command.
@@ -18,7 +19,7 @@ use crate::ports::RepositoryFilesystem;
 pub fn execute(store: &impl RepositoryFilesystem) -> Result<Vec<String>, AppError> {
     let jlo_setup = ".jlo/setup";
     if !store.file_exists(jlo_setup) {
-        return Err(AppError::SetupNotInitialized);
+        return Err(SetupError::NotInitialized.into());
     }
 
     // Load configuration
@@ -57,6 +58,7 @@ pub fn execute(store: &impl RepositoryFilesystem) -> Result<Vec<String>, AppErro
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::setup::error::SetupError;
     use crate::ports::RepositoryFilesystem;
     use crate::testing::TestStore;
 
@@ -66,7 +68,7 @@ mod tests {
 
         let result = execute(&store);
 
-        assert!(matches!(result, Err(AppError::SetupNotInitialized)));
+        assert!(matches!(result, Err(AppError::Setup(SetupError::NotInitialized))));
     }
 
     #[test]
@@ -76,7 +78,7 @@ mod tests {
 
         let result = execute(&store);
 
-        assert!(matches!(result, Err(AppError::SetupConfigMissing)));
+        assert!(matches!(result, Err(AppError::Setup(SetupError::ConfigMissing))));
     }
 
     #[test]

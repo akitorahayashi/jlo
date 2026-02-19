@@ -3,6 +3,7 @@
 use serde::Deserialize;
 
 use crate::domain::AppError;
+use crate::domain::config::error::ConfigError;
 
 #[derive(Deserialize)]
 struct ContractConfig {
@@ -16,7 +17,7 @@ pub fn extract_branch_prefix(content: &str) -> Result<String, AppError> {
     })?;
 
     if config.branch_prefix.trim().is_empty() {
-        return Err(AppError::InvalidConfig("branch_prefix cannot be empty".to_string()));
+        return Err(ConfigError::Invalid("branch_prefix cannot be empty".to_string()).into());
     }
 
     Ok(config.branch_prefix)

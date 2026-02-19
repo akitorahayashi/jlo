@@ -1,4 +1,4 @@
-use crate::domain::AppError;
+use crate::domain::roles::error::RoleError;
 use crate::impl_validated_id;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -11,7 +11,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RoleId(String);
 
-impl_validated_id!(RoleId, false, AppError::InvalidRoleId);
+impl_validated_id!(RoleId, false, RoleError, RoleError::InvalidId);
 
 impl From<RoleId> for String {
     fn from(val: RoleId) -> Self {

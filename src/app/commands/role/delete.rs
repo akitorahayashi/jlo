@@ -2,7 +2,7 @@
 
 use crate::app::AppContext;
 use crate::domain::PromptAssetLoader;
-use crate::domain::{AppError, Layer, RoleId};
+use crate::domain::{AppError, Layer, RoleError, RoleId};
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 use super::schedule::{ensure_role_scheduled, remove_role_scheduled};
@@ -25,9 +25,9 @@ where
     }
 
     let layer_enum = Layer::from_dir_name(layer)
-        .ok_or_else(|| AppError::InvalidLayer { name: layer.to_string() })?;
+        .ok_or_else(|| RoleError::InvalidLayer { name: layer.to_string() })?;
     if layer_enum.is_single_role() {
-        return Err(AppError::SingleRoleLayerTemplate(layer_enum.dir_name().to_string()));
+        return Err(RoleError::SingleRoleLayerTemplate(layer_enum.dir_name().to_string()).into());
     }
 
     let role_id = RoleId::new(role)?;
@@ -53,20 +53,22 @@ where
     })?;
 
     if !ctx.repository().file_exists(role_yml_str) {
-        return Err(AppError::RoleNotFound(format!(
+        return Err(RoleError::NotFound(format!(
             "{}/{} (missing {})",
             layer_enum.dir_name(),
             role_id.as_str(),
             role_yml_str
-        )));
+        ))
+        .into());
     }
 
     let removed = remove_role_scheduled(ctx.repository(), layer_enum, &role_id)?;
     if !removed {
-        return Err(AppError::RoleNotInConfig {
+        return Err(RoleError::NotInConfig {
             role: role_id.as_str().to_string(),
             layer: layer_enum.dir_name().to_string(),
-        });
+        }
+        .into());
     }
 
     if let Err(remove_err) = ctx.repository().remove_dir_all(role_dir_str) {
@@ -94,6 +96,7 @@ where
 mod tests {
     use super::*;
     use crate::adapters::catalogs::EmbeddedRoleTemplateStore;
+    use crate::domain::RoleError;
     use crate::ports::RepositoryFilesystem;
     use crate::testing::TestStore;
 
@@ -155,6 +158,6 @@ roles = [
         let ctx = context(repository);
 
         let err = execute(&ctx, "observers", "taxonomy").expect_err("delete should fail");
-        assert!(matches!(err, AppError::RoleNotInConfig { .. }));
+        assert!(matches!(err, AppError::Role(RoleError::NotInConfig { .. })));
     }
 }

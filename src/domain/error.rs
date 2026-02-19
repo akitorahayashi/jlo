@@ -2,6 +2,10 @@ use std::io;
 
 use thiserror::Error;
 
+use crate::domain::config::error::ConfigError;
+use crate::domain::roles::error::RoleError;
+use crate::domain::setup::error::SetupError;
+
 /// Domain-specific I/O error kind.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IoErrorKind {
@@ -43,9 +47,17 @@ pub enum AppError {
     #[error("Validation failed: {0}")]
     Validation(String),
 
-    /// Invalid configuration error.
-    #[error("Invalid configuration: {0}")]
-    InvalidConfig(String),
+    /// Configuration capability error.
+    #[error(transparent)]
+    Config(#[from] ConfigError),
+
+    /// Role capability error.
+    #[error(transparent)]
+    Role(#[from] RoleError),
+
+    /// Setup capability error.
+    #[error(transparent)]
+    Setup(#[from] SetupError),
 
     /// Invalid path error.
     #[error("Invalid path: {0}")]
@@ -89,69 +101,13 @@ pub enum AppError {
     #[error("No .jules/ repository found in current directory")]
     JulesNotFound,
 
-    /// Role identifier is invalid.
-    #[error("Invalid role identifier '{0}': must be alphanumeric with hyphens or underscores")]
-    InvalidRoleId(String),
-
-    /// Setup component identifier is invalid.
-    #[error(
-        "Invalid setup component identifier '{0}': must be alphanumeric with hyphens, underscores, or periods"
-    )]
-    InvalidSetupComponentId(String),
-
-    /// Layer identifier is invalid.
-    #[error(
-        "Invalid layer '{name}': must be one of Narrator, Observers, Decider, Planner, Implementer, Innovators, Integrator"
-    )]
-    InvalidLayer { name: String },
-
-    /// Role not found (fuzzy match failed).
-    #[error("Role '{0}' not found")]
-    RoleNotFound(String),
-
-    /// Role already exists at the specified location.
-    #[error("Role '{role}' already exists in layer '{layer}'")]
-    RoleExists { role: String, layer: String },
-
-    /// Duplicate role requested.
-    #[error("Duplicate role '{0}' specified")]
-    DuplicateRoleRequest(String),
-
-    /// Setup repository not initialized (.jlo/setup/ missing).
-    #[error("Setup not initialized. Run 'jlo init --remote' or 'jlo init --self-hosted' first.")]
-    SetupNotInitialized,
-
-    /// Setup config file missing (tools.yml).
-    #[error("Setup config file (tools.yml) not found")]
-    SetupConfigMissing,
-
-    /// Circular dependency detected during resolution.
-    #[error("Circular dependency detected: {0}")]
-    CircularDependency(String),
-
-    /// Setup component not found in catalog.
-    #[error("Setup component '{name}' not found. Available: {available}")]
-    SetupComponentNotFound { name: String, available: String },
-
     /// Path traversal attempt detected.
     #[error("Path traversal detected: '{0}' escapes repository root")]
     PathTraversal(String),
 
-    /// Invalid setup component metadata.
-    #[error("Invalid setup component metadata for '{component}': {reason}")]
-    InvalidSetupComponentMetadata { component: String, reason: String },
-
-    /// Malformed setup environment TOML file.
-    #[error("Malformed setup environment TOML: {0}")]
-    MalformedEnvToml(String),
-
     /// Control plane config file missing (.jlo/config.toml).
     #[error("Control plane config not found. Create .jlo/config.toml first.")]
     ControlPlaneConfigMissing,
-
-    /// Role not found in config for layer.
-    #[error("Role '{role}' not found in config for layer '{layer}'")]
-    RoleNotInConfig { role: String, layer: String },
 
     /// Exchange schedule error.
     #[error(transparent)]
@@ -160,10 +116,6 @@ pub enum AppError {
     /// Requirement file not found at path.
     #[error("Requirement file not found: {0}")]
     RequirementFileNotFound(String),
-
-    /// Template creation not supported for single-role layers.
-    #[error("Layer '{0}' is single-role and does not support custom roles. Use the built-in role.")]
-    SingleRoleLayerTemplate(String),
 
     /// Prompt assembly failed.
     #[error(transparent)]

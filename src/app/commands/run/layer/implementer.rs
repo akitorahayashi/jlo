@@ -11,7 +11,9 @@ use crate::domain::layers::execute::validate_requirement_path;
 use crate::domain::prompt_assemble::{
     AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
 };
-use crate::domain::{AppError, ControlPlaneConfig, Layer, MockConfig, MockOutput, RunOptions};
+use crate::domain::{
+    AppError, ConfigError, ControlPlaneConfig, Layer, MockConfig, MockOutput, RunOptions,
+};
 use crate::ports::{
     AutomationMode, Git, GitHub, JloStore, JulesClient, JulesStore, RepositoryFilesystem,
     SessionRequest,
@@ -297,10 +299,11 @@ where
     let (label, requirement_id) =
         parse_requirement_for_branch(&requirement_content, requirement_path)?;
     if !config.issue_labels.contains(&label) {
-        return Err(AppError::InvalidConfig(format!(
+        return Err(ConfigError::Invalid(format!(
             "Issue label '{}' is not defined in github-labels.json",
             label
-        )));
+        ))
+        .into());
     }
 
     // Implementer branch format: jules-implementer-<label>-<short_description>
@@ -380,7 +383,7 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
     }
 
     let parsed: RequirementMeta = serde_yaml::from_str(content).map_err(|err| {
-        AppError::InvalidConfig(format!(
+        ConfigError::Invalid(format!(
             "Requirement file must be valid YAML ({}): {}",
             path.display(),
             err
@@ -388,25 +391,27 @@ fn parse_requirement_for_branch(content: &str, path: &Path) -> Result<(String, S
     })?;
 
     let label = parsed.label.filter(|value| !value.trim().is_empty()).ok_or_else(|| {
-        AppError::InvalidConfig(format!("Requirement file missing label field: {}", path.display()))
+        ConfigError::Invalid(format!("Requirement file missing label field: {}", path.display()))
     })?;
     if !crate::domain::validation::validate_identifier(&label, false) {
-        return Err(AppError::InvalidConfig(format!(
+        return Err(ConfigError::Invalid(format!(
             "Requirement label '{}' is not a safe path component: {}",
             label,
             path.display()
-        )));
+        ))
+        .into());
     }
 
     let id = parsed.id.filter(|value| !value.trim().is_empty()).ok_or_else(|| {
-        AppError::InvalidConfig(format!("Requirement file missing id field: {}", path.display()))
+        ConfigError::Invalid(format!("Requirement file missing id field: {}", path.display()))
     })?;
 
     if id.len() != 6 || !id.chars().all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit()) {
-        return Err(AppError::InvalidConfig(format!(
+        return Err(ConfigError::Invalid(format!(
             "Issue id must be 6 lowercase alphanumeric chars: {}",
             path.display()
-        )));
+        ))
+        .into());
     }
 
     Ok((label, id))
@@ -492,7 +497,7 @@ mod tests {
             execute_mock(&jules_path, &options, &runtime, &config, &git, &github, &repository);
         assert!(result.is_err());
         assert!(
-            matches!(result, Err(AppError::InvalidConfig(msg)) if msg.contains("not defined in github-labels.json"))
+            matches!(result, Err(AppError::Config(ConfigError::Invalid(ref msg))) if msg.contains("not defined in github-labels.json"))
         );
     }
 }

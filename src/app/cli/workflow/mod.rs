@@ -85,7 +85,7 @@ pub enum WorkflowCommands {
 
 pub fn parse_layer(value: &str) -> Result<crate::domain::Layer, AppError> {
     crate::domain::Layer::from_dir_name(value)
-        .ok_or_else(|| AppError::InvalidLayer { name: value.to_string() })
+        .ok_or_else(|| crate::domain::RoleError::InvalidLayer { name: value.to_string() }.into())
 }
 
 pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {

@@ -4,6 +4,7 @@ use include_dir::{Dir, include_dir};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
+use crate::domain::setup::error::SetupError;
 use crate::domain::{AppError, EnvSpec, SetupComponent, SetupComponentId};
 use crate::ports::SetupComponentCatalog;
 
@@ -60,30 +61,28 @@ impl EmbeddedSetupComponentCatalog {
                 continue;
             };
 
-            let meta_content = meta_file.contents_utf8().ok_or_else(|| {
-                AppError::InvalidSetupComponentMetadata {
+            let meta_content =
+                meta_file.contents_utf8().ok_or_else(|| SetupError::InvalidComponentMetadata {
                     component: dir_name.to_string(),
                     reason: "meta.toml is not valid UTF-8".to_string(),
-                }
-            })?;
+                })?;
 
             let script_content = script_file.contents_utf8().ok_or_else(|| {
-                AppError::InvalidSetupComponentMetadata {
+                SetupError::InvalidComponentMetadata {
                     component: dir_name.to_string(),
                     reason: "install.sh is not valid UTF-8".to_string(),
                 }
             })?;
 
-            let meta: SetupComponentMeta = toml::from_str(meta_content).map_err(|e| {
-                AppError::InvalidSetupComponentMetadata {
+            let meta: SetupComponentMeta =
+                toml::from_str(meta_content).map_err(|e| SetupError::InvalidComponentMetadata {
                     component: dir_name.to_string(),
                     reason: e.to_string(),
-                }
-            })?;
+                })?;
 
             let name_str = meta.name.as_deref().unwrap_or(dir_name);
             let name_id = SetupComponentId::new(name_str).map_err(|_| {
-                AppError::InvalidSetupComponentMetadata {
+                SetupError::InvalidComponentMetadata {
                     component: dir_name.to_string(),
                     reason: format!("Invalid setup component name '{}'", name_str),
                 }
@@ -92,7 +91,7 @@ impl EmbeddedSetupComponentCatalog {
             let mut dependencies = Vec::new();
             for dep in &meta.dependencies {
                 dependencies.push(SetupComponentId::new(dep).map_err(|_| {
-                    AppError::InvalidSetupComponentMetadata {
+                    SetupError::InvalidComponentMetadata {
                         component: dir_name.to_string(),
                         reason: format!("Invalid dependency name '{}'", dep),
                     }
@@ -102,13 +101,14 @@ impl EmbeddedSetupComponentCatalog {
             if let Some(duplicate_key) =
                 meta.vars.keys().find(|key| meta.secrets.contains_key(*key))
             {
-                return Err(AppError::InvalidSetupComponentMetadata {
+                return Err(SetupError::InvalidComponentMetadata {
                     component: dir_name.to_string(),
                     reason: format!(
                         "Environment key '{}' is declared in both [vars] and [secrets]",
                         duplicate_key
                     ),
-                });
+                }
+                .into());
             }
 
             let mut env = Vec::new();
