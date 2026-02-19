@@ -1,0 +1,20 @@
+schema_version: 2
+id: bd5aff
+source_events:
+- '20e014'
+title: Mock requirement requiring planner detailization
+label: bugs
+priority: high
+summary: 'This is a mock requirement created by jlo --mock for workflow-scaffold validation. Mock tag: mock-run-22181829759'
+goal: Mock goal description for validation
+problem: Mock problem description for validation
+impact: Mock impact description for validation
+desired_outcome: Mock desired outcome for validation
+affected_areas:
+- workflow
+acceptance_criteria:
+- Mock acceptance criterion
+verification_criteria:
+- mock verification check
+implementation_ready: false
+planner_request_reason: Mock requirement needs planner detailization for workflow validation
