@@ -2,7 +2,7 @@
 //!
 //! This port encapsulates domain-facing operations on the `.jules/` directory.
 //! Path semantics are owned by `domain::layers::paths`, `domain::exchange::*`,
-//! and `domain::workstations::paths`;
+//! and `domain::jules_paths`;
 //! this port owns only the I/O behavior.
 
 use std::path::PathBuf;

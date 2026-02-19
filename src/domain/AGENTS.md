@@ -15,7 +15,8 @@ src/domain/
 ├── roles/            # Role taxonomy
 ├── schedule/         # Schedule models
 ├── setup/            # Setup component logic
-├── workstations/     # .jlo/.jules path semantics
+├── jlo_paths.rs      # .jlo path semantics
+├── jules_paths.rs    # .jules path semantics
 ├── error.rs          # AppError & Result types
 └── mod.rs
 ```

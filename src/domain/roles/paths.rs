@@ -1,13 +1,13 @@
 use std::path::{Path, PathBuf};
 
-use crate::domain::{Layer, workstations};
+use crate::domain::{Layer, jlo_paths};
 
 /// The role definition file name.
 pub const ROLE_FILENAME: &str = "role.yml";
 
 /// `.jlo/roles/`
 pub fn roles_dir(root: &Path) -> PathBuf {
-    workstations::paths::jlo_dir(root).join("roles")
+    jlo_paths::jlo_dir(root).join("roles")
 }
 
 /// `.jlo/roles/<layer>/`

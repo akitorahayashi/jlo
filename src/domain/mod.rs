@@ -1,6 +1,8 @@
 pub mod config;
 pub mod error;
 pub mod exchange;
+pub mod jlo_paths;
+pub mod jules_paths;
 pub mod layers;
 pub mod prompt_assemble;
 pub mod roles;
@@ -8,7 +10,6 @@ pub mod validation;
 pub mod version;
 
 pub mod setup;
-pub mod workstations;
 
 #[allow(unused_imports)]
 pub use config::WorkflowGenerateConfig;
@@ -27,7 +28,8 @@ pub use layers::execute::{JulesClientFactory, RequirementPathInfo, RunResult};
 pub use prompt_assemble::{PromptAssemblyError, PromptAssetLoader};
 pub use roles::{BuiltinRoleEntry, RoleId};
 
+pub use jlo_paths::JLO_DIR;
+pub use jules_paths::{JULES_DIR, VERSION_FILE};
 #[allow(unused_imports)]
 pub use setup::{DependencyGraph, EnvSpec, SetupComponent, SetupComponentId, SetupEnvArtifacts};
 pub use version::Version;
-pub use workstations::{JLO_DIR, JULES_DIR, VERSION_FILE};

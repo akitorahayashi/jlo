@@ -3,20 +3,12 @@ use std::path::{Path, PathBuf};
 /// The `.jules/` runtime directory name.
 pub const JULES_DIR: &str = ".jules";
 
-/// The `.jlo/` control-plane directory name.
-pub const JLO_DIR: &str = ".jlo";
-
 /// The version marker file name.
 pub const VERSION_FILE: &str = ".jlo-version";
 
 /// `.jules/`
 pub fn jules_dir(root: &Path) -> PathBuf {
     root.join(JULES_DIR)
-}
-
-/// `.jlo/`
-pub fn jlo_dir(root: &Path) -> PathBuf {
-    root.join(JLO_DIR)
 }
 
 /// `.jules/JULES.md`
