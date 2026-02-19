@@ -568,12 +568,34 @@ fn validate_innovator_perspective(path: &Path, role_name: &str, diagnostics: &mu
         Some(data) => data,
         None => return,
     };
+    validate_innovator_perspective_data(&data, path, role_name, diagnostics);
+}
 
-    ensure_int(&data, path, "schema_version", diagnostics, Some(1));
-    ensure_non_empty_string(&data, path, "role", diagnostics);
-    ensure_non_empty_string(&data, path, "focus", diagnostics);
+fn validate_innovator_perspective_data(
+    data: &Mapping,
+    path: &Path,
+    role_name: &str,
+    diagnostics: &mut Diagnostics,
+) {
+    ensure_int(data, path, "schema_version", diagnostics, Some(1));
+    ensure_non_empty_string(data, path, "role", diagnostics);
+    ensure_non_empty_string(data, path, "focus", diagnostics);
 
-    let role_value = get_string(&data, "role").unwrap_or_default();
+    if data.get("feedback_assimilation").is_some() {
+        diagnostics.push_error(
+            path.display().to_string(),
+            "feedback_assimilation is deprecated for innovator perspective and must be removed",
+        );
+    }
+
+    if data.get("recent_proposals").is_some() {
+        diagnostics.push_error(
+            path.display().to_string(),
+            "recent_proposals is deprecated for innovator perspective and must be removed",
+        );
+    }
+
+    let role_value = get_string(data, "role").unwrap_or_default();
     if !role_value.is_empty() && role_value != role_name {
         diagnostics.push_error(
             path.display().to_string(),
@@ -601,6 +623,19 @@ fn validate_observer_perspective_data(
     ensure_date(data, path, "updated_at", diagnostics);
     ensure_non_empty_sequence(data, path, "goals", diagnostics);
 
+    if let Some(focus_paths) = get_sequence(data, "focus_paths") {
+        for (idx, item) in focus_paths.iter().enumerate() {
+            if !item.is_string() {
+                diagnostics.push_error(
+                    path.display().to_string(),
+                    format!("focus_paths[{}] must be a string", idx),
+                );
+            }
+        }
+    } else if data.get("focus_paths").is_some() {
+        diagnostics.push_error(path.display().to_string(), "focus_paths must be a sequence");
+    }
+
     // rules can be empty initially
     if let Some(rules) = get_sequence(data, "rules") {
         for (idx, item) in rules.iter().enumerate() {
@@ -626,24 +661,6 @@ fn validate_observer_perspective_data(
         }
     } else if data.get("ignore").is_some() {
         diagnostics.push_error(path.display().to_string(), "ignore must be a sequence");
-    }
-
-    if let Some(log) = get_sequence(data, "log") {
-        for (idx, entry) in log.iter().enumerate() {
-            if let serde_yaml::Value::Mapping(map) = entry {
-                ensure_date(map, path, "at", diagnostics);
-                ensure_non_empty_string(map, path, "summary", diagnostics);
-            } else {
-                diagnostics.push_error(
-                    path.display().to_string(),
-                    format!("log[{}] must be a mapping", idx),
-                );
-            }
-        }
-    } else if data.get("log").is_none() {
-        diagnostics.push_error(path.display().to_string(), "Missing log section");
-    } else {
-        diagnostics.push_error(path.display().to_string(), "The 'log' field must be a sequence");
     }
 
     let role_value = get_string(data, "role").unwrap_or_default();
@@ -850,17 +867,60 @@ verification_signals: ["v"]
     }
 
     #[test]
+    fn test_validate_innovator_perspective_valid() {
+        let yaml = r#"
+schema_version: 1
+role: "architect"
+focus: "High-leverage intervention design"
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("perspective.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        validate_innovator_perspective_data(&data, &path, "architect", &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
+    }
+
+    #[test]
+    fn test_validate_innovator_perspective_deprecated_fields() {
+        let yaml = r#"
+schema_version: 1
+role: "architect"
+focus: "High-leverage intervention design"
+feedback_assimilation:
+  observer_inputs: []
+recent_proposals:
+  - "Proposal A"
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("perspective.yml");
+        let mut diagnostics = Diagnostics::default();
+
+        validate_innovator_perspective_data(&data, &path, "architect", &mut diagnostics);
+        assert!(diagnostics.error_count() >= 2);
+        let messages: Vec<_> = diagnostics.errors().iter().map(|e| &e.message).collect();
+        assert!(
+            messages.iter().any(
+                |m| m.contains("feedback_assimilation is deprecated for innovator perspective")
+            )
+        );
+        assert!(
+            messages
+                .iter()
+                .any(|m| m.contains("recent_proposals is deprecated for innovator perspective"))
+        );
+    }
+
+    #[test]
     fn test_validate_observer_perspective_valid() {
         let yaml = r#"
 schema_version: 2
 role: "cli_sentinel"
 updated_at: "2023-10-27"
+focus_paths: ["src/app", "src/assets/prompt-assemble/observers"]
 goals: ["Monitor CLI"]
 rules: ["Be nice"]
 ignore: ["ignore_me"]
-log:
-  - at: "2023-10-27"
-    summary: "Started"
 "#;
         let data: Mapping = serde_yaml::from_str(yaml).unwrap();
         let path = PathBuf::from("perspective.yml");
@@ -875,12 +935,9 @@ log:
         let yaml = r#"
 schema_version: 2
 role: "cli_sentinel"
-updated_at: "2023-10-27"
+updated_at: "invalid-date"
 goals: ["Monitor CLI"]
 rules: []
-log:
-  - at: "invalid-date"
-    summary: "Started"
 "#;
         let data: Mapping = serde_yaml::from_str(yaml).unwrap();
         let path = PathBuf::from("perspective.yml");
@@ -889,7 +946,7 @@ log:
         validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
         assert!(diagnostics.error_count() >= 1);
         let messages: Vec<_> = diagnostics.errors().iter().map(|e| &e.message).collect();
-        assert!(messages.iter().any(|m| m.contains("at must be YYYY-MM-DD")));
+        assert!(messages.iter().any(|m| m.contains("updated_at must be YYYY-MM-DD")));
     }
 
     #[test]
@@ -907,15 +964,16 @@ updated_at: "2023-10-27"
         validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
         assert!(diagnostics.error_count() > 0);
     }
+
     #[test]
-    fn test_validate_observer_perspective_log_not_sequence() {
+    fn test_validate_observer_perspective_focus_paths_not_sequence() {
         let yaml = r#"
 schema_version: 2
 role: "cli_sentinel"
 updated_at: "2023-10-27"
+focus_paths: "src/app"
 goals: ["Monitor CLI"]
 rules: ["Be nice"]
-log: "this should be a sequence"
 "#;
         let data: Mapping = serde_yaml::from_str(yaml).unwrap();
         let path = PathBuf::from("perspective.yml");
@@ -924,7 +982,7 @@ log: "this should be a sequence"
         validate_observer_perspective_data(&data, &path, "cli_sentinel", &mut diagnostics);
         assert!(diagnostics.error_count() > 0);
         let messages: Vec<_> = diagnostics.errors().iter().map(|e| &e.message).collect();
-        assert!(messages.iter().any(|m| m.contains("The 'log' field must be a sequence")));
+        assert!(messages.iter().any(|m| m.contains("focus_paths must be a sequence")));
     }
 
     #[test]

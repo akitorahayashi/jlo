@@ -1,7 +1,7 @@
 mod diagnostics;
 mod naming;
 mod quality;
-mod schema;
+mod schemas;
 mod semantic;
 mod structure;
 mod yaml;
@@ -48,10 +48,10 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         &mut diagnostics,
     );
 
-    let prompt_entries = schema::collect_prompt_entries(jules_path, &mut diagnostics)?;
+    let prompt_entries = schemas::collect_prompt_entries(jules_path, &mut diagnostics)?;
 
-    schema::schema_checks(
-        schema::SchemaInputs {
+    schemas::schema_checks(
+        schemas::SchemaInputs {
             jules_path,
             root: &root,
             issue_labels: &issue_labels,
