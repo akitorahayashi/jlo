@@ -37,3 +37,6 @@ profile:
     - "Cite the screen/component definition and where the text, layout, and states are defined"
     - "When reporting interaction issues, cite the triggering action and the missing/incorrect state transition"
     - "When reporting robustness issues, cite the condition (e.g., empty data, long strings) and the resulting breakage"
+
+# Intentional prohibitions by users
+constraint: []

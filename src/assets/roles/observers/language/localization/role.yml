@@ -38,3 +38,6 @@ profile:
     - Citation of the specific technical token or domain identity that was compromised.
     - Analysis of string length or formatting relative to the UI component's intended capacity.
     - Documentation of referential mismatches found in related target-language files.
+
+# Intentional prohibitions by users
+constraint: []

@@ -45,3 +45,6 @@ profile:
     - "For branching findings, cite the decision point and the missing observable condition."
     - "For granularity findings, cite where abstraction prevents reliable execution for the task class."
     - "For overlap findings, cite duplicated scope statements across skills and the unresolved ownership boundary."
+
+# Intentional prohibitions by users
+constraint: []

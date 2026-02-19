@@ -34,3 +34,6 @@ profile:
     - "Cite the type definition(s) and at least one transformation/call site that demonstrates the flow"
     - "When claiming duplication, list each competing definition and where it is used"
     - "When claiming missing validation, point to the boundary entry point(s) that accept the data"
+
+# Intentional prohibitions by users
+constraint: []

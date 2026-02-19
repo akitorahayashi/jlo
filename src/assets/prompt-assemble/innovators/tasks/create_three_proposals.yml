@@ -5,11 +5,10 @@ objective:
   Generate exactly three independent, high-leverage intervention proposals.
 
 steps:
-  - Inspect repository behavior, boundaries, and runtime assumptions within the prepared analysis scope.
+  - Inspect repository behavior, boundaries, and runtime assumptions using role.yml focus, analysis_points, and constraints as scope policy.
   - Generate exactly three proposals with clearly different directions and non-overlapping core interventions.
   - For each proposal, copy schema with cp .jules/schemas/innovators/proposal.yml .jules/exchange/proposals/<role>-<kebab-case-slug>.yml, then fill all fields.
   - Each proposal must include importance, impact_surface, implementation_cost, consistency_risks, and verification_signals.
-  - Do not update perspective.yml in this task.
 
 output:
   - .jules/exchange/proposals/<role>-<kebab-case-slug>.yml (3 files)

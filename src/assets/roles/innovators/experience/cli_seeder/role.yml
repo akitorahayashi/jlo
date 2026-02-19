@@ -42,3 +42,6 @@ profile:
     - "Clear migration path and exit strategy for existing CLIs."
     - "Explicit, reproducible exception and rejection conditions."
     - "Attached verifiable evidence allows re-verification."
+
+# Intentional prohibitions by users
+constraint: []

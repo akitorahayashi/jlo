@@ -96,32 +96,6 @@ fn mock_innovator_proposal_file_passes_doctor() {
     let ctx = TestContext::new();
     setup_scaffold(&ctx);
 
-    let workstation_dir = ctx.jules_path().join("workstations/alice");
-    fs::create_dir_all(&workstation_dir).expect("Failed to create workstation directory");
-
-    let perspective = r#"schema_version: 1
-role: "alice"
-focus: "High-leverage improvements"
-repository_observations:
-  codebase_state:
-    - "Current architecture has repetitive workflow logic."
-  startup_and_runtime_contracts:
-    - "Bootstrap owns workstation lifecycle."
-  decision_quality_gaps:
-    - "Proposal alternatives are currently sparse."
-  leverage_candidates:
-    - "Generate three proposals per run."
-thinking_notes:
-  hypotheses:
-    - "Parallel ideation increases option quality."
-  tradeoff_assessment:
-    - "Broader option sets increase evaluation load."
-  rejected_paths:
-    - "Single-proposal-only execution."
-"#;
-    fs::write(workstation_dir.join("perspective.yml"), perspective)
-        .expect("Failed to write perspective");
-
     let proposals_dir = ctx.jules_path().join("exchange/proposals");
     fs::create_dir_all(&proposals_dir).expect("Failed to create proposals directory");
     let proposal = r#"schema_version: 1

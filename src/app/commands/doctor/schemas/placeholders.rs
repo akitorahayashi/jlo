@@ -2,7 +2,8 @@ use std::fs;
 use std::path::Path;
 
 use crate::app::commands::doctor::diagnostics::Diagnostics;
-use crate::domain::workstations::perspectives::DATETIME_PLACEHOLDER;
+
+const DATE_PLACEHOLDER: &str = "YYYY-MM-DD";
 
 pub fn check_placeholders_file(path: &Path, diagnostics: &mut Diagnostics) {
     let content = match fs::read_to_string(path) {
@@ -21,7 +22,7 @@ pub fn check_placeholders(content: &str, path: &Path, diagnostics: &mut Diagnost
         "<6_random_lowercase_alphanumeric_chars>",
         "<role>",
         "<Descriptive Title>",
-        DATETIME_PLACEHOLDER,
+        DATE_PLACEHOLDER,
         "<path>",
         "<condition 1>",
         "<condition 2>",

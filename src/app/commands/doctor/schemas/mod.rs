@@ -2,7 +2,6 @@ pub mod changes;
 pub mod contracts;
 mod dates;
 pub mod events;
-pub mod perspective;
 pub mod placeholders;
 pub mod proposals;
 pub mod requirements;
@@ -18,15 +17,10 @@ use crate::domain::{AppError, Layer};
 use self::changes::validate_changes_file;
 use self::contracts::validate_contracts;
 use self::events::validate_event_file;
-use self::perspective::innovator::validate_innovator_perspective;
-use self::perspective::observer::validate_observer_perspective;
 use self::placeholders::check_placeholders_file;
 use self::proposals::validate_innovator_proposal;
 use self::requirements::validate_requirement_file;
-use self::roles::{
-    scheduled_innovator_roles, scheduled_observer_roles, validate_innovator_role_file,
-    validate_role_file,
-};
+use self::roles::{validate_innovator_role_file, validate_role_file};
 
 #[derive(Debug, Clone)]
 pub(crate) struct PromptEntry {
@@ -134,36 +128,6 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
                 );
                 check_placeholders_file(&entry, diagnostics);
             }
-        }
-
-        for role_name in scheduled_innovator_roles(inputs.root, diagnostics) {
-            let perspective_path = crate::domain::workstations::paths::workstation_perspective(
-                inputs.jules_path,
-                &role_name,
-            );
-            if !perspective_path.exists() {
-                diagnostics.push_error(
-                    perspective_path.display().to_string(),
-                    "Missing innovator workstation perspective.yml",
-                );
-                continue;
-            }
-            validate_innovator_perspective(&perspective_path, &role_name, diagnostics);
-        }
-
-        for role_name in scheduled_observer_roles(inputs.root, diagnostics) {
-            let perspective_path = crate::domain::workstations::paths::workstation_perspective(
-                inputs.jules_path,
-                &role_name,
-            );
-            if !perspective_path.exists() {
-                diagnostics.push_error(
-                    perspective_path.display().to_string(),
-                    "Missing observer workstation perspective.yml",
-                );
-                continue;
-            }
-            validate_observer_perspective(&perspective_path, &role_name, diagnostics);
         }
 
         let proposals_dir =

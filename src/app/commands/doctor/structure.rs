@@ -112,11 +112,6 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             crate::domain::exchange::proposals::paths::proposals_dir(inputs.jules_path),
             diagnostics,
         );
-
-        ensure_directory_exists(
-            crate::domain::workstations::paths::workstations_dir(inputs.jules_path),
-            diagnostics,
-        );
     }
 }
 
@@ -287,8 +282,6 @@ mod tests {
 
         // Proposal exchange directory
         exchange.child("proposals").create_dir_all().unwrap();
-
-        temp.child(".jules/workstations").create_dir_all().unwrap();
     }
 
     #[test]

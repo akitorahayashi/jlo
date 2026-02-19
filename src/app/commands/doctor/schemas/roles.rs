@@ -1,5 +1,4 @@
 use serde_yaml::Mapping;
-use std::fs;
 use std::path::Path;
 
 use crate::app::commands::doctor::diagnostics::Diagnostics;
@@ -23,6 +22,7 @@ pub fn validate_role(data: &Mapping, path: &Path, role_dir: &Path, diagnostics: 
     if layer_value != "observers" {
         diagnostics.push_error(path.display().to_string(), "layer must be 'observers'");
     }
+    validate_constraint(data, path, diagnostics);
 
     // Check profile section
     match data.get("profile") {
@@ -58,53 +58,6 @@ pub fn validate_role(data: &Mapping, path: &Path, role_dir: &Path, diagnostics: 
     }
 }
 
-pub fn scheduled_innovator_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<String> {
-    get_scheduled_roles(root, diagnostics, |config| match config.schedule.innovators {
-        Some(layer) => layer.roles.into_iter().map(|role| role.name.as_str().to_string()).collect(),
-        None => Vec::new(),
-    })
-}
-
-pub fn scheduled_observer_roles(root: &Path, diagnostics: &mut Diagnostics) -> Vec<String> {
-    get_scheduled_roles(root, diagnostics, |config| {
-        config
-            .schedule
-            .observers
-            .roles
-            .into_iter()
-            .map(|role| role.name.as_str().to_string())
-            .collect()
-    })
-}
-
-fn get_scheduled_roles<F>(
-    root: &Path,
-    diagnostics: &mut Diagnostics,
-    role_extractor: F,
-) -> Vec<String>
-where
-    F: FnOnce(crate::domain::ControlPlaneConfig) -> Vec<String>,
-{
-    let config_path = crate::domain::config::paths::config(root);
-    let content = match fs::read_to_string(&config_path) {
-        Ok(content) => content,
-        Err(err) => {
-            diagnostics.push_error(config_path.display().to_string(), err.to_string());
-            return Vec::new();
-        }
-    };
-
-    let config = match crate::domain::config::parse::parse_config_content(&content) {
-        Ok(config) => config,
-        Err(err) => {
-            diagnostics.push_error(config_path.display().to_string(), err.to_string());
-            return Vec::new();
-        }
-    };
-
-    role_extractor(config)
-}
-
 pub fn validate_innovator_role_file(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
     let data = match load_yaml_mapping(path, diagnostics) {
         Some(data) => data,
@@ -117,6 +70,7 @@ pub fn validate_innovator_role_file(path: &Path, role_dir: &Path, diagnostics: &
     if layer_value != "innovators" {
         diagnostics.push_error(path.display().to_string(), "layer must be 'innovators'");
     }
+    validate_constraint(&data, path, diagnostics);
 
     match data.get("profile") {
         Some(serde_yaml::Value::Mapping(profile_map)) => {
@@ -143,5 +97,26 @@ pub fn validate_innovator_role_file(path: &Path, role_dir: &Path, diagnostics: &
             path.display().to_string(),
             format!("role '{}' does not match directory '{}'", role_value, role_name),
         );
+    }
+}
+
+fn validate_constraint(data: &Mapping, path: &Path, diagnostics: &mut Diagnostics) {
+    match data.get("constraint") {
+        Some(serde_yaml::Value::Sequence(items)) => {
+            for (index, item) in items.iter().enumerate() {
+                if !item.is_string() {
+                    diagnostics.push_error(
+                        path.display().to_string(),
+                        format!("constraint[{}] must be a string", index),
+                    );
+                }
+            }
+        }
+        Some(_) => {
+            diagnostics.push_error(path.display().to_string(), "'constraint' must be a sequence");
+        }
+        None => {
+            diagnostics.push_error(path.display().to_string(), "Missing constraint section");
+        }
     }
 }

@@ -1,8 +1,5 @@
 {{ section("Role", include_required(".jlo/roles/observers/" ~ role ~ "/role.yml")) }}
 {{ section("Layer Contracts", include_required("prompt-assemble://observers/contracts.yml")) }}
-{{ section("Workstation Perspective", include_required(".jules/workstations/" ~ role ~ "/perspective.yml")) }}
-{{ section("Task: Prepare Scope", include_required("prompt-assemble://observers/tasks/prepare_scope.yml")) }}
 {{ section("Task: Emit Events", include_required("prompt-assemble://observers/tasks/emit_events.yml")) }}
-{{ section("Task: Refresh Perspective", include_required("prompt-assemble://observers/tasks/refresh_perspective.yml")) }}
 {{ section("Change Summary", include_optional(".jules/exchange/changes.yml")) }}
 {{ section("Principles", include_required("prompt-assemble://principle.yml")) }}

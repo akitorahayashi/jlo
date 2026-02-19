@@ -8,7 +8,6 @@ purpose:
 
 constraints:
   - "Do not emit directionally duplicate proposals within the same run"
-  - "Keep perspective memory declarative and role-owned; do not store per-run chronology or ID-based tracking text"
   - "Repository investigation is mandatory: codebase behavior, runtime assumptions, and open requirement context"
   - "All outputs must conform to the corresponding schema in .jules/schemas/innovators/"
   - "Proposals must introduce boundary, behavior, or decision-quality changes — not local refactoring findings"

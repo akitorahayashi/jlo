@@ -42,3 +42,6 @@ profile:
     - "For constraint findings, cite the expected failure path and the exact rule intended to prevent it."
     - "For background-context findings, cite the ambiguous rule and the missing structural information required to apply it."
     - "For volatility findings, cite unstable statements and explain why they should be replaced by durable structural guidance."
+
+# Intentional prohibitions by users
+constraint: []
