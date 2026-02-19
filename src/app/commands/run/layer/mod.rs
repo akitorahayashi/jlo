@@ -19,27 +19,26 @@ pub(super) fn execute_seed_ops<L: PromptAssetLoader>(
     loader: &L,
 ) -> Result<(), AppError> {
     for op in ops {
-        if let Some(parent) = op.to.parent() {
-            match loader.ensure_asset_dir(parent) {
-                Ok(()) => {}
-                Err(err) if op.required => {
-                    return Err(AppError::PromptAssembly(PromptAssemblyError::SchemaSeedError {
-                        path: op.to.to_string_lossy().to_string(),
-                        reason: err.to_string(),
-                    }));
-                }
-                Err(_) => continue,
+        let make_error = |err: std::io::Error| {
+            AppError::PromptAssembly(PromptAssemblyError::SchemaSeedError {
+                path: op.to.to_string_lossy().to_string(),
+                reason: err.to_string(),
+            })
+        };
+
+        if let Some(parent) = op.to.parent()
+            && let Err(err) = loader.ensure_asset_dir(parent)
+        {
+            if op.required {
+                return Err(make_error(err));
             }
+            continue;
         }
-        match loader.copy_asset(&op.from, &op.to) {
-            Ok(_) => {}
-            Err(err) if op.required => {
-                return Err(AppError::PromptAssembly(PromptAssemblyError::SchemaSeedError {
-                    path: op.to.to_string_lossy().to_string(),
-                    reason: err.to_string(),
-                }));
-            }
-            Err(_) => {}
+
+        if let Err(err) = loader.copy_asset(&op.from, &op.to)
+            && op.required
+        {
+            return Err(make_error(err));
         }
     }
     Ok(())
