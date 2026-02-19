@@ -1,0 +1,19 @@
+schema_version: 1
+id: "dup123"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "qa"
+confidence: "high"
+title: "Redundant Test Doubles in Run Command"
+statement: |
+  The `src/app/commands/run/mod.rs` module defines `TestGit` and `TestGitHub` structs locally, duplicating the functionality of shared test doubles in `src/testing/ports/`. This violates DRY and increases maintenance burden.
+evidence:
+  - path: "src/app/commands/run/mod.rs"
+    loc: ["142-263"]
+    note: "Local definition of TestGit and TestGitHub."
+  - path: "src/testing/ports/git_stub.rs"
+    loc: ["1"]
+    note: "Shared GitStub implementation."
+  - path: "src/testing/ports/github_stub.rs"
+    loc: ["1"]
+    note: "Shared GitHubStub implementation."

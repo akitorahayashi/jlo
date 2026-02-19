@@ -1,0 +1,16 @@
+schema_version: 1
+id: "mis456"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "qa"
+confidence: "high"
+title: "Missing Execution Loop Integration Tests"
+statement: |
+  Integration tests for the `run` command (`tests/cli/run/`) are limited to prompt previews and error contracts. The actual execution loop (LLM interaction, artifact creation, git operations) is not tested in the integration suite, leaving a critical gap in verifying the "Behavior Over Internals" principle.
+evidence:
+  - path: "tests/cli/run/"
+    loc: ["1"]
+    note: "Contains only *contract.rs tests focused on previews/errors."
+  - path: "tests/cli/run/narrator_skips_when_no_codebase_changes_contract.rs"
+    loc: ["18"]
+    note: "Uses --prompt-preview, avoiding execution."
