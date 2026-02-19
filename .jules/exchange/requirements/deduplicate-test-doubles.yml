@@ -23,20 +23,31 @@ impact: |
 desired_outcome: |
   run command tests use shared GitStub and GitHubStub.
 
-constraints: [] # list of constraints/assumptions (optional)
-risks: [] # list of known risks or regressions (optional)
+constraints:
+  - "Shared `FakeGit` must be enhanced to simulate `rm --` commands and track pushed branches to support existing `run` command tests."
+  - "Do not introduce breaking changes to `FakeGit` public API."
+
+risks:
+  - "Modifying shared `FakeGit` might affect other tests relying on it (e.g., `publish_proposals.rs`, `process.rs`)."
+  - "Shared `FakeGitHub` uses incremental IDs while `TestGitHub` used fixed IDs; ensure test assertions are robust."
 
 # Specifics
 affected_areas:
   - "src/app/commands/run/mod.rs"
+  - "src/testing/ports/git_stub.rs"
 
 acceptance_criteria:
-  - "Local TestGit/TestGitHub removed."
-  - "Tests use src/testing/ doubles."
+  - "Local `TestGit` and `TestGitHub` structs removed from `src/app/commands/run/mod.rs`."
+  - "All tests in `src/app/commands/run/mod.rs` use shared `FakeGit` and `FakeGitHub`."
+  - "Shared `FakeGit` supports `run_command` for file removal simulation."
+  - "Shared `FakeGit` supports tracking pushed branches."
+  - "All existing tests pass."
 
 verification_criteria:
-  - "cargo test passes."
+  - "Run `cargo test --package jlo --lib app::commands::run` to verify `run` command tests."
+  - "Run `cargo test --package jlo --lib testing::ports` to verify shared doubles."
+  - "Run `cargo test` (full suite) to ensure no regressions."
 
 # Planning Flags
-implementation_ready: false # false routes to planner; true routes to implementer
+implementation_ready: true # false routes to planner; true routes to implementer
 planner_request_reason: "Verify shared doubles cover all needs of run command." # required when implementation_ready is false
