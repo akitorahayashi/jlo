@@ -467,21 +467,6 @@ fn ensure_date(map: &serde_yaml::Mapping, path: &Path, key: &str, diagnostics: &
     }
 }
 
-fn ensure_datetime(
-    map: &serde_yaml::Mapping,
-    path: &Path,
-    key: &str,
-    diagnostics: &mut Diagnostics,
-) {
-    let value = get_string(map, key).unwrap_or_default();
-    if NaiveDate::parse_from_str(&value, "%Y-%m-%d").is_err() {
-        diagnostics.push_error(
-            path.display().to_string(),
-            format!("{} must be YYYY-MM-DD ({})", key, DATETIME_PLACEHOLDER),
-        );
-    }
-}
-
 fn get_scheduled_roles<F>(
     root: &Path,
     diagnostics: &mut Diagnostics,
@@ -607,7 +592,7 @@ fn validate_observer_perspective_data(
 ) {
     ensure_int(data, path, "schema_version", diagnostics, Some(2));
     ensure_non_empty_string(data, path, "observer", diagnostics);
-    ensure_datetime(data, path, "updated_at", diagnostics);
+    ensure_date(data, path, "updated_at", diagnostics);
     ensure_non_empty_sequence(data, path, "goals", diagnostics);
 
     // rules can be empty initially
@@ -620,7 +605,7 @@ fn validate_observer_perspective_data(
                 );
             }
         }
-    } else {
+    } else if data.get("rules").is_some() {
         diagnostics.push_error(path.display().to_string(), "rules must be a sequence");
     }
 
@@ -633,12 +618,14 @@ fn validate_observer_perspective_data(
                 );
             }
         }
+    } else if data.get("ignore").is_some() {
+        diagnostics.push_error(path.display().to_string(), "ignore must be a sequence");
     }
 
     if let Some(log) = get_sequence(data, "log") {
         for (idx, entry) in log.iter().enumerate() {
             if let serde_yaml::Value::Mapping(map) = entry {
-                ensure_datetime(map, path, "at", diagnostics);
+                ensure_date(map, path, "at", diagnostics);
                 ensure_non_empty_string(map, path, "summary", diagnostics);
             } else {
                 diagnostics.push_error(

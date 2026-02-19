@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// Innovator perspective definition.
 ///
-/// Originally defined as `PerspectiveData` in `publish_proposals.rs`.
+/// Originally defined as `Perspective` in `publish_proposals.rs`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InnovatorPerspective {
     pub schema_version: u32,
@@ -12,6 +12,11 @@ pub struct InnovatorPerspective {
     pub recent_proposals: Vec<String>,
 }
 
+/// Observer perspective definition.
+///
+/// Currently used for domain modeling and serialization compliance.
+/// Validation logic is handled via `serde_yaml::Mapping` in `doctor/schema.rs`
+/// to allow for partial validation and better error reporting.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ObserverPerspective {
     pub schema_version: u32,
