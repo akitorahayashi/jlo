@@ -1,0 +1,20 @@
+schema_version: 1
+
+# Metadata
+id: "cov003"
+requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+created_at: "2026-02-19"
+author_role: "cov"
+confidence: "high"
+
+# Content
+title: "Security-critical requirement path validation is untested"
+statement: |
+  The `validate_requirement_path` function enforces that requirement files must reside within the designated `.jules/exchange/requirements/` directory. This security and correctness constraint has complex logic (canonicalization, component checking) but zero test coverage, leaving it vulnerable to regression or bypass.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/layers/execute/mod.rs"
+    loc:
+      - "validate_requirement_path"
+    note: "Function implements security constraint but lacks tests."
