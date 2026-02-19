@@ -39,13 +39,12 @@ impl RequirementYamlBuilder {
     }
 
     pub fn build(self) -> String {
-        let planner_request_reason = if self.implementation_ready {
-            String::new()
-        } else if self.planner_request_reason.trim().is_empty() {
-            "Planner elaboration required".to_string()
-        } else {
-            self.planner_request_reason
-        };
+        let planner_request_reason =
+            if !self.implementation_ready && self.planner_request_reason.trim().is_empty() {
+                "Planner elaboration required".to_string()
+            } else {
+                self.planner_request_reason
+            };
 
         format!(
             "label: {}\nimplementation_ready: {}\nplanner_request_reason: {}\n",

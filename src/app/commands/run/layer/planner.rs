@@ -242,6 +242,35 @@ fn execute_prompt_preview<
     Ok(())
 }
 
+fn promote_requirement_for_mock_planner(requirement_content: &str) -> String {
+    let mut has_implementation_ready = false;
+    let mut rewritten_lines = Vec::new();
+
+    for line in requirement_content.lines() {
+        let trimmed = line.trim_start();
+        let indent_len = line.len().saturating_sub(trimmed.len());
+        let indent = &line[..indent_len];
+
+        if trimmed.starts_with("implementation_ready:") {
+            rewritten_lines.push(format!("{indent}implementation_ready: true"));
+            has_implementation_ready = true;
+            continue;
+        }
+
+        rewritten_lines.push(line.to_string());
+    }
+
+    if !has_implementation_ready {
+        rewritten_lines.push("implementation_ready: true".to_string());
+    }
+
+    let mut updated = rewritten_lines.join("\n");
+    if requirement_content.ends_with('\n') {
+        updated.push('\n');
+    }
+    updated
+}
+
 fn execute_mock<G, H, W>(
     _jules_path: &Path,
     options: &RunOptions,
@@ -277,11 +306,10 @@ where
 
     let requirement_content = repository.read_file(requirement_path_str)?;
 
-    // Update requirement: preserve decider reason and set implementation_ready to true
-    let updated_content = requirement_content
-        .replace("implementation_ready: false", "implementation_ready: true")
-        + &format!(
-            r#"
+    // Update requirement: route to implementer while preserving planner_request_reason
+    let mut updated_content = promote_requirement_for_mock_planner(&requirement_content);
+    updated_content.push_str(&format!(
+        r#"
 # Mock planner expansion
 expanded_at: "{}"
 expanded_by: mock-planner
@@ -296,9 +324,9 @@ analysis_details: |
   ## Implementation Notes
   - No actual analysis performed (mock mode)
 "#,
-            Utc::now().to_rfc3339(),
-            config.mock_tag
-        );
+        Utc::now().to_rfc3339(),
+        config.mock_tag
+    ));
 
     repository.write_file(requirement_path_str, &updated_content)?;
 
@@ -327,4 +355,32 @@ analysis_details: |
         mock_pr_url: pr.url,
         mock_tag: config.mock_tag.clone(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::promote_requirement_for_mock_planner;
+
+    #[test]
+    fn promote_requirement_sets_ready_and_preserves_reason() {
+        let original = r#"id: abc123
+label: bugs
+implementation_ready: false
+planner_request_reason: "Needs architectural decomposition"
+"#;
+
+        let updated = promote_requirement_for_mock_planner(original);
+        assert!(updated.contains("implementation_ready: true"));
+        assert!(updated.contains("planner_request_reason: \"Needs architectural decomposition\""));
+        assert!(!updated.contains("implementation_ready: false"));
+    }
+
+    #[test]
+    fn promote_requirement_adds_missing_ready_flag() {
+        let original = "id: abc123\nlabel: docs\n";
+
+        let updated = promote_requirement_for_mock_planner(original);
+        assert!(updated.contains("implementation_ready: true"));
+        assert!(!updated.contains("planner_request_reason:"));
+    }
 }

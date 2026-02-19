@@ -96,13 +96,6 @@ pub fn validate_requirement(
             "planner_request_reason required when implementation_ready is false",
         );
     }
-
-    if implementation_ready && !planner_reason.trim().is_empty() {
-        diagnostics.push_error(
-            path.display().to_string(),
-            "planner_request_reason must be empty when implementation_ready is true",
-        );
-    }
 }
 
 #[cfg(test)]
@@ -167,5 +160,35 @@ verification_criteria: ["test commands"]
         validate_requirement(&data, &path, &labels, &priorities, &mut diagnostics);
         assert!(diagnostics.error_count() > 0);
         assert!(diagnostics.errors()[0].message.contains("implementation_ready is required"));
+    }
+
+    #[test]
+    fn test_validate_requirement_allows_reason_when_implementation_ready_true() {
+        let yaml = r#"
+schema_version: 2
+implementation_ready: true
+planner_request_reason: "History retained for context"
+id: "abc123"
+source_events: ["ev1234"]
+title: "Bug fix"
+label: "bugs"
+priority: "high"
+summary: "Summary"
+goal: "Goal"
+problem: "Problem"
+impact: "Impact"
+desired_outcome: "Outcome"
+affected_areas: ["src/"]
+acceptance_criteria: ["Done"]
+verification_criteria: ["test commands"]
+"#;
+        let data: Mapping = serde_yaml::from_str(yaml).unwrap();
+        let path = PathBuf::from("test.yml");
+        let mut diagnostics = Diagnostics::default();
+        let labels = vec!["bugs".to_string()];
+        let priorities = vec!["high".to_string()];
+
+        validate_requirement(&data, &path, &labels, &priorities, &mut diagnostics);
+        assert_eq!(diagnostics.error_count(), 0);
     }
 }
