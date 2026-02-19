@@ -39,3 +39,6 @@ profile:
     - "The proposal identifies one missing capability and one clear ownership boundary."
     - "The proposal defines required changes to .jlo/ control-plane files: role.yml, contracts, and schedule."
     - "The proposal explains the introduction that changes team-level decision quality."
+
+# Intentional prohibitions by users
+constraint: []

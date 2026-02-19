@@ -40,3 +40,6 @@ profile:
     - "When flagging security risk, cite exact permission/secret scopes and their reachable execution context"
     - "When proposing efficiency changes, cite current critical-path bottlenecks and measurable split/cache opportunities"
     - "When proposing release-path changes, cite current lineage gaps and the target provenance/rollback contract"
+
+# Intentional prohibitions by users
+constraint: []

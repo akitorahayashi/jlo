@@ -45,3 +45,6 @@ profile:
     - "Explicit behavior specs for destructive operations."
     - "Organization of I/O contracts (outputs, exit codes)."
     - "Evidence of naming consistency."
+
+# Intentional prohibitions by users
+constraint: []

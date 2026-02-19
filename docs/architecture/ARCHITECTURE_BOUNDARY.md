@@ -60,7 +60,6 @@ The following dependencies are prohibited:
 | `events/` | Event schema, state model, parsing, and validation. |
 | `requirements/` | Requirement schema, parse/validation, and requirement-event linkage. |
 | `ideas/` | Innovator idea/proposal domain models and lifecycle semantics. |
-| `workstations/` | State schema, perspective constraints, and pure-policy lifecycle (Ensure/Prune). |
 | `layers/` | Layer identity, metadata, and contract semantics. |
 | `config/` | `config.toml` domain model, parser, and pure validation policies. |
 | `schedule/` | Schedule domain model, parser, and pure validation policies consumed from `.jlo/config.toml`. |
@@ -113,5 +112,5 @@ Each serves a distinct test layer.
 - One responsibility has one owner module.
 - Duplicate loaders/parsers across `domain`, `app`, and `adapters` are not allowed.
 - New filesystem layout logic for `.jlo/` or `.jules/` is added only in the corresponding
-  `src/domain/{workstations,config,schedule,roles,layers,exchange}/` owner module.
+  `src/domain/{config,schedule,roles,layers,exchange}/` owner module.
 - Migration steps may be incremental, but each step preserves these boundaries.

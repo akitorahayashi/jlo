@@ -15,7 +15,6 @@ mod run;
 pub use bootstrap::{
     WorkflowBootstrapManagedFilesOptions, WorkflowBootstrapManagedFilesOutput,
     WorkflowBootstrapWorkerBranchOptions, WorkflowBootstrapWorkerBranchOutput,
-    WorkflowBootstrapWorkstationsOptions, WorkflowBootstrapWorkstationsOutput,
 };
 pub use doctor::{WorkflowDoctorOptions, WorkflowDoctorOutput};
 pub use generate::{WorkflowGenerateOptions, WorkflowGenerateOutput};
@@ -30,13 +29,6 @@ pub fn bootstrap_managed_files(
     options: WorkflowBootstrapManagedFilesOptions,
 ) -> Result<WorkflowBootstrapManagedFilesOutput, AppError> {
     bootstrap::managed_files::execute(options)
-}
-
-/// Execute workflow bootstrap workstation reconciliation.
-pub fn bootstrap_workstations(
-    options: WorkflowBootstrapWorkstationsOptions,
-) -> Result<WorkflowBootstrapWorkstationsOutput, AppError> {
-    bootstrap::workstations::execute(options)
 }
 
 /// Execute workflow bootstrap worker-branch synchronization.

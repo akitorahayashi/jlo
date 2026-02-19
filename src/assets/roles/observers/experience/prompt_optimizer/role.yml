@@ -40,3 +40,6 @@ profile:
     - "Cite where runtime context is injected or resolved when claiming missing or misplaced decision logic"
     - "For each optimization claim, provide the prevented failure mode and the acceptance check it strengthens"
     - "When flagging duplication/conflict, cite at least two concrete instruction sites and the semantic mismatch"
+
+# Intentional prohibitions by users
+constraint: []

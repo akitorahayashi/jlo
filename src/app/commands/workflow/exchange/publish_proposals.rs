@@ -7,13 +7,10 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
-use crate::domain::PromptAssetLoader;
 use crate::domain::exchange::proposals::Proposal;
-use crate::domain::workstations::perspectives::InnovatorPerspective;
 use crate::domain::{AppError, RoleId};
-use crate::ports::{Git, GitHub, IssueInfo, JloStore, JulesStore, RepositoryFilesystem};
+use crate::ports::{GitHub, IssueInfo, JulesStore, RepositoryFilesystem};
 
 #[derive(Debug, Clone)]
 pub struct ExchangePublishProposalsOptions {}
@@ -42,26 +39,19 @@ pub fn execute(
         return Err(AppError::JulesNotFound);
     }
 
-    let jules_path = repository.jules_path();
-    let root = jules_path.parent().unwrap_or(Path::new(".")).to_path_buf();
-    let git = GitCommandAdapter::new(root.canonicalize().map_err(|e| {
-        AppError::InternalError(format!("Failed to resolve repository root: {}", e))
-    })?);
     let github = crate::adapters::github::GitHubCommandAdapter::new();
 
-    execute_with(&repository, &options, &git, &github)
+    execute_with(&repository, &options, &github)
 }
 
 /// Core logic, injectable for testing.
-fn execute_with<W, G, H>(
+fn execute_with<W, H>(
     repository: &W,
     _options: &ExchangePublishProposalsOptions,
-    _git: &G,
     github: &H,
 ) -> Result<ExchangePublishProposalsOutput, AppError>
 where
-    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
-    G: Git,
+    W: RepositoryFilesystem + JulesStore,
     H: GitHub,
 {
     let jules_path = repository.jules_path();
@@ -126,36 +116,6 @@ where
             }
         }
 
-        // Verify perspective.yml exists and records this proposal
-        let perspective_path =
-            crate::domain::workstations::paths::workstation_perspective(&jules_path, role.as_str());
-        let perspective_path_str = perspective_path
-            .to_str()
-            .ok_or_else(|| AppError::Validation("Invalid perspective path".to_string()))?;
-        if !repository.file_exists(perspective_path_str) {
-            return Err(AppError::Validation(format!(
-                "perspective.yml missing for role '{}': innovator run must update workstation perspective before publication",
-                role.as_str()
-            )));
-        }
-        let perspective_content = repository.read_file(perspective_path_str)?;
-        let perspective: InnovatorPerspective = serde_yaml::from_str(&perspective_content)
-            .map_err(|e| {
-                AppError::Validation(format!(
-                    "Invalid YAML in perspective {}: {}",
-                    perspective_path.display(),
-                    e
-                ))
-            })?;
-        let title_trimmed = data.title.trim();
-        if !perspective.recent_proposals.iter().any(|p| p.trim() == title_trimmed) {
-            return Err(AppError::Validation(format!(
-                "perspective.yml for '{}' does not list proposal '{}' in recent_proposals: refinement contract violated",
-                role.as_str(),
-                title_trimmed
-            )));
-        }
-
         let issue_title = format!("[innovator/{}] {}", role.as_str(), data.title.trim());
         let impact_surface = render_list(&data.impact_surface);
         let consistency_risks = render_list(&data.consistency_risks);
@@ -179,7 +139,6 @@ where
 
     // Pass 2: Create issues and clean up artifacts (all proposals validated).
     let mut published = Vec::new();
-    let mut deleted_paths: Vec<PathBuf> = Vec::new();
 
     for (role, proposal_path, issue_title, issue_body) in &validated {
         let issue: IssueInfo = github.create_issue(issue_title, issue_body, &[])?;
@@ -206,7 +165,6 @@ where
                 .to_str()
                 .ok_or_else(|| AppError::Validation("Invalid proposal path".to_string()))?,
         )?;
-        deleted_paths.push(proposal_path.clone());
     }
 
     Ok(ExchangePublishProposalsOutput {
@@ -218,7 +176,7 @@ where
 }
 
 /// Discover proposal files under `.jules/exchange/proposals/`.
-fn discover_proposals<W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader>(
+fn discover_proposals<W: RepositoryFilesystem + JulesStore>(
     proposals_dir: &Path,
     repository: &W,
 ) -> Result<Vec<PathBuf>, AppError> {
@@ -296,7 +254,7 @@ fn validate_proposal_filename_matches_role(
 mod tests {
     use super::*;
     use crate::ports::RepositoryFilesystem;
-    use crate::testing::{FakeGit, FakeGitHub, TestStore};
+    use crate::testing::{FakeGitHub, TestStore};
 
     fn proposal_yaml() -> &'static str {
         r#"schema_version: 1
@@ -325,27 +283,20 @@ verification_signals:
     #[test]
     fn publishes_proposal_and_removes_artifact() {
         let proposal_path = ".jules/exchange/proposals/alice-improve-error-messages.yml";
-        let perspective_path = ".jules/workstations/alice/perspective.yml";
-        let perspective_yaml = "schema_version: 1\nrole: alice\nfocus: \"Tests\"\nrecent_proposals:\n  - \"Improve error messages\"\n";
-        let repository = TestStore::new()
-            .with_exists(true)
-            .with_file(proposal_path, proposal_yaml())
-            .with_file(perspective_path, perspective_yaml);
+        let repository =
+            TestStore::new().with_exists(true).with_file(proposal_path, proposal_yaml());
 
-        let git = FakeGit::new();
         let github = FakeGitHub::new();
 
         let options = ExchangePublishProposalsOptions {};
 
-        let output = execute_with(&repository, &options, &git, &github).unwrap();
+        let output = execute_with(&repository, &options, &github).unwrap();
 
         assert_eq!(output.published.len(), 1);
         assert_eq!(output.published[0].role, "alice");
         assert_eq!(output.published[0].issue_number, 1);
         assert!(!output.committed);
         assert!(!output.pushed);
-        let created_branches = git.branches_created.lock().unwrap();
-        assert_eq!(created_branches.len(), 0);
 
         // Proposal file should be removed
         assert!(!repository.file_exists(proposal_path));
@@ -363,12 +314,11 @@ verification_signals:
     #[test]
     fn no_proposals_returns_empty_output() {
         let repository = TestStore::new().with_exists(true);
-        let git = FakeGit::new();
         let github = FakeGitHub::new();
 
         let options = ExchangePublishProposalsOptions {};
 
-        let output = execute_with(&repository, &options, &git, &github).unwrap();
+        let output = execute_with(&repository, &options, &github).unwrap();
 
         assert!(output.published.is_empty());
         assert!(!output.committed);
@@ -378,19 +328,14 @@ verification_signals:
     #[test]
     fn rejects_invalid_role_identifier() {
         let proposal_path = ".jules/exchange/proposals/alice-improve-error-messages.yml";
-        let perspective_path = ".jules/workstations/alice/perspective.yml";
         let invalid_role_yaml = proposal_yaml().replace("role: \"alice\"", "role: \"../../etc\"");
-        let perspective_yaml = "schema_version: 1\nrole: alice\nfocus: \"Tests\"\nrecent_proposals:\n  - \"Improve error messages\"\n";
-        let repository = TestStore::new()
-            .with_exists(true)
-            .with_file(proposal_path, &invalid_role_yaml)
-            .with_file(perspective_path, perspective_yaml);
+        let repository =
+            TestStore::new().with_exists(true).with_file(proposal_path, &invalid_role_yaml);
 
-        let git = FakeGit::new();
         let github = FakeGitHub::new();
         let options = ExchangePublishProposalsOptions {};
 
-        let result = execute_with(&repository, &options, &git, &github);
+        let result = execute_with(&repository, &options, &github);
         assert!(result.is_err());
         let message = result.unwrap_err().to_string();
         assert!(message.contains("Invalid proposal role"));
@@ -399,20 +344,16 @@ verification_signals:
     #[test]
     fn accepts_proposal_filename_with_normalized_role_segment() {
         let proposal_path = ".jules/exchange/proposals/alice-team-improve-error-messages.yml";
-        let perspective_path = ".jules/workstations/alice_team/perspective.yml";
         let proposal_with_underscored_role =
             proposal_yaml().replace("role: \"alice\"", "role: \"alice_team\"");
-        let perspective_yaml = "schema_version: 1\nrole: alice_team\nfocus: \"Tests\"\nrecent_proposals:\n  - \"Improve error messages\"\n";
 
         let repository = TestStore::new()
             .with_exists(true)
-            .with_file(proposal_path, &proposal_with_underscored_role)
-            .with_file(perspective_path, perspective_yaml);
-        let git = FakeGit::new();
+            .with_file(proposal_path, &proposal_with_underscored_role);
         let github = FakeGitHub::new();
         let options = ExchangePublishProposalsOptions {};
 
-        let output = execute_with(&repository, &options, &git, &github).unwrap();
+        let output = execute_with(&repository, &options, &github).unwrap();
         assert_eq!(output.published.len(), 1);
         assert_eq!(output.published[0].role, "alice_team");
     }

@@ -1,6 +1,7 @@
 role: ROLE_NAME
 description: "# TODO: One-line summary of role mandate"
 layer: observers
+constraint: []
 
 profile:
   focus: "# TODO: Describe the specialized analytical focus for this observer"

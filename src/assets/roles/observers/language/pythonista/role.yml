@@ -47,3 +47,6 @@ profile:
     - "When flagging testability issues, cite the direct I/O call sites inside 'core' functions"
     - "When flagging performance issues, cite the hotspot loop/I/O pattern and the likely bottleneck class"
     - "When flagging import/config issues, cite the module import side effect or scattered env reads"
+
+# Intentional prohibitions by users
+constraint: []

@@ -1,6 +1,7 @@
 role: ROLE_NAME
 description: "# TODO: One-line summary of role mandate"
 layer: innovators
+constraint: []
 
 profile:
   focus: "# TODO: Describe the leverage lens for this role (what class of improvements it prioritizes)"

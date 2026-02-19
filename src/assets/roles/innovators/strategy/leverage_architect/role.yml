@@ -32,3 +32,6 @@ profile:
     - "The proposal names the introduced mechanism and the boundary it changes."
     - "The proposal states importance, impact surface, implementation cost, and consistency risks."
     - "The proposal defines concrete verification signals that prove reliability improved."
+
+# Intentional prohibitions by users
+constraint: []

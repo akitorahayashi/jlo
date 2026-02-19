@@ -25,9 +25,7 @@ pub use crate::app::commands::setup::list::{
 };
 pub use crate::app::commands::update::UpdateResult;
 pub use crate::app::commands::upgrade::{UpgradeOptions, UpgradeResult};
-pub use crate::app::commands::workflow::{
-    WorkflowBootstrapManagedFilesOutput, WorkflowBootstrapWorkstationsOutput,
-};
+pub use crate::app::commands::workflow::WorkflowBootstrapManagedFilesOutput;
 pub use crate::domain::AppError;
 pub use crate::domain::WorkflowRunnerMode;
 pub use crate::domain::{BuiltinRoleEntry, Layer};
@@ -317,13 +315,4 @@ pub fn workflow_bootstrap_managed_files_at(
     let options =
         crate::app::commands::workflow::WorkflowBootstrapManagedFilesOptions { root: path.into() };
     crate::app::commands::workflow::bootstrap_managed_files(options)
-}
-
-/// Reconcile workstation perspectives under `.jules/workstations/`.
-pub fn workflow_bootstrap_workstations_at(
-    path: impl Into<PathBuf>,
-) -> Result<WorkflowBootstrapWorkstationsOutput, AppError> {
-    let options =
-        crate::app::commands::workflow::WorkflowBootstrapWorkstationsOptions { root: path.into() };
-    crate::app::commands::workflow::bootstrap_workstations(options)
 }

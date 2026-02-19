@@ -35,3 +35,6 @@ profile:
     - "Cite the coverage configuration/report location and the metric type (line/branch/etc.)"
     - "When reporting gaps, cite the uncovered decision/branch and why it is critical"
     - "When suggesting gates, cite the change surface (diff) and the observed coverage delta"
+
+# Intentional prohibitions by users
+constraint: []

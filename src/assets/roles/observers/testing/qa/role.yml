@@ -35,3 +35,6 @@ profile:
     - "Cite the test(s) and the production boundary they exercise (entry points, seams, adapters)"
     - "For flakiness, cite the non-deterministic dependency (time/random/IO/order/shared state)"
     - "For diagnosability issues, cite the failing assertion output or the overly broad test scope"
+
+# Intentional prohibitions by users
+constraint: []

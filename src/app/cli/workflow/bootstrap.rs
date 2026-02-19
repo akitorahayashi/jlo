@@ -7,8 +7,6 @@ pub enum WorkflowBootstrapCommands {
     WorkerBranch,
     /// Materialize managed files from embedded scaffold
     ManagedFiles,
-    /// Reconcile workstation perspectives from schedule intent
-    Workstations,
 }
 
 pub fn run_workflow_bootstrap(command: WorkflowBootstrapCommands) -> Result<(), AppError> {
@@ -26,11 +24,6 @@ pub fn run_workflow_bootstrap(command: WorkflowBootstrapCommands) -> Result<(), 
         WorkflowBootstrapCommands::ManagedFiles => {
             let options = workflow::WorkflowBootstrapManagedFilesOptions { root };
             let output = workflow::bootstrap_managed_files(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowBootstrapCommands::Workstations => {
-            let options = workflow::WorkflowBootstrapWorkstationsOptions { root };
-            let output = workflow::bootstrap_workstations(options)?;
             workflow::write_workflow_output(&output)
         }
     }
