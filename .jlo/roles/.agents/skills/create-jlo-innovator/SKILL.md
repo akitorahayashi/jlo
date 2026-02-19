@@ -19,6 +19,7 @@ Required shape:
 ```yaml
 role: <role_id>
 layer: innovators
+constraint: <sequence>
 profile:
   focus: <string>
   analysis_points: <non-empty sequence>
@@ -32,6 +33,7 @@ profile:
 Validator-critical fields:
 - `role`
 - `layer` (must be `innovators`)
+- `constraint` (sequence, can be empty)
 - `profile.focus`
 - `profile.analysis_points`
 - `profile.proposal_quality_bar`
