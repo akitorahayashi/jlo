@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+/// Placeholder for date values in scaffold templates and validation.
+pub const DATETIME_PLACEHOLDER: &str = "YYYY-MM-DD";
+
 /// Innovator perspective definition.
 ///
 /// Originally defined as `Perspective` in `publish_proposals.rs`.

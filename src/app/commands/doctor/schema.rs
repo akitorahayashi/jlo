@@ -12,8 +12,7 @@ use super::yaml::{
     ensure_enum, ensure_id, ensure_int, ensure_non_empty_sequence, ensure_non_empty_string,
     get_bool, get_sequence, get_string, load_yaml_mapping, read_yaml_files,
 };
-
-const DATETIME_PLACEHOLDER: &str = "YYYY-MM-DD";
+use crate::domain::workstations::perspectives::DATETIME_PLACEHOLDER;
 
 #[derive(Debug, Clone)]
 pub(crate) struct PromptEntry {

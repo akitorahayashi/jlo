@@ -11,6 +11,7 @@ use serde_yaml::Value;
 
 use crate::adapters::local_repository::LocalRepositoryAdapter;
 use crate::domain::PromptAssetLoader;
+use crate::domain::workstations::perspectives::DATETIME_PLACEHOLDER;
 use crate::domain::{AppError, Layer};
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem};
 
@@ -204,7 +205,7 @@ fn materialize_perspective_from_schema(
 
 fn replace_placeholders(value: &mut Value) {
     match value {
-        Value::String(s) if s == "YYYY-MM-DD" => {
+        Value::String(s) if s == DATETIME_PLACEHOLDER => {
             *s = Utc::now().date_naive().to_string();
         }
         Value::Mapping(map) => {
