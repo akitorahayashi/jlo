@@ -1,0 +1,20 @@
+schema_version: 1
+
+# Metadata
+id: "cov001"
+requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+created_at: "2026-02-19"
+author_role: "cov"
+confidence: "high"
+
+# Content
+title: "Critical gap in proposal validation tests"
+statement: |
+  The `publish_proposals` command implements validation for required fields in Innovator proposals, but lacks test cases for missing fields. This creates a risk that incomplete proposals could be published as GitHub issues if the validation logic is modified without regression testing.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/workflow/exchange/publish_proposals.rs"
+    loc:
+      - "80-100"
+    note: "Validation logic for required fields exists but corresponding tests for missing fields are absent."
