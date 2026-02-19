@@ -14,34 +14,53 @@ summary: "Move validation logic from adapters to domain models and replace strin
 
 # Content
 goal: |
-  Enforce valid state in domain models and improve validation robustness.
+  Enforce valid state in domain models and improve validation robustness by moving logic from adapters to domain entities.
 
 problem: |
-  Validation lives in adapters (control_plane_config.rs). Models (Proposal, WorkflowGenerateConfig) are anemic. Errors are stringly-typed.
+  Validation currently resides in `src/adapters/control_plane_config.rs`, leaving domain models (`WorkflowGenerateConfig`, `Proposal`) anemic (public fields without constraints). Configuration errors are primarily stringly-typed (`ConfigError::Invalid(String)`), making programmatic error handling brittle and reducing type safety.
 
 impact: |
-  Invalid configurations can be created. Domain logic is scattered.
+  - **Reliability**: Invalid configurations can be instantiated in memory, potentially leading to runtime failures deep in the execution path rather than at load time.
+  - **Maintainability**: Validation logic is coupled to the loading mechanism (adapter) rather than the data structure (domain), violating separation of concerns.
+  - **Testability**: Testing validation logic requires mocking filesystem interactions or parsing TOML, rather than unit testing pure domain logic.
+  - **Error Handling**: String-based errors prevent callers from reacting to specific failure modes (e.g., distinguishing a missing field from an invalid format).
 
 desired_outcome: |
-  Domain models enforce invariants. Validation logic is inside domain structs. Typed errors for configuration issues.
+  - Domain models (`WorkflowGenerateConfig`, `Proposal`) implement self-validation methods (e.g., `validate()`).
+  - Validation logic is encapsulated within the domain structs.
+  - `ConfigError` and related error enums use specific, typed variants for different failure modes.
+  - Adapters delegate validation to domain models immediately after parsing.
 
-constraints: [] # list of constraints/assumptions (optional)
-risks: [] # list of known risks or regressions (optional)
+constraints:
+  - "Validation logic must be strictly moved to domain models, not duplicated in adapters."
+  - "Error types must be enum variants (e.g., `MissingField`, `InvalidValue`), not string wrappers, except where wrapping external errors."
+  - "Existing configuration behavior (e.g., default values, trimming) must be preserved unless explicitly invalid."
+
+risks:
+  - "Strict validation might reject currently working but technically malformed configs (e.g., untrimmed strings) if migration is not handled carefully."
+  - "Changes to `ConfigError` will ripple through `AppError` and may require updates to error handling in multiple adapters."
 
 # Specifics
 affected_areas:
-  - "src/domain/config/"
+  - "src/domain/config/error.rs"
+  - "src/domain/config/workflow_generate.rs"
+  - "src/domain/config/control_plane.rs"
+  - "src/domain/exchange/proposals/model.rs"
   - "src/adapters/control_plane_config.rs"
-  - "src/domain/exchange/proposals/"
 
 acceptance_criteria:
-  - "WorkflowGenerateConfig validates itself."
-  - "Proposal validates itself."
-  - "Stringly-typed config errors replaced."
+  - "The `ConfigError` enum is expanded with specific variants (e.g., `EmptyBranch`, `InvalidCron`, `InvalidTimeout`, `MissingField`)."
+  - "`WorkflowGenerateConfig::validate(&self)` is implemented and enforces: `target_branch` not empty, `worker_branch` not empty, `schedule_crons` not empty, `wait_minutes_default` > 0."
+  - "`Proposal::validate(&self)` is implemented and enforces required fields (id, role, title, problem, etc.) are not empty."
+  - "`load_workflow_generate_config` in `src/adapters/control_plane_config.rs` is refactored to delegate validation to `WorkflowGenerateConfig::validate`."
+  - "`ControlPlaneConfig::validate` is updated to use the new typed errors."
 
 verification_criteria:
-  - "Unit tests for domain models verify validation logic."
+  - "Unit tests in `src/domain/config/workflow_generate.rs` verify all validation rules and error variants."
+  - "Unit tests in `src/domain/exchange/proposals/model.rs` verify mandatory field validation."
+  - "Existing adapter tests in `src/adapters/control_plane_config.rs` pass or are updated to assert on specific error variants."
+  - "Manual verification: Run `jlo doctor` (or equivalent config loader) with invalid config to confirm new error messages."
 
 # Planning Flags
-implementation_ready: false # false routes to planner; true routes to implementer
+implementation_ready: true # false routes to planner; true routes to implementer
 planner_request_reason: "Define the validation strategy and error types." # required when implementation_ready is false
