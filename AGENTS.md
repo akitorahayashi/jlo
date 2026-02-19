@@ -24,8 +24,8 @@ Prompt-assembly assets (contracts, tasks, templates) live in `src/assets/prompt-
 `JULES_WORKER_BRANCH` is assumed to enforce GitHub Branch protection with `Require a pull request before merging`.
 
 Two merge lanes are intentionally distinct:
-- Jules API lane: Layer PRs use `jlo workflow gh pr enable-automerge` (via `--auto`) to delegate merge timing to GitHub asynchronously.
-- Programmatic maintenance lane: `jlo workflow gh push worker-branch` waits for status checks in-process and performs an immediate merge without `--auto`.
+- Jules API lane: Layer PRs use `jlo workflow process pr automerge` to delegate merge timing to GitHub asynchronously.
+- Programmatic maintenance lane: `jlo workflow push worker-branch` waits for status checks in-process and performs an immediate merge without `--auto`.
 
 `doctor` remains workflow orchestration responsibility.
 Programmatic commands do not embed a mandatory internal `doctor` execution; workflows run `jlo workflow doctor` as a separate step after command execution.

@@ -47,7 +47,7 @@
             echo "No mock cleanup changes detected."
             exit 0
           fi
-          jlo workflow push-worker \
+          jlo workflow push worker-branch \
             --change-token "mock-cleanup-${JULES_MOCK_TAG}" \
             --commit-message "jules: cleanup mock artifacts ${JULES_MOCK_TAG}" \
             --pr-title "chore: cleanup mock artifacts ${JULES_MOCK_TAG}" \

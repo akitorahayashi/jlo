@@ -60,7 +60,7 @@
           EOF
           )
           jlo_version="$(jlo --version | cut -d ' ' -f 2)"
-          jlo workflow push-worker \
+          jlo workflow push worker-branch \
             --change-token "bootstrap" \
             --commit-message "chore: bootstrap .jules/ runtime repository [jlo ${jlo_version}]" \
             --pr-title "chore: bootstrap runtime workspace" \

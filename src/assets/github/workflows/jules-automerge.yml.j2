@@ -88,7 +88,7 @@ jobs:
           GH_TOKEN: {{ gha_expr("secrets.JLO_BOT_TOKEN") }}
         run: |
           set -euo pipefail
-          jlo workflow process-pr \
+          jlo workflow process pr \
             automerge {{ gha_expr("steps.discover.outputs.pr_number") }} \
             --retry-attempts 15 \
             --retry-delay-seconds 3 \

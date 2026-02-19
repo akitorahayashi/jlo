@@ -43,8 +43,9 @@ jlo init --remote
 | `jlo workflow exchange publish-proposals` | | Publish innovator proposals as GitHub issues |
 | `jlo workflow exchange clean requirement <file>` | | Remove a processed requirement and its source events |
 | `jlo workflow exchange clean mock --mock-tag <tag>` | | Clean up mock artifacts |
-| `jlo workflow gh process pr <all\|metadata\|automerge> <pr_number>` | | Run PR process pipeline (add `--fail-on-error` to fail on step errors) |
-| `jlo workflow gh process issue label-innovator <issue> <role>` | | Apply innovator labels to a proposal issue |
+| `jlo workflow process pr <all\|metadata\|automerge> <pr_number>` | | Run PR process pipeline (add `--fail-on-error` to fail on step errors) |
+| `jlo workflow process issue label-innovator <issue> <role>` | | Apply innovator labels to a proposal issue |
+| `jlo workflow push worker-branch --change-token <token> --commit-message <msg> --pr-title <title> --pr-body <body>` | | Commit `.jules` changes and merge to worker branch via PR |
 | `jlo workflow generate <mode> [--output-dir <dir>]` | `g [-o]` | Generate workflow scaffold files to an output directory |
 | `jlo setup gen [path]` | `s g` | Generate `.jlo/setup/install.sh`, `.jlo/setup/vars.toml`, and `.jlo/setup/secrets.toml` |
 | `jlo setup list` | `s ls` | List available components |

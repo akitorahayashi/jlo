@@ -19,7 +19,7 @@ Triage center converting Observer events into requirements.
 4. Cleanup: Archive source events to `decided/`.
 
 ## Resources
-- Schema: `.jules/schemas/decider/issue.yml`
+- Schema: `.jules/schemas/decider/requirements.yml`
 - Tasks:
   - triage.yml: Logic for event analysis and grouping.
 - Prompt: `decider_prompt.j2`

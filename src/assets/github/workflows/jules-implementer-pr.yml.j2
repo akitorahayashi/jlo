@@ -86,4 +86,4 @@ jobs:
           GH_TOKEN: {{ gha_expr("secrets.JULES_LINKED_GH_PAT") }}
         run: |
           set -euo pipefail
-          jlo workflow process-pr metadata {{ gha_expr("steps.discover.outputs.pr_number") }} --fail-on-error
+          jlo workflow process pr metadata {{ gha_expr("steps.discover.outputs.pr_number") }} --fail-on-error

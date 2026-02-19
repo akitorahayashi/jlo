@@ -7,8 +7,9 @@ pub mod bootstrap;
 mod doctor;
 pub mod exchange;
 pub mod generate;
-pub mod gh;
 mod output;
+pub mod process;
+pub mod push;
 mod run;
 
 pub use bootstrap::{

@@ -1,7 +1,15 @@
 //! Workflow command implementation.
 
+mod bootstrap;
+mod process;
+mod push;
+
 use crate::domain::AppError;
-use clap::{Args, Subcommand};
+use clap::Subcommand;
+
+pub use bootstrap::WorkflowBootstrapCommands;
+pub use process::WorkflowProcessCommands;
+pub use push::WorkflowPushCommands;
 
 #[derive(Subcommand)]
 pub enum WorkflowCommands {
@@ -36,34 +44,16 @@ pub enum WorkflowCommands {
         output_dir: Option<String>,
     },
 
-    /// Process a Pull Request
-    ProcessPr {
+    /// Process GitHub workflow actions
+    Process {
         #[command(subcommand)]
-        command: WorkflowProcessPrCommands,
+        command: WorkflowProcessCommands,
     },
 
-    /// Apply innovator labels to a proposal issue
-    LabelInnovator {
-        /// Issue number
-        issue_number: u64,
-        /// Role name (e.g., scout, architect)
-        role: String,
-    },
-
-    /// Commit .jules changes, create PR to worker branch, and merge it
-    PushWorker {
-        /// Stable token used in branch naming (e.g. requirement-cleanup)
-        #[arg(long)]
-        change_token: String,
-        /// Commit message
-        #[arg(long)]
-        commit_message: String,
-        /// Pull request title
-        #[arg(long)]
-        pr_title: String,
-        /// Pull request body
-        #[arg(long)]
-        pr_body: String,
+    /// Commit .jules changes and publish via worker branch
+    Push {
+        #[command(subcommand)]
+        command: WorkflowPushCommands,
     },
 
     /// Remove a processed requirement and its source events
@@ -92,56 +82,6 @@ pub enum WorkflowCommands {
     PublishProposals,
 }
 
-#[derive(Subcommand)]
-pub enum WorkflowBootstrapCommands {
-    /// Ensure/sync worker branch from target branch
-    WorkerBranch,
-    /// Materialize managed files from embedded scaffold
-    ManagedFiles,
-    /// Reconcile workstation perspectives from schedule intent
-    Workstations,
-}
-
-/// Shared flags for PR processing commands.
-#[derive(Args, Debug, Clone)]
-pub struct ProcessPrArgs {
-    /// Fail if any step returns an execution error
-    #[arg(long)]
-    pub fail_on_error: bool,
-    /// Retry attempts for transient auto-merge errors
-    #[arg(long, default_value_t = 1)]
-    pub retry_attempts: u32,
-    /// Delay between retry attempts (seconds)
-    #[arg(long, default_value_t = 0)]
-    pub retry_delay_seconds: u64,
-}
-
-#[derive(Subcommand)]
-pub enum WorkflowProcessPrCommands {
-    /// Run all PR event commands
-    All {
-        /// PR number
-        pr_number: u64,
-        #[command(flatten)]
-        args: ProcessPrArgs,
-    },
-    /// Run metadata-only commands
-    Metadata {
-        /// PR number
-        pr_number: u64,
-        #[command(flatten)]
-        args: ProcessPrArgs,
-    },
-    /// Run auto-merge command only
-    #[command(alias = "auto-merge")]
-    Automerge {
-        /// PR number
-        pr_number: u64,
-        #[command(flatten)]
-        args: ProcessPrArgs,
-    },
-}
-
 pub fn parse_layer(value: &str) -> Result<crate::domain::Layer, AppError> {
     crate::domain::Layer::from_dir_name(value)
         .ok_or_else(|| AppError::InvalidLayer { name: value.to_string() })
@@ -149,7 +89,7 @@ pub fn parse_layer(value: &str) -> Result<crate::domain::Layer, AppError> {
 
 pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
     match command {
-        WorkflowCommands::Bootstrap { command } => run_workflow_bootstrap(command),
+        WorkflowCommands::Bootstrap { command } => bootstrap::run_workflow_bootstrap(command),
         WorkflowCommands::Doctor => {
             use crate::app::commands::workflow;
             let options = workflow::WorkflowDoctorOptions {};
@@ -176,29 +116,11 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             let output = workflow::generate(options)?;
             workflow::write_workflow_output(&output)
         }
-        WorkflowCommands::ProcessPr { command } => {
+        WorkflowCommands::Process { command } => {
             let github = crate::adapters::github::GitHubCommandAdapter::new();
-            run_workflow_gh_process_pr(&github, command)
+            process::run_workflow_process(&github, command)
         }
-        WorkflowCommands::LabelInnovator { issue_number, role } => {
-            let github = crate::adapters::github::GitHubCommandAdapter::new();
-            use crate::app::commands::workflow;
-            let options =
-                workflow::gh::process::issue::LabelInnovatorOptions { issue_number, role };
-            let output = workflow::gh::process::issue::label_innovator::execute(&github, options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowCommands::PushWorker { change_token, commit_message, pr_title, pr_body } => {
-            use crate::app::commands::workflow;
-            let output =
-                workflow::gh::push::execute(workflow::gh::push::PushWorkerBranchOptions {
-                    change_token,
-                    commit_message,
-                    pr_title,
-                    pr_body,
-                })?;
-            workflow::write_workflow_output(&output)
-        }
+        WorkflowCommands::Push { command } => push::run_workflow_push(command),
         WorkflowCommands::CleanRequirement { requirement_file } => {
             use crate::app::commands::workflow;
             let options = workflow::exchange::ExchangeCleanRequirementOptions { requirement_file };
@@ -246,57 +168,4 @@ pub fn run_workflow(command: WorkflowCommands) -> Result<(), AppError> {
             workflow::write_workflow_output(&output)
         }
     }
-}
-
-fn run_workflow_bootstrap(command: WorkflowBootstrapCommands) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    let root = std::env::current_dir()
-        .map_err(|e| AppError::InternalError(format!("Failed to get current directory: {}", e)))?;
-
-    match command {
-        WorkflowBootstrapCommands::WorkerBranch => {
-            let options = workflow::WorkflowBootstrapWorkerBranchOptions { root };
-            let output = workflow::bootstrap_worker_branch(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowBootstrapCommands::ManagedFiles => {
-            let options = workflow::WorkflowBootstrapManagedFilesOptions { root };
-            let output = workflow::bootstrap_managed_files(options)?;
-            workflow::write_workflow_output(&output)
-        }
-        WorkflowBootstrapCommands::Workstations => {
-            let options = workflow::WorkflowBootstrapWorkstationsOptions { root };
-            let output = workflow::bootstrap_workstations(options)?;
-            workflow::write_workflow_output(&output)
-        }
-    }
-}
-
-fn run_workflow_gh_process_pr(
-    github: &impl crate::ports::GitHub,
-    command: WorkflowProcessPrCommands,
-) -> Result<(), AppError> {
-    use crate::app::commands::workflow;
-
-    let (pr_number, mode, args) = match command {
-        WorkflowProcessPrCommands::All { pr_number, args } => {
-            (pr_number, workflow::gh::process::pr::ProcessMode::All, args)
-        }
-        WorkflowProcessPrCommands::Metadata { pr_number, args } => {
-            (pr_number, workflow::gh::process::pr::ProcessMode::Metadata, args)
-        }
-        WorkflowProcessPrCommands::Automerge { pr_number, args } => {
-            (pr_number, workflow::gh::process::pr::ProcessMode::Automerge, args)
-        }
-    };
-    let options = workflow::gh::process::pr::ProcessOptions {
-        pr_number,
-        mode,
-        fail_on_error: args.fail_on_error,
-        retry_attempts: args.retry_attempts,
-        retry_delay_seconds: args.retry_delay_seconds,
-    };
-    let output = workflow::gh::process::pr::process::execute(github, options)?;
-    workflow::write_workflow_output(&output)
 }

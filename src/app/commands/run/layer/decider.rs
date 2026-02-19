@@ -195,9 +195,9 @@ where
 
     // Create two mock requirements: one for planner, one for implementer
     let label = config.issue_labels.first().cloned().ok_or_else(|| {
-        AppError::InvalidConfig("No issue labels available for mock decider".to_string())
+        AppError::InvalidConfig("No requirement labels available for mock decider".to_string())
     })?;
-    let mock_issue_template = MOCK_ASSETS
+    let mock_requirement_template = MOCK_ASSETS
         .get_file("decider_requirement.yml")
         .ok_or_else(|| {
             AppError::InternalError("Mock asset missing: decider_requirement.yml".to_string())
@@ -248,9 +248,9 @@ where
     let planner_requirement_file =
         requirements_dir.join(format!("planner-{}.yml", config.mock_tag));
 
-    let mut planner_requirement_yaml: serde_yaml::Value = serde_yaml::from_str(mock_issue_template)
-        .map_err(|e| {
-            AppError::InternalError(format!("Failed to parse mock issue template: {}", e))
+    let mut planner_requirement_yaml: serde_yaml::Value =
+        serde_yaml::from_str(mock_requirement_template).map_err(|e| {
+            AppError::InternalError(format!("Failed to parse mock requirement template: {}", e))
         })?;
 
     if let Some(mapping) = planner_requirement_yaml.as_mapping_mut() {
@@ -304,8 +304,8 @@ where
         requirements_dir.join(format!("impl-{}.yml", config.mock_tag));
 
     let mut implementer_requirement_yaml: serde_yaml::Value =
-        serde_yaml::from_str(mock_issue_template).map_err(|e| {
-            AppError::InternalError(format!("Failed to parse mock issue template: {}", e))
+        serde_yaml::from_str(mock_requirement_template).map_err(|e| {
+            AppError::InternalError(format!("Failed to parse mock requirement template: {}", e))
         })?;
 
     if let Some(mapping) = implementer_requirement_yaml.as_mapping_mut() {

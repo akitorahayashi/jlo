@@ -11,9 +11,9 @@ pub enum Layer {
     Narrator,
     /// Observers: Read source and changes, emit events (taxonomy, data_arch, consistency, qa)
     Observers,
-    /// Decider: Read events, emit issues, delete events
+    /// Decider: Read events, emit requirements, delete events
     Decider,
-    /// Planner: Read issues requiring deep analysis, expand them in-place (specifier_global)
+    /// Planner: Read requirements requiring deep analysis, expand them in-place (specifier_global)
     Planner,
     /// Implementer: Execute approved tasks, create PRs with code changes (executor_global)
     Implementer,
@@ -163,7 +163,7 @@ impl Layer {
     pub fn perspective_role_key(&self) -> Result<&'static str, crate::domain::AppError> {
         match self {
             Layer::Innovators => Ok("role"),
-            Layer::Observers => Ok("role"),
+            Layer::Observers => Ok("observer"),
             _ => Err(crate::domain::AppError::RepositoryIntegrity(format!(
                 "Unsupported layer for workstation perspective materialization: '{}'",
                 self.dir_name()
@@ -249,8 +249,8 @@ mod tests {
     }
 
     #[test]
-    fn perspective_role_key_for_observers_is_role() {
-        assert_eq!(Layer::Observers.perspective_role_key().unwrap(), "role");
+    fn perspective_role_key_for_observers_is_observer() {
+        assert_eq!(Layer::Observers.perspective_role_key().unwrap(), "observer");
     }
 
     #[test]

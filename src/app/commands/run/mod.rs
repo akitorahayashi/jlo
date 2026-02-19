@@ -15,7 +15,7 @@ use crate::app::commands::run::strategy::{JulesClientFactory, get_layer_strategy
 use crate::app::commands::workflow::exchange::{
     ExchangeCleanRequirementOptions, clean_requirement_apply_with_adapters,
 };
-use crate::app::commands::workflow::gh::push::{
+use crate::app::commands::workflow::push::{
     PushWorkerBranchOptions, execute as push_worker_branch,
 };
 use crate::domain::PromptAssetLoader;

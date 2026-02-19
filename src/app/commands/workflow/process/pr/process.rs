@@ -1,4 +1,4 @@
-//! Workflow `pr process` pipeline command implementation.
+//! Workflow PR process pipeline command implementation.
 //!
 //! Runs event-level PR commands in configured order and emits per-step results.
 
@@ -20,7 +20,7 @@ const TRANSIENT_AUTOMERGE_ERROR_PATTERNS: &[&str] = &[
 ];
 const RETRY_FIRST_DELAYS_SECONDS: &[u64] = &[1, 2, 5];
 
-/// Execution mode for `workflow gh pr process`.
+/// Execution mode for `workflow process pr <all|metadata|automerge>`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProcessMode {
     /// Run all PR event steps.
@@ -41,7 +41,7 @@ impl ProcessMode {
     }
 }
 
-/// Options for `workflow gh pr process`.
+/// Options for `workflow process pr <all|metadata|automerge>`.
 #[derive(Debug, Clone)]
 pub struct ProcessOptions {
     /// PR number to process.
@@ -68,7 +68,7 @@ pub struct ProcessStepResult {
     pub attempts: u32,
 }
 
-/// Output of `workflow gh pr process`.
+/// Output of `workflow process pr <all|metadata|automerge>`.
 #[derive(Debug, Clone, Serialize)]
 pub struct ProcessOutput {
     pub schema_version: u32,
@@ -78,7 +78,7 @@ pub struct ProcessOutput {
     pub steps: Vec<ProcessStepResult>,
 }
 
-/// Execute `pr process`.
+/// Execute the PR process pipeline.
 pub fn execute(github: &impl GitHub, options: ProcessOptions) -> Result<ProcessOutput, AppError> {
     if options.retry_attempts == 0 {
         return Err(AppError::Validation("retry_attempts must be greater than zero".to_string()));
@@ -117,7 +117,7 @@ pub fn execute(github: &impl GitHub, options: ProcessOptions) -> Result<ProcessO
             had_errors = true;
             if options.fail_on_error {
                 return Err(AppError::Validation(format!(
-                    "workflow gh pr process failed at '{}' for PR #{}: {}",
+                    "workflow process pr failed at '{}' for PR #{}: {}",
                     result.command,
                     options.pr_number,
                     result.error.as_deref().unwrap_or("unknown error")

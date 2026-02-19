@@ -36,12 +36,9 @@ Workflow orchestration delegates to `jlo workflow` commands:
 - `jlo workflow exchange publish-proposals`
 - `jlo workflow exchange clean requirement <file>`
 - `jlo workflow exchange clean mock --mock-tag <tag>`
-- `jlo workflow gh pr comment-summary-request <pr_number>`
-- `jlo workflow gh pr sync-category-label <pr_number>`
-- `jlo workflow gh pr automerge <pr_number>`
-- `jlo workflow gh pr process <all|metadata|automerge> <pr_number> [--retry-attempts N] [--retry-delay-seconds N] [--fail-on-error]`
-- `jlo workflow gh push worker-branch --change-token <token> --commit-message <msg> --pr-title <title> --pr-body <body>`
-- `jlo workflow gh issue label-innovator <issue_number> <role>`
+- `jlo workflow process pr <all|metadata|automerge> <pr_number> [--retry-attempts N] [--retry-delay-seconds N] [--fail-on-error]`
+- `jlo workflow process issue label-innovator <issue_number> <role>`
+- `jlo workflow push worker-branch --change-token <token> --commit-message <msg> --pr-title <title> --pr-body <body>`
 
 ## Workflow Execution Flow
 

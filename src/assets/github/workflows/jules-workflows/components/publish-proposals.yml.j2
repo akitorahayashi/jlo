@@ -32,7 +32,7 @@
             echo "No proposal cleanup changes detected."
             exit 0
           fi
-          jlo workflow push-worker \
+          jlo workflow push worker-branch \
             --change-token "publish-proposals" \
             --commit-message "jules: publish innovator proposals" \
             --pr-title "chore: publish innovator proposals" \
