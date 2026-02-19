@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::domain::{AppError, Layer, PromptAssetLoader, RoleId};
+use crate::domain::{AppError, Layer, PromptAssetLoader, RoleError, RoleId};
 use crate::ports::{AutomationMode, JulesClient, RepositoryFilesystem, SessionRequest};
 
 pub fn print_role_preview<W: RepositoryFilesystem + PromptAssetLoader + ?Sized>(
@@ -45,7 +45,7 @@ pub fn validate_role_exists<W: RepositoryFilesystem + PromptAssetLoader + ?Sized
     let role_yml_path = crate::domain::roles::paths::role_yml(root, layer, role);
 
     if !repository.file_exists(&role_yml_path.to_string_lossy()) {
-        return Err(AppError::RoleNotFound(format!("{}/{}", layer.dir_name(), role)));
+        return Err(RoleError::NotFound(format!("{}/{}", layer.dir_name(), role)).into());
     }
 
     Ok(())

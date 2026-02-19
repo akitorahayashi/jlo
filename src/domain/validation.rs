@@ -20,10 +20,10 @@ pub fn validate_identifier(id: &str, allow_dots: bool) -> bool {
 
 #[macro_export]
 macro_rules! impl_validated_id {
-    ($name:ident, $allow_dots:expr, $err_variant:path) => {
+    ($name:ident, $allow_dots:expr, $err_type:ty, $err_variant:expr) => {
         impl $name {
             /// Validate and create a new instance.
-            pub fn new(id: &str) -> Result<Self, $crate::domain::AppError> {
+            pub fn new(id: &str) -> Result<Self, $err_type> {
                 if $crate::domain::validation::validate_identifier(id, $allow_dots) {
                     Ok(Self(id.to_string()))
                 } else {

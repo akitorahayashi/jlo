@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::domain::AppError;
+use crate::domain::config::error::ConfigError;
 use crate::domain::config::schedule::Schedule;
 
 /// Configuration for agent execution loaded from `.jlo/config.toml`.
@@ -69,17 +70,15 @@ impl Default for JulesApiConfig {
 }
 
 impl JulesApiConfig {
-    pub fn validate(&self) -> Result<(), AppError> {
+    pub fn validate(&self) -> Result<(), ConfigError> {
         if self.timeout_secs == 0 {
-            return Err(AppError::InvalidConfig("timeout_secs must be greater than 0".to_string()));
+            return Err(ConfigError::Invalid("timeout_secs must be greater than 0".to_string()));
         }
         if self.max_retries == 0 {
-            return Err(AppError::InvalidConfig("max_retries must be greater than 0".to_string()));
+            return Err(ConfigError::Invalid("max_retries must be greater than 0".to_string()));
         }
         if self.retry_delay_ms == 0 {
-            return Err(AppError::InvalidConfig(
-                "retry_delay_ms must be greater than 0".to_string(),
-            ));
+            return Err(ConfigError::Invalid("retry_delay_ms must be greater than 0".to_string()));
         }
         Ok(())
     }
@@ -132,17 +131,15 @@ impl Default for ExecutionConfig {
 }
 
 impl ExecutionConfig {
-    pub fn validate(&self) -> Result<(), AppError> {
+    pub fn validate(&self) -> Result<(), ConfigError> {
         if self.max_parallel == 0 {
-            return Err(AppError::InvalidConfig("max_parallel must be greater than 0".to_string()));
+            return Err(ConfigError::Invalid("max_parallel must be greater than 0".to_string()));
         }
         if self.jlo_target_branch.trim().is_empty() {
-            return Err(AppError::InvalidConfig("jlo_target_branch must not be empty".to_string()));
+            return Err(ConfigError::Invalid("jlo_target_branch must not be empty".to_string()));
         }
         if self.jules_worker_branch.trim().is_empty() {
-            return Err(AppError::InvalidConfig(
-                "jules_worker_branch must not be empty".to_string(),
-            ));
+            return Err(ConfigError::Invalid("jules_worker_branch must not be empty".to_string()));
         }
         Ok(())
     }
@@ -231,7 +228,9 @@ mod tests {
         let mut config = ControlPlaneConfig::default();
         config.run.max_parallel = 0;
         let err = config.validate().unwrap_err();
-        assert!(matches!(err, AppError::InvalidConfig(msg) if msg.contains("max_parallel")));
+        assert!(
+            matches!(err, AppError::Config(ConfigError::Invalid(ref msg)) if msg.contains("max_parallel"))
+        );
     }
 
     #[test]
@@ -239,6 +238,8 @@ mod tests {
         let mut config = ControlPlaneConfig::default();
         config.jules_api.timeout_secs = 0;
         let err = config.validate().unwrap_err();
-        assert!(matches!(err, AppError::InvalidConfig(msg) if msg.contains("timeout_secs")));
+        assert!(
+            matches!(err, AppError::Config(ConfigError::Invalid(ref msg)) if msg.contains("timeout_secs"))
+        );
     }
 }
