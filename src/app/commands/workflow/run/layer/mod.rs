@@ -87,6 +87,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ports::GitWorkspace;
     use crate::ports::{GitHub, IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
     use crate::testing::TestStore;
 
@@ -134,6 +135,15 @@ mod tests {
             Ok(())
         }
 
+        fn push_branch_from_rev(
+            &self,
+            _rev: &str,
+            _branch: &str,
+            _force: bool,
+        ) -> Result<(), AppError> {
+            Ok(())
+        }
+
         fn commit_files(&self, _message: &str, _files: &[&Path]) -> Result<String, AppError> {
             Ok("deadbeef".to_string())
         }
@@ -144,6 +154,10 @@ mod tests {
 
         fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> {
             Ok(true)
+        }
+
+        fn create_workspace(&self, _branch: &str) -> Result<Box<dyn GitWorkspace>, AppError> {
+            unimplemented!()
         }
     }
 
