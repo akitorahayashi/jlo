@@ -1,0 +1,14 @@
+schema_version: 1
+id: "3zcrid"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "structural_arch"
+confidence: "high"
+title: "Monolithic AppError Couples Unrelated Domains"
+statement: |
+  The `AppError` enum in `src/domain/error.rs` aggregates errors from all subsystems (Git, Config, Roles, Setup), causing high coupling. Changes in one low-level module force recompilation of the entire error handling structure.
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "pub enum AppError {"
+    note: "Centralized error enum used across all domains."

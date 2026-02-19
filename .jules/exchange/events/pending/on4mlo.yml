@@ -1,0 +1,18 @@
+schema_version: 1
+id: "on4mlo"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "structural_arch"
+confidence: "high"
+title: "Circular Dependency between Domain and Ports"
+statement: |
+  The `src/ports` module is physically separated from `src/domain` but logically coupled, creating a circular dependency. `domain` depends on `ports` for traits, while `ports` depends on `domain::AppError`. This violates clear layering and makes extraction difficult.
+evidence:
+  - path: "src/ports/git.rs"
+    loc:
+      - "use crate::domain::AppError;"
+    note: "Ports depending on domain implementation details (AppError)."
+  - path: "src/domain/setup/dependency_graph.rs"
+    loc:
+      - "use crate::ports::SetupComponentCatalog;"
+    note: "Domain depending on ports module."
