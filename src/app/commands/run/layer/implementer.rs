@@ -8,9 +8,7 @@ use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
 use crate::domain::layers::execute::validate_requirement_path;
-use crate::domain::prompt_assemble::{
-    AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
-};
+use crate::domain::prompt_assemble::{PromptAssetLoader, PromptContext, assemble_prompt};
 use crate::domain::{
     AppError, ConfigError, ControlPlaneConfig, Layer, MockConfig, MockOutput, RunOptions,
 };
@@ -192,15 +190,16 @@ fn assemble_implementer_prompt<
 
     let context = PromptContext::new().with_var("task", task_content);
 
-    assemble_prompt(
+    let (prompt, seed_ops) = assemble_prompt(
         jules_path,
         Layer::Implementer,
         &context,
         repository,
         crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset,
     )
-    .map(|p: AssembledPrompt| p.content)
-    .map_err(|e| AppError::InternalError(e.to_string()))
+    .map_err(|e| AppError::InternalError(e.to_string()))?;
+    super::execute_seed_ops(seed_ops, repository)?;
+    Ok(prompt.content)
 }
 
 fn extract_requirement_label(requirement_content: &str) -> Result<String, AppError> {

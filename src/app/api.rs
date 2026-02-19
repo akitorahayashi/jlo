@@ -2,6 +2,13 @@
 //!
 //! This module exposes high-level functions that glue together context creation
 //! and command execution.
+//!
+//! # Dependency injection seams
+//!
+//! The `*_with_deps` functions accept prebuilt adapters and expose the same
+//! operations as the public convenience functions. They are `pub(crate)` to
+//! keep the external API surface stable while enabling test composition and
+//! advanced callers that share adapter state across operations.
 
 use std::path::{Path, PathBuf};
 
@@ -13,7 +20,8 @@ use crate::app::{
     AppContext,
     commands::{deinit, doctor, init, role, run, setup, update, upgrade},
 };
-use crate::ports::{JloStore, JulesStore, RoleTemplateStore};
+use crate::domain::PromptAssetLoader;
+use crate::ports::{Git, GitHub, JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
 pub use crate::app::commands::deinit::DeinitOutcome;
 pub use crate::app::commands::doctor::{DoctorOptions, DoctorOutcome};
@@ -315,4 +323,99 @@ pub fn workflow_bootstrap_managed_files_at(
     let options =
         crate::app::commands::workflow::WorkflowBootstrapManagedFilesOptions { root: path.into() };
     crate::app::commands::workflow::bootstrap_managed_files(options)
+}
+
+// =============================================================================
+// Dependency-injected seams (pub(crate))
+//
+// These accept prebuilt adapters so tests and advanced callers can inject
+// alternative implementations. The public `*_at` functions above delegate
+// to these when the default local adapters are adequate.
+// =============================================================================
+
+/// Run a layer with prebuilt adapters.
+#[allow(clippy::too_many_arguments, dead_code)]
+pub(crate) fn run_with_deps<W, G, H>(
+    jules_path: &Path,
+    target: RunOptions,
+    runtime: RunRuntimeOptions,
+    git: &G,
+    github: &H,
+    repository: &W,
+) -> Result<RunResult, AppError>
+where
+    W: RepositoryFilesystem
+        + JloStore
+        + JulesStore
+        + PromptAssetLoader
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+    G: Git,
+    H: GitHub,
+{
+    run::execute(jules_path, target, runtime, git, github, repository)
+}
+
+/// Create a role with prebuilt repository and template-store adapters.
+#[allow(dead_code)]
+pub(crate) fn role_create_with_deps<W, R>(
+    repository: W,
+    templates: R,
+    layer: &str,
+    name: &str,
+) -> Result<RoleCreateOutcome, AppError>
+where
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
+    R: RoleTemplateStore,
+{
+    let ctx = AppContext::new(repository, templates);
+    role::create_role(&ctx, layer, name)
+}
+
+/// Add a built-in role with prebuilt repository and template-store adapters.
+#[allow(dead_code)]
+pub(crate) fn role_add_with_deps<W, R>(
+    repository: W,
+    templates: R,
+    layer: &str,
+    name: &str,
+) -> Result<RoleAddOutcome, AppError>
+where
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
+    R: RoleTemplateStore,
+{
+    let ctx = AppContext::new(repository, templates);
+    role::add_role(&ctx, layer, name)
+}
+
+/// Delete a role with prebuilt repository and template-store adapters.
+#[allow(dead_code)]
+pub(crate) fn role_delete_with_deps<W, R>(
+    repository: W,
+    templates: R,
+    layer: &str,
+    name: &str,
+) -> Result<RoleDeleteOutcome, AppError>
+where
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
+    R: RoleTemplateStore,
+{
+    let ctx = AppContext::new(repository, templates);
+    role::delete_role(&ctx, layer, name)
+}
+
+/// Upgrade with prebuilt repository and template-store adapters.
+#[allow(dead_code)]
+pub(crate) fn upgrade_with_deps<W, R>(
+    repository: &W,
+    templates: &R,
+    options: UpgradeOptions,
+) -> Result<UpgradeResult, AppError>
+where
+    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
+    R: RoleTemplateStore,
+{
+    upgrade::execute(repository, options, templates)
 }

@@ -6,9 +6,7 @@ use super::super::mock::mock_execution::{MOCK_ASSETS, generate_mock_id};
 use crate::app::commands::run::RunRuntimeOptions;
 use crate::app::commands::run::input::{detect_repository_source, load_mock_config};
 use crate::domain::layers::execute::starting_branch::resolve_starting_branch;
-use crate::domain::prompt_assemble::{
-    AssembledPrompt, PromptAssetLoader, PromptContext, assemble_prompt,
-};
+use crate::domain::prompt_assemble::{PromptAssetLoader, PromptContext, assemble_prompt};
 use crate::domain::{
     AppError, ControlPlaneConfig, Layer, MockConfig, MockOutput, RoleId, RunOptions,
 };
@@ -185,15 +183,16 @@ fn assemble_innovator_prompt<
         .with_var("task_name", task_name)
         .with_var("task", task);
 
-    assemble_prompt(
+    let (prompt, seed_ops) = assemble_prompt(
         jules_path,
         Layer::Innovators,
         &context,
         repository,
         crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset,
     )
-    .map(|p: AssembledPrompt| p.content)
-    .map_err(|e| AppError::InternalError(e.to_string()))
+    .map_err(|e| AppError::InternalError(e.to_string()))?;
+    super::execute_seed_ops(seed_ops, repository)?;
+    Ok(prompt.content)
 }
 
 fn resolve_innovator_task(task: &str) -> Result<String, AppError> {

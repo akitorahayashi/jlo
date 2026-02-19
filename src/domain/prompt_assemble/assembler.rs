@@ -7,7 +7,7 @@ use crate::domain::Layer;
 
 use super::error::PromptAssemblyError;
 use super::loader::PromptAssetLoader;
-use super::types::{AssembledPrompt, PromptContext};
+use super::types::{AssembledPrompt, PromptContext, SeedOp};
 
 /// The `prompt-assemble://` scheme prefix for embedded catalog resolution.
 const PROMPT_ASSEMBLE_SCHEME: &str = "prompt-assemble://";
@@ -27,7 +27,7 @@ pub fn assemble_prompt<L, R>(
     context: &PromptContext,
     loader: &L,
     prompt_assemble_reader: R,
-) -> Result<AssembledPrompt, PromptAssemblyError>
+) -> Result<(AssembledPrompt, Vec<SeedOp>), PromptAssemblyError>
 where
     L: PromptAssetLoader + Clone + Send + Sync + 'static,
     R: Fn(&str) -> Option<String> + Send + Sync + 'static,
@@ -42,6 +42,7 @@ where
 
     let included_files = Arc::new(Mutex::new(Vec::new()));
     let skipped_files = Arc::new(Mutex::new(Vec::new()));
+    let seed_ops = Arc::new(Mutex::new(Vec::new()));
     let failure = Arc::new(Mutex::new(None));
 
     let include_ctx = Arc::new(IncludeContext {
@@ -51,6 +52,7 @@ where
         prompt_assemble_reader: Box::new(prompt_assemble_reader),
         included_files: included_files.clone(),
         skipped_files: skipped_files.clone(),
+        seed_ops: seed_ops.clone(),
         failure: failure.clone(),
     });
 
@@ -101,11 +103,13 @@ where
         return Err(err);
     }
 
-    Ok(AssembledPrompt {
+    let prompt = AssembledPrompt {
         content: rendered,
         included_files: included_files.lock().unwrap().clone(),
         skipped_files: skipped_files.lock().unwrap().clone(),
-    })
+    };
+    let ops = seed_ops.lock().unwrap().clone();
+    Ok((prompt, ops))
 }
 
 /// Validate that a path is safe and does not traverse outside the root.
@@ -136,6 +140,7 @@ struct IncludeContext {
     prompt_assemble_reader: CatalogReader,
     included_files: Arc<Mutex<Vec<String>>>,
     skipped_files: Arc<Mutex<Vec<String>>>,
+    seed_ops: Arc<Mutex<Vec<SeedOp>>>,
     failure: Arc<Mutex<Option<PromptAssemblyError>>>,
 }
 
@@ -156,14 +161,18 @@ impl IncludeContext {
         }
 
         let full_path = self.root.join(path);
-        self.seed_from_schema(path, &full_path, required);
+        let seed_source = self.seed_from_schema(path, &full_path, required);
 
         if self.failure.lock().unwrap().is_some() {
             return None;
         }
 
-        if self.loader.asset_exists(&full_path) {
-            match self.loader.read_asset(&full_path) {
+        // If a seed source was found, read content from the schema source so the prompt
+        // assembly can proceed; the app layer will execute the SeedOp to persist the copy.
+        let read_path = seed_source.as_deref().unwrap_or(&full_path);
+
+        if self.loader.asset_exists(read_path) {
+            match self.loader.read_asset(read_path) {
                 Ok(content) => {
                     self.included_files.lock().unwrap().push(path.to_string());
                     Some(content)
@@ -227,42 +236,24 @@ impl IncludeContext {
         }
     }
 
-    fn seed_from_schema(&self, path: &str, full_path: &Path, required: bool) {
+    fn seed_from_schema(&self, path: &str, full_path: &Path, required: bool) -> Option<PathBuf> {
         if self.loader.asset_exists(full_path) {
-            return;
+            return None;
         }
 
-        let Some(file_name) = Path::new(path).file_name() else {
-            return;
-        };
+        let file_name = Path::new(path).file_name()?;
 
         let schema_path = self.schemas_dir.join(file_name);
         if !self.loader.asset_exists(&schema_path) {
-            return;
+            return None;
         }
 
-        if let Some(parent) = full_path.parent()
-            && let Err(err) = self.loader.ensure_asset_dir(parent)
-        {
-            if required {
-                self.failure.lock().unwrap().replace(PromptAssemblyError::SchemaSeedError {
-                    path: path.to_string(),
-                    reason: err.to_string(),
-                });
-            }
-            return;
-        }
-
-        if required {
-            if let Err(err) = self.loader.copy_asset(&schema_path, full_path) {
-                self.failure.lock().unwrap().replace(PromptAssemblyError::SchemaSeedError {
-                    path: path.to_string(),
-                    reason: err.to_string(),
-                });
-            }
-        } else {
-            let _ = self.loader.copy_asset(&schema_path, full_path);
-        }
+        self.seed_ops.lock().unwrap().push(SeedOp {
+            from: schema_path.clone(),
+            to: full_path.to_path_buf(),
+            required,
+        });
+        Some(schema_path)
     }
 }
 
@@ -361,7 +352,7 @@ mod tests {
         );
 
         assert!(result.is_ok());
-        let assembled = result.unwrap();
+        let (assembled, _seed_ops) = result.unwrap();
         assert!(assembled.content.contains("# Contracts"));
         assert!(assembled.content.contains("layer: planner"));
     }
@@ -380,7 +371,7 @@ mod tests {
         );
 
         let ctx = PromptContext::new().with_var("role", "qa");
-        let result = assemble_prompt(
+        let (result, _seed_ops) = assemble_prompt(
             jules_path,
             Layer::Observers,
             &ctx,
@@ -431,7 +422,7 @@ mod tests {
         mock_loader.add_file(".jules/schemas/observers/event.yml", "schema: event");
 
         let ctx = PromptContext::new().with_var("role", "taxonomy");
-        let result = assemble_prompt(
+        let (result, _seed_ops) = assemble_prompt(
             jules_path,
             Layer::Observers,
             &ctx,
