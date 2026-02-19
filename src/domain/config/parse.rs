@@ -56,8 +56,6 @@ mod tests {
         let toml = r#"
 [run]
 jlo_target_branch = "develop"
-parallel = false
-max_parallel = 5
 
 [jules_api]
 api_url = "https://example.com/v1/sessions"
@@ -68,8 +66,6 @@ retry_delay_ms = 250
         let config = parse_config_content(toml).unwrap();
 
         assert_eq!(config.run.jlo_target_branch, "develop");
-        assert!(!config.run.parallel);
-        assert_eq!(config.run.max_parallel, 5);
         assert_eq!(config.jules_api.api_url.as_str(), "https://example.com/v1/sessions");
     }
 
@@ -79,17 +75,28 @@ retry_delay_ms = 250
         let config = parse_config_content(toml).unwrap();
 
         assert_eq!(config.run.jlo_target_branch, "main");
-        assert!(config.run.parallel);
     }
 
     #[test]
     fn run_config_validation_fails() {
         let toml = r#"
 [run]
-max_parallel = 0
+jlo_target_branch = ""
 "#;
         let result = parse_config_content(toml);
         assert!(result.is_err());
         assert!(matches!(result, Err(AppError::Config(_))));
+    }
+
+    #[test]
+    fn run_config_rejects_removed_parallel_fields() {
+        let toml = r#"
+[run]
+parallel = true
+max_parallel = 3
+"#;
+        let result = parse_config_content(toml);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(AppError::TomlParseError(_))));
     }
 }

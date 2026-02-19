@@ -112,12 +112,6 @@ pub struct ExecutionConfig {
     /// Branch where .jules/ runtime repository resides (worker).
     #[serde(default = "default_jules_worker_branch")]
     pub jules_worker_branch: String,
-    /// Whether to run agents in parallel.
-    #[serde(default = "default_true")]
-    pub parallel: bool,
-    /// Maximum number of parallel agent executions.
-    #[serde(default = "default_max_parallel")]
-    pub max_parallel: usize,
 }
 
 impl Default for ExecutionConfig {
@@ -125,17 +119,12 @@ impl Default for ExecutionConfig {
         Self {
             jlo_target_branch: default_jlo_target_branch(),
             jules_worker_branch: default_jules_worker_branch(),
-            parallel: default_true(),
-            max_parallel: default_max_parallel(),
         }
     }
 }
 
 impl ExecutionConfig {
     pub fn validate(&self) -> Result<(), ConfigError> {
-        if self.max_parallel == 0 {
-            return Err(ConfigError::Invalid("max_parallel must be greater than 0".to_string()));
-        }
         if self.jlo_target_branch.trim().is_empty() {
             return Err(ConfigError::Invalid("jlo_target_branch must not be empty".to_string()));
         }
@@ -152,14 +141,6 @@ fn default_jlo_target_branch() -> String {
 
 fn default_jules_worker_branch() -> String {
     "jules".to_string()
-}
-
-fn default_true() -> bool {
-    true
-}
-
-fn default_max_parallel() -> usize {
-    3
 }
 
 /// Workflow timing configuration.
@@ -207,15 +188,7 @@ mod tests {
         let config = ControlPlaneConfig::default();
         assert_eq!(config.run.jlo_target_branch, "main");
         assert_eq!(config.run.jules_worker_branch, "jules");
-        assert!(config.run.parallel);
-        assert_eq!(config.run.max_parallel, 3);
         assert!(config.validate().is_ok());
-    }
-
-    #[test]
-    fn validate_execution_config_invalid_max_parallel() {
-        let config = ExecutionConfig { max_parallel: 0, ..Default::default() };
-        assert!(config.validate().is_err());
     }
 
     #[test]
@@ -249,16 +222,6 @@ mod tests {
     fn validate_accepts_valid_config() {
         let config = ControlPlaneConfig::default();
         assert!(config.validate().is_ok());
-    }
-
-    #[test]
-    fn validate_rejects_zero_max_parallel() {
-        let mut config = ControlPlaneConfig::default();
-        config.run.max_parallel = 0;
-        let err = config.validate().unwrap_err();
-        assert!(
-            matches!(err, AppError::Config(ConfigError::Invalid(ref msg)) if msg.contains("max_parallel"))
-        );
     }
 
     #[test]
