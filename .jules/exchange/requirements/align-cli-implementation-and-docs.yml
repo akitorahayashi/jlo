@@ -13,31 +13,49 @@ summary: "Fix inconsistencies between CLI implementation and README documentatio
 
 # Content
 goal: |
-  Consistent and accurate documentation and CLI behavior.
+  Consistent and accurate documentation and CLI behavior. Specifically, `jlo init` should use flags as documented, and `jlo run` should support all plural aliases and documented flags.
 
 problem: |
-  README.md describes commands/args differently than they work.
+  README.md describes commands/args differently than they work:
+  - `jlo init` is documented as using flags (`--remote`, `--self-hosted`) but implemented as positional arguments.
+  - `jlo run planner` and `implementer` are documented as using positional requirement paths but implemented as requiring `-r` flag.
+  - `jlo run` aliases are inconsistently implemented (some plurals supported, some missing).
 
 impact: |
-  User confusion and reduced trust in the tool due to inaccurate documentation.
+  User confusion and reduced trust in the tool due to inaccurate documentation and unexpected CLI behavior.
 
 desired_outcome: |
-  README.md accurately reflects the CLI.
+  README.md accurately reflects the CLI, and the CLI behaves consistently with standard conventions and documentation (e.g., flags for optional modes, consistent aliases).
 
-constraints: [] # list of constraints/assumptions (optional)
-risks: [] # list of known risks or regressions (optional)
+constraints:
+  - "Update `jlo init` to use `--remote` and `--self-hosted` flags instead of positional arguments."
+  - "Update `jlo run` to support `integrators` and `narrators` aliases for consistency."
+  - "Update `README.md` to correctly reflect `jlo run planner/implementer -r <file>` usage."
+
+risks:
+  - "Breaking change for users relying on positional arguments for `jlo init` (low risk as it's a setup command)."
 
 # Specifics
 affected_areas:
   - "README.md"
-  - "src/app/cli/"
+  - "src/app/cli/mod.rs"
+  - "src/app/cli/init.rs"
+  - "src/app/cli/run.rs"
 
 acceptance_criteria:
-  - "Documentation matches implementation."
+  - "`jlo init --remote` and `jlo init --self-hosted` commands work as expected."
+  - "`jlo init remote` (positional) usage is removed."
+  - "`jlo run integrators` alias is supported."
+  - "`jlo run narrators` alias is supported."
+  - "`README.md` correctly documents `jlo run planner -r <file>`."
+  - "`README.md` correctly documents `jlo run implementer -r <file>`."
 
 verification_criteria:
-  - "Manual verification of jlo --help vs README.md."
+  - "Run `cargo run --bin jlo -- init --help` and verify flags `--remote` and `--self-hosted` are present and mutually exclusive."
+  - "Run `cargo run --bin jlo -- run --help` and verify `integrators` and `narrators` aliases are listed (or work)."
+  - "Run `cargo run --bin jlo -- run planner --help` and verify `-r` flag is required."
+  - "Manual review of `README.md` changes."
 
 # Planning Flags
-implementation_ready: false # false routes to planner; true routes to implementer
+implementation_ready: true # false routes to planner; true routes to implementer
 planner_request_reason: "Determine whether to update docs or code for each case." # required when implementation_ready is false
