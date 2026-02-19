@@ -1,0 +1,20 @@
+schema_version: 1
+
+# Metadata
+id: "da0001"
+requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+created_at: "2026-02-19"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Monolithic Error Type: AppError"
+statement: |
+  The `AppError` enum centralizes all application errors into a single type, creating tight coupling between unrelated domains (IO, Git, Config, Roles). This violates the "Boundary Sovereignty" principle by forcing the entire application to recompile when any specific domain error changes, and makes error handling at call sites coarse-grained.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "26-128"
+    note: "Defines 26+ variants including Io, Config, Role, GitError, TomlParseError."

@@ -1,0 +1,20 @@
+schema_version: 1
+
+# Metadata
+id: "da0003"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Anemic Domain Model: Proposal"
+statement: |
+  The `Proposal` domain model relies heavily on `#[serde(default)]` for all fields, which allows it to be instantiated with empty strings and default values directly from JSON, bypassing any explicit validation. This creates an anemic model where valid state is not enforced by the type system.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/exchange/proposals/model.rs"
+    loc:
+      - "7-25"
+    note: "All fields use `#[serde(default)]`, allowing empty/invalid initialization."

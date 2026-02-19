@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "da0002"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Leaky Validation in Control Plane Adapter"
+statement: |
+  Domain validation logic for `WorkflowGenerateConfig` (e.g., cron schedule validation) is implemented in `src/adapters/control_plane_config.rs`, rather than within the domain model itself. This results in an anemic domain model (`WorkflowGenerateConfig` is a plain struct) and risks invalid configurations being created if the adapter is bypassed.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/adapters/control_plane_config.rs"
+    loc:
+      - "38-65"
+    note: "load_workflow_generate_config validates cron entries and wait_minutes_default."
+  - path: "src/domain/config/workflow_generate.rs"
+    loc:
+      - "6-17"
+    note: "WorkflowGenerateConfig is a public struct with no validation methods."
