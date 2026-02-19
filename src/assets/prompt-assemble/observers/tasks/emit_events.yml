@@ -1,18 +1,11 @@
 id: emit_events
-title: Inspect, Emit Events, and Update Memory
+title: Inspect and Emit Events
 
 description:
-  Core observer cycle. Inspect the codebase within your role's domain, emit
-  event files for findings, and refresh workstation memory.
+  Inspect repository state and emit event files for high-signal findings.
 
 steps:
-  - "Inspect the repository within your role's domain across the full codebase.
-    If changes.yml exists, treat it as a secondary hint only after baseline understanding is established."
   - "Cross-reference findings against open requirements and recent events to avoid duplication."
   - "For each finding (0-3): copy schema with
     cp .jules/schemas/observers/event.yml .jules/exchange/events/pending/<id>.yml,
     then fill all fields. Each event must have concrete file-level evidence."
-  - "Review goals in perspective.yml against current repository state. Replace
-    stale or completed goals — maintain 1-3 actionable goals at all times."
-  - "Update perspective.yml: set updated_at, refine rules/ignore, prepend a
-    one-line log entry (newest first, max 5)."

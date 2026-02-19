@@ -27,7 +27,6 @@ Ref: [root AGENTS.md](../../AGENTS.md).
 │   ├── events/{pending,decided}/
 │   ├── requirements/
 │   └── proposals/
-└── workstations/<role>/perspective.yml
 ```
 
 ## Prompt Assembly
@@ -48,7 +47,6 @@ References use the `prompt-assemble://` scheme to load from the embedded catalog
 | `event.yml` | Observers | Issue findings |
 | `requirements.yml` | Decider | Requirements |
 | `proposal.yml` | Innovators | Improvement proposals |
-| `perspective.yml` | Obs/Inn | Memory state |
 
 ### Exchange (`.jules/exchange/`)
 1. Narrator: `changes.yml` (Git summary).

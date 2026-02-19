@@ -38,3 +38,6 @@ profile:
     - "When claiming missing correlation, cite boundary crossings lacking stable IDs"
     - "When claiming loss of causality, cite missing dependency/branch/error classification in emitted events"
     - "When flagging cost/PII risk, cite the field/label and why it is high-risk or high-cardinality"
+
+# Intentional prohibitions by users
+constraint: []

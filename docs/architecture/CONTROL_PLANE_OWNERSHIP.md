@@ -35,7 +35,6 @@ Users never checkout or edit the `JULES_WORKER_BRANCH` branch directly. All conf
 | `.jules/exchange/events/<state>/**` | Agent | Agent execution | Observer outputs, decider inputs |
 | `.jules/exchange/requirements/**` | Agent | Agent execution | Decider outputs, planner/implementer inputs |
 | `.jules/exchange/proposals/*.yml` | Agent | Agent execution | Innovator proposals pending publication |
-| `.jules/workstations/<role>/**` | Agent | Agent execution | Role perspectives (memory) |
 | `.jules/exchange/changes.yml` | Agent | Narrator execution | Changes summary |
 | `.jules/setup/**` | Bootstrap | Workflow bootstrap | Materialized from embedded scaffold |
 
@@ -67,11 +66,9 @@ Workflow bootstrap is the sole authority for producing `.jules/` on `JULES_WORKE
 3. Checkout `JULES_WORKER_BRANCH` (create from `JLO_TARGET_BRANCH` history if absent).
 4. Write all managed framework files from embedded scaffold to `.jules/`.
 5. Do not project user intent files from `.jlo/` into `.jules/`; agents read control intent directly.
-6. Ensure workstation perspectives for scheduled observer/innovator roles.
-7. Prune workstation directories for unscheduled roles.
-8. Do not prune unmanaged runtime artifacts.
-9. Write the runtime version file.
-10. Commit changes (if any) to `JULES_WORKER_BRANCH` with a deterministic message.
+6. Do not prune unmanaged runtime artifacts.
+7. Write the runtime version file.
+8. Commit changes (if any) to `JULES_WORKER_BRANCH` with a deterministic message.
 
 ### Idempotency
 

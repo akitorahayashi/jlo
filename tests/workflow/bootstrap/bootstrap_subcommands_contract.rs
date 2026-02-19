@@ -1,7 +1,7 @@
 use crate::harness::TestContext;
 
 #[test]
-fn bootstrap_subcommands_can_run_independently() {
+fn bootstrap_managed_files_subcommand_runs_independently() {
     let ctx = TestContext::new();
     ctx.init_remote();
 
@@ -9,11 +9,5 @@ fn bootstrap_subcommands_can_run_independently() {
     assert!(
         ctx.jules_path().join(".jlo-version").exists(),
         "managed-files subcommand should stamp .jules version file"
-    );
-
-    ctx.cli().args(["workflow", "bootstrap", "workstations"]).assert().success();
-    assert!(
-        ctx.jules_path().join("workstations").exists(),
-        "workstations subcommand should reconcile workstation directory"
     );
 }

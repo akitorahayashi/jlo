@@ -267,7 +267,6 @@ where
     let safe_tag = sanitize_yaml_value(&config.mock_tag);
     let today = Utc::now().format("%Y-%m-%d").to_string();
     let mut created_paths = Vec::new();
-    let mut proposal_titles = Vec::new();
     let proposal_template = load_mock_asset_text("innovator_proposal.yml")?;
 
     for index in 1..=3 {
@@ -290,29 +289,7 @@ where
             .replace("__TAG__", &safe_tag);
         repository.write_file(proposal_path_str, &proposal_content)?;
         created_paths.push(proposal_path);
-        proposal_titles.push(proposal_title);
     }
-
-    let perspective_path =
-        crate::domain::workstations::paths::workstation_perspective(jules_path, role.as_str());
-    let perspective_path_str = perspective_path
-        .to_str()
-        .ok_or_else(|| AppError::Validation("Invalid perspective path".to_string()))?;
-    let workstation_dir =
-        crate::domain::workstations::paths::workstation_dir(jules_path, role.as_str());
-    let workstation_dir_str = workstation_dir
-        .to_str()
-        .ok_or_else(|| AppError::Validation("Invalid workstation path".to_string()))?;
-    repository.create_dir_all(workstation_dir_str)?;
-
-    let perspective_template = load_mock_asset_text("innovator_perspective.yml")?;
-    let perspective_content = perspective_template
-        .replace("__ROLE__", role.as_str())
-        .replace("__TITLE_1__", &proposal_titles[2])
-        .replace("__TITLE_2__", &proposal_titles[1])
-        .replace("__TITLE_3__", &proposal_titles[0]);
-    repository.write_file(perspective_path_str, &perspective_content)?;
-    created_paths.push(perspective_path);
 
     let files: Vec<&Path> = created_paths.iter().map(|path| path.as_path()).collect();
     git.commit_files(&format!("[{}] innovator: mock three proposals", config.mock_tag), &files)?;
@@ -361,7 +338,7 @@ mod tests {
     }
 
     #[test]
-    fn mock_innovator_creates_three_proposals_and_updates_perspective() {
+    fn mock_innovator_creates_three_proposals() {
         let jules_path = PathBuf::from(".jules");
         let repository = TestStore::new().with_exists(true);
         let git = FakeGit::new();
@@ -383,9 +360,6 @@ mod tests {
         assert!(repository.file_exists(p1.to_str().unwrap()));
         assert!(repository.file_exists(p2.to_str().unwrap()));
         assert!(repository.file_exists(p3.to_str().unwrap()));
-
-        let perspective_path = jules_path.join("workstations/alice/perspective.yml");
-        assert!(repository.file_exists(perspective_path.to_str().unwrap()));
     }
 
     #[test]

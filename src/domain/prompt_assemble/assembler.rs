@@ -425,9 +425,10 @@ mod tests {
         let mut catalog = HashMap::new();
         catalog.insert(
             "observers/observers_prompt.j2".to_string(),
-            r#"{{ section("Perspective", include_required(".jules/workstations/taxonomy/perspective.yml")) }}"#.to_string(),
+            r#"{{ section("Event Schema", include_required(".jules/schemas/observers/event.yml")) }}"#
+                .to_string(),
         );
-        mock_loader.add_file(".jules/schemas/observers/perspective.yml", "schema: perspective");
+        mock_loader.add_file(".jules/schemas/observers/event.yml", "schema: event");
 
         let ctx = PromptContext::new().with_var("role", "taxonomy");
         let result = assemble_prompt(
@@ -439,7 +440,7 @@ mod tests {
         )
         .unwrap();
 
-        assert!(result.content.contains("schema: perspective"));
-        assert!(result.included_files.iter().any(|path| path.ends_with("perspective.yml")));
+        assert!(result.content.contains("schema: event"));
+        assert!(result.included_files.iter().any(|path| path.ends_with("event.yml")));
     }
 }

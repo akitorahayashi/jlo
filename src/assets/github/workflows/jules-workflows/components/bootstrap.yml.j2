@@ -37,9 +37,6 @@
       - name: Bootstrap managed files
         run: jlo workflow bootstrap managed-files
 
-      - name: Reconcile workstation perspectives
-        run: jlo workflow bootstrap workstations
-
       - name: Validate repository
         run: jlo workflow doctor
 
@@ -56,7 +53,6 @@
 
           - synchronize ${JLO_TARGET_BRANCH} into ${JULES_WORKER_BRANCH} via \`jlo workflow bootstrap worker-branch\`
           - bootstrap managed files via \`jlo workflow bootstrap managed-files\`
-          - reconcile workstations via \`jlo workflow bootstrap workstations\`
           EOF
           )
           jlo_version="$(jlo --version | cut -d ' ' -f 2)"

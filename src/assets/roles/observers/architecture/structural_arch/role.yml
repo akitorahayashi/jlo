@@ -40,3 +40,6 @@ profile:
     - "When calling out findability issues, cite conflicting directory paths and ambiguous names"
     - "When calling out public surface issues, cite exported symbols/modules and their downstream usage"
     - "When calling out flow issues, cite entry points, decision points, and where side effects occur"
+
+# Intentional prohibitions by users
+constraint: []

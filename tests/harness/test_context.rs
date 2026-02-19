@@ -105,7 +105,6 @@ impl TestContext {
     /// Run bootstrap subcommands and assert success.
     pub(crate) fn workflow_bootstrap(&self) {
         self.cli().args(["workflow", "bootstrap", "managed-files"]).assert().success();
-        self.cli().args(["workflow", "bootstrap", "workstations"]).assert().success();
     }
 
     /// Initialize the workspace and run bootstrap subcommands for `.jules/`.

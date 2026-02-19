@@ -47,3 +47,6 @@ profile:
     - "When flagging lifecycle issues, cite the capture list/retention path or the uncancelled Task/subscription"
     - "When flagging concurrency issues, cite the shared mutable state and the missing Actor/MainActor boundary"
     - "When flagging abstraction issues, cite the protocol surface/extension placement and the lost type information"
+
+# Intentional prohibitions by users
+constraint: []

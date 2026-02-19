@@ -13,7 +13,6 @@ fn bootstrap_does_not_project_control_plane_roles() {
     fs::write(custom_role_jlo.join("role.yml"), "role: custom").expect("write role.yml");
 
     ctx.cli().args(["workflow", "bootstrap", "managed-files"]).assert().success();
-    ctx.cli().args(["workflow", "bootstrap", "workstations"]).assert().success();
 
     // Verify it is NOT in .jules/.
     assert!(
@@ -36,7 +35,6 @@ fn bootstrap_does_not_project_unknown_control_plane_directories() {
     fs::write(custom_dir_jlo.join("data.toml"), "").expect("write data.toml");
 
     ctx.cli().args(["workflow", "bootstrap", "managed-files"]).assert().success();
-    ctx.cli().args(["workflow", "bootstrap", "workstations"]).assert().success();
 
     assert!(
         !ctx.jules_path().join("custom-project").exists(),

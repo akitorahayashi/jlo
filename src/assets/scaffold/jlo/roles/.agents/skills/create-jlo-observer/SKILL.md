@@ -19,6 +19,7 @@ Required shape:
 ```yaml
 role: <role_id>
 layer: observers
+constraint: <sequence>
 profile:
   focus: <string>
   analysis_points: <non-empty sequence>
@@ -31,6 +32,7 @@ profile:
 Validator-critical fields:
 - `role`
 - `layer` (must be `observers`)
+- `constraint` (sequence, can be empty)
 - `profile.focus`
 - `profile.analysis_points`
 

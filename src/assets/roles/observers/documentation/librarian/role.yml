@@ -39,3 +39,6 @@ profile:
     - "For duplication findings, cite the conflicting canonical claims and ownership ambiguity."
     - "For discoverability findings, show the exact navigation path and where intent-to-path selection fails."
     - "For reorganization proposals, cite the structural rule being enforced and the measurable lookup simplification."
+
+# Intentional prohibitions by users
+constraint: []

@@ -9,7 +9,6 @@ use crate::domain::{AppError, JLO_DIR, VERSION_FILE};
 
 pub mod managed_files;
 pub mod worker_branch;
-pub mod workstations;
 
 pub use managed_files::{
     WorkflowBootstrapManagedFilesOptions, WorkflowBootstrapManagedFilesOutput,
@@ -17,7 +16,6 @@ pub use managed_files::{
 pub use worker_branch::{
     WorkflowBootstrapWorkerBranchOptions, WorkflowBootstrapWorkerBranchOutput,
 };
-pub use workstations::{WorkflowBootstrapWorkstationsOptions, WorkflowBootstrapWorkstationsOutput};
 
 pub(super) fn validate_control_plane_preconditions(root: &Path) -> Result<(), AppError> {
     let jlo_path = root.join(JLO_DIR);
