@@ -1,0 +1,14 @@
+schema_version: 1
+id: "4s99pv"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "structural_arch"
+confidence: "high"
+title: "Domain Validation Leaks into Adapters"
+statement: |
+  Configuration validation rules for `WorkflowGenerateConfig` are implemented in `src/adapters/control_plane_config.rs` instead of the domain entity itself. This leads to anemic domain models and scattered business logic.
+evidence:
+  - path: "src/adapters/control_plane_config.rs"
+    loc:
+      - "fn load_workflow_generate_config"
+    note: "Validation logic (checking required fields) inside adapter code."
