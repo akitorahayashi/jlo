@@ -159,16 +159,16 @@ impl Git for GitCommandAdapter {
             kind: e.kind().into(),
         })?;
 
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0);
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
         let id = format!("ws-{}", now);
         let temp_dir = workspaces_dir.join(&id);
 
         // git worktree add --detach <path> <branch>
         // We use --detach to allow creating a workspace even if the branch is already checked out elsewhere.
-        self.run_output(&["worktree", "add", "--detach", temp_dir.to_str().unwrap(), branch], None)?;
+        self.run_output(
+            &["worktree", "add", "--detach", temp_dir.to_str().unwrap(), branch],
+            None,
+        )?;
 
         Ok(Box::new(GitWorktreeWorkspace {
             adapter: GitCommandAdapter::new(temp_dir.clone()),

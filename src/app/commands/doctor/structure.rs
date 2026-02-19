@@ -167,15 +167,13 @@ fn check_workspaces(root: &Path, diagnostics: &mut Diagnostics) {
 
     match fs::read_dir(&workspaces_dir) {
         Ok(entries) => {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        diagnostics.push_warning(
-                            path.display().to_string(),
-                            "Temporary workspace found. These are normally cleaned up automatically but may remain after a crash.",
-                        );
-                    }
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    diagnostics.push_warning(
+                        path.display().to_string(),
+                        "Temporary workspace found. These are normally cleaned up automatically but may remain after a crash.",
+                    );
                 }
             }
         }

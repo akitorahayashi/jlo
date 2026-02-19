@@ -87,7 +87,12 @@ mod tests {
             Ok(true)
         }
 
-        fn push_branch_from_rev(&self, _rev: &str, _branch: &str, _force: bool) -> Result<(), AppError> {
+        fn push_branch_from_rev(
+            &self,
+            _rev: &str,
+            _branch: &str,
+            _force: bool,
+        ) -> Result<(), AppError> {
             Ok(())
         }
 

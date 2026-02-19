@@ -206,8 +206,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::GitWorkspace;
     use crate::adapters::local_repository::LocalRepositoryAdapter;
+    use crate::ports::GitWorkspace;
     use crate::ports::{
         GitHub, IssueInfo, JulesStore, PrComment, PullRequestDetail, PullRequestInfo,
     };
@@ -303,7 +303,12 @@ mod tests {
             Ok(())
         }
 
-        fn push_branch_from_rev(&self, _rev: &str, branch: &str, _force: bool) -> Result<(), AppError> {
+        fn push_branch_from_rev(
+            &self,
+            _rev: &str,
+            branch: &str,
+            _force: bool,
+        ) -> Result<(), AppError> {
             self.pushed_branches.lock().expect("push lock poisoned").push(branch.to_string());
             Ok(())
         }

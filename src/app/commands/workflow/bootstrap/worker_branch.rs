@@ -204,7 +204,12 @@ mod tests {
             Ok(())
         }
 
-        fn push_branch_from_rev(&self, _rev: &str, branch: &str, _force: bool) -> Result<(), AppError> {
+        fn push_branch_from_rev(
+            &self,
+            _rev: &str,
+            branch: &str,
+            _force: bool,
+        ) -> Result<(), AppError> {
             self.pushed.lock().expect("pushed lock poisoned").push(branch.to_string());
             Ok(())
         }
@@ -246,12 +251,7 @@ mod tests {
         fn get_first_commit(&self, commit: &str) -> Result<String, AppError> {
             self.git.get_first_commit(commit)
         }
-        fn has_changes(
-            &self,
-            from: &str,
-            to: &str,
-            pathspec: &[&str],
-        ) -> Result<bool, AppError> {
+        fn has_changes(&self, from: &str, to: &str, pathspec: &[&str]) -> Result<bool, AppError> {
             self.git.has_changes(from, to, pathspec)
         }
         fn run_command(&self, args: &[&str], cwd: Option<&Path>) -> Result<String, AppError> {
@@ -263,7 +263,12 @@ mod tests {
         fn push_branch(&self, branch: &str, force: bool) -> Result<(), AppError> {
             self.git.push_branch(branch, force)
         }
-        fn push_branch_from_rev(&self, rev: &str, branch: &str, force: bool) -> Result<(), AppError> {
+        fn push_branch_from_rev(
+            &self,
+            rev: &str,
+            branch: &str,
+            force: bool,
+        ) -> Result<(), AppError> {
             self.git.push_branch_from_rev(rev, branch, force)
         }
         fn commit_files(&self, message: &str, files: &[&Path]) -> Result<String, AppError> {

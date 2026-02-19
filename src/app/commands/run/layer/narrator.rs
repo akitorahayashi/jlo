@@ -306,7 +306,12 @@ mod tests {
             panic!("mock narrator no-op must not call push_branch");
         }
 
-        fn push_branch_from_rev(&self, _rev: &str, _branch: &str, _force: bool) -> Result<(), AppError> {
+        fn push_branch_from_rev(
+            &self,
+            _rev: &str,
+            _branch: &str,
+            _force: bool,
+        ) -> Result<(), AppError> {
             panic!("mock narrator no-op must not call push_branch_from_rev");
         }
 
