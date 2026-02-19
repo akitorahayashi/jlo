@@ -2,7 +2,6 @@ pub mod deinit;
 pub mod doctor;
 pub mod init;
 pub mod role;
-pub mod role_schedule;
 pub mod run;
 pub mod setup;
 pub mod update;

@@ -5,7 +5,7 @@ use crate::domain::PromptAssetLoader;
 use crate::domain::{AppError, Layer, RoleId};
 use crate::ports::{JloStore, JulesStore, RepositoryFilesystem, RoleTemplateStore};
 
-use crate::app::commands::role_schedule::{ensure_role_scheduled, remove_role_scheduled};
+use super::schedule::{ensure_role_scheduled, remove_role_scheduled};
 
 use super::RoleDeleteOutcome;
 
