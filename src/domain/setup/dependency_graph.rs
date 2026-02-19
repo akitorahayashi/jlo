@@ -101,8 +101,8 @@ impl DependencyGraph {
         let name_str = id.as_str();
 
         // Resolve from catalog first to get canonical identity.
-        let component = catalog.get(name_str).ok_or_else(|| {
-            AppError::from(SetupError::ComponentNotFound {
+        let component = catalog.get(name_str).ok_or_else(|| -> AppError {
+            SetupError::ComponentNotFound {
                 name: name_str.to_string(),
                 available: catalog
                     .names()
@@ -110,7 +110,8 @@ impl DependencyGraph {
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>()
                     .join(", "),
-            })
+            }
+            .into()
         })?;
 
         let canonical_id = &component.name;

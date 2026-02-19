@@ -48,11 +48,12 @@ pub fn execute() -> Result<Vec<SetupComponentSummary>, AppError> {
 pub fn execute_detail(component_name: &str) -> Result<SetupComponentDetail, AppError> {
     let catalog = EmbeddedSetupComponentCatalog::new()?;
 
-    let component = catalog.get(component_name).ok_or_else(|| {
-        AppError::from(crate::domain::setup::error::SetupError::ComponentNotFound {
+    let component = catalog.get(component_name).ok_or_else(|| -> AppError {
+        crate::domain::setup::error::SetupError::ComponentNotFound {
             name: component_name.to_string(),
             available: catalog.names().join(", "),
-        })
+        }
+        .into()
     })?;
 
     Ok(SetupComponentDetail {

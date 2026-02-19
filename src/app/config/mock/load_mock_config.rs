@@ -16,12 +16,13 @@ fn load_branch_prefix_for_layer(layer: Layer) -> Result<String, AppError> {
     let content = crate::adapters::catalogs::prompt_assemble_assets::read_prompt_assemble_asset(
         &catalog_path,
     )
-    .ok_or_else(|| {
-        AppError::from(ConfigError::Invalid(format!(
+    .ok_or_else(|| -> AppError {
+        ConfigError::Invalid(format!(
             "Missing contracts for layer '{}' in embedded catalog: prompt-assemble://{}",
             layer.dir_name(),
             catalog_path
-        )))
+        ))
+        .into()
     })?;
 
     extract_branch_prefix(&content).map_err(|e| {
