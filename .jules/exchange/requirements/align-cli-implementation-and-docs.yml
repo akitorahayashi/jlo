@@ -1,0 +1,43 @@
+schema_version: 2
+
+# Metadata
+id: "ib6h13" # stable identity
+source_events:
+  - "lsdxdi"
+  - "os8dcq"
+  - "6tlbvh"
+title: "Align Cli Implementation And Docs"
+label: "refacts" # Must match a key in .jules/github-labels.json
+priority: "medium"
+summary: "Fix inconsistencies between CLI implementation and README documentation."
+
+# Content
+goal: |
+  Consistent and accurate documentation and CLI behavior.
+
+problem: |
+  README.md describes commands/args differently than they work.
+
+impact: |
+  User confusion and reduced trust in the tool due to inaccurate documentation.
+
+desired_outcome: |
+  README.md accurately reflects the CLI.
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "README.md"
+  - "src/app/cli/"
+
+acceptance_criteria:
+  - "Documentation matches implementation."
+
+verification_criteria:
+  - "Manual verification of jlo --help vs README.md."
+
+# Planning Flags
+implementation_ready: false # false routes to planner; true routes to implementer
+planner_request_reason: "Determine whether to update docs or code for each case." # required when implementation_ready is false
