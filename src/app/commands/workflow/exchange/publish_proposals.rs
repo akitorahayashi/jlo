@@ -7,12 +7,10 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::adapters::git::GitCommandAdapter;
 use crate::adapters::local_repository::LocalRepositoryAdapter;
-use crate::domain::PromptAssetLoader;
 use crate::domain::exchange::proposals::Proposal;
 use crate::domain::{AppError, RoleId};
-use crate::ports::{Git, GitHub, IssueInfo, JloStore, JulesStore, RepositoryFilesystem};
+use crate::ports::{GitHub, IssueInfo, JulesStore, RepositoryFilesystem};
 
 #[derive(Debug, Clone)]
 pub struct ExchangePublishProposalsOptions {}
@@ -41,26 +39,19 @@ pub fn execute(
         return Err(AppError::JulesNotFound);
     }
 
-    let jules_path = repository.jules_path();
-    let root = jules_path.parent().unwrap_or(Path::new(".")).to_path_buf();
-    let git = GitCommandAdapter::new(root.canonicalize().map_err(|e| {
-        AppError::InternalError(format!("Failed to resolve repository root: {}", e))
-    })?);
     let github = crate::adapters::github::GitHubCommandAdapter::new();
 
-    execute_with(&repository, &options, &git, &github)
+    execute_with(&repository, &options, &github)
 }
 
 /// Core logic, injectable for testing.
-fn execute_with<W, G, H>(
+fn execute_with<W, H>(
     repository: &W,
     _options: &ExchangePublishProposalsOptions,
-    _git: &G,
     github: &H,
 ) -> Result<ExchangePublishProposalsOutput, AppError>
 where
-    W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader,
-    G: Git,
+    W: RepositoryFilesystem + JulesStore,
     H: GitHub,
 {
     let jules_path = repository.jules_path();
@@ -185,7 +176,7 @@ where
 }
 
 /// Discover proposal files under `.jules/exchange/proposals/`.
-fn discover_proposals<W: RepositoryFilesystem + JloStore + JulesStore + PromptAssetLoader>(
+fn discover_proposals<W: RepositoryFilesystem + JulesStore>(
     proposals_dir: &Path,
     repository: &W,
 ) -> Result<Vec<PathBuf>, AppError> {
@@ -263,7 +254,7 @@ fn validate_proposal_filename_matches_role(
 mod tests {
     use super::*;
     use crate::ports::RepositoryFilesystem;
-    use crate::testing::{FakeGit, FakeGitHub, TestStore};
+    use crate::testing::{FakeGitHub, TestStore};
 
     fn proposal_yaml() -> &'static str {
         r#"schema_version: 1
@@ -295,20 +286,17 @@ verification_signals:
         let repository =
             TestStore::new().with_exists(true).with_file(proposal_path, proposal_yaml());
 
-        let git = FakeGit::new();
         let github = FakeGitHub::new();
 
         let options = ExchangePublishProposalsOptions {};
 
-        let output = execute_with(&repository, &options, &git, &github).unwrap();
+        let output = execute_with(&repository, &options, &github).unwrap();
 
         assert_eq!(output.published.len(), 1);
         assert_eq!(output.published[0].role, "alice");
         assert_eq!(output.published[0].issue_number, 1);
         assert!(!output.committed);
         assert!(!output.pushed);
-        let created_branches = git.branches_created.lock().unwrap();
-        assert_eq!(created_branches.len(), 0);
 
         // Proposal file should be removed
         assert!(!repository.file_exists(proposal_path));
@@ -326,12 +314,11 @@ verification_signals:
     #[test]
     fn no_proposals_returns_empty_output() {
         let repository = TestStore::new().with_exists(true);
-        let git = FakeGit::new();
         let github = FakeGitHub::new();
 
         let options = ExchangePublishProposalsOptions {};
 
-        let output = execute_with(&repository, &options, &git, &github).unwrap();
+        let output = execute_with(&repository, &options, &github).unwrap();
 
         assert!(output.published.is_empty());
         assert!(!output.committed);
@@ -345,11 +332,10 @@ verification_signals:
         let repository =
             TestStore::new().with_exists(true).with_file(proposal_path, &invalid_role_yaml);
 
-        let git = FakeGit::new();
         let github = FakeGitHub::new();
         let options = ExchangePublishProposalsOptions {};
 
-        let result = execute_with(&repository, &options, &git, &github);
+        let result = execute_with(&repository, &options, &github);
         assert!(result.is_err());
         let message = result.unwrap_err().to_string();
         assert!(message.contains("Invalid proposal role"));
@@ -364,11 +350,10 @@ verification_signals:
         let repository = TestStore::new()
             .with_exists(true)
             .with_file(proposal_path, &proposal_with_underscored_role);
-        let git = FakeGit::new();
         let github = FakeGitHub::new();
         let options = ExchangePublishProposalsOptions {};
 
-        let output = execute_with(&repository, &options, &git, &github).unwrap();
+        let output = execute_with(&repository, &options, &github).unwrap();
         assert_eq!(output.published.len(), 1);
         assert_eq!(output.published[0].role, "alice_team");
     }

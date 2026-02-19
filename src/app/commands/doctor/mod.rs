@@ -48,8 +48,6 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
         &mut diagnostics,
     );
 
-    let prompt_entries = schemas::collect_prompt_entries(jules_path, &mut diagnostics)?;
-
     schemas::schema_checks(
         schemas::SchemaInputs {
             jules_path,
@@ -58,7 +56,6 @@ pub fn execute(jules_path: &Path, options: DoctorOptions) -> Result<DoctorOutcom
             event_states: &event_states,
             event_confidence: &event_confidence,
             issue_priorities: &issue_priorities,
-            prompt_entries: &prompt_entries,
         },
         &mut diagnostics,
     );

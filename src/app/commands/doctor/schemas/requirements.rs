@@ -29,9 +29,10 @@ pub fn validate_requirement(
 ) {
     ensure_int(data, path, "schema_version", diagnostics, Some(2));
     ensure_id(data, path, "id", diagnostics);
-    if get_sequence(data, "source_events").map(|seq| seq.is_empty()).unwrap_or(true) {
+    let source_events = get_sequence(data, "source_events");
+    if source_events.as_ref().map(|seq| seq.is_empty()).unwrap_or(true) {
         diagnostics.push_error(path.display().to_string(), "source_events must have entries");
-    } else if let Some(seq) = get_sequence(data, "source_events") {
+    } else if let Some(seq) = source_events {
         for event_id in seq {
             if let serde_yaml::Value::String(value) = event_id
                 && !crate::app::commands::doctor::yaml::is_valid_id(&value)

@@ -7,12 +7,12 @@ pub mod proposals;
 pub mod requirements;
 pub mod roles;
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::app::commands::doctor::diagnostics::Diagnostics;
 use crate::app::commands::doctor::structure::list_subdirs;
 use crate::app::commands::doctor::yaml::read_yaml_files;
-use crate::domain::{AppError, Layer};
+use crate::domain::Layer;
 
 use self::changes::validate_changes_file;
 use self::contracts::validate_contracts;
@@ -22,12 +22,6 @@ use self::proposals::validate_innovator_proposal;
 use self::requirements::validate_requirement_file;
 use self::roles::{validate_innovator_role_file, validate_role_file};
 
-#[derive(Debug, Clone)]
-pub(crate) struct PromptEntry {
-    pub path: PathBuf,
-    pub contracts: Vec<String>,
-}
-
 pub struct SchemaInputs<'a> {
     pub jules_path: &'a Path,
     pub root: &'a Path,
@@ -35,31 +29,9 @@ pub struct SchemaInputs<'a> {
     pub event_states: &'a [String],
     pub event_confidence: &'a [String],
     pub issue_priorities: &'a [String],
-    pub prompt_entries: &'a [PromptEntry],
-}
-
-pub fn collect_prompt_entries(
-    _jules_path: &Path,
-    _diagnostics: &mut Diagnostics,
-) -> Result<Vec<PromptEntry>, AppError> {
-    // Prompt entries (templates, contracts, tasks) are now embedded in the binary
-    // via src/assets/prompt-assemble/. No filesystem-based collection needed.
-    Ok(Vec::new())
 }
 
 pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
-    for entry in inputs.prompt_entries {
-        for contract in &entry.contracts {
-            let contract_path = inputs.root.join(contract);
-            if !contract_path.exists() {
-                diagnostics.push_error(
-                    entry.path.display().to_string(),
-                    format!("Contract not found: {}", contract),
-                );
-            }
-        }
-    }
-
     let changes_path = crate::domain::exchange::paths::exchange_changes(inputs.jules_path);
     if changes_path.exists() {
         validate_changes_file(&changes_path, diagnostics);
@@ -106,35 +78,30 @@ pub fn schema_checks(inputs: SchemaInputs<'_>, diagnostics: &mut Diagnostics) {
     }
 
     // Validate flat exchange directory
-    {
-        for state in inputs.event_states {
-            let state_dir =
-                crate::domain::exchange::events::paths::events_state_dir(inputs.jules_path, state);
-            for entry in read_yaml_files(&state_dir, diagnostics) {
-                validate_event_file(&entry, state, inputs.event_confidence, diagnostics);
-                check_placeholders_file(&entry, diagnostics);
-            }
+    for state in inputs.event_states {
+        let state_dir =
+            crate::domain::exchange::events::paths::events_state_dir(inputs.jules_path, state);
+        for entry in read_yaml_files(&state_dir, diagnostics) {
+            validate_event_file(&entry, state, inputs.event_confidence, diagnostics);
+            check_placeholders_file(&entry, diagnostics);
         }
+    }
 
-        {
-            let requirements_dir =
-                crate::domain::exchange::requirements::paths::requirements_dir(inputs.jules_path);
-            for entry in read_yaml_files(&requirements_dir, diagnostics) {
-                validate_requirement_file(
-                    &entry,
-                    inputs.issue_labels,
-                    inputs.issue_priorities,
-                    diagnostics,
-                );
-                check_placeholders_file(&entry, diagnostics);
-            }
-        }
+    let requirements_dir =
+        crate::domain::exchange::requirements::paths::requirements_dir(inputs.jules_path);
+    for entry in read_yaml_files(&requirements_dir, diagnostics) {
+        validate_requirement_file(
+            &entry,
+            inputs.issue_labels,
+            inputs.issue_priorities,
+            diagnostics,
+        );
+        check_placeholders_file(&entry, diagnostics);
+    }
 
-        let proposals_dir =
-            crate::domain::exchange::proposals::paths::proposals_dir(inputs.jules_path);
-        for proposal_path in read_yaml_files(&proposals_dir, diagnostics) {
-            validate_innovator_proposal(&proposal_path, diagnostics);
-            check_placeholders_file(&proposal_path, diagnostics);
-        }
+    let proposals_dir = crate::domain::exchange::proposals::paths::proposals_dir(inputs.jules_path);
+    for proposal_path in read_yaml_files(&proposals_dir, diagnostics) {
+        validate_innovator_proposal(&proposal_path, diagnostics);
+        check_placeholders_file(&proposal_path, diagnostics);
     }
 }

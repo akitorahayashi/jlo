@@ -36,7 +36,7 @@ pub fn validate_event(
         Some(value) => value,
         None => {
             diagnostics.push_error(path.display().to_string(), "requirement_id is required");
-            String::new()
+            return;
         }
     };
     if state == "pending" && !requirement_id.is_empty() {

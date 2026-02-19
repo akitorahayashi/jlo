@@ -3,8 +3,9 @@ use std::path::Path;
 
 use crate::app::commands::doctor::diagnostics::Diagnostics;
 use crate::app::commands::doctor::yaml::{
-    ensure_non_empty_sequence, ensure_non_empty_string, get_sequence, get_string, load_yaml_mapping,
+    ensure_non_empty_sequence, ensure_non_empty_string, get_string, load_yaml_mapping,
 };
+use crate::domain::Layer;
 
 pub fn validate_role_file(path: &Path, role_dir: &Path, diagnostics: &mut Diagnostics) {
     let data = match load_yaml_mapping(path, diagnostics) {
@@ -19,7 +20,7 @@ pub fn validate_role(data: &Mapping, path: &Path, role_dir: &Path, diagnostics: 
 
     // Check layer field
     let layer_value = get_string(data, "layer").unwrap_or_default();
-    if layer_value != "observers" {
+    if layer_value != Layer::Observers.dir_name() {
         diagnostics.push_error(path.display().to_string(), "layer must be 'observers'");
     }
     validate_constraint(data, path, diagnostics);
@@ -27,18 +28,8 @@ pub fn validate_role(data: &Mapping, path: &Path, role_dir: &Path, diagnostics: 
     // Check profile section
     match data.get("profile") {
         Some(serde_yaml::Value::Mapping(profile_map)) => {
-            if get_string(profile_map, "focus").is_none() {
-                diagnostics.push_error(path.display().to_string(), "Missing profile.focus");
-            }
-            if get_sequence(profile_map, "analysis_points")
-                .map(|seq| seq.is_empty())
-                .unwrap_or(true)
-            {
-                diagnostics.push_error(
-                    path.display().to_string(),
-                    "profile.analysis_points must have entries",
-                );
-            }
+            ensure_non_empty_string(profile_map, path, "focus", diagnostics);
+            ensure_non_empty_sequence(profile_map, path, "analysis_points", diagnostics);
         }
         Some(_) => {
             diagnostics.push_error(path.display().to_string(), "'profile' must be a mapping");
@@ -67,7 +58,7 @@ pub fn validate_innovator_role_file(path: &Path, role_dir: &Path, diagnostics: &
     ensure_non_empty_string(&data, path, "role", diagnostics);
 
     let layer_value = get_string(&data, "layer").unwrap_or_default();
-    if layer_value != "innovators" {
+    if layer_value != Layer::Innovators.dir_name() {
         diagnostics.push_error(path.display().to_string(), "layer must be 'innovators'");
     }
     validate_constraint(&data, path, diagnostics);

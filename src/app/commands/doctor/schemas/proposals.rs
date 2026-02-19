@@ -11,7 +11,7 @@ use super::dates::ensure_date;
 
 pub fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
     if let Some(data) = load_yaml_mapping(path, diagnostics) {
-        validate_innovator_document_dates_fields(&data, path, diagnostics);
+        validate_innovator_document_common_fields(&data, path, diagnostics);
         ensure_non_empty_string(&data, path, "introduction", diagnostics);
         ensure_non_empty_string(&data, path, "importance", diagnostics);
         ensure_non_empty_sequence(&data, path, "impact_surface", diagnostics);
@@ -38,7 +38,7 @@ pub fn validate_innovator_proposal(path: &Path, diagnostics: &mut Diagnostics) {
     }
 }
 
-pub fn validate_innovator_document_dates_fields(
+pub fn validate_innovator_document_common_fields(
     data: &Mapping,
     path: &Path,
     diagnostics: &mut Diagnostics,
