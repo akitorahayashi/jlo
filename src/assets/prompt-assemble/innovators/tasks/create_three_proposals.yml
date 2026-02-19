@@ -2,7 +2,7 @@ task: create_three_proposals
 mode: direct
 
 objective:
-  Generate exactly three independent, high-leverage intervention proposals.
+  Generate three intervention proposals.
 
 steps:
   - Inspect repository behavior, boundaries, and runtime assumptions using role.yml focus, analysis_points, and constraints as scope policy.
@@ -14,7 +14,5 @@ output:
   - .jules/exchange/proposals/<role>-<kebab-case-slug>.yml (3 files)
 
 constraints:
-  - "All proposals must satisfy role.yml proposal_quality_bar and remain within role focus boundary"
   - "The three proposals must have non-overlapping core direction"
   - "Filenames must include role prefix and kebab-case slug to avoid collisions"
-  - "If a proposal direction is materially equivalent to another emitted proposal, fail explicitly instead of emitting overlapping files"

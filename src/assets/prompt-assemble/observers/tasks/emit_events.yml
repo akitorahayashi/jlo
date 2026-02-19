@@ -5,7 +5,6 @@ description:
   Inspect repository state and emit event files for high-signal findings.
 
 steps:
-  - "Inspect repository directly using role.yml focus, analysis_points, and constraints as your scope policy."
   - "Cross-reference findings against open requirements and recent events to avoid duplication."
   - "For each finding (0-3): copy schema with
     cp .jules/schemas/observers/event.yml .jules/exchange/events/pending/<id>.yml,
