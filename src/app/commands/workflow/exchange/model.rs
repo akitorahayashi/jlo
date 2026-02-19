@@ -54,7 +54,7 @@ pub struct RequirementSummary {
 pub struct RequirementItem {
     pub path: String,
     pub label: String,
-    pub requires_deep_analysis: bool,
+    pub implementation_ready: bool,
     pub id: String,
     pub source_events: Vec<String>,
 }

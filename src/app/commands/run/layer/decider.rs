@@ -250,7 +250,7 @@ where
     let planner_source_event_ids = vec![source_event_ids[0].clone()];
     let impl_source_event_ids: Vec<String> = source_event_ids[1..].to_vec();
 
-    // Requirement 1: requires deep analysis (for planner)
+    // Requirement 1: not implementation-ready (routes to planner)
     let planner_requirement_id = generate_mock_id();
     let planner_requirement_file =
         requirements_dir.join(format!("planner-{}.yml", config.mock_tag));
@@ -281,12 +281,12 @@ where
             }
         }
 
-        mapping.insert("title".into(), "Mock requirement requiring deep analysis".into());
+        mapping.insert("title".into(), "Mock requirement requiring planner detailization".into());
         mapping.insert("priority".into(), "high".into());
-        mapping.insert("requires_deep_analysis".into(), true.into());
+        mapping.insert("implementation_ready".into(), false.into());
         mapping.insert(
-            "deep_analysis_reason".into(),
-            "Mock requirement requires architectural analysis-for-workflow-validation".into(),
+            "planner_request_reason".into(),
+            "Mock requirement needs planner detailization for workflow validation".into(),
         );
     }
 
@@ -337,7 +337,8 @@ where
         }
 
         mapping.insert("title".into(), "Mock requirement ready for implementation".into());
-        mapping.insert("requires_deep_analysis".into(), false.into());
+        mapping.insert("implementation_ready".into(), true.into());
+        mapping.insert("planner_request_reason".into(), "".into());
     }
 
     repository.write_file(
@@ -534,6 +535,17 @@ mod tests {
 
         assert!(repository.file_exists(&planner_req.to_string_lossy()));
         assert!(repository.file_exists(&impl_req.to_string_lossy()));
+
+        let planner_content = repository.read_file(&planner_req.to_string_lossy()).unwrap();
+        let planner_yaml: serde_yaml::Value = serde_yaml::from_str(&planner_content).unwrap();
+        assert_eq!(planner_yaml["implementation_ready"].as_bool(), Some(false));
+        assert!(!planner_yaml["planner_request_reason"].as_str().unwrap_or("").trim().is_empty());
+
+        let impl_content = repository.read_file(&impl_req.to_string_lossy()).unwrap();
+        let impl_yaml: serde_yaml::Value = serde_yaml::from_str(&impl_content).unwrap();
+        assert_eq!(impl_yaml["implementation_ready"].as_bool(), Some(true));
+        assert_eq!(impl_yaml["planner_request_reason"].as_str(), Some(""));
+
         assert!(
             !repository.file_exists(".jules/exchange/events/pending/mock-test-decider-event1.yml")
         );

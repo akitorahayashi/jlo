@@ -16,4 +16,5 @@ acceptance_criteria:
   - "Mock acceptance criterion"
 verification_criteria:
   - "mock verification check"
-requires_deep_analysis: false
+implementation_ready: true
+planner_request_reason: ""

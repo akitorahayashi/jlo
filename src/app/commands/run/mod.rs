@@ -413,7 +413,7 @@ mod tests {
     #[derive(serde::Deserialize)]
     struct RequirementDoc {
         id: String,
-        requires_deep_analysis: bool,
+        implementation_ready: bool,
         source_events: Vec<String>,
     }
 
@@ -564,7 +564,7 @@ roles = [
 
         for requirement_path in &requirement_files {
             let requirement = read_requirement_doc(requirement_path);
-            if requirement.requires_deep_analysis {
+            if !requirement.implementation_ready {
                 planner_requirement = Some(requirement_path.clone());
             } else {
                 implementer_requirement = Some(requirement_path.clone());

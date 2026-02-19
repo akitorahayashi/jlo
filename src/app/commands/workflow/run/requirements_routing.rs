@@ -37,17 +37,17 @@ pub(crate) fn find_requirements(
             .to_str()
             .ok_or_else(|| AppError::Validation(format!("Invalid path: {}", path.display())))?;
         let content = store.read_file(path_str)?;
-        let requires_deep_analysis = RequirementHeader::parse(&content)
+        let implementation_ready = RequirementHeader::parse(&content)
             .map_err(|err| match err {
                 AppError::ParseError { details, .. } => {
                     AppError::ParseError { what: path_str.to_string(), details }
                 }
                 other => other,
             })?
-            .requires_deep_analysis;
+            .implementation_ready;
         let belongs_to_layer = match layer {
-            Layer::Planner => requires_deep_analysis,
-            Layer::Implementer => !requires_deep_analysis,
+            Layer::Planner => !implementation_ready,
+            Layer::Implementer => implementation_ready,
             _ => false,
         };
         if belongs_to_layer {
@@ -70,10 +70,10 @@ mod tests {
         store.jules_write_version(env!("CARGO_PKG_VERSION")).unwrap();
     }
 
-    fn write_requirement(store: &TestStore, name: &str, label: &str, requires_deep_analysis: bool) {
+    fn write_requirement(store: &TestStore, name: &str, label: &str, implementation_ready: bool) {
         let content = format!(
-            "id: test01\nlabel: {}\nrequires_deep_analysis: {}\nsource_events:\n  - event1\n",
-            label, requires_deep_analysis
+            "id: test01\nlabel: {}\nimplementation_ready: {}\nsource_events:\n  - event1\n",
+            label, implementation_ready
         );
         let path = format!(".jules/exchange/requirements/{}.yml", name);
         store.write_file(&path, &content).unwrap();
@@ -81,13 +81,13 @@ mod tests {
 
     #[test]
     #[serial]
-    fn planner_issue_discovery_filters_by_requires_deep_analysis() {
+    fn planner_issue_discovery_filters_by_not_implementation_ready() {
         let store = TestStore::new();
         setup_workspace(&store);
 
-        write_requirement(&store, "requires-planning", "bugs", true);
-        write_requirement(&store, "ready-to-implement", "bugs", false);
-        write_requirement(&store, "docs-planning", "docs", true);
+        write_requirement(&store, "requires-planning", "bugs", false);
+        write_requirement(&store, "ready-to-implement", "bugs", true);
+        write_requirement(&store, "docs-planning", "docs", false);
 
         let issues = find_requirements(&store, Layer::Planner).unwrap();
 
@@ -102,8 +102,8 @@ mod tests {
         let store = TestStore::new();
         setup_workspace(&store);
 
-        write_requirement(&store, "requires-planning", "bugs", true);
-        write_requirement(&store, "ready-to-implement", "bugs", false);
+        write_requirement(&store, "requires-planning", "bugs", false);
+        write_requirement(&store, "ready-to-implement", "bugs", true);
 
         let issues = find_requirements(&store, Layer::Implementer).unwrap();
 

@@ -280,7 +280,8 @@ label: bugs
 source_events:
   - abc123
   - def456
-requires_deep_analysis: false
+implementation_ready: true
+planner_request_reason: ""
 "#,
         )
         .unwrap();

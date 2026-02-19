@@ -79,11 +79,11 @@ fn mock_decider_requirement_file_passes_doctor() {
     fs::write(
         requirements_dir.join("planner-requirement.yml"),
         mock_requirement
-          .replace("mock01", planner_requirement_id)
+            .replace("mock01", planner_requirement_id)
             .replace("event1", planner_event_id)
             .replace(
-                "requires_deep_analysis: false",
-                "requires_deep_analysis: true\ndeep_analysis_reason: \"Mock requirement requires architectural analysis\"",
+                "implementation_ready: true\nplanner_request_reason: \"\"",
+                "implementation_ready: false\nplanner_request_reason: \"Mock requirement requires architectural analysis\"",
             ),
     )
     .expect("Failed to write planner requirement file");

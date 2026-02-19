@@ -38,6 +38,6 @@ verification_criteria:
   - "<criteria 2 (e.g. lint check)>"
   - "<criteria 3 (e.g. test commands)>"
 
-# Analysis Flags
-requires_deep_analysis: false # true if deep impact analysis/dependency check is needed
-deep_analysis_reason: "" # required when requires_deep_analysis is true
+# Planning Flags
+implementation_ready: false # false routes to planner; true routes to implementer
+planner_request_reason: "" # required when implementation_ready is false

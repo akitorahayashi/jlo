@@ -11,9 +11,9 @@ pub struct RequirementHeader {
     /// Label for the requirement (e.g., bugs, feats, refacts).
     #[serde(default)]
     pub label: String,
-    /// Whether the requirement requires deep analysis (planner) or implementation (implementer).
+    /// Whether the requirement is ready for implementer execution.
     #[serde(default)]
-    pub requires_deep_analysis: bool,
+    pub implementation_ready: bool,
 }
 
 impl RequirementHeader {
@@ -33,16 +33,16 @@ mod tests {
 
     #[test]
     fn parse_requirement_header_success() {
-        let header = RequirementHeader::parse("label: bugs\nrequires_deep_analysis: true").unwrap();
+        let header = RequirementHeader::parse("label: bugs\nimplementation_ready: true").unwrap();
         assert_eq!(header.label, "bugs");
-        assert!(header.requires_deep_analysis);
+        assert!(header.implementation_ready);
     }
 
     #[test]
     fn parse_requirement_header_default_values() {
-        let header = RequirementHeader::parse("label: features").unwrap(); // Missing requires_deep_analysis
+        let header = RequirementHeader::parse("label: features").unwrap(); // Missing implementation_ready
         assert_eq!(header.label, "features");
-        assert!(!header.requires_deep_analysis); // Default should be false
+        assert!(!header.implementation_ready); // Default should be false
     }
 
     #[test]

@@ -278,9 +278,9 @@ where
 
     let requirement_content = repository.read_file(requirement_path_str)?;
 
-    // Update requirement: expand analysis and set requires_deep_analysis to false
+    // Update requirement: preserve decider reason and set implementation_ready to true
     let updated_content = requirement_content
-        .replace("requires_deep_analysis: true", "requires_deep_analysis: false")
+        .replace("implementation_ready: false", "implementation_ready: true")
         + &format!(
             r#"
 # Mock planner expansion

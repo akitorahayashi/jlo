@@ -313,22 +313,29 @@ pub fn validate_requirement(
             .push_error(path.display().to_string(), "verification_criteria must have entries");
     }
 
-    let requires_deep = match get_bool(data, "requires_deep_analysis") {
+    let implementation_ready = match get_bool(data, "implementation_ready") {
         Some(val) => val,
         None => {
             diagnostics.push_error(
                 path.display().to_string(),
-                "requires_deep_analysis is required (true/false)",
+                "implementation_ready is required (true/false)",
             );
             return;
         }
     };
 
-    let deep_reason = get_string(data, "deep_analysis_reason").unwrap_or_default();
-    if requires_deep && deep_reason.trim().is_empty() {
+    let planner_reason = get_string(data, "planner_request_reason").unwrap_or_default();
+    if !implementation_ready && planner_reason.trim().is_empty() {
         diagnostics.push_error(
             path.display().to_string(),
-            "deep_analysis_reason required when requires_deep_analysis is true",
+            "planner_request_reason required when implementation_ready is false",
+        );
+    }
+
+    if implementation_ready && !planner_reason.trim().is_empty() {
+        diagnostics.push_error(
+            path.display().to_string(),
+            "planner_request_reason must be empty when implementation_ready is true",
         );
     }
 }
@@ -759,7 +766,8 @@ evidence: []
     fn test_validate_requirement_data_valid() {
         let yaml = r#"
 schema_version: 2
-requires_deep_analysis: false
+implementation_ready: true
+planner_request_reason: ""
 id: "abc123"
 source_events: ["ev1234"]
 title: "Bug fix"
@@ -785,7 +793,7 @@ verification_criteria: ["test commands"]
     }
 
     #[test]
-    fn test_validate_requirement_missing_requires_deep_analysis() {
+    fn test_validate_requirement_missing_implementation_ready() {
         let yaml = r#"
 schema_version: 2
 id: "abc123"
@@ -810,7 +818,7 @@ verification_criteria: ["test commands"]
 
         validate_requirement(&data, &path, &labels, &priorities, &mut diagnostics);
         assert!(diagnostics.error_count() > 0);
-        assert!(diagnostics.errors()[0].message.contains("requires_deep_analysis is required"));
+        assert!(diagnostics.errors()[0].message.contains("implementation_ready is required"));
     }
 
     #[test]
