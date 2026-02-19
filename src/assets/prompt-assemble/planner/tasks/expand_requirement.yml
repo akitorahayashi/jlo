@@ -11,7 +11,7 @@ steps:
   - Read the target requirement and its planner_request_reason.
   - Analyze full system impact, dependency tree, affected areas, constraints,
     and risks.
-  - Detailize decider-defined parameters by updating affected_areas, constraints,
+  - Detail decider-defined parameters by updating affected_areas, constraints,
     risks, acceptance_criteria, and verification_criteria with concrete, actionable content.
   - Preserve planner_request_reason as-is (do not rewrite).
   - Set implementation_ready to true and overwrite the requirement file.

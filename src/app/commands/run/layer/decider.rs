@@ -535,6 +535,17 @@ mod tests {
 
         assert!(repository.file_exists(&planner_req.to_string_lossy()));
         assert!(repository.file_exists(&impl_req.to_string_lossy()));
+
+        let planner_content = repository.read_file(&planner_req.to_string_lossy()).unwrap();
+        let planner_yaml: serde_yaml::Value = serde_yaml::from_str(&planner_content).unwrap();
+        assert_eq!(planner_yaml["implementation_ready"].as_bool(), Some(false));
+        assert!(!planner_yaml["planner_request_reason"].as_str().unwrap_or("").trim().is_empty());
+
+        let impl_content = repository.read_file(&impl_req.to_string_lossy()).unwrap();
+        let impl_yaml: serde_yaml::Value = serde_yaml::from_str(&impl_content).unwrap();
+        assert_eq!(impl_yaml["implementation_ready"].as_bool(), Some(true));
+        assert_eq!(impl_yaml["planner_request_reason"].as_str(), Some(""));
+
         assert!(
             !repository.file_exists(".jules/exchange/events/pending/mock-test-decider-event1.yml")
         );

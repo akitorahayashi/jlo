@@ -10,7 +10,7 @@ use crate::domain::{AppError, Layer};
 use super::diagnostics::Diagnostics;
 use super::yaml::{read_yaml_bool, read_yaml_files, read_yaml_string, read_yaml_strings};
 
-const STALE_DEEP_ANALYSIS_THRESHOLD_DAYS: i64 = 7;
+const STALE_IMPLEMENTATION_PENDING_THRESHOLD_DAYS: i64 = 7;
 
 #[derive(Debug, Default)]
 pub struct SemanticContext {
@@ -236,7 +236,7 @@ pub fn semantic_checks(
                 && let Ok(parsed) = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
             {
                 let days = (Utc::now().date_naive() - parsed).num_days();
-                if days > STALE_DEEP_ANALYSIS_THRESHOLD_DAYS {
+                if days > STALE_IMPLEMENTATION_PENDING_THRESHOLD_DAYS {
                     diagnostics.push_warning(
                         path.display().to_string(),
                         format!("implementation_ready false for {} days", days),

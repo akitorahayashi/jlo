@@ -1,9 +1,9 @@
 # Planner
-Deep analysis agent for complex requirements.
+Planning detail agent for requirements not yet implementation-ready.
 
 ## Interface
 - Input: Requirements in `.jules/exchange/requirements/` where `implementation_ready: false`.
-- Output: Detailizes decider parameters (`affected_areas`, `constraints`, `risks`, `acceptance_criteria`, `verification_criteria`) and sets `implementation_ready: true`.
+- Output: Details decider parameters (`affected_areas`, `constraints`, `risks`, `acceptance_criteria`, `verification_criteria`) and sets `implementation_ready: true`.
 - Execution: `jlo run planner <requirement-path>`
 
 ## Constraints
