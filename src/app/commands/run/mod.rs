@@ -207,6 +207,7 @@ where
 mod tests {
     use super::*;
     use crate::adapters::local_repository::LocalRepositoryAdapter;
+    use crate::ports::GitWorkspace;
     use crate::ports::{
         GitHub, IssueInfo, JulesStore, PrComment, PullRequestDetail, PullRequestInfo,
     };
@@ -302,6 +303,16 @@ mod tests {
             Ok(())
         }
 
+        fn push_branch_from_rev(
+            &self,
+            _rev: &str,
+            branch: &str,
+            _force: bool,
+        ) -> Result<(), AppError> {
+            self.pushed_branches.lock().expect("push lock poisoned").push(branch.to_string());
+            Ok(())
+        }
+
         fn commit_files(&self, _message: &str, _files: &[&Path]) -> Result<String, AppError> {
             let mut counter = self.commit_counter.lock().expect("counter lock poisoned");
             *counter += 1;
@@ -314,6 +325,10 @@ mod tests {
 
         fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> {
             Ok(true)
+        }
+
+        fn create_workspace(&self, _branch: &str) -> Result<Box<dyn GitWorkspace>, AppError> {
+            unimplemented!()
         }
     }
 
