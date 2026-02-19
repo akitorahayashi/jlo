@@ -22,19 +22,34 @@ impact: |
 desired_outcome: |
   Integration tests that simulate a full run.
 
-constraints: [] # list of constraints/assumptions (optional)
-risks: [] # list of known risks or regressions (optional)
+constraints:
+  - "Must use shared test doubles from src/testing/ports (enhance FakeGit/FakeGitHub, do not duplicate)."
+  - "Must expose run_with_deps and testing module via a 'testing' feature flag in Cargo.toml."
+  - "Integration tests must verify the full execution loop (Git -> LLM -> Git/GitHub) using injected mocks."
+  - "Do not introduce circular dependencies between tests and the library."
+
+risks:
+  - "Exposing internal APIs (run_with_deps) via feature flag increases public surface area; mitigation: use #[cfg(feature = 'testing')]."
+  - "Mocking the LLM client requires careful orchestration to ensure the loop proceeds correctly."
 
 # Specifics
 affected_areas:
-  - "tests/cli/run/"
+  - "src/testing/ports/git_stub.rs"
+  - "src/app/api.rs"
+  - "src/lib.rs"
+  - "Cargo.toml"
+  - "tests/cli/run/execution_loop_test.rs"
 
 acceptance_criteria:
-  - "Tests added that execute the run loop."
+  - "FakeGit enhanced to track pushed branches and simulate basic commands (rm)."
+  - "testing feature added to Cargo.toml and utilized in src/lib.rs to expose internals."
+  - "New integration test file execution_loop_test.rs added covering Planner, Implementer, and Observers flows."
+  - "Tests verify side effects: branch creation, file modification, and PR creation via mocks."
+  - "run command unit tests in mod.rs migrated to use shared doubles."
 
 verification_criteria:
-  - "cargo test passes."
+  - "cargo test --features testing passes."
 
 # Planning Flags
-implementation_ready: false # false routes to planner; true routes to implementer
+implementation_ready: true # false routes to planner; true routes to implementer
 planner_request_reason: "Design the integration test scenario." # required when implementation_ready is false
