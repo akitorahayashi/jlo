@@ -3,6 +3,7 @@
 mod add;
 mod create;
 mod delete;
+mod schedule;
 
 use crate::app::AppContext;
 use crate::domain::AppError;
