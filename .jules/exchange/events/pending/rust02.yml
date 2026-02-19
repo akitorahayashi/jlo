@@ -1,0 +1,14 @@
+schema_version: 1
+id: "rust02"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "rustacean"
+confidence: "high"
+title: "Monolithic `AppError` Anti-pattern"
+statement: |
+  The `AppError` enum is a monolithic error type that couples unrelated domains (IO, Git, Config, API, etc.), violating separation of concerns. It also relies on stringly-typed variants like `Validation(String)` and `InternalError(String)`, which lose semantic meaning and make error handling fragile.
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "18-120"
+    note: "Monolithic enum definition and stringly-typed variants"

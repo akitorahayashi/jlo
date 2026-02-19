@@ -1,0 +1,14 @@
+schema_version: 1
+id: "rust01"
+requirement_id: ""
+created_at: "2026-02-19"
+author_role: "rustacean"
+confidence: "high"
+title: "Unnecessary Dynamic Dispatch in `assemble_prompt`"
+statement: |
+  The `assemble_prompt` function accepts a generic `L: PromptAssetLoader`, but then immediately wraps it in `Box::new(loader.clone())` inside `IncludeContext`. This erases the type information and forces dynamic dispatch (vtable lookups) where static dispatch was possible and intended by the function signature. This defeats the purpose of the generic bound and introduces unnecessary allocation.
+evidence:
+  - path: "src/domain/prompt_assemble/assembler.rs"
+    loc:
+      - "47-56"
+    note: "Boxing of generic loader forces dynamic dispatch"
