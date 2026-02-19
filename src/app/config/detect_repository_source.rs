@@ -24,6 +24,7 @@ pub fn detect_repository_source(git: &(impl Git + ?Sized)) -> Result<String, App
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ports::GitWorkspace;
     use serial_test::serial;
     use std::path::Path;
 
@@ -84,6 +85,14 @@ mod tests {
         }
         fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> {
             Ok(true)
+        }
+
+        fn push_branch_from_rev(&self, _rev: &str, _branch: &str, _force: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn create_workspace(&self, _branch: &str) -> Result<Box<dyn GitWorkspace>, AppError> {
+            unimplemented!()
         }
     }
 

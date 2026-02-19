@@ -110,6 +110,8 @@ pub fn structural_checks(inputs: StructuralInputs<'_>, diagnostics: &mut Diagnos
             diagnostics,
         );
     }
+
+    check_workspaces(inputs.root, diagnostics);
 }
 
 fn check_version_file(jules_path: &Path, current_version: &str, diagnostics: &mut Diagnostics) {
@@ -154,6 +156,35 @@ fn ensure_directory_exists(path: PathBuf, diagnostics: &mut Diagnostics) {
 fn ensure_file_exists(path: &Path, diagnostics: &mut Diagnostics) {
     if !path.exists() {
         diagnostics.push_error(path.display().to_string(), "Missing required file");
+    }
+}
+
+fn check_workspaces(root: &Path, diagnostics: &mut Diagnostics) {
+    let workspaces_dir = root.join(".jlo").join("workspaces");
+    if !workspaces_dir.exists() {
+        return;
+    }
+
+    match fs::read_dir(&workspaces_dir) {
+        Ok(entries) => {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        diagnostics.push_warning(
+                            path.display().to_string(),
+                            "Temporary workspace found. These are normally cleaned up automatically but may remain after a crash.",
+                        );
+                    }
+                }
+            }
+        }
+        Err(err) => {
+            diagnostics.push_error(
+                workspaces_dir.display().to_string(),
+                format!("Failed to read workspaces directory: {}", err),
+            );
+        }
     }
 }
 

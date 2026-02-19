@@ -1,7 +1,8 @@
 use crate::domain::AppError;
-use crate::ports::Git;
+use crate::ports::{Git, GitWorkspace};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone)]
 pub struct GitCommandAdapter {
@@ -98,6 +99,17 @@ impl Git for GitCommandAdapter {
         Ok(())
     }
 
+    fn push_branch_from_rev(&self, rev: &str, branch: &str, force: bool) -> Result<(), AppError> {
+        let refspec = format!("{}:refs/heads/{}", rev, branch);
+        let args = if force {
+            vec!["push", "-f", "origin", &refspec]
+        } else {
+            vec!["push", "origin", &refspec]
+        };
+        self.run_output(&args, None)?;
+        Ok(())
+    }
+
     fn push_branch(&self, branch: &str, force: bool) -> Result<(), AppError> {
         let args = if force {
             vec!["push", "-f", "-u", "origin", branch]
@@ -138,5 +150,110 @@ impl Git for GitCommandAdapter {
         let args = if force { vec!["branch", "-D", branch] } else { vec!["branch", "-d", branch] };
         self.run_output(&args, None)?;
         Ok(true)
+    }
+
+    fn create_workspace(&self, branch: &str) -> Result<Box<dyn GitWorkspace>, AppError> {
+        let workspaces_dir = self.root.join(".jlo").join("workspaces");
+        std::fs::create_dir_all(&workspaces_dir).map_err(|e| AppError::Io {
+            message: format!("Failed to create workspaces directory: {}", e),
+            kind: e.kind().into(),
+        })?;
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let id = format!("ws-{}", now);
+        let temp_dir = workspaces_dir.join(&id);
+
+        // git worktree add --detach <path> <branch>
+        // We use --detach to allow creating a workspace even if the branch is already checked out elsewhere.
+        self.run_output(&["worktree", "add", "--detach", temp_dir.to_str().unwrap(), branch], None)?;
+
+        Ok(Box::new(GitWorktreeWorkspace {
+            adapter: GitCommandAdapter::new(temp_dir.clone()),
+            temp_dir,
+            main_root: self.root.clone(),
+        }))
+    }
+}
+
+struct GitWorktreeWorkspace {
+    adapter: GitCommandAdapter,
+    temp_dir: PathBuf,
+    main_root: PathBuf,
+}
+
+impl Git for GitWorktreeWorkspace {
+    fn get_head_sha(&self) -> Result<String, AppError> {
+        self.adapter.get_head_sha()
+    }
+
+    fn get_current_branch(&self) -> Result<String, AppError> {
+        self.adapter.get_current_branch()
+    }
+
+    fn commit_exists(&self, sha: &str) -> bool {
+        self.adapter.commit_exists(sha)
+    }
+
+    fn get_nth_ancestor(&self, commit: &str, n: usize) -> Result<Option<String>, AppError> {
+        self.adapter.get_nth_ancestor(commit, n)
+    }
+
+    fn get_first_commit(&self, commit: &str) -> Result<String, AppError> {
+        self.adapter.get_first_commit(commit)
+    }
+
+    fn has_changes(&self, from: &str, to: &str, pathspec: &[&str]) -> Result<bool, AppError> {
+        self.adapter.has_changes(from, to, pathspec)
+    }
+
+    fn run_command(&self, args: &[&str], cwd: Option<&Path>) -> Result<String, AppError> {
+        self.adapter.run_command(args, cwd)
+    }
+
+    fn checkout_branch(&self, branch: &str, create: bool) -> Result<(), AppError> {
+        self.adapter.checkout_branch(branch, create)
+    }
+
+    fn push_branch(&self, branch: &str, force: bool) -> Result<(), AppError> {
+        self.adapter.push_branch(branch, force)
+    }
+
+    fn push_branch_from_rev(&self, rev: &str, branch: &str, force: bool) -> Result<(), AppError> {
+        self.adapter.push_branch_from_rev(rev, branch, force)
+    }
+
+    fn commit_files(&self, message: &str, files: &[&Path]) -> Result<String, AppError> {
+        self.adapter.commit_files(message, files)
+    }
+
+    fn fetch(&self, remote: &str) -> Result<(), AppError> {
+        self.adapter.fetch(remote)
+    }
+
+    fn delete_branch(&self, branch: &str, force: bool) -> Result<bool, AppError> {
+        self.adapter.delete_branch(branch, force)
+    }
+
+    fn create_workspace(&self, branch: &str) -> Result<Box<dyn GitWorkspace>, AppError> {
+        self.adapter.create_workspace(branch)
+    }
+}
+
+impl GitWorkspace for GitWorktreeWorkspace {
+    fn path(&self) -> &Path {
+        &self.temp_dir
+    }
+}
+
+impl Drop for GitWorktreeWorkspace {
+    fn drop(&mut self) {
+        // try to remove worktree
+        let _ = Command::new("git")
+            .args(["worktree", "remove", "-f", self.temp_dir.to_str().unwrap()])
+            .current_dir(&self.main_root)
+            .output();
     }
 }

@@ -32,6 +32,9 @@ pub trait Git {
     /// Push a branch to the remote.
     fn push_branch(&self, branch: &str, force: bool) -> Result<(), AppError>;
 
+    /// Push a specific revision to a remote branch.
+    fn push_branch_from_rev(&self, rev: &str, branch: &str, force: bool) -> Result<(), AppError>;
+
     /// Stage and commit files with a message.
     fn commit_files(&self, message: &str, files: &[&Path]) -> Result<String, AppError>;
 
@@ -40,4 +43,12 @@ pub trait Git {
 
     /// Delete a local branch. Returns true if the branch was deleted.
     fn delete_branch(&self, branch: &str, force: bool) -> Result<bool, AppError>;
+
+    /// Create a transactional workspace for the given branch.
+    fn create_workspace(&self, branch: &str) -> Result<Box<dyn GitWorkspace>, AppError>;
+}
+
+pub trait GitWorkspace: Git {
+    /// Get the path to the workspace root.
+    fn path(&self) -> &Path;
 }

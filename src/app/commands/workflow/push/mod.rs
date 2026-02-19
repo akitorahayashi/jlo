@@ -227,6 +227,7 @@ fn sanitize_branch_segment(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ports::GitWorkspace;
     use crate::ports::{IssueInfo, PrComment, PullRequestDetail, PullRequestInfo};
     use serial_test::serial;
     use std::path::Path;
@@ -340,6 +341,10 @@ mod tests {
             Ok(())
         }
 
+        fn push_branch_from_rev(&self, _rev: &str, _branch: &str, _force: bool) -> Result<(), AppError> {
+            Ok(())
+        }
+
         fn commit_files(&self, _message: &str, _files: &[&Path]) -> Result<String, AppError> {
             Ok("commit-sha".to_string())
         }
@@ -354,6 +359,10 @@ mod tests {
                 .expect("deleted branches lock poisoned")
                 .push(branch.to_string());
             Ok(true)
+        }
+
+        fn create_workspace(&self, _branch: &str) -> Result<Box<dyn GitWorkspace>, AppError> {
+            unimplemented!()
         }
     }
 

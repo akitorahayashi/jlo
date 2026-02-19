@@ -220,6 +220,7 @@ fn build_range_description(range: &RangeContext) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ports::GitWorkspace;
     use crate::ports::{
         DiscoveredRole, JloStore, JulesStore, PullRequestInfo, RepositoryFilesystem, ScaffoldFile,
     };
@@ -305,6 +306,10 @@ mod tests {
             panic!("mock narrator no-op must not call push_branch");
         }
 
+        fn push_branch_from_rev(&self, _rev: &str, _branch: &str, _force: bool) -> Result<(), AppError> {
+            panic!("mock narrator no-op must not call push_branch_from_rev");
+        }
+
         fn commit_files(
             &self,
             _message: &str,
@@ -319,6 +324,10 @@ mod tests {
 
         fn delete_branch(&self, _branch: &str, _force: bool) -> Result<bool, AppError> {
             panic!("mock narrator no-op must not call delete_branch");
+        }
+
+        fn create_workspace(&self, _branch: &str) -> Result<Box<dyn GitWorkspace>, AppError> {
+            panic!("mock narrator no-op must not call create_workspace");
         }
     }
 
