@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "cov003"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "cov"
+confidence: "high"
+
+# Content
+title: "Mock-Heavy Testing Anti-Pattern"
+statement: |
+  The tests in `src/app/commands/run/mod.rs` and its submodules (layer implementations) rely extensively on duplicated local mocks (`TestGit`, `TestGitHub`) and mock-only execution paths (`execute_mock`). These tests verify the orchestration logic in isolation but fail to validate the integration with the real `JulesClient`, `HttpJulesClient`, or the actual Git/GitHub ports. This creates a "false safety" risk where tests pass but the actual integration is broken.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/run/mod.rs"
+    loc:
+      - "struct TestGit"
+      - "struct TestGitHub"
+    note: "Local re-definition of mocks instead of using shared test doubles."
+  - path: "src/app/commands/run/mod.rs"
+    loc:
+      - "fn execute_with_mock_prerequisite_validator"
+    note: "Test helper that drives the mock-only path."
+  - path: "src/app/commands/run/layer/decider.rs"
+    loc:
+      - "fn execute"
+    note: "Bifurcates execution into completely separate mock vs real paths."

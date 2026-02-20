@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "cov002"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "cov"
+confidence: "high"
+
+# Content
+title: "Gap in Prompt Assembly Seeding Logic"
+statement: |
+  The `IncludeContext::seed_from_schema` method in `src/domain/prompt_assemble/assembler.rs` implements critical logic for auto-creating (seeding) files from schema templates when they are missing. However, the existing test `test_assemble_prompt_schema_seed` does not actually verify the `SeedOp` generation because it pre-populates the mock loader with the target file, causing `seed_from_schema` to return early. This means the file creation logic is effectively untested.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/prompt_assemble/assembler.rs"
+    loc:
+      - "fn seed_from_schema"
+    note: "Logic for generating SeedOps is skipped if file exists in loader."
+  - path: "src/domain/prompt_assemble/assembler.rs"
+    loc:
+      - "test_assemble_prompt_schema_seed"
+    note: "Test manually adds file to loader, bypassing the seeding logic it purports to test."
