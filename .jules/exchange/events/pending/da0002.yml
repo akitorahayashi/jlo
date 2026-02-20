@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "da0002"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Primitive Obsession in RunOptions"
+statement: |
+  `RunOptions` uses `Option<String>` for `role` and `task`, allowing invalid states to be represented and passed deep into the call stack before validation. This violates "Represent Valid States Only". `role` should be `Option<RoleId>` and `task` should be a validated type or enum, ensuring that only valid options can be constructed and passed.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/config/run_options.rs"
+    loc:
+      - "12"
+      - "16"
+    note: "RunOptions uses String for role and task instead of validated types."
+  - path: "src/app/commands/run/layer/observers.rs"
+    loc:
+      - "100"
+    note: "Validation of role happens late in execution flow."
