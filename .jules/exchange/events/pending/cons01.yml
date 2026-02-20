@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "cons01"
+requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+created_at: "2026-02-20"
+author_role: "consistency"
+confidence: "high"
+
+# Content
+title: "jlo init Argument Drift"
+statement: |
+  The `jlo init` command documentation specifies optional flags (`--remote`, `--self-hosted`), but the implementation requires a mandatory positional argument (`remote` or `self-hosted`). This drift confuses users attempting to follow the README.
+
+# Evidence supporting the observation
+evidence:
+  - path: "README.md"
+    loc:
+      - "jlo init (--remote | --self-hosted)"
+    note: "Documentation claims flags are used."
+  - path: "src/app/cli/init.rs"
+    loc:
+      - "Init { mode: InitMode }"
+    note: "Implementation defines `mode` as a positional argument (InitMode is an enum without explicit flag attributes)."
