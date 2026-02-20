@@ -169,7 +169,8 @@ fromJSON(needs.run-observers.outputs.json).number_of_api_requests_succeeded > 0"
     'Run decider',
     {},
     ['resolve-run-plan', 'wait-after-observers'],
-    "needs.resolve-run-plan.result == 'success' &&
+    "always() &&
+needs.resolve-run-plan.result == 'success' &&
 fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
 (
   (
@@ -205,7 +206,8 @@ fromJSON(needs.run-decider.outputs.json).number_of_api_requests_succeeded > 0"
     'Run planner',
     {},
     ['resolve-run-plan', 'wait-after-decider'],
-    "needs.resolve-run-plan.result == 'success' &&
+    "always() &&
+needs.resolve-run-plan.result == 'success' &&
 fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true &&
 (
   (
@@ -241,7 +243,8 @@ fromJSON(needs.run-planner.outputs.json).number_of_api_requests_succeeded > 0"
     'Run implementer',
     {},
     ['resolve-run-plan', 'wait-after-decider'],
-    "needs.resolve-run-plan.result == 'success' &&
+    "always() &&
+needs.resolve-run-plan.result == 'success' &&
 fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true &&
 (
   (

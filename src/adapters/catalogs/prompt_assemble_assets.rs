@@ -25,7 +25,7 @@ mod tests {
         let content = read_prompt_assemble_asset("principle.yml");
         assert!(content.is_some(), "principle.yml should exist");
         let text = content.unwrap();
-        assert!(text.contains("coding:"), "principle.yml should contain coding section");
+        assert!(text.contains("design:"), "principle.yml should contain design section");
     }
 
     #[test]

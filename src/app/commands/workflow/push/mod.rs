@@ -65,12 +65,15 @@ pub(crate) fn execute_with_adapters(
         )));
     }
 
+    git.fetch("origin")?;
+    let has_local_commits = has_local_commits_ahead(git, &worker_branch)?;
     let status = git.run_command(&["status", "--porcelain", "--", ".jules"], None)?;
-    if status.trim().is_empty() {
+    let has_jules_changes = !status.trim().is_empty();
+    if !has_local_commits && !has_jules_changes {
         return Ok(PushWorkerBranchOutput {
             schema_version: 1,
             applied: false,
-            skipped_reason: Some("No .jules changes to push".to_string()),
+            skipped_reason: Some("No local commits or .jules changes to push".to_string()),
             branch: None,
             pr_number: None,
             head_sha: None,
@@ -81,23 +84,27 @@ pub(crate) fn execute_with_adapters(
     let push_branch = build_worker_push_branch_name(&options.change_token);
     git.checkout_branch(&push_branch, true)?;
 
-    git.run_command(&["add", "-A", "--", ".jules"], None)?;
-    let staged = git.run_command(&["diff", "--cached", "--name-only"], None)?;
-    if staged.trim().is_empty() {
-        git.checkout_branch(&worker_branch, false)?;
-        let _ = git.delete_branch(&push_branch, true)?;
-        return Ok(PushWorkerBranchOutput {
-            schema_version: 1,
-            applied: false,
-            skipped_reason: Some("No staged .jules changes to commit".to_string()),
-            branch: None,
-            pr_number: None,
-            head_sha: None,
-            merged: false,
-        });
+    if has_jules_changes {
+        git.run_command(&["add", "-A", "--", ".jules"], None)?;
+        let staged = git.run_command(&["diff", "--cached", "--name-only"], None)?;
+        if staged.trim().is_empty() && !has_local_commits {
+            git.checkout_branch(&worker_branch, false)?;
+            let _ = git.delete_branch(&push_branch, true)?;
+            return Ok(PushWorkerBranchOutput {
+                schema_version: 1,
+                applied: false,
+                skipped_reason: Some("No staged .jules changes to commit".to_string()),
+                branch: None,
+                pr_number: None,
+                head_sha: None,
+                merged: false,
+            });
+        }
+        if !staged.trim().is_empty() {
+            git.run_command(&["commit", "-m", &options.commit_message], None)?;
+        }
     }
 
-    git.run_command(&["commit", "-m", &options.commit_message], None)?;
     let head_sha = git.get_head_sha()?;
     git.push_branch(&push_branch, false)?;
 
@@ -132,6 +139,20 @@ pub(crate) fn execute_with_adapters(
         head_sha: Some(head_sha),
         merged: true,
     })
+}
+
+fn has_local_commits_ahead(git: &impl Git, worker_branch: &str) -> Result<bool, AppError> {
+    let remote_ref = format!("origin/{}", worker_branch);
+    let range = format!("{}..HEAD", remote_ref);
+    let output = git.run_command(&["rev-list", "--count", &range], None)?;
+    let count = output.trim().parse::<u64>().map_err(|_| {
+        AppError::Validation(format!(
+            "Invalid commit count from 'git rev-list --count {}': {}",
+            range,
+            output.trim()
+        ))
+    })?;
+    Ok(count > 0)
 }
 
 fn cleanup_pr_and_branch(
@@ -271,16 +292,23 @@ mod tests {
         current_branch: Arc<Mutex<String>>,
         status_output: String,
         staged_output: String,
+        ahead_count: String,
         commands: Arc<Mutex<Vec<Vec<String>>>>,
         deleted_branches: Arc<Mutex<Vec<String>>>,
     }
 
     impl TestGit {
-        fn new(current_branch: &str, status_output: &str, staged_output: &str) -> Self {
+        fn new(
+            current_branch: &str,
+            status_output: &str,
+            staged_output: &str,
+            ahead_count: &str,
+        ) -> Self {
             Self {
                 current_branch: Arc::new(Mutex::new(current_branch.to_string())),
                 status_output: status_output.to_string(),
                 staged_output: staged_output.to_string(),
+                ahead_count: ahead_count.to_string(),
                 commands: Arc::new(Mutex::new(Vec::new())),
                 deleted_branches: Arc::new(Mutex::new(Vec::new())),
             }
@@ -328,6 +356,10 @@ mod tests {
             }
             if args == ["diff", "--cached", "--name-only"] {
                 return Ok(self.staged_output.clone());
+            }
+            if args.first().copied() == Some("rev-list") && args.get(1).copied() == Some("--count")
+            {
+                return Ok(self.ahead_count.clone());
             }
             Ok(String::new())
         }
@@ -523,6 +555,7 @@ mod tests {
             "jules",
             " M .jules/schemas/observers/event.yml",
             ".jules/schemas/observers/event.yml\n",
+            "0",
         );
         let github = TestGitHub::new(false, false);
 
@@ -543,7 +576,7 @@ mod tests {
     #[serial]
     fn execute_with_adapters_deletes_local_push_branch_when_nothing_staged() {
         let _worker_branch = EnvVarGuard::set("JULES_WORKER_BRANCH", "jules");
-        let git = TestGit::new("jules", " M .jules/schemas/observers/event.yml", "");
+        let git = TestGit::new("jules", " M .jules/schemas/observers/event.yml", "", "0");
         let github = TestGitHub::new(false, false);
 
         let out = execute_with_adapters(&git, &github, options()).expect("should skip cleanly");
@@ -564,6 +597,7 @@ mod tests {
             "jules",
             " M .jules/schemas/observers/event.yml",
             ".jules/schemas/observers/event.yml\n",
+            "0",
         );
         let github = TestGitHub::new(false, true); // fail merge
 
@@ -579,5 +613,42 @@ mod tests {
             github.deleted_remote_branches.lock().expect("deleted remote lock poisoned");
         assert_eq!(deleted_remote.len(), 1);
         assert!(deleted_remote[0].starts_with(WORKER_PUSH_BRANCH_PREFIX));
+    }
+
+    #[test]
+    #[serial]
+    fn execute_with_adapters_pushes_existing_local_commits_without_new_jules_commit() {
+        let _worker_branch = EnvVarGuard::set("JULES_WORKER_BRANCH", "jules");
+        let git = TestGit::new("jules", "", "", "2");
+        let github = TestGitHub::new(false, false);
+
+        let out = execute_with_adapters(&git, &github, options()).expect("push should succeed");
+        assert!(out.applied);
+        assert!(out.merged);
+
+        let commands = git.commands.lock().expect("commands lock poisoned");
+        assert!(
+            !commands.iter().any(|cmd| cmd == &vec!["add", "-A", "--", ".jules"]),
+            "command should not stage .jules when there are no working-tree .jules changes"
+        );
+        assert!(
+            !commands.iter().any(|cmd| cmd == &vec!["commit", "-m", "jules: cleanup"]),
+            "command should not create extra commit when only local commits need publishing"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn execute_with_adapters_skips_when_no_local_or_jules_changes() {
+        let _worker_branch = EnvVarGuard::set("JULES_WORKER_BRANCH", "jules");
+        let git = TestGit::new("jules", "", "", "0");
+        let github = TestGitHub::new(false, false);
+
+        let out = execute_with_adapters(&git, &github, options()).expect("should skip cleanly");
+        assert!(!out.applied);
+        assert_eq!(
+            out.skipped_reason.as_deref(),
+            Some("No local commits or .jules changes to push")
+        );
     }
 }
