@@ -1,0 +1,22 @@
+schema_version: 1
+
+# Metadata
+id: "tact01"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "tactician"
+confidence: "high"
+
+# Content
+title: "Misplaced Architecture Documentation"
+statement: |
+  The file `src/assets/scaffold/AGENTS.md` contains core architectural definitions (Concepts, Directory Structure, Flow) that belong in `docs/architecture/` or the root `AGENTS.md`. This violates the principle of scope-local rule placement and creates a global contract in a local directory.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/assets/scaffold/AGENTS.md"
+    loc:
+      - "6"
+      - "12"
+      - "59"
+    note: "Contains 'Concepts', 'Directory Structure', and 'Flow' sections defining global architecture."

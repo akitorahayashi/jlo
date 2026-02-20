@@ -1,0 +1,25 @@
+schema_version: 1
+
+# Metadata
+id: "tact03"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "tactician"
+confidence: "medium"
+
+# Content
+title: "Ambiguous Test Double Policy"
+statement: |
+  The file `src/testing/AGENTS.md` lacks an explicit constraint enforcing the centralization of test doubles. This ambiguity allows local re-implementations (e.g., `TestGit` in `src/app/commands/run/mod.rs`) to drift from the shared contract, violating the DRY principle and creating inconsistent test environments.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/testing/AGENTS.md"
+    loc:
+      - "18"
+    note: "'Architectural Principles' section mentions reusability but lacks exclusivity constraints."
+  - path: "src/app/commands/run/mod.rs"
+    loc:
+      - "222"
+      - "335"
+    note: "Duplicate definitions of `TestGit` and `TestGitHub`."
