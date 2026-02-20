@@ -1,0 +1,29 @@
+schema_version: 1
+
+# Metadata
+id: "sarc02"
+requirement_id: "" # ID of the requirement that processed this event (empty if unprocessed)
+created_at: "2026-02-20"
+author_role: "structural_arch" # e.g. taxonomy
+confidence: "high"
+
+# Content
+title: "Low Cohesion in `src/adapters` Root"
+statement: |
+  The `src/adapters` directory contains unrelated modules (`control_plane_config.rs`, `workflow_installer.rs`) at its root, turning it into a 'bag of things'. These modules should be grouped by their functional purpose (e.g., `src/adapters/config`, `src/adapters/install`) to improve cohesion and findability.
+
+# Evidence supporting the observation
+# For multi-file events, add multiple list items.
+evidence:
+  - path: "src/adapters/control_plane_config.rs"
+    loc:
+      - "1"
+    note: "Config loading logic placed at root of adapters."
+  - path: "src/adapters/workflow_installer.rs"
+    loc:
+      - "1"
+    note: "Installation logic placed at root of adapters."
+  - path: "src/adapters/mod.rs"
+    loc:
+      - "2"
+    note: "Exports unrelated modules directly."
