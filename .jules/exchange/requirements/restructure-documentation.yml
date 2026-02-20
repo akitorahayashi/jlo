@@ -1,0 +1,51 @@
+schema_version: 2
+
+# Metadata
+id: "d6v1s4"
+source_events:
+  - "sarc03"
+  - "tact01"
+  - "tact02"
+  - "x7d9f2"
+title: "Restructure Documentation Layout"
+label: "docs"
+priority: "medium"
+summary: "Move architectural and operational documentation to standard locations."
+
+# Content
+goal: |
+  Move core architectural (`Scaffold Design`) and operational (`Template System`) documentation from `src/assets/` to `docs/` to improve findability. Rename `docs/operations/REPRODUCTION_GUIDE.md` to `docs/operations/SETUP_GUIDE.md` to better reflect its content.
+
+problem: |
+  Key documentation is buried in `src/assets/scaffold/` and `src/assets/templates/`, which are technically resource directories but not the standard place for human-readable docs. Additionally, the "Reproduction Guide" actually describes setup/deployment, which is misleading.
+
+impact: |
+  Developers and users struggle to find critical documentation, leading to misuse or lack of understanding of the system.
+
+desired_outcome: |
+  All primary documentation resides in `docs/` or the root `AGENTS.md`. `src/assets/` contains only functional resources.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/assets/scaffold/AGENTS.md"
+  - "src/assets/templates/AGENTS.md"
+  - "docs/operations/REPRODUCTION_GUIDE.md"
+  - "docs/architecture/"
+  - "docs/operations/"
+
+acceptance_criteria:
+  - "`src/assets/scaffold/AGENTS.md` content moved to `docs/architecture/scaffold.md` (or similar)."
+  - "`src/assets/templates/AGENTS.md` content moved to `docs/operations/templates.md`."
+  - "`docs/operations/REPRODUCTION_GUIDE.md` renamed to `docs/operations/SETUP_GUIDE.md`."
+  - "Links/references updated."
+
+verification_criteria:
+  - "Check file existence in new locations."
+  - "Verify no broken links (if possible)."
+
+# Planning Flags
+implementation_ready: true
+planner_request_reason: ""

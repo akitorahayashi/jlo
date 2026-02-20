@@ -1,0 +1,53 @@
+schema_version: 2
+
+# Metadata
+id: "t4m8p2"
+source_events:
+  - "jgug9f"
+  - "cov001"
+  - "cov003"
+  - "rust02"
+  - "sarc01"
+  - "tact03"
+title: "Unify and Strengthen Test Infrastructure"
+label: "tests"
+priority: "high"
+summary: "Centralize test doubles and improve test coverage for critical execution paths."
+
+# Content
+goal: |
+  Eliminate duplicated test doubles (`TestGit`, `TestGitHub`), improve the realism of shared mocks (`FakeGit`), and ensure that `execute_real` paths in the `run` command are adequately tested (via integration tests or improved unit tests).
+
+problem: |
+  The codebase currently duplicates mock definitions in `src/app/commands/run/mod.rs` instead of using the shared ones in `src/testing/`. Additionally, the shared `FakeGit` implementation is too simplistic (hardcoded success), and the `execute_real` paths for `Decider` and `Implementer` layers are completely uncovered by unit tests, relying solely on `execute_mock`.
+
+impact: |
+  This fragmentation leads to maintenance burden (multiple sources of truth for mocks), "false confidence" in tests that pass against unrealistic mocks, and potential regressions in critical production paths that are currently untested.
+
+desired_outcome: |
+  All tests should use shared test doubles from `src/testing/`. `FakeGit` should support stateful simulation (tracking commits, branches). `execute_real` paths should be covered by tests that inject these improved shared mocks.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/testing/ports/git_stub.rs"
+  - "src/testing/ports/github_stub.rs"
+  - "src/app/commands/run/mod.rs"
+  - "src/app/commands/run/layer/"
+
+acceptance_criteria:
+  - "Local `TestGit` and `TestGitHub` structs in `src/app/commands/run/mod.rs` are removed."
+  - "Tests in `src/app/commands/run/` use shared `FakeGit` and `FakeGitHub`."
+  - "`FakeGit` implementation is enhanced to simulate basic Git operations (commit, branch tracking)."
+  - "`execute_real` functions are invoked in at least one test case."
+
+verification_criteria:
+  - "Grep for `struct TestGit` in `src/app/commands/run/` returns no results."
+  - "Run `cargo test` and ensure all tests pass."
+  - "Check coverage report (if available) for `execute_real`."
+
+# Planning Flags
+implementation_ready: false
+planner_request_reason: "Design required for dependency injection of JulesClient in execute_real and unification of test doubles."

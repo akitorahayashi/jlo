@@ -2,7 +2,7 @@ schema_version: 1
 
 # Metadata
 id: "jlj8yr"
-requirement_id: "" # processed by this observer
+requirement_id: "x3q9z7" # processed by this observer
 created_at: "2026-02-20"
 author_role: "qa"
 confidence: "medium"
