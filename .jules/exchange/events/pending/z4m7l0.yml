@@ -1,0 +1,23 @@
+schema_version: 1
+
+# Metadata
+id: "z4m7l0"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Inconsistent Acronym Usage: ID vs Id"
+statement: |
+  The acronym for "Identifier" is inconsistently casing as `ID` (all caps) in comments/docs and `Id` (PascalCase) in type names.
+
+evidence:
+  - path: "src/ports/github.rs"
+    loc:
+      - "Comment ID"
+    note: "Uses all-caps ID in documentation."
+  - path: "src/adapters/local_repository/jlo_store.rs"
+    loc:
+      - "struct RoleId"
+    note: "Uses PascalCase Id in type definition."

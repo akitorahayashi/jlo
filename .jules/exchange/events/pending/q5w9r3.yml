@@ -1,0 +1,23 @@
+schema_version: 1
+
+# Metadata
+id: "q5w9r3"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "CLI Vocabulary Mismatch: Init Command"
+statement: |
+  The `jlo init` command implementation uses a positional argument for the initialization mode, while documentation and standard conventions imply a flag.
+
+evidence:
+  - path: "src/app/cli/mod.rs"
+    loc:
+      - "enum InitMode"
+    note: "Implemented as positional argument `mode`."
+  - path: "docs/operations/REPRODUCTION_GUIDE.md"
+    loc:
+      - "jlo init --remote"
+    note: "Documented as flag `--remote`."
