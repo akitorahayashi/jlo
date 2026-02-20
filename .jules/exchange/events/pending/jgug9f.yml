@@ -1,0 +1,22 @@
+schema_version: 1
+
+# Metadata
+id: "jgug9f"
+requirement_id: "" # processed by this observer
+created_at: "2026-02-20"
+author_role: "qa"
+confidence: "high"
+
+# Content
+title: "Unreliable FakeGit Implementation Risks False Confidence"
+statement: |
+  The `FakeGit` test double implements the `Git` trait but returns hardcoded success values for critical methods like `has_changes`, `run_command`, and `fetch`. It does not simulate actual Git state transitions or failures. This violates the "Behavior Over Internals" principle, as tests relying on this mock may pass even if the production code makes incorrect assumptions about Git behavior (e.g., assuming a command succeeded when it would fail in reality).
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/testing/ports/git_stub.rs"
+    loc:
+      - "impl Git for FakeGit"
+      - "has_changes"
+      - "run_command"
+    note: "Methods return hardcoded success values without simulating actual behavior."
