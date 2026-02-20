@@ -54,7 +54,7 @@ acceptance_criteria:
   - "`RunOptions.role` is `Option<RoleId>`."
   - "`RoleId` and `SetupComponentId` share validation logic and Serde behavior."
   - "`MockExecutionService` is renamed (e.g., `MockWorkflowOrchestrator`)."
-  - `src/adapters` root is clean of implementation files.
+  - "`src/adapters` root is clean of implementation files."
 
 verification_criteria:
   - "Review code changes for type safety improvements."
