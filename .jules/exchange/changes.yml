@@ -1,0 +1,30 @@
+# Changes Summary Schema
+#
+# Authoritative schema for .jules/exchange/changes.yml.
+#
+# Purpose: advisory summary of recent codebase activity for downstream layers.
+# Observers use these entries to decide whether a change falls within their
+# responsibility. Each entry must be self-contained and actionable.
+#
+# Exactly 5 entries are required. If fewer than 5 distinct themes exist,
+# group minor changes under a broader theme to fill all slots.
+
+schema_version: 1
+created_at: "2026-02-20"  # UTC date when this file was produced
+
+summaries:
+  - title: "Comprehensive Command Layer Expansion"
+    scope: "src/app/commands, src/app/cli"
+    impact: "Introduces init, run, doctor, role, setup, update, upgrade, and workflow commands, significantly expanding CLI capabilities."
+  - title: "Prompt Assembly Engine Implementation"
+    scope: "src/domain/prompt_assemble, src/assets/prompt-assemble"
+    impact: "Implements a specialized engine and assets for generating prompts, likely for LLM interaction."
+  - title: "Role & Setup Asset Management System"
+    scope: "src/assets/roles, src/assets/setup, src/domain/roles, src/domain/setup"
+    impact: "Facilitates role and setup component management, enabling project initialization and configuration via defined assets."
+  - title: "Configuration & Layering Domain Logic"
+    scope: "src/domain/config, src/domain/layers"
+    impact: "Establishes core domain logic for configuration parsing and layer management, ensuring consistent system states."
+  - title: "Testing Infrastructure & Contract Verification"
+    scope: "src/testing, tests/"
+    impact: "Introduces a robust testing framework with extensive contract tests and stubs to ensure system reliability."
