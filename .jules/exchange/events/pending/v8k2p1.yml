@@ -1,0 +1,19 @@
+schema_version: 1
+
+# Metadata
+id: "v8k2p1"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "taxonomy"
+confidence: "high"
+
+# Content
+title: "Vague Naming: MockExecutionService"
+statement: |
+  The struct `MockExecutionService` uses the generic suffix "Service", which obscures its specific responsibility of orchestrating mock workflow execution.
+
+evidence:
+  - path: "src/app/commands/run/mock/mock_execution.rs"
+    loc:
+      - "struct MockExecutionService"
+    note: "Service suffix is vague; `MockWorkflowExecutor` or `MockOrchestrator` would be more precise."
