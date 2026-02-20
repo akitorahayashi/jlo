@@ -17,49 +17,61 @@ summary: "Address core architectural issues: monolithic errors, primitive obsess
 # Content
 goal: |
   Clean up accumulating technical debt by:
-  1. Decomposing the monolithic `AppError` enum into domain-specific errors.
+  1. Decomposing the monolithic `AppError` enum into domain-specific errors and removing stringly-typed ad-hoc variants.
   2. Replacing primitive types (`String`) in `RunOptions` with strongly typed identifiers (`RoleId`).
-  3. Unifying identifier validation logic (`RoleId` vs `SetupComponentId`) and ensuring consistent Serde support.
-  4. Renaming vague types like `MockExecutionService` to be more specific.
-  5. Reorganizing `src/adapters` to improve cohesion.
+  3. Unifying identifier validation logic (`RoleId` vs `SetupComponentId`) and ensuring consistent Serde support (rejecting invalid values during deserialization).
+  4. Renaming vague types like `MockExecutionService` to be more specific (e.g., `MockWorkflowOrchestrator`).
+  5. Reorganizing `src/adapters` to move root-level modules into appropriate subdirectories.
 
 problem: |
   The codebase suffers from several architectural anti-patterns:
-  - `AppError` is a monolithic catch-all, coupling unrelated domains.
-  - `RunOptions` uses `String` for `role`, allowing invalid states.
-  - Identifier logic is duplicated and inconsistent.
-  - `MockExecutionService` is vaguely named.
-  - `src/adapters` is a "bag of things".
+  - `AppError` in `src/domain/error.rs` acts as a God Object for errors, mixing unrelated concerns (IO, Config, Git, specific logic errors) and encouraging stringly-typed error messages.
+  - `RunOptions` uses `String` for `role`, allowing invalid states to propagate deep into the application before validation.
+  - `SetupComponentId` derives `Deserialize`, bypassing the validation logic enforced by `impl_validated_id!`, whereas `RoleId` implements it manually.
+  - `MockExecutionService` is vaguely named, obscuring its role as a test double for workflow execution.
+  - `src/adapters` contains loose files (`control_plane_config.rs`, `workflow_installer.rs`) polluting the module root.
 
 impact: |
-  These issues reduce maintainability, increase coupling, and make the code harder to reason about and test.
+  These issues reduce maintainability, increase coupling, and make the code harder to reason about and test. Invalid states can exist at runtime, and error handling is brittle.
 
 desired_outcome: |
-  Errors are domain-specific. Configuration uses strong types. Identifiers are consistent. Modules are cohesive.
+  Errors are domain-specific and strongly typed. Configuration uses strong types to represent valid states. Identifiers are consistently validated and serialized. Modules are cohesive and organized.
 
-constraints: []
-risks: []
+constraints:
+  - "Do not introduce new external dependencies."
+  - "Maintain existing error messages where possible to avoid confusing users, unless the message itself is the debt."
+
+risks:
+  - "High: Refactoring `AppError` involves touching many files. Plan for incremental changes if possible, or a large atomic commit if necessary."
+  - "Medium: JSON/TOML deserialization behavior for `SetupComponentId` will change (it will now fail on invalid IDs instead of accepting them), which is a desired fix but could break tests relying on lax validation."
 
 # Specifics
 affected_areas:
   - "src/domain/error.rs"
+  - "src/domain/validation.rs"
   - "src/domain/roles/role_id.rs"
   - "src/domain/setup/setup_component.rs"
   - "src/domain/config/run_options.rs"
   - "src/app/commands/run/mock/mock_execution.rs"
-  - "src/adapters/"
+  - "src/adapters/control_plane_config.rs"
+  - "src/adapters/workflow_installer.rs"
+  - "src/adapters/mod.rs"
 
 acceptance_criteria:
-  - "`AppError` is decomposed or significantly reduced in scope."
-  - "`RunOptions.role` is `Option<RoleId>`."
-  - "`RoleId` and `SetupComponentId` share validation logic and Serde behavior."
-  - "`MockExecutionService` is renamed (e.g., `MockWorkflowOrchestrator`)."
-  - "`src/adapters` root is clean of implementation files."
+  - "The `AppError` enum is refactored: ad-hoc variants (e.g. `Validation(String)`) are replaced or minimized, and domain logic errors are moved to specific error types."
+  - "`RunOptions` struct uses `Option<RoleId>` instead of `Option<String>`."
+  - "`SetupComponentId` correctly fails deserialization for invalid values (e.g. empty strings, path traversal)."
+  - "`impl_validated_id!` macro or `domain::validation` provides a consistent way to implement Serde."
+  - "`MockExecutionService` is renamed to `MockWorkflowOrchestrator` (or similar) in all usages."
+  - "`src/adapters` root contains only `mod.rs` and directories; `control_plane_config.rs` and `workflow_installer.rs` are moved to appropriate submodules (e.g. `adapters::config`, `adapters::install`)."
 
 verification_criteria:
-  - "Review code changes for type safety improvements."
-  - "Verify build succeeds."
+  - "Run `cargo check` to ensure no compile errors."
+  - "Run `cargo test` to ensure all tests pass, specifically `RoleId` and `SetupComponentId` validation tests."
+  - "Inspect `src/domain/error.rs` to verify `AppError` simplification."
+  - "Inspect `src/adapters/` directory structure."
+  - "Verify `RunOptions` usage prevents passing arbitrary strings as roles."
 
 # Planning Flags
-implementation_ready: false
+implementation_ready: true
 planner_request_reason: "Decomposition of AppError requires careful planning to avoid massive breaking changes at once."
