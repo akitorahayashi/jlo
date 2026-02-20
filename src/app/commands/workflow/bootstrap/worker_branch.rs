@@ -53,38 +53,39 @@ pub(crate) fn execute_with_adapter(
     git.run_command(&["fetch", "origin", target_branch], None)?;
 
     let worker_exists = remote_branch_exists(git, worker_branch)?;
+    let worker_ref = format!("origin/{}", worker_branch);
     let target_ref = format!("origin/{}", target_branch);
-
-    let (workspace_base, worker_created) = if worker_exists {
+    let worker_created = if worker_exists {
         git.run_command(&["fetch", "origin", worker_branch], None)?;
-        (format!("origin/{}", worker_branch), false)
+        git.run_command(&["checkout", "-B", worker_branch, worker_ref.as_str()], None)?;
+        false
     } else {
-        git.push_branch_from_rev(target_ref.as_str(), worker_branch, false)?;
-        (target_ref.clone(), true)
+        git.run_command(&["checkout", "-B", worker_branch, target_ref.as_str()], None)?;
+        git.push_branch(worker_branch, false)?;
+        true
     };
 
-    let workspace = git.create_workspace(&workspace_base)?;
-
     let mut conflict_resolved = false;
-    let merge_result = workspace.run_command(
+    let merge_result = git.run_command(
         &["merge", target_ref.as_str(), "--no-edit", "-X", "theirs", "--allow-unrelated-histories"],
         None,
     );
 
     if merge_result.is_err() {
-        workspace.run_command(&["checkout", "--ours", ".jules/"], None)?;
-        workspace.run_command(&["add", ".jules/"], None)?;
-        let staged = workspace.run_command(&["diff", "--cached", "--name-only"], None)?;
+        git.run_command(&["checkout", "--ours", ".jules/"], None)?;
+        git.run_command(&["add", ".jules/"], None)?;
+        let staged = git.run_command(&["diff", "--cached", "--name-only"], None)?;
         if staged.trim().is_empty() {
             return Err(AppError::Validation(
                 "Merge failed and no .jules conflict-resolution changes were staged".to_string(),
             ));
         }
-        workspace.run_command(&["commit", "--no-edit"], None)?;
+        git.run_command(&["commit", "--no-edit"], None)?;
         conflict_resolved = true;
     }
-
-    workspace.push_branch_from_rev("HEAD", worker_branch, false)?;
+    // Intentionally does not push merge results to the worker branch directly.
+    // Publishing continues through `workflow push worker-branch` so branch-protection
+    // stays enforced via PR merge path in a single downstream operation.
 
     Ok(WorkflowBootstrapWorkerBranchOutput {
         schema_version: 1,
@@ -298,8 +299,7 @@ mod tests {
         assert!(out.worker_created);
         assert!(out.merged);
         assert!(!out.conflict_resolved);
-        // Pushed once when created, once after merge
-        assert_eq!(git.pushed.lock().expect("pushed lock poisoned").as_slice(), ["jules", "jules"]);
+        assert_eq!(git.pushed.lock().expect("pushed lock poisoned").as_slice(), ["jules"]);
     }
 
     #[test]
@@ -307,8 +307,8 @@ mod tests {
         let git = TestGit::new("sha\trefs/heads/jules", false, "");
         let out = execute_with_adapter(&git, "main", "jules").expect("worker branch sync failed");
         assert!(!out.worker_created);
-        // Pushed once after merge
-        assert_eq!(git.pushed.lock().expect("pushed lock poisoned").as_slice(), ["jules"]);
+        // Regression guard: worker sync must not push merged state directly to protected branch.
+        assert!(git.pushed.lock().expect("pushed lock poisoned").is_empty());
     }
 
     #[test]
@@ -321,6 +321,7 @@ mod tests {
         let commands = git.commands.lock().expect("commands lock poisoned");
         assert!(commands.iter().any(|args| args == &vec!["checkout", "--ours", ".jules/"]));
         assert!(commands.iter().any(|args| args == &vec!["add", ".jules/"]));
+        assert!(git.pushed.lock().expect("pushed lock poisoned").is_empty());
     }
 
     #[test]
@@ -329,5 +330,6 @@ mod tests {
         let err =
             execute_with_adapter(&git, "main", "jules").expect_err("expected conflict failure");
         assert!(err.to_string().contains("no .jules conflict-resolution changes were staged"));
+        assert!(git.pushed.lock().expect("pushed lock poisoned").is_empty());
     }
 }

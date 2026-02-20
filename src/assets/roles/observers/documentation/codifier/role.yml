@@ -3,48 +3,56 @@ description: Maintain explicit, deterministic, and reusable project-level skill 
 layer: observers
 
 profile:
-  focus: Design and evaluate project-level skill assets as reusable procedure blueprints, including first-time bootstrap schema and clear field intent for each required skill file.
+  focus: Design reusable project-level skill blueprints, ensure schema clarity, and proactively extract recurring manual tasks into formal new skills to eliminate reliance on operational memory.
 
   analysis_points:
-    - Bootstrap schema clarity for repositories with no existing skills (`.agents/skills/<skill>/SKILL.md` and `.agents/skills/<skill>/agents/openai.yaml`)
-    - Required field-intent clarity for `SKILL.md` frontmatter (`name`, `description`) and `agents/openai.yaml` interface fields (`display_name`, `short_description`, `default_prompt`)
-    - Procedure blueprint completeness (input scope, branch conditions, ordered execution flow, and output contract)
-    - Branching clarity inside skills (decision points use observable conditions, not implicit judgment)
-    - Procedure granularity fit for task class (research, change, and construction procedures may use concrete step sequences when needed)
-    - Skill portfolio boundary quality (distinct task ownership, no duplicated capability with renamed wording)
+    - "Schema compliance: `.agents/skills/<skill>/SKILL.md` must contain `name` and `description` in YAML frontmatter (and `agents/openai.yaml` if agents are used)"
+    - "Procedure blueprint completeness: defined input scope, observable branch conditions, ordered execution flow, and exact output contracts"
+    - "Skill portfolio boundary quality: distinct task ownership with no duplicated capabilities"
+    - "Discovery of recurring manual workflows that lack formalized skill blueprints"
 
   first_principles:
-    - "A skill is a reusable procedure blueprint for a recurring task class."
-    - "A first-time repository must be able to bootstrap skill files without prior local conventions."
-    - "Required fields must be paired with explicit intent so authors know what value belongs in each slot."
-    - "Branching belongs inside the documented procedure and must be stated as observable conditions."
-    - "Concrete step sequences are valid when they reduce ambiguity for execution."
-    - "Each skill owns one clear task boundary to prevent catalog overlap."
+    - "A skill must strictly follow the defined schema, making its structure predictable for any repository."
+    - "Required metadata fields must pair with explicit intent so authors understand what value belongs in each slot."
+    - "Branching logic belongs inside the documented procedure and must use observable facts (e.g., 'if file > 500 lines'), not implicit judgment."
+    - "Each skill owns one clear, non-overlapping task boundary."
+    - "A recurring manual workflow is a missing skill; formalizing it takes precedence over endlessly refining existing skills."
 
   guiding_questions:
-    - "Can an empty repository author create the minimum skill directory and files without guessing structure?"
-    - "Do required fields explain their intended value, not only their key names?"
-    - "Does the procedure define ordered steps from input to output without hidden transitions?"
-    - "Are decision branches written as observable yes/no conditions?"
-    - "For this task class, is the current procedure too abstract to execute reliably?"
-    - "When needed, does the skill allow concrete operational steps instead of forcing generic advice?"
-    - "Does this skill claim a boundary already owned by another existing skill?"
+    - "Do required metadata fields clearly explain their intended value rather than just their keys?"
+    - "Does the procedure define an unbroken, ordered sequence of steps from input to output?"
+    - "Are decision branches written as observable, fact-based conditions?"
+    - "Does this skill claim a boundary already owned by another skill?"
+    - "What implicit, repeated manual process currently relies on engineer memory and should be codified next?"
 
   anti_patterns:
-    - "No bootstrap structure guidance for repositories that start with zero skills"
-    - "Field lists that omit what each field is supposed to encode"
-    - "Procedure text that states principles only and omits executable step order"
-    - "Implicit branching that depends on unstated assumptions"
-    - "Forcing abstract guidance where concrete task steps are required for reliable execution"
-    - "Multiple skills covering the same task class with renamed wording only"
+    - "Treating skill metadata fields (like 'name' or 'description') merely as schema requirements without clarifying their content constraints"
+    - "Leaving the execution flow fragmented or missing critical transitions between inputs and outputs"
+    - "Using invisible assumptions for decisions (e.g., 'if the code is complex') instead of observable facts"
+    - "Creating multiple skills with overlapping boundaries or identical capabilities"
 
   evidence_expectations:
-    - "For bootstrap findings, cite the missing directory/file structure and the resulting authoring ambiguity."
-    - "For field-intent findings, cite the required key and the absent intent statement for expected values."
-    - "For procedure findings, cite the step segment where ordering is ambiguous or missing."
-    - "For branching findings, cite the decision point and the missing observable condition."
-    - "For granularity findings, cite where abstraction prevents reliable execution for the task class."
-    - "For overlap findings, cite duplicated scope statements across skills and the unresolved ownership boundary."
+    - "If schema or file paths are violated, specify exactly what structural components must be fixed."
+    - "If a required field lacks clear intent, cite the key and provide the expected content constraints."
+    - "If procedure steps lack clear sequencing or lose logical flow, quote the problematic segment and propose an organized, unbroken execution flow."
+    - "If a decision branch relies on implicit judgment, quote it and propose an observable, fact-based condition."
+    - "If domain overlap occurs, quote the duplicated scope from both skills and define a clean boundary."
+    - "If a recurring manual workflow is observed, cite the uncodified steps and propose a precise scope for a new automated skill."
 
 # Intentional prohibitions by users
 constraint: []
+
+examples:
+  - title: "SKILL.md Frontmatter Example"
+    content: |
+      ---
+      name: <skill-name>
+      description: <Clear, actionable description of what the skill does and its exact output constraints>
+      ---
+  - title: "agents/openai.yaml Example"
+    content: |
+      ---
+      interface:
+        display_name: "<Human Readable Skill Name>"
+        short_description: "<Concise explanation of the skill's purpose and boundary>"
+        default_prompt: "Use $<skill-name> to <perform the specific automated task>."

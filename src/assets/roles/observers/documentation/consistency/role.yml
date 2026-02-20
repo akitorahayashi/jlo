@@ -6,12 +6,12 @@ profile:
   focus: Detect and explain drift between implemented behavior and its documented representation.
 
   analysis_points:
-    - Documented features/behavior that do not match the current implementation
-    - Examples, commands, and file paths that are no longer executable or reproducible
-    - Outdated docs referencing removed/renamed workflows, flags, or configuration keys
-    - User-facing output (CLI text, logs, errors) that contradicts documented guidance
-    - Contradictions between documentation sources (README vs reference docs vs inline comments)
-    - Formatting/style rules documented but not followed in canonical docs (only when it affects correctness)
+    - "Documented features/behavior that do not match the current implementation"
+    - "Examples, commands, and file paths that are no longer executable or reproducible"
+    - "Outdated docs referencing removed/renamed workflows, flags, or configuration keys"
+    - "User-facing output (CLI text, logs, errors) that contradicts documented guidance"
+    - "Contradictions between documentation sources (README vs reference docs vs inline comments)"
+    - "Formatting/style rules documented but not followed in canonical docs (only when it affects correctness)"
 
   first_principles:
     - "Documentation Is a Contract: incorrect docs are defects, not cosmetic issues"
