@@ -22,7 +22,7 @@ on:
           - innovators
           - observers
           - decider
-          - requirements-rounting
+          - requirements-routing
         default: narrator
       wait_minutes:
         description: 'Minutes to wait between layers (Jules async processing time)'
@@ -148,7 +148,7 @@ jobs:
           run_innovators=false
           run_observers=false
           run_decider=false
-          run_requirements_rounting=false
+          run_requirements_routing=false
           run_planner=false
           run_implementer=false
 
@@ -157,7 +157,7 @@ jobs:
               run_narrator=true
               run_observers=true
               run_decider=true
-              run_requirements_rounting=true
+              run_requirements_routing=true
               run_planner=true
               run_implementer=true
               ;;
@@ -167,28 +167,28 @@ jobs:
             observers)
               run_observers=true
               run_decider=true
-              run_requirements_rounting=true
+              run_requirements_routing=true
               run_planner=true
               run_implementer=true
               ;;
             decider)
               run_decider=true
-              run_requirements_rounting=true
+              run_requirements_routing=true
               run_planner=true
               run_implementer=true
               ;;
-            requirements-rounting)
-              run_requirements_rounting=true
+            requirements-routing)
+              run_requirements_routing=true
               run_planner=true
               run_implementer=true
               ;;
             *)
-              echo "::error::Unsupported entry_point '${ENTRY_POINT}'. Allowed values: narrator, innovators, observers, decider, requirements-rounting."
+              echo "::error::Unsupported entry_point '${ENTRY_POINT}'. Allowed values: narrator, innovators, observers, decider, requirements-routing."
               exit 1
               ;;
           esac
 
-          echo "json={\"should_run\":true,\"entry_point\":\"${ENTRY_POINT}\",\"run_narrator\":${run_narrator},\"run_innovators\":${run_innovators},\"run_observers\":${run_observers},\"run_decider\":${run_decider},\"run_requirements_rounting\":${run_requirements_rounting},\"run_planner\":${run_planner},\"run_implementer\":${run_implementer}}" >> "$GITHUB_OUTPUT"
+          echo "json={\"should_run\":true,\"entry_point\":\"${ENTRY_POINT}\",\"run_narrator\":${run_narrator},\"run_innovators\":${run_innovators},\"run_observers\":${run_observers},\"run_decider\":${run_decider},\"run_requirements_routing\":${run_requirements_routing},\"run_planner\":${run_planner},\"run_implementer\":${run_implementer}}" >> "$GITHUB_OUTPUT"
 
 
   # ============================================================
@@ -596,10 +596,12 @@ jobs:
   # ============================================================
   # Phase 11: Gate planner and implementer lane
   # ============================================================
-  requirements-rounting:
+  requirements-routing:
     needs: [resolve-run-plan, wait-after-decider]
     if: |
-      fromJSON(needs.resolve-run-plan.outputs.json).run_requirements_rounting == true &&
+      always() &&
+      needs.resolve-run-plan.result == 'success' &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_requirements_routing == true &&
       (
         needs.wait-after-decider.result == 'success' ||
         needs.wait-after-decider.result == 'skipped'
@@ -617,14 +619,14 @@ jobs:
   # ============================================================
 
   run-planner:
-    needs: ["resolve-run-plan", "requirements-rounting"]
+    needs: ["resolve-run-plan", "requirements-routing"]
     if: |
       always() &&
       needs.resolve-run-plan.result == 'success' &&
       fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true &&
       (
-        needs.requirements-rounting.result == 'success' ||
-        needs.requirements-rounting.result == 'skipped'
+        needs.requirements-routing.result == 'success' ||
+        needs.requirements-routing.result == 'skipped'
       )
 
     runs-on: ubuntu-latest
@@ -706,14 +708,14 @@ jobs:
   # ============================================================
 
   run-implementer:
-    needs: ["resolve-run-plan", "requirements-rounting"]
+    needs: ["resolve-run-plan", "requirements-routing"]
     if: |
       always() &&
       needs.resolve-run-plan.result == 'success' &&
       fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true &&
       (
-        needs.requirements-rounting.result == 'success' ||
-        needs.requirements-rounting.result == 'skipped'
+        needs.requirements-routing.result == 'success' ||
+        needs.requirements-routing.result == 'skipped'
       )
 
     runs-on: ubuntu-latest

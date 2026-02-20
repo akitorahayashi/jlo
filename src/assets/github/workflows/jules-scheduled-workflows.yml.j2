@@ -22,7 +22,7 @@ on:
           - innovators
           - observers
           - decider
-          - requirements-rounting
+          - requirements-routing
         default: narrator
       wait_minutes:
         description: 'Minutes to wait between layers (Jules async processing time)'
@@ -189,24 +189,24 @@ fromJSON(needs.run-decider.outputs.json).number_of_api_requests_succeeded > 0"
   # ============================================================
   # Phase 11: Gate planner and implementer lane
   # ============================================================
-{% include "workflows/jules-workflows/components/requirements-rounting.yml.j2" %}
+{% include "workflows/jules-workflows/components/requirements-routing.yml.j2" %}
   # ============================================================
   # Phase 12: Run planner
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-planner',
-    'requirements-rounting',
+    'requirements-routing',
     'run_planner',
     'planner',
     'Run planner',
     {},
-    ['resolve-run-plan', 'requirements-rounting'],
+    ['resolve-run-plan', 'requirements-routing'],
     "always() &&
 needs.resolve-run-plan.result == 'success' &&
 fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true &&
 (
-  needs.requirements-rounting.result == 'success' ||
-  needs.requirements-rounting.result == 'skipped'
+  needs.requirements-routing.result == 'success' ||
+  needs.requirements-routing.result == 'skipped'
 )"
 ) }}
   # ============================================================
@@ -226,18 +226,18 @@ fromJSON(needs.run-planner.outputs.json).number_of_api_requests_succeeded > 0"
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-implementer',
-    'requirements-rounting',
+    'requirements-routing',
     'run_implementer',
     'implementer',
     'Run implementer',
     {},
-    ['resolve-run-plan', 'requirements-rounting'],
+    ['resolve-run-plan', 'requirements-routing'],
     "always() &&
 needs.resolve-run-plan.result == 'success' &&
 fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true &&
 (
-  needs.requirements-rounting.result == 'success' ||
-  needs.requirements-rounting.result == 'skipped'
+  needs.requirements-routing.result == 'success' ||
+  needs.requirements-routing.result == 'skipped'
 )",
     extra_run_args='--branch "${JLO_TARGET_BRANCH}"'
 ) }}

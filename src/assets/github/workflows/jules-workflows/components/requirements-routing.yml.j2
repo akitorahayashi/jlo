@@ -1,7 +1,9 @@
-  requirements-rounting:
+  requirements-routing:
     needs: [resolve-run-plan, wait-after-decider]
     if: |
-      fromJSON(needs.resolve-run-plan.outputs.json).run_requirements_rounting == true &&
+      always() &&
+      needs.resolve-run-plan.result == 'success' &&
+      fromJSON(needs.resolve-run-plan.outputs.json).run_requirements_routing == true &&
       (
         needs.wait-after-decider.result == 'success' ||
         needs.wait-after-decider.result == 'skipped'

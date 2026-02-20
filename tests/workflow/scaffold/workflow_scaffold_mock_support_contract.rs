@@ -69,8 +69,8 @@ fn installed_workflow_scaffold_includes_mock_support() {
         "Entry point choices should include innovators"
     );
     assert!(
-        workflow.contains("\n          - requirements-rounting\n"),
-        "Entry point choices should include requirements-rounting start-point"
+        workflow.contains("\n          - requirements-routing\n"),
+        "Entry point choices should include requirements-routing start-point"
     );
     assert!(
         !workflow.contains("\n          - planner\n"),
@@ -82,7 +82,7 @@ fn installed_workflow_scaffold_includes_mock_support() {
     );
     assert!(
         workflow.contains(
-            "observers)\n              run_observers=true\n              run_decider=true\n              run_requirements_rounting=true\n              run_planner=true\n              run_implementer=true"
+            "observers)\n              run_observers=true\n              run_decider=true\n              run_requirements_routing=true\n              run_planner=true\n              run_implementer=true"
         ),
         "Observers entry-point should continue downstream without innovators"
     );
@@ -100,15 +100,15 @@ fn installed_workflow_scaffold_includes_mock_support() {
     );
     assert!(
         workflow.contains(
-            "decider)\n              run_decider=true\n              run_requirements_rounting=true\n              run_planner=true\n              run_implementer=true"
+            "decider)\n              run_decider=true\n              run_requirements_routing=true\n              run_planner=true\n              run_implementer=true"
         ),
         "Decider entry-point should continue to planner/implementer without innovators"
     );
     assert!(
         workflow.contains(
-            "requirements-rounting)\n              run_requirements_rounting=true\n              run_planner=true\n              run_implementer=true"
+            "requirements-routing)\n              run_requirements_routing=true\n              run_planner=true\n              run_implementer=true"
         ),
-        "requirements-rounting entry-point should start from planner/implementer lane"
+        "requirements-routing entry-point should start from planner/implementer lane"
     );
     assert!(
         workflow.contains(
@@ -118,21 +118,20 @@ fn installed_workflow_scaffold_includes_mock_support() {
     );
     assert!(
         workflow.contains(
-            "requirements-rounting:\n    needs: [resolve-run-plan, wait-after-decider]"
+            "requirements-routing:\n    needs: [resolve-run-plan, wait-after-decider]\n    if: |\n      always() &&\n      needs.resolve-run-plan.result == 'success' &&\n      fromJSON(needs.resolve-run-plan.outputs.json).run_requirements_routing == true"
         ),
-        "requirements-rounting job should be present"
+        "requirements-routing job should evaluate with always() and a successful resolve-run-plan gate"
+    );
+    assert!(
+        workflow
+            .contains("run-planner:\n    needs: [\"resolve-run-plan\", \"requirements-routing\"]"),
+        "run-planner should depend on requirements-routing"
     );
     assert!(
         workflow.contains(
-            "run-planner:\n    needs: [\"resolve-run-plan\", \"requirements-rounting\"]"
+            "run-implementer:\n    needs: [\"resolve-run-plan\", \"requirements-routing\"]"
         ),
-        "run-planner should depend on requirements-rounting"
-    );
-    assert!(
-        workflow.contains(
-            "run-implementer:\n    needs: [\"resolve-run-plan\", \"requirements-rounting\"]"
-        ),
-        "run-implementer should depend on requirements-rounting"
+        "run-implementer should depend on requirements-routing"
     );
     assert!(workflow.contains("wait-after-narrator:"), "Should include narrator-specific wait job");
     assert!(
