@@ -646,6 +646,9 @@ mod tests {
 
         let out = execute_with_adapters(&git, &github, options()).expect("should skip cleanly");
         assert!(!out.applied);
-        assert_eq!(out.skipped_reason.as_deref(), Some("No local commits or .jules changes to push"));
+        assert_eq!(
+            out.skipped_reason.as_deref(),
+            Some("No local commits or .jules changes to push")
+        );
     }
 }

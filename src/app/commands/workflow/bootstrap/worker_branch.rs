@@ -327,7 +327,8 @@ mod tests {
     #[test]
     fn fails_when_conflict_resolution_stages_nothing() {
         let git = TestGit::new("sha\trefs/heads/jules", true, "");
-        let err = execute_with_adapter(&git, "main", "jules").expect_err("expected conflict failure");
+        let err =
+            execute_with_adapter(&git, "main", "jules").expect_err("expected conflict failure");
         assert!(err.to_string().contains("no .jules conflict-resolution changes were staged"));
         assert!(git.pushed.lock().expect("pushed lock poisoned").is_empty());
     }
