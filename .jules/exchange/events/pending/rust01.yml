@@ -1,0 +1,14 @@
+schema_version: 1
+id: "rust01"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "rustacean"
+confidence: "high"
+title: "Monolithic & Stringly-Typed Error Model"
+statement: |
+  The `AppError` type in `src/domain/error.rs` is a monolithic enum that couples unrelated domains (IO, Git, Config, Role, Setup, PromptAssembly) and relies heavily on `String` payloads (e.g., `Validation(String)`, `InternalError(String)`), losing semantic meaning and making error handling fragile and non-composable.
+evidence:
+  - path: "src/domain/error.rs"
+    loc:
+      - "28-132"
+    note: "AppError definition showing mixed domains and String payloads."

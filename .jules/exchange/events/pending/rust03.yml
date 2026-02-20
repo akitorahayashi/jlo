@@ -1,0 +1,14 @@
+schema_version: 1
+id: "rust03"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "rustacean"
+confidence: "high"
+title: "Concurrency Primitives as Escape Hatch"
+statement: |
+  The `assemble_prompt` function in `src/domain/prompt_assemble/assembler.rs` uses `Arc<Mutex<T>>` to manage local state within `minijinja` closures. This introduces unnecessary thread-safety overhead and complexity for a synchronous operation, acting as an escape hatch to satisfy trait bounds instead of redesigning the flow (e.g., using `minijinja::State` or a context object).
+evidence:
+  - path: "src/domain/prompt_assemble/assembler.rs"
+    loc:
+      - "42-45"
+    note: "Use of Arc<Mutex<T>> for local variables."
