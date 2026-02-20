@@ -22,7 +22,7 @@ on:
           - innovators
           - observers
           - decider
-          - requirements
+          - requirements-rounting
         default: narrator
       wait_minutes:
         description: 'Minutes to wait between layers (Jules async processing time)'
@@ -120,14 +120,8 @@ fromJSON(needs.run-innovators.outputs.json).number_of_api_requests_succeeded > 0
     if_condition="always() &&
 needs.resolve-run-plan.result == 'success' &&
 (
-  (
-    fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == true &&
-    needs.run-narrator.result == 'success'
-  ) ||
-  (
-    fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == false &&
-    needs.run-narrator.result == 'skipped'
-  )
+  needs.run-narrator.result == 'success' ||
+  needs.run-narrator.result == 'skipped'
 )",
     wait_requested_expr='fromJSON(needs.resolve-run-plan.outputs.json).run_narrator',
     skip_message='Narrator not requested; skipping wait.'
@@ -138,13 +132,16 @@ needs.resolve-run-plan.result == 'success' &&
 {{ run_macro.run_agent_job(
     'run-observers',
     'wait-after-narrator',
-    'json',
+    'run_observers',
     'observers',
     'Run observers',
     {},
     ['resolve-run-plan', 'wait-after-narrator'],
     "fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&
-      needs.wait-after-narrator.result == 'success'"
+(
+  needs.wait-after-narrator.result == 'success' ||
+  needs.wait-after-narrator.result == 'skipped'
+)"
 ) }}
   # ============================================================
   # Phase 8: Wait for observer processing
@@ -173,14 +170,8 @@ fromJSON(needs.run-observers.outputs.json).number_of_api_requests_succeeded > 0"
 needs.resolve-run-plan.result == 'success' &&
 fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
 (
-  (
-    fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&
-    needs.wait-after-observers.result == 'success'
-  ) ||
-  (
-    fromJSON(needs.resolve-run-plan.outputs.json).run_observers == false &&
-    needs.wait-after-observers.result == 'skipped'
-  )
+  needs.wait-after-observers.result == 'success' ||
+  needs.wait-after-observers.result == 'skipped'
 )"
 ) }}
   # ============================================================
@@ -196,32 +187,30 @@ needs.run-decider.result == 'success' &&
 fromJSON(needs.run-decider.outputs.json).number_of_api_requests_succeeded > 0"
 ) }}
   # ============================================================
-  # Phase 11: Run planner
+  # Phase 11: Gate planner and implementer lane
+  # ============================================================
+{% include "workflows/jules-workflows/components/requirements-rounting.yml.j2" %}
+  # ============================================================
+  # Phase 12: Run planner
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-planner',
-    'resolve-run-plan',
+    'requirements-rounting',
     'run_planner',
     'planner',
     'Run planner',
     {},
-    ['resolve-run-plan', 'wait-after-decider'],
+    ['resolve-run-plan', 'requirements-rounting'],
     "always() &&
 needs.resolve-run-plan.result == 'success' &&
 fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true &&
 (
-  (
-    fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
-    needs.wait-after-decider.result == 'success'
-  ) ||
-  (
-    fromJSON(needs.resolve-run-plan.outputs.json).run_decider == false &&
-    needs.wait-after-decider.result == 'skipped'
-  )
+  needs.requirements-rounting.result == 'success' ||
+  needs.requirements-rounting.result == 'skipped'
 )"
 ) }}
   # ============================================================
-  # Phase 12: Wait for planner PRs
+  # Phase 13: Wait for planner PRs
   # ============================================================
 {{ wait_macro.wait_for_processing(
     job_name='wait-after-planner',
@@ -233,33 +222,27 @@ needs.run-planner.result == 'success' &&
 fromJSON(needs.run-planner.outputs.json).number_of_api_requests_succeeded > 0"
 ) }}
   # ============================================================
-  # Phase 13: Run implementer
+  # Phase 14: Run implementer
   # ============================================================
 {{ run_macro.run_agent_job(
     'run-implementer',
-    'resolve-run-plan',
+    'requirements-rounting',
     'run_implementer',
     'implementer',
     'Run implementer',
     {},
-    ['resolve-run-plan', 'wait-after-decider'],
+    ['resolve-run-plan', 'requirements-rounting'],
     "always() &&
 needs.resolve-run-plan.result == 'success' &&
 fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true &&
 (
-  (
-    fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
-    needs.wait-after-decider.result == 'success'
-  ) ||
-  (
-    fromJSON(needs.resolve-run-plan.outputs.json).run_decider == false &&
-    needs.wait-after-decider.result == 'skipped'
-  )
+  needs.requirements-rounting.result == 'success' ||
+  needs.requirements-rounting.result == 'skipped'
 )",
     extra_run_args='--branch "${JLO_TARGET_BRANCH}"'
 ) }}
   # ============================================================
-  # Phase 14: Wait for implementer labels
+  # Phase 15: Wait for implementer labels
   # ============================================================
 {{ wait_macro.wait_for_processing(
     job_name='wait-after-implementer',
@@ -272,6 +255,6 @@ fromJSON(needs.run-implementer.outputs.json).number_of_api_requests_succeeded > 
 ) }}
 
   # ============================================================
-  # Phase 15: Cleanup mock artifacts
+  # Phase 16: Cleanup mock artifacts
   # ============================================================
 {% include "workflows/jules-workflows/components/cleanup-mock-artifacts.yml.j2" %}

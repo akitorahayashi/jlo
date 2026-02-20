@@ -22,7 +22,7 @@ on:
           - innovators
           - observers
           - decider
-          - requirements
+          - requirements-rounting
         default: narrator
       wait_minutes:
         description: 'Minutes to wait between layers (Jules async processing time)'
@@ -148,6 +148,7 @@ jobs:
           run_innovators=false
           run_observers=false
           run_decider=false
+          run_requirements_rounting=false
           run_planner=false
           run_implementer=false
 
@@ -156,6 +157,7 @@ jobs:
               run_narrator=true
               run_observers=true
               run_decider=true
+              run_requirements_rounting=true
               run_planner=true
               run_implementer=true
               ;;
@@ -165,25 +167,28 @@ jobs:
             observers)
               run_observers=true
               run_decider=true
+              run_requirements_rounting=true
               run_planner=true
               run_implementer=true
               ;;
             decider)
               run_decider=true
+              run_requirements_rounting=true
               run_planner=true
               run_implementer=true
               ;;
-            requirements)
+            requirements-rounting)
+              run_requirements_rounting=true
               run_planner=true
               run_implementer=true
               ;;
             *)
-              echo "::error::Unsupported entry_point '${ENTRY_POINT}'. Allowed values: narrator, innovators, observers, decider, requirements."
+              echo "::error::Unsupported entry_point '${ENTRY_POINT}'. Allowed values: narrator, innovators, observers, decider, requirements-rounting."
               exit 1
               ;;
           esac
 
-          echo "json={\"should_run\":true,\"entry_point\":\"${ENTRY_POINT}\",\"run_narrator\":${run_narrator},\"run_innovators\":${run_innovators},\"run_observers\":${run_observers},\"run_decider\":${run_decider},\"run_planner\":${run_planner},\"run_implementer\":${run_implementer}}" >> "$GITHUB_OUTPUT"
+          echo "json={\"should_run\":true,\"entry_point\":\"${ENTRY_POINT}\",\"run_narrator\":${run_narrator},\"run_innovators\":${run_innovators},\"run_observers\":${run_observers},\"run_decider\":${run_decider},\"run_requirements_rounting\":${run_requirements_rounting},\"run_planner\":${run_planner},\"run_implementer\":${run_implementer}}" >> "$GITHUB_OUTPUT"
 
 
   # ============================================================
@@ -365,14 +370,8 @@ jobs:
       always() &&
       needs.resolve-run-plan.result == 'success' &&
       (
-        (
-          fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == true &&
-          needs.run-narrator.result == 'success'
-        ) ||
-        (
-          fromJSON(needs.resolve-run-plan.outputs.json).run_narrator == false &&
-          needs.run-narrator.result == 'skipped'
-        )
+        needs.run-narrator.result == 'success' ||
+        needs.run-narrator.result == 'skipped'
       )
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -426,7 +425,10 @@ jobs:
     needs: ["resolve-run-plan", "wait-after-narrator"]
     if: |
       fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&
-            needs.wait-after-narrator.result == 'success'
+      (
+        needs.wait-after-narrator.result == 'success' ||
+        needs.wait-after-narrator.result == 'skipped'
+      )
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -513,14 +515,8 @@ jobs:
       needs.resolve-run-plan.result == 'success' &&
       fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
       (
-        (
-          fromJSON(needs.resolve-run-plan.outputs.json).run_observers == true &&
-          needs.wait-after-observers.result == 'success'
-        ) ||
-        (
-          fromJSON(needs.resolve-run-plan.outputs.json).run_observers == false &&
-          needs.wait-after-observers.result == 'skipped'
-        )
+        needs.wait-after-observers.result == 'success' ||
+        needs.wait-after-observers.result == 'skipped'
       )
 
     runs-on: ubuntu-latest
@@ -598,24 +594,37 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 11: Run planner
+  # Phase 11: Gate planner and implementer lane
+  # ============================================================
+  requirements-rounting:
+    needs: [resolve-run-plan, wait-after-decider]
+    if: |
+      fromJSON(needs.resolve-run-plan.outputs.json).run_requirements_rounting == true &&
+      (
+        needs.wait-after-decider.result == 'success' ||
+        needs.wait-after-decider.result == 'skipped'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run requirements routing
+        run: |
+          set -euo pipefail
+          echo "Requirements routing is active."
+
+  # ============================================================
+  # Phase 12: Run planner
   # ============================================================
 
   run-planner:
-    needs: ["resolve-run-plan", "wait-after-decider"]
+    needs: ["resolve-run-plan", "requirements-rounting"]
     if: |
       always() &&
       needs.resolve-run-plan.result == 'success' &&
       fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true &&
       (
-        (
-          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
-          needs.wait-after-decider.result == 'success'
-        ) ||
-        (
-          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == false &&
-          needs.wait-after-decider.result == 'skipped'
-        )
+        needs.requirements-rounting.result == 'success' ||
+        needs.requirements-rounting.result == 'skipped'
       )
 
     runs-on: ubuntu-latest
@@ -644,7 +653,7 @@ jobs:
           set -euo pipefail
           jlo workflow run planner ${{ env.JLO_RUN_FLAGS }}
   # ============================================================
-  # Phase 12: Wait for planner PRs
+  # Phase 13: Wait for planner PRs
   # ============================================================
 
   wait-after-planner:
@@ -693,24 +702,18 @@ jobs:
           echo "Wait complete."
           echo "json={}" >> "$GITHUB_OUTPUT"
   # ============================================================
-  # Phase 13: Run implementer
+  # Phase 14: Run implementer
   # ============================================================
 
   run-implementer:
-    needs: ["resolve-run-plan", "wait-after-decider"]
+    needs: ["resolve-run-plan", "requirements-rounting"]
     if: |
       always() &&
       needs.resolve-run-plan.result == 'success' &&
       fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true &&
       (
-        (
-          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
-          needs.wait-after-decider.result == 'success'
-        ) ||
-        (
-          fromJSON(needs.resolve-run-plan.outputs.json).run_decider == false &&
-          needs.wait-after-decider.result == 'skipped'
-        )
+        needs.requirements-rounting.result == 'success' ||
+        needs.requirements-rounting.result == 'skipped'
       )
 
     runs-on: ubuntu-latest
@@ -739,7 +742,7 @@ jobs:
           set -euo pipefail
           jlo workflow run implementer ${{ env.JLO_RUN_FLAGS }} --branch "${JLO_TARGET_BRANCH}"
   # ============================================================
-  # Phase 14: Wait for implementer labels
+  # Phase 15: Wait for implementer labels
   # ============================================================
 
   wait-after-implementer:
@@ -789,7 +792,7 @@ jobs:
           echo "json={}" >> "$GITHUB_OUTPUT"
 
   # ============================================================
-  # Phase 15: Cleanup mock artifacts
+  # Phase 16: Cleanup mock artifacts
   # ============================================================
   cleanup-mock-artifacts:
     needs: [publish-proposals, wait-after-planner, wait-after-implementer]

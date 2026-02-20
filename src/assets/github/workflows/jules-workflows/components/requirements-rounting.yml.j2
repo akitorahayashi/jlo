@@ -1,0 +1,15 @@
+  requirements-rounting:
+    needs: [resolve-run-plan, wait-after-decider]
+    if: |
+      fromJSON(needs.resolve-run-plan.outputs.json).run_requirements_rounting == true &&
+      (
+        needs.wait-after-decider.result == 'success' ||
+        needs.wait-after-decider.result == 'skipped'
+      )
+    runs-on: {{ runner }}
+    timeout-minutes: 5
+    steps:
+      - name: Run requirements routing
+        run: |
+          set -euo pipefail
+          echo "Requirements routing is active."
