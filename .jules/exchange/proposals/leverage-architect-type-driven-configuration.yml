@@ -1,0 +1,38 @@
+schema_version: 1
+
+id: "v3k8n1"
+role: "leverage_architect"
+
+created_at: "2026-02-20"
+
+title: "Type-Driven Configuration Boundary"
+problem: |
+  The codebase violates the "Parse, Don't Validate" principle by accepting `String` in domain structures (e.g., `RunOptions.role`)
+  and performing late or ad-hoc validation. `impl_validated_id!` is duplicated and lacks built-in Serde support, leading to
+  fragmented validation logic and potential for invalid state to propagate deep into the application.
+introduction: |
+  Introduce a unified `Validated<T>` wrapper or specific newtypes (e.g., `RoleId`, `LayerId`) with integrated Serde support.
+  Enforce strict parsing at the configuration boundary (CLI args, config files) so that the domain layer only ever
+  receives guaranteed-valid types. Replace manual `impl_validated_id!` macro usage with this unified approach.
+importance: |
+  This eliminates an entire class of runtime errors ("invalid role format" deep in execution) and simplifies
+  internal logic by removing defensive checks. It ensures that if a configuration is loaded, it is semantically valid.
+
+impact_surface:
+  - "src/domain/config/: Replace String fields with Validated types."
+  - "src/domain/roles/: Update RoleId to use the new validation kernel."
+  - "src/adapters/control_plane_config.rs: Parse directly into domain types."
+
+implementation_cost: |
+  Moderate refactor cost. Requires changing struct definitions and updating call sites.
+  Estimated 1-2 days.
+  Strategy: Create the validation kernel first, then migrate types one by one.
+
+consistency_risks:
+  - "Serialization format changes if not careful (though we aim for string transparency)."
+  - "Initial friction as `String` passing becomes compilation error."
+
+verification_signals:
+  - "Compiler verification: `RunOptions` has no `String` fields for identifiers."
+  - "Runtime behavior: Invalid config fails immediately at load time with a specific parsing error."
+  - "Tests: Property-based tests verify that `Validated<T>` cannot be constructed with invalid data."

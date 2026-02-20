@@ -1,0 +1,39 @@
+schema_version: 1
+
+id: "x9p2m4"
+role: "leverage_architect"
+
+created_at: "2026-02-20"
+
+title: "Unified Domain Error Architecture"
+problem: |
+  The current `AppError` is a monolithic enumeration mixing IO, validation, configuration, and internal errors.
+  Crucial failures like `Validation` and `InternalError` wrap raw strings, obscuring the root cause and preventing
+  programmatic recovery or specific handling. This forces developers to grep logs and makes the system fragile to change.
+introduction: |
+  Decompose `AppError` into focused, domain-specific error types (e.g., `GitError`, `ConfigError`, `ValidationError`)
+  using `thiserror`. Replace stringly-typed variants with rich structs containing context (e.g., `field_name`, `invalid_value`).
+  This establishes a clear contract where errors are part of the API, not just side effects.
+importance: |
+  Reliability requires observing *why* something failed, not just *that* it failed. Structured errors enable
+  precise telemetry, automated recovery (e.g., retrying specific git errors), and clearer boundary contracts.
+  It removes the "check the logs" loop for common failures.
+
+impact_surface:
+  - "src/domain/error.rs: Decompose AppError."
+  - "src/ports/: Update all port traits to return specific errors or a composed DomainError."
+  - "src/adapters/: Map external errors (IO, Git) to domain errors at the boundary."
+
+implementation_cost: |
+  High refactor cost. Touching `AppError` affects nearly every file.
+  Estimated 2-3 days of mechanical refactoring.
+  Strategy: Introduce new errors alongside `AppError` and migrate module-by-module.
+
+consistency_risks:
+  - "Migration period where both error styles exist."
+  - "Potential for missed error conversions during the transition."
+
+verification_signals:
+  - "Compiler verification: No `AppError::Validation(String)` usages remain."
+  - "Telemetry: Error logs contain structured fields (e.g., `error.type`, `error.context`) instead of just messages."
+  - "Tests: New tests assert on specific error variants (e.g., `assert_matches!(err, GitError::PushRejected { .. })`)."
