@@ -1,0 +1,20 @@
+schema_version: 1
+
+# Metadata
+id: "da0003"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "data_arch"
+confidence: "medium"
+
+# Content
+title: "Prompt Assembly Coupled to Schema Storage Layout"
+statement: |
+  `IncludeContext::seed_from_schema` in `src/domain/prompt_assemble/assembler.rs` tightly couples prompt assembly logic to the physical storage layout of schemas. It assumes a flat directory structure (`schemas_dir.join(file_name)`), preventing future reorganization or nested schemas. This violates "Boundary Sovereignty" as the prompt assembly engine should be agnostic to the underlying storage layout of schemas.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/prompt_assemble/assembler.rs"
+    loc:
+      - "300"
+    note: "seed_from_schema constructs schema path assuming flat layout."

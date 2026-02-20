@@ -1,0 +1,28 @@
+schema_version: 1
+
+# Metadata
+id: "da0001"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "data_arch"
+confidence: "high"
+
+# Content
+title: "Duplicate Validated Identifier Logic & Missing Serde Support"
+statement: |
+  The codebase duplicates validation logic for `RoleId` and `SetupComponentId` using a shared macro (`impl_validated_id!`), but diverges in Serialization/Deserialization support. `RoleId` implements Serde manually, while `SetupComponentId` lacks it entirely. This forces manual mapping and validation in `EmbeddedSetupComponentCatalog`, leading to inefficient data transformations and potential for drift in validation rules. This violates "Single Source of Truth" for identifier serialization and "Inefficient data transformations".
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/domain/roles/role_id.rs"
+    loc:
+      - "10"
+    note: "RoleId implements Serialize/Deserialize manually."
+  - path: "src/domain/setup/setup_component.rs"
+    loc:
+      - "13"
+    note: "SetupComponentId lacks Serialize/Deserialize derive or impl."
+  - path: "src/adapters/catalogs/setup_component_embedded.rs"
+    loc:
+      - "80"
+    note: "EmbeddedSetupComponentCatalog manually constructs SetupComponentId, bypassing Serde."
