@@ -1,0 +1,43 @@
+schema_version: 2
+
+# Metadata
+id: "<6_random_lowercase_alphanumeric_chars>" # stable identity
+source_events:
+  - "<event_id>" # List of event IDs that triggered this requirement; each event ID belongs to only one requirement
+title: "<Descriptive Title>"
+label: "<requirement_label>" # Must match a key in .jules/github-labels.json
+priority: "low|medium|high"
+summary: "<One-line statement of the requirement>"
+
+# Content
+goal: |
+  <What outcome is desired - the high-level objective>
+
+problem: |
+  <What is wrong or missing - conceptual description>
+
+impact: |
+  <Why this matters - consequences if not addressed>
+
+desired_outcome: |
+  <What should be true after resolution>
+
+constraints: [] # list of constraints/assumptions (optional)
+risks: [] # list of known risks or regressions (optional)
+
+# Specifics
+affected_areas:
+  - "<file or module path>"
+
+acceptance_criteria:
+  - "<condition 1>"
+  - "<condition 2>"
+
+verification_criteria:
+  - "<criteria 1 (e.g. format check)>"
+  - "<criteria 2 (e.g. lint check)>"
+  - "<criteria 3 (e.g. test commands)>"
+
+# Planning Flags
+implementation_ready: false # false routes to planner; true routes to implementer
+planner_request_reason: "" # required when implementation_ready is false
