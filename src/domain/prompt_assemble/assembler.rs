@@ -40,20 +40,15 @@ where
     let template = prompt_assemble_reader(&template_path)
         .ok_or_else(|| PromptAssemblyError::AssemblyTemplateNotFound(template_path.clone()))?;
 
-    let included_files = Arc::new(Mutex::new(Vec::new()));
-    let skipped_files = Arc::new(Mutex::new(Vec::new()));
-    let seed_ops = Arc::new(Mutex::new(Vec::new()));
-    let failure = Arc::new(Mutex::new(None));
-
     let include_ctx = Arc::new(IncludeContext {
         root: root.to_path_buf(),
         schemas_dir: schemas_dir.clone(),
         loader: Box::new(loader.clone()),
         prompt_assemble_reader: Box::new(prompt_assemble_reader),
-        included_files: included_files.clone(),
-        skipped_files: skipped_files.clone(),
-        seed_ops: seed_ops.clone(),
-        failure: failure.clone(),
+        included_files: Mutex::new(Vec::new()),
+        skipped_files: Mutex::new(Vec::new()),
+        seed_ops: Mutex::new(Vec::new()),
+        failure: Mutex::new(None),
     });
 
     let mut env = Environment::new();
@@ -99,16 +94,16 @@ where
         }
     })?;
 
-    if let Some(err) = failure.lock().unwrap().take() {
+    if let Some(err) = include_ctx.failure.lock().unwrap().take() {
         return Err(err);
     }
 
     let prompt = AssembledPrompt {
         content: rendered,
-        included_files: included_files.lock().unwrap().clone(),
-        skipped_files: skipped_files.lock().unwrap().clone(),
+        included_files: include_ctx.included_files.lock().unwrap().clone(),
+        skipped_files: include_ctx.skipped_files.lock().unwrap().clone(),
     };
-    let ops = seed_ops.lock().unwrap().clone();
+    let ops = include_ctx.seed_ops.lock().unwrap().clone();
     Ok((prompt, ops))
 }
 
@@ -138,10 +133,10 @@ struct IncludeContext {
     schemas_dir: PathBuf,
     loader: Box<dyn PromptAssetLoader + Send + Sync>,
     prompt_assemble_reader: CatalogReader,
-    included_files: Arc<Mutex<Vec<String>>>,
-    skipped_files: Arc<Mutex<Vec<String>>>,
-    seed_ops: Arc<Mutex<Vec<SeedOp>>>,
-    failure: Arc<Mutex<Option<PromptAssemblyError>>>,
+    included_files: Mutex<Vec<String>>,
+    skipped_files: Mutex<Vec<String>>,
+    seed_ops: Mutex<Vec<SeedOp>>,
+    failure: Mutex<Option<PromptAssemblyError>>,
 }
 
 impl IncludeContext {
@@ -241,9 +236,7 @@ impl IncludeContext {
             return None;
         }
 
-        let file_name = Path::new(path).file_name()?;
-
-        let schema_path = self.schemas_dir.join(file_name);
+        let schema_path = self.schemas_dir.join(path);
         if !self.loader.asset_exists(&schema_path) {
             return None;
         }
@@ -433,5 +426,42 @@ mod tests {
 
         assert!(result.content.contains("schema: event"));
         assert!(result.included_files.iter().any(|path| path.ends_with("event.yml")));
+    }
+
+    #[test]
+    fn test_assemble_prompt_schema_seed_nested() {
+        let mock_loader = MockPromptLoader::new();
+        let jules_path = Path::new(".jules");
+
+        // Template from catalog; requests a nested file
+        let mut catalog = HashMap::new();
+        catalog.insert(
+            "observers/observers_prompt.j2".to_string(),
+            r#"{{ section("Nested", include_required("nested/file.yml")) }}"#.to_string(),
+        );
+
+        // Add the schema file at the nested location
+        // schemas_dir for Observers is .jules/schemas/observers/
+        // So we put it at .jules/schemas/observers/nested/file.yml
+        mock_loader.add_file(".jules/schemas/observers/nested/file.yml", "schema: nested");
+
+        let ctx = PromptContext::new().with_var("role", "taxonomy");
+        let (result, seed_ops) = assemble_prompt(
+            jules_path,
+            Layer::Observers,
+            &ctx,
+            &mock_loader,
+            mock_catalog(catalog),
+        )
+        .unwrap();
+
+        assert!(result.content.contains("schema: nested"));
+        assert!(result.included_files.iter().any(|path| path.contains("nested/file.yml")));
+
+        // Verify SeedOp was generated
+        assert_eq!(seed_ops.len(), 1);
+        let op = &seed_ops[0];
+        assert!(op.from.ends_with("nested/file.yml"));
+        assert!(op.to.ends_with("nested/file.yml"));
     }
 }
