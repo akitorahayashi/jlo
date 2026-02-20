@@ -41,6 +41,25 @@ impl Serialize for RoleId {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn valid_ids_are_accepted(s in "[a-zA-Z0-9_-]+") {
+            prop_assert!(RoleId::new(&s).is_ok());
+        }
+
+        #[test]
+        fn invalid_chars_are_rejected(s in ".*[^a-zA-Z0-9_-].*") {
+            prop_assert!(RoleId::new(&s).is_err());
+        }
+
+        #[test]
+        fn roundtrip_display(s in "[a-zA-Z0-9_-]+") {
+            let role_id = RoleId::new(&s).unwrap();
+            prop_assert_eq!(role_id.to_string(), s);
+        }
+    }
 
     #[test]
     fn valid_alphanumeric_id() {
