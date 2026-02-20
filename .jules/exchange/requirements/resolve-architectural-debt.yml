@@ -1,0 +1,65 @@
+schema_version: 2
+
+# Metadata
+id: "a9k3b5"
+source_events:
+  - "da0001"
+  - "da0002"
+  - "rust01"
+  - "v8k2p1"
+  - "sarc02"
+  - "z4m7l0"
+title: "Resolve Architectural Technical Debt"
+label: "refacts"
+priority: "medium"
+summary: "Address core architectural issues: monolithic errors, primitive obsession, and module organization."
+
+# Content
+goal: |
+  Clean up accumulating technical debt by:
+  1. Decomposing the monolithic `AppError` enum into domain-specific errors.
+  2. Replacing primitive types (`String`) in `RunOptions` with strongly typed identifiers (`RoleId`).
+  3. Unifying identifier validation logic (`RoleId` vs `SetupComponentId`) and ensuring consistent Serde support.
+  4. Renaming vague types like `MockExecutionService` to be more specific.
+  5. Reorganizing `src/adapters` to improve cohesion.
+
+problem: |
+  The codebase suffers from several architectural anti-patterns:
+  - `AppError` is a monolithic catch-all, coupling unrelated domains.
+  - `RunOptions` uses `String` for `role`, allowing invalid states.
+  - Identifier logic is duplicated and inconsistent.
+  - `MockExecutionService` is vaguely named.
+  - `src/adapters` is a "bag of things".
+
+impact: |
+  These issues reduce maintainability, increase coupling, and make the code harder to reason about and test.
+
+desired_outcome: |
+  Errors are domain-specific. Configuration uses strong types. Identifiers are consistent. Modules are cohesive.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/domain/error.rs"
+  - "src/domain/roles/role_id.rs"
+  - "src/domain/setup/setup_component.rs"
+  - "src/domain/config/run_options.rs"
+  - "src/app/commands/run/mock/mock_execution.rs"
+  - "src/adapters/"
+
+acceptance_criteria:
+  - "`AppError` is decomposed or significantly reduced in scope."
+  - "`RunOptions.role` is `Option<RoleId>`."
+  - "`RoleId` and `SetupComponentId` share validation logic and Serde behavior."
+  - "`MockExecutionService` is renamed (e.g., `MockWorkflowOrchestrator`)."
+  - `src/adapters` root is clean of implementation files.
+
+verification_criteria:
+  - "Review code changes for type safety improvements."
+  - "Verify build succeeds."
+
+# Planning Flags
+implementation_ready: false
+planner_request_reason: "Decomposition of AppError requires careful planning to avoid massive breaking changes at once."

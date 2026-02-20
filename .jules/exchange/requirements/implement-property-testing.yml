@@ -1,0 +1,42 @@
+schema_version: 2
+
+# Metadata
+id: "x3q9z7"
+source_events:
+  - "jlj8yr"
+title: "Implement Property-Based Testing"
+label: "tests"
+priority: "low"
+summary: "Introduce property-based testing for domain logic."
+
+# Content
+goal: |
+  Add `proptest` (or similar) to the project and implement property-based tests for domain logic (e.g., configuration parsing, validation rules) to cover edge cases missed by example-based tests.
+
+problem: |
+  Current testing relies exclusively on fixed examples, leaving complex state spaces (like input validation) potentially vulnerable to edge cases.
+
+impact: |
+  Increased risk of unhandled edge cases and bugs in complex logic.
+
+desired_outcome: |
+  Critical domain logic is verified with property-based tests.
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "Cargo.toml"
+  - "src/domain/"
+
+acceptance_criteria:
+  - "`proptest` dependency added."
+  - "At least one property-based test implemented for a domain module (e.g., `run_options` or `role_id`)."
+
+verification_criteria:
+  - "Run `cargo test`."
+
+# Planning Flags
+implementation_ready: true
+planner_request_reason: ""

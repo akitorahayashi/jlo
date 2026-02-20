@@ -1,0 +1,50 @@
+schema_version: 2
+
+# Metadata
+id: "c7h2x9"
+source_events:
+  - "cons01"
+  - "cons02"
+  - "cons03"
+  - "q5w9r3"
+title: "Resolve CLI Implementation Drift"
+label: "bugs"
+priority: "high"
+summary: "Harmonize `jlo init`, `run`, and `workflow` commands with documentation and desired UX."
+
+# Content
+goal: |
+  Ensure that the CLI implementation for `jlo init`, `jlo run`, and `jlo workflow` matches the documented behavior and follows standard CLI conventions (e.g., using flags for optional modes and positional arguments for primary targets).
+
+problem: |
+  The current implementation of `jlo init` requires a mandatory positional argument (`remote` or `self-hosted`), while the documentation specifies optional flags. Similarly, `jlo run` requires a flag for requirement files but documentation implies positional usage. `jlo workflow` subcommands are flattened in code but documented as hierarchical.
+
+impact: |
+  This drift confuses users, reduces developer experience, and makes the CLI behavior unpredictable compared to the documentation.
+
+desired_outcome: |
+  The CLI implementation should be updated to match the desired UX (likely following the documentation where it is more standard), or the documentation should be updated if the current implementation is deliberate (though unlikely for `init`).
+
+constraints: []
+risks: []
+
+# Specifics
+affected_areas:
+  - "src/app/cli/init.rs"
+  - "src/app/cli/run.rs"
+  - "src/app/cli/workflow/mod.rs"
+  - "README.md"
+
+acceptance_criteria:
+  - "`jlo init --remote` and `jlo init --self-hosted` work as flags."
+  - "`jlo run planner <file>` works as a positional argument."
+  - "`jlo workflow gh` and `jlo workflow exchange` subcommands exist and work as documented."
+
+verification_criteria:
+  - "Run `jlo init --help` to verify flags."
+  - "Run `jlo run --help` to verify positional arguments."
+  - "Run `jlo workflow --help` to verify subcommands."
+
+# Planning Flags
+implementation_ready: true
+planner_request_reason: ""
