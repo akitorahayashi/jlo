@@ -1,0 +1,24 @@
+schema_version: 1
+
+# Metadata
+id: "cov001"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "cov"
+confidence: "high"
+
+# Content
+title: "Uncovered Critical Path in Run Command"
+statement: |
+  The `execute_real` functions in `DeciderLayer` and `ImplementerLayer` contain the core production logic for interacting with the Jules API and assembling prompts. However, the existing tests in `src/app/commands/run/layer/decider.rs` and `src/app/commands/run/layer/implementer.rs` exclusively cover the `execute_mock` path. This leaves the actual production code path completely untested at the unit level, increasing the risk of regressions in critical functionality like session creation and prompt assembly.
+
+# Evidence supporting the observation
+evidence:
+  - path: "src/app/commands/run/layer/decider.rs"
+    loc:
+      - "fn execute_real"
+    note: "Contains critical API interaction logic but is not invoked by any test in the file."
+  - path: "src/app/commands/run/layer/implementer.rs"
+    loc:
+      - "fn execute_real"
+    note: "Contains critical API interaction logic but is not invoked by any test in the file."
