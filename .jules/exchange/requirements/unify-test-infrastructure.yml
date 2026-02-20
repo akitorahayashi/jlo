@@ -27,27 +27,36 @@ impact: |
 desired_outcome: |
   All tests should use shared test doubles from `src/testing/`. `FakeGit` should support stateful simulation (tracking commits, branches). `execute_real` paths should be covered by tests that inject these improved shared mocks.
 
-constraints: []
-risks: []
+constraints:
+  - "Ensure backward compatibility for existing tests using `FakeGit`."
+  - "Do not expose `FakeJulesClient` or factory details excessively outside of testing context."
+
+risks:
+  - "Refactoring `FakeGit` to use shared state (`Arc<Mutex<T>>`) might require updates to existing tests that assume ownership or non-shared state."
+  - "Injecting `JulesClientFactory` into `execute_with_mock_prerequisite_validator` changes internal API but should be contained within `run/mod.rs`."
 
 # Specifics
 affected_areas:
   - "src/testing/ports/git_stub.rs"
   - "src/testing/ports/github_stub.rs"
+  - "src/testing/ports/jules_client_stub.rs"
+  - "src/testing/ports/mod.rs"
+  - "src/testing/mod.rs"
   - "src/app/commands/run/mod.rs"
-  - "src/app/commands/run/layer/"
 
 acceptance_criteria:
-  - "Local `TestGit` and `TestGitHub` structs in `src/app/commands/run/mod.rs` are removed."
-  - "Tests in `src/app/commands/run/` use shared `FakeGit` and `FakeGitHub`."
-  - "`FakeGit` implementation is enhanced to simulate basic Git operations (commit, branch tracking)."
-  - "`execute_real` functions are invoked in at least one test case."
+  - "Create `src/testing/ports/jules_client_stub.rs` implementing `FakeJulesClient` and `FakeJulesClientFactory`."
+  - "Enhance `FakeGit` in `src/testing/ports/git_stub.rs` to use `Arc<Mutex<T>>` for fields (shared state), supporting `Clone`."
+  - "Enhance `FakeGit` to support `rm --` simulation (via optional `root` path) and track pushed branches."
+  - "Refactor `src/app/commands/run/mod.rs`: remove `TestGit`/`TestGitHub`, import shared mocks."
+  - "Update `execute` flow in `run/mod.rs` to support injecting `JulesClientFactory` for testing."
+  - "Add at least one test case in `run/mod.rs` exercising `execute_real` path for Decider or Implementer using `FakeJulesClient`."
 
 verification_criteria:
   - "Grep for `struct TestGit` in `src/app/commands/run/` returns no results."
-  - "Run `cargo test` and ensure all tests pass."
-  - "Check coverage report (if available) for `execute_real`."
+  - "Run `cargo test` and ensure all tests (including new `execute_real` tests) pass."
+  - "Verify `FakeGit` changes do not break existing tests in other modules."
 
 # Planning Flags
-implementation_ready: false
+implementation_ready: true
 planner_request_reason: "Design required for dependency injection of JulesClient in execute_real and unification of test doubles."
