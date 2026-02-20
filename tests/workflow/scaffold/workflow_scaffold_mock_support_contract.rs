@@ -106,6 +106,24 @@ fn installed_workflow_scaffold_includes_mock_support() {
         ),
         "Requirements entry-point should start from planner/implementer routing"
     );
+    assert!(
+        workflow.contains(
+            "run-decider:\n    needs: [\"resolve-run-plan\", \"wait-after-observers\"]\n    if: |\n      always() &&\n      needs.resolve-run-plan.result == 'success' &&\n      fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true"
+        ),
+        "run-decider should use always() so it can run when wait-after-observers is skipped by routing"
+    );
+    assert!(
+        workflow.contains(
+            "run-planner:\n    needs: [\"resolve-run-plan\", \"wait-after-decider\"]\n    if: |\n      always() &&\n      needs.resolve-run-plan.result == 'success' &&\n      fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true"
+        ),
+        "run-planner should use always() so it can run when wait-after-decider is skipped by routing"
+    );
+    assert!(
+        workflow.contains(
+            "run-implementer:\n    needs: [\"resolve-run-plan\", \"wait-after-decider\"]\n    if: |\n      always() &&\n      needs.resolve-run-plan.result == 'success' &&\n      fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true"
+        ),
+        "run-implementer should use always() so it can run when wait-after-decider is skipped by routing"
+    );
     assert!(workflow.contains("wait-after-narrator:"), "Should include narrator-specific wait job");
     assert!(
         !workflow.contains("wait-after-initial-requests:"),

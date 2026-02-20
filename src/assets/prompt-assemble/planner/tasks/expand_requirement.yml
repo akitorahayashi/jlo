@@ -4,9 +4,6 @@ objective:
   Perform deep analysis on the assigned requirement and expand it with system impact
   assessment, dependency analysis, risks, and implementation specifics.
 
-inputs:
-  - The embedded requirement content (provided after the prompt)
-
 steps:
   - Read the target requirement and its planner_request_reason.
   - Analyze full system impact, dependency tree, affected areas, constraints,

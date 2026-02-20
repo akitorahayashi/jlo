@@ -509,6 +509,7 @@ jobs:
   run-decider:
     needs: ["resolve-run-plan", "wait-after-observers"]
     if: |
+      always() &&
       needs.resolve-run-plan.result == 'success' &&
       fromJSON(needs.resolve-run-plan.outputs.json).run_decider == true &&
       (
@@ -603,6 +604,7 @@ jobs:
   run-planner:
     needs: ["resolve-run-plan", "wait-after-decider"]
     if: |
+      always() &&
       needs.resolve-run-plan.result == 'success' &&
       fromJSON(needs.resolve-run-plan.outputs.json).run_planner == true &&
       (
@@ -697,6 +699,7 @@ jobs:
   run-implementer:
     needs: ["resolve-run-plan", "wait-after-decider"]
     if: |
+      always() &&
       needs.resolve-run-plan.result == 'success' &&
       fromJSON(needs.resolve-run-plan.outputs.json).run_implementer == true &&
       (

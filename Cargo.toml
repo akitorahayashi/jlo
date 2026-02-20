@@ -1,6 +1,6 @@
 [package]
 name = "jlo"
-version = "13.2.0"
+version = "13.2.1"
 edition = "2024"
 description = "CLI tool for deploying scaffolding and orchestrating scheduled LLM agent execution."
 
