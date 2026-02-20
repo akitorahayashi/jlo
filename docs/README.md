@@ -11,12 +11,14 @@ High-level design and constraints.
 - [Boundary & Dependency Model](architecture/ARCHITECTURE_BOUNDARY.md)
 - [Control Plane Ownership](architecture/CONTROL_PLANE_OWNERSHIP.md)
 - [Prompt Assembly Policy](architecture/PROMPT_ASSEMBLY.md)
+- [Scaffold Design](architecture/scaffold.md)
 
 ### [Operations](operations/)
 
 Operational guides and reference maps.
 
-- [Reproduction Guide](operations/REPRODUCTION_GUIDE.md)
+- [Setup Guide](operations/SETUP_GUIDE.md)
+- [Template System](operations/templates.md)
 - [Workflow Branch Impact Map](operations/WORKFLOW_BRANCH_IMPACT_MAP.md)
 - [Workflow Layer Change Map](operations/WORKFLOW_LAYER_CHANGE_MAP.md)
 
@@ -38,8 +40,6 @@ Core development and design context located in the source tree.
 
 - [CLI Development](../src/AGENTS.md) — Rust CLI development context (SSOT for verification)
 - [GitHub Workflows](../.github/AGENTS.md) — GitHub Actions workflows design
-- [Scaffold Design](../src/assets/scaffold/AGENTS.md) — `.jules/` scaffold design
-- [Template System](../src/assets/templates/AGENTS.md) — Template system
 
 ## Keeping Docs Updated
 

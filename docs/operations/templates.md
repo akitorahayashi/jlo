@@ -1,6 +1,6 @@
 # Template System
 
-See [root AGENTS.md](../../../AGENTS.md) for design principles.
+See [root AGENTS.md](../../AGENTS.md) for design principles.
 
 ## Directory Structure
 
@@ -41,7 +41,7 @@ Creates `.jlo/roles/<layer>/<name>/role.yml` populated from the template.
 
 ## Relationship to jlo role create Command
 
-See [src/AGENTS.md](../../../src/AGENTS.md) for CLI command details.
+See [src/AGENTS.md](../../src/AGENTS.md) for CLI command details.
 
 The `jlo role create` command:
 1. Reads templates from `src/assets/templates/`
