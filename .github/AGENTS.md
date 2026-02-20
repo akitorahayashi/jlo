@@ -84,7 +84,7 @@ Reinstalling the workflow kit overwrites rendered schedule/wait values with `.jl
 - Branch protection on `JULES_WORKER_BRANCH` requires status checks and allows auto-merge.
 - Workflow bot identities have required repository permissions.
 
-## Relationship to REPRODUCTION_GUIDE.md
+## Relationship to SETUP_GUIDE.md
 
-[REPRODUCTION_GUIDE.md](../docs/operations/REPRODUCTION_GUIDE.md) provides reproduction setup guidance.
+[SETUP_GUIDE.md](../docs/operations/SETUP_GUIDE.md) provides reproduction setup guidance.
 This file focuses on workflow development context.
