@@ -1,0 +1,18 @@
+schema_version: 1
+id: "rust02"
+requirement_id: ""
+created_at: "2026-02-20"
+author_role: "rustacean"
+confidence: "high"
+title: "Duplicated Test Doubles & DRY Violation"
+statement: |
+  The `jlo run` command implementation in `src/app/commands/run/mod.rs` defines local `TestGit` and `TestGitHub` structs, duplicating the shared test doubles available in `src/testing/ports/`. This violates DRY, creates maintenance debt, and leads to inconsistent test behavior.
+evidence:
+  - path: "src/app/commands/run/mod.rs"
+    loc:
+      - "219-331"
+    note: "Local redefinition of TestGit struct and impl."
+  - path: "src/app/commands/run/mod.rs"
+    loc:
+      - "333-406"
+    note: "Local redefinition of TestGitHub struct and impl."
