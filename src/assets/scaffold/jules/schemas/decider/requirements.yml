@@ -39,5 +39,5 @@ verification_criteria:
   - "<criteria 3 (e.g. test commands)>"
 
 # Planning Flags
-implementation_ready: false # false routes to planner; true routes to implementer
+implementation_ready: false # true routes to implementer;false routes to planner (The scope of the change is extensive or requires further detailed investigation)
 planner_request_reason: "" # required when implementation_ready is false

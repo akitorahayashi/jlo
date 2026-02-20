@@ -1,8 +1,3 @@
-rules:
-  - "Code dictates the Execution (How): Production code is the mechanical truth. It must clearly and efficiently express the logic, algorithms, and control flow required to accomplish a task."
-  - "Tests define the Specification (What): Test suites act as executable documentation. They define the system's expected behaviors, business requirements, and boundaries without focusing on internal implementation details."
-  - "Comments capture the Rationale (Why Not): Comments should never duplicate what the code already says. They exist solely to preserve invisible context—explaining technical constraints, trade-offs, edge-case reasoning, and the discarded alternatives that led to a specific decision."
-
 design:
   - "When adding new features or refactoring, removing old modules and deprecated features is mandatory. Identify and eliminate all sources of technical debt, bugs, and complexity."
   - "Never define class or file names with ambiguous responsibilities, such as base, common, core, utils, or helpers."
